@@ -4,9 +4,9 @@
 .cell-list-pagination>span{margin-right:auto;font-variant-numeric:tabular-nums}
 .cell-list-pagination button{font-size:13px;padding:6px 9px}
 .cell-row{position:relative}
-.cell-list .cell-columns,.cell-list .cell-row>.cell-disclosure>summary{grid-template-columns:minmax(130px,1.25fr) 130px minmax(70px,.65fr) .65fr .9fr .8fr 156px;gap:16px;padding:16px 24px}
+.cell-list .cell-columns,.cell-list .cell-row>.cell-disclosure>summary{grid-template-columns:var(--cell-overview-columns,minmax(130px,1.25fr) 130px minmax(70px,.65fr) .65fr .9fr .8fr 156px);gap:16px;padding:12px 24px}
 .cell-list .cell-columns{font-size:13px;padding-top:15px;padding-bottom:12px;color:var(--ink-muted)}
-.cell-list .cell-row>.cell-disclosure>summary{min-height:76px;background:var(--surface);color:var(--ink-secondary);font-size:15px}
+.cell-list .cell-row>.cell-disclosure>summary{min-height:64px;background:var(--surface);color:var(--ink-secondary);font-size:15px}
 .cell-list .cell-row:hover>.cell-disclosure>summary{background:var(--surface-subtle)}
 .cell-list .cell-row>.cell-disclosure>summary:focus-visible{outline:0;background:var(--accent-soft)}
 .cell-identity,.cell-recording-identity{min-width:0}
@@ -19,20 +19,24 @@
 .cell-list .cell-value .badge{font-size:14px;font-weight:550;padding:4px 7px;white-space:normal}
 .cell-expand-cue{display:none;flex-shrink:0}
 .cell-list .expand-hint{display:flex;align-items:center;gap:4px;font-size:12px;justify-content:flex-start}
-.cell-qc-action{position:absolute;right:20px;top:38px;transform:translateY(-50%);font-size:13px;padding:8px 10px;opacity:0;pointer-events:none}
+.cell-qc-action{position:absolute;right:20px;top:32px;transform:translateY(-50%);font-size:13px;padding:8px 10px;opacity:0;pointer-events:none}
 .cell-row:hover>.cell-qc-action,.cell-row:focus-within>.cell-qc-action{opacity:1;pointer-events:auto}
-.cell-list .cell-details{display:flex;align-items:stretch;flex-direction:column;gap:14px;padding:18px 24px;background:var(--surface-subtle)}
+.cell-list .cell-details{display:flex;align-items:stretch;flex-direction:column;gap:10px;padding:10px 24px;background:var(--surface-subtle)}
 .cell-detail-table{border-collapse:collapse;width:100%;table-layout:fixed}
-.cell-detail-table th,.cell-detail-table td{padding:4px 20px 4px 0;text-align:left;vertical-align:top;overflow-wrap:anywhere;line-height:1.5}
+.cell-detail-table th,.cell-detail-table td{padding:3px 16px 3px 0;text-align:left;vertical-align:top;overflow-wrap:anywhere;line-height:1.5}
 .cell-detail-table th{font-size:13px;font-weight:500;color:var(--ink-muted)}
 .cell-detail-table td{font-size:16px;color:var(--ink-secondary);font-variant-numeric:tabular-nums}
-.cell-detail-table th:nth-child(1){width:27%}
-.cell-detail-table th:nth-child(2),.cell-detail-table th:nth-child(3){width:18%}
-.cell-detail-table th:nth-child(4){width:37%}
-.cell-detail-table td:nth-child(2),.cell-detail-table td:nth-child(3){font-size:20px;font-weight:600;color:var(--ink)}
+.cell-detail-table th:nth-child(1){width:23%}
+.cell-detail-table th:nth-child(2),.cell-detail-table th:nth-child(3){width:14%}
+.cell-detail-table th:nth-child(4){width:29%}
+.cell-detail-table td:nth-child(2),.cell-detail-table td:nth-child(3){font-size:16px;font-weight:600;color:var(--ink)}
 .cell-detail-table td.mono{font-size:13px}
 .cell-list .cell-details .tags{flex-wrap:wrap;margin:0;align-items:center}
-.cell-tag-label{font-size:13px;color:var(--ink-muted);margin-right:6px}
+.cell-detail-table th.cell-tags-heading{width:20%;padding-right:0;text-align:right}
+.cell-detail-table td.cell-detail-tags{padding-right:0;text-align:right}
+.cell-detail-tags .tags{justify-content:flex-end}
+.cell-tag-label{font-size:12px;color:var(--ink-muted)}
+.cell-detail-tags .tags+.tags{margin-top:5px!important}
 .cell-list .cell-details .tags .badge{font-size:13px}
 .cell-list .cell-details>button{align-self:flex-end}
 @media (hover:none),(pointer:coarse){.cell-qc-action{opacity:1;pointer-events:auto}}
@@ -60,4 +64,6 @@
  .cell-detail-table td:nth-child(2)::before{content:'Included epochs'}
  .cell-detail-table td:nth-child(3)::before{content:'Excluded epochs'}
  .cell-detail-table td:nth-child(4)::before{content:'Cell UUID'}
+ .cell-detail-table td:nth-child(5){grid-column:1/-1}
+ .cell-detail-table td:nth-child(5)::before{content:'Cell tags'}
 }

@@ -40,7 +40,8 @@ responses. These checks do not perform native baseline preparation or scientific
 measurements, and source organization claims no chart-paint or performance result.
 
 Cell-list rows use desktop columns for cell label, recording date, rig, epochs,
-recorded time and exported epochs. Expanded supplemental facts span the full row.
+recorded time and exported epochs. Parent type headers and child cells share icon centers and aggregate value columns.
+Expanded supplemental facts and right-aligned tags share one compact full-width table.
 QC is an independent sibling button available before expanding details: desktop
 hover or keyboard focus reveals it at the right, while touch/coarse pointers keep
 it visible. Reserved space prevents reveal from moving the row. Native disclosure

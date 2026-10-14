@@ -153,7 +153,7 @@ test('QC is reachable on a collapsed cell row and keeps exact identity with repe
     assert.equal(calls[index],cells[index].cell_uuid);
   }
   const details=rows[1].findByProps({className:'cell-detail-table'});
-  assert.deepEqual(details.findAllByType('td').map(node=>node.children.join('')),['Unknown','Unavailable','Unavailable','second']);
+  assert.deepEqual(details.findAllByType('td').map(node=>node.children.join('')),['Unknown','Unavailable','Unavailable','second','']);
   const metrics=rows[1].findByType('summary').findAllByProps({className:'cell-value'});
   assert(metrics[0].children.includes('Unavailable'));
   assert.equal(metrics[2].findByProps({className:'badge neutral'}).children.join(''),'Unavailable');

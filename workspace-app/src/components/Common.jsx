@@ -46,11 +46,12 @@ export function CellList({cells = [], onInspect,onQC}) {
           </summary>
           <div className="cell-details">
             <table className="cell-detail-table" aria-label="Recorded cell details">
-              <thead><tr><th scope="col">Recorded type</th><th scope="col">Included epochs</th><th scope="col">Excluded epochs</th><th scope="col">Cell UUID</th></tr></thead>
-              <tbody><tr><td>{type}</td><td>{count(cell.included)}</td><td>{count(excluded)}</td><td className="mono">{uuid}</td></tr></tbody>
+              <thead><tr><th scope="col">Recorded type</th><th scope="col">Included epochs</th><th scope="col">Excluded epochs</th><th scope="col">Cell UUID</th><th scope="col" className="cell-tags-heading">Cell tags</th></tr></thead>
+              <tbody><tr><td>{type}</td><td>{count(cell.included)}</td><td>{count(excluded)}</td><td className="mono">{uuid}</td><td className="cell-detail-tags">
+                  {Array.isArray(cell.tags)&&cell.tags.length>0&&<div className="tags" aria-label="Cell tags">{cell.tags.map(tag=><Badge key={tag}>{tag}</Badge>)}</div>}
+                  {cell.annotations?.cell_tags?.length>0&&<div className="tags" aria-label="Shared cell tags"><span className="cell-tag-label">Shared</span>{cell.annotations.cell_tags.map(chip=><Badge key={`${chip.profile_uuid}:${chip.tag}`}>{chip.tag} · {chip.author_name} · cell</Badge>)}</div>}
+                </td></tr></tbody>
             </table>
-            {Array.isArray(cell.tags)&&cell.tags.length>0&&<div className="tags" aria-label="Cell tags"><span className="cell-tag-label">Cell tags</span>{cell.tags.map(tag=><Badge key={tag}>{tag}</Badge>)}</div>}
-            {cell.annotations?.cell_tags?.length>0&&<div className="tags" aria-label="Shared cell tags"><span className="cell-tag-label">Shared cell tags</span>{cell.annotations.cell_tags.map(chip=><Badge key={`${chip.profile_uuid}:${chip.tag}`}>{chip.tag} · {chip.author_name} · cell</Badge>)}</div>}
             {onInspect&&<button className="primary" onClick={()=>onInspect(uuid)}>Inspect & tag epochs <ArrowRight size={16}/></button>}
           </div>
         </details>

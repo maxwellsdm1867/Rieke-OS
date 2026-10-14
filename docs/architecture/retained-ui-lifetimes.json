@@ -559,10 +559,10 @@
       ]
     },
     "src/components/Common.jsx": {
-      "fingerprint": "fbcd3b4a101a20a1f0acb3841625c02d4e7fc68689db93be980529d7d3aca8cc",
+      "fingerprint": "7f4d0a436c99e3d036bfa790314b79428352de5f7389643953dd9fb65059ed49",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced.",
+      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced. Reviewed compact table-only relocation of tags; UUID callbacks, disclosure, pagination and effects are unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
