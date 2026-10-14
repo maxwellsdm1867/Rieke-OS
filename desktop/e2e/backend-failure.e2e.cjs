@@ -156,7 +156,7 @@ async function cleanupFailedFixture(){
   assert.equal(createHash('sha256').update(await fs.readFile(path.join(fixture.bundle, 'Contents/Resources/app.asar'))).digest('hex'), appAsarSha256);
   diagnostic.stage='launching-faulted-clone';
   diagnostic.bundle=fixture.bundle;diagnostic.fixture_home=fixture.home;diagnostic.launch_started_ms=Date.now();
-  const application=await launchNative(fixture);
+  const application=await bounded(launchNative(fixture),45000,'Owned native fault-test launch');
   diagnostic.stage='waiting-for-recovery';
   await application.evaluate(({BrowserWindow})=>{
     for(const window of BrowserWindow.getAllWindows())window.webContents.on('render-process-gone',(_event,details)=>process.stdout.write('FAULT_RENDERER_EVENT='+JSON.stringify(details)+'\n'));
