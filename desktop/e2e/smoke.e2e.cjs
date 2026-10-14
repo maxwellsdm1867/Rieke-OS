@@ -96,12 +96,13 @@ async function main(){
   assert.ok(status.available===null||typeof status.available==='string');assert.equal(typeof status.message,'string');
   const connected=Boolean(status.checked_at&&!status.check_error&&['Current','Available','Downloading','Validating'].includes(status.state));
   receipt.update_connectivity_verified=connected;
-  if(!connected)receipt.update_feed_probe=await (async()=>{
-    const {httpsTransport}=require('../updates/testing-updater.cjs');
+  if(!connected)receipt.update_feed_probe=await application.evaluate(async({app})=>{
+    const require=process.getBuiltinModule('module').createRequire(app.getAppPath()+'/main.cjs');
+    const {httpsTransport}=require('./updates/testing-updater.cjs');
     try{const response=await httpsTransport('https://api.github.com/repos/maxwellsdm1867/Rieke-OS/releases?per_page=100&page=1',{kind:'api'});let bytes=0;for await(const chunk of response.body){bytes+=chunk.length;if(bytes>1024*1024){response.body.destroy();break;}}
       return{status:response.statusCode,bytes,rate_remaining:response.headers['x-ratelimit-remaining'],rate_reset:response.headers['x-ratelimit-reset'],retry_after:response.headers['retry-after'],date:response.headers.date};
     }catch(error){return{error: error.message,code:error.code||null};}
-  })();
+  });
 
   if(!connected)receipt.warnings.push('Update status was handled, but release-feed connectivity/availability was not verified.');
   if(process.env.RIEKE_SMOKE_REQUIRE_UPDATE_CONNECTIVITY==='1')assert.equal(connected,true,'This run requires a successful release-feed check');
