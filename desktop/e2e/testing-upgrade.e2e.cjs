@@ -211,7 +211,7 @@ async function main(){
  await fs.writeFile(profileProbe,profileBytes,{mode:0o600});
  await check('macOS launch refusal triggers complete previous-app rollback with profile unchanged',async()=>{
   const {outcome}=await phase('rollback',config);assert.equal(outcome.state,'Restored');assert.equal(outcome.failedCandidateRetained,true);assert.equal(outcome.version,priorVersion);assert.equal(await bundleDigest(fixture.bundle),priorDigest);
-  const cache=path.join(fixture.userData,'updates/unsigned-testing'),failed=(await fs.readdir(cache)).filter(name=>/^failed-candidate-.*\.app$/.test(name));
+  const cache=path.dirname(fixture.bundle),failed=(await fs.readdir(cache)).filter(name=>/^\.Rieke OS\.failed-candidate-.*\.app$/.test(name));
   assert.equal(failed.length,1);const failedPath=path.join(cache,failed[0]),failedInfo=await fs.lstat(failedPath);
   assert.ok(failedInfo.isDirectory()&&!failedInfo.isSymbolicLink()&&failedInfo.uid===process.getuid());assert.equal(path.dirname(await fs.realpath(failedPath)),await fs.realpath(cache));
   assert.equal(await bundleDigest(failedPath),candidateDigest);
