@@ -99,13 +99,33 @@ async function quitAndVerify(){
  }catch(error){if(error.code!=='ENOENT')throw error;}
  return{orderly_exit:true,owned_processes_before:before.length,owned_processes_after:0,root_registry_removed:true};
 }
-async function authorProfile(){
+async function projectDataReady(){
+ const startedAt=Date.now(),origin=new URL(page.url()).origin;
+ await bounded(page.waitForFunction(async()=>{
+  const response=await fetch('/api/project/data-status');if(!response.ok)throw Error('Project data status unavailable');
+  const state=await response.json();if(state.status==='failed')throw Error('Project activation failed');
+  return state.status==='ready';
+ },undefined,{timeout:60000,polling:100}),'Scientific project activation',60000);
+ await page.waitForFunction(()=>document.querySelector('.project-overview-retained')&&document.querySelector('.project-presentation-status')?.textContent==='',undefined,{timeout:Math.min(60000,remaining())});
+ (receipt.project_data_readiness??=[]).push({origin,started_at:startedAt,ready_at:Date.now(),status:'ready',canonical_overview_visible:true,
+  activation_requests:(receipt.renderer_write_requests||[]).filter(event=>event.origin===origin&&event.path==='/api/project/activate').map(event=>({...event}))});
+}
+async function authorProfile(requireExisting=false){
+ const read=()=>page.evaluate(async()=>{const response=await fetch('/api/annotation-profiles');if(!response.ok)throw Error('Tag author state unavailable');return response.json();});
+ const initial=await read();
+ if(requireExisting)assert.equal(initial.selected_profile_uuid,receipt.tag_author_uuid,'Selected tag author must persist across restart');
  const dialog=page.getByRole('dialog',{name:'Tag author',exact:true});
- if(await dialog.waitFor({state:'visible',timeout:3000}).then(()=>true,()=>false)){
+ if(!initial.selected_profile_uuid){
+  await dialog.waitFor({state:'visible',timeout:Math.min(20000,remaining())});
   const existing=dialog.getByRole('button',{name:'Smoke test',exact:true});
   if(await existing.count())await existing.first().click();else{await dialog.getByRole('textbox').fill('Smoke test');await dialog.getByRole('button',{name:'Create profile',exact:true}).click();}
   await dialog.waitFor({state:'hidden',timeout:10000});
  }
+ await page.waitForFunction(()=>document.querySelector('.annotation-profile-trigger')?.title==='Tag author: Smoke test',undefined,{timeout:Math.min(20000,remaining())});
+ const selected=await read();assert.ok(selected.selected_profile_uuid,'A tag author must be selected before clean shutdown');
+ assert.equal(selected.profiles.find(profile=>profile.profile_uuid===selected.selected_profile_uuid)?.display_name,'Smoke test');
+ if(requireExisting)assert.equal(selected.selected_profile_uuid,receipt.tag_author_uuid);
+ else receipt.tag_author_uuid=selected.selected_profile_uuid;
 }
 async function actualPage(project=false){
  const until=Date.now()+60000;
@@ -136,7 +156,7 @@ async function start(restoredProjectName=null){
   target.on('requestfailed',request=>{const event=pending.get(request);if(event){event.failed_at=Date.now();pending.delete(request);}});
  };
  application.on('window',observeRequests);application.windows().forEach(observeRequests);
- page=await actualPage(Boolean(restoredProjectName)); if(restoredProjectName)await authorProfile();
+ page=await actualPage(Boolean(restoredProjectName)); if(restoredProjectName){await projectDataReady();await authorProfile(true);}
  page.setDefaultTimeout(20000);page.on('pageerror',error=>receipt.failures.push({name:'renderer-pageerror',message:error.message}));
  if(restoredProjectName)await page.getByRole('heading',{name:restoredProjectName,exact:true}).waitFor({timeout:Math.min(60000,remaining())});
  else await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:Math.min(60000,remaining())});
@@ -206,8 +226,8 @@ async function main(){
   await form.getByRole('button',{name:'Browse: New project folder',exact:true}).click();const picker=page.getByRole('dialog',{name:'New project folder',exact:true});
   await picker.getByRole('checkbox',{name:'Create a new folder inside this location'}).check();await picker.getByRole('textbox',{name:'New folder name',exact:true}).fill(leaf);await picker.getByRole('button',{name:'Use new folder',exact:true}).click();
   assert.equal(await form.locator('#new-project-directory').inputValue(),projectPath);await form.getByRole('button',{name:'Create & open',exact:true}).click();
-  page=await actualPage(true); await authorProfile();
-  await page.getByRole('heading',{name:projectName,exact:true}).waitFor({timeout:Math.min(60000,remaining())});await authorProfile();
+  page=await actualPage(true);await projectDataReady();await authorProfile();
+  await page.getByRole('heading',{name:projectName,exact:true}).waitFor({timeout:Math.min(60000,remaining())});
   const project=await page.evaluate(()=>fetch('/api/projects').then(response=>response.json()));projectUuid=project.current_project_uuid;assert.ok(projectUuid);
   assert.ok((await fs.stat(projectPath)).isDirectory());const health=await bounded(ownedControl(fixture,'health'),'Project readiness');firstSession=health.session_id;
   assert.ok(health.services.some(service=>service.project_uuid===projectUuid&&service.project_path===projectPath&&service.bound===true));receipt.project_uuid=projectUuid;
@@ -215,12 +235,12 @@ async function main(){
  });
  await check('first orderly quit exits root and project services',quitAndVerify);
  await check('cold restart reopens the persisted project',async()=>{
-  await start(projectName);await page.getByRole('heading',{name:projectName,exact:true}).waitFor({timeout:Math.min(60000,remaining())});await authorProfile();
+  await start(projectName);await page.getByRole('heading',{name:projectName,exact:true}).waitFor({timeout:Math.min(60000,remaining())});
   const project=await page.evaluate(()=>fetch('/api/projects').then(response=>response.json()));assert.equal(project.current_project_uuid,projectUuid);
   const health=await bounded((async()=>{
    while(true){const current=await ownedControl(fixture,'health');if(current.services.some(service=>service.project_uuid===projectUuid&&service.project_path===projectPath&&service.bound===true))return current;remaining();await delay(100);}
   })(),'Restored project readiness',60000);assert.notEqual(health.session_id,firstSession);assert.ok(health.services.some(service=>service.project_uuid===projectUuid&&service.project_path===projectPath&&service.bound===true));
-  return{same_project_uuid:true,new_owned_session:true,persisted_native_project_reopened:true,automatic_restore:true};
+  return{same_project_uuid:true,new_owned_session:true,persisted_native_project_reopened:true,automatic_restore:true,selected_tag_author_preserved:true};
  });
  await check('final orderly quit preserves original manifest and ASAR bytes',async()=>{
   const shutdown=await quitAndVerify(),after=await bundleReceipts();assert.equal(after.manifest_sha256,initial.manifest_sha256);assert.equal(after.asar_sha256,initial.asar_sha256);assert.equal(receipt.failures.length,0,'Renderer errors occurred');
