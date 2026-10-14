@@ -25,6 +25,10 @@ an unavailable prerequisite, partial run, skipped case or timeout into success.
 | [benchmark_workflow.py](benchmark_workflow.py) | `run --source-root --output [--protocol-epochs N] [--profile]`, `compare BASELINE CANDIDATE --output`; thirteen fixed browser action variants, three ordinary samples and exact correctness checks. Action medians and trace endpoints gate comparison; optional profiles are diagnostic and do not block optimization. Default active protocol is one million; CI uses 20,000 within an actual million-row project. Exact protocol sizes must match. Follow the canonical guide and retain unmeasured scenario limits. |
 | [benchmark_native.py](benchmark_native.py) | `--evidence-root` with attachment arguments or `--verify`; binds immutable native research evidence and preserves the measured commit. An attachment does not grant release qualification. |
 
+Mapped Python and frontend test workers have a 600-second limit; desktop workers
+retain 180 seconds. A timeout fails with partial output and the selected command
+in its receipt. These worker deadlines are independent of benchmark timing gates.
+
 The guard uses Python, local Git history, the existing Node import parser and
 frontend dependencies for JavaScript checks. `RIEKE_TEST_DOM_MODULE` must be unset
 for frontend guard/test execution. Missing catalog paths, unknown fields, invalid

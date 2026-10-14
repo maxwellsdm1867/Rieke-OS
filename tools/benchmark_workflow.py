@@ -491,6 +491,10 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
         command = ['node',str(ROOT/'benchmarks/workflow/browser.mjs'),'--source-root',str(source_root),
                    '--server-json',str(meta_path),'--output',str(output/'browser'),'--samples',str(samples),
                    '--profile',str(profile).lower(),'--module-timing',str(module_timing).lower()]
+        if smoke:
+            # Small-fixture compatibility checks must expose stale UI contracts
+            # before the million-row lane, not consume its ten-minute action waits.
+            command += ['--action-timeout-ms','30000','--setup-timeout-ms','30000']
         if browser_executable:
             command += ['--browser-executable',str(browser_executable)]
         browser,stream,deadline = execute_owned(command,output/'browser.log',cfg['max_browser_seconds'],cfg['max_rss_bytes'],browser_ids)

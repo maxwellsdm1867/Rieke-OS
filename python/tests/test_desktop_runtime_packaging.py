@@ -16,11 +16,22 @@ import workspace_bootstrap as boot
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
 from desktop_build_runtime import patch_parser, exclude_optional_features, OPTIONAL_PID_ATTACH, refresh_native_license_inventory, copy_application
-from desktop_runtime_manifest import inventory
+from desktop_runtime_manifest import inventory, resource_difference
 from desktop_application_profile import audit_application, load_profile, validate_source_closure, validate_release_source, copy_python_application, validate_profile
 
 
 class DesktopPackagingTests(unittest.TestCase):
+    def test_manifest_difference_preserves_counts_and_bounds_path_diagnostics(self):
+        before = {f'python/cache/{n}.pyc': {'sha256': 'old', 'size': 1} for n in range(43)}
+        after = {name: {'sha256': 'new', 'size': 1} for name in before}
+        before['removed'] = {'symlink': 'target'}
+        after['added'] = {'sha256': 'new', 'size': 2}
+        result = resource_difference(before, after)
+        self.assertEqual(result['changed']['count'], 43)
+        self.assertEqual(len(result['changed']['paths']), 20)
+        self.assertEqual(result['added'], {'count': 1, 'paths': ['added']})
+        self.assertEqual(result['removed'], {'count': 1, 'paths': ['removed']})
+
     def test_current_application_closure_includes_typed_requested_summary_backend(self):
         profile = load_profile()
         required = {'disco/metadata/typed_index.py', 'disco/metadata/typed_lifecycle.py',

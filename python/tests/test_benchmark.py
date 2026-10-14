@@ -31,7 +31,11 @@ class BenchmarkTests(unittest.TestCase):
         release['version'] = '0.1.6'
         (cls.repo/'rieke-release.json').write_text(json.dumps(release))
         def git(*args): return bench.git(*args, root=cls.repo)
-        git('init', '-q'); git('add', '.')
+        git('init', '-q')
+        # These repositories are deleted immediately after the test. Detached
+        # Git maintenance must not keep writing .git during fixture cleanup.
+        git('config', 'maintenance.auto', 'false'); git('config', 'gc.auto', '0')
+        git('add', '.')
         git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'Benchmark fixture')
         cls.commit = git('rev-parse', 'HEAD')
         release = json.loads((cls.repo/'rieke-release.json').read_text()); release['version'] = '0.1.7'
@@ -223,6 +227,8 @@ class SuitePathTests(unittest.TestCase):
         for name, raw in self.files.items():
             self.write(name, raw)
         self.git('init', '-q')
+        self.git('config', 'maintenance.auto', 'false')
+        self.git('config', 'gc.auto', '0')
         self.first = self.commit()
 
     def expected_paths(self, nav=None):
