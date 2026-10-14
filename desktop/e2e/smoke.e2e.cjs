@@ -33,11 +33,25 @@ async function ownedProcesses(){
 }
 async function quitAndVerify(){
  const before=await ownedProcesses();assert.ok(before.length,'Owned packaged processes must exist before shutdown');
+ const quitDiagnostic={started_at:new Date().toISOString(),owned_processes_before:before.length};
+ quitDiagnostic.documents=await application.evaluate(({webContents})=>webContents.getAllWebContents().map(contents=>({
+  id:contents.id,type:contents.getType(),url:contents.getURL(),loading:contents.isLoading(),crashed:contents.isCrashed(),destroyed:contents.isDestroyed()
+ })));
+ (receipt.quit_diagnostics??=[]).push(quitDiagnostic);
  await bounded(gracefulQuit(application,page),'Orderly quit',45000);application=null;page=null;
  const deadline=Math.min(workDeadline,Date.now()+10000);let left;
  do{left=await ownedProcesses();if(!left.length)break;await delay(200);}while(Date.now()<deadline);
  assert.equal(left.length,0,'Root, project, native database and Electron processes must all exit');
- await assert.rejects(fs.stat(path.join(fixture.userData,'desktop-service.json')),{code:'ENOENT'});
+ quitDiagnostic.owned_processes_after=left.length;quitDiagnostic.exited_at=new Date().toISOString();
+ try{
+  const record=JSON.parse(await fs.readFile(path.join(fixture.userData,'desktop-service.json'),'utf8'));
+  // Preserve only lifecycle fields, never capabilities, environments, or project
+  // records. A services_closed receipt can intentionally retain uncertain drafts;
+  // that is still a failure of this healthy smoke's clean-save requirement.
+  quitDiagnostic.retained_registry={pid:record.pid,bound:record.bound,quit:record.quit};
+  await write();
+  assert.fail('Clean smoke shutdown retained ownership evidence: '+JSON.stringify(quitDiagnostic.retained_registry));
+ }catch(error){if(error.code!=='ENOENT')throw error;}
  return{orderly_exit:true,owned_processes_before:before.length,owned_processes_after:0,root_registry_removed:true};
 }
 async function authorProfile(){
