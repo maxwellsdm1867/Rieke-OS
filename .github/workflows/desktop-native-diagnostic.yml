@@ -102,13 +102,18 @@ jobs:
           PY
       - name: Backend failure launch diagnostics
         if: matrix.suite == 'backend-failure'
-        run: node desktop/e2e/backend-failure.e2e.cjs 2>&1 | tee docs/dev/desktop-ui-e2e/backend-failure-console.log
+        run: |
+          set -o pipefail
+          node --test desktop/e2e/fault-main-inspector.test.cjs
+          node desktop/e2e/backend-failure.e2e.cjs 2>&1 | tee docs/dev/desktop-ui-e2e/backend-failure-console.log
       - name: Smoke and ordinary quit diagnostics
         if: matrix.suite == 'smoke'
         env:
           RIEKE_SMOKE_REQUIRE_UPDATE_CONNECTIVITY: '1'
           GH_TOKEN: ${{ github.token }}
-        run: node desktop/e2e/smoke.e2e.cjs 2>&1 | tee docs/dev/desktop-ui-e2e/smoke-console.log
+        run: |
+          set -o pipefail
+          node desktop/e2e/smoke.e2e.cjs 2>&1 | tee docs/dev/desktop-ui-e2e/smoke-console.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
