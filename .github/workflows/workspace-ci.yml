@@ -6,6 +6,11 @@ on:
         description: 'Full reviewed ancestor SHA for the same affected-contract selection used by pull requests'
         required: true
         type: string
+      full_checks:
+        description: 'Run every regression contract for exact-source publication qualification'
+        required: false
+        type: boolean
+        default: false
   pull_request:
   push:
     branches: [main, master, codex/rieke-native-e2e, codex/0.1.8-stable-ports]
@@ -19,6 +24,7 @@ jobs:
     name: Adopted architecture contract discovery
     runs-on: ubuntu-latest
     outputs:
+      documentation_only: ${{ steps.plan.outputs.documentation_only }}
       source_changed: ${{ steps.plan.outputs.source_changed }}
       javascript_required: ${{ steps.plan.outputs.javascript_required }}
       python_required: ${{ steps.plan.outputs.python_required }}
@@ -31,6 +37,7 @@ jobs:
         id: plan
         env:
           BASE_REF: ${{ inputs.base_sha || github.event.pull_request.base.sha || github.event.before }}
+          FULL_CHECKS: ${{ inputs.full_checks }}
         run: |
           if [ "${{ github.event_name }}" = workflow_dispatch ] && [[ ! "$BASE_REF" =~ ^[0-9a-fA-F]{40}$ ]]; then
             printf '%s\n' 'Manual regression requires a full ancestor SHA.' >&2
@@ -38,6 +45,8 @@ jobs:
           fi
           args=(--all)
           if [ -n "$BASE_REF" ] && [ "$BASE_REF" != 0000000000000000000000000000000000000000 ]; then args=(--base "$BASE_REF"); fi
+          if [ "$FULL_CHECKS" = true ]; then args=(--all); fi
+          python3 -B tools/architecture_guard.py check --language metadata
           python3 -B tools/architecture_guard.py plan "${args[@]}" --github-output "$GITHUB_OUTPUT" --output "$RUNNER_TEMP/architecture-plan.json"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -47,7 +56,7 @@ jobs:
           if-no-files-found: error
   frontend:
     needs: architecture
-    if: needs.architecture.outputs.javascript_required == 'true'
+    if: needs.architecture.outputs.documentation_only != 'true' && needs.architecture.outputs.javascript_required == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,7 +71,7 @@ jobs:
         working-directory: workspace-app
       - run: python3 -B tools/architecture_guard.py check --language javascript
       - name: Existing full frontend regression and build
-        if: needs.architecture.outputs.source_changed == 'true'
+        if: needs.architecture.outputs.documentation_only != 'true' && needs.architecture.outputs.source_changed == 'true'
         run: npm test && npm run build
         working-directory: workspace-app
       - name: Contract-only frontend checks
@@ -75,7 +84,7 @@ jobs:
   desktop-contracts:
     name: Scoped desktop lifecycle contracts
     needs: architecture
-    if: needs.architecture.outputs.desktop_required == 'true'
+    if: needs.architecture.outputs.documentation_only != 'true' && needs.architecture.outputs.desktop_required == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -95,6 +104,7 @@ jobs:
         run: |
           args=(--all)
           if [ -n "$BASE_REF" ] && [ "$BASE_REF" != 0000000000000000000000000000000000000000 ]; then args=(--base "$BASE_REF"); fi
+          if [ "${{ inputs.full_checks }}" = true ]; then args=(--all); fi
           python3 -B tools/architecture_guard.py test "${args[@]}" --language desktop --output "$RUNNER_TEMP/desktop-contracts.json"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -104,7 +114,7 @@ jobs:
           if-no-files-found: error
   python:
     needs: architecture
-    if: needs.architecture.outputs.python_required == 'true'
+    if: needs.architecture.outputs.documentation_only != 'true' && needs.architecture.outputs.python_required == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -117,12 +127,12 @@ jobs:
       - run: uv pip install --system --require-hashes -r python/workspace-runtime.lock
       - run: python -B tools/architecture_guard.py check --language python
       - run: python tools/build_release.py --validate-only
-        if: needs.architecture.outputs.source_changed == 'true'
+        if: needs.architecture.outputs.documentation_only != 'true' && needs.architecture.outputs.source_changed == 'true'
       - name: Reject mixed EpicTreeGUI source in Disco
-        if: needs.architecture.outputs.source_changed == 'true' && (github.repository == 'maxwellsdm1867/disco' || github.repository == 'maxwellsdm1867/Rieke-OS')
+        if: needs.architecture.outputs.documentation_only != 'true' && needs.architecture.outputs.source_changed == 'true' && (github.repository == 'maxwellsdm1867/disco' || github.repository == 'maxwellsdm1867/Rieke-OS')
         run: python tools/desktop_application_profile.py
       - name: Existing full Python regression
-        if: needs.architecture.outputs.source_changed == 'true'
+        if: needs.architecture.outputs.documentation_only != 'true' && needs.architecture.outputs.source_changed == 'true'
         run: |
           python -m unittest discover -s python/tests -p 'test_*.py' -v
           PYTHONPATH=python:python/tests python -B -m unittest discover -s python/disco -t python -p 'test_*.py' -v
@@ -138,7 +148,7 @@ jobs:
           python -B tools/architecture_guard.py test --base "$BASE_REF" --language python
   native-mysql:
     needs: architecture
-    if: needs.architecture.outputs.source_changed == 'true'
+    if: needs.architecture.outputs.documentation_only != 'true' && needs.architecture.outputs.source_changed == 'true'
     name: Apple Silicon native project lifecycle and transfer
     runs-on: macos-15
     timeout-minutes: 35

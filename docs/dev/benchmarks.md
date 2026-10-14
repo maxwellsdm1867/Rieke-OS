@@ -266,9 +266,13 @@ query track below. This is a development regression requirement, including updat
 whose intended effect is not performance. Product optimization does not justify
 skipping either check. Missing, failed, partial or incomparable evidence is not a
 green iteration. The [everyday-million workflow](../../.github/workflows/everyday-million.yml)
-enforces this query track on every pull request and push to `main`/`master`, with
-no path filter. It also runs the fixed core and complements the existing workspace correctness
-workflow; stress receipts remain separate from release-gate inputs.
+enforces this query track on pull requests and pushes to `main`/`master`, except
+committed comparisons containing only Markdown files. Those still validate
+catalog references; code, configuration, unknown and harness paths retain the full
+track. Manual dispatch always runs it, including exact-source release checks.
+It also runs the fixed core and complements workspace correctness. Publication
+requires successful exact-source stress comparisons in addition to, never instead
+of, the existing native/artifact release qualification.
 
 The one registry remains [benchmarks/registry.json](../../benchmarks/registry.json),
 under `stress_tracks.everyday-million`. The core remains small; do not substitute
@@ -343,8 +347,8 @@ it is not proof that every everyday interaction avoids regressions.
 
 ### CI enforcement and retained baselines
 
-The everyday-million workflow runs harness validation tests, then the original
-pinned source `34ce2e06dec0e2886d5a2310f21e02cf818cb646`, previous source and candidate
+The everyday-million workflow runs harness validation tests, then the heap-corrected
+pinned source `a16c915f9730384af3285949bb962d12707ccf01`, previous source and candidate
 serially using one current harness and pinned CPython environment on one Ubuntu
 runner, then runs candidate fixed-core correctness with Node 22.12.0 and the
 committed frontend lock. Candidate stress measurement is shared by both comparisons. For pull requests,

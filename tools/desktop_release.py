@@ -159,6 +159,8 @@ def promote(directory, tag, evidence_path):
     artifacts = artifact_inventory(directory)
     verify_metadata(directory, expected_version)
     evidence = validate_evidence(json.loads(evidence_path.read_text()), artifacts, expected_version)
+    from desktop_source_ci import require_source_ci, require_tag
+    require_source_ci(repository, evidence['source_commit'], os.environ.get('CANDIDATE_RUN_ID', ''))
     # Benchmarks are independent of scientific artifact qualification and required
     # before any remote release mutation. Missing native requirements fail closed.
     from benchmark import gate as benchmark_gate, report as benchmark_report
@@ -199,6 +201,8 @@ def promote(directory, tag, evidence_path):
         else:
             subprocess.run(['gh', 'release', 'upload', tag, str(directory / name), '--repo', repository], check=True)
     if release['draft']:
+        require_source_ci(repository, evidence['source_commit'], os.environ.get('CANDIDATE_RUN_ID', ''))
+        require_tag(repository, tag, evidence['source_commit'])
         gh_json(f"repos/{repository}/releases/{release['id']}", '-X', 'PATCH', payload={'draft': False, 'make_latest': 'false'})
     # Expose the complete release without moving latest, then verify final public
     # download URLs with no authentication before changing stable selection.
@@ -212,6 +216,8 @@ def promote(directory, tag, evidence_path):
                 hasher.update(chunk); size += len(chunk)
         if size != record['size'] or hasher.hexdigest() != record['sha256']:
             raise ValueError('Public artifact bytes differ; latest has not been promoted')
+    require_source_ci(repository, evidence['source_commit'], os.environ.get('CANDIDATE_RUN_ID', ''))
+    require_tag(repository, tag, evidence['source_commit'])
     gh_json(f"repos/{repository}/releases/{release['id']}", '-X', 'PATCH', payload={'make_latest': 'true'})
     return {'published': tag, 'artifacts': artifacts}
 
