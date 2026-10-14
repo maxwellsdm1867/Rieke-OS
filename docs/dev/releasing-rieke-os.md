@@ -252,6 +252,9 @@ unsigned-testing prerelease containing the exact ZIP, descriptor and SHA256SUMS,
 checks GitHub's uploaded digests/sizes, and rechecks CI and tag before visibility.
 A failure after upload leaves a draft for inspection. Existing releases/assets
 are never overwritten. Do not bypass this path with a raw release API command.
+The backend family, browser family and final aggregate jobs must each succeed.
+The aggregate binds both family records to the same resolved source plan while
+each family retains its own matched runtime/host evidence.
 All four performance comparisons must bind the exact candidate receipt bytes;
 passing comparisons from another candidate cannot qualify publication. Stable
 promotion invokes the same source-CI gate in addition to its existing
