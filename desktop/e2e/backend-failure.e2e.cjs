@@ -41,8 +41,72 @@ const {createFixture, launch, gracefulQuit, run} = require('./helpers.cjs');
 const {resealRuntimeManifest} = require('../sign-runtime.cjs');
 const {verifyResources} = require('../updater-validation.cjs');
 
+
+let ownedFixture;
+const literalFailure = "raise RuntimeError('Injected packaged backend failure before imports, binding, projects or databases')\n";
+async function bounded(operation,ms,label){
+  let timer;
+  try{return await Promise.race([operation,new Promise((_resolve,reject)=>{timer=setTimeout(()=>reject(Error(label+' timed out')),ms);})]);}
+  finally{clearTimeout(timer);}
+}
+async function nativeSnapshot(application,label){
+  const snapshots=await bounded(application.evaluate(async({BrowserWindow})=>{
+    return Promise.all(BrowserWindow.getAllWindows().map(async window=>{
+      const web=window.webContents;
+      const result={id:window.id,url:web.getURL(),loading:web.isLoading(),crashed:web.isCrashed()};
+      try{result.dom=await web.executeJavaScript(`(async()=>({readyState:document.readyState,
+        headings:[...document.querySelectorAll('h1,h2,[role="heading"]')].map(node=>({text:node.textContent.trim(),visible:!!node.getClientRects().length&&getComputedStyle(node).visibility!=='hidden'})),
+        body:document.body?.innerText,status:await window.riekeDesktop.status()}))()`);}
+      catch(error){result.dom_error=error.message;}
+      try{result.png=(await web.capturePage()).toPNG().toString('base64');}
+      catch(error){result.screenshot_error=error.message;}
+      return result;
+    }));
+  }),8000,'Native recovery observation');
+  for(const snapshot of snapshots)if(snapshot.png){
+    await fs.mkdir(path.dirname(diagnosticFile),{recursive:true});
+    snapshot.screenshot=path.join(path.dirname(diagnosticFile),`backend-${label}-${snapshot.id}.png`);
+    await fs.writeFile(snapshot.screenshot,Buffer.from(snapshot.png,'base64'));delete snapshot.png;
+  }
+  diagnostic[label]=snapshots;
+  await fs.writeFile(path.join(path.dirname(diagnosticFile),'backend-native-observations.json'),JSON.stringify({after_launch:diagnostic.after_launch,on_failure:diagnostic.on_failure},null,2)+'\n');
+}
+async function cleanupFailedFixture(){
+  const fixture=ownedFixture,application=fixture?.activeApplication;
+  if(!application)return;
+  const child=application.process();
+  if(child.exitCode!==null||child.signalCode)return;
+  // Force cleanup is allowed only for this verified raise-before-import fixture:
+  // no scientific code ran, no project was admitted, and its backend is gone.
+  const entry=path.join(fixture.bundle,'Contents/Resources/runtime/application/python/workspace_desktop.py');
+  assert.equal(await fs.readFile(entry,'utf8'),literalFailure);
+  const record=JSON.parse(await fs.readFile(path.join(fixture.userData,'desktop-service.json'),'utf8'));
+  assert.ok(record.executable.startsWith(fixture.bundle+'/'));
+  await assert.rejects(run('/bin/ps',['-p',String(record.pid),'-o','comm=']),error=>error.code===1);
+  assert.equal((await fs.readdir(path.join(fixture.userData,'backend'))).length,0);
+  diagnostic.failure_cleanup={no_accepted_writers_verified:true};
+  const exited=new Promise(resolve=>child.once('exit',(code,signal)=>resolve({code,signal})));
+  try{
+    await bounded(application.evaluate(async({BrowserWindow})=>{
+      for(const window of BrowserWindow.getAllWindows())if(window.webContents.getURL().endsWith('/recovery.html')){
+        await window.webContents.executeJavaScript("document.getElementById('quit').click(); true");return;
+      }
+      throw Error('No recovery Quit control');
+    }),5000,'Recovery Quit click');
+    diagnostic.failure_cleanup.exit=await bounded(exited,10000,'Failure-path ordinary Quit');
+  }catch(error){
+    diagnostic.failure_cleanup.ordinary_quit_error=error.message;
+    if(child.exitCode===null&&!child.signalCode){
+      child.kill('SIGTERM');
+      try{diagnostic.failure_cleanup.exit=await bounded(exited,5000,'Owned failed-fixture termination');}
+      catch{child.kill('SIGKILL');diagnostic.failure_cleanup.exit=await bounded(exited,5000,'Owned failed-fixture kill');}
+      diagnostic.failure_cleanup.forced=true;
+    }
+  }
+}
+
 (async () => {
-  const fixture = await createFixture({reuse: false});
+  const fixture = ownedFixture = await createFixture({reuse: false});
   const runtime = path.join(fixture.bundle, 'Contents/Resources/runtime');
   const sourceManifestSha256 = createHash('sha256').update(await fs.readFile(path.join(runtime, 'runtime-manifest.json'))).digest('hex');
   const appAsarSha256 = createHash('sha256').update(await fs.readFile(path.join(fixture.bundle, 'Contents/Resources/app.asar'))).digest('hex');
@@ -51,7 +115,6 @@ const {verifyResources} = require('../updater-validation.cjs');
   const entry = path.join(runtime, 'application/python/workspace_desktop.py');
   // This faulted copy is disposable and never supplies signing/release evidence.
   // The literal statement cannot import project code, bind services or start DB.
-  const literalFailure = "raise RuntimeError('Injected packaged backend failure before imports, binding, projects or databases')\n";
   await fs.writeFile(entry, literalFailure);
   const manifest = await resealRuntimeManifest(runtime); await verifyResources(runtime, manifest.resources);
   // Keep the literal backend exception as the only injected fault. Updating
@@ -73,6 +136,7 @@ const {verifyResources} = require('../updater-validation.cjs');
   await application.evaluate(({BrowserWindow})=>{
     for(const window of BrowserWindow.getAllWindows())window.webContents.on('render-process-gone',(_event,details)=>process.stdout.write('FAULT_RENDERER_EVENT='+JSON.stringify(details)+'\n'));
   });
+  try{await nativeSnapshot(application,'after_launch');}catch(error){diagnostic.after_launch_error=error.message;}
   await page.getByRole('heading', {name: 'Disco recovery', exact: true}).waitFor({timeout: 90000});
   const status = await page.evaluate(() => window.riekeDesktop.status());
   assert.equal(status.state, 'Recovery'); assert.match(status.detail, /exited before owning its listener/);
@@ -98,8 +162,16 @@ const {verifyResources} = require('../updater-validation.cjs');
   assert.equal(interrupted.quit.requested, true);
   assert.ok(['interrupted', 'closing'].includes(interrupted.quit.state), 'Abnormal backend exit must retain recovery evidence');
   await fs.writeFile(path.join(output, 'backend-startup-failure.json'), JSON.stringify(receipt, null, 2) + '\n');
-  console.log(JSON.stringify(receipt));
+  // The app has acknowledged exit 0 and all evidence writes are complete.
+  // Playwright's driver may retain controller handles after Electron exits.
+  await new Promise(resolve=>process.stdout.write(JSON.stringify({...receipt,controller_resources:process.getActiveResourcesInfo()})+'\n',resolve));
+  process.exit(0);
 })().catch(async error => {
   failureDiagnostic(error);
-  console.error(error.message); process.exitCode = 1;
+  if(ownedFixture?.activeApplication)try{await nativeSnapshot(ownedFixture.activeApplication,'on_failure');}catch(observation){diagnostic.on_failure_error=observation.message;}
+  try{await cleanupFailedFixture();}catch(cleanup){diagnostic.failure_cleanup_error=cleanup.message;}
+  failureDiagnostic(error);
+  await new Promise(resolve=>process.stderr.write(error.message+'\n',resolve));process.exitCode=1;
+  const child=ownedFixture?.activeApplication?.process();
+  if(child&&(child.exitCode!==null||child.signalCode))process.exit(1);
 });
