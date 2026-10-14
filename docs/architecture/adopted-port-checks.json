@@ -3610,7 +3610,7 @@
       },
       {
         "file": "python/tests/test_benchmark.py",
-        "file_sha256": "965847df1ba0a04ed41d8b9f501e84617e45e578187e878bec2cbd34ed76ed28",
+        "file_sha256": "64900f6019ef448bbaa3863b1cf9ee88f8faece08869dc0c904730ed5a18a6e6",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -3623,7 +3623,7 @@
             "kind": "ast-call"
           }
         ],
-        "reason": "Current module path relocation and revision-owned schema provenance; all original loader Call ASTs unchanged. Source-only evidence task-6/evidence/current-path-closure/source-ast-check.json; no native execution authorization."
+        "reason": "Current module path relocation and revision-owned schema provenance; all original loader Call ASTs unchanged. Source-only evidence task-6/evidence/current-path-closure/source-ast-check.json; no native execution authorization. CI reliability follow-up disables background Git maintenance only in disposable fixture repositories; both reviewed loader Call ASTs and destinations remain unchanged. See docs/dev/ci-failure-audit-2026-10-13.md."
       },
       {
         "file": "python/tests/test_benchmark_native.py",
@@ -3729,7 +3729,7 @@
       },
       {
         "file": "python/tests/test_desktop_runtime_packaging.py",
-        "file_sha256": "528964cbe6f2b95e76b5325711eb399da57f644571a1f390713350a546ed8803",
+        "file_sha256": "4d7d2a2e8fdbbcee91a5688dbfdd549b27949621d750ecf93b7855b8c8665df4",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -3742,7 +3742,7 @@
             "kind": "ast-call"
           }
         ],
-        "reason": "Current module path relocation and revision-owned schema provenance; all original loader Call ASTs unchanged. Source-only evidence task-6/evidence/current-path-closure/source-ast-check.json; no native execution authorization."
+        "reason": "Current module path relocation and revision-owned schema provenance; all original loader Call ASTs unchanged. Source-only evidence task-6/evidence/current-path-closure/source-ast-check.json; no native execution authorization. CI reliability adds bounded manifest-difference diagnostics coverage only; both loader Call ASTs and destinations remain unchanged. See docs/dev/ci-failure-audit-2026-10-13.md."
       },
       {
         "file": "python/tests/test_desktop_test_release.py",

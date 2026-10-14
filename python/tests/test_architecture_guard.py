@@ -7,6 +7,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 GUARD = ROOT / 'tools/architecture_guard.py'
@@ -15,6 +16,7 @@ _import_path = sys.path[:]
 try:
     sys.path.insert(0, str(ROOT / 'tools'))
     from architecture_guard import canonical_reviewed_ast
+    import architecture_guard as guard
 finally:
     sys.path[:] = _import_path
 
@@ -1183,6 +1185,22 @@ class PythonNamedEntryPolicyTests(unittest.TestCase):
             'import disco.backup.snapshot as s\ns.__dict__["private"]',
         ):
             with self.subTest(source=source): self.fault(source)
+
+
+class MappedRunnerFailureTests(unittest.TestCase):
+    def test_timeout_preserves_partial_test_output_and_never_reports_success(self):
+        selection = {'tests': {'desktop': ['desktop/tests/example.test.cjs']}}
+        failure = subprocess.TimeoutExpired(['node'], 180,
+                                             output=b'not ok 1 - unfinished contract\n')
+        with patch.object(guard, 'check_ownership', return_value=['metadata']), \
+             patch.object(guard.subprocess, 'run', side_effect=failure):
+            result = guard.run_contracts(ROOT, {}, selection, 'desktop', 'node')
+        self.assertEqual(result['status'], 'failed')
+        run = result['runs'][0]
+        self.assertTrue(run['timed_out'])
+        self.assertIsNone(run['exit_code'])
+        self.assertIn('unfinished contract', run['output'])
+        self.assertIn('desktop/tests/example.test.cjs', run['command'])
 
 
 if __name__ == '__main__': unittest.main()

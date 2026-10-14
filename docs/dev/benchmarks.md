@@ -236,6 +236,28 @@ endpoints using provisional review thresholds; retain improvements as well as
 regressions. Dirty-source runs remain development diagnostics; repeat the final
 committed source before delivery.
 
+## Harness compatibility before expensive comparisons
+
+CI first runs `tools/benchmark_workflow.py run --smoke` for the pinned, previous
+and candidate sources with the same harness and locked browser dependencies.
+All thirteen actions use a 1,000-row owned fixture and 30-second action/setup
+waits. A failed compatibility check stops the expensive lane with retained
+failure receipts; a passing check is diagnostic only. Full million-row results
+and unchanged comparison thresholds remain required.
+
+The trace adapter supports historical dropdowns and current single-stream labels
+or pressed stream buttons. Single-stream identity is bound to the independent
+fixture descriptor inventory, never guessed from the latest response. Both
+canvas observation and visible readiness use this adapter. The existing
+`benchmarks/workflow/browser-readiness.test.mjs` fault tests cover incompatible
+controls, wrong identities/values, incomplete windows and stale drawings.
+
+Manual dispatch may supply a full `candidate_sha` to check immutable application
+source with the workflow's harness, along with `baseline_sha` for its previous
+comparison. Pinned source stays fixed; receipts record both app and harness
+identities. See [the CI failure audit](ci-failure-audit-2026-10-13.md) for the
+observed failures, fixes and qualification boundaries.
+
 ## Required everyday query check after every app update
 
 After **every application update and each implementation iteration**, run the
