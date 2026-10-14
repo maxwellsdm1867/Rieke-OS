@@ -1,11 +1,11 @@
 import CellTypeIcon from './CellTypeIcon.jsx';
-import {cellTypeColor} from "../cell-qc/cellTypes.js";
+import {cellTypeColor,recordingRigLabel} from "../cell-qc/cellTypes.js";
 import {useMemo,useState} from 'react';
 import {groupedCellPage} from '../tree-browser/boundedTree.js';
 import "../cell-qc/ui/CellList.css";
 import MetadataTable from '../epoch-browser/ui/MetadataTable.jsx';
 import {recordingDate,datedCellLabel} from '../recording-import/recordingIdentity.js';
-import { AlertTriangle, LoaderCircle, ArrowRight, CheckCircle2, Circle } from 'lucide-react';
+import { AlertTriangle, LoaderCircle, ArrowRight, ChevronDown, CheckCircle2, Circle } from 'lucide-react';
 import { number, duration } from '../api.js';
 export function Status({loading, error, children, retry, data}) {
   if (loading && !data) return <div className="status" role="status"><LoaderCircle className="spin" size={22} aria-hidden="true"/> Loading data…</div>;
@@ -26,34 +26,35 @@ export function CellList({cells = [], onInspect,onQC}) {
   const page=useMemo(()=>groupedCellPage(cells,offset),[cells,offset]);
   return <div className="cell-list">{page.total>60&&<nav className="cell-list-pagination" aria-label="Cell list pages"><span>{number(page.offset+1)}–{number(page.end)} of {number(page.total)} cells</span><button disabled={!page.hasPrevious} onClick={()=>setOffset(page.offset-60)}>Previous cells</button><button disabled={!page.hasNext} onClick={()=>setOffset(page.offset+60)}>Next cells</button></nav>}{page.groups.map(({type,cells:group,total}) => <section key={type}>
     <div className="group-heading"><span className="type-dot" style={{background:cellTypeColor(type)}}/><strong>{type}</strong><span>{group.length===total?`${number(total)} cells`:`${number(group.length)} of ${number(total)} cells on this page`}</span></div>
-    <div className="cell-columns"><span>Cell / recording date</span><span>Epochs</span><span>Recorded time</span><span>Saved exports</span><span/></div>
+    <div className="cell-columns"><span>Cell</span><span>Recording date</span><span>Rig</span><span>Epochs</span><span>Recorded time</span><span title="Unique epochs appearing in saved exports; inclusion and review are independent.">Exported epochs</span><span/></div>
     {group.map(cell => {
       const total=cell.epoch_count ?? cell.epochs;
       const exported=cell.exported;
       const count=value=>Number.isFinite(value)&&value>=0?number(value):'Unavailable';
       const excluded=Number.isFinite(total)&&Number.isFinite(cell.included)?Math.max(0,total-cell.included):null;
       const uuid=cell.cell_uuid || cell.uuid;
+      const date=recordingDate(cell),rig=recordingRigLabel(cell);
+      const rawLabel=cell.cell_label || cell.label || 'Cell label not recorded';
+      const label=rawLabel.startsWith(`${date} · `)?rawLabel.slice(date.length+3):rawLabel;
       return <div className="cell-row" data-has-qc={onQC?true:undefined} key={uuid}>
         <details className="cell-disclosure">
-          <summary><div className="cell-identity"><span className="cell-glyph" style={{color:cellTypeColor(type)}}><CellTypeIcon type={type} size={24}/></span><span><strong>{datedCellLabel(cell,true)}</strong></span></div>
+          <summary><div className="cell-identity"><span className="cell-glyph" style={{color:cellTypeColor(type)}}><CellTypeIcon type={type} size={24}/></span><span className="cell-recording-identity"><strong>{label}{cell.identity_qualifier&&<small> · {cell.identity_qualifier}</small>}</strong></span><ChevronDown className="cell-expand-cue" size={15} aria-hidden="true"/></div>
+            <span className="cell-value cell-date"><small>Recording date</small>{date}</span><span className="cell-value cell-rig"><small>Rig</small>{rig}</span>
             <span className="cell-value"><small>Epochs</small>{count(total)}</span><span className="cell-value"><small>Recorded time</small>{duration(cell.duration_seconds)}</span>
-            <span className="cell-value"><small>Saved exports</small><Badge kind={exported>0?'info':'neutral'}>{Number.isFinite(exported)?exported>0?`${number(exported)} epochs exported`:'No saved export':'Unavailable'}</Badge></span>
-            <span className="expand-hint">Details</span>
+            <span className="cell-value"><small>Exported epochs</small><Badge kind={exported>0?'info':'neutral'}>{Number.isFinite(exported)?exported>0?number(exported):'None':'Unavailable'}</Badge></span>
+            <span className="expand-hint">Details <ChevronDown size={14} aria-hidden="true"/></span>
           </summary>
           <div className="cell-details">
-            <dl className="cell-detail-grid" aria-label="Recorded cell details">
-              <div><dt>Recorded type</dt><dd>{type}</dd></div>
-              <div><dt>Recording date</dt><dd>{recordingDate(cell)}</dd></div>
-              <div><dt>Included epochs</dt><dd>{count(cell.included)}</dd></div>
-              <div><dt>Excluded epochs</dt><dd>{count(excluded)}</dd></div>
-              <div className="cell-detail-identity"><dt>Cell UUID</dt><dd className="mono">{uuid}</dd></div>
-            </dl>
-            {Array.isArray(cell.tags)&&cell.tags.length>0&&<div className="tags" aria-label="Cell tags">{cell.tags.map(tag=><Badge key={tag}>{tag}</Badge>)}</div>}
-            {cell.annotations?.cell_tags?.length>0&&<div className="tags" aria-label="Shared cell tags">{cell.annotations.cell_tags.map(chip=><Badge key={`${chip.profile_uuid}:${chip.tag}`}>{chip.tag} · {chip.author_name} · cell</Badge>)}</div>}
+            <table className="cell-detail-table" aria-label="Recorded cell details">
+              <thead><tr><th scope="col">Recorded type</th><th scope="col">Included epochs</th><th scope="col">Excluded epochs</th><th scope="col">Cell UUID</th></tr></thead>
+              <tbody><tr><td>{type}</td><td>{count(cell.included)}</td><td>{count(excluded)}</td><td className="mono">{uuid}</td></tr></tbody>
+            </table>
+            {Array.isArray(cell.tags)&&cell.tags.length>0&&<div className="tags" aria-label="Cell tags"><span className="cell-tag-label">Cell tags</span>{cell.tags.map(tag=><Badge key={tag}>{tag}</Badge>)}</div>}
+            {cell.annotations?.cell_tags?.length>0&&<div className="tags" aria-label="Shared cell tags"><span className="cell-tag-label">Shared cell tags</span>{cell.annotations.cell_tags.map(chip=><Badge key={`${chip.profile_uuid}:${chip.tag}`}>{chip.tag} · {chip.author_name} · cell</Badge>)}</div>}
             {onInspect&&<button className="primary" onClick={()=>onInspect(uuid)}>Inspect & tag epochs <ArrowRight size={16}/></button>}
           </div>
         </details>
-        {onQC&&<button className="cell-qc-action" aria-label={`Open QC for ${datedCellLabel(cell,true)}`} onClick={()=>onQC(uuid)}>Cell QC <ArrowRight size={15}/></button>}
+        {onQC&&<button className="cell-qc-action" aria-label={`Open QC for ${datedCellLabel(cell,true)} · Rig ${rig}`} onClick={()=>onQC(uuid)}>Cell QC <ArrowRight size={15}/></button>}
       </div>;
     })}
   </section>)}</div>;

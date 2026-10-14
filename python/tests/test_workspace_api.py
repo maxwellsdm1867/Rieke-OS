@@ -82,6 +82,34 @@ class FixtureService(WorkspaceService):
 
 
 class WorkspaceAPITests(unittest.TestCase):
+    def test_legacy_overview_paths_display_rig_without_opening_recordings(self):
+        self.service.sources[0]['metadata'] = {'rig': 'EF', 'rig_type': 'PATCH'}
+        self.service.sources[0]['filename'] = '20261013FK.h5'
+        for path in ('/api/overview', self.base, self.base + '/overview'):
+            response = self.client.get(path)
+            self.assertEqual(response.status_code, 200, response.get_json())
+            self.assertEqual([cell['recording_rigs'] for cell in response.get_json()['cells']], [['EF'], ['EF']])
+
+    def test_recording_rig_summary_preserves_multiple_sources_and_unknowns(self):
+        from workspace_api import summarize_cell_membership
+        rows = [self.service.rows[key].copy() for key in self.service.ids]
+        rows[1]['cell_uuid'] = rows[0]['cell_uuid']
+        rows[1]['source_sha256'] = 'b' * 64
+        sources = {'a' * 64: {'metadata': {'rig': 'EF'}},
+                   'b' * 64: {'metadata': {'rig': 'HT'}}}
+        counts = summarize_cell_membership(rows, set(), set(), source_metadata=sources)
+        cell = counts[rows[0]['cell_uuid']]
+        self.assertEqual(cell['recording_rigs'], ['EF', 'HT'])
+        self.assertFalse(cell['recording_rig_missing'])
+        sources['b' * 64]['metadata'] = {'rig_type': 'PATCH'}
+        cell = summarize_cell_membership(rows, set(), set(), source_metadata=sources)[rows[0]['cell_uuid']]
+        self.assertEqual(cell['recording_rigs'], ['EF'])
+        self.assertTrue(cell['recording_rig_missing'])
+        sources['a' * 64]['metadata'] = {'rig': None, 'properties': {'rig': 'not authoritative'}}
+        cell = summarize_cell_membership(rows, set(), set(), source_metadata=sources)[rows[0]['cell_uuid']]
+        self.assertEqual(cell['recording_rigs'], [])
+        self.assertTrue(cell['recording_rig_missing'])
+
     def test_event_history_is_paged_and_full_evidence_is_loaded_separately(self):
         from unittest.mock import Mock
         from workspace_audit import build_audit_payload

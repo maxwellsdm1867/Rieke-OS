@@ -476,13 +476,15 @@
       ]
     },
     "src/cell-qc/cellTypes.js": {
-      "fingerprint": "25a5ab79480de0513a9b71749c3f99e852b1bd37f2cc54ef84fed298e8740cd6",
+      "fingerprint": "15b47a802defcde40f4c9a1c47fb8c76ae4ab2f114c1d3f0af3523c15335ad15",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Reviewed 0.1.13 QC tile: presentation-only title/icon placement and exact display aliases; request, session, annotation and retained effect ownership unchanged.",
+      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/overviewPresentation.test.js",
+        "src/cellTypeIconsRendering.test.js"
       ]
     },
     "src/cell-qc/ui/CellListSection.jsx": {
@@ -519,7 +521,7 @@
       ]
     },
     "src/cell-qc/ui/CellTypeAccordions.jsx": {
-      "fingerprint": "f133e3f0d564395f46c00214f605a90f36c2a82fb9818b3bc24a20a72e556143",
+      "fingerprint": "06b0a21ee86f1b6686514a45006ba7eb14c775ec004595337b4cd63d82a5cfcd",
       "sites": [
         {
           "owner": "CellTypeGroup",
@@ -528,10 +530,12 @@
         }
       ],
       "lifetime": "semantic-reveal-intent",
-      "reason": "Only changed revealKey reopens groups; manual collapse survives same-key visibility changes.",
+      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced.",
       "tests": [
         "src/useSemanticReset.test.js",
-        "src/semanticPresentationControls.test.js"
+        "src/semanticPresentationControls.test.js",
+        "src/overviewPresentation.test.js",
+        "src/cellTypeIconsRendering.test.js"
       ]
     },
     "src/cell-qc/ui/CellTypeSummary.jsx": {
@@ -555,10 +559,10 @@
       ]
     },
     "src/components/Common.jsx": {
-      "fingerprint": "721be5608d12c9bd414d77743aefc0bbc00eae193782b0b9571e5b8aebef09f9",
+      "fingerprint": "fbcd3b4a101a20a1f0acb3841625c02d4e7fc68689db93be980529d7d3aca8cc",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "Reviewed cell-list presentation change: native disclosure is retained inside a stable UUID-keyed row; pagination state and memo dependencies remain unchanged. Hover/focus visibility is CSS-only. The independent QC button invokes the existing parent-owned UUID callback and creates no requests, effects, consent or background work. Unknown metrics remain unavailable.",
+      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -2460,13 +2464,15 @@
       ]
     },
     "src/protocol-overview/ui/ProtocolInfographic.jsx": {
-      "fingerprint": "5834464eaf68df1717c69dbbb67e1217814633fec8e7365e081520183a392581",
+      "fingerprint": "d8d67897bd4095e565ee7a087c39adce0bc3a8fc715cd4fbb54218f56de8a135",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/overviewPresentation.test.js",
+        "src/cellTypeIconsRendering.test.js"
       ]
     },
     "src/protocol-overview/ui/ProtocolSelectionSummary.jsx": {

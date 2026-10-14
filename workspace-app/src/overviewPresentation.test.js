@@ -152,11 +152,23 @@ test('QC is reachable on a collapsed cell row and keeps exact identity with repe
     assert.equal(disclosure.props.open,undefined,'QC does not toggle the disclosure');
     assert.equal(calls[index],cells[index].cell_uuid);
   }
-  const details=rows[1].findByProps({className:'cell-detail-grid'});
-  assert.deepEqual(details.findAllByType('dd').map(node=>node.children.join('')),['Unknown','2026-10-13','Unavailable','Unavailable','second']);
+  const details=rows[1].findByProps({className:'cell-detail-table'});
+  assert.deepEqual(details.findAllByType('td').map(node=>node.children.join('')),['Unknown','Unavailable','Unavailable','second']);
   const metrics=rows[1].findByType('summary').findAllByProps({className:'cell-value'});
   assert(metrics[0].children.includes('Unavailable'));
   assert.equal(metrics[2].findByProps({className:'badge neutral'}).children.join(''),'Unavailable');
   await h.render(h.CellListSection,{cells,open:true});
   assert.equal(h.root.findAllByProps({className:'cell-qc-action'}).length,0,'no action without a route callback');
+});
+
+
+test('project and protocol overview show recording rig on the cell row before details open',async t=>{
+ const h=await harness(t);const cell={...data.cells[0],recording_rigs:['EF'],recording_rig_missing:false};
+ for(const Component of [h.Overview,h.ProtocolInfographic]){
+  await h.render(Component,{data:{...data,cells:[cell]},onQC:()=>{}});
+  const row=h.root.findByProps({className:'cell-row'});
+  assert.equal(row.findByProps({className:'cell-value cell-rig'}).children.filter(value=>typeof value==='string').join(''),'EF');
+  assert.equal(row.findByType('details').props.open,undefined);
+  assert.match(row.findByProps({className:'cell-qc-action'}).props['aria-label'],/Rig EF/);
+ }
 });

@@ -76,3 +76,25 @@ checks. Detached plans cross processes; authority witnesses do not. The parent
 revalidates before publication. Imported snapshot authority does not opt in. This
 extension has its own synthetic-H5/source tests and does not relabel the earlier
 module-reorganization receipts or qualify an assembled application.
+
+
+## Overview recording rig display
+
+The retained HTTP owner adds `recording_rigs` and `recording_rig_missing` to cell
+summary DTOs for project and protocol Overview. Rig names come from the already
+validated source summary's experiment `metadata.rig`, or recorded
+`metadata.properties.rig` when the top-level key is absent. Recorded null/missing
+names remain unknown; PATCH/MEA rig type and filenames do not supply rig names.
+Multiple source rigs remain explicit rather than choosing one from repeated cell
+labels. The exact cell UUID and existing epoch membership determine the sources.
+
+The app indexes source descriptors once per published source-list lifetime.
+Cell source IDs are collected during existing response-scoped row passes;
+ordinary protocol reads do not build project-wide epoch/cell maps or open H5s.
+The protocol Overview v2 ETag includes the relevant source rig token and checks
+it again at response close. Source projection bytes, native metadata generation
+recipes and scientific consent/decision authority remain unchanged. The inert
+project presentation cache positively allowlists these display fields. Fixtures
+in `test_workspace_api`, `test_workspace_protocol_overview_cache` and
+`test_workspace_presentation_cache` cover native/fallback entries, metadata over
+filenames, missing/multiple rigs, replacement and conditional reuse.
