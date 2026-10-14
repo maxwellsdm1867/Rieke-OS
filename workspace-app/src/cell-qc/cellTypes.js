@@ -94,3 +94,9 @@ export function cellTypeQCLabel(type) {
     (/-bipolar$/.test(key)?bipolar[key.replace(/-bipolar$/,'')]:null)||
     ({horizontal:'Horizontal',unclassified:'Unclassified',unknown:'Unclassified'}[key])||raw;
 }
+
+
+export function recordingRigLabel(cell={}) {
+  const rigs=Array.isArray(cell.recording_rigs)?cell.recording_rigs.filter(value=>typeof value==='string'&&value.trim()):[];
+  return rigs.length?[...rigs,...(cell.recording_rig_missing?['Not recorded']:[])].join(', '):'Not recorded';
+}

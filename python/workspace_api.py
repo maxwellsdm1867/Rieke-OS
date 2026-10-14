@@ -41,11 +41,28 @@ class StaleWorkspace(ValueError):
     pass
 
 
-def summarize_cell_membership(rows, approved, exported, included=None):
+def recorded_source_rig(source):
+    """Display the recorded rig name, never the PATCH/MEA acquisition type."""
+    metadata = source.get('metadata') or {}
+    value = metadata.get('rig')
+    if 'rig' not in metadata:
+        value = (metadata.get('properties') or {}).get('rig')
+    return value if isinstance(value, str) and value.strip() else None
+
+
+def recording_rig_summary(source_ids, source_metadata):
+    values = [recorded_source_rig(source_metadata.get(identity, {})) for identity in source_ids]
+    return {'recording_rigs': sorted({value for value in values if value is not None}),
+            'recording_rig_missing': not values or any(value is None for value in values)}
+
+
+def summarize_cell_membership(rows, approved, exported, included=None, *, source_metadata=None):
     """One pass over epochs, rather than one complete scan per cell."""
     summaries = {}
     for row in rows:
         current = summaries.setdefault(row['cell_uuid'], {'reviewed': 0, 'unreviewed': 0, 'exported': 0})
+        if source_metadata is not None:
+            current.setdefault('_recording_sources', set()).add(row['source_sha256'])
         identity = row['epoch_uuid']
         reviewed = identity in approved
         current['reviewed'] += reviewed
@@ -53,6 +70,9 @@ def summarize_cell_membership(rows, approved, exported, included=None):
         current['exported'] += identity in exported
         if included is not None:
             current['included'] = current.get('included', 0) + (identity in included)
+    if source_metadata is not None:
+        for current in summaries.values():
+            current.update(recording_rig_summary(current.pop('_recording_sources'), source_metadata))
     return summaries
 
 
@@ -125,6 +145,22 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     app.extensions['project_active_writers'] = lambda: bool(active_jobs) or importing.locked()
     recover_jobs(log_dir(project_dir, 'app-jobs'), owner_run_id)
     service = service or WorkspaceService(project_dir)
+    # Index source descriptors once per published source list, not per protocol.
+    # Values retain their recorded metadata; this index grants no read authority.
+    rig_source_owner = service.sources
+    rig_source_index = {source['source_sha256']: source for source in rig_source_owner}
+
+    def recording_sources():
+        nonlocal rig_source_owner, rig_source_index
+        if service.sources is not rig_source_owner or len(service.sources) != len(rig_source_index):
+            rig_source_owner = service.sources
+            rig_source_index = {source['source_sha256']: source for source in rig_source_owner}
+        return rig_source_index
+
+    def recording_rig_token(members):
+        sources = recording_sources()
+        identities = sorted({service.rows[identity]['source_sha256'] for identity in members})
+        return [(identity, recorded_source_rig(sources.get(identity, {}))) for identity in identities]
     store = store or CurationStore(service.dj, service.project["project_uuid"])
     storage = ManagedStorage(project_dir, service.project['project_uuid'], Path(__file__).resolve().parents[1])
     explorer_history = explorer_history or ExplorerHistory(service.dj, service.project['project_uuid'])
@@ -274,7 +310,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if payload.get('cells'):
             cell_counts = summarize_cell_membership(rows,
                 {key for key in ids if curation[key]['review_state'] == 'approved'}, exported_ids,
-                {key for key in ids if curation[key]['included']})
+                {key for key in ids if curation[key]['included']}, source_metadata=recording_sources())
             for cell in payload['cells']:
                 cell.update(cell_counts[cell['cell_uuid']])
         if shared_annotations:
@@ -329,7 +365,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                    if cross_protocols else {}),
                 'group_labels':sorted(group['group_labels'],key=str)})
         cells.sort(key=lambda row:(row['cell_type'] or '',row['date'],row['label']))
-        cell_counts=summarize_cell_membership(rows,approved,exported,included)
+        cell_counts=summarize_cell_membership(rows,approved,exported,included,source_metadata=recording_sources())
         for cell in cells:cell.update(cell_counts[cell['cell_uuid']])
         scope=service.source_scope()
         archived=set(scope['excluded_source_revisions'])
@@ -387,13 +423,13 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         bins={};duration=0
         for row in rows:
             duration+=row['duration_seconds']
-            cell=bins.setdefault(row['cell_uuid'],{'ids':set(),'duration_seconds':0,'groups':set()})
+            cell=bins.setdefault(row['cell_uuid'],{'ids':set(),'duration_seconds':0,'groups':set(),'sources':set()})
             cell['ids'].add(row['epoch_uuid']);cell['duration_seconds']+=row['duration_seconds']
-            cell['groups'].add(row['group_label'])
+            cell['groups'].add(row['group_label']);cell['sources'].add(row['source_sha256'])
         cells=[]
         for identity,group in bins.items():
             members=group['ids']
-            cells.append({**service.cells[identity],'epochs':len(members),'duration_seconds':group['duration_seconds'],
+            cells.append({**service.cells[identity],**recording_rig_summary(group['sources'],recording_sources()),'epochs':len(members),'duration_seconds':group['duration_seconds'],
                 'included':len(members),'reviewed':len(members & approved),'unreviewed':len(members-approved),
                 'exported':len(members & exported),
                 'protocol_uuids':[key for key,proof in proofs.items() if members & proof['ids']],
@@ -767,7 +803,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             exported_ids = set(export_memberships) & set(service.rows)
             payload["counts"].update(exported=len(exported_ids), reviewed=len(approved), approved=len(approved),
                                      unreviewed=payload["counts"]["epochs"] - len(approved))
-            cell_counts = summarize_cell_membership(service.rows.values(), approved, exported_ids)
+            cell_counts = summarize_cell_membership(service.rows.values(), approved, exported_ids, source_metadata=recording_sources())
             for cell in payload['cells']:
                 cell.update(cell_counts[cell['cell_uuid']])
             add_cell_annotations(payload.get('cells',[]))
@@ -820,14 +856,15 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if context is not None:
                 members=proof['members']
                 exported,signature=store.protocol_export_status(protocol_uuid,members)
-                etag=checksum({'projection':'protocol-overview-v1','query':context['query_revision'],
+                rig_token=recording_rig_token(members)
+                etag=checksum({'projection':'protocol-overview-v2','query':context['query_revision'],'recording_rigs':rig_token,
                                'exports':signature,'filters':query_filters})
                 unchanged=request.headers.get('If-None-Match')=='"'+etag+'"'
                 payload=None if unchanged else native_protocol_summary(protocol_uuid,query_filters,
                     cross_protocols=False,exported_ids=exported)
                 after=selected_state.native_context(protocol_uuid)
                 _,after_signature=store.protocol_export_status(protocol_uuid,())
-                if (after is None or after['query_revision']!=context['query_revision'] or after_signature!=signature):
+                if (after is None or after['query_revision']!=context['query_revision'] or after_signature!=signature or recording_rig_token(members)!=rig_token):
                     raise StaleWorkspace('Protocol summary changed while reading. Refresh and retry.')
                 response=app.response_class(status=304) if unchanged else jsonify(payload)
                 response.set_etag(etag)

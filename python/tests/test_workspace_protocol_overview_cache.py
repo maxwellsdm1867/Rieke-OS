@@ -14,6 +14,30 @@ class ProtocolOverviewCacheTests(unittest.TestCase):
         self.client=self.case.client;self.service=self.case.service
         self.path=self.case.case.base+'/overview'
 
+    def test_project_and_protocol_rigs_use_metadata_and_invalidate_conditional_reuse(self):
+        source = self.service.sources[0]
+        source['filename'] = '20261013FK.h5'
+        source['metadata'] = {'rig': 'EF', 'rig_type': 'PATCH'}
+        first = self.client.get(self.path)
+        self.assertEqual(first.status_code, 200, first.get_json())
+        with patch.object(self.service, 'events', return_value=[]):
+            self.assertEqual(self.client.get('/api/overview').get_json()['cells'][0]['recording_rigs'], ['EF'])
+        for path in (self.case.case.base, self.path):
+            response = self.client.get(path)
+            self.assertEqual(response.status_code, 200, response.get_json())
+            for cell in response.get_json()['cells']:
+                self.assertEqual(cell['recording_rigs'], ['EF'])
+                self.assertFalse(cell['recording_rig_missing'])
+        self.assertEqual(self.client.get(self.path, headers={'If-None-Match': first.headers['ETag']}).status_code, 304)
+        source['metadata']['rig'] = 'HT'
+        changed = self.client.get(self.path, headers={'If-None-Match': first.headers['ETag']})
+        self.assertEqual(changed.status_code, 200, changed.get_json())
+        self.assertEqual(changed.get_json()['cells'][0]['recording_rigs'], ['HT'])
+        self.assertNotEqual(changed.headers['ETag'], first.headers['ETag'])
+        self.service.sources = [{**source, 'metadata': {'properties': {'rig': 'Rig C'}}}]
+        replacement = self.client.get(self.path)
+        self.assertEqual(replacement.get_json()['cells'][0]['recording_rigs'], ['Rig C'])
+
     def test_summary_matches_full_summary_except_explicitly_omitted_cross_protocol_links(self):
         expected=self.client.get(self.case.case.base).get_json()
         for cell in expected['cells']:cell.pop('protocol_uuids',None)

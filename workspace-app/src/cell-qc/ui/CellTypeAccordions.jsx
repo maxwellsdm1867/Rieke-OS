@@ -23,9 +23,9 @@ function CellTypeGroup({group,total,onInspect,onQC,showInclusion,revealKey}){
       <dl className="cell-type-metrics">
         <div><dt>Epochs</dt><dd>{countLabel(group.epochs)}</dd></div>
         <div><dt>Recorded time</dt><dd>{group.duration_seconds===null?'Unavailable':duration(group.duration_seconds)}</dd></div>
-        <div><dt>Saved export history</dt><dd>{countLabel(group.exported)}{group.exported!==null&&<small> epochs</small>}{group.withExports!==null&&<small> · {number(group.withExports)} {group.withExports===1?'cell':'cells'}</small>}</dd></div>
+        <div><dt title="Unique epochs appearing in saved exports; inclusion and review are independent.">Exported epochs</dt><dd>{countLabel(group.exported)}</dd></div>
       </dl>
-      {showInclusion&&<p className="cell-type-marks">Export marks: <strong>{countLabel(group.included)}</strong> included · <strong>{countLabel(group.reviewed)}</strong> marked reviewed</p>}
+      {showInclusion&&<dl className="cell-type-marks"><div><dt>Included epochs</dt><dd>{countLabel(group.included)}</dd></div><div><dt>Marked reviewed</dt><dd>{countLabel(group.reviewed)}</dd></div></dl>}
     </div>
     <div id={id} className="cell-type-cells" hidden={!open}><CellList cells={group.cells} onInspect={onInspect} onQC={onQC}/></div>
   </section>;

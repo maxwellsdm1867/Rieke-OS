@@ -38,3 +38,18 @@ node --import ./src/test-support/reactTestEnvironment.js --test src/cellBaseline
 They demonstrate actual component readiness and navigation with controlled request
 responses. These checks do not perform native baseline preparation or scientific
 measurements, and source organization claims no chart-paint or performance result.
+
+Cell-list rows use desktop columns for cell label, recording date, rig, epochs,
+recorded time and exported epochs. Parent type headers and child cells share icon centers and aggregate value columns.
+Expanded supplemental facts and right-aligned tags share one compact full-width table.
+QC is an independent sibling button available before expanding details: desktop
+hover or keyboard focus reveals it at the right, while touch/coarse pointers keep
+it visible. Reserved space prevents reveal from moving the row. Native disclosure
+and its visible chevron retain keyboard access. QC receives the exact cell UUID
+through the existing caller-owned route callback; it neither toggles disclosure
+nor reads or prepares QC data. Unknown counts/export coverage remain unavailable.
+Recording rig labels use the additive metadata-backed `recording_rigs` and
+`recording_rig_missing` display fields; missing rig is Not recorded, multiple
+source rigs remain distinguishable, and labels do not change scientific identity.
+`overviewPresentation.test.js` checks collapsed-row navigation, both Overview
+entries and repeated-label UUIDs; browser fixture evidence checks reveal/layout.

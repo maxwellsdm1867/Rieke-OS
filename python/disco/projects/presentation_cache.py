@@ -55,6 +55,11 @@ def display_overview(value):
                 raise ValueError('Invalid overview row')
             item = {**_strings(row, strings), **_numbers(row, numbers)}
             if collection == 'cells':
+                rigs = row.get('recording_rigs')
+                if isinstance(rigs, list) and len(rigs) <= 5000:
+                    item['recording_rigs'] = [rig for rig in rigs if isinstance(rig, str) and len(rig) <= 4096]
+                if type(row.get('recording_rig_missing')) is bool:
+                    item['recording_rig_missing'] = row['recording_rig_missing']
                 ids = row.get('protocol_uuids') or []
                 if not isinstance(ids, list) or len(ids) > 5000:
                     raise ValueError('Invalid protocol identities')

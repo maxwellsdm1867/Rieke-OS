@@ -38,6 +38,14 @@ class PresentationCacheTests(unittest.TestCase):
     def load(self):
         return cache.load_overview(self.project, user_state=self.state, expected_uuid=self.uuid)
 
+    def test_recording_rigs_survive_the_inert_display_allowlist(self):
+        self.payload['cells'][0].update(recording_rigs=['EF', 'HT'], recording_rig_missing=True)
+        self.assertTrue(self.save())
+        row = self.load()['overview']['cells'][0]
+        self.assertEqual(row['recording_rigs'], ['EF', 'HT'])
+        self.assertTrue(row['recording_rig_missing'])
+        self.assertNotIn('scope_lease', row)
+
     def test_missing_read_is_side_effect_free(self):
         self.assertEqual(self.load(), {'available': False})
         self.assertFalse(self.state.exists())
