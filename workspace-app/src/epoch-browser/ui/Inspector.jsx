@@ -166,7 +166,9 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   // Keep the exact list identity through that handoff; writes still need cellsReady.
   const navigatingSameScope=!readPaused&&rows.loading&&!rows.error&&!annotationState.dirty&&confirmedCells.current?.key===navigationReadKey;
   const navigationReady=cellsReady||navigatingSameScope;
-  const listQueryRevision=queryRevision??(navigatingSameScope?confirmedCells.current.queryRevision:(preserveCandidateView&&protocol.query_revision===readContext.candidate_scope_revision?protocol.query_revision:undefined));
+  // List identity is presentation only: same-scope errors must not tear it down.
+  // Navigation and scientific edits remain gated by the fresh receipts above.
+  const listQueryRevision=queryRevision??(confirmedCells.current?.key===navigationReadKey?confirmedCells.current.queryRevision:(preserveCandidateView&&protocol.query_revision===readContext.candidate_scope_revision?protocol.query_revision:undefined));
 
   const [treeReceipt,setTreeReceipt]=useState(null);
   const treePage=treeReceipt?.data;

@@ -945,7 +945,7 @@
       ]
     },
     "src/epoch-browser/ui/Inspector.jsx": {
-      "fingerprint": "fbc3b9c38a59238e1786ad8c604eaeb10da2a3d7524066f9ae12c3bd6f0a056e",
+      "fingerprint": "a5cb33bf214ac2ffaa1395965cb78d5b7455f69f4dcd7392fc8aadbf4ae1a799",
       "sites": [
         {
           "owner": "InspectorContent",
@@ -1069,11 +1069,12 @@
         }
       ],
       "lifetime": "semantic-highlights + reconnecting-read-authority",
-      "reason": "Project/tree-intent/design/tree-mode identity resets highlights via shared helper. Separate committed highlight owner still retires and reconnects. Existing request leases, receipt clearing, resize listeners and current page/navigation fences remain ordinary effects. Independent review 2026-10-14: preserve exact-key list identity through locator/offset reads; disclosure no longer navigates. Effect sites unchanged; fresh receipts still gate writes.",
+      "reason": "Project/tree-intent/design/tree-mode identity resets highlights via shared helper. Separate committed highlight owner still retires and reconnects. Existing request leases, receipt clearing, resize listeners and current page/navigation fences remain ordinary effects. Independent review 2026-10-14: preserve exact-key list identity through locator/offset reads; disclosure no longer navigates. Effect sites unchanged; fresh receipts still gate writes. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged.",
       "tests": [
         "src/inspectorNavigationLifecycle.test.js",
         "src/protocolBrowseEntry.test.js",
-        "src/annotationReceiptWorkflow.test.js"
+        "src/annotationReceiptWorkflow.test.js",
+        "src/navigationSurfaces.test.js"
       ]
     },
     "src/epoch-browser/ui/InspectorActions.jsx": {
@@ -1093,7 +1094,7 @@
       ]
     },
     "src/epoch-browser/ui/MatchingEpochs.jsx": {
-      "fingerprint": "249a8d4a20135f8dfead69b459efd26bb4349bd4944bb6d2015cb078ec6bfa6d",
+      "fingerprint": "34f8a7d6a29595c7cef3a6358e183593dd723e0f1cccdc5772247fe45f5591d2",
       "sites": [
         {
           "owner": "MatchingEpochsContent",
@@ -1108,15 +1109,16 @@
         {
           "owner": "MatchingEpochsContent",
           "kind": "useEffect",
-          "fingerprint": "8d53c2ee44d61b1af8bcf5c6497e8be8f507c0154a25e89275b898f456c406a9"
+          "fingerprint": "118400e76c77c683a4ced622d13a4d0b244ca5675238339379153394a309d54e"
         }
       ],
       "lifetime": "session-publication-and-current-data",
-      "reason": "Publish route-owned presentation snapshots; current pages/focus and ResizeObserver refresh independently. Initial CellQC family selection is guarded by absence of a user-selected family. Authored annotation text is checkpointed separately.",
+      "reason": "Publish route-owned presentation snapshots; current pages/focus and ResizeObserver refresh independently. Initial CellQC family selection is guarded by absence of a user-selected family. Authored annotation text is checkpointed separately. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/authoredDrafts.test.js",
-        "src/retainedControls.test.js"
+        "src/retainedControls.test.js",
+        "src/navigationSurfaces.test.js"
       ]
     },
     "src/epoch-browser/ui/MetadataPanel.jsx": {
@@ -1862,7 +1864,7 @@
       ]
     },
     "src/metadata-explorer/ui/MetadataExplorer.jsx": {
-      "fingerprint": "a44e45ca94a423e3dd232ebef66ebf5c983ceea106cda8c0b078e36efffd1459",
+      "fingerprint": "f6d774d4fb8f5bfd25f5cb85d518b4516c2c6f200a6384fab73ceceb0a166354",
       "sites": [
         {
           "owner": "MetadataExplorer",
@@ -1931,10 +1933,11 @@
         }
       ],
       "lifetime": "semantic-presentation + hydration-witness + active-local-undo",
-      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners.",
+      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged.",
       "tests": [
         "src/retainedControls.test.js",
-        "src/requested-summaries/requestedSummariesLifecycle.test.js"
+        "src/requested-summaries/requestedSummariesLifecycle.test.js",
+        "src/navigationSurfaces.test.js"
       ]
     },
     "src/metadata-explorer/ui/QueryPresetDialog.jsx": {

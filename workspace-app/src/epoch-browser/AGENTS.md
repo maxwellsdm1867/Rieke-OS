@@ -156,3 +156,12 @@ navigation may continue, but page/cell readiness still gates writes. Existing op
 cell pages must remain mounted; opening another cell reads only that cell. Collapse
 retires that branch’s reads; reopening restores its frontier with fresh bounded reads.
 Regression examples are in `../inspectorNavigationLifecycle.test.js`.
+
+Same-key failed navigation reads also retain list presentation identity; errors
+never grant navigation or write authority. Predicate matching persists expansion,
+frontier and scroll hints in its session, scoped by project, canonical predicate,
+ordered splits and preview revision. Offset/focus/loading changes are not new list
+scopes. `../navigationSurfaces.test.js` exercises actual list composition across
+pinned, frozen Workbench and predicate sources, delayed and failed reads, rapid
+Tab navigation, retained view transitions and per-view session isolation. Its
+action timings use synthetic responses and exclude native paint.
