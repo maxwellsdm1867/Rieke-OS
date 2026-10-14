@@ -23,11 +23,24 @@ an unavailable prerequisite, partial run, skipped case or timeout into success.
 | [benchmark.py](benchmark.py) | `run --output`, `gate RECEIPT --commit --app-version [--release]`, `compare BASELINE CANDIDATE --output`. Owns the fixed suite, receipt validation and comparable-source/environment gate; failed workers write incomplete evidence. |
 | [benchmark_everyday.py](benchmark_everyday.py) | `iteration --baseline-source --source-root --output`, `run --source-root --output`, `compare BASELINE CANDIDATE --output`; actual million-record synthetic query stress, serial matched sources and explicit admission seams. Required with core after every app update; follow the canonical guide. |
 | [benchmark_workflow.py](benchmark_workflow.py) | `run --source-root --output [--protocol-epochs N] [--profile]`, `compare BASELINE CANDIDATE --output`; thirteen fixed browser action variants, three ordinary samples and exact correctness checks. Action medians and trace endpoints gate comparison; optional profiles are diagnostic and do not block optimization. Default active protocol is one million; CI uses 20,000 within an actual million-row project. Exact protocol sizes must match. Follow the canonical guide and retain unmeasured scenario limits. |
+| [benchmark_ci.py](benchmark_ci.py) | `resolve`, `run --family backend|browser`, `aggregate`; resolves immutable source roles, schedules distinct SHAs serially within each family, preserves byte-identical role aliases and requires complete passing family evidence. It orchestrates existing benchmarks without changing their receipts, cases or thresholds. |
 | [benchmark_native.py](benchmark_native.py) | `--evidence-root` with attachment arguments or `--verify`; binds immutable native research evidence and preserves the measured commit. An attachment does not grant release qualification. |
 
 Mapped Python and frontend test workers have a 600-second limit; desktop workers
 retain 180 seconds. A timeout fails with partial output and the selected command
 in its receipt. These worker deadlines are independent of benchmark timing gates.
+
+The plan additionally reports `documentation_only` for a nonempty committed diff
+containing only Markdown. CI keeps catalog/reference validation and skips behavior
+and million-row jobs in that case; mapping remains visible in the plan. Unknown,
+code, configuration and harness changes retain the conservative checks. Manual
+publication qualification uses `workspace-ci` with `full_checks=true` and the
+million workflow on the exact source SHA; a scoped PR plan cannot substitute.
+Backend and browser families run on separate hosts but keep their own baseline and
+candidate measurements together. The final aggregate and both family jobs must
+succeed. Superseded automatic PR runs may be cancelled; explicit qualification
+runs remain independent. Same-SHA reuse is confined to one family/run and preserves
+raw receipt bytes; cached timing verdicts never qualify another source.
 
 The guard uses Python, local Git history, the existing Node import parser and
 frontend dependencies for JavaScript checks. `RIEKE_TEST_DOM_MODULE` must be unset
@@ -87,7 +100,7 @@ The root names remain stable because workflows and other tools call them directl
 | --- | --- |
 | Source selection and staging | [desktop_release_plan.py](desktop_release_plan.py), [desktop_application_profile.py](desktop_application_profile.py), [build_release.py](build_release.py), [desktop_build_runtime.py](desktop_build_runtime.py) |
 | Runtime inventory, audit and compatibility | [desktop_runtime_manifest.py](desktop_runtime_manifest.py), [desktop_runtime_audit.py](desktop_runtime_audit.py), [desktop_native_compatibility.py](desktop_native_compatibility.py) |
-| Artifact evidence and publication controls | [desktop_release.py](desktop_release.py), [desktop_test_release.py](desktop_test_release.py), [desktop_artifact_e2e.py](desktop_artifact_e2e.py) |
+| Artifact evidence and publication controls | [desktop_release.py](desktop_release.py), [desktop_test_release.py](desktop_test_release.py), [desktop_source_ci.py](desktop_source_ci.py), [desktop_artifact_e2e.py](desktop_artifact_e2e.py) |
 | Runtime/native/scientific/startup probes | [desktop_runtime_smoke.py](desktop_runtime_smoke.py), [desktop_backend_smoke.py](desktop_backend_smoke.py), [desktop_no_docker_smoke.py](desktop_no_docker_smoke.py), [desktop_scientific_e2e.py](desktop_scientific_e2e.py), [desktop_startup_failures.py](desktop_startup_failures.py) |
 | Owned lazy-startup diagnostics | [diagnose_lazy_run.cjs](diagnose_lazy_run.cjs), [diagnose_lazy_failure.cjs](diagnose_lazy_failure.cjs), [diagnose_lazy_sampler.cjs](diagnose_lazy_sampler.cjs), [analyze_lazy_diagnostic.py](analyze_lazy_diagnostic.py) |
 
@@ -147,7 +160,15 @@ Promotion/testing-release behavior is covered by
 [testing-release tests](../python/tests/test_desktop_test_release.py) and
 [artifact fault tests](../python/tests/test_desktop_artifact_faults.py).
 Keep artifact hashes, candidate commit, channel, clean-source checks and evidence
-requirements intact. A CLI may sign, install dependencies, launch owned processes,
+requirements intact. `desktop_source_ci.require_source_ci` reads the latest
+exact-source GitHub regression/million runs, full regression plan, comparison
+receipts and complete native candidate jobs. Missing/stale/pending/failed/skipped
+evidence blocks both stable promotion and unsigned `desktop_test_release --publish`
+before publication. Testing publication also matches the candidate's small metadata
+artifact, checks tag identity and uploaded digests, and rechecks CI before exposing
+the draft. See the [canonical publication instructions](../docs/dev/releasing-rieke-os.md#unsigned-github-testing-publication)
+and [source-CI refusal tests](../python/tests/test_desktop_source_ci.py). Owner-level
+raw GitHub release access is not disabled by these tools. A CLI may sign, install dependencies, launch owned processes,
 write databases, call GitHub or promote releases; the existence of a parser does
 not make its invocation read-only. The lazy diagnostic runners additionally bind
 specific local bundle/fixture/Playwright paths. Do not launch them as generic smoke

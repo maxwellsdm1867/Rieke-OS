@@ -266,9 +266,13 @@ query track below. This is a development regression requirement, including updat
 whose intended effect is not performance. Product optimization does not justify
 skipping either check. Missing, failed, partial or incomparable evidence is not a
 green iteration. The [everyday-million workflow](../../.github/workflows/everyday-million.yml)
-enforces this query track on every pull request and push to `main`/`master`, with
-no path filter. It also runs the fixed core and complements the existing workspace correctness
-workflow; stress receipts remain separate from release-gate inputs.
+enforces this query track on pull requests and pushes to `main`/`master`, except
+committed comparisons containing only Markdown files. Those still validate
+catalog references; code, configuration, unknown and harness paths retain the full
+track. Manual dispatch always runs it, including exact-source release checks.
+It also runs the fixed core and complements workspace correctness. Publication
+requires successful exact-source stress comparisons in addition to, never instead
+of, the existing native/artifact release qualification.
 
 The one registry remains [benchmarks/registry.json](../../benchmarks/registry.json),
 under `stress_tracks.everyday-million`. The core remains small; do not substitute
@@ -343,24 +347,45 @@ it is not proof that every everyday interaction avoids regressions.
 
 ### CI enforcement and retained baselines
 
-The everyday-million workflow runs harness validation tests, then the heap-corrected
-pinned source `a16c915f9730384af3285949bb962d12707ccf01`, previous source and candidate
-serially using one current harness and pinned CPython environment on one Ubuntu
-runner, then runs candidate fixed-core correctness with Node 22.12.0 and the
-committed frontend lock. Candidate stress measurement is shared by both comparisons. For pull requests,
-previous means the PR base SHA and candidate is GitHub's checked-out merge commit;
-for pushes, previous means `event.before`. A first push whose before SHA is all
-zeros explicitly falls back to the pinned source. Manual dispatch accepts an
-optional full `baseline_sha` for the previous comparison, defaulting to the
-candidate's first parent; it never silently changes the pinned regression SHA.
+The everyday-million workflow resolves its pinned, previous and candidate source
+SHAs once, then runs the complete backend and browser families on separate Ubuntu
+runners. Within each family, distinct sources run serially with one current harness
+and pinned runtime; baseline and candidate timings never come from different hosts.
+The backend retains both tree and typed-query lanes. The browser family also runs
+candidate fixed-core correctness with Node 22.12.0 and the committed frontend lock.
+All cases, samples, exact-result/refusal checks and comparison thresholds remain.
 
-Both comparisons and the subsequent fixed core run execute even if an earlier
-stress measurement/comparison fails or flags a regression. Any failed measurement,
-invalid comparison or provisional regression trigger fails the job. Raw receipts,
+The integrated candidate retains the reviewed heap-corrected pinned source
+`a16c915f9730384af3285949bb962d12707ccf01`. For pull
+requests, previous means the PR base SHA and candidate is GitHub's checked-out merge
+commit; for pushes, previous means `event.before`. A first push whose before SHA is
+all zeros falls back to the pin. Manual dispatch accepts an optional full
+`baseline_sha`, defaulting to the harness's first parent, and an optional explicit
+candidate SHA; it never silently changes the pin. An explicit candidate override
+uses a diagnostic aggregate check name and cannot supply the normal current-head
+qualification status.
+
+Each family measures an identical source SHA once in that run. Candidate is the
+canonical role if it shares a SHA with a baseline; otherwise pinned precedes
+previous. Raw receipt directories are copied unchanged into their role aliases,
+with the original source/provenance fields and matching byte digests. Both baseline
+comparisons still run. This is same-run reuse under the same harness, fixture and
+runtime, not reuse of an earlier run's timings or inferred tree equivalence.
+
+Only automatic pull-request runs cancel earlier runs for the same PR. Push and
+explicit manual qualification runs have distinct concurrency groups and are not
+cancelled by later PR updates. Cancellation never supplies a passing receipt.
+
+Both comparisons run even if an earlier measurement fails or flags a regression.
+Browser compatibility checks precede large browser allocations; core and browser
+measurements retain their failures independently. Each family uploads its raw
+evidence, and the final aggregate requires both successful families, matching
+source plans, unchanged alias bytes, all four passing comparisons and successful
+core evidence. A missing, skipped, cancelled or failed family cannot qualify. Raw receipts,
 logs, comparison JSON and selected source references upload with `always()` and
 30-day retention, including failed runs. Preserve important baselines beyond the
-artifact expiry in owned evidence storage. The job has a 30-minute timeout; a
-timeout is incomplete evidence, never a pass. Workflow presence does not configure
+artifact expiry in owned evidence storage. Each measurement family retains a 90-minute safety timeout; a timeout is
+incomplete evidence, never a pass. Workflow presence does not configure
 GitHub branch protection: require this job in repository rules if merge blocking
 is desired. CI Linux results do not compare to local macOS results or qualify the
 installed native app. Runner image/runtime changes require fresh matched runs.

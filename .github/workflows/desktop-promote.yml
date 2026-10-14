@@ -58,6 +58,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag }}
           EVIDENCE_PATH: ${{ inputs.evidence_path }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
         run: |
           python3 - <<'PY'
           import os, pathlib, subprocess

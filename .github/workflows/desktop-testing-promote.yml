@@ -1,0 +1,86 @@
+name: Publish checked Disco testing candidate
+on:
+  workflow_dispatch:
+    inputs:
+      source_commit:
+        description: 'Full clean source commit with successful full regression and million-row checks'
+        required: true
+        type: string
+      candidate_run_id:
+        description: 'Successful complete desktop candidate run for the same source'
+        required: true
+        type: string
+      notes_path:
+        description: 'Reviewed Markdown release notes under release-evidence in this checkout'
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: disco-testing-publication
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'maxwellsdm1867/Rieke-OS'
+    runs-on: macos-15
+    environment: desktop-publishing
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SOURCE_COMMIT: ${{ inputs.source_commit }}
+      CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+      NOTES_PATH: ${{ inputs.notes_path }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Require successful exact-source checks before downloading app bytes
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          sys.path.insert(0, 'tools')
+          from desktop_source_ci import require_source_ci
+          print(json.dumps(require_source_ci(os.environ['GITHUB_REPOSITORY'], os.environ['SOURCE_COMMIT'], os.environ['CANDIDATE_RUN_ID'])))
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: rieke-desktop-macos-arm64
+          run-id: ${{ inputs.candidate_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ${{ runner.temp }}/testing-candidate
+      - name: Verify and publish the exact testing archive
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, sys
+          root = pathlib.Path.cwd().resolve()
+          notes = (root / os.environ['NOTES_PATH']).resolve(strict=True)
+          if not notes.is_relative_to(root / 'release-evidence') or notes.suffix != '.md':
+              raise SystemExit('Notes must be reviewed Markdown under release-evidence')
+          directory = pathlib.Path(os.environ['RUNNER_TEMP']) / 'testing-candidate'
+          descriptor = json.loads((directory / 'desktop-release.json').read_text())
+          if descriptor['source_commit'] != os.environ['SOURCE_COMMIT']:
+              raise SystemExit('Downloaded candidate source differs')
+          name = descriptor['archive']['filename']
+          if pathlib.Path(name).name != name:
+              raise SystemExit('Invalid archive filename')
+          archive = directory / name
+          digest = hashlib.sha256()
+          with archive.open('rb') as stream:
+              for block in iter(lambda: stream.read(1024 * 1024), b''): digest.update(block)
+          if digest.hexdigest() != descriptor['archive']['sha256']:
+              raise SystemExit('Downloaded archive hash differs')
+          extracted = directory / 'extracted'
+          subprocess.run(['ditto', '-x', '-k', str(archive), str(extracted)], check=True)
+          sys.path.insert(0, str(root / 'tools'))
+          from desktop_test_release import publish
+          proof = publish(extracted / 'Disco.app', archive, directory / 'desktop-release.json', notes, os.environ['CANDIDATE_RUN_ID'])
+          (directory / 'publication.json').write_text(json.dumps(proof, indent=2) + '\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: testing-publication-proof
+          path: ${{ runner.temp }}/testing-candidate/publication.json
+          if-no-files-found: error

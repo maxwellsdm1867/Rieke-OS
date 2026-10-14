@@ -11,34 +11,141 @@ on:
         required: false
         type: string
       candidate_sha:
-        description: 'Optional full application SHA to measure with this workflow revision; published tags and assets remain unchanged'
+        description: 'Optional diagnostic application SHA; does not qualify the workflow revision for publication'
         required: false
         type: string
 
 permissions:
   contents: read
 
+# Only superseded automatic PR runs cancel. Push and explicit qualification runs
+# have distinct groups and retain their full evidence even when new work arrives.
+concurrency:
+  group: everyday-million-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  everyday-million:
-    name: Actual million metadata query regression
+  scope:
+    name: Select performance check scope
+    runs-on: ubuntu-latest
+    outputs:
+      documentation_only: ${{ steps.plan.outputs.documentation_only }}
+      harness: ${{ steps.sources.outputs.harness }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: plan
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          args=(--all)
+          if [ "$EVENT_NAME" != workflow_dispatch ] && [ -n "$BASE_REF" ] && [ "$BASE_REF" != 0000000000000000000000000000000000000000 ]; then args=(--base "$BASE_REF"); fi
+          python3 -B tools/architecture_guard.py check --language metadata
+          python3 -B tools/architecture_guard.py plan "${args[@]}" --github-output "$GITHUB_OUTPUT" --output "$RUNNER_TEMP/performance-scope.json"
+      - id: sources
+        if: steps.plan.outputs.documentation_only != 'true'
+        env:
+          PINNED_SHA: a16c915f9730384af3285949bb962d12707ccf01
+          PREVIOUS_SHA: ${{ inputs.baseline_sha || github.event.pull_request.base.sha || github.event.before }}
+          REQUESTED_CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python3 -B tools/benchmark_ci.py resolve --pinned "$PINNED_SHA" --previous "$PREVIOUS_SHA" \
+            --candidate "$REQUESTED_CANDIDATE_SHA" --event "$EVENT_NAME" \
+            --output "$RUNNER_TEMP/source-plan.json" --github-output "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-check-scope
+          path: ${{ runner.temp }}/performance-scope.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: steps.sources.outcome == 'success'
+        with:
+          name: performance-source-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/source-plan.json
+          if-no-files-found: error
+
+  backend:
+    name: Backend million query regression
+    needs: scope
+    if: needs.scope.outputs.documentation_only != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     defaults:
       run:
         shell: bash
     steps:
+      - name: Initialize backend failure diagnostics
+        run: |
+          mkdir -p "$RUNNER_TEMP/everyday-backend"
+          printf 'Backend preparation started; missing receipts do not qualify.\n' > "$RUNNER_TEMP/everyday-backend/backend-start.txt"
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.scope.outputs.harness }}
           fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: performance-source-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/performance-plan
+      - uses: astral-sh/setup-uv@v6
+      - name: Install pinned benchmark runtime
+        run: |
+          uv venv --python 3.11.13 "$RUNNER_TEMP/everyday-python"
+          uv pip install --python "$RUNNER_TEMP/everyday-python/bin/python" -r benchmarks/requirements-py311.txt
+      - name: Validate backend and scheduling harnesses
+        run: |
+          mkdir -p "$RUNNER_TEMP/everyday-backend"
+          test -f python/tests/test_benchmark_everyday.py
+          test -f python/tests/test_benchmark_ci.py
+          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_everyday.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-backend/everyday-harness-tests.log"
+          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_ci.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-backend/scheduling-tests.log"
+      - name: Measure each distinct backend source serially on this runner
+        run: |
+          unset RIEKE_TEST_DOM_MODULE
+          "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_ci.py run --family backend \
+            --plan "$RUNNER_TEMP/performance-plan/source-plan.json" --output "$RUNNER_TEMP/everyday-backend" \
+            --worktrees "$RUNNER_TEMP/backend-sources"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: everyday-backend-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/everyday-backend/
+          if-no-files-found: error
+          retention-days: 30
+
+  browser:
+    name: Browser million workflow regression
+    needs: scope
+    if: needs.scope.outputs.documentation_only != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Initialize browser failure diagnostics
+        run: |
+          mkdir -p "$RUNNER_TEMP/everyday-browser"
+          printf 'Browser preparation started; missing receipts do not qualify.\n' > "$RUNNER_TEMP/everyday-browser/browser-start.txt"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.scope.outputs.harness }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: performance-source-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/performance-plan
       - uses: actions/setup-node@v4
         with:
           node-version: '22.12.0'
           cache: npm
           cache-dependency-path: workspace-app/package-lock.json
-      - name: Install committed frontend dependencies
-        run: npm ci --prefix workspace-app
-      - name: Install committed browser benchmark dependencies
+      - name: Install committed frontend and browser dependencies
         run: |
+          npm ci --prefix workspace-app
           npm ci --prefix desktop --ignore-scripts
           desktop/node_modules/.bin/playwright install --with-deps chromium
       - uses: astral-sh/setup-uv@v6
@@ -46,149 +153,67 @@ jobs:
         run: |
           uv venv --python 3.11.13 "$RUNNER_TEMP/everyday-python"
           uv pip install --python "$RUNNER_TEMP/everyday-python/bin/python" -r benchmarks/requirements-py311.txt
-      - name: Validate benchmark harnesses
+      - name: Validate browser, core and timing harnesses
         run: |
-          mkdir -p "$RUNNER_TEMP/everyday-results"
+          mkdir -p "$RUNNER_TEMP/everyday-browser"
           test -f python/tests/test_benchmark.py
-          test -f python/tests/test_benchmark_everyday.py
           test -f python/tests/test_benchmark_workflow.py
           test -f python/tests/test_benchmark_workflow_backend.py
+          test -f python/tests/test_operation_timing.py
           test -f benchmarks/workflow/browser-readiness.test.mjs
-          node --test benchmarks/workflow/browser-readiness.test.mjs 2>&1 | tee "$RUNNER_TEMP/everyday-results/workflow-readiness-tests.log"
-          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/core-harness-tests.log"
-          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_everyday.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/everyday-harness-tests.log"
-          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_workflow.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/workflow-harness-tests.log"
-          PYTHONPATH=python "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_workflow_backend.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/workflow-backend-tests.log"
-          PYTHONPATH=python "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_operation_timing.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/module-timing-tests.log"
-      - name: Measure retained baselines and candidate serially
-        env:
-          PINNED_SHA: a16c915f9730384af3285949bb962d12707ccf01
-          PREVIOUS_SHA: ${{ inputs.baseline_sha || github.event.pull_request.base.sha || github.event.before }}
-          REQUESTED_CANDIDATE_SHA: ${{ inputs.candidate_sha }}
-          EVENT_NAME: ${{ github.event_name }}
+          node --test benchmarks/workflow/browser-readiness.test.mjs 2>&1 | tee "$RUNNER_TEMP/everyday-browser/workflow-readiness-tests.log"
+          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-browser/core-harness-tests.log"
+          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_workflow.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-browser/workflow-harness-tests.log"
+          PYTHONPATH=python "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_workflow_backend.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-browser/workflow-backend-tests.log"
+          PYTHONPATH=python "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_operation_timing.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-browser/module-timing-tests.log"
+      - name: Preflight, core, then each distinct browser source serially
         run: |
           unset RIEKE_TEST_DOM_MODULE
-          result_dir="$RUNNER_TEMP/everyday-results"
-          python_bin="$RUNNER_TEMP/everyday-python/bin/python"
-          mkdir -p "$result_dir"
-          if [ -z "$PREVIOUS_SHA" ] && [ "$EVENT_NAME" = workflow_dispatch ]; then
-            PREVIOUS_SHA="$(git rev-parse HEAD^)"
-          elif [ "$PREVIOUS_SHA" = 0000000000000000000000000000000000000000 ]; then
-            # First push has no preceding branch tip; retain the fixed baseline.
-            PREVIOUS_SHA="$PINNED_SHA"
-            printf '%s\n' 'First-push previous baseline falls back to pinned baseline.' >> "$result_dir/source-refs.txt"
-          fi
-          CANDIDATE_SHA="${REQUESTED_CANDIDATE_SHA:-$(git rev-parse HEAD)}"
-          CANDIDATE_SOURCE="$GITHUB_WORKSPACE"
-          for source_sha in "$PINNED_SHA" "$PREVIOUS_SHA" "$CANDIDATE_SHA"; do
-            if [[ ! "$source_sha" =~ ^[0-9a-fA-F]{40}$ ]]; then
-              printf '%s\n' 'Invalid baseline: a full commit SHA is required.' >&2
-              exit 1
-            fi
-            if ! git cat-file -e "${source_sha}^{commit}"; then
-              git fetch --no-tags origin "$source_sha"
-            fi
-            git cat-file -e "${source_sha}^{commit}"
-          done
-          printf 'pinned=%s\nprevious=%s\ncandidate=%s\nevent=%s\n' \
-            "$PINNED_SHA" "$PREVIOUS_SHA" "$CANDIDATE_SHA" "$EVENT_NAME" >> "$result_dir/source-refs.txt"
-          printf 'harness=%s\n' "$(git rev-parse HEAD)" >> "$result_dir/source-refs.txt"
-          git worktree add --detach "$RUNNER_TEMP/everyday-pinned" "$PINNED_SHA"
-          git worktree add --detach "$RUNNER_TEMP/everyday-previous" "$PREVIOUS_SHA"
-          if [ -n "$REQUESTED_CANDIDATE_SHA" ]; then
-            CANDIDATE_SOURCE="$RUNNER_TEMP/everyday-candidate"
-            git worktree add --detach "$CANDIDATE_SOURCE" "$CANDIDATE_SHA"
-          fi
-          # Capture failures without skipping the other source or comparison.
-          # All commands use this checkout's harness and one pinned interpreter.
-          failure=0
-          run_check() {
-            label="$1"
-            shift
-            rc=0
-            "$@" > "$result_dir/${label}.log" 2>&1 || rc=$?
-            printf '%s exit=%s\n' "$label" "$rc" | tee -a "$result_dir/exit-status.txt"
-            if [ "$rc" -ne 0 ]; then failure=1; fi
-          }
-          # Browser baselines share exact locked dependencies. Check compatibility
-          # first; after it passes, retain all measurement failures independently.
-          # Identical locks are required before sharing dependencies with baseline
-          # source worktrees; never install different dependencies and compare.
-          prepare_browser_baseline() {
-            source_dir="$1"
-            for package_dir in workspace-app desktop; do
-              if ! "$python_bin" -B tools/benchmark_workflow.py dependencies-match "$source_dir/$package_dir/package-lock.json" "$GITHUB_WORKSPACE/$package_dir/package-lock.json"; then
-                printf 'Incomparable browser baseline: %s/%s/package-lock.json differs from candidate.\n' "$source_dir" "$package_dir" >&2
-                return 1
-              fi
-            done
-            for package_dir in workspace-app desktop; do
-              ln -s "$GITHUB_WORKSPACE/$package_dir/node_modules" "$source_dir/$package_dir/node_modules" || return 1
-              # A symlink is a file to Git; the usual node_modules/ ignore rule
-              # need not cover it. This shared local exclude is CI-only.
-              exclude_file="$(git -C "$source_dir" rev-parse --git-path info/exclude)"
-              printf '/%s/node_modules\n' "$package_dir" >> "$exclude_file"
-            done
-          }
-          # setup failures are evidence failures; candidate still runs.
-          pinned_ready=0
-          previous_ready=0
-          prepare_browser_baseline "$RUNNER_TEMP/everyday-pinned" > "$result_dir/workflow-pinned-setup.log" 2>&1 && pinned_ready=1 || failure=1
-          if [ "$CANDIDATE_SOURCE" != "$GITHUB_WORKSPACE" ]; then
-            prepare_browser_baseline "$CANDIDATE_SOURCE" > "$result_dir/workflow-candidate-setup.log" 2>&1 || failure=1
-          fi
-          if [ "$PREVIOUS_SHA" = "$PINNED_SHA" ]; then
-            previous_workflow_receipt="$result_dir/workflow-pinned/receipt.json"
-          else
-            prepare_browser_baseline "$RUNNER_TEMP/everyday-previous" > "$result_dir/workflow-previous-setup.log" 2>&1 && previous_ready=1 || failure=1
-            previous_workflow_receipt="$result_dir/workflow-previous/receipt.json"
-          fi
-          # Exercise all fixed actions on a small fixture before allocating
-          # million-row projects. Unsupported UI contracts fail this job early;
-          # their diagnostic receipts never count as million-row qualification.
-          if [ "$pinned_ready" -eq 1 ]; then
-            run_check compatibility-pinned "$python_bin" -B tools/benchmark_workflow.py run \
-              --smoke --source-root "$RUNNER_TEMP/everyday-pinned" --output "$result_dir/compatibility-pinned"
-          fi
-          if [ "$previous_ready" -eq 1 ]; then
-            run_check compatibility-previous "$python_bin" -B tools/benchmark_workflow.py run \
-              --smoke --source-root "$RUNNER_TEMP/everyday-previous" --output "$result_dir/compatibility-previous"
-          fi
-          run_check compatibility-candidate "$python_bin" -B tools/benchmark_workflow.py run \
-            --smoke --source-root "$CANDIDATE_SOURCE" --output "$result_dir/compatibility-candidate"
-          if [ "$failure" -ne 0 ]; then exit "$failure"; fi
-          run_check pinned-run "$python_bin" -B tools/benchmark_everyday.py run \
-            --source-root "$RUNNER_TEMP/everyday-pinned" --output "$result_dir/pinned"
-          run_check previous-run "$python_bin" -B tools/benchmark_everyday.py run \
-            --source-root "$RUNNER_TEMP/everyday-previous" --output "$result_dir/previous"
-          run_check candidate-run "$python_bin" -B tools/benchmark_everyday.py run \
-            --source-root "$CANDIDATE_SOURCE" --output "$result_dir/candidate"
-          run_check pinned-compare "$python_bin" -B tools/benchmark_everyday.py compare \
-            "$result_dir/pinned/receipt.json" "$result_dir/candidate/receipt.json" \
-            --output "$result_dir/pinned-comparison.json"
-          run_check previous-compare "$python_bin" -B tools/benchmark_everyday.py compare \
-            "$result_dir/previous/receipt.json" "$result_dir/candidate/receipt.json" \
-            --output "$result_dir/previous-comparison.json"
-          run_check candidate-core "$python_bin" -B "$CANDIDATE_SOURCE/tools/benchmark.py" run \
-            --output "$result_dir/core"
-          if [ "$pinned_ready" -eq 1 ]; then
-            run_check workflow-pinned-run "$python_bin" -B tools/benchmark_workflow.py run \
-              --source-root "$RUNNER_TEMP/everyday-pinned" --protocol-epochs 20000 --output "$result_dir/workflow-pinned"
-          fi
-          if [ "$previous_ready" -eq 1 ]; then
-            run_check workflow-previous-run "$python_bin" -B tools/benchmark_workflow.py run \
-              --source-root "$RUNNER_TEMP/everyday-previous" --protocol-epochs 20000 --output "$result_dir/workflow-previous"
-          fi
-          run_check workflow-candidate-run "$python_bin" -B tools/benchmark_workflow.py run \
-            --source-root "$CANDIDATE_SOURCE" --protocol-epochs 20000 --output "$result_dir/workflow-candidate"
-          run_check workflow-pinned-compare "$python_bin" -B tools/benchmark_workflow.py compare \
-            "$result_dir/workflow-pinned/receipt.json" "$result_dir/workflow-candidate/receipt.json" \
-            --output "$result_dir/workflow-pinned-comparison.json"
-          run_check workflow-previous-compare "$python_bin" -B tools/benchmark_workflow.py compare \
-            "$previous_workflow_receipt" "$result_dir/workflow-candidate/receipt.json" \
-            --output "$result_dir/workflow-previous-comparison.json"
-          exit "$failure"
-      - name: Preserve benchmark evidence including failures
+          "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_ci.py run --family browser \
+            --plan "$RUNNER_TEMP/performance-plan/source-plan.json" --output "$RUNNER_TEMP/everyday-browser" \
+            --worktrees "$RUNNER_TEMP/browser-sources"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: everyday-browser-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/everyday-browser/
+          if-no-files-found: error
+          retention-days: 30
+
+  everyday-million:
+    # Keep the required normal check name. Measuring an explicit other source is
+    # diagnostic and must not create a green qualification check on this HEAD.
+    name: ${{ inputs.candidate_sha != '' && 'Diagnostic million metadata query regression' || 'Actual million metadata query regression' }}
+    needs: [scope, backend, browser]
+    if: always() && needs.scope.outputs.documentation_only != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.scope.outputs.harness }}
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: performance-source-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/performance-plan
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: everyday-backend-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/everyday-results
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: everyday-browser-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/everyday-results
+      - name: Require both complete families and all unchanged comparisons
+        env:
+          BACKEND_RESULT: ${{ needs.backend.result }}
+          BROWSER_RESULT: ${{ needs.browser.result }}
+        run: |
+          python3 -B tools/benchmark_ci.py aggregate --plan "$RUNNER_TEMP/performance-plan/source-plan.json" \
+            --output "$RUNNER_TEMP/everyday-results" --backend-result "$BACKEND_RESULT" --browser-result "$BROWSER_RESULT"
+      - name: Preserve combined evidence including failures
         if: always()
         uses: actions/upload-artifact@v4
         with:

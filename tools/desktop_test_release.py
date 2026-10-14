@@ -12,6 +12,8 @@ import os
 from pathlib import Path
 import plistlib
 import re
+import subprocess
+import tempfile
 import zipfile
 
 REPOSITORY='maxwellsdm1867/Rieke-OS'
@@ -78,9 +80,79 @@ def build_descriptor(bundle,archive):
             'source_commit':manifest.get('source_commit'),'source_dirty':manifest.get('source_dirty'),
             'production_ready':False}
 
+def publish(bundle, archive, output, notes, candidate_run_id):
+    """Publish only a fully checked exact-byte unsigned candidate; never replace assets."""
+    from desktop_source_ci import api, artifact, require_source_ci, require_tag
+    descriptor = build_descriptor(bundle, archive)
+    if descriptor['source_dirty'] is not False:
+        raise ValueError('Cannot publish a dirty or unproven source')
+    proof = require_source_ci(REPOSITORY, descriptor['source_commit'], candidate_run_id)
+    qualified = artifact(REPOSITORY, {'id': proof['candidate_run']},
+                         'desktop-release-metadata', 'desktop-release.json')
+    if qualified != descriptor:
+        raise ValueError('Local archive differs from the successful native candidate')
+    output = Path(output)
+    if output.name != 'desktop-release.json':
+        raise ValueError('Publication descriptor must be named desktop-release.json')
+    # All qualification and local reads precede the first remote mutation.
+    note_text = Path(notes).read_text()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(descriptor, indent=2) + '\n')
+    tag = 'desktop-test-v' + descriptor['application_version']
+    # Candidate qualification already requires a reviewed version tag. Do not
+    # rely on publication to create a missing Git ref.
+    require_tag(REPOSITORY, tag, descriptor['source_commit'])
+    with tempfile.TemporaryDirectory(prefix='disco-publication-') as temporary:
+        root = Path(temporary)
+        sums = root / 'SHA256SUMS'
+        assets = [Path(archive), output]
+        sums.write_text(''.join(f'{hashes(path)[0]}  {path.name}\n' for path in assets))
+        assets.append(sums)
+        release_notes = root / 'notes.md'
+        release_notes.write_text('Unsigned Apple silicon testing prerelease. Not production-qualified.\n\n' + note_text)
+        # Existing releases are refused by gh; no --clobber.
+        subprocess.run(['gh', 'release', 'create', tag, '--repo', REPOSITORY,
+                        '--target', descriptor['source_commit'], '--draft', '--prerelease',
+                        '--title', f'Disco {descriptor["application_version"]} testing',
+                        '--notes-file', str(release_notes), *map(str, assets)], check=True)
+        # The REST tag endpoint only resolves published releases. gh's view
+        # command also finds authenticated drafts; use its numeric ID thereafter.
+        identity = json.loads(subprocess.check_output(
+            ['gh', 'release', 'view', tag, '--repo', REPOSITORY,
+             '--json', 'databaseId,tagName,isDraft,targetCommitish'], text=True))
+        if (type(identity.get('databaseId')) is not int or identity['databaseId'] <= 0
+                or identity.get('tagName') != tag or identity.get('isDraft') is not True
+                or identity.get('targetCommitish') != descriptor['source_commit']):
+            raise ValueError('Created draft identity differs; release remains a draft')
+        release = api(f'repos/{REPOSITORY}/releases/{identity["databaseId"]}')
+        if (release.get('id') != identity['databaseId'] or release.get('draft') is not True
+                or release.get('tag_name') != tag
+                or release.get('target_commitish') != descriptor['source_commit']):
+            raise ValueError('Created draft identity differs; release remains a draft')
+        uploaded = {row['name']: row for row in release['assets']}
+        for path in assets:
+            row = uploaded.get(path.name, {})
+            if row.get('digest') != 'sha256:' + hashes(path)[0] or row.get('size') != path.stat().st_size:
+                raise ValueError('Uploaded bytes differ; release remains a draft')
+        # Recheck immediately before visibility: a newer pending/failed CI run blocks it.
+        require_source_ci(REPOSITORY, descriptor['source_commit'], candidate_run_id)
+        require_tag(REPOSITORY, tag, descriptor['source_commit'])
+        subprocess.run(['gh', 'release', 'edit', tag, '--repo', REPOSITORY,
+                        '--draft=false', '--prerelease', '--latest=false'], check=True)
+    return proof
+
+
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--app',type=Path,required=True);parser.add_argument('--archive',type=Path,required=True);parser.add_argument('--output',type=Path,required=True)
-    args=parser.parse_args();descriptor=build_descriptor(args.app,args.archive)
-    args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(descriptor,indent=2)+'\n')
-    print('Wrote unsigned test metadata for '+descriptor['application_version'])
+    parser.add_argument('--publish', action='store_true')
+    parser.add_argument('--candidate-run-id')
+    parser.add_argument('--notes', type=Path)
+    args=parser.parse_args()
+    if args.publish:
+        if not args.candidate_run_id or not args.notes: parser.error('--publish requires --candidate-run-id and --notes')
+        print(json.dumps(publish(args.app, args.archive, args.output, args.notes, args.candidate_run_id)))
+    else:
+        descriptor=build_descriptor(args.app,args.archive)
+        args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(descriptor,indent=2)+'\n')
+        print('Wrote unsigned test metadata for '+descriptor['application_version'])

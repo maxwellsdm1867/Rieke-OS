@@ -98,9 +98,21 @@ class ArchitectureGuardTests(unittest.TestCase):
         result=self.cli('plan','--base',self.initial)
         self.assertEqual(result['affected_contracts'],[])
         self.assertFalse(result['source_changed'])
+        self.assertTrue(result['documentation_only'])
+        self.assertFalse(self.cli('plan','--all')['documentation_only'])
         self.assertEqual(self.cli('plan','--all')['affected_contracts'],['recovery'])
         self.write('docs/contract.md','# Contract\n## Recovery\nUpdated explanation\n');self.commit()
         self.assertEqual(self.cli('plan','--base',self.initial)['affected_contracts'],['recovery'])
+
+    def test_documentation_scope_does_not_skip_catalog_code_or_unknown_changes(self):
+        for path in ['docs/evidence.json', 'python/new.py', '.github/workflows/ci.yml', 'unknown.txt']:
+            base = self.git('rev-parse', 'HEAD')
+            self.write(path, '{}'); self.commit()
+            result = self.cli('plan', '--base', base)
+            self.assertFalse(result['documentation_only'])
+            self.assertTrue(result['source_changed'])
+            self.assertTrue(result['python_required'])
+            self.assertTrue(result['javascript_required'])
 
     def test_mapped_command_runs_behavior_and_propagates_failure(self):
         passed=self.cli('test','--all','--language','python')
@@ -164,7 +176,7 @@ class ArchitectureGuardTests(unittest.TestCase):
         output=self.root/'.git/result.json';github=self.root/'.git/github-output'
         result=self.cli('plan','--base',self.initial,'--output',str(output),'--github-output',str(github))
         self.assertEqual(json.loads(output.read_text()),result)
-        self.assertEqual(github.read_text(),'source_changed=false\njavascript_required=false\npython_required=true\ndesktop_required=false\n')
+        self.assertEqual(github.read_text(),'source_changed=false\ndocumentation_only=true\njavascript_required=false\npython_required=true\ndesktop_required=false\n')
         self.assertEqual(len(result['source_sha256']['docs/contract.md']),64)
 
     def test_module_policy_version_is_explicit_and_nested_test_paths_remain_mapped(self):
