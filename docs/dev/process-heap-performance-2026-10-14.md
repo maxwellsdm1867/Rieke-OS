@@ -86,3 +86,44 @@ The profile saw sixteen recipe copies during selection. Their atomic member
 dictionaries are normally untracked by CPython; this is allocation/CPU work,
 not evidence of 320,000 additional tracked cyclic objects. Each proposed reduction
 needs its own correctness review and ordinary before/after measurement.
+
+## Measured correction and baseline decision
+
+Two serial local matched pairs used clean sources b82de83 (before) and
+37173813211cd0784084faf8f5daac1987046ed9 (after), the actual-million fixture,
+20,000 protocol epochs and three ordinary samples. The second pair reversed
+execution order. All thirteen action correctness checks passed in both pairs.
+
+| Action | First before → after | Reverse-order before → after |
+| --- | ---: | ---: |
+| Incoming Select all | 1,164.9 → 874.8 ms | 1,221.1 → 871.2 ms |
+| Workbench view open | 1,005.4 → 564.7 ms | 897.0 → 553.8 ms |
+| Fresh preparation | 2,944 → 2,722 ms | 3,055 → 2,777 ms |
+
+The first pair flagged trace first-visible latency (45.4 → 61.7 ms); the repeat
+passed that comparison (63.8 → 69.4 ms) but flagged the zero-request deselection
+interaction (10.4 → 22.5 ms). Both flags remain in the evidence. No thresholds
+or sample counts changed. The first startup rose 7.456 → 7.753 seconds,
+including 298.5 ms of initial heap collection. Sampled fixture-server peak RSS
+fell 1,438,351,360 → 1,355,022,336 bytes in the first pair and
+1,353,531,392 → 1,338,589,184 in the reverse pair. These are 200 ms sampled
+process RSS peaks, not retained-memory or native-app bounds.
+
+A separate profiled diagnostic recorded 188 generation-2 collections after the
+fix: median 5.21 ms, maximum 22.64 ms. That diagnostic includes profiling overhead
+and does not replace ordinary action timings.
+
+[GitHub run 38526987389](https://github.com/maxwellsdm1867/Rieke-OS/actions/runs/38526987389)
+passed all four query/workflow comparisons and fixed-core checks on candidate
+`a16c915f9730384af3285949bb962d12707ccf01`. Its Git tree is identical to
+`37173813211cd0784084faf8f5daac1987046ed9`; the former is the tested PR merge commit.
+The standard five-job regression run 38526987274 also passed. The active workflow
+pin is now the exact tested merge commit a16c915. The old pin
+`34ce2e06dec0e2886d5a2310f21e02cf818cb646`, the prior release comparison and all
+failed runs retain their original identities. This is a benchmark baseline
+update, not a release, merge or native-package qualification.
+
+Raw GitHub artifacts and local matched/profile receipts are preserved at
+`/Users/maxwellsdm/Documents/Codex/disco-heap-baseline-2026-10-14/` beyond GitHub's
+artifact retention period. The original local comparison JSON and sampled-memory
+receipts remain in `disco-performance-flags-20261013` task evidence.

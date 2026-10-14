@@ -62,7 +62,7 @@ jobs:
           PYTHONPATH=python "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_operation_timing.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/module-timing-tests.log"
       - name: Measure retained baselines and candidate serially
         env:
-          PINNED_SHA: 34ce2e06dec0e2886d5a2310f21e02cf818cb646
+          PINNED_SHA: a16c915f9730384af3285949bb962d12707ccf01
           PREVIOUS_SHA: ${{ inputs.baseline_sha || github.event.pull_request.base.sha || github.event.before }}
           REQUESTED_CANDIDATE_SHA: ${{ inputs.candidate_sha }}
           EVENT_NAME: ${{ github.event_name }}
