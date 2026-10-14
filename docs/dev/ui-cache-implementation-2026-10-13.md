@@ -174,8 +174,69 @@ Restoring these fields never reopens a confirmation or replays a command. The
 [authored-state audit](authored-state-retention-audit-2026-10-13.md) records exact
 owners, covered fields and the deliberate detached-folder-picker boundary.
 
-Implementation validation is in progress. Final committed-source, ordinary-action,
-native and required fixed benchmark receipts will be recorded here before delivery.
-The [retention diagnostic guide](../../benchmarks/retention/README.md) separates
-full-App populated fixture checks, native empty-project lifecycle checks and the
-existing core/million regression gates. None alone qualifies an installed release.
+### Completed retained-UI validation at `27a0117`
+
+These receipts belong to clean source `27a0117a0b701b178089c7b0687fcf87886675ee`.
+They establish the retained-UI checkpoint below. Later projection-contract
+compatibility evidence is attributed separately in the following subsection.
+
+- **Required regression gates:** the [core receipt](../../benchmarks/results/ui-retention-27a0117-core/benchmark.json)
+  has no validation errors, with all ten cases passed and fixtures cleaned. The
+  [pinned million-epoch comparison](../../benchmarks/results/ui-retention-27a0117-pinned/comparison.json)
+  passed. Against combined baseline `ceaf776`, the [first comparison](../../benchmarks/results/ui-retention-27a0117-previous/comparison.json)
+  flagged `tree.return_root` and `tree.change_splits`; the [investigation](../../benchmarks/results/ui-retention-27a0117-previous/investigation.json)
+  and [complete matched repeat](../../benchmarks/results/ui-retention-27a0117-previous-repeat/comparison.json)
+  are preserved. The repeat passed without changing thresholds or averaging away
+  the first result. These are synthetic correctness/stress gates, not native latency qualification.
+- **Actual browser click-through:** [candidate checks](ui-cache-design-evidence-2026-10-13/ui-audit-27a0117/candidate/browser/receipt.json)
+  recorded 86 passes, five unsupported checks and no failures or blocked checks.
+  All [22 paired visual sheets](ui-cache-design-evidence-2026-10-13/ui-audit-27a0117/comparison/comparison.html)
+  were [reviewed](ui-cache-design-evidence-2026-10-13/ui-audit-27a0117/visual-review.json),
+  covering Light, Dark, Fred and 1100×760 compact layout. The baseline's compact
+  Apply occlusion remains recorded; the candidate's real control hit/click passed.
+  Unsupported checks are four single-stream channel probes and Activity's missing
+  fixture relation. This browser fixture does not qualify scientific writes,
+  export/merge execution, real imports or widths below 1100px.
+- **Full-App returns:** the [matched comparison](../../benchmarks/results/ui-retention-27a0117-app-comparison.json)
+  preserves Inspector and canvas identity, scroll, expansion and sample window,
+  while renderer requests fell from 5→4 for tab return and 7→4 for history return.
+  Median elapsed actions nevertheless increased from 101.1→116.8 ms and
+  147.0→163.3 ms (three samples each). This is a retention improvement, with no
+  browser speedup established. The [baseline cold-restoration failure](../../benchmarks/results/ui-retention-27a0117-app-baseline/browser/receipt.json)
+  after its successful warm samples remains a failure; the [candidate restore](../../benchmarks/results/ui-retention-27a0117-app-candidate/browser/receipt.json)
+  passed. Its held-activation snapshot check is not native startup timing.
+- **Native development Electron:** [empty-project lifecycle](../../benchmarks/results/ui-retention-27a0117-native-empty/receipt.json)
+  and [populated dual-response UI checks](../../benchmarks/results/ui-retention-27a0117-native-populated/receipt.json)
+  passed, including fresh-process restoration and orderly initial/restart exits.
+  The latter verified exact trace values, retained scroll/channel/window and
+  unchanged H5 bytes on a synthetic 63-epoch, two-cell fixture. In the
+  [matched incremental fast-path comparison](../../benchmarks/results/ui-retention-native-comparison-27a0117.json)
+  against `b504962` (which already retained documents), warm switch medians fell
+  90.1→55.0 ms and 73.7→57.3 ms: 38.9% and 22.2%, three samples per direction.
+  Renderer folder calls fell from two to zero; main-process health/authorization
+  checks still run. The receipt separately preserves 26 expected quit-phase 503
+  draining trace responses. This does not establish general waveform performance,
+  native scale performance or the full improvement over `ceaf776`.
+
+These `27a0117` results alone do not qualify later source, an installed package
+or a production release. Earlier failed and superseded diagnostic receipts remain intact.
+
+### Cache compatibility follow-up at `b026a29`
+
+The [version-first-open investigation](project-version-first-open-2026-10-14.md)
+now proves reuse of the original sealed source/native/typed caches across the
+published 0.1.12 testing-prerelease upgrade on an owned 63-epoch fixture, with
+unchanged scientific hashes/stats and exact dual-response trace values. It does
+not demonstrate a cold-start speedup: first upgraded readiness remained 63.049 s,
+and a same-version fresh stage reproduced 62.253 s versus 12.560 s on reopen
+without rebuilding. The finer startup cause remains unresolved.
+
+The [current core gate](../../benchmarks/results/ui-cache-compatible-b026a29-core/benchmark.json)
+passed in 15.724 s and the [pinned million-epoch comparison](../../benchmarks/results/ui-cache-compatible-b026a29-pinned/comparison.json)
+passed without review flags. The [comparison against previous candidate
+`79449da`](../../benchmarks/results/ui-cache-compatible-b026a29-previous/comparison.json)
+also passed both million-epoch lanes without review flags. Neither comparison
+required a repeat. The 102 scoped metadata/compatibility checks, full architecture
+check and packaged-source closure check also passed.
+These unpackaged native-fixture and synthetic regression checks do not qualify
+an installed release or establish general cold-start/waveform performance.

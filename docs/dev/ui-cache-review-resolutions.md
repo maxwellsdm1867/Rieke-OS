@@ -12,3 +12,9 @@
 8. **Eviction:** begin with a small deterministic working set (three project contents, eight destinations) and preserve dirty/busy or uncheckpointed state above a soft cap. Desktop eviction requires successful existing draft flush; oversize/failed saves cannot cause silent data loss. Destinations must retain required filters/scroll/zoom/draft state or be kept resident. Scope/actor changes remain publication fences.
 
 The core user outcome remains immediate unchanged navigation, preserving the last screen, and disk-backed restoration after restart. Full cold scientific initialization is not eliminated by a saved presentation. Refresh after committed changes updates affected values without destroying the live view. Existing source verification, action leases, frozen membership and accepted-operation recovery remain authoritative.
+
+The later [first-open investigation](project-version-first-open-2026-10-14.md)
+implements a separately reviewed exact-vector projection compatibility decision
+for the 0.1.12 testing-prerelease transition. It preserves the original sealed
+cache without relaxing scientific admission. It does not eliminate the measured
+first-use startup delay, which also occurred with identical code and cache hits.

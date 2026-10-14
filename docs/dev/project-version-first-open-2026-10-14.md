@@ -5,10 +5,15 @@ an existing project in a new Disco version. This audit uses only owned disposabl
 projects, staged builds and an isolated HOME/profile. The installed app and real
 scientific projects are unchanged.
 
+The compatibility fix now preserves the original sealed cache across the tested
+upgrade. It does **not** demonstrate a cold-start speedup: the first upgraded open
+still took about 63 seconds, and a same-version fresh-stage experiment reproduced
+the long delay without a cache rebuild.
+
 ## Completed pre-change native experiment
 
 The complete four-process sequence ran old `add33d153ae8f533d5c4a68c50690764323c4336`
-(released 0.1.12) to candidate `79449da`. The candidate's production bytes match
+(published 0.1.12 testing prerelease) to candidate `79449da`. The candidate's production bytes match
 the previously qualified local UI candidate `27a0117`; intervening commits fix
 only this experiment's driver. The same owned project, profile, paths, source
 records and cache remain in place throughout old populate → old reopen → new
@@ -86,12 +91,85 @@ metadata signatures, and final publication checks are unchanged. Compatible
 opening reads the original generation under its original key and seal; it never
 renames, reseals or relabels existing cache files.
 
-Source review approved the exact draft vector and integration. The architecture check and packaged-source closure check pass, along with 102
-resolver, refresh, projection, native-index, object and typed-index checks, including each owner
+Source review approved the exact vector and integration. The architecture and
+packaged-source closure checks pass, along with 102 resolver, refresh, projection,
+native-index, object and typed-index checks, including each owner
 and resolver mutation, malformed receipts, original-seal reopening without H5
 walk/projection decode/index rebuild, and semantic equality to a forced fresh
 build while SQL admission still runs. Equivalent-builder unit tests are not
 historical-cache proof; the staged native upgrade supplies that separate evidence.
 
-Post-change native upgrade measurements and required core/million gates are pending.
-No cache-compatibility speedup, installed build or release qualification is claimed.
+## Completed compatible-upgrade experiment
+
+The [post-change four-process receipt](../../benchmarks/results/ui-version-first-open-b026a29-compatible/receipt.json)
+binds old `add33d1` to `b026a29db869d6cca962d53aa0260c1ed1f59f0d`.
+The [staged contract witness](../../benchmarks/results/ui-version-first-open-b026a29-staged-contracts.json)
+checks the staged resolver/receipt bytes and the unchanged upgrade harness.
+Old populate, old reopen, first upgraded open and new reopen all passed their
+membership/identity checks and exited normally with code 0.
+
+| Phase | Launch to data ready | Launch to usable Overview | Source projection | Native/typed indexes |
+| --- | ---: | ---: | --- | --- |
+| Old reopen | 11.401 s | 11.601 s | 1 hit, 0 rebuilds | Reopened |
+| First upgraded open | 63.049 s | 63.447 s | 1 hit, 0 rebuilds | Reopened original generation |
+| New reopen | 13.303 s | 13.500 s | 1 hit, 0 rebuilds | Reopened original generation |
+
+The [cache proof](../../benchmarks/results/ui-version-first-open-b026a29-compatible/cache-compatibility-proof.json)
+confirms that source-projection files, native/typed SQLite indexes, seals and
+published-generation records kept their original names and SHA256 hashes through
+both new-version phases. Nothing was renamed or resealed. The separate passive
+[scientific stat witness](../../benchmarks/results/ui-version-first-open-b026a29-compatible/scientific-stat-witness.json)
+confirms unchanged original/managed H5 and all three imported metadata files,
+including hashes, device/inode, size, mtime and ctime. Exact 63-epoch/two-cell
+membership and protocol identity remain checked against the original project.
+
+A separate [dual-response trace check](../../benchmarks/results/ui-version-first-open-b026a29-traces/receipt.json)
+passed after the four timing phases: Amp1 and Amp2 each returned all 127 expected
+values at start 17, with exact stream identity, units and sample rate. This used
+authenticated renderer requests to the native trace API; it is not another native
+channel-button UI audit and its time is excluded from the upgrade measurements.
+
+There is **no demonstrated cold-latency improvement**. With source rebuild time
+zero, the first upgraded refresh still took 49.608 s, including 41.757 s in the
+broad `sql_queries` metric. The same-stage reopen spent 8.498 s in refresh and
+6.495 s in that metric. Cache preservation is established independently of this
+remaining delay.
+
+## Same-version fresh-stage diagnostic
+
+The [stage-path pair](../../benchmarks/results/ui-version-first-open-b026a29-stage-path-pair/receipt.json)
+then opened the already candidate-warmed project from a fresh stage of the same
+`b026a29` source, followed by a second process from that stage. The prior and fresh
+stages contained 111 Python application files with identical relative paths and
+SHA256 bytes. No version change or source/index rebuild occurred in either phase.
+
+| Phase | Launch to data ready | Launch to usable Overview | Refresh | Broad `sql_queries` metric |
+| --- | ---: | ---: | ---: | ---: |
+| Fresh-stage first open | 62.253 s | 62.415 s | 47.835 s | 40.414 s |
+| Same-stage reopen | 12.560 s | 12.746 s | 8.038 s | 6.114 s |
+
+Both phases reused the original generation, preserved cache/scientific files and
+exact membership, and exited normally. This reproduces the long delay without a
+version change or projection rebuild. It does not isolate the cause: finer SQL,
+Python import/schema declaration and filesystem costs remain unresolved, while OS
+caches and memory pressure were uncontrolled. This was an unprofiled experiment.
+`PYTHONPROFILEIMPORTTIME` was omitted because the unchanged supervisor filters it;
+no environment allowlist or loader hook was changed to obtain profiling output.
+
+## Current validation boundary
+
+At `b026a29`, the [core gate](../../benchmarks/results/ui-cache-compatible-b026a29-core/benchmark.json)
+completed in 15.724 s with no validation errors and cleaned fixtures. The
+[pinned million-epoch comparison](../../benchmarks/results/ui-cache-compatible-b026a29-pinned/comparison.json)
+passed with `review_required: []`. The [comparison against previous candidate
+`79449da`](../../benchmarks/results/ui-cache-compatible-b026a29-previous/comparison.json)
+also passed both registered million-epoch lanes with `review_required: []`.
+Both comparisons used the same current harness and permanent fixture serially;
+all exact-result/refusal checks passed. Neither required a repeat. These query
+and correctness gates do not establish a native startup speedup.
+
+These are owned synthetic-project, unpackaged native-development observations.
+They do not qualify an installed application, real-data scale or a production
+release. Renderer request coverage starts after launch resolves and excludes
+main-process authorization traffic. All pre-change and failed evidence remains
+preserved, and no general startup or waveform speedup is claimed.
