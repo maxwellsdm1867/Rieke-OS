@@ -109,19 +109,24 @@ class ProjectData:
     def _cleanup_partial(self):
         app = self.partial
         if app:
-            inbox = app.extensions.get('h5_inbox')
-            if inbox:
-                inbox.stop()
-            close_traces = app.extensions.get('close_trace_workers')
-            if close_traces:
-                close_traces()
-            scheduler = app.extensions.get('backup_scheduler')
-            if scheduler:
-                scheduler.close(flush=False)
-            service = app.extensions.get('workspace_service')
-            if service:
-                with contextlib.suppress(Exception):
-                    service.dj.conn().close()
+            try:
+                inbox = app.extensions.get('h5_inbox')
+                if inbox:
+                    inbox.stop()
+                close_traces = app.extensions.get('close_trace_workers')
+                if close_traces:
+                    close_traces()
+                scheduler = app.extensions.get('backup_scheduler')
+                if scheduler:
+                    scheduler.close(flush=False)
+                service = app.extensions.get('workspace_service')
+                if service:
+                    with contextlib.suppress(Exception):
+                        service.dj.conn().close()
+            finally:
+                close_heap = app.extensions.get('close_project_heap')
+                if close_heap:
+                    close_heap()
         if self.attempted:
             self.cleanup_failed()
         self.partial = None

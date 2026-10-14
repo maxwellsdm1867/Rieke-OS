@@ -37,6 +37,16 @@ def inventory(runtime):
     return result
 
 
+def resource_difference(expected, actual):
+    """Bounded path evidence; all resource differences still fail verification."""
+    groups = {'added': sorted(actual.keys() - expected.keys()),
+              'removed': sorted(expected.keys() - actual.keys()),
+              'changed': sorted(name for name in expected.keys() & actual.keys()
+                                if expected[name] != actual[name])}
+    return {kind: {'count': len(paths), 'paths': paths[:20]}
+            for kind, paths in groups.items()}
+
+
 def native_audit(runtime):
     problems, binaries, minimum = [], 0, set()
     for path in sorted(runtime.rglob('*')):
@@ -127,7 +137,8 @@ def main():
     else:
         existing = json.loads((runtime / 'runtime-manifest.json').read_text())
         if existing['resources'] != manifest['resources']:
-            raise ValueError('Packaged resources differ from runtime manifest')
+            raise ValueError('Packaged resources differ from runtime manifest: ' +
+                             json.dumps(resource_difference(existing['resources'], manifest['resources']), sort_keys=True))
     print(json.dumps({'resources': len(manifest['resources']), **audit}, indent=2))
     if audit['problems']:
         raise SystemExit(1)

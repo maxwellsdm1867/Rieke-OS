@@ -491,6 +491,10 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
         command = ['node',str(ROOT/'benchmarks/workflow/browser.mjs'),'--source-root',str(source_root),
                    '--server-json',str(meta_path),'--output',str(output/'browser'),'--samples',str(samples),
                    '--profile',str(profile).lower(),'--module-timing',str(module_timing).lower()]
+        if smoke:
+            # Small-fixture compatibility checks must expose stale UI contracts
+            # before the million-row lane, not consume its ten-minute action waits.
+            command += ['--action-timeout-ms','30000','--setup-timeout-ms','30000']
         if browser_executable:
             command += ['--browser-executable',str(browser_executable)]
         browser,stream,deadline = execute_owned(command,output/'browser.log',cfg['max_browser_seconds'],cfg['max_rss_bytes'],browser_ids)
@@ -542,7 +546,8 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
         backend_cleanup = output/'server/cleanup.json'
         receipt['cleanup']['backend'] = json.loads(backend_cleanup.read_text()) if backend_cleanup.is_file() else {}
         if (not all(receipt['cleanup'][key] for key in ('browser_processes_closed','server_processes_closed'))
-                or not all(receipt['cleanup']['backend'].get(key) is True for key in ('server_closed','fixture_closed','instrumentation_restored'))):
+                or not all(receipt['cleanup']['backend'].get(key) is True for key in ('server_closed','fixture_closed','instrumentation_restored'))
+                or receipt['cleanup']['backend'].get('heap_closed', True) is not True):
             receipt['status'] = 'failed'
             receipt['cleanup_error'] = 'Owned cleanup incomplete or unverified'
         provenance_keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','module_timing','fixture')
@@ -577,7 +582,8 @@ def load_receipt(path):
         raise ValueError('Source/harness changed during measurement')
     cleanup = receipt.get('cleanup',{})
     if (cleanup.get('server_processes_closed') is not True or cleanup.get('browser_processes_closed') is not True
-            or any(cleanup.get('backend',{}).get(key) is not True for key in ('server_closed','fixture_closed','instrumentation_restored'))):
+            or any(cleanup.get('backend',{}).get(key) is not True for key in ('server_closed','fixture_closed','instrumentation_restored'))
+            or cleanup.get('backend',{}).get('heap_closed', True) is not True):
         raise ValueError('Unverified cleanup')
     for name,digest in receipt.get('evidence_sha256',{}).items():
         file = path.parent/name

@@ -15,6 +15,7 @@ from pathlib import Path
 import signal
 import sys
 import threading
+import time
 
 
 def uid(i):
@@ -239,6 +240,7 @@ def build(source, output, epochs, protocol_epochs=None):
             'incoming_epochs': [uid(i) for i in range(incoming_start, epochs)],
             'date_label': original['date'], 'cell_label': 'Cell 0',
             'trace_expected': {'epoch_uuid': uid(0), 'stream_uuid': stream, 'start': 0, 'count': 10000, 'sample_rate': 10000, 'units': 'pA', 'values_first': 0, 'values_last': 9999},
+            'trace_streams': copy.deepcopy(service.rows[uid(0)]['streams']),
             'trace_stream': stream, 'trace_samples': 10000, 'trace_rate_hz': 10000,
             'qualifying_scale': epochs == 1_000_000, 'fixture': 'workflow-owned-v2',
             'admissions': ['transactional SQL doubles', 'synthetic metadata index catalog/projection; production predicate evaluator', 'source verification double'],
@@ -258,10 +260,20 @@ def main():
     if args.protocol_epochs is not None and not 200 <= args.protocol_epochs <= args.epochs:
         parser.error('protocol-epochs must be 200..epochs')
     args.output.mkdir(parents=True, exist_ok=False)
-    fixture = server = restore = None
-    cleanup = {'server_closed': False, 'fixture_closed': False, 'instrumentation_restored': False}
+    fixture = server = restore = heap = None
+    cleanup = {'server_closed': False, 'fixture_closed': False, 'instrumentation_restored': False,
+               'heap_closed': True}
     try:
         fixture, app, meta = build(args.source_root.resolve(), args.output.resolve(), args.epochs, args.protocol_epochs)
+        # Exercise the same explicit dedicated-worker startup policy as desktop.
+        # Older source revisions have no process-heap owner and keep their policy.
+        if (args.source_root.resolve() / 'python/workspace_process_heap.py').is_file():
+            from workspace_process_heap import install as install_project_heap
+            heap_started = time.perf_counter()
+            heap = install_project_heap(app)
+            cleanup['heap_closed'] = False
+            meta['process_heap'] = {'policy': 'dedicated-project-v1',
+                                    'startup_ms': (time.perf_counter() - heap_started) * 1000}
         from backend_timing import install
         from werkzeug.serving import make_server
         restore = install(app, args.output, args.source_root)
@@ -278,6 +290,7 @@ def main():
             ('server_closed', server.server_close if server else None),
             ('instrumentation_restored', restore),
             ('fixture_closed', fixture.doCleanups if fixture else None),
+            ('heap_closed', heap.close if heap else None),
         ):
             if operation:
                 try:

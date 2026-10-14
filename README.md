@@ -120,6 +120,9 @@ the [physical module guide](ARCHITECTURE.md#module-guide), and
 or [tooling navigation](tools/AGENTS.md) for the area you are changing. Local guides
 own the detailed contract, executable examples and scoped checks.
 
+See the [CI failure audit](docs/dev/ci-failure-audit-2026-10-13.md) for observed
+failures, their repairs, retained evidence and remaining qualification limits.
+
 The [module ledger](docs/architecture/core-module-ledger.md) and its
 [frontend](docs/architecture/core-module-ledger.md#frontend-finite-abc-current-path-composition)
 and [backend](docs/architecture/core-module-ledger.md#backend-finite-current-path-composition)
