@@ -881,7 +881,7 @@
       ]
     },
     "src/epoch-browser/ui/InspectionCellTree.jsx": {
-      "fingerprint": "6d9dbbe7048b356619a9f5002adb7d47ea33eaa4993f8873fa5e08445c00978d",
+      "fingerprint": "d7d4d849304e65f35d2b2cf283c33422bdef20e19bc7074dabb3d15bccd570f2",
       "sites": [
         {
           "owner": "CellEpochPage",
@@ -935,16 +935,17 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Independent review 2026-10-14: preserve exact-key list identity through locator/offset reads; disclosure no longer navigates. Effect sites unchanged; fresh receipts still gate writes.",
       "tests": [
         "src/inspectionTreeLifecycle.test.js",
         "src/hierarchyRetention.test.js",
         "src/treeTagCoverageWorkflow.test.js",
-        "src/treeCombinedPresentation.test.js"
+        "src/treeCombinedPresentation.test.js",
+        "src/inspectorNavigationLifecycle.test.js"
       ]
     },
     "src/epoch-browser/ui/Inspector.jsx": {
-      "fingerprint": "cb157a9db02db9d90e14f19fe2884ed47f76cdc80664fcf39be87eb04fad3d46",
+      "fingerprint": "fbc3b9c38a59238e1786ad8c604eaeb10da2a3d7524066f9ae12c3bd6f0a056e",
       "sites": [
         {
           "owner": "InspectorContent",
@@ -1068,7 +1069,7 @@
         }
       ],
       "lifetime": "semantic-highlights + reconnecting-read-authority",
-      "reason": "Project/tree-intent/design/tree-mode identity resets highlights via shared helper. Separate committed highlight owner still retires and reconnects. Existing request leases, receipt clearing, resize listeners and current page/navigation fences remain ordinary effects.",
+      "reason": "Project/tree-intent/design/tree-mode identity resets highlights via shared helper. Separate committed highlight owner still retires and reconnects. Existing request leases, receipt clearing, resize listeners and current page/navigation fences remain ordinary effects. Independent review 2026-10-14: preserve exact-key list identity through locator/offset reads; disclosure no longer navigates. Effect sites unchanged; fresh receipts still gate writes.",
       "tests": [
         "src/inspectorNavigationLifecycle.test.js",
         "src/protocolBrowseEntry.test.js",

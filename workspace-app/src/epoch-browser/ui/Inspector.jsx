@@ -162,9 +162,11 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   // A navigation request does not change the membership of already loaded cell
   // pages. Retain their read authority only inside this exact committed scope.
   // Save, range-selection and inclusion controls still require cellsReady.
-  const navigatingSameScope=!!pendingNavigation&&rows.loading&&!rows.error&&!annotationState.dirty&&confirmedCells.current?.key===navigationReadKey;
+  // Anchor resolution starts an offset read after pendingNavigation clears.
+  // Keep the exact list identity through that handoff; writes still need cellsReady.
+  const navigatingSameScope=!readPaused&&rows.loading&&!rows.error&&!annotationState.dirty&&confirmedCells.current?.key===navigationReadKey;
   const navigationReady=cellsReady||navigatingSameScope;
-  const listQueryRevision=navigatingSameScope?confirmedCells.current.queryRevision:(queryRevision??(preserveCandidateView&&protocol.query_revision===readContext.candidate_scope_revision?protocol.query_revision:undefined));
+  const listQueryRevision=queryRevision??(navigatingSameScope?confirmedCells.current.queryRevision:(preserveCandidateView&&protocol.query_revision===readContext.candidate_scope_revision?protocol.query_revision:undefined));
 
   const [treeReceipt,setTreeReceipt]=useState(null);
   const treePage=treeReceipt?.data;

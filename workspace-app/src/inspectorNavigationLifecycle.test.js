@@ -295,3 +295,51 @@ test('same-scope Activity return retains actual Inspector highlights while chang
   await h.render({...incoming,revision:1});assert.deepEqual(h.viewer.treePane.listProps.highlightedEpochs,[]);
  }finally{await h.close();}
 });
+
+test('anchor-to-offset handoff preserves loaded cell rows and query identity without list rereads',async()=>{
+ const h=await createWorkflowHarness({total:138,liveMetadata:false,delay:10}),held=[];
+ try{
+  const Inspector=await h.component('Inspector');
+  await h.mount(Inspector,{...props,protocol:{...props.protocol,query_revision:'query-0'},initialEpochUuid:'epoch-0'});
+  await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);await openCell(h);
+  await h.act(()=>h.root.findAllByType('button').find(n=>n.props.children==='Load more epochs').props.onClick());
+  await h.waitFor(()=>!!row(h,70));
+  const node=row(h,70),source=h.viewer.treePane.listProps.source,before=h.fixture.requests.length;
+  h.fixture.respond=(url,options,result)=>url.pathname.endsWith('/epochs')&&!url.searchParams.has('cell_uuid')&&url.searchParams.get('offset')==='60'?new Promise(resolve=>held.push(()=>resolve(result()))):result();
+  await h.act(()=>node.props.onClick({}));await h.waitFor(()=>held.length>0);
+  assert.deepEqual(h.viewer.treePane.listProps.source,source);
+  assert.equal(row(h,70),node);
+  assert.equal(h.viewer.treePane.listProps.navigationDisabled,false,'read navigation stays available');
+  assert.equal(h.viewer.treePane.listProps.disabled,true,'writes wait for fresh offset receipt');
+  assert.equal(h.fixture.requests.slice(before).filter(r=>r.path.includes('cell_uuid=')).length,0);
+  h.fixture.respond=(url,options,result)=>result();await h.act(()=>held.splice(0).forEach(release=>release()));
+  await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);
+  for(const ordinal of [71,69,70]){await h.act(()=>row(h,ordinal).props.onClick({}));assert.equal(row(h,70),node);}
+  assert.equal(h.viewer.epoch.epoch_uuid,'epoch-69');
+  await h.act(()=>h.viewer.navigation.onMove(1));
+  assert.equal(h.viewer.epoch.epoch_uuid,'epoch-70');assert.equal(row(h,70),node);
+  await h.act(()=>h.viewer.navigation.onMove(-1));
+  assert.equal(h.viewer.epoch.epoch_uuid,'epoch-69');
+  assert.equal(h.fixture.requests.slice(before).filter(r=>r.path.includes('cell_uuid=')).length,0);
+ }finally{for(const release of held)release();await h.close();}
+});
+
+test('browse cell expansion preserves inspected epoch and existing rows, fetching only the opened cell',async()=>{
+ const h=await createWorkflowHarness({total:700,liveMetadata:false,delay:10});
+ try{
+  const Inspector=await h.component('Inspector');await h.mount(Inspector,{...props,protocol:{...props.protocol,query_revision:'query-0'},initialEpochUuid:'epoch-0'});
+  await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);await openCell(h);
+  await h.act(()=>row(h,9).props.onClick({}));const node=row(h,9),before=h.fixture.requests.length;
+  const cell=h.root.findAllByType('details').filter(n=>n.props.className==='cell-tree-cell')[1];
+  const summary=cell.findByType('summary');
+  assert.equal(summary.props.onClick,undefined,'browsing disclosure must not inspect first epoch');
+  await h.act(()=>cell.props.onToggle({currentTarget:{open:true}}));
+  await h.waitFor(()=>h.fixture.requests.slice(before).some(r=>r.path.includes('cell_uuid=cell-1')&&r.completed));
+  assert.equal(h.viewer.epoch.epoch_uuid,'epoch-8');assert.equal(row(h,9),node);
+  assert.ok(h.fixture.requests.slice(before).every(r=>r.path.includes('cell_uuid=cell-1')));
+  await h.act(()=>cell.props.onToggle({currentTarget:{open:false}}));
+  await h.act(()=>cell.props.onToggle({currentTarget:{open:true}}));await h.settle(40);
+  assert.equal(h.viewer.epoch.epoch_uuid,'epoch-8');assert.equal(row(h,9),node);
+  assert.ok(h.fixture.requests.slice(before).every(r=>r.path.includes('cell_uuid=cell-1')));
+ }finally{await h.close();}
+});

@@ -144,3 +144,15 @@ Legacy container rules apply only to non-resizable layouts. Sizing examples live
 in `inspectorInteraction.test.js`; the actual UI audit checks compact metadata
 position and trace Apply hit targets. This is a layout correction, not a change
 to response samples or presentation lifetime.
+
+## Stable inspection navigation
+
+Cell disclosure expands or collapses its rows without selecting the first epoch.
+Explicit epoch clicks own inspection; cell tag actions remain separate. During
+an exact-owner, exact-navigation-key anchor-to-offset handoff, retain the confirmed
+list query identity while the offset request is pending. Prefer any current returned
+query revision; owner/scope/revision changes and errors retire this reuse. Read-only
+navigation may continue, but page/cell readiness still gates writes. Existing open
+cell pages must remain mounted; opening another cell reads only that cell. Collapse
+retires that branch’s reads; reopening restores its frontier with fresh bounded reads.
+Regression examples are in `../inspectorNavigationLifecycle.test.js`.
