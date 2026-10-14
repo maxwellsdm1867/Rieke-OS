@@ -4947,8 +4947,8 @@
       },
       {
         "file": "python/disco/navigation/tree_pages.py",
-        "file_sha256": "8c7e2c2c399541f81c28baff869803e3429e0db5ebef2c5c92df72261dc068c3",
-        "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Protocol-local cache follow-up: captured method targets and fallback checks are unchanged; fingerprint dependencies and grouping reservations are cohort-scoped. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md.",
+        "file_sha256": "15f0c384e9b7c22488afb03d9c1c935a0c533f56897d286e97b0a74376ec881a",
+        "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Protocol-local cache follow-up: captured method targets and fallback checks are unchanged; fingerprint dependencies and grouping reservations are cohort-scoped. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Source/protocol cache retention review: exact method captures and observer targets remain unchanged; one shared bounded cache retains both navigation modes with original freshness checks.",
         "sites": [
           {
             "selector": "Call:2",
@@ -5157,7 +5157,7 @@
               {
                 "module": "disco.navigation.tree_pages",
                 "file": "python/disco/navigation/tree_pages.py",
-                "file_sha256": "8c7e2c2c399541f81c28baff869803e3429e0db5ebef2c5c92df72261dc068c3",
+                "file_sha256": "15f0c384e9b7c22488afb03d9c1c935a0c533f56897d286e97b0a74376ec881a",
                 "contract_id": "backend-navigation"
               }
             ]
