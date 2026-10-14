@@ -1,3 +1,4 @@
+import {predicateIdentity} from '../../typed-query/predicateIdentity.js';
 import {normalizeTraceViewPreference} from '../../traces/traceViewPreference.jsx';
 import EpochViewer from './EpochViewer.jsx';
 import {NavigationLoadingProvider} from '../../components/NavigationLoading.jsx';
@@ -14,7 +15,7 @@ import './MatchingEpochs.css';
 import AnnotationTags from '../../annotations/ui/AnnotationTags.jsx';
 import TagExchangeControls from '../../annotations/ui/TagExchangeControls.jsx';
 
-function MatchingEpochsContent({designMode=false,builder=null,columnTree=null,toolbarTarget=null,viewFilters,onViewFilters,filterRevision,filterDisabled=false,predicate,splits,preview,onRefresh,session,onSession,tracePreference:providedTracePreference,onTracePreference,onTagFilter,onAnnotationsChanged,onDesign,designDisabled=false,onExport,exportDisabled=false,actions=[],inclusionForEpoch,onToggleInclusion,onQC}){
+function MatchingEpochsContent({projectId=null,designMode=false,builder=null,columnTree=null,toolbarTarget=null,viewFilters,onViewFilters,filterRevision,filterDisabled=false,predicate,splits,preview,onRefresh,session,onSession,tracePreference:providedTracePreference,onTracePreference,onTagFilter,onAnnotationsChanged,onDesign,designDisabled=false,onExport,exportDisabled=false,actions=[],inclusionForEpoch,onToggleInclusion,onQC}){
   const [localTracePreference,setLocalTracePreference]=useState(()=>normalizeTraceViewPreference(session?.tracePreference));
   const tracePreference=providedTracePreference??localTracePreference;
   const setTracePreference=onTracePreference??setLocalTracePreference;
@@ -22,6 +23,8 @@ function MatchingEpochsContent({designMode=false,builder=null,columnTree=null,to
   const saved=useRef(session?.revision===preview.tree_revision?session:null).current;
   const [focused,setFocused]=useState(saved?.focused||null),[request,setRequest]=useState(saved?.focused?{anchorUuid:saved.focused}:{offset:0});
   const [cells,setCells]=useState(null),[targets,setTargets]=useState(saved?.targets||[]);
+  const [listNavigation,setListNavigation]=useState(saved?.listNavigation||null);
+  const listScope=predicateIdentity([projectId,predicate,splits,preview.tree_revision]);
   const [annotationDrafts,setAnnotationDrafts]=useState(session?.annotationDrafts||{});
   const rememberAnnotationDraft=useCallback((key,value)=>setAnnotationDrafts(previous=>{if(previous[key]===value)return previous;const next={...previous};if(value)next[key]=value;else delete next[key];return next;}),[]);
   const [collapseRequest,setCollapseRequest]=useState(0);
@@ -43,7 +46,7 @@ function MatchingEpochsContent({designMode=false,builder=null,columnTree=null,to
     const target=navigationIntent.current&&epochIntentAt(navigationIntent.current.index,page.data.total);
     if(target){navigationIntent.current=target;const uuid=epochAtIntent(page.data,target);if(uuid)setFocused(uuid);else setRequest({offset:target.offset});}
   },[page.data,currentPage]);
-  useEffect(()=>{callbacks.current.onSession?.({tracePreference,revision:preview.tree_revision,offset,focused,treeOpen,treeMode,targets,annotationDrafts});},[tracePreference,preview.tree_revision,offset,focused,treeOpen,treeMode,targets,annotationDrafts]);
+  useEffect(()=>{callbacks.current.onSession?.({tracePreference,revision:preview.tree_revision,offset,focused,treeOpen,treeMode,targets,listNavigation,annotationDrafts});},[tracePreference,preview.tree_revision,offset,focused,treeOpen,treeMode,targets,listNavigation,annotationDrafts]);
   const inPage=currentPage&&page.data.epochs.some(row=>row.epoch_uuid===focused);
   const detailRevision=`${preview.tree_revision}:${annotationRevision}`;
   const inspection=useEpochInspection({focused,path:inPage?`/epochs/${focused}`:null,row:inPage?page.data.epochs.find(row=>row.epoch_uuid===focused):null,scope:JSON.stringify([source,filterRevision]),revision:detailRevision,reloadRow:page.reload});
@@ -70,7 +73,7 @@ function MatchingEpochsContent({designMode=false,builder=null,columnTree=null,to
     {page.error&&<div className="mx-operation-error" role="alert">{page.error}<button onClick={onRefresh}>Refresh predicate results</button></div>}
 </>}
     layout={{layoutRef:layout,sizes:pane,treeOpen,metadataOpen,onResize:(name,value)=>setSizes(old=>({...old,[name]:value}))}}
-    treePane={{treeMode:treeMode,onTreeMode:value=>{setTreeMode(value);if(value)setSizes(old=>({...old,tree:Math.max(420,pane.tree)}));},onDesign:onDesign,designDisabled:designDisabled,collapseRequest:collapseRequest,onCollapse:()=>setCollapseRequest(value=>value+1),treeProps:{onAnnotationsChanged:annotationsChanged,actionsDisabled:filterDisabled,inclusionForEpoch,onToggleInclusion,cells,selectedEpochs:targets,setSelectedEpochs:setTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{selectEpoch(epoch.epoch_uuid);setTargets([]);toggleMetadata(true);setCellTagRequest((cells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},predicate,splits,revision:preview.tree_revision,expectedRevision:preview.tree_revision,onRefreshPreview:onRefresh,selected:focused,onSelectEpoch:selectEpoch},listStatus:{data:cells,loading:!cells&&page.loading,error:page.error,retry:onRefresh},listProps:{revealEpoch:!page.loading&&!page.error?page.data?.epochs?.find(row=>row.epoch_uuid===focused):null,inclusionForEpoch,onToggleInclusion,cells:cells||[],source,revision:preview.tree_revision,focused:cellTagRequest?null:focused,onFocus:selectEpoch,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cell,epoch)=>{selectEpoch(epoch.epoch_uuid);setTargets([]);toggleMetadata(true);setCellTagRequest(cell);},targets,setTargets,disabled:!!page.error||filterDisabled}}} resource={{...epoch,blocked:!!page.error,loading:detailLoading,retry:epoch.reload}}
+    treePane={{treeMode:treeMode,onTreeMode:value=>{setTreeMode(value);if(value)setSizes(old=>({...old,tree:Math.max(420,pane.tree)}));},onDesign:onDesign,designDisabled:designDisabled,collapseRequest:collapseRequest,onCollapse:()=>setCollapseRequest(value=>value+1),treeProps:{onAnnotationsChanged:annotationsChanged,actionsDisabled:filterDisabled,inclusionForEpoch,onToggleInclusion,cells,selectedEpochs:targets,setSelectedEpochs:setTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{selectEpoch(epoch.epoch_uuid);setTargets([]);toggleMetadata(true);setCellTagRequest((cells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},predicate,splits,revision:preview.tree_revision,expectedRevision:preview.tree_revision,onRefreshPreview:onRefresh,selected:focused,onSelectEpoch:selectEpoch},listStatus:{data:cells,loading:!cells&&page.loading,error:page.error,retry:onRefresh},listProps:{navigationScope:listScope,initialNavigation:listNavigation,onNavigationChange:setListNavigation,revealEpoch:!page.loading&&!page.error?page.data?.epochs?.find(row=>row.epoch_uuid===focused):null,inclusionForEpoch,onToggleInclusion,cells:cells||[],source,revision:preview.tree_revision,focused:cellTagRequest?null:focused,onFocus:selectEpoch,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cell,epoch)=>{selectEpoch(epoch.epoch_uuid);setTargets([]);toggleMetadata(true);setCellTagRequest(cell);},targets,setTargets,disabled:!!page.error||filterDisabled}}} resource={{...epoch,blocked:!!page.error,loading:detailLoading,retry:epoch.reload}}
     epoch={detail&&inclusionForEpoch?inclusionForEpoch(detail):detail} targets={targets}
     navigation={{position:index<0?-1:offset+index,total:page.data?.total||0,loading:page.loading,onMove:move}}
     traceRevision={detailRevision} detailDisabled={!currentPage||epoch.loading} onQC={onQC}
