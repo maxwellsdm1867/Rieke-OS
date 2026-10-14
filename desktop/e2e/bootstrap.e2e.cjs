@@ -1,4 +1,5 @@
 'use strict';
+const {retainedPage,showSidebar}=require('./retained-test-page.cjs');
 // Real downloaded app UI, installer copy/seal/quarantine checks and installed
 // startup. Only Launch Services dispatch is stubbed in this disposable clone;
 // it must never target the user's running application or profile.
@@ -81,7 +82,7 @@ execFile[require('node:util').promisify.custom] = async (file, args) => {
   const exited=new Promise(resolve=>application.process().once('exit',resolve));await page.getByRole('button',{name:'Install and Open',exact:true}).click();assert.equal(await Promise.race([exited,new Promise((_r,reject)=>setTimeout(()=>reject(new Error('Clean installer did not finish')),420000).unref())]),0);
   assert.deepEqual(JSON.parse(await fs.readFile(cleanHandoff,'utf8')).args,['-n','-a',cleanTarget,'--env',`HOME=${fixture.home}`,'--args',`--user-data-dir=${fixture.userData}`]);
   assert.equal(await run('/usr/bin/xattr',['-p','com.apple.quarantine',cleanTarget]).then(()=>true,error=>{if(error.code===1)return false;throw error;}),false,'This startup fixture must never carry quarantine');
-  fixture.bundle=cleanTarget;fixture.executable=path.join(cleanTarget,'Contents/MacOS/Disco');({application,page}=await launch(fixture));
+  fixture.bundle=cleanTarget;fixture.executable=path.join(cleanTarget,'Contents/MacOS/Disco');({application,page}=await launch(fixture));page=await retainedPage(application,{heading:'Your projects'});
   await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});assert.equal((await page.evaluate(()=>window.riekeDesktop.status())).channel,'unsigned-testing');
   await gracefulQuit(application,page);await verifyResources(path.join(cleanTarget,'Contents/Resources/runtime'),manifest.resources);return {manual_macos_approval_unqualified:true,separate_never_quarantined_fixture:true,real_installed_startup:true,base_profile_restored:true,native_orderly_exit:true,runtime_immutable:true};
  });

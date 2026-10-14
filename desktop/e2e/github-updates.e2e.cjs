@@ -1,4 +1,5 @@
 'use strict';
+const {retainedPage,showSidebar}=require('./retained-test-page.cjs');
 // Only the official GitHub HTTPS transport is mapped to a loopback asset server
 // inside an isolated test clone. Descriptor, ZIP, candidate/runtime validation,
 // UI, draft/writer drain and ordinary Quit all run the packaged implementation.
@@ -48,7 +49,7 @@ async function main(){
  await run('/usr/libexec/PlistBuddy',['-c',`Set :ElectronAsarIntegrity:Resources/app.asar:hash ${createHash('sha256').update(asar.getRawHeader(archive).headerString).digest('hex')}`,plist]);
  await run('/usr/bin/codesign',['--force','--sign','-','--entitlements',path.resolve(__dirname,'../entitlements.mac.plist'),fixture.bundle]);await run('/usr/bin/codesign',['--verify','--deep','--strict',fixture.bundle]);
  await verifyResources(runtime,manifest.resources);receipt.test_current_version=priorVersion;
- ({application,page}=await launch(fixture));page.on('pageerror',error=>receipt.failures.push({name:'renderer-pageerror',message:error.message}));
+ ({application,page}=await launch(fixture));page=await retainedPage(application,{heading:'Your projects'});page.on('pageerror',error=>receipt.failures.push({name:'renderer-pageerror',message:error.message}));
  await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});
  await check('background official release metadata creates a quiet version notice without downloading',async()=>{
   await page.waitForFunction(version=>[...document.querySelectorAll('.app-update-badge')].some(node=>node.textContent===`v${version}`),candidateVersion,{timeout:30000});

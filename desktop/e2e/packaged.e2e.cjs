@@ -1,4 +1,5 @@
 'use strict';
+const {retainedPage,showSidebar}=require('./retained-test-page.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -60,6 +61,7 @@ async function saveNextOwnedDownload(filename, click) {
   return result;
 }
 async function chooseNewProjectFolder(form, name) {
+  await chooseTestProfile();
   const selected = form.locator('#new-project-directory');
   assert.equal(await selected.getAttribute('readonly'), '');
   await application.evaluate(({dialog}, directory) => {dialog.showOpenDialog = async () => ({canceled:false,filePaths:[directory]});}, fixture.projects);
@@ -90,7 +92,7 @@ async function verifyHeaderIcon(selector, headerSelector, screenName) {
       }, {selector, headerSelector});
       await page.screenshot({path: path.join(output, `${screenName}-${width}.png`)});
       assert.equal(geometry.source, '/disco-icon.png'); assert.ok(geometry.naturalWidth > 0);
-      const expectedSize = selector === '.onboarding-app-icon' ? 48 : 32;
+      const expectedSize = selector === '.onboarding-app-icon' ? 48 : 42;
       assert.equal(geometry.icon.width, expectedSize); assert.equal(geometry.icon.height, expectedSize);
       assert.ok(geometry.icon.left >= geometry.header.left && geometry.icon.right <= geometry.header.right + 1 && geometry.icon.right <= width + 1,
         'App icon must remain inside its header and viewport: ' + JSON.stringify(geometry));
@@ -114,6 +116,7 @@ async function check(name, fn) {
 }
 async function start(heading = 'Your projects') {
   const launched = await launch(fixture); ({application, page} = launched);
+  page=await retainedPage(application,{heading});
   page.on('pageerror', error => receipt.failures.push({name: 'renderer-pageerror', message: error.message}));
   await page.getByRole('heading', {name: heading, exact: true}).waitFor({timeout: 90000});
   return launched.actual;
@@ -131,7 +134,7 @@ async function main() {
     () => verifyHeaderIcon('.onboarding-app-icon', '.project-onboarding>header', 'launcher-icon'));
   await check('renderer isolation, sandbox and CSP', async () => {
     const settings = await application.evaluate(({BrowserWindow}) => {
-      const prefs = BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences();
+      const prefs = (BrowserWindow.getAllWindows()[0].contentView.children.at(-1)?.webContents||BrowserWindow.getAllWindows()[0].webContents).getLastWebPreferences();
       return {contextIsolation: prefs.contextIsolation, sandbox: prefs.sandbox, nodeIntegration: prefs.nodeIntegration, webSecurity: prefs.webSecurity};
     });
     assert.deepEqual(settings, {contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true});
@@ -186,13 +189,13 @@ async function main() {
     const previous = page.url();
     try {
       await page.evaluate(url => {window.open(url); window.location.assign(url);}, target); await delay(600);
-      assert.equal(page.url(), previous); assert.equal(application.windows().length, 1); assert.equal(visits, 0);
+      assert.equal(page.url(), previous); assert.equal(await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().length), 1); assert.equal(visits, 0);
       const blocked = await page.evaluate(async url => {try {await fetch(url); return false;} catch {return true;}}, target); assert.equal(blocked, true);
       await page.evaluate(url => {const frame = document.createElement('iframe'); frame.src = url; document.body.append(frame);}, target); await delay(100); assert.equal(visits, 0);
       await page.evaluate(() => document.querySelectorAll('iframe').forEach(frame => frame.remove()));
       // Chromium reports the deliberately denied navigation to CDP before
       // Electron cancels it. Reset this test-created pending-navigation state.
-      await application.evaluate(({BrowserWindow}) => BrowserWindow.getAllWindows()[0].webContents.reload());
+      await application.evaluate(({BrowserWindow}) => (BrowserWindow.getAllWindows()[0].contentView.children.at(-1)?.webContents||BrowserWindow.getAllWindows()[0].webContents).reload());
       await page.getByRole('heading', {name: 'Your projects', exact: true}).waitFor({timeout: 15000});
     } finally { await new Promise(resolve => server.close(resolve)); }
   });
@@ -217,7 +220,7 @@ async function main() {
     const before = await ownedControl(fixture, 'health');
     const child = spawn(fixture.executable, [`--user-data-dir=${fixture.userData}`], {env: {...process.env, HOME: fixture.home, TMPDIR: fixture.root}, stdio: 'ignore'});
     const code = await Promise.race([new Promise(resolve => child.once('exit', resolve)), delay(10000).then(() => {throw new Error('Duplicate app did not exit');})]);
-    assert.equal(code, 0); assert.equal((await ownedControl(fixture, 'health')).pid, before.pid); assert.equal(application.windows().length, 1);
+    assert.equal(code, 0); assert.equal((await ownedControl(fixture, 'health')).pid, before.pid); assert.equal(await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().length), 1);
   });
   await check('corrupted saved view is visible, blocks overwrite and supports preserved quit or explicit reset', async () => {
     await gracefulQuit(application, page); application = null; page = null;
@@ -254,7 +257,8 @@ async function main() {
     assert.equal(await form.getByRole('button',{name:'Create & open',exact:true}).isDisabled(),true);
     await chooseNewProjectFolder(form, receipt.run_id);
     await page.getByRole('button', {name: 'Create & open', exact: true}).click();
-    await page.getByRole('button', {name: 'Project overview', exact: true}).waitFor({timeout: 90000});
+    page=await retainedPage(application,{title:projectName}); await chooseTestProfile(); await showSidebar(page);
+    await page.getByRole('heading',{name:projectName,exact:true}).waitFor({timeout:90000});
     assert.match(await page.title(), /Electron lifecycle fixture/);
     const project = await page.evaluate(() => fetch('/api/projects').then(response => response.json()));
     receipt.test_project_uuid = project.current_project_uuid; assert.ok(project.current_project_uuid);
@@ -270,19 +274,19 @@ async function main() {
     const form = page.locator('.onboarding-create-form'); await form.getByRole('textbox').nth(0).fill(secondName);
     await chooseNewProjectFolder(form, receipt.run_id + '-second');
     await page.getByRole('button', {name: 'Create & open', exact: true}).click();
-    await page.waitForFunction(expected => document.title.startsWith(expected), secondName, {timeout: 90000}); await chooseTestProfile();
+    page=await retainedPage(application,{title:secondName}); await chooseTestProfile(); await showSidebar(page); await chooseTestProfile();
     receipt.second_project_uuid = (await page.evaluate(() => fetch('/api/projects').then(response => response.json()))).current_project_uuid;
     assert.ok(receipt.second_project_uuid);
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: projectName, exact: true}).click();
-    await page.waitForFunction(expected => document.title.startsWith(expected) && !document.title.includes(' second'), projectName, {timeout: 30000});
+    page=await retainedPage(application,{title:projectName}); await showSidebar(page);
     const navigationStart = Date.now();
     await page.getByRole('button', {name: 'Logs', exact: true}).click();
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: secondName, exact: true}).click();
-    await page.waitForFunction(expected => document.title.startsWith(expected), secondName, {timeout: 30000});
+    page=await retainedPage(application,{title:secondName}); await showSidebar(page);
     const saved = JSON.parse(await fs.readFile(path.join(fixture.userData, 'drafts', receipt.test_project_uuid + '.json')));
     assert.equal(saved.value.route.page, 'activity');
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: projectName, exact: true}).click();
-    await page.waitForFunction(expected => document.title.startsWith(expected) && !document.title.includes(' second'), projectName, {timeout: 30000});
+    page=await retainedPage(application,{title:projectName}); await showSidebar(page);
     await page.waitForFunction(() => [...document.querySelectorAll('.nav-item.active')].some(item => item.textContent.includes('Logs')));
     return {warm_document_handoff: true, route_persisted: 'activity', elapsed_ms: Date.now() - navigationStart};
   });
@@ -291,11 +295,11 @@ async function main() {
     await fs.unlink(missing);
     const secondName = projectName + ' second';
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: secondName, exact: true}).click();
-    await page.waitForFunction(expected => document.title.startsWith(expected), secondName, {timeout: 30000});
+    page=await retainedPage(application,{title:secondName}); await showSidebar(page);
     await page.waitForFunction(() => [...document.querySelectorAll('.nav-item.active')].some(item => item.textContent.includes('Project overview')));
     assert.equal(await page.getByRole('heading', {name: 'Saved view needs recovery', exact: true}).count(), 0);
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: projectName, exact: true}).click();
-    await page.waitForFunction(expected => document.title.startsWith(expected) && !document.title.includes(' second'), projectName, {timeout: 30000});
+    page=await retainedPage(application,{title:projectName}); await showSidebar(page);
     return {missing_draft_treated_as_new_view: true};
   });
   if (process.env.RIEKE_E2E_H5) await check('actual active import defers replacement drain without stopping any writer', async () => {
@@ -406,7 +410,7 @@ async function main() {
     await gracefulQuit(application, page); application = null; page = null;
     const saved = JSON.parse(await fs.readFile(path.join(fixture.userData, 'drafts', receipt.test_project_uuid + '.json')));
     assert.equal(saved.format, 'rieke-renderer-draft'); assert.equal(saved.value.route.page, 'files');
-    await start(); await page.getByRole('button', {name: new RegExp('^Open ' + projectName + ',')}).click();
+    await start(projectName); await chooseTestProfile(); await showSidebar(page);
     await page.getByRole('button', {name: 'Project files', exact: true}).waitFor({timeout: 90000});
     await chooseTestProfile();
     await page.waitForFunction(() => [...document.querySelectorAll('.nav-item.active')].some(item => item.textContent.includes('Project files')), undefined, {timeout: 10000});
@@ -416,14 +420,14 @@ async function main() {
     const filename = path.join(fixture.userData, 'drafts', receipt.test_project_uuid + '.json');
     const saved = JSON.parse(await fs.readFile(filename, 'utf8'));
     const corrupted = JSON.stringify({...saved, projectId: 'launcher'}); await fs.writeFile(filename, corrupted);
-    await start(); await page.getByRole('button', {name: new RegExp('^Open ' + projectName + ',')}).click();
+    await start('Saved view needs recovery');
     await page.getByRole('heading', {name: 'Saved view needs recovery', exact: true}).waitFor({timeout: 90000});
     await quitAndVerifyOwnedExit();
     assert.equal(await fs.readFile(filename, 'utf8'), corrupted);
-    await start(); await page.getByRole('button', {name: new RegExp('^Open ' + projectName + ',')}).click();
+    await start('Saved view needs recovery');
     await page.getByRole('heading', {name: 'Saved view needs recovery', exact: true}).waitFor({timeout: 90000});
     await page.getByRole('button', {name: 'Start with a new view', exact: true}).click();
-    await page.getByRole('button', {name: 'Project overview', exact: true}).waitFor({timeout: 30000});
+    page=await retainedPage(application,{title:projectName}); await chooseTestProfile(); await showSidebar(page); await page.getByRole('heading',{name:projectName,exact:true}).waitFor();
     await chooseTestProfile();
     const backups = (await fs.readdir(path.dirname(filename))).filter(name => name.startsWith(receipt.test_project_uuid + '.corrupt-'));
     assert.ok((await Promise.all(backups.map(name => fs.readFile(path.join(path.dirname(filename), name), 'utf8')))).includes(corrupted));
@@ -434,13 +438,13 @@ async function main() {
     const before = await ownedControl(fixture, 'health');
     deliberateCrash = true;
     receipt.crash_test_method = 'Actual renderer crash; original stale Playwright target replaced by fresh CDP connection to the same isolated app; real recovery UI, bridge and backend health assertions';
-    await application.evaluate(({BrowserWindow}) => {const target = BrowserWindow.getAllWindows()[0]; setTimeout(() => target.webContents.forcefullyCrashRenderer(), 100);});
+    await application.evaluate(({BrowserWindow}) => {const target = BrowserWindow.getAllWindows()[0]; const content=target.contentView.children.at(-1)?.webContents||target.webContents; setTimeout(() => content.forcefullyCrashRenderer(), 100);});
     await delay(300);
     // Attach a fresh software-test session to this isolated app's existing CDP
     // endpoint. Pinned Playwright cannot revive its original crashed Page.
     const port = Number((await fs.readFile(path.join(fixture.userData, 'DevToolsActivePort'), 'utf8')).split('\n')[0]);
     recoveredBrowser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
-    page = recoveredBrowser.contexts()[0].pages()[0];
+    page = recoveredBrowser.contexts()[0].pages().find(item=>item.url().startsWith('file:')&&item.url().endsWith('/recovery.html')); assert.ok(page);
     page.on('pageerror', error => receipt.failures.push({name: 'recovered-renderer-pageerror', message: error.message}));
     await page.getByRole('heading', {name: 'Disco recovery', exact: true}).waitFor({timeout: 15000});
     assert.equal((await ownedControl(fixture, 'health')).pid, before.pid);
@@ -450,7 +454,7 @@ async function main() {
     assert.equal(interrupted.quit.drafts_saved, false);
     assert.equal(interrupted.quit.state, 'services_closed');
     deliberateCrash = false;
-    await start();
+    await start(projectName); await chooseTestProfile(); await showSidebar(page);
     assert.notEqual((await ownedControl(fixture, 'health')).session_id, before.session_id);
     return {renderer_recovery_visible: true, ordinary_quit_exited_owned_processes: true, latest_view_not_claimed_saved: true, cold_relaunch_ready: true};
   });

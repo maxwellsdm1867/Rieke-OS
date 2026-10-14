@@ -1,4 +1,5 @@
 'use strict';
+const {retainedPage,showSidebar}=require('./retained-test-page.cjs');
 // Real packaged updater/helper; only GitHub transport and macOS open are mapped
 // to owned test boundaries. The source app, distribution and user app are read-only.
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),nativeFs=require('node:fs'),path=require('node:path'),http=require('node:http');
@@ -155,7 +156,7 @@ async function phase(phase,config){
  }
 }
 async function startup(version){
- const launched=await launch(fixture);application=launched.application;
+ const launched=await launch(fixture);application=launched.application;launched.page=await retainedPage(application,{heading:'Your projects'});
  await launched.page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});
  const health=await ownedControl(fixture,'health');assert.equal(health.application_version,version);
  await gracefulQuit(application,launched.page);application=null;
