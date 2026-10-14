@@ -4,6 +4,10 @@
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path');
 const {createHash,randomUUID}=require('node:crypto');
 const {createFixture,launch,gracefulQuit,ownedControl,run}=require('./helpers.cjs');
+const {takeReleaseFeedToken,installReleaseFeedAuth,restoreReleaseFeedAuth}=require('./release-feed-auth.cjs');
+// Remove before launch inherits process.env: never pass the token to scientific
+// services or persist it in their environment/ownership records.
+let releaseFeedToken=takeReleaseFeedToken(process.env);
 const output=path.resolve(__dirname,'../../docs/dev/desktop-smoke-e2e.json');
 const started=Date.now(),workDeadline=started+240000,totalDeadline=started+300000;
 const receipt={format:'rieke-packaged-smoke-e2e',version:1,started_at:new Date().toISOString(),total_deadline_ms:300000,
@@ -76,7 +80,15 @@ async function main(){
   return{app_version:version,root_ready:true,isolated_home_and_profile:true,branding:brand};
  });
  await check('explicit update Check returns an honest valid result',async()=>{
+  if(releaseFeedToken){
+   receipt.ci_release_feed_auth=await application.evaluate(installReleaseFeedAuth,{token:releaseFeedToken});releaseFeedToken=null;
+   receipt.seams.push('CI-only in-memory Authorization header for the exact public releases API; live TLS/request/response and UI Check remain unchanged. Anonymous client connectivity is separate local evidence.');
+  }
+  try{
   await page.getByRole('button',{name:/^App Updates(?: —|$)/}).first().click();const dialog=page.getByRole('dialog',{name:'App Updates',exact:true}),button=dialog.getByRole('button',{name:'Check for updates',exact:true});
+  // Let startup's anonymous check settle before the fresh explicit UI request.
+  await page.waitForFunction(async()=> (await window.riekeDesktop.status()).state!=='Checking',undefined,{timeout:45000});
+  const priorCheck=(await page.evaluate(()=>window.riekeDesktop.status())).checked_at;
   await bounded(button.click({timeout:Math.min(45000,remaining())}),'Explicit update Check');
   // Poll asynchronous IPC explicitly and assert the same completed snapshot.
   const status=await bounded((async()=>{
@@ -86,7 +98,7 @@ async function main(){
      enabled:[...document.querySelectorAll('.app-update-dialog button')].some(button=>button.textContent.includes('Check for updates')&&!button.disabled)}));
     const status=snapshot.status,terminal=['Current','Available','Deferred','Ready','Downloading','Validating'];
     if(!status||!terminal.includes(status.state)&&status.state!=='Checking')return status||{state:'Invalid'};
-    const checked=process.env.RIEKE_SMOKE_REQUIRE_UPDATE_CONNECTIVITY!=='1'||status.checked_at||status.state==='Deferred';
+    const checked=Boolean(status.checked_at&&status.checked_at!==priorCheck);
     if(terminal.includes(status.state)&&checked&&snapshot.enabled)return status;
     await delay(100);
    }
@@ -108,6 +120,10 @@ async function main(){
   if(process.env.RIEKE_SMOKE_REQUIRE_UPDATE_CONNECTIVITY==='1')assert.equal(connected,true,'This run requires a successful release-feed check');
   await dialog.getByRole('button',{name:'Close updates',exact:true}).click();
   return{state:status.state,available:status.available,checked_at:status.checked_at||null,check_error:status.check_error||null,message:status.message,connectivity_verified:connected,download_or_install_not_requested:true};
+  }finally{
+   const auth=await application.evaluate(restoreReleaseFeedAuth);
+   if(auth){receipt.ci_release_feed_auth={...auth,removed:true};assert.ok(auth.authenticated_requests>0,'Explicit update check must actually use the live authenticated API');}
+  }
  });
  const leaf='smoke-'+randomUUID().slice(0,8),projectName='Packaged smoke '+leaf,projectPath=path.join(fixture.projects,leaf);let projectUuid,firstSession;
  await check('native folder selection creates and opens a real project',async()=>{
@@ -140,6 +156,7 @@ async function main(){
 }
 async function finish(error){
  if(finishing)return;finishing=true;aborted=true;clearTimeout(workTimer);
+ if(application&&receipt.ci_release_feed_auth&&!receipt.ci_release_feed_auth.removed)await application.evaluate(restoreReleaseFeedAuth).catch(()=>{});
  if(error){receipt.failures.push({name:'smoke-suite',message:error.message});receipt.elapsed_ms=Date.now()-started;
   if(application&&page){try{const child=application.process(),exit=child.exitCode!==null?Promise.resolve(child.exitCode):new Promise(resolve=>child.once('exit',resolve));const left=Math.max(1,Math.min(45000,totalDeadline-Date.now()));
    let result;

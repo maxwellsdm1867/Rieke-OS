@@ -350,7 +350,10 @@ jobs:
         if: matrix.suite == 'smoke'
         env:
           RIEKE_SMOKE_REQUIRE_UPDATE_CONNECTIVITY: '1'
-        run: node desktop/e2e/smoke.e2e.cjs
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --test desktop/e2e/release-feed-auth.test.cjs
+          node desktop/e2e/smoke.e2e.cjs
       - name: Native updater and user-driven download checks
         if: matrix.suite == 'updater'
         run: |
