@@ -34,6 +34,15 @@ async function ownedProcesses(){
 async function quitAndVerify(){
  const before=await ownedProcesses();assert.ok(before.length,'Owned packaged processes must exist before shutdown');
  const quitDiagnostic={started_at:new Date().toISOString(),owned_processes_before:before.length,lifecycle_events:[]};
+ quitDiagnostic.active_renderer_prepare_events=[];
+ page.on('console',message=>{
+  const text=message.text();if(text.startsWith('DISCO_SMOKE_ACTIVE_PREPARE=')){
+   try{quitDiagnostic.active_renderer_prepare_events.push(JSON.parse(text.slice('DISCO_SMOKE_ACTIVE_PREPARE='.length)));}catch{}
+  }
+ });
+ // Observe only the already-active document. Evaluating hidden documents here
+ // could wake them and conceal a retained-renderer scheduling problem.
+ await page.evaluate(()=>window.riekeDesktop.onPrepareClose(({requestId})=>console.info('DISCO_SMOKE_ACTIVE_PREPARE='+JSON.stringify({request_id:requestId,at:Date.now()}))));
  let pendingDiagnostic='';
  application.process().stdout.on('data',chunk=>{
   pendingDiagnostic+=chunk.toString();let end;
@@ -112,6 +121,21 @@ async function actualPage(project=false){
 }
 async function start(restoredProjectName=null){
  ({application,page}=await bounded(launch(fixture),'Packaged launch'));
+ const observedPages=new WeakSet();let observationId=0;
+ const observeRequests=target=>{
+  if(observedPages.has(target))return;observedPages.add(target);
+  const pending=new Map(),targetId=++observationId;
+  target.on('request',request=>{
+   if(!['POST','PUT','PATCH','DELETE'].includes(request.method()))return;
+   if(request.frame()!==target.mainFrame())return;
+   const url=new URL(request.url());if(url.hostname!=='127.0.0.1')return;
+   const event={target_observation_id:targetId,method:request.method(),origin:url.origin,path:url.pathname,started_at:Date.now()};
+   pending.set(request,event);(receipt.renderer_write_requests??=[]).push(event);
+  });
+  target.on('requestfinished',request=>{const event=pending.get(request);if(event){event.finished_at=Date.now();pending.delete(request);}});
+  target.on('requestfailed',request=>{const event=pending.get(request);if(event){event.failed_at=Date.now();pending.delete(request);}});
+ };
+ application.on('window',observeRequests);application.windows().forEach(observeRequests);
  page=await actualPage(Boolean(restoredProjectName)); if(restoredProjectName)await authorProfile();
  page.setDefaultTimeout(20000);page.on('pageerror',error=>receipt.failures.push({name:'renderer-pageerror',message:error.message}));
  if(restoredProjectName)await page.getByRole('heading',{name:restoredProjectName,exact:true}).waitFor({timeout:Math.min(60000,remaining())});
