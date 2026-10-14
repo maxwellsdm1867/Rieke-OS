@@ -266,9 +266,13 @@ query track below. This is a development regression requirement, including updat
 whose intended effect is not performance. Product optimization does not justify
 skipping either check. Missing, failed, partial or incomparable evidence is not a
 green iteration. The [everyday-million workflow](../../.github/workflows/everyday-million.yml)
-enforces this query track on every pull request and push to `main`/`master`, with
-no path filter. It also runs the fixed core and complements the existing workspace correctness
-workflow; stress receipts remain separate from release-gate inputs.
+enforces this query track on pull requests and pushes to `main`/`master`, except
+committed comparisons containing only Markdown files. Those still validate
+catalog references; code, configuration, unknown and harness paths retain the full
+track. Manual dispatch always runs it, including exact-source release checks.
+It also runs the fixed core and complements workspace correctness. Publication
+requires successful exact-source stress comparisons in addition to, never instead
+of, the existing native/artifact release qualification.
 
 The one registry remains [benchmarks/registry.json](../../benchmarks/registry.json),
 under `stress_tracks.everyday-million`. The core remains small; do not substitute

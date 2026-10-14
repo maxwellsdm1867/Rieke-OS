@@ -3695,7 +3695,7 @@
       },
       {
         "file": "python/tests/test_desktop_release.py",
-        "file_sha256": "d0731610778580a1d0922fe10bfbf76d0ce60cc3ff86656080094e5f6a92cb19",
+        "file_sha256": "61bb02a1acf9e14e75215b46d7566d48d195fba9227329d7f9e5d63bbe2dfd24",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -3708,7 +3708,7 @@
             "kind": "ast-call"
           }
         ],
-        "reason": "Existing repository-tool test loader; unchanged source and AST binding"
+        "reason": "Stable publication boundary tests added; both loader Call ASTs and their destinations independently verified unchanged from 15980d4."
       },
       {
         "file": "python/tests/test_desktop_runtime_audit.py",

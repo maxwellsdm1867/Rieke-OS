@@ -215,24 +215,54 @@ receipts in public release assets. Publish reviewed aggregate evidence only.
 
 ## Unsigned GitHub testing publication
 
-After the exact-byte checks pass, create the descriptor and inventory:
+Publication now requires the latest successful **exact-source** regression and
+million-row workflows, plus a successful complete desktop candidate. Missing,
+pending, failed, cancelled, skipped or stale evidence blocks publication before
+any release mutation. A passing PR merge does not certify a different source SHA.
+A focused native rerun cannot substitute for the candidate's full selected checks.
+
+For a release source, dispatch `workspace-ci.yml` on that source's branch/tag with
+`base_sha` set to a reviewed full ancestor SHA and `full_checks=true`. Dispatch
+`everyday-million.yml` on the same source without `candidate_sha`, supplying the
+reviewed previous-iteration `baseline_sha`. Ordinary Markdown-only PRs retain
+reference validation but skip behavior/million jobs; release qualification always
+runs the full checks. Code, configuration, unknown and harness changes retain the
+conservative full scope. No timing thresholds or samples are relaxed.
+
+After exact-byte candidate qualification, use **Publish checked Disco testing
+candidate** (`desktop-testing-promote.yml`) with the source SHA, complete candidate
+run ID and reviewed notes under `release-evidence/`. It verifies CI before fetching
+app bytes, then calls the same gated local publisher:
 
 ```sh
 python3 tools/desktop_test_release.py \
-  --app 'desktop/dist/mac-arm64/Rieke OS.app' \
-  --archive desktop/dist/Rieke-OS-0.1.3-arm64.zip \
-  --output desktop/dist/desktop-release.json
-python3 tools/desktop_release.py inventory --output desktop/dist/artifacts.json
+  --app 'desktop/dist/mac-arm64/Disco.app' \
+  --archive desktop/dist/Disco-0.1.14-arm64.zip \
+  --output desktop/dist/desktop-release.json \
+  --publish --candidate-run-id COMPLETE_CANDIDATE_RUN_ID \
+  --notes release-evidence/testing-notes.md
 ```
 
-Replace the example version consistently. Publish the reviewed commit as a
-**prerelease**, labeled **unsigned testing**, under `desktop-test-v<version>`.
-Attach the exact DMG, complete ZIP, `desktop-release.json`, checksums and sanitized
-qualification evidence. Check descriptor hashes against both the inspected app
-and archived bytes, then read back the published assets to verify the same bytes.
-A source ZIP, draft release, Git push or candidate Actions artifact alone is not
-a discoverable complete testing update. Do not mark the testing prerelease as a
-signed production/stable release or overwrite an existing release's assets.
+Replace the example version and run ID. Omitting `--publish` still only writes a
+local descriptor, so builds can produce metadata before native qualification.
+The publisher compares that descriptor with the candidate's small
+`desktop-release-metadata` artifact, requires the existing exact-source testing
+tag used by the candidate workflow, and creates a draft
+unsigned-testing prerelease containing the exact ZIP, descriptor and SHA256SUMS,
+checks GitHub's uploaded digests/sizes, and rechecks CI and tag before visibility.
+A failure after upload leaves a draft for inspection. Existing releases/assets
+are never overwritten. Do not bypass this path with a raw release API command.
+All four performance comparisons must bind the exact candidate receipt bytes;
+passing comparisons from another candidate cannot qualify publication. Stable
+promotion invokes the same source-CI gate in addition to its existing
+production/native evidence requirements, and rechecks CI and tag identity before
+making a draft public and again before selecting it as latest.
+
+These controls govern the canonical tools and workflows. Repository owners with
+release-write access can still bypass them using GitHub directly; YAML does not
+remove that permission. Configure required reviewers on `desktop-publishing` and
+repository protections separately. This change does not claim those settings are
+already enabled or retroactively certify existing published bytes.
 
 Users open the DMG app and choose **Install and Open** for
 `~/Applications/Rieke OS.app`. The installer verifies/copies the complete bundle

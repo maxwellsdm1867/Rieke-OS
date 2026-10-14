@@ -222,6 +222,15 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always() && steps.candidate_inventory.outcome == 'success'
         with:
+          name: desktop-release-metadata
+          path: |
+            desktop/dist/artifacts.json
+            desktop/dist/desktop-release.json
+          if-no-files-found: error
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.candidate_inventory.outcome == 'success'
+        with:
           name: rieke-desktop-macos-arm64
           path: |
             desktop/dist/*.dmg

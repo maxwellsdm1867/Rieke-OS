@@ -19,7 +19,34 @@ permissions:
   contents: read
 
 jobs:
+  scope:
+    name: Select performance check scope
+    runs-on: ubuntu-latest
+    outputs:
+      documentation_only: ${{ steps.plan.outputs.documentation_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: plan
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          args=(--all)
+          if [ "$EVENT_NAME" != workflow_dispatch ] && [ -n "$BASE_REF" ] && [ "$BASE_REF" != 0000000000000000000000000000000000000000 ]; then args=(--base "$BASE_REF"); fi
+          python3 -B tools/architecture_guard.py check --language metadata
+          python3 -B tools/architecture_guard.py plan "${args[@]}" --github-output "$GITHUB_OUTPUT" --output "$RUNNER_TEMP/performance-scope.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-check-scope
+          path: ${{ runner.temp }}/performance-scope.json
+          if-no-files-found: error
   everyday-million:
+    needs: scope
+    if: needs.scope.outputs.documentation_only != 'true'
+
     name: Actual million metadata query regression
     runs-on: ubuntu-latest
     timeout-minutes: 90

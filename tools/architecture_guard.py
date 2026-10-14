@@ -1133,12 +1133,13 @@ def affected_plan(root, value, base, head, all_contracts):
     selected = [entry for entry in value['contracts'] if all_contracts or shared or any(
         fnmatch.fnmatchcase(path, pattern) for path in paths for pattern in entry['affected_paths'])]
     tests = {language: sorted({path for entry in selected for path in entry['tests'].get(language, [])}) for language in RUNNERS}
-    # Preserve workspace-ci's previous docs/** and **/*.md exclusion, while
-    # reference/contract changes still receive their mapped conformance checks.
-    source_changed = all_contracts or any(not path.startswith('docs/') and not path.endswith('.md') for path in paths)
+    # Only Markdown is documentation-only; configuration and unknown files
+    # under docs/ need the same conservative behavioral checks as other paths.
+    source_changed = all_contracts or any(not path.endswith('.md') for path in paths)
     return {'base':base_sha, 'head':head_sha, 'dirty':dirty, 'selection':'all' if all_contracts else 'changed',
             'changed_paths':paths, 'affected_contracts':[entry['id'] for entry in selected],
             'tests':tests, 'source_changed':source_changed,
+            'documentation_only':not all_contracts and bool(paths) and all(path.endswith('.md') for path in paths),
             'javascript_required':source_changed or bool(tests['javascript']),
             'python_required':source_changed or bool(tests['python']),
             'desktop_required':bool(tests['desktop'])}
@@ -1232,7 +1233,7 @@ def main():
             args.output.write_text(json.dumps(result, indent=2)+'\n')
         if args.github_output:
             with args.github_output.open('a') as output:
-                for key in ('source_changed','javascript_required','python_required','desktop_required'):
+                for key in ('source_changed','documentation_only','javascript_required','python_required','desktop_required'):
                     output.write(f'{key}={str(result[key]).lower()}\n')
         print(json.dumps(result, indent=2))
         return 1 if result['status'] == 'failed' else 0
