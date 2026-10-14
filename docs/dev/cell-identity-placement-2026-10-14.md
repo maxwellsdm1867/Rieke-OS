@@ -24,3 +24,13 @@ Focused checks cover exact level restriction, label non-inference, neutral unkno
 mounted browsing/Edit Tree/QC, paged/ancestor/counts-only metadata and existing
 navigation/selection behavior. Final source gates and their exact receipts are
 reported separately after the implementation commit.
+
+The approved standalone prototype is retained on local branch
+`codex/cell-identity-preview`, at
+`workspace-app/src/tree-browser/identity-placement-prototype.html`. It is not
+part of this implementation branch. The final browser check uses the actual QC,
+ColumnTree (design mode), and HierarchyTree with isolated sample responses.
+A compact hierarchy grid adjustment reserves a 22px icon track and keeps the
+label/count tracks aligned; other node levels retain their original grid.
+The first abed6ed pinned-million attempt was intentionally interrupted after
+visual verification exposed that grid placement issue; it is incomplete evidence.

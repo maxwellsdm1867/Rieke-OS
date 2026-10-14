@@ -88,3 +88,8 @@
 
 .hierarchy-tree .tree-group-folder{display:none}
 .hierarchy-tree .tree-cell-identity-icon{display:inline-flex;align-items:center;flex-shrink:0}
+/* Identity rows reserve one compact glyph track; other levels keep two tracks. */
+.hierarchy-tree .ht-branch>button:first-child:has(>.tree-cell-identity-icon){grid-template-columns:12px 22px minmax(0,1fr)}
+.hierarchy-tree .ht-branch>button:first-child>.tree-cell-identity-icon{grid-column:2;grid-row:1 / span 2}
+.hierarchy-tree .ht-branch>button:first-child:has(>.tree-cell-identity-icon)>.ht-value,
+.hierarchy-tree .ht-branch>button:first-child:has(>.tree-cell-identity-icon)>.ht-count{grid-column:3}

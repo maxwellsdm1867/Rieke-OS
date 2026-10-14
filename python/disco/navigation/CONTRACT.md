@@ -152,3 +152,10 @@ waveforms retain the existing lazy trace endpoint and source checks. Predicate
 membership, chronological paging, anchors and preview revision checks are unchanged.
 Backend coverage lives in `test_workspace_matching_epochs.py`; shared-viewer
 navigation and metadata-toggle coverage lives in `traceSurfaceIntegration.test.js`.
+
+## Cell identity presentation
+
+Cell-level tree branches carry optional recorded `cell_type` from the existing
+representative rows. Paged branches and ancestors forward this display metadata.
+No new lookup, scope scan, summary request or membership authority is introduced.
+Other grouping levels do not gain cell identity metadata.

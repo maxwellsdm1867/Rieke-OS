@@ -116,3 +116,8 @@ handlers from hidden or replaced columns remain inert. This changes read-only
 presentation, not selection, tags, inclusion, or backend authority.
 `treeTagCoverageWorkflow.test.js` covers sibling replacement at three depths,
 held/out-of-order responses, stale callbacks and failure/retry.
+
+Recorded identity glyphs use `ui/TreeBranchIcon.jsx` only for exact `cell` and
+`cell type` levels, including Edit Tree. Joint and other levels keep their existing
+appearance. Cell branches carry optional recorded `cell_type`; labels never
+classify cells. Missing types use the neutral unknown glyph.
