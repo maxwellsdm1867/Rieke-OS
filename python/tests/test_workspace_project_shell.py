@@ -148,6 +148,22 @@ class ProjectShellTests(unittest.TestCase):
             self.data.stop()
         self.assertEqual(self.client.get('/api/health').status_code, 200)
 
+    def test_partial_worker_close_failure_still_releases_process_heap(self):
+        close_heap = Mock()
+        def fail(capture, begin):
+            begin()
+            app = Flask('partially-loaded')
+            capture(app)
+            app.extensions['close_trace_workers'] = Mock(side_effect=RuntimeError('trace close failed'))
+            app.extensions['close_project_heap'] = close_heap
+            raise ValueError('activation failed after heap setup')
+        self.build.side_effect = fail
+        with self.assertLogs(self.app.logger, level='ERROR'):
+            self.assertEqual(self.activate().status_code, 400)
+        close_heap.assert_called_once()
+        self.assertIn('trace close failed', self.data.status()['cleanup_error'])
+        self.assertIn('activation failed', self.data.status()['error'])
+
     def test_concurrent_activation_does_not_duplicate_services(self):
         began, release = threading.Event(), threading.Event()
         def build(capture, begin):

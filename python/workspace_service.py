@@ -7,6 +7,7 @@ Callers serialize calls because the underlying DataJoint connection is shared.
 from __future__ import annotations
 
 import copy
+import contextlib
 import datetime as dt
 import hashlib
 import json
@@ -495,12 +496,14 @@ class WorkspaceService:
 
     def refresh(self):
         """Incrementally rebuild verified projections; publish only whole successes."""
+        heap = getattr(self, '_project_heap', None)
         started = time.perf_counter()
         metrics = {'source_cache_hits': 0, 'source_cache_rebuilt': 0,
                    'timing_ms': {'metadata_check': 0., 'source_rebuild': 0., 'sql_queries': 0.}}
         self._loaded = False
         try:
-            result = self._refresh_verified_sources(metrics)
+            with heap.refresh() if heap is not None else contextlib.nullcontext():
+                result = self._refresh_verified_sources(metrics)
         except Exception as error:
             metrics['timing_ms']['total'] = (time.perf_counter() - started) * 1000
             self.last_refresh = {**metrics, 'status': 'failed', 'error_type': type(error).__name__,

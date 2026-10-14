@@ -248,6 +248,94 @@ class StructuralNavigationTests(unittest.TestCase):
         scope = next(iter(self.service._tree_page_scope_cache[1].values()))[0]
         self.assertEqual(scope[2].grouping_budget, 16*1024)
 
+    def test_source_search_survives_protocol_navigation_with_freshness_checks(self):
+        self.index()
+        source = {'splits':'cell', 'predicate':{
+            'field':'cell', 'operator':'eq',
+            'value':self.service.rows[self.service.ids[0]]['cell_uuid']}}
+        protocol = {'protocol_uuid':self.service.protocol_id, 'splits':'cell'}
+        with patch.object(self.pager, '_build_scope', wraps=self.pager._build_scope) as builds:
+            expected = self.pager.page(source)
+            self.pager.page(protocol)
+            self.assertEqual(self.pager.page(source), expected)
+            self.assertEqual(builds.call_count, 2)
+        self.service._fingerprints[self.service.ids[0]] = 'c'*64
+        with self.assertRaises(StaleTreePage):
+            self.pager.page({**source, 'revision':expected['revision']})
+
+    def test_protocol_hit_with_retained_source_witness_avoids_project_scan(self):
+        self.index()
+        class GuardedFingerprints(dict):
+            guard = False
+            def __iter__(self):
+                if self.guard: raise AssertionError('Protocol iterated project fingerprints')
+                return super().__iter__()
+            def keys(self):
+                if self.guard: raise AssertionError('Protocol enumerated project fingerprints')
+                return super().keys()
+            def items(self):
+                if self.guard: raise AssertionError('Protocol enumerated project fingerprints')
+                return super().items()
+            def values(self):
+                if self.guard: raise AssertionError('Protocol enumerated project fingerprints')
+                return super().values()
+            def __ne__(self, other):
+                if self.guard: raise AssertionError('Protocol compared project fingerprints')
+                return super().__ne__(other)
+            def __eq__(self, other):
+                if self.guard: raise AssertionError('Protocol compared project fingerprints')
+                return super().__eq__(other)
+            def __sizeof__(self):
+                if self.guard: raise AssertionError('Protocol charged live project fingerprints')
+                return super().__sizeof__()
+        self.service._fingerprints = GuardedFingerprints(self.service._fingerprints)
+        source, protocol = {'splits':'cell'}, {'protocol_uuid':self.service.protocol_id, 'splits':'cell'}
+        self.pager.page(source)
+        expected = self.pager.page(protocol)
+        self.service._fingerprints.guard = True
+        with patch.object(self.pager, '_build_scope', side_effect=AssertionError('Protocol rebuilt')):
+            self.assertEqual(self.pager.page(protocol), expected)
+
+    def test_mixed_scope_eviction_charges_and_releases_source_witness(self):
+        from disco.navigation import tree_pages
+        self.index()
+        source, protocol = {'splits':'cell'}, {'protocol_uuid':self.service.protocol_id, 'splits':'cell'}
+        self.pager.page(source)
+        source_entry = next(iter(self.service._tree_page_scope_cache[1].values()))
+        source_bytes = source_entry[2]
+        witness_bytes = sys.getsizeof(self.service._tree_page_scope_cache[2])
+        del source_entry
+        self.service._tree_page_scope_cache = None
+        self.pager.page(protocol)
+        protocol_bytes = next(iter(self.service._tree_page_scope_cache[1].values()))[2]
+        self.service._tree_page_scope_cache = None
+        # Each scope fits alone; the pair plus the source witness cannot fit.
+        budget = tree_pages.TREE_SCOPE_CACHE_OVERHEAD + max(source_bytes + witness_bytes, protocol_bytes)
+        with patch.object(tree_pages, 'TREE_SCOPE_BYTE_BUDGET', budget):
+            self.pager.page(source)
+            old_values = weakref.ref(next(iter(self.service._tree_page_scope_cache[1].values()))[0][2])
+            expected = self.pager.page(protocol)
+            cache = self.service._tree_page_scope_cache
+            self.assertEqual(len(cache[1]), 1)
+            self.assertIsNone(cache[2])
+            self.assertLessEqual(tree_pages.TREE_SCOPE_CACHE_OVERHEAD + sum(entry[2] for entry in cache[1].values()), budget)
+            with patch.object(self.pager, '_build_scope', side_effect=AssertionError('Admitted protocol rebuilt')):
+                self.assertEqual(self.pager.page(protocol), expected)
+        gc.collect()
+        self.assertIsNone(old_values())
+
+    def test_oversize_source_witness_does_not_discard_protocol_cache(self):
+        from disco.navigation import tree_pages
+        self.index()
+        class OversizeFingerprints(dict):
+            def __sizeof__(self): return tree_pages.TREE_SCOPE_BYTE_BUDGET
+        self.service._fingerprints = OversizeFingerprints(self.service._fingerprints)
+        protocol = {'protocol_uuid':self.service.protocol_id, 'splits':'cell'}
+        expected = self.pager.page(protocol)
+        self.assertEqual(self.pager.page({'splits':'cell'})['count'], len(self.service.rows))
+        with patch.object(self.pager, '_build_scope', side_effect=AssertionError('Protocol discarded')):
+            self.assertEqual(self.pager.page(protocol), expected)
+
     def test_replaced_rows_release_previous_cached_values_on_next_navigation(self):
         self.index()
         body = {'splits':'date,cell,block'}

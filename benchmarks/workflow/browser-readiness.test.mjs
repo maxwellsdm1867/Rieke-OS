@@ -2,19 +2,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readiness,snapshotAction,assertFinalizedRequests,resetPreparation,options,phasePlan,moduleTimingEnabled} from './browser.mjs';
-import {installObserver} from './fixture-app.mjs';
+import {installObserver,installTraceControlReader} from './fixture-app.mjs';
 
 function element(text='', attributes={}) {
   return {textContent:text, disabled:false, ...attributes,
     getBoundingClientRect:()=>({width:20,height:20}),
+    querySelectorAll:selector=>attributes.children?.[selector]||[],
     getAttribute(name){return attributes[name]??null;}};
 }
-function setup(t, selectors={}) {
+function setup(t, selectors={}, streams=[{uuid:'response',device:'Amp1',units:'pA'}]) {
   const previous={window:globalThis.window,document:globalThis.document,getComputedStyle:globalThis.getComputedStyle};
   const w={active:{action_id:'current',intent:0,frames:0},requests:[],draws:[]};
   globalThis.window={__workflow:w};
   globalThis.document={body:{textContent:''},querySelectorAll:s=>selectors[s]||[],querySelector:s=>(selectors[s]||[])[0]||null};
   globalThis.getComputedStyle=()=>({visibility:'visible'});
+  installTraceControlReader({streams});
   t.after(()=>{for(const [key,value] of Object.entries(previous)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}});
   return w;
 }
@@ -53,11 +55,11 @@ test('prior action response cannot satisfy current predicate submission',t=>{
   assert.equal(readiness({selector:'.results',requestPath:'/explore/run',expectedCount:100}),false);
 });
 
-function trace(t){
+function trace(t, control=element('',{tagName:'SELECT',value:'response'}),streams){
   const expected={epoch_uuid:'requested',stream_uuid:'response',start:0,count:2,sample_rate:10,units:'pA',values_first:1,values_last:2};
-  const w=setup(t,{'.tv-base':[element()], '[aria-label="Response stream"]':[element('',{value:'response'})]});
+  const w=setup(t,{'.tv-base':[element()], '[aria-label="Response stream"]':[control]},streams);
   const request={action_id:'current',end:10,status:200,result:{...expected,values:[1,2]}};
-  w.requests.push(request);w.draws.push({at:11,stream_uuid:'response'});
+  w.requests.push(request);w.draws.push({at:11,action_id:'current',stream_uuid:'response'});
   return {w,request,spec:{selector:'.tv-base',trace:expected}};
 }
 
@@ -86,6 +88,45 @@ test('correct trace observations record current identity at readiness',t=>{
   assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
   assert.equal(w.completed.current.evidence.trace.epoch_uuid,'requested');
   assert.equal(w.completed.current.evidence.trace.values_count,2);
+});
+
+test('single-stream label uses the independent fixture identity',t=>{
+  const {w,spec}=trace(t,element('Amp1 · pA',{tagName:'DIV',children:{span:[element('Amp1 · pA')]}}));
+  assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
+  assert.equal(w.completed.current.trace_control.kind,'single-label');
+});
+
+test('multiple-stream buttons require one exact pressed UUID',t=>{
+  const streams=[{uuid:'other',device:'Amp2',units:'mV'},{uuid:'response',device:'Amp1',units:'pA'}];
+  const buttons=streams.map(row=>element(row.device,{title:row.uuid,'aria-pressed':String(row.uuid==='response')}));
+  const {w,spec}=trace(t,element('',{tagName:'DIV',children:{button:buttons}}),streams);
+  assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
+  assert.equal(w.completed.current.trace_control.kind,'buttons');
+});
+
+for(const [name,control,streams] of [
+  ['obsolete value assumption',element('',{tagName:'DIV',value:'response'})],
+  ['wrong single-stream label',element('',{tagName:'DIV',children:{span:[element('Amp2 · mV')]}})],
+  ['ambiguous single-stream identity',element('',{tagName:'DIV',children:{span:[element('Amp1 · pA')]}}),[{uuid:'response'},{uuid:'other'}]],
+  ['unknown pressed UUID',element('',{tagName:'DIV',children:{button:[element('',{title:'wrong','aria-pressed':'true'})]}})],
+])test(`trace fails promptly for ${name}`,t=>{
+  const {spec}=trace(t,control,streams);
+  assert.throws(()=>readiness(spec),/Harness incompatible with Response stream/);
+});
+
+for(const key of ['epoch_uuid','stream_uuid'])test(`trace cannot borrow wrong ${key}`,t=>{
+  const {request,spec}=trace(t);request.result[key]='wrong';
+  assert.equal(readiness(spec),false);
+});
+for(const key of ['start','count','sample_rate','units'])test(`trace refuses incorrect ${key}`,t=>{
+  const {request,spec}=trace(t);request.result[key]='wrong';
+  assert.throws(()=>readiness(spec),new RegExp('Trace mismatch '+key));
+});
+test('trace refuses incorrect waveform values and prior-action drawings',t=>{
+  const {w,request,spec}=trace(t);request.result.values=[99,2];
+  assert.throws(()=>readiness(spec),/Incorrect first waveform sample/);
+  request.result.values=[1,2];w.draws[0].action_id='previous';
+  assert.equal(readiness(spec),false);
 });
 
 test('predicate backend result cannot finish before membership is rendered',t=>{

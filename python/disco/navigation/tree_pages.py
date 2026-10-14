@@ -30,6 +30,26 @@ _STRUCTURAL_HISTORY_METHODS = {name: getattr(ExplorerHistory, name)
                                for name in ('protocol_binding', 'protocol_binding_header', 'get')}
 
 
+def _retain_scope_cache(owner, generation, cache, source_fingerprints):
+    """One LRU/byte budget for source scopes and protocol-local projections.
+
+    Three-part entries are source scopes; protocol entries also carry their
+    cohort fingerprints. The project witness is retained only while a source
+    entry needs it, and never consulted to validate a protocol cache hit.
+    """
+    while True:
+        if not any(len(entry) == 3 for entry in cache.values()):
+            source_fingerprints = None
+        base_bytes = TREE_SCOPE_CACHE_OVERHEAD + (
+            sys.getsizeof(source_fingerprints) if source_fingerprints is not None else 0)
+        if (not cache or (len(cache) <= 8
+                and sum(entry[1] for entry in cache.values()) <= 2_000_000
+                and base_bytes + sum(entry[2] for entry in cache.values()) <= TREE_SCOPE_BYTE_BUDGET)):
+            break
+        cache.pop(next(iter(cache)))
+    owner._tree_page_scope_cache = (generation, cache, source_fingerprints)
+
+
 def _structural_contract(service, *, frozen_protocol=None):
     """Only borrow raw membership when its public policies are unchanged.
 
@@ -323,24 +343,24 @@ class TreePages:
         membership = (tuple(member['uuid'] for member in service.protocols[protocol]['result']['epochs'])
                       if protocol and binding is None else None)
         generation = (id(index), index.generation, id(service.rows),
-                      id(service._fingerprints), id(service.protocols), protocol is not None)
-        base_bytes = TREE_SCOPE_CACHE_OVERHEAD + (0 if protocol else sys.getsizeof(service._fingerprints))
-        if base_bytes >= TREE_SCOPE_BYTE_BUDGET:
-            cache_owner._tree_page_scope_cache = None
-            return self._build_scope(body)
+                      id(service._fingerprints), id(service.protocols))
         cached = getattr(cache_owner, '_tree_page_scope_cache', None)
-        if (cached is None or cached[0] != generation
-                or (protocol is None and cached[2] != service._fingerprints)):
+        if cached is None or cached[0] != generation:
+            cached = cache_owner._tree_page_scope_cache = (generation, {}, None)
+        cache, source_fingerprints = cached[1:]
+        if protocol is None and (source_fingerprints is None or source_fingerprints != service._fingerprints):
             # The published fingerprint dictionary is also used by reconciliation
             # and test adapters. Detect in-place edits, not only refresh swaps.
-            # Equality is a linear lightweight check; it avoids sorting/encoding
-            # the full membership for every navigation request.
-            # Protocol entries carry only their own dependency fingerprints.
-            # Source discovery retains the project-wide witness. Changing modes
-            # releases that witness instead of charging it to a small protocol.
-            cached = cache_owner._tree_page_scope_cache = (generation, {},
-                None if protocol else dict(service._fingerprints))
-        cache = cached[1]
+            # Invalidate source entries only; protocols still check their complete
+            # own cohorts. Merely switching navigation modes invalidates neither.
+            for old_key, entry in list(cache.items()):
+                if len(entry) == 3:
+                    del cache[old_key]
+            _retain_scope_cache(cache_owner, generation, cache, None)
+            if TREE_SCOPE_CACHE_OVERHEAD + sys.getsizeof(service._fingerprints) >= TREE_SCOPE_BYTE_BUDGET:
+                return self._build_scope(body)
+            # Publish this witness only if a source projection is admitted below.
+            source_fingerprints = dict(service._fingerprints)
         key = (checksum({'protocol': protocol, 'binding': binding and {
             'version': binding['version'], 'revision_uuid': binding.get('revision_uuid'),
             'read_scope_revision': binding.get('read_scope_revision')},
@@ -372,6 +392,10 @@ class TreePages:
         # An oversize projection may serve this request but is never retained.
         weight = len(rows) if isinstance(values, _NavigationValues) else len(rows) + sum(len(value) for value in values.values())
         if weight <= 2_000_000:
+            # A protocol may evict older source entries and their witness to fit;
+            # a source entry must fit together with its full freshness witness.
+            base_bytes = TREE_SCOPE_CACHE_OVERHEAD + (
+                sys.getsizeof(source_fingerprints) if protocol is None else 0)
             byte_limit = TREE_SCOPE_BYTE_BUDGET - base_bytes
             retained_bytes = _retained_scope_bytes(result, service.rows, byte_limit)
             if fingerprints is not None:
@@ -386,9 +410,7 @@ class TreePages:
                 return result
             cache[key] = ((result, weight, retained_bytes, fingerprints) if protocol else
                           (result, weight, retained_bytes))
-            while (len(cache) > 8 or sum(entry[1] for entry in cache.values()) > 2_000_000
-                    or sum(entry[2] for entry in cache.values()) > byte_limit):
-                cache.pop(next(iter(cache)))
+            _retain_scope_cache(cache_owner, generation, cache, source_fingerprints)
         return result
 
     def _build_scope(self, body, *, all_fields=False):

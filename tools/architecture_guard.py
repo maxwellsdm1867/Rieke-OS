@@ -20,6 +20,10 @@ import architecture_module_policy as module_policy
 CATALOG = 'docs/architecture/adopted-port-checks.json'
 LANGUAGES = ('python', 'javascript')
 RUNNERS = (*LANGUAGES, 'desktop')
+# Mapped frontend/backend suites now contain hundreds of tests. The former
+# three-minute worker limit was shorter than successful full CI executions.
+# This is a bounded test-worker deadline, not a performance regression budget.
+RUN_TIMEOUT_SECONDS = {'python': 600, 'javascript': 600, 'desktop': 180}
 
 
 def canonical_reviewed_ast(node):
@@ -1157,7 +1161,17 @@ def run_contracts(root, value, plan, language, node):
         command = [node, '--test', *tests]
         cwd = root
     env = {**os.environ, 'PYTHONPATH':os.pathsep.join([str(root / 'python'), str(root / 'python/tests')]), 'PYTHONDONTWRITEBYTECODE':'1'}
-    run = subprocess.run(command, cwd=cwd, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=180)
+    timeout = RUN_TIMEOUT_SECONDS[language]
+    try:
+        run = subprocess.run(command, cwd=cwd, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        output = error.stdout or ''
+        if isinstance(output, bytes):
+            output = output.decode('utf-8', errors='replace')
+        return {'status':'failed', 'checked':checked,
+                'error':f'Mapped {language} tests exceeded {timeout} seconds',
+                'runs':[{'command':command, 'cwd':str(cwd), 'exit_code':None,
+                         'timed_out':True, 'timeout_seconds':timeout, 'output':output}]}
     return {'status':'passed' if run.returncode == 0 else 'failed', 'checked':checked,
             'runs':[{'command':command, 'cwd':str(cwd), 'exit_code':run.returncode, 'output':run.stdout}]}
 

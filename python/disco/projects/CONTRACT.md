@@ -190,6 +190,18 @@ validated export. The shell tests use temporary files and injected scientific
 construction. Actual restoration, unmount and database shutdown require the
 separate packaged Electron tests and timings.
 
+The dedicated desktop project process installs `workspace_process_heap` after
+scientific application construction. It freezes the current collector generation
+so ordinary requests do not repeatedly scan the large loaded heap. Reference
+counting and normal collection of new-only cycles remain active. This is a
+worker-wide policy: cycles involving frozen objects wait for refresh or shutdown.
+`WorkspaceService.refresh` thaws before rebuilding, collects and refreezes after
+success, and stays thawed after failure. Its reported elapsed time includes this
+work. Partial-load and final worker cleanup release collector ownership even if
+earlier resource cleanup raises. Shared interpreters and the launcher never opt in.
+See [the investigation and review](../../../docs/dev/process-heap-performance-2026-10-14.md)
+and the subprocess examples in `python/tests/test_workspace_process_heap.py`.
+
 ## Protocol linked recording sizes
 
 `DataStores.recording_sizes(source_sha256s)` projects filesystem availability

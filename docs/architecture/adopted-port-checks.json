@@ -759,7 +759,8 @@
           "python/tests/test_lazy_startup_outcome.py",
           "python/tests/test_architecture_guard.py",
           "python/tests/test_desktop_release_plan.py",
-          "python/tests/test_workspace_project_inventory.py"
+          "python/tests/test_workspace_project_inventory.py",
+          "python/tests/test_workspace_process_heap.py"
         ],
         "desktop": [
           "desktop/tests/supervisor.test.cjs",
@@ -3854,7 +3855,7 @@
       },
       {
         "file": "python/tests/test_benchmark.py",
-        "file_sha256": "965847df1ba0a04ed41d8b9f501e84617e45e578187e878bec2cbd34ed76ed28",
+        "file_sha256": "64900f6019ef448bbaa3863b1cf9ee88f8faece08869dc0c904730ed5a18a6e6",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -3867,7 +3868,7 @@
             "kind": "ast-call"
           }
         ],
-        "reason": "Current module path relocation and revision-owned schema provenance; all original loader Call ASTs unchanged. Source-only evidence task-6/evidence/current-path-closure/source-ast-check.json; no native execution authorization."
+        "reason": "Current module path relocation and revision-owned schema provenance; all original loader Call ASTs unchanged. Source-only evidence task-6/evidence/current-path-closure/source-ast-check.json; no native execution authorization. CI reliability follow-up disables background Git maintenance only in disposable fixture repositories; both reviewed loader Call ASTs and destinations remain unchanged. See docs/dev/ci-failure-audit-2026-10-13.md."
       },
       {
         "file": "python/tests/test_benchmark_native.py",
@@ -3973,7 +3974,7 @@
       },
       {
         "file": "python/tests/test_desktop_runtime_packaging.py",
-        "file_sha256": "8dd1080f7102987abec98319a8a3328d70b936e5c0bc93d5a48105c7ed52f0e2",
+        "file_sha256": "2f5264afc8f6a6830f2f0d653c2c8026f700c0170ce14724f0d506c47cce642e",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -3986,7 +3987,7 @@
             "kind": "ast-call"
           }
         ],
-        "reason": "Desktop startup adds deferred parser API checks; existing settings fixture loader Call ASTs are unchanged and still load only owned test copies."
+        "reason": "Desktop startup adds deferred parser API checks; existing settings fixture loader Call ASTs are unchanged and still load only owned test copies. Bounded manifest-difference diagnostics coverage is added; both fixture loader ASTs and targets are unchanged."
       },
       {
         "file": "python/tests/test_desktop_test_release.py",
@@ -4947,8 +4948,8 @@
       },
       {
         "file": "python/disco/navigation/tree_pages.py",
-        "file_sha256": "8c7e2c2c399541f81c28baff869803e3429e0db5ebef2c5c92df72261dc068c3",
-        "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Protocol-local cache follow-up: captured method targets and fallback checks are unchanged; fingerprint dependencies and grouping reservations are cohort-scoped. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md.",
+        "file_sha256": "15f0c384e9b7c22488afb03d9c1c935a0c533f56897d286e97b0a74376ec881a",
+        "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Protocol-local cache follow-up: captured method targets and fallback checks are unchanged; fingerprint dependencies and grouping reservations are cohort-scoped. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Source/protocol cache retention review: exact method captures and observer targets remain unchanged; one shared bounded cache retains both navigation modes with original freshness checks.",
         "sites": [
           {
             "selector": "Call:2",
@@ -4980,7 +4981,7 @@
       {
         "file": "python/lifecycle_diagnostic.py",
         "file_sha256": "88ab25a0b97bdd65dab7b3fba42b58ce30165a47be3c07d43efef186cd5c42a3",
-        "reason": "Opt-in observer registration ASTs, fixed module/function targets and observer source are unchanged versus main5aaf0be. WorkspaceService now admits source fingerprints only after exact or bounded converter proof; its source owner witnesses are refreshed. See docs/dev/h5-json-precision-2026-10-09.md. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md.",
+        "reason": "Opt-in observer registration ASTs, fixed module/function targets and observer source are unchanged versus main5aaf0be. WorkspaceService now admits source fingerprints only after exact or bounded converter proof; its source owner witnesses are refreshed. See docs/dev/h5-json-precision-2026-10-09.md. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Dedicated process heap lifecycle: reviewed syntax and targets remain unchanged; owner bytes add explicit refresh and shutdown collector ownership.",
         "sites": [
           {
             "selector": "Name:56",
@@ -5043,7 +5044,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -5065,7 +5066,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -5087,7 +5088,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -5157,7 +5158,7 @@
               {
                 "module": "disco.navigation.tree_pages",
                 "file": "python/disco/navigation/tree_pages.py",
-                "file_sha256": "8c7e2c2c399541f81c28baff869803e3429e0db5ebef2c5c92df72261dc068c3",
+                "file_sha256": "15f0c384e9b7c22488afb03d9c1c935a0c533f56897d286e97b0a74376ec881a",
                 "contract_id": "backend-navigation"
               }
             ]
@@ -5689,7 +5690,7 @@
       {
         "file": "python/tests/test_workspace_refresh_cache.py",
         "file_sha256": "347a06862c242e0a704598a6c1bdd72e6c84444cc3b625da27a3c369f55a1fa6",
-        "reason": "Inject service dependencies/discovery failures and bounded budgets; use original tree/predicate discovery as equality oracle for cache reuse/invalidation. Added numeric-policy regression cases shift selectors only: each existing reviewed call AST was matched unchanged within the same test method. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Projection compatibility tests are appended; original reviewed sites and AST selectors remain unchanged. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md.",
+        "reason": "Inject service dependencies/discovery failures and bounded budgets; use original tree/predicate discovery as equality oracle for cache reuse/invalidation. Added numeric-policy regression cases shift selectors only: each existing reviewed call AST was matched unchanged within the same test method. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Projection compatibility tests are appended; original reviewed sites and AST selectors remain unchanged. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Dedicated process heap lifecycle: reviewed syntax and targets remain unchanged; owner bytes add explicit refresh and shutdown collector ownership.",
         "sites": [
           {
             "selector": "Name:40",
@@ -5708,7 +5709,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -5730,7 +5731,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -5752,7 +5753,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -5785,7 +5786,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -5818,7 +5819,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -5840,7 +5841,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -5862,7 +5863,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -5884,7 +5885,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -5906,7 +5907,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -5928,7 +5929,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -5950,7 +5951,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -5983,7 +5984,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -6005,7 +6006,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -6027,7 +6028,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
@@ -6049,7 +6050,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
+                "file_sha256": "5ff4111053048cf5e3907fa3dc58184e9f9b76c3632c79198ea603dfaee40017",
                 "contract_id": null
               }
             ]
