@@ -48,8 +48,11 @@ each keep their 64 MiB estimated retention budget. One frozen recipe is retained
 in addition, so its storage still scales with that candidate's recipe; this is
 not a process RSS limit. Old adapters can retain their input until released, and
 project/manager teardown releases the store. No cache eviction truncates a scope.
-Opening/closing context, generation, transaction and acceptance checks are
-unchanged. This optimization does not claim page-size-only authority work:
+Canonical context derivation reads a binding header before freshly verifying its
+main recipe within the existing context-local read scope. It avoids a detached
+cached recipe that would be discarded. Custom binding/header/get overrides retain
+full binding reads. Opening/closing context, generation, transaction and acceptance
+checks are unchanged. This optimization does not claim page-size-only authority work:
 candidate/main validation and persisted global annotation evidence still run.
 Single-epoch detail reads retain their membership check but hydrate curation only
 for that epoch, just as epoch pages already do; custom curation readers retain

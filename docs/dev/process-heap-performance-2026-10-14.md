@@ -118,7 +118,8 @@ passed all four query/workflow comparisons and fixed-core checks on candidate
 `a16c915f9730384af3285949bb962d12707ccf01`. Its Git tree is identical to
 `37173813211cd0784084faf8f5daac1987046ed9`; the former is the tested PR merge commit.
 The standard five-job regression run 38526987274 also passed. The active workflow
-pin is now the exact tested merge commit a16c915. The old pin
+pin is now the exact tested merge commit a16c915, retained on
+`codex/performance-heap-baseline` so it remains fetchable after the PR advances. The old pin
 `34ce2e06dec0e2886d5a2310f21e02cf818cb646`, the prior release comparison and all
 failed runs retain their original identities. This is a benchmark baseline
 update, not a release, merge or native-package qualification.
@@ -127,3 +128,40 @@ Raw GitHub artifacts and local matched/profile receipts are preserved at
 `/Users/maxwellsdm/Documents/Codex/disco-heap-baseline-2026-10-14/` beyond GitHub's
 artifact retention period. The original local comparison JSON and sampled-memory
 receipts remain in `disco-performance-flags-20261013` task evidence.
+
+## Implemented allocation follow-up
+
+Commit `463985e` changes canonical Workbench contexts to read the binding header
+instead of copying a cached main recipe that the same context immediately replaced
+with freshly verified storage. It keeps the fresh read, independent closing
+contexts and full-binding fallback for custom binding/header/get implementations.
+133 Workbench, pending and scoped-read tests passed. Added coverage includes
+main equal to baseline, a distinct main after acceptance, warmed-main storage
+corruption/deletion and custom overrides. Independent review found no remaining
+freshness or fallback issue; the full architecture guard passed.
+
+Two serial pairs used clean heap-only `3717381` and clean allocation candidate
+`463985e`, the same actual-million/20k fixture, unchanged thresholds and three
+ordinary samples. First pair order was candidate then baseline; the second was
+baseline then candidate. Both complete comparisons passed with no review flags,
+and all thirteen correctness oracles passed for each run.
+
+| Action | First baseline → candidate | Second baseline → candidate |
+| --- | ---: | ---: |
+| Incoming Select all | 911.2 → 871.7 ms (4.3% faster) | 867.3 → 836.2 ms (3.6%) |
+| Fresh preparation | 2,773.2 → 2,635.2 ms (5.0%) | 2,692.2 → 2,593.7 ms (3.7%) |
+| Prepared Workbench return | 1,266.3 → 1,225.4 ms (3.2%) | 1,263.1 → 1,196.9 ms (5.2%) |
+
+An intervening candidate repeat overlapped a separate frontend test process in
+`cell-overview-qc/Rieke-OS`. It took 167 seconds overall versus about 59–63 seconds
+for the quiet pairs and produced ten timing review flags. Its receipt, failed
+comparison and contemporaneous process/CPU observation are retained; none of its
+samples were deleted or relabeled. The second full pair began after that process
+exited. These small local gains are repeated observations, not confidence intervals
+or native packaged-app qualification. Cell-equality search was about 3–4% slower
+in both pairs, within the unchanged comparison threshold; this optimization does
+not claim a search speedup. The new active baseline remains the independently
+qualified heap-only source, allowing the allocation change to be compared to it.
+
+Raw receipts, all three comparison files and sampled-memory observations are saved
+under `/Users/maxwellsdm/Documents/Codex/disco-recipe-copy-measurements-2026-10-14/`.
