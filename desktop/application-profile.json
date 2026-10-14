@@ -36,6 +36,8 @@
     "disco/metadata/explore_queries.py",
     "disco/metadata/metadata_objects.py",
     "disco/metadata/projection_cache.py",
+    "disco/metadata/projection_contract.py",
+    "disco/metadata/projection_contract_receipts.py",
     "disco/metadata/search.py",
     "disco/metadata/typed_index.py",
     "disco/metadata/typed_lifecycle.py",

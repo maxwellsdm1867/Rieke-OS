@@ -18,6 +18,7 @@ import numpy as np
 
 import workspace_service as module
 from workspace_service import WorkspaceService
+from disco.workbench.recipes import checksum
 try:
     from .test_workspace_curation import Table
 except ImportError:
@@ -542,3 +543,86 @@ class RefreshCacheTests(unittest.TestCase):
             self.service._remember_tree_catalog(('base',), registered)
             self.service._remember_tree_catalog(('empty',), ({'fields':[]}, {}))
         self.assertEqual(set(self.service._tree_catalog_cache), {('base',), ('empty',)})
+
+    def _reviewed_projection_identity(self):
+        from disco.metadata import projection_contract
+        from disco.metadata.projection_contract_receipts import COMPATIBILITY_RECEIPTS
+        python_root = Path(__file__).resolve().parents[1]
+        owners = [hashlib.sha256((python_root/path).read_bytes()).hexdigest()
+                  for path in projection_contract.OWNER_PATHS]
+        build = owners + [hashlib.sha256((python_root/'disco/metadata/projection_contract.py').read_bytes()).hexdigest()]
+        reviews = [review for review in COMPATIBILITY_RECEIPTS['reviews']
+                   if list(review['reviewed_build']) == build]
+        self.assertEqual(len(reviews), 1, 'Current implementation needs one exact review receipt')
+        review = reviews[0]
+        self.assertEqual(review['decision'], 'compatible')
+        self.assertEqual(review['legacy_contract'], checksum(list(review['legacy_owners'])))
+        self.assertEqual(projection_contract.resolve_projection_contract(owners), review['legacy_contract'])
+        self.assertEqual(self.service._projection_contract, review['legacy_contract'])
+        return review['legacy_contract'], checksum(build)
+
+    def _projection_semantics(self, service):
+        return copy.deepcopy(dict(rows=service.rows, cells=service.cells,
+            sources=service.sources, details=dict(service.details.items()),
+            streams={identity: row['streams'] for identity, row in service.rows.items()},
+            fingerprints=service._fingerprints,
+            membership=service.query_result(self.protocol)))
+
+    def _scientific_file_snapshot(self):
+        # Cache generations/leases may change; all scientific inputs and project
+        # definitions must retain both their bytes and modification timestamps.
+        return {str(path.relative_to(self.folder)):
+                (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns)
+                for path in self.folder.rglob('*')
+                if path.is_file() and not path.is_relative_to(self.folder/'cache')}
+
+    def test_reviewed_projection_contract_reopens_exact_sealed_generation(self):
+        from disco.metadata.disk_index import DiskMetadataIndex
+        from disco.metadata.projection_cache import ProjectionCache
+        # This proves key compatibility using the current equivalent builder;
+        # actual historical-build reuse is covered by the native upgrade audit.
+        legacy, fallback = self._reviewed_projection_identity()
+        self.assertNotEqual(legacy, fallback)
+        expected = self._projection_semantics(self.service)
+        scientific = self._scientific_file_snapshot()
+        index_path = self.service.disk_index.path
+        generation = self.service.disk_index.generation
+        seal_path = Path(str(index_path) + '.sha256.json')
+        unchanged = {path: hashlib.sha256(path.read_bytes()).hexdigest()
+                     for path in (index_path, seal_path)}
+        initial_queries = self.evaluator.call_count
+        with patch.object(ProjectionCache, 'read', side_effect=AssertionError('No projection decode')), \
+             patch.object(WorkspaceService, '_read_source_metadata', side_effect=AssertionError('No metadata rebuild')), \
+             patch.object(DiskMetadataIndex, 'build', side_effect=AssertionError('No index rebuild')), \
+             patch('h5py.File', side_effect=AssertionError('No H5 opens')):
+            restarted = WorkspaceService(self.folder)
+            self.assertEqual(self._projection_semantics(restarted), expected)
+        self.assertEqual(restarted._projection_contract, legacy)
+        self.assertEqual(restarted.disk_index.generation, generation)
+        self.assertEqual(restarted.disk_index.path, index_path)
+        self.assertEqual(Path(str(restarted.disk_index.path) + '.sha256.json'), seal_path)
+        self.assertEqual({path: hashlib.sha256(path.read_bytes()).hexdigest() for path in unchanged}, unchanged)
+        self.assertEqual(restarted.last_refresh['metadata_index'], 'reopened')
+        self.assertEqual((restarted.last_refresh['reused_sources'], restarted.last_refresh['rebuilt_sources']), (2, 0))
+        self.assertEqual(self.evaluator.call_count, initial_queries + 1)
+        self.assertEqual(self._scientific_file_snapshot(), scientific)
+
+    def test_reviewed_projection_matches_full_five_witness_rebuild(self):
+        legacy, fallback = self._reviewed_projection_identity()
+        self.assertNotEqual(legacy, fallback)
+        expected = self._projection_semantics(self.service)
+        scientific = self._scientific_file_snapshot()
+        generation, index_path = self.service.disk_index.generation, self.service.disk_index.path
+        initial_queries = self.evaluator.call_count
+        # Force only the public resolver's exact unreviewed-build identity. The
+        # normal source admission, projection builder and SQL checks all run.
+        with patch('disco.metadata.projection_contract.resolve_projection_contract', return_value=fallback):
+            rebuilt = WorkspaceService(self.folder)
+        self.assertEqual(rebuilt._projection_contract, fallback)
+        self.assertNotEqual(rebuilt.disk_index.generation, generation)
+        self.assertNotEqual(rebuilt.disk_index.path, index_path)
+        self.assertEqual(rebuilt.last_refresh['metadata_index'], 'built')
+        self.assertEqual((rebuilt.last_refresh['reused_sources'], rebuilt.last_refresh['rebuilt_sources']), (0, 2))
+        self.assertEqual(self.evaluator.call_count, initial_queries + 1)
+        self.assertEqual(self._projection_semantics(rebuilt), expected)
+        self.assertEqual(self._scientific_file_snapshot(), scientific)

@@ -125,9 +125,41 @@ leaf's __file__; they never hash this inert initializer instead.
 
 The digest inputs are file bytes, not renamed package labels. Import-path changes
 alter some implementation bytes, so these ordered witness digests change and may
-conservatively rebuild disposable generations. No digest override, cache reseal,
-persistent science change or claim of unchanged cache keys is authorized. Build,
+conservatively rebuild disposable generations. That relocation authorized no
+digest override, cache reseal, persistent science change or claim of unchanged
+cache keys. Build,
 reopen and cold-start costs have not been measured for this relocation.
+
+### Reviewed source-projection compatibility
+
+`projection_contract.resolve_projection_contract` now selects the source witness
+from the existing four ordered whole-file digests plus its own whole-file digest.
+An exact reviewed five-file vector may return the recorded legacy four-file
+checksum. Unknown bytes, mixed vectors, missing or invalid review data use the
+full five-file checksum instead. Missing or invalid owner digests fail rather
+than silently omitting a witness. Index and typed-sidecar recipes are unchanged.
+
+`projection_contract_receipts.py` is bounded literal data, parsed without executing
+it. Each decision binds a complete vector, legacy witnesses and checksum,
+rationale and evidence. It permits no wildcard or independent per-file match.
+Its data is excluded from the resolver fingerprint to avoid a self-reference;
+the application profile and staged integrity manifest include both files.
+The mapped `test_workspace_projection_contract.py` requires an explicit compatible
+or breaking decision for the current vector. Updating a receipt requires review
+of the actual owner changes and equivalence evidence, not merely copying hashes.
+
+The first decision covers the reviewed 0.1.12 `add33d1` implementation: four
+new-import CLI lines do not change existing-project projection semantics. Opening
+its unchanged cache uses its original generation and seal. No cache is renamed,
+resealed, relabeled or migrated. Complete SQL validation, source/metadata
+signatures, source eligibility, generation checks and leases remain mandatory.
+An incompatible recording, decoder, index or query change still invalidates or
+refuses through its existing witnesses. Reuse never replaces scientific admission.
+
+The [version-opening audit](../../../docs/dev/project-version-first-open-2026-10-14.md)
+separates native historical-cache evidence from equivalent-builder unit tests and
+from timing. Cache compatibility alone does not eliminate cold schema setup or
+the SQL validation required on every reopen.
 
 Cache namespaces retain current manifests, exact owner identity, writer/reader
 locks and orphan/foreign-file conservatism. Old readers keep assets alive until

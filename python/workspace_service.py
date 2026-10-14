@@ -286,7 +286,8 @@ class WorkspaceService:
         import disco.metadata.projection_cache as workspace_projection_cache, disco.metadata.metadata_objects as workspace_metadata_objects
         self._projection_store = ProjectionCache(self.project_dir / 'cache' / 'source-projections')
         import recording_workspace
-        self._projection_contract = checksum([digest(Path(module.__file__)) for module in
+        from disco.metadata.projection_contract import resolve_projection_contract
+        self._projection_contract = resolve_projection_contract([digest(Path(module.__file__)) for module in
             (recording_workspace, workspace_projection_cache, workspace_metadata_objects)] + [digest(Path(__file__))])
         try:
             self.refresh()
