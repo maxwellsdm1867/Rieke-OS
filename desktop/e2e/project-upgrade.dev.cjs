@@ -103,7 +103,7 @@ function overviewReadiness({mode}) {
   const owner = node.closest('.retained-workspace-view');
   const canonical = !node.hasAttribute('inert') && node.getAttribute('aria-busy') !== 'true';
   const state = {visible: true, node_id: window.__upgradeOverviewIds.get(node), owner_key: owner?.getAttribute('data-workspace-view') || null, canonical, usable: canonical && !node.closest('[hidden],[inert]') && !document.querySelector('dialog:modal')};
-  return mode === 'state' ? state : state[mode];
+  return mode === 'state' ? state : mode === 'usable-state' ? (state.usable ? state : false) : state[mode];
 }
 async function overviewDiagnostics(page) {
   return page.evaluate(() => ({url: location.href, visibility: document.visibilityState,
@@ -352,9 +352,14 @@ async function snapshotCache(project) {
           await prepareInitialPresentation(activePage, receipt);
           phase.presentation_setup = receipt.presentation_setup.slice(before);
           phase.presentation_setup_finished_at = performance.now();
-          phase.final_overview_identity = await activePage.evaluate(overviewReadiness, {mode: 'state'});
-          assert.equal(phase.final_overview_identity.usable, true, 'Exactly one visible active Overview must be usable after setup');
+          phase.post_setup_wait_started_at = performance.now();
+          const remaining = readinessDeadline - phase.post_setup_wait_started_at;
+          assert.ok(remaining > 0, 'Overview setup exhausted the original readiness deadline');
+          const finalState = await activePage.waitForFunction(overviewReadiness, {mode: 'usable-state'}, {timeout: remaining});
           phase.overview_usable_at = performance.now();
+          phase.final_overview_identity = await finalState.jsonValue();
+          await finalState.dispose();
+          phase.post_setup_wait_ms = phase.overview_usable_at - phase.post_setup_wait_started_at;
         });
       const dataReady = poll(async () => {
         const status = await api('/api/project/data-status');
