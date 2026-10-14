@@ -350,6 +350,55 @@ class WorkbenchTests(unittest.TestCase):
         row['recipe'] = original
         self.assertEqual(self.manager.context(self.protocol, self.revision, 'actor-one')['candidate_scope_revision'], context['candidate_scope_revision'])
 
+    def test_canonical_context_uses_verified_main_without_hydrating_binding_cache(self):
+        for accepted in (False, True):
+            with self.subTest(accepted=accepted):
+                if accepted:
+                    response = self.accept(self.accepted_request())
+                    self.assertEqual(response.status_code, 200, response.get_json())
+                expected = self.manager.context(self.protocol, self.revision, 'actor-one')
+                self.manager.history._recipe_cache.clear()
+                actual = self.manager.context(self.protocol, self.revision, 'actor-one',
+                    query_revision_guard=lambda: expected['expected_query_revision'])
+                self.assertEqual(actual['candidate_scope_revision'], expected['candidate_scope_revision'])
+                self.assertEqual(actual['main'], expected['main'])
+                self.assertEqual(actual['previous'], expected['previous'])
+                self.assertEqual(self.manager.history._recipe_cache, {})
+                self.assertEqual(actual['main_revision_uuid'] == actual['baseline_revision_uuid'], not accepted)
+
+    def test_context_rechecks_distinct_warmed_main_corruption_and_deletion(self):
+        response = self.accept(self.accepted_request())
+        self.assertEqual(response.status_code, 200, response.get_json())
+        expected = self.manager.context(self.protocol, self.revision, 'actor-one')
+        self.assertNotEqual(expected['main_revision_uuid'], expected['baseline_revision_uuid'])
+        self.manager.history.protocol_binding(self.protocol)
+        rows = self.case.explorer_revisions.rows
+        row = next(row for row in rows if row['revision_uuid'] == expected['main_revision_uuid'])
+        original = copy.deepcopy(row['recipe'])
+        row['recipe']['epochs'][0]['metadata_hash'] = 'f' * 64
+        with self.assertRaisesRegex(ValueError, 'integrity'):
+            self.manager.context(self.protocol, self.revision, 'actor-one')
+        row['recipe'] = original
+        rows.remove(row)
+        with self.assertRaisesRegex(KeyError, 'Explorer revision not found'):
+            self.manager.context(self.protocol, self.revision, 'actor-one')
+        rows.append(row)
+        self.assertEqual(self.manager.context(self.protocol, self.revision, 'actor-one')['candidate_scope_revision'],
+                         expected['candidate_scope_revision'])
+
+    def test_custom_binding_and_header_readers_keep_full_binding_path(self):
+        expected = self.manager.context(self.protocol, self.revision, 'actor-one')
+        for method in ('protocol_binding', 'protocol_binding_header'):
+            with self.subTest(method=method):
+                self.manager.history._recipe_cache.clear()
+                original = getattr(self.manager.history, method)
+                with patch.object(self.manager.history, method, wraps=original) as reader:
+                    actual = self.manager.context(self.protocol, self.revision, 'actor-one',
+                        query_revision_guard=lambda: expected['expected_query_revision'])
+                self.assertEqual(reader.call_count, 1)
+                self.assertIn(expected['main_revision_uuid'], self.manager.history._recipe_cache)
+                self.assertEqual(actual['candidate_scope_revision'], expected['candidate_scope_revision'])
+
     def test_custom_recipe_reader_retains_calls_and_nested_context_isolation(self):
         expected = self.manager.context(self.protocol, self.revision, 'actor-one')
         reader = self.manager.history.get

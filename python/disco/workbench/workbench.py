@@ -326,17 +326,20 @@ class ProtocolWorkbench:
             key = self.key(protocol, revision, actor)
             summary, baseline, candidate = self.proposal(protocol, revision)
             header, decisions = self.draft(key)
-            binding = self.history.protocol_binding(protocol)
+            reads = _recipe_reads.get()
+            # Canonical contexts freshly verify main below. Avoid constructing
+            # the detached cached recipe that would immediately be discarded.
+            binding = (self.history.protocol_binding_header(protocol) if reads.canonical
+                       else self.history.protocol_binding(protocol))
             if query_revision_guard is None:
                 result, _, query_revision = self.state(protocol)
             else:
                 query_revision = query_revision_guard()
                 result = self.service.query_result(protocol) if binding is None else None
-            main = binding['recipe'] if binding else None
-            reads = _recipe_reads.get()
-            if binding and reads.canonical:
+            main = None
+            if binding:
                 # A binding's UUID cache is not fresh recipe storage authority.
-                main = self._recipe(binding['revision_uuid'])
+                main = self._recipe(binding['revision_uuid']) if reads.canonical else binding['recipe']
             previous = _members(main) if main else _members(result)
             base, proposed = _members(baseline), _members(candidate)
             incoming = {key: value for key, value in proposed.items() if key not in base}
