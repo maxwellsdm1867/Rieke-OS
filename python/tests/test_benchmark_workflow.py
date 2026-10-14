@@ -405,7 +405,8 @@ class WorkflowReceiptTests(unittest.TestCase):
                    lambda v: v['environment'].update(cpu_count=0),
                    lambda v: v['environment'].update(physical_memory=True),
                    lambda v: v['cleanup'].update(server_processes_closed=False),
-                   lambda v: v['cleanup']['backend'].update(fixture_closed=False)]
+                   lambda v: v['cleanup']['backend'].update(fixture_closed=False),
+                   lambda v: v['cleanup']['backend'].update(heap_closed=False)]
         for index, change in enumerate(changes):
             path, value = self.receipt(str(index)); change(value); self.save(path, value)
             with self.subTest(index=index), self.assertRaises(ValueError):

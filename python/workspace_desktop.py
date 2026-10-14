@@ -866,7 +866,10 @@ def main(argv=None):
             from disco.projects.project_database import ensure_project_database
             ensure_project_database(project)
             from workspace_api import create_app
-            return create_app(project, retinanalysis, desktop_session_lock=session_lock, on_created=capture)
+            application = create_app(project, retinanalysis, desktop_session_lock=session_lock, on_created=capture)
+            from workspace_process_heap import install as install_project_heap
+            install_project_heap(application)
+            return application
 
         def cleanup_failed_project():
             from workspace_native_mysql import stop_native_database
@@ -924,15 +927,22 @@ def main(argv=None):
     try:
         server.run()
     finally:
-        current_inbox = app.extensions.get('h5_inbox')
-        if current_inbox:
-            current_inbox.stop()
-        close_traces = app.extensions.get('close_trace_workers')
-        if close_traces is not None:
-            close_traces()
+        try:
+            current_inbox = app.extensions.get('h5_inbox')
+            if current_inbox:
+                current_inbox.stop()
+            close_traces = app.extensions.get('close_trace_workers')
+            if close_traces is not None:
+                close_traces()
+        finally:
+            try:
+                close_heap = app.extensions.get('close_project_heap')
+                if close_heap is not None:
+                    close_heap()
+            finally:
+                if session_lock:
+                    session_lock.close()
 
-        if session_lock:
-            session_lock.close()
 
 
 if __name__ == '__main__':

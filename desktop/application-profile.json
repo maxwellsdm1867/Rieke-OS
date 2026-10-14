@@ -112,6 +112,7 @@
     "workspace_protocol_identity.py",
     "workspace_protocol_state.py",
     "workspace_qc.py",
+    "workspace_process_heap.py",
     "workspace_service.py",
     "workspace_sqlite.py",
     "workspace_startup_failure.py",
