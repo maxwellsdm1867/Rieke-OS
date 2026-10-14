@@ -130,6 +130,15 @@ for package rules, source-only examples and qualification limits. Actual package
 relocation still requires reviewed closure/discovery changes and separate
 qualification, not a silent relaxation of the allowlist.
 
+`desktop_build_runtime.py --refresh-application` requires the full build receipt's
+`runtime_build_inputs` to match the current dependency specifications, lock files
+and runtime build/patch implementation before preflight or copying starts. Legacy
+receipts and changed inputs require a full build into a fresh runtime output.
+Full builds refuse incompatible retained Python/MySQL trees as well.
+The complete builder is hashed conservatively, so a builder-only edit can also
+require rebuilding. Application source updates alone can still use refresh.
+This input check does not establish artifact integrity or runtime qualification.
+
 [DesktopPackagingTests](../python/tests/test_desktop_runtime_packaging.py) contains
 these existing focused source/temporary-file checks:
 

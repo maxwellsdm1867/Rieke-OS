@@ -79,6 +79,32 @@ def digest(path):
         return hashlib.file_digest(handle, 'sha256').hexdigest()
 
 
+# Application-only refresh may retain these bytes, so every input that builds
+# the retained dependency layer must still match. Hash the complete build tool
+# to include parser patches, relocation and optional-feature policy changes.
+RUNTIME_BUILD_INPUTS = (
+    'desktop/python-runtime.json',
+    'python/workspace-source.json',
+    'python/workspace-mysql-runtime.json',
+    'python/workspace-runtime.lock',
+    'desktop/requirements.lock',
+    'desktop/scientific-wheels.lock',
+    'tools/desktop_build_runtime.py',
+    'python/workspace_bootstrap.py',
+    'python/workspace_mysql_runtime.py',
+)
+
+
+def runtime_build_inputs():
+    return {'version': 1, 'sha256': {
+        name: digest(ROOT / name) for name in RUNTIME_BUILD_INPUTS}}
+
+
+def require_current_runtime_inputs(receipt):
+    if receipt.get('runtime_build_inputs') != runtime_build_inputs():
+        raise ValueError('Runtime build inputs differ or are missing; build a fresh pinned runtime before refreshing')
+
+
 def install_runtime_dependencies(interpreter, env):
     # A direct, hash-locked requirement prevents newer build hosts preferring
     # the same-version macOS 14 SciPy wheel with invalid PROPACK Mach-O sections.
@@ -383,6 +409,13 @@ def exclude_optional_features(output):
 
 
 def build(output, skip_frontend=False):
+    build_inputs = runtime_build_inputs()
+    # Full builds also reuse existing Python/MySQL trees. Never bless stale
+    # retained bytes with a new input receipt; changed inputs need fresh output.
+    if (output / 'python').exists() or (output / 'mysql').exists():
+        receipt_path = output / 'build-receipt.json'
+        receipt = json.loads(receipt_path.read_text()) if receipt_path.exists() else {}
+        require_current_runtime_inputs(receipt)
     spec = json.loads((ROOT / 'desktop/python-runtime.json').read_text())
     if sys.platform != spec['platform'] or os.uname().machine != 'arm64':
         raise ValueError('Initial desktop runtime build supports macOS Apple Silicon only')
@@ -473,7 +506,8 @@ def build(output, skip_frontend=False):
     dependency_inventory(output)
     refresh_native_license_inventory(output)
     exclusions = exclude_optional_features(output)
-    receipt = {'python_archive_sha256': spec['sha256'], 'parser_source_commit':
+    require_current_runtime_inputs({'runtime_build_inputs': build_inputs})
+    receipt = {'runtime_build_inputs': build_inputs, 'python_archive_sha256': spec['sha256'], 'parser_source_commit':
                subprocess.check_output(['git', '-C', checkout, 'rev-parse', 'HEAD'], text=True).strip(),
                'parser_patch': patch, 'parser_wheel_sha256': digest(parser_wheel),
                'vision_wheel_sha256': digest(vision_wheel),
@@ -497,13 +531,14 @@ def main():
     if args.refresh_application:
         receipt_path = args.output.resolve() / 'build-receipt.json'
         receipt = json.loads(receipt_path.read_text())
-        if receipt.get('scientific_wheels_lock_sha256') != digest(ROOT / 'desktop/scientific-wheels.lock'):
-            raise ValueError('Runtime wheel policy differs; rebuild the pinned runtime before refreshing')
+        require_current_runtime_inputs(receipt)
         receipt['scientific_runtime'] = scientific_preflight(args.output.resolve() / 'python/bin/python3.11', args.output.resolve())
         frontend = ROOT / 'workspace-app/dist' if args.skip_frontend else build_frontend()
+        require_current_runtime_inputs(receipt)
         copy_application(ROOT, args.output.resolve(), frontend)
         receipt['trace_native'] = build_trace_native(args.output.resolve() / 'native')
         refresh_native_license_inventory(args.output.resolve())
+        require_current_runtime_inputs(receipt)
         receipt_path.write_text(json.dumps(receipt, indent=2) + '\n')
         run([sys.executable, ROOT / 'tools/desktop_runtime_manifest.py', '--runtime', args.output.resolve(), '--write'])
     else:
