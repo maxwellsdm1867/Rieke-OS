@@ -36,6 +36,10 @@ async function quitAndVerifyOwnedExit() {
   await gracefulQuit(application, page); application = null; page = null;
   const until = Date.now() + 10000; let left;
   do {left = await ownedPackagedProcesses();if (!left.length) break;await delay(100);} while (Date.now() < until);
+  if(left.length){
+    receipt.shutdown_diagnostics={platform:process.platform,node:process.version,os_release:require('node:os').release(),processes:receipt.last_owned_process_observation};
+    try{const registry=JSON.parse(await fs.readFile(path.join(fixture.userData,'desktop-service.json'),'utf8'));receipt.shutdown_diagnostics.root={pid:registry.pid,quit:registry.quit,services:registry.services};}catch(error){receipt.shutdown_diagnostics.registry_error=error.code||error.message;}
+  }
   assert.deepEqual(left, [], 'Ordinary Quit must exit the owned Electron, root/project and native database processes');
 }
 async function chooseTestProfile() {
