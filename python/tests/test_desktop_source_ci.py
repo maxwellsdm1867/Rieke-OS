@@ -35,6 +35,9 @@ class SourceCITests(unittest.TestCase):
         self.jobs = {1: [dict(name=name, conclusion='success') for name in
             ['Adopted architecture contract discovery', 'frontend', 'python',
              'Scoped desktop lifecycle contracts', 'Apple Silicon native project lifecycle and transfer']],
+            2: [dict(name=name, conclusion='success') for name in
+                ['Backend million query regression', 'Browser million workflow regression',
+                 'Actual million metadata query regression']],
             3: [dict(name=name, conclusion='success') for name in ['build', 'Verify smoke', 'Verify updater']]}
         self.api_patch = patch.object(gate, 'api', side_effect=self.api)
         self.artifact_patch = patch.object(gate, 'artifact', side_effect=self.artifact)
@@ -99,6 +102,27 @@ class SourceCITests(unittest.TestCase):
         for change in variants:
             self.benchmark = {**original, **change}
             with self.assertRaisesRegex(ValueError, 'exact clean publication source'): self.check()
+
+    def test_each_performance_family_and_aggregate_must_succeed_in_this_attempt(self):
+        original = copy.deepcopy(self.jobs[2])
+        for index, job in enumerate(original):
+            for conclusion in (None, 'skipped', 'failure', 'cancelled', 'timed_out', 'neutral'):
+                with self.subTest(job=job['name'], conclusion=conclusion):
+                    self.jobs[2] = copy.deepcopy(original)
+                    self.jobs[2][index]['conclusion'] = conclusion
+                    with self.assertRaisesRegex(ValueError, 'required successful job'):
+                        self.check()
+            for duplicate in (False, True):
+                with self.subTest(job=job['name'], duplicate=duplicate):
+                    self.jobs[2] = copy.deepcopy(original)
+                    if duplicate:
+                        self.jobs[2].append(job.copy())
+                    else:
+                        self.jobs[2].pop(index)
+                    with self.assertRaisesRegex(ValueError, 'required successful job'):
+                        self.check()
+        self.jobs[2] = original
+        self.check()
 
     def test_review_trigger_blocks_even_if_workflow_claims_success(self):
         self.comparison.update(status='review_required', review_required=['selection/total_ms'])
