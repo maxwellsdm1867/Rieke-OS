@@ -239,6 +239,7 @@ def build(source, output, epochs, protocol_epochs=None):
             'incoming_epochs': [uid(i) for i in range(incoming_start, epochs)],
             'date_label': original['date'], 'cell_label': 'Cell 0',
             'trace_expected': {'epoch_uuid': uid(0), 'stream_uuid': stream, 'start': 0, 'count': 10000, 'sample_rate': 10000, 'units': 'pA', 'values_first': 0, 'values_last': 9999},
+            'trace_streams': copy.deepcopy(service.rows[uid(0)]['streams']),
             'trace_stream': stream, 'trace_samples': 10000, 'trace_rate_hz': 10000,
             'qualifying_scale': epochs == 1_000_000, 'fixture': 'workflow-owned-v2',
             'admissions': ['transactional SQL doubles', 'synthetic metadata index catalog/projection; production predicate evaluator', 'source verification double'],

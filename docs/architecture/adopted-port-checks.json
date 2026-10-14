@@ -3854,7 +3854,7 @@
       },
       {
         "file": "python/tests/test_benchmark.py",
-        "file_sha256": "965847df1ba0a04ed41d8b9f501e84617e45e578187e878bec2cbd34ed76ed28",
+        "file_sha256": "64900f6019ef448bbaa3863b1cf9ee88f8faece08869dc0c904730ed5a18a6e6",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -3867,7 +3867,7 @@
             "kind": "ast-call"
           }
         ],
-        "reason": "Current module path relocation and revision-owned schema provenance; all original loader Call ASTs unchanged. Source-only evidence task-6/evidence/current-path-closure/source-ast-check.json; no native execution authorization."
+        "reason": "Current module path relocation and revision-owned schema provenance; all original loader Call ASTs unchanged. Source-only evidence task-6/evidence/current-path-closure/source-ast-check.json; no native execution authorization. CI reliability follow-up disables background Git maintenance only in disposable fixture repositories; both reviewed loader Call ASTs and destinations remain unchanged. See docs/dev/ci-failure-audit-2026-10-13.md."
       },
       {
         "file": "python/tests/test_benchmark_native.py",
@@ -3973,7 +3973,7 @@
       },
       {
         "file": "python/tests/test_desktop_runtime_packaging.py",
-        "file_sha256": "8dd1080f7102987abec98319a8a3328d70b936e5c0bc93d5a48105c7ed52f0e2",
+        "file_sha256": "2f5264afc8f6a6830f2f0d653c2c8026f700c0170ce14724f0d506c47cce642e",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -3986,7 +3986,7 @@
             "kind": "ast-call"
           }
         ],
-        "reason": "Desktop startup adds deferred parser API checks; existing settings fixture loader Call ASTs are unchanged and still load only owned test copies."
+        "reason": "Desktop startup adds deferred parser API checks; existing settings fixture loader Call ASTs are unchanged and still load only owned test copies. Bounded manifest-difference diagnostics coverage is added; both fixture loader ASTs and targets are unchanged."
       },
       {
         "file": "python/tests/test_desktop_test_release.py",

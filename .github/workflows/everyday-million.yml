@@ -10,6 +10,10 @@ on:
         description: 'Optional full SHA for the previous-iteration comparison; pinned regression baseline stays fixed'
         required: false
         type: string
+      candidate_sha:
+        description: 'Optional full application SHA to measure with this workflow revision; published tags and assets remain unchanged'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -60,6 +64,7 @@ jobs:
         env:
           PINNED_SHA: 34ce2e06dec0e2886d5a2310f21e02cf818cb646
           PREVIOUS_SHA: ${{ inputs.baseline_sha || github.event.pull_request.base.sha || github.event.before }}
+          REQUESTED_CANDIDATE_SHA: ${{ inputs.candidate_sha }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           unset RIEKE_TEST_DOM_MODULE
@@ -73,7 +78,9 @@ jobs:
             PREVIOUS_SHA="$PINNED_SHA"
             printf '%s\n' 'First-push previous baseline falls back to pinned baseline.' >> "$result_dir/source-refs.txt"
           fi
-          for source_sha in "$PINNED_SHA" "$PREVIOUS_SHA"; do
+          CANDIDATE_SHA="${REQUESTED_CANDIDATE_SHA:-$(git rev-parse HEAD)}"
+          CANDIDATE_SOURCE="$GITHUB_WORKSPACE"
+          for source_sha in "$PINNED_SHA" "$PREVIOUS_SHA" "$CANDIDATE_SHA"; do
             if [[ ! "$source_sha" =~ ^[0-9a-fA-F]{40}$ ]]; then
               printf '%s\n' 'Invalid baseline: a full commit SHA is required.' >&2
               exit 1
@@ -84,9 +91,14 @@ jobs:
             git cat-file -e "${source_sha}^{commit}"
           done
           printf 'pinned=%s\nprevious=%s\ncandidate=%s\nevent=%s\n' \
-            "$PINNED_SHA" "$PREVIOUS_SHA" "$(git rev-parse HEAD)" "$EVENT_NAME" >> "$result_dir/source-refs.txt"
+            "$PINNED_SHA" "$PREVIOUS_SHA" "$CANDIDATE_SHA" "$EVENT_NAME" >> "$result_dir/source-refs.txt"
+          printf 'harness=%s\n' "$(git rev-parse HEAD)" >> "$result_dir/source-refs.txt"
           git worktree add --detach "$RUNNER_TEMP/everyday-pinned" "$PINNED_SHA"
           git worktree add --detach "$RUNNER_TEMP/everyday-previous" "$PREVIOUS_SHA"
+          if [ -n "$REQUESTED_CANDIDATE_SHA" ]; then
+            CANDIDATE_SOURCE="$RUNNER_TEMP/everyday-candidate"
+            git worktree add --detach "$CANDIDATE_SOURCE" "$CANDIDATE_SHA"
+          fi
           # Capture failures without skipping the other source or comparison.
           # All commands use this checkout's harness and one pinned interpreter.
           failure=0
@@ -98,22 +110,8 @@ jobs:
             printf '%s exit=%s\n' "$label" "$rc" | tee -a "$result_dir/exit-status.txt"
             if [ "$rc" -ne 0 ]; then failure=1; fi
           }
-          run_check pinned-run "$python_bin" -B tools/benchmark_everyday.py run \
-            --source-root "$RUNNER_TEMP/everyday-pinned" --output "$result_dir/pinned"
-          run_check previous-run "$python_bin" -B tools/benchmark_everyday.py run \
-            --source-root "$RUNNER_TEMP/everyday-previous" --output "$result_dir/previous"
-          run_check candidate-run "$python_bin" -B tools/benchmark_everyday.py run \
-            --source-root "$GITHUB_WORKSPACE" --output "$result_dir/candidate"
-          run_check pinned-compare "$python_bin" -B tools/benchmark_everyday.py compare \
-            "$result_dir/pinned/receipt.json" "$result_dir/candidate/receipt.json" \
-            --output "$result_dir/pinned-comparison.json"
-          run_check previous-compare "$python_bin" -B tools/benchmark_everyday.py compare \
-            "$result_dir/previous/receipt.json" "$result_dir/candidate/receipt.json" \
-            --output "$result_dir/previous-comparison.json"
-          run_check candidate-core "$python_bin" -B tools/benchmark.py run \
-            --output "$result_dir/core"
-          # The browser workflow is a separate end-to-end track. Run it even
-          # after earlier measurement/core failures, retaining every raw receipt.
+          # Browser baselines share exact locked dependencies. Check compatibility
+          # first; after it passes, retain all measurement failures independently.
           # Identical locks are required before sharing dependencies with baseline
           # source worktrees; never install different dependencies and compare.
           prepare_browser_baseline() {
@@ -136,12 +134,43 @@ jobs:
           pinned_ready=0
           previous_ready=0
           prepare_browser_baseline "$RUNNER_TEMP/everyday-pinned" > "$result_dir/workflow-pinned-setup.log" 2>&1 && pinned_ready=1 || failure=1
+          if [ "$CANDIDATE_SOURCE" != "$GITHUB_WORKSPACE" ]; then
+            prepare_browser_baseline "$CANDIDATE_SOURCE" > "$result_dir/workflow-candidate-setup.log" 2>&1 || failure=1
+          fi
           if [ "$PREVIOUS_SHA" = "$PINNED_SHA" ]; then
             previous_workflow_receipt="$result_dir/workflow-pinned/receipt.json"
           else
             prepare_browser_baseline "$RUNNER_TEMP/everyday-previous" > "$result_dir/workflow-previous-setup.log" 2>&1 && previous_ready=1 || failure=1
             previous_workflow_receipt="$result_dir/workflow-previous/receipt.json"
           fi
+          # Exercise all fixed actions on a small fixture before allocating
+          # million-row projects. Unsupported UI contracts fail this job early;
+          # their diagnostic receipts never count as million-row qualification.
+          if [ "$pinned_ready" -eq 1 ]; then
+            run_check compatibility-pinned "$python_bin" -B tools/benchmark_workflow.py run \
+              --smoke --source-root "$RUNNER_TEMP/everyday-pinned" --output "$result_dir/compatibility-pinned"
+          fi
+          if [ "$previous_ready" -eq 1 ]; then
+            run_check compatibility-previous "$python_bin" -B tools/benchmark_workflow.py run \
+              --smoke --source-root "$RUNNER_TEMP/everyday-previous" --output "$result_dir/compatibility-previous"
+          fi
+          run_check compatibility-candidate "$python_bin" -B tools/benchmark_workflow.py run \
+            --smoke --source-root "$CANDIDATE_SOURCE" --output "$result_dir/compatibility-candidate"
+          if [ "$failure" -ne 0 ]; then exit "$failure"; fi
+          run_check pinned-run "$python_bin" -B tools/benchmark_everyday.py run \
+            --source-root "$RUNNER_TEMP/everyday-pinned" --output "$result_dir/pinned"
+          run_check previous-run "$python_bin" -B tools/benchmark_everyday.py run \
+            --source-root "$RUNNER_TEMP/everyday-previous" --output "$result_dir/previous"
+          run_check candidate-run "$python_bin" -B tools/benchmark_everyday.py run \
+            --source-root "$CANDIDATE_SOURCE" --output "$result_dir/candidate"
+          run_check pinned-compare "$python_bin" -B tools/benchmark_everyday.py compare \
+            "$result_dir/pinned/receipt.json" "$result_dir/candidate/receipt.json" \
+            --output "$result_dir/pinned-comparison.json"
+          run_check previous-compare "$python_bin" -B tools/benchmark_everyday.py compare \
+            "$result_dir/previous/receipt.json" "$result_dir/candidate/receipt.json" \
+            --output "$result_dir/previous-comparison.json"
+          run_check candidate-core "$python_bin" -B "$CANDIDATE_SOURCE/tools/benchmark.py" run \
+            --output "$result_dir/core"
           if [ "$pinned_ready" -eq 1 ]; then
             run_check workflow-pinned-run "$python_bin" -B tools/benchmark_workflow.py run \
               --source-root "$RUNNER_TEMP/everyday-pinned" --protocol-epochs 20000 --output "$result_dir/workflow-pinned"
@@ -151,7 +180,7 @@ jobs:
               --source-root "$RUNNER_TEMP/everyday-previous" --protocol-epochs 20000 --output "$result_dir/workflow-previous"
           fi
           run_check workflow-candidate-run "$python_bin" -B tools/benchmark_workflow.py run \
-            --source-root "$GITHUB_WORKSPACE" --protocol-epochs 20000 --output "$result_dir/workflow-candidate"
+            --source-root "$CANDIDATE_SOURCE" --protocol-epochs 20000 --output "$result_dir/workflow-candidate"
           run_check workflow-pinned-compare "$python_bin" -B tools/benchmark_workflow.py compare \
             "$result_dir/workflow-pinned/receipt.json" "$result_dir/workflow-candidate/receipt.json" \
             --output "$result_dir/workflow-pinned-comparison.json"
