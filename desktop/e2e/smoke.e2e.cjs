@@ -44,10 +44,23 @@ async function authorProfile(){
   await dialog.waitFor({state:'hidden',timeout:10000});
  }
 }
+async function actualPage(project=false){
+ const until=Date.now()+60000;
+ while(Date.now()<until){
+  for(const candidate of application.windows()){
+   if(!/^http:\/\/127\.0\.0\.1:\d+\//.test(candidate.url()))continue;
+   const target=project?candidate.locator('.main-content h1').first():candidate.getByRole('heading',{name:'Your projects',exact:true});
+   if(await target.isVisible().catch(()=>false) || (project && await candidate.getByRole('dialog',{name:'Tag author',exact:true}).isVisible().catch(()=>false)))return candidate;
+  }
+  await delay(100);
+ }
+ throw new Error('Expected retained application document did not become ready');
+}
 async function start(restoredProjectName=null){
  ({application,page}=await bounded(launch(fixture),'Packaged launch'));
+ page=await actualPage(Boolean(restoredProjectName)); if(restoredProjectName)await authorProfile();
  page.setDefaultTimeout(20000);page.on('pageerror',error=>receipt.failures.push({name:'renderer-pageerror',message:error.message}));
- if(restoredProjectName)await page.getByRole('button',{name:restoredProjectName+', current project',exact:true}).waitFor({timeout:Math.min(60000,remaining())});
+ if(restoredProjectName)await page.getByRole('heading',{name:restoredProjectName,exact:true}).waitFor({timeout:Math.min(60000,remaining())});
  else await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:Math.min(60000,remaining())});
 }
 async function main(){
@@ -95,7 +108,8 @@ async function main(){
   await form.getByRole('button',{name:'Browse: New project folder',exact:true}).click();const picker=page.getByRole('dialog',{name:'New project folder',exact:true});
   await picker.getByRole('checkbox',{name:'Create a new folder inside this location'}).check();await picker.getByRole('textbox',{name:'New folder name',exact:true}).fill(leaf);await picker.getByRole('button',{name:'Use new folder',exact:true}).click();
   assert.equal(await form.locator('#new-project-directory').inputValue(),projectPath);await form.getByRole('button',{name:'Create & open',exact:true}).click();
-  await page.getByRole('button',{name:'Project overview',exact:true}).waitFor({timeout:Math.min(60000,remaining())});await authorProfile();
+  page=await actualPage(true); await authorProfile();
+  await page.getByRole('heading',{name:projectName,exact:true}).waitFor({timeout:Math.min(60000,remaining())});await authorProfile();
   const project=await page.evaluate(()=>fetch('/api/projects').then(response=>response.json()));projectUuid=project.current_project_uuid;assert.ok(projectUuid);
   assert.ok((await fs.stat(projectPath)).isDirectory());const health=await bounded(ownedControl(fixture,'health'),'Project readiness');firstSession=health.session_id;
   assert.ok(health.services.some(service=>service.project_uuid===projectUuid&&service.project_path===projectPath&&service.bound===true));receipt.project_uuid=projectUuid;
@@ -103,7 +117,7 @@ async function main(){
  });
  await check('first orderly quit exits root and project services',quitAndVerify);
  await check('cold restart reopens the persisted project',async()=>{
-  await start(projectName);await page.getByRole('button',{name:'Project overview',exact:true}).waitFor({timeout:Math.min(60000,remaining())});await authorProfile();
+  await start(projectName);await page.getByRole('heading',{name:projectName,exact:true}).waitFor({timeout:Math.min(60000,remaining())});await authorProfile();
   const project=await page.evaluate(()=>fetch('/api/projects').then(response=>response.json()));assert.equal(project.current_project_uuid,projectUuid);
   const health=await bounded((async()=>{
    while(true){const current=await ownedControl(fixture,'health');if(current.services.some(service=>service.project_uuid===projectUuid&&service.project_path===projectPath&&service.bound===true))return current;remaining();await delay(100);}
