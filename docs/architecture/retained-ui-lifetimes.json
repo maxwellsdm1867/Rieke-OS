@@ -555,13 +555,15 @@
       ]
     },
     "src/components/Common.jsx": {
-      "fingerprint": "97cf1ef4c35d4c27e8a6f7005ec34ddd0e608da7f6797674c10c89f690cf30e9",
+      "fingerprint": "721be5608d12c9bd414d77743aefc0bbc00eae193782b0b9571e5b8aebef09f9",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "Reviewed cell-list presentation change: native disclosure is retained inside a stable UUID-keyed row; pagination state and memo dependencies remain unchanged. Hover/focus visibility is CSS-only. The independent QC button invokes the existing parent-owned UUID callback and creates no requests, effects, consent or background work. Unknown metrics remain unavailable.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/overviewPresentation.test.js",
+        "src/cellTypeIconsRendering.test.js"
       ]
     },
     "src/components/DesktopDraftRecovery.jsx": {

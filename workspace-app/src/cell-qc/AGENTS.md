@@ -38,3 +38,13 @@ node --import ./src/test-support/reactTestEnvironment.js --test src/cellBaseline
 They demonstrate actual component readiness and navigation with controlled request
 responses. These checks do not perform native baseline preparation or scientific
 measurements, and source organization claims no chart-paint or performance result.
+
+Cell-list rows show aligned recording identity, epoch, duration and saved-export
+columns. Expanded details use labeled recorded metadata. QC is an independent
+sibling button available before expanding details: desktop hover or keyboard focus
+reveals it at the right, while touch/coarse pointers keep it visible. CSS reserves
+its space so reveal does not move the row. QC receives the exact cell UUID through
+the existing caller-owned route callback; it neither toggles disclosure nor reads
+or prepares QC data. Unknown counts and export coverage remain unavailable.
+`overviewPresentation.test.js` checks collapsed-row navigation and repeated-label
+UUIDs; browser fixture evidence separately checks CSS reveal and layout.

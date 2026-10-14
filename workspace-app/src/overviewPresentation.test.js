@@ -135,3 +135,28 @@ test('missing membership summaries are unavailable while an authoritative empty 
  assert.match(h.root.findByProps({className:'pi-cell-coverage'}).children.join(''),/1 cell summary row lacks a UUID/);
  assert.equal(h.root.findByProps({className:'pi-metrics'}).findAllByType('strong')[0].children.join(''),'Unavailable');
 });
+
+
+test('QC is reachable on a collapsed cell row and keeps exact identity with repeated labels',async t=>{
+  const h=await harness(t),calls=[];
+  const cells=[{cell_uuid:'first',label:'Cell1',date:'2026-10-13',cell_type:'Unknown',epochs:7,exported:0},
+    {cell_uuid:'second',label:'Cell1',date:'2026-10-13',cell_type:'Unknown',epochs:null,exported:null}];
+  await h.render(h.CellListSection,{cells,open:true,onQC:uuid=>calls.push(uuid)});
+  const rows=h.root.findAllByProps({className:'cell-row'});
+  for(const [index,row] of rows.entries()){
+    const disclosure=row.findByType('details');
+    assert.equal(disclosure.props.open,undefined,'QC needs no details expansion');
+    const qc=row.findByProps({className:'cell-qc-action'});
+    assert.equal(row.findByType('summary').findAllByType('button').length,0,'summary and QC remain separate controls');
+    await act(()=>qc.props.onClick());
+    assert.equal(disclosure.props.open,undefined,'QC does not toggle the disclosure');
+    assert.equal(calls[index],cells[index].cell_uuid);
+  }
+  const details=rows[1].findByProps({className:'cell-detail-grid'});
+  assert.deepEqual(details.findAllByType('dd').map(node=>node.children.join('')),['Unknown','2026-10-13','Unavailable','Unavailable','second']);
+  const metrics=rows[1].findByType('summary').findAllByProps({className:'cell-value'});
+  assert(metrics[0].children.includes('Unavailable'));
+  assert.equal(metrics[2].findByProps({className:'badge neutral'}).children.join(''),'Unavailable');
+  await h.render(h.CellListSection,{cells,open:true});
+  assert.equal(h.root.findAllByProps({className:'cell-qc-action'}).length,0,'no action without a route callback');
+});

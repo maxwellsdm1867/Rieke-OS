@@ -25,9 +25,5 @@
 @container (max-width:470px){
   .cell-type-disclosure>span{display:none}
   .cell-type-metrics dd{font-size:14px}
-  .cell-type-cells .cell-columns{display:none}
-  .cell-type-cells .cell-row>summary{grid-template-columns:minmax(0,1fr) auto;gap:9px}
-  .cell-type-cells .cell-row>summary>.cell-identity{grid-column:1/-1}
-  .cell-type-cells .cell-row>summary>.badge{white-space:normal;justify-self:start}
-  .cell-type-cells .cell-details{flex-wrap:wrap;gap:12px}
+
 }
