@@ -1,17 +1,17 @@
 'use strict';
 const {retainedPage,showSidebar}=require('./retained-test-page.cjs');
+const {viewNamespace,VIEW_COMPATIBILITY}=require('../startup/startup-session.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const http = require('node:http');
 const {spawn} = require('node:child_process');
 const {createHash, randomUUID} = require('node:crypto');
-const {chromium} = require('playwright');
 const {createFixture, launch, gracefulQuit, ownedControl, run} = require('./helpers.cjs');
 const {verifyResources} = require('../updater-validation.cjs');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const output = path.resolve(__dirname, '../../docs/dev/desktop-ui-e2e');
-let fixture, application, page, recoveredBrowser, deliberateCrash = false;
+let fixture, application, page, deliberateCrash = false;
 const receipt = {format: 'rieke-packaged-ui-e2e', version: 1, signed_qualification: false, checks: [], failures: [],
   method: 'Playwright Electron 1.63.0; exact packaged app clone; isolated HOME and standard --user-data-dir; sandbox enabled and CSP intact; native chooser return values stubbed only'};
 receipt.run_id = randomUUID().slice(0, 8);
@@ -37,14 +37,34 @@ async function quitAndVerifyOwnedExit() {
   assert.deepEqual(left, [], 'Ordinary Quit must exit the owned Electron, root/project and native database processes');
 }
 async function chooseTestProfile() {
+  if(!await page.locator('.app-shell').count())return;
   const dialog = page.getByRole('dialog', {name: 'Tag author', exact: true});
-  const visible = await dialog.waitFor({state: 'visible', timeout: 3000}).then(() => true).catch(() => false);
+  const authors=await page.evaluate(()=>fetch('/api/annotation-profiles').then(response=>response.ok?response.json():null));
+  if(!authors)return;
+  const visible = await dialog.waitFor({state:'visible',timeout:authors.selected_profile_uuid?3000:30000}).then(()=>true).catch(error=>{if(!authors.selected_profile_uuid)throw error;return false;});
   if (visible) {
     const existing = dialog.getByRole('button', {name: 'Electron E2E', exact: true});
     if (await existing.count()) await existing.first().click();
     else {await dialog.getByRole('textbox').fill('Electron E2E'); await dialog.getByRole('button', {name: 'Create profile', exact: true}).click();}
     await dialog.waitFor({state: 'hidden'});
+    await page.waitForFunction(()=>document.querySelector('.annotation-profile-trigger')?.title==='Tag author: Electron E2E');
   }
+}
+async function resumeProject(name){
+ page=await retainedPage(application,{title:name});
+ // Successful creation leaves its origin setup presentation retained. Dismiss
+ // that completed dialog explicitly before exercising a different action.
+ if(await page.getByRole('dialog',{name:'Project setup',exact:true}).isVisible()){
+  await page.keyboard.press('Escape');
+  if(await page.getByRole('dialog',{name:'Project setup',exact:true}).isVisible())await page.keyboard.press('Escape');
+  await page.getByRole('dialog',{name:'Project setup',exact:true}).waitFor({state:'hidden'});
+ }
+ await chooseTestProfile();await showSidebar(page);
+}
+function projectDraft(projectId){
+ const leaf=projectId===receipt.test_project_uuid?receipt.run_id:projectId===receipt.second_project_uuid?receipt.run_id+'-second':null;
+ assert.ok(leaf,'Draft must belong to one of the owned test projects');
+ return path.join(fixture.userData,'scoped-views',viewNamespace(projectId,path.join(fixture.projects,leaf),VIEW_COMPATIBILITY),'drafts',projectId+'.json');
 }
 async function saveNextOwnedDownload(filename, click) {
   await application.evaluate(({session}, filename) => {
@@ -116,7 +136,8 @@ async function check(name, fn) {
 }
 async function start(heading = 'Your projects') {
   const launched = await launch(fixture); ({application, page} = launched);
-  page=await retainedPage(application,{heading});
+  page=await retainedPage(application,heading===projectName?{title:projectName}:{heading});
+  if(heading===projectName)await chooseTestProfile();
   page.on('pageerror', error => receipt.failures.push({name: 'renderer-pageerror', message: error.message}));
   await page.getByRole('heading', {name: heading, exact: true}).waitFor({timeout: 90000});
   return launched.actual;
@@ -267,7 +288,7 @@ async function main() {
   });
   await check('workspace actual app icon loads at upper right without overlap at normal and narrow native widths',
     () => verifyHeaderIcon('.header-app-icon', '.app-header', 'workspace-icon'));
-  await check('rapid warm project navigation persists the current view before document replacement', async () => {
+  await check('rapid warm project navigation retains the exact document and current view', async () => {
     const secondName = projectName + ' second';
     await page.getByRole('button', {name: 'Add project', exact: true}).click();
     await page.getByRole('dialog', {name: 'Project setup', exact: true}).getByRole('button', {name: /^Create a new project/}).click();
@@ -278,28 +299,29 @@ async function main() {
     receipt.second_project_uuid = (await page.evaluate(() => fetch('/api/projects').then(response => response.json()))).current_project_uuid;
     assert.ok(receipt.second_project_uuid);
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: projectName, exact: true}).click();
-    page=await retainedPage(application,{title:projectName}); await showSidebar(page);
-    const navigationStart = Date.now();
+    await resumeProject(projectName);
+    const navigationStart = Date.now(), retainedOrigin=await page.evaluate(()=>performance.timeOrigin);
     await page.getByRole('button', {name: 'Logs', exact: true}).click();
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: secondName, exact: true}).click();
-    page=await retainedPage(application,{title:secondName}); await showSidebar(page);
-    const saved = JSON.parse(await fs.readFile(path.join(fixture.userData, 'drafts', receipt.test_project_uuid + '.json')));
-    assert.equal(saved.value.route.page, 'activity');
+    await resumeProject(secondName);
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: projectName, exact: true}).click();
-    page=await retainedPage(application,{title:projectName}); await showSidebar(page);
+    await resumeProject(projectName);
     await page.waitForFunction(() => [...document.querySelectorAll('.nav-item.active')].some(item => item.textContent.includes('Logs')));
-    return {warm_document_handoff: true, route_persisted: 'activity', elapsed_ms: Date.now() - navigationStart};
+    assert.equal(await page.evaluate(()=>performance.timeOrigin),retainedOrigin,'Warm return must reuse the same document');
+    return {warm_document_handoff:true,exact_document_retained:true,route_retained:'activity',disk_checkpoint:'qualified separately at orderly Quit',elapsed_ms:Date.now()-navigationStart};
   });
   await check('missing saved view opens normally without corrupt-draft recovery', async () => {
-    const missing = path.join(fixture.userData, 'drafts', receipt.second_project_uuid + '.json');
-    await fs.unlink(missing);
+    const missing = projectDraft(receipt.second_project_uuid);
     const secondName = projectName + ' second';
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: secondName, exact: true}).click();
-    page=await retainedPage(application,{title:secondName}); await showSidebar(page);
+    await resumeProject(secondName);
+    await quitAndVerifyOwnedExit();
+    await fs.unlink(missing);
+    await start(secondName);await chooseTestProfile();await showSidebar(page);
     await page.waitForFunction(() => [...document.querySelectorAll('.nav-item.active')].some(item => item.textContent.includes('Project overview')));
     assert.equal(await page.getByRole('heading', {name: 'Saved view needs recovery', exact: true}).count(), 0);
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: projectName, exact: true}).click();
-    page=await retainedPage(application,{title:projectName}); await showSidebar(page);
+    await resumeProject(projectName);
     return {missing_draft_treated_as_new_view: true};
   });
   if (process.env.RIEKE_E2E_H5) await check('actual active import defers replacement drain without stopping any writer', async () => {
@@ -408,7 +430,7 @@ async function main() {
   await check('durable real renderer draft survives orderly close and cold restart', async () => {
     await page.getByRole('button', {name: 'Project files', exact: true}).click();
     await gracefulQuit(application, page); application = null; page = null;
-    const saved = JSON.parse(await fs.readFile(path.join(fixture.userData, 'drafts', receipt.test_project_uuid + '.json')));
+    const saved = JSON.parse(await fs.readFile(projectDraft(receipt.test_project_uuid)));
     assert.equal(saved.format, 'rieke-renderer-draft'); assert.equal(saved.value.route.page, 'files');
     await start(projectName); await chooseTestProfile(); await showSidebar(page);
     await page.getByRole('button', {name: 'Project files', exact: true}).waitFor({timeout: 90000});
@@ -417,7 +439,7 @@ async function main() {
   });
   await check('project draft identity mismatch requires visible preserved recovery', async () => {
     await gracefulQuit(application, page); application = null; page = null;
-    const filename = path.join(fixture.userData, 'drafts', receipt.test_project_uuid + '.json');
+    const filename = projectDraft(receipt.test_project_uuid);
     const saved = JSON.parse(await fs.readFile(filename, 'utf8'));
     const corrupted = JSON.stringify({...saved, projectId: 'launcher'}); await fs.writeFile(filename, corrupted);
     await start('Saved view needs recovery');
@@ -434,19 +456,17 @@ async function main() {
     return {project_identity_validated: true, mismatched_bytes_preserved: true, ordinary_quit_preserved_bytes: true, owned_processes_exited: true, explicit_reset: true,
       preserved_sha256: createHash('sha256').update(corrupted).digest('hex')};
   });
-  await check('renderer crash retains recovery and ordinary Quit closes owned services before cold relaunch', async () => {
+  await check('project renderer crash returns to launcher, refuses reactivation and closes safely', async () => {
     const before = await ownedControl(fixture, 'health');
     deliberateCrash = true;
-    receipt.crash_test_method = 'Actual renderer crash; original stale Playwright target replaced by fresh CDP connection to the same isolated app; real recovery UI, bridge and backend health assertions';
+    receipt.crash_test_method = 'Actual retained project renderer crash; inspect the uncrashed visible launcher, refuse the failed owner, verify native Quit and cold restart';
     await application.evaluate(({BrowserWindow}) => {const target = BrowserWindow.getAllWindows()[0]; const content=target.contentView.children.at(-1)?.webContents||target.webContents; setTimeout(() => content.forcefullyCrashRenderer(), 100);});
     await delay(300);
-    // Attach a fresh software-test session to this isolated app's existing CDP
-    // endpoint. Pinned Playwright cannot revive its original crashed Page.
-    const port = Number((await fs.readFile(path.join(fixture.userData, 'DevToolsActivePort'), 'utf8')).split('\n')[0]);
-    recoveredBrowser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
-    page = recoveredBrowser.contexts()[0].pages().find(item=>item.url().startsWith('file:')&&item.url().endsWith('/recovery.html')); assert.ok(page);
-    page.on('pageerror', error => receipt.failures.push({name: 'recovered-renderer-pageerror', message: error.message}));
-    await page.getByRole('heading', {name: 'Disco recovery', exact: true}).waitFor({timeout: 15000});
+    // The current per-project crash contract preserves healthy documents and
+    // activates the existing launcher, instead of crashing/reloading the host.
+    page=await retainedPage(application,{heading:'Your projects',timeout:15000});
+    const refused=await page.evaluate(async identity=>{try{await window.riekeDesktop.activateRetainedProject(identity);return '';}catch(error){return error.message;}},{projectUuid:receipt.test_project_uuid,path:path.join(fixture.projects,receipt.run_id)});
+    assert.match(refused,/renderer stopped|unavailable|closing/i);
     assert.equal((await ownedControl(fixture, 'health')).pid, before.pid);
     await page.screenshot({path: path.join(output, 'renderer-recovery.png')});
     await quitAndVerifyOwnedExit();
@@ -456,7 +476,7 @@ async function main() {
     deliberateCrash = false;
     await start(projectName); await chooseTestProfile(); await showSidebar(page);
     assert.notEqual((await ownedControl(fixture, 'health')).session_id, before.session_id);
-    return {renderer_recovery_visible: true, ordinary_quit_exited_owned_processes: true, latest_view_not_claimed_saved: true, cold_relaunch_ready: true};
+    return {healthy_launcher_visible:true,failed_document_reactivation_refused:true,ordinary_quit_exited_owned_processes: true, latest_view_not_claimed_saved: true, cold_relaunch_ready: true};
   });
   await check('final orderly quit and packaged resource immutability', async () => {
     await gracefulQuit(application, page); application = null; page = null;
