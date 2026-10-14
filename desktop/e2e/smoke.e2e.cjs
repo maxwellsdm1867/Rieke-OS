@@ -33,7 +33,43 @@ async function ownedProcesses(){
 }
 async function quitAndVerify(){
  const before=await ownedProcesses();assert.ok(before.length,'Owned packaged processes must exist before shutdown');
- const quitDiagnostic={started_at:new Date().toISOString(),owned_processes_before:before.length};
+ const quitDiagnostic={started_at:new Date().toISOString(),owned_processes_before:before.length,lifecycle_events:[]};
+ let pendingDiagnostic='';
+ application.process().stdout.on('data',chunk=>{
+  pendingDiagnostic+=chunk.toString();let end;
+  while((end=pendingDiagnostic.indexOf('\n'))>=0){const line=pendingDiagnostic.slice(0,end);pendingDiagnostic=pendingDiagnostic.slice(end+1);
+   if(line.startsWith('DISCO_SMOKE_LIFECYCLE=')&&quitDiagnostic.lifecycle_events.length<200){try{quitDiagnostic.lifecycle_events.push(JSON.parse(line.slice('DISCO_SMOKE_LIFECYCLE='.length)));}catch{}}
+  }
+  if(pendingDiagnostic.length>65536)pendingDiagnostic='';
+ });
+ await application.evaluate(({app})=>{
+  const require=process.getBuiltinModule('module').createRequire(app.getAppPath()+'/main.cjs');
+  const {DraftBarrier}=require('./close/draft-barrier.cjs');
+  const {DraftStore}=require('./drafts/draft-store.cjs');
+  const {StartupSession}=require('./startup/startup-session.cjs');
+  let sequence=0;const emit=(event,fields={})=>process.stdout.write('DISCO_SMOKE_LIFECYCLE='+JSON.stringify({event,at:Date.now(),...fields})+'\n');
+  const target=owner=>({id:owner.webContents.id,active:owner.active,project_id:owner.binding?.project_uuid,
+   draft_unavailable:owner.draftUnavailable,background_throttling:owner.webContents.getBackgroundThrottling()});
+  const prepare=DraftBarrier.prototype.prepare,acknowledge=DraftBarrier.prototype.acknowledge;
+  DraftBarrier.prototype.prepare=function(owners,options){
+   emit('prepare',{targets:[...owners].map(target),timeout:options?.timeout});
+   if(!this.smokeObservedSend){const send=this.send;this.send=function(owner,payload){emit('send',{...target(owner),request_id:payload.requestId});return send.call(this,owner,payload);};this.smokeObservedSend=true;}
+   return prepare.call(this,owners,options);
+  };
+  DraftBarrier.prototype.acknowledge=function(payload,owner){
+   emit('acknowledge',{...target(owner),request_id:payload?.requestId,ok:payload?.ok,reason:payload?.reason});
+   return acknowledge.call(this,payload,owner);
+  };
+  for(const [prototype,name]of[[DraftStore.prototype,'save'],[StartupSession.prototype,'remember']]){
+   const original=prototype[name];prototype[name]=function(...args){
+    const operation=++sequence;emit(name+'-start',{operation,project_id:name==='save'?args[0]?.projectId:args[0]});
+    const result=original.apply(this,args);
+    // Observe the original promise without replacing it or changing its outcome.
+    Promise.resolve(result).then(()=>emit(name+'-end',{operation}),error=>emit(name+'-error',{operation,message:error.message}));
+    return result;
+   };
+  }
+ });
  quitDiagnostic.documents=await application.evaluate(({webContents})=>webContents.getAllWebContents().map(contents=>({
   id:contents.id,type:contents.getType(),url:contents.getURL(),loading:contents.isLoading(),crashed:contents.isCrashed(),destroyed:contents.isDestroyed()
  })));
