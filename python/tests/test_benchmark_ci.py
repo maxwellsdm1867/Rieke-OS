@@ -305,7 +305,7 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertEqual(upload['if'], 'always()')
         self.assertEqual(upload['with']['name'], 'everyday-million-${{ github.run_id }}-${{ github.run_attempt }}')
         sources = next(step for step in self.jobs['scope']['steps'] if step.get('id') == 'sources')
-        self.assertEqual(sources['env']['PINNED_SHA'], '34ce2e06dec0e2886d5a2310f21e02cf818cb646')
+        self.assertEqual(sources['env']['PINNED_SHA'], 'a16c915f9730384af3285949bb962d12707ccf01')
 
 
 if __name__ == '__main__':
