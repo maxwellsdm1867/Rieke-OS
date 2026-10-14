@@ -1,5 +1,11 @@
 name: desktop-native-diagnostic
 on:
+  push:
+    branches: [codex/release-0.1.14-qualification]
+    paths:
+      - .github/workflows/desktop-native-diagnostic.yml
+      - desktop/e2e/backend-failure.e2e.cjs
+      - desktop/e2e/smoke.e2e.cjs
   workflow_dispatch:
 permissions:
   contents: read
@@ -71,8 +77,11 @@ jobs:
               file=dist/name
               assert file.is_file() and not file.is_symlink()
               assert file.stat().st_size==expected['size']
+              digest=hashlib.sha256()
               with file.open('rb') as stream:
-                  assert hashlib.file_digest(stream,'sha256').hexdigest()==expected['sha256']
+                  for chunk in iter(lambda: stream.read(1024*1024),b''):
+                      digest.update(chunk)
+              assert digest.hexdigest()==expected['sha256']
           archive=dist/f"Disco-{baseline['application_version']}-arm64.zip"
           assert archive.name in inventory
           destination=dist/'mac-arm64'
