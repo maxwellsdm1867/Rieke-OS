@@ -82,8 +82,13 @@ def _complete_bin_shape(indices, count, width):
     ends = np.r_[low[1:] - 1, count - 1]
     bins = np.minimum(columns - 1, np.floor(indices.astype('f8') / (count - 1) * width))
     occupied, sizes = np.unique(bins, return_counts=True)
+    # The encoder already proved strictly increasing original indices. Exact
+    # ordered lookup needs no general set normalization or masked-array support.
+    required = np.r_[low, ends]
+    positions = np.searchsorted(indices, required)
     return (np.array_equal(occupied, targets) and bool(np.all(sizes <= 4)) and
-            bool(np.isin(np.r_[low, ends], indices).all()))
+            bool(np.all(positions < len(indices))) and
+            np.array_equal(indices[positions], required))
 
 
 def prepare_display_geometry(batch, physical_width):

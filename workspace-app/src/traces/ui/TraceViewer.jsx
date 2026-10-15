@@ -1,5 +1,5 @@
-import {GEOMETRY_UNAVAILABLE,geometryEligible,readTraceGeometry,traceDisplayPath} from '../traceDisplayGeometry.js';
-import {useTraceViewport} from '../useTraceViewport.js';
+import {GEOMETRY_UNAVAILABLE} from '../traceDisplayGeometry.js';
+import {usePreparedTraceGeometry} from '../usePreparedTraceGeometry.js';
 import {useExactTraceCursor} from '../useExactTraceCursor.js';
 import {usePreparedTraceRead} from '../usePreparedTraceRead.js';
 import {traceSampleStatistics,traceStatisticsExtent} from '../traceStatistics.js';
@@ -95,17 +95,12 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   const identity=JSON.stringify([contextKey,epoch?.epoch_uuid,epoch?.source_sha256,stream?.uuid,stream?.sample_count,stream?.sample_rate,stream?.units]);
   const base=useRef(null),overlay=useRef(null),geometry=useRef(null),cursor=useRef(null),drag=useRef(null),frame=useRef(null),sampleReadout=useRef(null),timeReadout=useRef(null),responseReadout=useRef(null),cursorInput=useRef(null),surface=useRef(null);
   const geometryCandidate=prepared&&whole&&Number.isSafeInteger(stream?.sample_count)&&stream.sample_count<=1000000&&/^[0-9a-f]{64}$/.test(epoch?.source_sha256??'');
-  const physicalWidth=useTraceViewport(base,geometryCandidate);
   const [rawFallback,setRawFallback]=useState(null);
   const fallbackCurrent=rawFallback?.identity===identity&&rawFallback.owner===owner;
   useLayoutEffect(()=>setRawFallback(previous=>previous?.identity===identity&&previous.owner===owner?previous:null),[identity,owner]);
-  const useGeometry=geometryCandidate&&!fallbackCurrent&&geometryEligible(stream?.sample_count,physicalWidth);
-  const displayPath=useGeometry?traceDisplayPath(epoch.epoch_uuid,stream,readContext,physicalWidth):null;
-  const displayIdentity=JSON.stringify([identity,physicalWidth]);
-  const displayPort=useMemo(()=>useGeometry?{request:(path,options)=>readTraceGeometry(owner?.request??api,path,options,
-    {epochUuid:epoch.epoch_uuid,sourceSha256:epoch.source_sha256,stream,readContext,physicalWidth})}:undefined,
-    [useGeometry,owner,identity,physicalWidth]);
-  const displayResource=usePreparedTraceRead(displayPath,displayIdentity,displayPort);
+  const displayResource=usePreparedTraceGeometry({canvas:base,enabled:geometryCandidate,requestEnabled:!fallbackCurrent,
+    identity,owner,request:owner?.request??api,epochUuid:epoch?.epoch_uuid,sourceSha256:epoch?.source_sha256,stream,readContext});
+  const {physicalWidth,useGeometry,path:displayPath,revision:displayIdentity}=displayResource;
   const unavailable=fallbackCurrent||displayResource.data===GEOMETRY_UNAVAILABLE;
   useLayoutEffect(()=>{if(displayResource.data===GEOMETRY_UNAVAILABLE)setRawFallback({identity,owner});},[displayResource.data,identity,owner]);
   const rawEnabled=!geometryCandidate||physicalWidth!==null&&!useGeometry||unavailable;

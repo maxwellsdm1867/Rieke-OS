@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import React from 'react';
+import React,{useLayoutEffect} from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
 import {createServer} from '../test-support/isolatedVite.js';
 import {fileURLToPath} from 'node:url';
@@ -10,7 +10,7 @@ const uid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const captured={kind:'prepared_display',token:uid(1),project_uuid:uid(2),publication_revision:uid(3),view_kind:'workbench_pending',protocol_uuid:uid(4),candidate_revision_uuid:uid(5),membership_sha256:'a'.repeat(64)};
 async function harness({holdDisplay=false,displayError=null}={}){
  const names=['window','document','getComputedStyle','ResizeObserver','requestAnimationFrame','cancelAnimationFrame'],previous=Object.fromEntries(names.map(n=>[n,globalThis[n]]));
- const observers=[],resolutions=[],frames=new Map(),strokes=[],requests=[];let frameId=0,renderer;
+ const observers=[],resolutions=[],frames=new Map(),strokes=[],requests=[],followingLayoutRequests=[];let frameId=0,renderer;
  let rect={left:0,top:0,width:603,height:300};
  globalThis.window={devicePixelRatio:1,addEventListener(){},removeEventListener(){},matchMedia(query){const value={query,callback:null,addEventListener(_,cb){this.callback=cb;},removeEventListener(){this.callback=null;}};resolutions.push(value);return value;}};
  globalThis.document={activeElement:null};globalThis.getComputedStyle=()=>({getPropertyValue:name=>name==='--plot-trace'?'trace':name});
@@ -30,8 +30,9 @@ async function harness({holdDisplay=false,displayError=null}={}){
  const port={identity:'geometry-session',request};
  const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
  const {default:Trace}=await server.ssrLoadModule('/src/traces/ui/TraceViewer.jsx'),{WorkspaceRequestProvider}=await server.ssrLoadModule('/src/workspaceRequest.js');
- const render=async({record=epoch,context=captured,owner=port}={})=>act(async()=>{activeEpoch=record;activeContext=context;const node=React.createElement(WorkspaceRequestProvider,{port:owner},React.createElement(Trace,{epoch:record,readContext:context}));if(renderer)renderer.update(node);else renderer=TestRenderer.create(node,{createNodeMock:n=>n.type==='canvas'?(n.props.className==='tv-base'?canvas:overlay):n.props['aria-label']==='Recorded response and scientific units'?response:generic});});
- return {requests,strokes,values,epoch,port,response,resolutions,get root(){return renderer.root;},render,
+ function FollowingLayout(){useLayoutEffect(()=>{followingLayoutRequests.push(requests.length);});return null;}
+ const render=async({record=epoch,context=captured,owner=port}={})=>act(async()=>{activeEpoch=record;activeContext=context;const node=React.createElement(WorkspaceRequestProvider,{port:owner},React.createElement(React.Fragment,null,React.createElement(Trace,{epoch:record,readContext:context}),React.createElement(FollowingLayout)));if(renderer)renderer.update(node);else renderer=TestRenderer.create(node,{createNodeMock:n=>n.type==='canvas'?(n.props.className==='tv-base'?canvas:overlay):n.props['aria-label']==='Recorded response and scientific units'?response:generic});});
+ return {requests,strokes,values,epoch,port,response,resolutions,followingLayoutRequests,get root(){return renderer.root;},render,
   async frame(){await act(async()=>{const callbacks=[...frames.values()];frames.clear();callbacks.forEach(cb=>cb());});},
   async resize(width){await act(async()=>{rect={...rect,width};for(const observer of [...observers].reverse())if(!observer.closed)observer.callback();});},
   async dpr(value){await act(async()=>{window.devicePixelRatio=value;for(const resolution of [...resolutions])resolution.callback?.();});},
@@ -76,4 +77,26 @@ test('typed geometry unavailable alone triggers same-prepared raw fallback',asyn
  const failed=await harness({displayError:Object.assign(Error('source changed'),{status:409,data:{code:'source_changed'}})});try{
   await failed.render();assert.equal(failed.requests.length,1);assert.equal(failed.strokes.length,0);assert(failed.root.findAllByProps({role:'alert'}).some(n=>n.children.includes('source changed')));
  }finally{await failed.close();}
+});
+
+test('current geometry error retries the same prepared display owner without a raw fallback',async()=>{
+ const h=await harness({holdDisplay:true});try{
+  await h.render();await act(async()=>h.requests[0].reject(Error('Current geometry read failed')));
+  assert(h.root.findAllByProps({role:'alert'}).some(n=>n.children.includes('Current geometry read failed')));
+  const retry=h.root.findAllByType('button').find(n=>n.props.children==='Retry trace');
+  await act(async()=>retry.props.onClick());
+  assert.equal(h.requests.length,2);assert(h.requests[0].signal.aborted);assert(h.requests[1].isDisplay);assert.equal(h.requests[1].path,h.requests[0].path);
+  await act(async()=>h.requests[1].finish());assert(h.strokes.length);assert.equal(h.requests.filter(r=>!r.isDisplay).length,0);
+ }finally{await h.close();}
+});
+
+
+test('actual Trace dispatches geometry during its first committed layout before its following sibling',async()=>{
+ const h=await harness({holdDisplay:true});try{
+  await h.render();
+  assert.equal(h.followingLayoutRequests[0],1,'actual consumer must request before width publication can cause a second commit');
+  assert.equal(h.requests.length,1);assert(h.requests[0].isDisplay);assert.equal(h.requests[0].width,500);
+  assert.equal(h.strokes.length,0);
+  await act(async()=>h.requests[0].finish());assert(h.strokes.length);
+ }finally{await h.close();}
 });

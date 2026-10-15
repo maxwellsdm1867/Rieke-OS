@@ -192,6 +192,13 @@ class NativeTraceTests(unittest.TestCase):
         self.assertLessEqual(max(lengths), native.MAX_SPAN_BYTES)
         self.assertLessEqual(sum(lengths), native.MAX_INPUT_BYTES)
         self.assertLess(sum(lengths), self.path.stat().st_size // 2)
+        # Reverse physical placement must also preserve a partial logical slice.
+        lengths.clear()
+        with patch.object(native.os, 'pread', side_effect=observed):
+            partial = self.read(63, 1089)
+        self.assertEqual(partial.tobytes(), values[63:1089].tobytes())
+        self.assertLessEqual(max(lengths), native.MAX_SPAN_BYTES)
+        self.assertLessEqual(sum(lengths), native.MAX_INPUT_BYTES)
 
     def test_unsupported_endian_padding_filters_and_layout_fall_back_before_raw_io(self):
         cases = [dict(values=self.values(dtype=[('quantity','>f8'),('units','S10')])),
@@ -429,6 +436,72 @@ class NativeTraceTests(unittest.TestCase):
             self.assertIsNone(self.read())
         finally:
             native._NATIVE_SLOT.release()
+
+    def test_chunk_map_sparse_masks_and_logical_error_precedence(self):
+        from types import SimpleNamespace as Chunk
+        def enumerate_chunks(entries, total=128):
+            class Data:
+                id = Chunk(chunk_iter=lambda callback: [callback(entry) for entry in entries])
+                def __len__(self): return total
+            return native._enumerate_chunk_arrays(Data())
+        def chunk(coordinate, offset=0, size=20, mask=0):
+            return Chunk(chunk_offset=(coordinate,), byte_offset=offset, size=size, filter_mask=mask)
+        # Sparse/skipped-filter semantics win over malformed physical storage.
+        self.assertIsNone(enumerate_chunks([chunk(0, -1)])[1])
+        self.assertIsNone(enumerate_chunks([chunk(0, -1), chunk(64, 20, mask=1)])[1])
+        with self.assertRaisesRegex(ValueError, 'Invalid or duplicate'):
+            enumerate_chunks([chunk(0), chunk(0, mask=1)])
+        # Excess record count is checked before malformed logical coordinates.
+        with self.assertRaisesRegex(ValueError, '^Duplicate trace chunk locations$'):
+            enumerate_chunks([chunk(1), chunk(64), chunk(128)])
+        _, (offsets, sizes, unusual, order) = enumerate_chunks([chunk(64, 10), chunk(0, 50)])
+        self.assertEqual(offsets.tolist(), [50, 10])
+        self.assertEqual(sizes.tolist(), [20, 20])
+        self.assertEqual(order.tolist(), [1, 0])
+        self.assertEqual(unusual, {})
+
+    def test_array_chunk_spans_exact_limits_and_physical_error_precedence(self):
+        def spans(offsets, sizes, file_size=100000000, order=None):
+            return native._array_chunk_spans(np.array(offsets, dtype='u8'),
+                np.array(sizes, dtype='u8'), file_size, selected=order)
+        def shape(result):
+            return None if result is None else [(a, b, ids.tolist()) for a, b, ids in result]
+        limit = native.MAX_SPAN_BYTES
+        for gap in (native.MAX_GAP_BYTES, native.MAX_GAP_BYTES + 1):
+            result = spans([0, 20 + gap], [20, 20])
+            self.assertEqual(len(result), 1 if gap == native.MAX_GAP_BYTES else 2)
+        self.assertEqual(len(spans([0, 20], [20, limit - 20])), 1)
+        self.assertEqual(len(spans([0, 20], [20, limit - 19])), 2)
+        with self.assertRaisesRegex(ValueError, 'overlapping'):
+            spans([100, 110], [20, 20])
+        with self.assertRaisesRegex(ValueError, 'overlapping'):
+            spans([100], [20], 119)
+        # A too-large first chunk falls back before a later corrupt chunk.
+        self.assertIsNone(spans([0, limit + 2], [limit + 1, 0]))
+        with self.assertRaisesRegex(ValueError, 'overlapping'):
+            spans([0, 20], [0, limit + 1])
+        self.assertIsNone(spans([i * 6000000 for i in range(9)], [limit] * 9))
+        # Equal offsets retain enumeration order, including fallback priority.
+        self.assertIsNone(spans([0, 0], [20, limit + 1], order=np.array([1, 0])))
+        with self.assertRaisesRegex(ValueError, 'overlapping'):
+            spans([0, 0], [20, limit + 1], order=np.array([0, 1]))
+        # Logical selection order and physical read order remain independent.
+        self.assertEqual(shape(spans([100, 0, 50], [20, 20, 20], order=np.array([0, 2]))),
+                         [(50, 120, [2, 0])])
+
+    def test_array_chunk_span_search_keeps_integer_precision_at_large_offsets(self):
+        maximum = 2**64 - 1
+        limit = native.MAX_SPAN_BYTES
+        for base in (2**53 - 1, 2**53 + 1, 2**63 - 1, 2**63 + 1, maximum - 2 * limit):
+            for delta in (-1, 0, 1):
+                with self.subTest(base=base, delta=delta):
+                    result = native._array_chunk_spans(np.array([base, base + 20], dtype='u8'),
+                        np.array([20, limit - 20 + delta], dtype='u8'), maximum)
+                    self.assertEqual(len(result), 1 if delta <= 0 else 2)
+                    self.assertEqual(result[-1][1], base + limit + delta)
+        result = native._array_chunk_spans(np.array([maximum - 100], dtype='u8'),
+            np.array([100], dtype='u8'), maximum)
+        self.assertEqual((result[0][0], result[0][1]), (maximum - 100, maximum))
 
     def test_physical_overlap_and_caps_are_checked_before_read(self):
         from types import SimpleNamespace as Chunk

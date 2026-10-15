@@ -151,7 +151,19 @@ NULLPAD or NULLTERM unit strings only. For NULLTERM, the helper zeros bytes afte
 the first NUL exactly as H5 converts to NumPy NULLPAD strings; full-width strings
 and quantity bits remain unchanged. UTF-8/padded/custom H5 types retain generic H5.
 
-HDF5 resolves sealed paths and chunk metadata on the caller thread. Physical
+HDF5 resolves sealed paths and chunk metadata on the caller thread. Enumeration
+writes physical offsets, sizes and enumeration order into fixed NumPy integer
+arrays through scalar memoryviews, with a bounded bytearray for seen logical
+chunks. It retains neither HDF5 StoreInfo objects nor their coordinate tuples.
+Sparse allocation and skipped-filter fallback precede physical-map validation;
+invalid logical coordinates and duplicate counts still fail. Stable physical
+sorting preserves enumeration order for tied offsets. Vectorized bounds and
+overlap checks preserve the earlier error-versus-oversized-chunk fallback order;
+exact integer span searches and relative offsets preserve logical sample order.
+Unusual malformed scalar metadata retains the existing validation path. These
+allocations are request-local; no GC policy or source/sample cache changes.
+
+Physical
 ranges must not overlap and must remain within the source file. Reads coalesce
 only up to 4 MiB per span with gaps no larger than 64 KiB, and at most 32 MiB total.
 A duplicate of the admitted H5 sec2 descriptor supplies `pread`; its source stat
@@ -251,8 +263,11 @@ Wire format is `DTM1`, uint32-LE JSON header length, JSON and zero padding to ei
 bytes, uint32-LE original indices, zero padding to eight bytes, and binary64-LE
 original point values. Header identity includes the exact prepared context,
 source/epoch/stream, sample rate, units, raw start/count, physical width, point count
-and full-stream finite extrema/counts. The browser admits this separately from raw
-sample decoding and draws the supplied ordered points without reducing them again.
+and full-stream finite extrema/counts. The encoder proves required screen-column
+endpoint coverage by exact ordered lookup after validating strictly increasing
+original indices; it does not normalize general sets or load masked-array support.
+The browser admits this separately from raw sample decoding and draws the supplied
+ordered points without reducing them again.
 Width, DPR, owner, source or epoch changes retire incompatible geometry.
 
 Whole automatic-amplitude views can use geometry. Raw zoom and manually clipped

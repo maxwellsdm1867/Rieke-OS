@@ -58,7 +58,8 @@ class TraceGeometryTests(unittest.TestCase):
             return dict(prepare_display_geometry(batch, width), read_context=context)
 
     def test_fractional_bins_ties_endpoint_spikes_and_exact_float_bits(self):
-        for width in (1., 1.375, 7.5, 30.25):
+        for width in (1., math.nextafter(1., 0.), math.nextafter(1., math.inf),
+                      1.375, math.nextafter(7.5, 0.), 7.5, math.nextafter(7.5, math.inf), 30.25):
             batch, context, raw = fixture()
             raw[0], raw[-1], raw[31:36] = -0., 1e200, [4, 4, -4, -4, 5e-324]
             geometry = self.prepare(batch, context, width)

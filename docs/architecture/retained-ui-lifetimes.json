@@ -3120,7 +3120,7 @@
       ]
     },
     "src/traces/ui/TraceViewer.jsx": {
-      "fingerprint": "1cb0dd739b426dd155347226cf4f6236a8e07850dd368cfb040213771c78434f",
+      "fingerprint": "dfac034f77459bac87470f1f73713ac36869d2afcb02202423e8cf144b77b501",
       "sites": [
         {
           "owner": "TraceViewer",
@@ -3159,14 +3159,15 @@
         }
       ],
       "lifetime": "exact-presentation-and-read-lifetime",
-      "reason": "Whole geometry, raw windows and cursor tiles stay separate. Owner/context/width fences reject stale paint; unchanged reveals retain input text.",
+      "reason": "Whole geometry uses one committed measurement/request owner; raw windows and exact cursor tiles remain separate. Source/context/width and live signal fences reject stale display; first mount dispatch precedes following sibling layout and no raw prefetch occurs.",
       "tests": [
         "src/retainedControls.test.js",
         "src/traces/responsePreferenceRetention.test.js",
         "src/traces/traceDisplayLifecycle.test.js",
         "src/traces/traceExtentLifecycle.test.js",
         "src/traces/traceGeometryLifecycle.test.js",
-        "src/traces/tracePaintLifecycle.test.js"
+        "src/traces/tracePaintLifecycle.test.js",
+        "src/traces/preparedTraceGeometryCommit.test.js"
       ]
     },
     "src/traces/ui/traceGeometry.js": {
@@ -3827,18 +3828,19 @@
         "src/traces/preparedTraceRead.test.js"
       ]
     },
-    "src/traces/useTraceViewport.js": {
-      "fingerprint": "800b7e46a8513a633fdd343ef0e30f022da9b0220d8fbc7f1c5146ee7313cb7a",
+    "src/traces/usePreparedTraceGeometry.js": {
+      "fingerprint": "09231aaed9ed50f70226988e61cc31c46b7ca325a91a47c90ad17dc2b0b9d0cb",
       "sites": [
         {
-          "owner": "useTraceViewport",
+          "owner": "usePreparedTraceGeometry",
           "kind": "useLayoutEffect",
-          "fingerprint": "425a8a69db1246ce584dc8d6edf89fd9df237ab62677b3d5003d99b567316fb5"
+          "fingerprint": "98712ca5b8929922ba1f6da0acfe8eba2fd5799081ff605a1905908c5e1766bf"
         }
       ],
-      "lifetime": "measured-viewport-lifetime",
-      "reason": "ResizeObserver and rearmed DPR listeners dispose with the canvas owner. Actual fractional physical width controls geometry admission and demand.",
+      "lifetime": "commit-owned-measured-geometry-read",
+      "reason": "Only committed active owners measure the real canvas and synchronously dispatch before publishing width. Canonical context/source/epoch/stream, port/function, nonce and activity define lifetime; cleanup and width replacement abort the signal. Current live signals fence late completions and completed A-B-A resurrection. Zero-width and hidden retained views wait; DPR and CSS observers retire with ownership.",
       "tests": [
+        "src/traces/preparedTraceGeometryCommit.test.js",
         "src/traces/traceGeometryLifecycle.test.js"
       ]
     }

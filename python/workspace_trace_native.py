@@ -366,31 +366,116 @@ def _read_native(data, signature, begin, end, expected_units=None):
         if diagnostic is not None: diagnostic.mark(None)
 
 
+def _enumerate_chunk_arrays(data):
+    """Bounded arrays; callback retains neither StoreInfo nor coordinate tuples."""
+    import numpy as np
+    total = len(data)
+    expected_count = (total + 63) // 64
+    physical = np.zeros(expected_count, dtype=np.uint64)
+    lengths = np.zeros(expected_count, dtype=np.uint64)
+    physical_view = memoryview(physical)
+    lengths_view = memoryview(lengths)
+    seen = bytearray(expected_count)
+    enumeration_order = np.empty(expected_count, dtype=np.intp)
+    order_view = memoryview(enumeration_order)
+    count, invalid_logical, masked = 0, False, False
+    unusual = {}
+
+    def collect(info):
+        nonlocal count, invalid_logical, masked
+        count += 1
+        if count > expected_count:
+            return None
+        coordinate = info.chunk_offset
+        if (len(coordinate) != 1 or type(coordinate[0]) is not int or coordinate[0] < 0 or
+                coordinate[0] % 64 or coordinate[0] >= total):
+            invalid_logical = True
+            return None
+        index = coordinate[0] // 64
+        if seen[index]:
+            invalid_logical = True
+            return None
+        seen[index] = 1
+        order_view[count - 1] = index
+        offset, size = info.byte_offset, info.size
+        if (isinstance(offset, int) and isinstance(size, int) and
+                0 <= offset <= 0xffffffffffffffff and 0 <= size <= 0xffffffffffffffff):
+            physical_view[index], lengths_view[index] = offset, size
+        else:
+            # Preserve legacy sorting/error precedence on malformed numeric maps.
+            # Only exceptional scalar fields are retained, never the HDF5 record.
+            unusual[index] = (offset, size)
+        masked = masked or info.filter_mask != 0
+        return None
+
+    data.id.chunk_iter(collect)
+    if count > expected_count:
+        raise ValueError('Duplicate trace chunk locations')
+    if invalid_logical:
+        raise ValueError('Invalid or duplicate trace chunk locations')
+    if count != expected_count or masked:
+        return count, None
+    return count, (physical, lengths, unusual, enumeration_order)
+
+
+def _array_chunk_spans(physical, lengths, file_size, unusual=None, selected=None):
+    """Same greedy cap/gap policy with exact full-map validation before reads."""
+    import numpy as np
+    unusual = unusual or {}
+    if unusual or not 0 <= file_size <= 0xffffffffffffffff:
+        from types import SimpleNamespace
+        ids = range(len(physical)) if selected is None else selected
+        records = []
+        for index in ids:
+            index = int(index)
+            offset, size = unusual.get(index, (int(physical[index]), int(lengths[index])))
+            records.append(SimpleNamespace(byte_offset=offset, size=size, logical_index=index))
+        spans = _chunk_spans(records, file_size)
+        return None if spans is None else [(a, b, np.array([r.logical_index for r in items], dtype=np.intp))
+                                          for a, b, items in spans]
+    ids = np.arange(len(physical), dtype=np.intp) if selected is None else selected
+    order = ids[np.argsort(physical[ids], kind='stable')]
+    offsets, sizes = physical[order], lengths[order]
+    ends = offsets + sizes
+    invalid = (sizes == 0) | (offsets > file_size) | (sizes > np.uint64(file_size) - offsets)
+    invalid[1:] |= offsets[1:] < ends[:-1]
+    bad = np.flatnonzero(invalid)
+    oversized = np.flatnonzero(sizes > MAX_SPAN_BYTES)
+    # Legacy checks each record, then returns fallback immediately on its cap.
+    if len(bad) and (not len(oversized) or bad[0] <= oversized[0]):
+        raise ValueError('Invalid or overlapping trace chunk storage')
+    if len(oversized):
+        return None
+    gaps = np.flatnonzero(offsets[1:] - ends[:-1] > MAX_GAP_BYTES) + 1
+    group_ends = np.r_[gaps, len(order)]
+    spans = []
+    start, used = 0, 0
+    for group_end in group_ends:
+        group_end = int(group_end)
+        while start < group_end:
+            low = int(offsets[start])
+            stop = min(group_end, int(np.searchsorted(ends, np.uint64(min(low + MAX_SPAN_BYTES, 0xffffffffffffffff)), side='right')))
+            high = int(ends[stop - 1])
+            spans.append((low, high, order[start:stop]))
+            used += high - low
+            start = stop
+    return None if used > MAX_INPUT_BYTES else spans
+
+
 def _read_admitted(data, signature, begin, end, helper, dtype, normalize_units, expected_units=None):
     import numpy as np
     diagnostic = _current_native_timing()
     if diagnostic is not None: diagnostic.mark('enumeration')
-    infos = []
-    data.id.chunk_iter(lambda item: infos.append(item))
+    chunk_count, arrays = _enumerate_chunk_arrays(data)
     if diagnostic is not None:
-        diagnostic.count('chunks', len(infos))
+        diagnostic.count('chunks', chunk_count)
         diagnostic.mark('map')
-    total = len(data)
-    expected_count = (total + 63) // 64
-    if len(infos) > expected_count:
-        raise ValueError('Duplicate trace chunk locations')
-    logical = {}
-    for info in infos:
-        coordinate = info.chunk_offset
-        if (len(coordinate) != 1 or type(coordinate[0]) is not int or coordinate[0] < 0 or
-                coordinate[0] % 64 or coordinate[0] >= total or coordinate[0] in logical):
-            raise ValueError('Invalid or duplicate trace chunk locations')
-        logical[coordinate[0]] = info
-    # Sparse/fill chunks and skipped filters stay with HDF5's generic semantics.
-    if len(infos) != expected_count or any(info.filter_mask != 0 for info in infos):
+    if arrays is None:
         return None
+    physical, lengths, unusual, enumeration_order = arrays
+    expected_count = len(physical)
     first, stop = begin // 64, (end + 63) // 64
-    selected = [logical[index * 64] for index in range(first, stop)]
+    selected = np.arange(first, stop, dtype=np.intp)
     fd = os.dup(data.file.id.get_vfd_handle())
     try:
         before = os.fstat(fd)
@@ -398,10 +483,10 @@ def _read_admitted(data, signature, begin, end, helper, dtype, normalize_units, 
             raise ValueError('Source recording changed before reading trace chunks')
         # Validate the complete bounded dataset's physical map, not just this slice.
         if diagnostic is not None: diagnostic.mark('spans')
-        all_spans = _chunk_spans(infos, before.st_size)
+        all_spans = _array_chunk_spans(physical, lengths, before.st_size, unusual, enumeration_order)
         if all_spans is None:
             return None
-        spans = all_spans if first == 0 and stop == expected_count else _chunk_spans(selected, before.st_size)
+        spans = all_spans if first == 0 and stop == expected_count else _array_chunk_spans(physical, lengths, before.st_size, unusual, selected)
         if spans is None:
             return None
         if diagnostic is not None:
@@ -418,9 +503,8 @@ def _read_admitted(data, signature, begin, end, helper, dtype, normalize_units, 
                 diagnostic.mark('buffers')
             if len(block) != high - low:
                 raise ValueError('Truncated trace chunk storage')
-            for item in items:
-                index = item.chunk_offset[0] // 64 - first
-                offsets[index], sizes[index] = input_size + item.byte_offset - low, item.size
+            offsets[items - first] = physical[items] - np.uint64(low) + np.uint64(input_size)
+            sizes[items - first] = lengths[items]
             pieces.append(block)
             input_size += len(block)
         compressed = b''.join(pieces)

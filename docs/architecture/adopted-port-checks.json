@@ -1823,7 +1823,7 @@
             "workspace-app/src/traces/usePreparedTraceRead.js",
             "workspace-app/src/traces/traceDisplayGeometry.js",
             "workspace-app/src/traces/useExactTraceCursor.js",
-            "workspace-app/src/traces/useTraceViewport.js"
+            "workspace-app/src/traces/usePreparedTraceGeometry.js"
           ]
         },
         {
@@ -1899,6 +1899,16 @@
           "allow": [
             "react"
           ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/traces/usePreparedTraceGeometry.js",
+          "allow": [
+            "react",
+            "workspace-app/src/retainedWorkspaceViews.js",
+            "workspace-app/src/traces/traceReadContext.js",
+            "workspace-app/src/traces/traceDisplayGeometry.js"
+          ]
         }
       ],
       "tests": {
@@ -1921,7 +1931,8 @@
           "workspace-app/src/traces/preparedTraceRead.test.js",
           "workspace-app/src/traces/traceDisplayGeometry.test.js",
           "workspace-app/src/traces/exactTraceCursor.test.js",
-          "workspace-app/src/traces/traceGeometryLifecycle.test.js"
+          "workspace-app/src/traces/traceGeometryLifecycle.test.js",
+          "workspace-app/src/traces/preparedTraceGeometryCommit.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
@@ -3110,7 +3121,8 @@
             "pathlib",
             "subprocess",
             "threading",
-            "time"
+            "time",
+            "types"
           ]
         }
       ],
@@ -3979,6 +3991,14 @@
           {
             "from": "workspace-app/src/traces/retainedReadLifecycle.test.js",
             "to": "workspace-app/src/traces/useExactTraceCursor.js"
+          },
+          {
+            "from": "workspace-app/src/traces/preparedTraceGeometryCommit.test.js",
+            "to": "workspace-app/src/traces/usePreparedTraceGeometry.js"
+          },
+          {
+            "from": "workspace-app/src/traces/preparedTraceGeometryCommit.test.js",
+            "to": "workspace-app/src/traces/traceStatistics.js"
           }
         ],
         "public_entries": [

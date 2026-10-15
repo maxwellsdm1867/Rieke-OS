@@ -211,7 +211,8 @@ No prepared capability enters tree, tag or inclusion mutations. Unsupported
 backends omit the field and retain existing routes; malformed capabilities fail
 closed. Selected views wait for their own page capability, never their parent's.
 
-`usePreparedTraceRead.js` owns only the mounted prepared-display request lifetime.
+`usePreparedTraceRead.js` owns the mounted prepared raw-display request lifetime.
+Geometry uses its separate committed measurement/request owner below.
 It dispatches synchronously from a layout effect, with loading derived from the
 read identity rather than a pre-dispatch state update. Publication requires exact
 path, captured revision, reload nonce, request-port object, request function and
@@ -248,9 +249,21 @@ geometry, wrong representation or authority errors fail closed. Unsupported
 geometry retains its single raw interval across resize, scoped to the current
 source/context/request owner. No automatic background raw trace is loaded.
 
-`useTraceViewport.js` measures the mounted canvas and observes CSS size and
-resolution changes, rearming the DPR media query. Width changes retire geometry
-reads. The painter independently clears/refuses old-width geometry before a new
+`usePreparedTraceGeometry.js` measures the actual mounted canvas and dispatches
+the eligible geometry request in the same committed layout effect, before
+publishing width/loading state. It performs no render-time I/O and never borrows
+a previous view's dimensions. Its owner captures the canonical capability fields,
+source, epoch, stream descriptor, request port/function, reload nonce and retained
+view activity. Cleanup and each changed physical width abort the current signal;
+publication requires the current lifetime and non-aborted signal, including A-B-A
+replacement. Hidden retained views and uncommitted suspended owners do not read.
+CSS size and resolution changes remeasure the canvas, rearming the DPR media query;
+zero-width canvases wait. Ordinary prepared raw reads retain `usePreparedTraceRead`.
+`preparedTraceGeometryCommit.test.js` covers committed ordering, canonical context
+identity, zero/fractional widths, DPR, owner/reload/ABA, hidden activity and Suspense.
+The actual `Trace` lifecycle test checks that geometry dispatch precedes the next
+sibling layout effect on first mount, plus typed raw fallback and error retry.
+Width changes retire geometry reads. The painter independently clears/refuses old-width geometry before a new
 state commit, so observer delivery order cannot paint the wrong bins.
 
 `useExactTraceCursor.js` owns at most one 20k raw tile and one in-flight cursor
