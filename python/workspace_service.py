@@ -1456,6 +1456,30 @@ class WorkspaceService:
             path, signature = self._verified_source(manifest)
             return read_response_window(path, signature, row, stream, start, count)
 
+    def trace_batch(self, epoch_uuid, stream_uuid, start=0, count=100000, chunks=1):
+        """Read at most five exact windows under one caller-owned read scope.
+
+        One immutable source plan covers every window. No partial batch escapes
+        if a later read or closing source/publication witness fails.
+        """
+        if getattr(self.trace, '__func__', None) is not _CANONICAL_TRACE_READER:
+            raise ValueError('Trace batches are unavailable for a custom trace reader')
+        if type(chunks) is not int or not 1 <= chunks <= 5:
+            raise ValueError('Trace batch requires 1–5 chunks')
+        plan, witness = self.capture_trace_read(epoch_uuid, stream_uuid, start, count)
+        windows, offset = [], start
+        for _ in range(chunks):
+            window = read_response_window(plan['path'], tuple(plan['signature']),
+                plan['row'], plan['stream'], offset, count)
+            windows.append(window)
+            offset += window['count']
+            if offset >= window['total_samples']:
+                break
+        self.validate_trace_read(witness)
+        return {key: windows[0][key] for key in ('epoch_uuid', 'stream_uuid',
+                    'total_samples', 'source_sha256', 'sample_rate', 'units', 'decimated')} | {
+                'start': start, 'count': offset - start, 'windows': windows}
+
     def events(self, limit=100):
         self._ready()
         if not isinstance(limit, int) or not 1 <= limit <= 1000:
@@ -1505,3 +1529,7 @@ _PROTOCOL_BROWSE_READS = {name: getattr(WorkspaceService, name) for name in
 _PROTOCOL_SUMMARY_READS = {name: getattr(WorkspaceService, name) for name in
     ('protocol', 'query_result', 'filtered_rows', '_filter_rows', '_decorate', '_curation',
      '_counts', '_cell_summary', '_ready', 'validate_metadata_filters', 'binding')}
+
+
+# Batch admission must never bypass a custom trace policy.
+_CANONICAL_TRACE_READER = WorkspaceService.trace

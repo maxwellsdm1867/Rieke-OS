@@ -6,7 +6,7 @@ import {Activity,ArrowLeft,ArrowRight,Hand,LoaderCircle,MousePointer2,ZoomIn,Zoo
 import {api,number,useResource,requestTraceWindow} from '../../api.js';
 import {clampWindow,dragWindow,finiteExtent,formatTick,MAX_TRACE_SAMPLES,sampleAtPixel,ticks,timeRange,zoomWindow} from './traceGeometry.js';
 import './TraceViewer.css';
-import {readWholeTrace} from '../readWholeTrace.js';
+import {readWholeTrace,MAX_WHOLE_TRACE_CHUNK_SAMPLES} from '../readWholeTrace.js';
 import {traceRequestPath,traceCacheRevision,traceResponseMatches} from '../traceReadContext.js';
 import {useNavigationLoading,useDelayedLoading} from '../../components/NavigationLoading.jsx';
 
@@ -85,7 +85,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   const chunked=readWindow.count>MAX_TRACE_SAMPLES;
   const requestPath=traceRequestPath(epoch?.epoch_uuid,stream,clampWindow(readWindow.start,readWindow.count,stream?.sample_count),readContext);
   const requestPort=useMemo(()=>{
-    if(chunked)return {request:(_path,{signal})=>readWholeTrace({request:owner?.request??api,epochUuid:epoch.epoch_uuid,sourceSha256:epoch.source_sha256,stream,readContext,signal,window:{start:readWindow.start,count:readWindow.count}})};
+    if(chunked)return {request:(_path,{signal})=>readWholeTrace({request:owner?.request??api,epochUuid:epoch.epoch_uuid,sourceSha256:epoch.source_sha256,stream,readContext,signal,window:{start:readWindow.start,count:readWindow.count},maxChunkSamples:readWindow.start===0&&readWindow.count===stream.sample_count?MAX_WHOLE_TRACE_CHUNK_SAMPLES:MAX_TRACE_SAMPLES})};
     if(owner||imported||!stream)return undefined;
     return {request:(path,{signal})=>requestTraceWindow(path,{revision:contextKey,signal,epoch,stream,window:readWindow})};
   },[chunked,owner,epoch?.epoch_uuid,epoch?.source_sha256,stream?.uuid,stream?.sample_count,stream?.sample_rate,stream?.units,contextKey,readWindow.start,readWindow.count,imported]);

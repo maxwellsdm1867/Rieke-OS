@@ -208,18 +208,18 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const epoch=inspection.resource;
   const focusedEpoch=useMemo(()=>(!readContext&&!filters?.metadata_predicate||pageReady&&rows.data?.epochs?.some(row=>row.epoch_uuid===focused))&&epoch.data?.epoch_uuid===focused?annotationState.apply(epoch.data):null,[readContext,filters?.metadata_predicate,pageReady,rows.data,epoch.data,focused,annotationState.apply]);
   const neighborIndex=rows.data?.epochs?.findIndex(row=>row.epoch_uuid===focused)??-1;
-  useEpochPrefetch(!readContext&&!annotationState.dirty&&!epoch.loading&&!rows.loading&&neighborIndex>=0?epochPrefetchPaths(rows.data.epochs,neighborIndex,inspection.live?row=>`/epochs/${row.epoch_uuid}?protocol_uuid=${id}`:initialEpochTracePath,{progressive:true,activeCellOnly:true}):[],annotationState.epochRevision,180,{traces:true,traceOnly:!inspection.live,progressive:true,concurrency:inspection.live?1:2});
+  useEpochPrefetch(!readContext&&!annotationState.dirty&&!epoch.loading&&!rows.loading&&neighborIndex>=0?epochPrefetchPaths(rows.data.epochs,neighborIndex,initialEpochTracePath,{progressive:true,activeCellOnly:true}):[],annotationState.epochRevision,180,{traces:true,traceOnly:true,progressive:true,concurrency:2});
   const metadataCatalog=useResource(metadataOpen&&!designMode?'/metadata/fields':null,structureRevision);
   const scopeIdentity=JSON.stringify([readRoot,id,requestedCellFocus,presentationScope,initialEpochUuid]);
   const attemptedFocusLocator=useRef(null);
   const focusLocatorKey=JSON.stringify([readRoot,search,pageRevision,focused]);
   useEffect(()=>{
-    if(!(preserveCandidateView||!inspection.live)||!pageReady||pendingNavigation||!focused)return;
+    if(!pageReady||pendingNavigation||!focused)return;
     if(rows.data.epochs.some(row=>row.epoch_uuid===focused)){attemptedFocusLocator.current=focusLocatorKey;return;}
     if(attemptedFocusLocator.current===focusLocatorKey)return;
     attemptedFocusLocator.current=focusLocatorKey;
     navigationIntent.current=null;anchorSteps.current=0;setPendingNavigation({anchorUuid:focused,direction:0});
-  },[preserveCandidateView,inspection.live,pageReady,pendingNavigation,focused,rows.data,focusLocatorKey]);
+  },[pageReady,pendingNavigation,focused,rows.data,focusLocatorKey]);
   const readAuthority=JSON.stringify([readRoot,protocolSearch,pageRevision]);
   const previousReadAuthority=useRef({readAuthority,presentationScope});
   useEffect(()=>{
@@ -409,7 +409,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     if(onChange)onChange({kind:'annotations',protocolId:id,...(safe?{origin:annotationOrigin,confirmed}:{})});
     else{epoch.reload();loadedRows.reload();}
   };
-  const tagEntry=focusedEpoch&&<AnnotationTags composer={{values:annotationDrafts,onChange:rememberAnnotationDraft}} reconcileReceipt={!!onChange} refreshWithEpoch={!!onChange&&inspection.live} readSeparately={!inspection.live} epoch={focusedEpoch} revision={revision} disabled={designBlocked||busy||((readContext||filters?.metadata_predicate)&&!pageReady)||epoch.loading||!!pendingNavigation} onChange={annotationChanged} onFilter={onTagFilter} focusRequest={tagFocus} targetScope={cellTagRequest?'cell':!readContext&&targets.length?'selected':'epoch'} epochFocusRequest={epochTagFocus} onNavigateEpoch={navigateAndTag} selectedEpochs={readContext?[]:targets} tools={!cellTagRequest&&!targets.length&&<TagExchangeControls epoch={focusedEpoch} disabled={designBlocked||busy} onChanged={annotationChanged}/>}>{!readContext&&<EpochTags value={tag} onValue={setTag} onAdd={value=>curate({tags_add:[value]})} onRemove={value=>curate({tags_remove:[value]},'focused')} selectedTags={focusedEpoch.curation?.tags||[]} busy={designBlocked||busy||!pageReady} scope={`dataset · ${actionScope}`} revision={revision}/> }</AnnotationTags>;
+  const tagEntry=focusedEpoch&&<AnnotationTags composer={{values:annotationDrafts,onChange:rememberAnnotationDraft}} reconcileReceipt={!!onChange} readSeparately={!inspection.live} epoch={focusedEpoch} revision={revision} disabled={designBlocked||busy||((readContext||filters?.metadata_predicate)&&!pageReady)||epoch.loading||!!pendingNavigation} onChange={annotationChanged} onFilter={onTagFilter} focusRequest={tagFocus} targetScope={cellTagRequest?'cell':!readContext&&targets.length?'selected':'epoch'} epochFocusRequest={epochTagFocus} onNavigateEpoch={navigateAndTag} selectedEpochs={readContext?[]:targets} tools={!cellTagRequest&&!targets.length&&<TagExchangeControls epoch={focusedEpoch} disabled={designBlocked||busy} onChanged={annotationChanged}/>}>{!readContext&&<EpochTags value={tag} onValue={setTag} onAdd={value=>curate({tags_add:[value]})} onRemove={value=>curate({tags_remove:[value]},'focused')} selectedTags={focusedEpoch.curation?.tags||[]} busy={designBlocked||busy||!pageReady} scope={`dataset · ${actionScope}`} revision={revision}/> }</AnnotationTags>;
   const highlightedSelected=new Set(targets);
   const highlightTools=(locked=false)=>readContext&&<EpochHighlightTools count={highlightedEpochs.length} allSelected={highlightedEpochs.length>0&&highlightedEpochs.every(uuid=>highlightedSelected.has(uuid))} disabled={locked||busy||readPaused||!!draftSelection?.disabled||!cellsReady} onSelect={()=>applyHighlighted(true)} onDeselect={()=>applyHighlighted(false)}/>;
   return <EpochViewer hideFilterControl viewFilters={filters} onViewFilters={onFilterChange} filterRevision={revision} filterDisabled={busy} className={designMode?'tree-design':'epoch-inspector-mode'} ariaLabel={designMode?'Tree overview workspace':'Epoch inspection workspace. Tab next epoch, Shift+Tab previous epoch; Up/Down or W/S also navigate.'} onKeyDown={epochKeys}

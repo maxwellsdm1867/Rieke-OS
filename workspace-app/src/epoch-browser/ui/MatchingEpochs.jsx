@@ -52,7 +52,7 @@ function MatchingEpochsContent({projectId=null,designMode=false,builder=null,col
   const inspection=useEpochInspection({focused,path:inPage?`/epochs/${focused}`:null,row:inPage?page.data.epochs.find(row=>row.epoch_uuid===focused):null,scope:JSON.stringify([source,filterRevision]),revision:detailRevision,reloadRow:page.reload});
   const epoch=inspection.resource,detail=inPage&&epoch.data?.epoch_uuid===focused?epoch.data:null;
   const index=page.data?.epochs.findIndex(row=>row.epoch_uuid===focused)??-1;
-  useEpochPrefetch(inPage&&!epoch.loading&&index>=0?epochPrefetchPaths(page.data.epochs,index,inspection.live?row=>`/epochs/${row.epoch_uuid}`:initialEpochTracePath,{progressive:true}):[],detailRevision,180,{traces:true,traceOnly:!inspection.live,progressive:true,concurrency:inspection.live?1:2});
+  useEpochPrefetch(inPage&&!epoch.loading&&index>=0?epochPrefetchPaths(page.data.epochs,index,initialEpochTracePath,{progressive:true}):[],detailRevision,180,{traces:true,traceOnly:true,progressive:true,concurrency:2});
   function selectEpoch(uuid){setCellTagRequest(null);toggleMetadata(true);navigationIntent.current=null;setFocused(uuid);if(!page.data?.epochs.some(row=>row.epoch_uuid===uuid))setRequest({anchorUuid:uuid});}
   function move(direction){
     const next=advanceEpochIntent({page:currentPage?page.data:null,focused,intent:navigationIntent.current,direction});

@@ -117,7 +117,7 @@ def build(source, output, epochs, protocol_epochs=None):
     service.rows.clear(); service.cells.clear()
     service.ids = [uid(i) for i in range(main_count)]
     service.cell_ids = [uid(2_000_000 + i) for i in range((epochs + 99) // 100)]
-    tracefile = output / 'trace-fixture.h5'
+    tracefile = (output / 'trace-fixture.h5').resolve()
     stream = uid(5_000_000)
     def add(start, stop, sha):
         for i in range(start, stop):
@@ -127,7 +127,7 @@ def build(source, output, epochs, protocol_epochs=None):
                    'source_sha256': sha, 'streams': [], 'group_uuid': uid(4_000_000),
                    'protocol_name': 'ambient' if main_count <= i < incoming_start else 'example'}
             if i in (0, incoming_start):
-                row['streams'] = [{'uuid': stream, 'kind': 'responses', 'sample_count': 10000,
+                row['streams'] = [{'uuid': stream, 'kind': 'responses', 'sample_count': 10000 if i == 0 else 300000,
                     'sample_rate': 10000.0, 'units': 'pA',
                     'h5_path': '/epochs/' + uid(i) + '/responses/' + stream}]
             service.rows[uid(i)] = row
@@ -160,8 +160,9 @@ def build(source, output, epochs, protocol_epochs=None):
             group = h.create_group('/epochs/' + uid(i)); group.attrs['uuid'] = uid(i)
             response = group.create_group('responses/' + stream)
             response.attrs['uuid'] = stream; response.attrs['sampleRate'] = 10000.0
-            data = np.zeros(10000, dtype=[('quantity', 'f8'), ('units', 'S2')])
-            data['quantity'] = np.arange(10000); data['units'] = b'pA'
+            count = 10000 if i == 0 else 300000
+            data = np.zeros(count, dtype=[('quantity', 'f8'), ('units', 'S2')])
+            data['quantity'] = np.arange(count); data['units'] = b'pA'
             response.create_dataset('data', data=data)
     st = tracefile.stat()
     verified_mock.return_value = (tracefile, (str(tracefile), st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns))
@@ -238,11 +239,12 @@ def build(source, output, epochs, protocol_epochs=None):
             'first_epoch': uid(0), 'first_cell': service.cell_ids[0], 'first_incoming': uid(incoming_start),
             'first_cell_epochs': [uid(i) for i in range(min(100, main_count))],
             'incoming_epochs': [uid(i) for i in range(incoming_start, epochs)],
-            'date_label': original['date'], 'cell_label': 'Cell 0',
+            'date_label': original['date'], 'cell_label': 'Cell 0', 'incoming_cell_label': f'Cell {incoming_start // 100}',
             'trace_expected': {'epoch_uuid': uid(0), 'stream_uuid': stream, 'start': 0, 'count': 10000, 'sample_rate': 10000, 'units': 'pA', 'values_first': 0, 'values_last': 9999},
+            'incoming_trace_expected': {'epoch_uuid': uid(incoming_start), 'stream_uuid': stream, 'start': 0, 'count': 300000, 'sample_rate': 10000, 'units': 'pA', 'values_first': 0, 'values_last': 299999, 'ramp': True, 'source_sha256': fixture.source_sha},
             'trace_streams': copy.deepcopy(service.rows[uid(0)]['streams']),
             'trace_stream': stream, 'trace_samples': 10000, 'trace_rate_hz': 10000,
-            'qualifying_scale': epochs == 1_000_000, 'fixture': 'workflow-owned-v2',
+            'qualifying_scale': epochs == 1_000_000, 'fixture': 'workflow-owned-v3',
             'admissions': ['transactional SQL doubles', 'synthetic metadata index catalog/projection; production predicate evaluator', 'source verification double'],
             'trace': 'two owned synthetic H5 ramps; real lazy reads',
             'owned_h5_path': str(tracefile.resolve()), 'native_qualification': False}

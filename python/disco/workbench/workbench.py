@@ -1118,14 +1118,25 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     @app.get(candidate + '/epochs/<epoch>/trace')
     def workbench_trace(protocol, revision, epoch):
-        query_filters({'candidate_scope_revision', 'stream_uuid', 'start', 'count'})
+        query_filters({'candidate_scope_revision', 'stream_uuid', 'start', 'count', 'chunks'})
         with guarded(protocol, revision) as owner:
             context = checked(protocol, revision, owner, request.args.get('candidate_scope_revision'))
             scoped = manager.frozen_service(context)
             if epoch not in context['pending']:
                 raise ValueError('Trace epoch is outside the frozen incoming candidate')
-            return jsonify(finish(context, scoped.trace(epoch, request.args.get('stream_uuid'),
-                int(request.args.get('start', 0)), int(request.args.get('count', 20000)))))
+            if 'chunks' in request.args:
+                if request.headers.get('X-Disco-Trace-Priority') == 'background':
+                    raise ValueError('Trace batches require a foreground request')
+                result = scoped.trace_batch(epoch, request.args.get('stream_uuid'),
+                    int(request.args.get('start', 0)), int(request.args.get('count', 20000)),
+                    int(request.args['chunks']))
+            else:
+                result = scoped.trace(epoch, request.args.get('stream_uuid'),
+                    int(request.args.get('start', 0)), int(request.args.get('count', 20000)))
+            result = finish(context, result)
+        # Samples and response fences are detached. Complete the closing guards
+        # before encoding so a large window does not block unrelated DB reads.
+        return jsonify(result)
 
     @app.get(candidate + '/tree')
     def workbench_tree(protocol, revision):

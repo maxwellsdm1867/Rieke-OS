@@ -138,10 +138,13 @@ def validate_trace(trace, total_ms):
     number(expected['end'],'trace window end',positive=True)
     if expected['end'] <= expected['start']:
         raise ValueError('Invalid trace window')
+    fields += tuple(key for key in ('count', 'sample_rate', 'source_sha256', 'root', 'candidate_scope_revision') if key in expected)
     for boundary in ('first','complete'):
         actual = trace.get(boundary)
         if not isinstance(actual,dict) or any(actual.get(key) != expected[key] for key in fields):
             raise ValueError(f'Wrong {boundary} trace identity/window')
+        if 'count' in expected and actual.get('values_count') != expected['count']:
+            raise ValueError(f'Incomplete {boundary} trace values')
     first = number(trace.get('first_visible_ms'),'first trace time')
     complete = number(trace.get('complete_ms'),'complete trace time')
     if not 0 <= first <= complete <= total_ms+1e-6:

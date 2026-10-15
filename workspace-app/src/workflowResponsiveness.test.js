@@ -262,3 +262,22 @@ test('cell reuse retires on actor changes and requires a fresh all-cell receipt'
   assert.equal(h.fixture.requests.slice(start).filter(record=>record.path.includes('include_cells=true')).length,1);
  }finally{release?.();await h.close();}
 });
+
+
+test('live tag editing with lightweight rows stays usable through repeated authoritative annotation refreshes',async()=>{
+ const h=await createWorkflowHarness({liveMetadata:true});
+ h.fixture.respond=(url,options,fallback)=>{
+  const value=fallback();
+  if(url.pathname==='/api/protocols/protocol-A/epochs')return {...value,epochs:value.epochs.map(({annotations,...row})=>row)};
+  return value;
+ };
+ try{
+  await h.mount();await ready(h);
+  for(const tag of ['first live tag','second live tag']){
+   await sharedSave(h,tag);await ready(h);
+   await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);
+   assert.equal(sharedInput(h).props.disabled,false);
+  }
+  assert.deepEqual(h.fixture.annotations.get('epoch-0'),['first live tag','second live tag']);
+ }finally{await h.close();}
+});

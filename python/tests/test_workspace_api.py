@@ -151,6 +151,23 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(response.get_json()['attributes']['startTimeDotNetDateTimeOffsetTicks'], str(ticks))
         self.assertEqual(self.service.details[epoch]['attributes']['startTimeDotNetDateTimeOffsetTicks'], ticks)
 
+    def test_foreground_trace_batch_opt_in_and_request_bounds(self):
+        result = dict(windows=[dict(values=[1.25])], count=1)
+        path = '/api/epochs/' + self.service.ids[0] + '/trace'
+        query = dict(stream_uuid='stream', start=0, count=100000, chunks=3)
+        with patch.object(self.service, 'trace_batch', return_value=result) as batch:
+            response = self.client.get(path, query_string=query)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.get_json(), result)
+            batch.assert_called_once_with(self.service.ids[0], 'stream', 0, 100000, 3)
+            batch.reset_mock()
+            for options, headers in (({**query, 'extra': 1}, {}),
+                    ({**query, 'chunks': ['2', '3']}, {}),
+                    (query, {'X-Disco-Trace-Priority': 'background'})):
+                response = self.client.get(path, query_string=options, headers=headers)
+                self.assertEqual(response.status_code, 400)
+            batch.assert_not_called()
+
     def test_trace_encoding_does_not_hold_the_database_lock(self):
         import threading
         started, release, shell_done = threading.Event(), threading.Event(), threading.Event()

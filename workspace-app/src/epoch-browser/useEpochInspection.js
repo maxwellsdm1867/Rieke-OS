@@ -19,14 +19,16 @@ export function useEpochInspection({focused,path,row,scope,revision=0,cache=true
   // Hidden values never authorize a global trace fallback.
   const needsDescriptor=!!owner&&!readContext&&!lightweight?.trace_read_context&&!owner.traceReadContext&&
     (!lightweight||lightweight.streams.some(stream=>stream.kind==='responses'&&stream.sample_count!==0));
-  const values=useResource(requested||needsDescriptor?path:null,revision,0,{cache,warmEpoch:live&&cache,paused});
+  const values=useResource(requested||needsDescriptor?path:null,revision,0,{cache,paused});
   const matchingValues=values.data?.epoch_uuid===focused?values.data:null;
   const descriptor=needsDescriptor&&matchingValues?.trace_read_context&&Array.isArray(matchingValues.streams)?
     {...lightweight,epoch_uuid:focused,streams:matchingValues.streams,trace_read_context:matchingValues.trace_read_context}:null;
-  const data=paused?null:live?matchingValues:needsDescriptor?descriptor:lightweight;
-  const missingLocator=!live&&(needsDescriptor?!!matchingValues&&!descriptor:candidate&&!lightweight);
-  const resource=live?{...values,data}:{data,loading:!!focused&&!data&&!missingLocator&&!(needsDescriptor&&values.error),
-    error:missingLocator?'Trace information is unavailable in this epoch page. Refresh the epoch list.':needsDescriptor?values.error:null,reload:needsDescriptor?values.reload:reloadRow};
+  // Metadata values can arrive independently; the admitted row already owns
+  // trace identity in live mode too. Required scoped descriptors still gate it.
+  const data=paused?null:needsDescriptor?descriptor:lightweight??(live?matchingValues:null);
+  const missingLocator=needsDescriptor?!!matchingValues&&!descriptor:!live&&candidate&&!lightweight;
+  const resource={data,loading:!!focused&&!data&&!missingLocator&&!((needsDescriptor||live&&!lightweight)&&values.error),
+    error:missingLocator?'Trace information is unavailable in this epoch page. Refresh the epoch list.':needsDescriptor||live&&!lightweight?values.error:null,reload:needsDescriptor||live&&!lightweight?values.reload:reloadRow};
   function toggle(value){setLive(value);setDemand(null);try{localStorage.setItem('workspace.inspector.liveMetadata',String(value));}catch{}}
   function load(){if(!path||!focused||paused)return;if(requested)values.reload();else setDemand({key,owner});}
   return {live,resource,selectRow:next=>setSelected({row:next,scope,owner}),

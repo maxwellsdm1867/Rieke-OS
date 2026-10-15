@@ -252,14 +252,14 @@ test('receipt replay must retain operation identity and use replay HTTP status',
 
 test('owned preparation reset retries only explicit busy refusal and records setup',async t=>{
   const previous=globalThis.fetch;t.after(()=>{globalThis.fetch=previous;});let calls=0;
-  const meta={fixture:'workflow-owned-v2',port:1234,epochs:1000,main_count:900,incoming_count:100};
+  const meta={fixture:'workflow-owned-v3',port:1234,epochs:1000,main_count:900,incoming_count:100};
   globalThis.fetch=async(url,options)=>{assert.equal(url,'http://127.0.0.1:1234/__benchmark__/reset-preparation');assert.equal(options.headers['X-Workspace-Request'],'1');calls++;return calls===1?{status:409,ok:false,text:async()=>'Other owned fixture requests are still active'}:{status:200,ok:true,text:async()=>JSON.stringify({reset:true,ready:true,epochs:1000,main_count:900,incoming_count:100})};};
   const result=await resetPreparation(meta,{timeoutMs:3000});assert.equal(result.attempts,2);assert.equal(result.included_in_headline,false);
 });
 
 test('owned preparation reset never retries changed authority or wrong counts',async t=>{
   const previous=globalThis.fetch;t.after(()=>{globalThis.fetch=previous;});let calls=0;
-  const meta={fixture:'workflow-owned-v2',port:1234,epochs:1000,main_count:900,incoming_count:100};
+  const meta={fixture:'workflow-owned-v3',port:1234,epochs:1000,main_count:900,incoming_count:100};
   globalThis.fetch=async()=>{calls++;return {status:409,ok:false,text:async()=>'Main/source/annotation authority changed; refusing reset'};};
   await assert.rejects(resetPreparation(meta),/changed/);assert.equal(calls,1);
   globalThis.fetch=async()=>({status:200,ok:true,text:async()=>JSON.stringify({reset:true,ready:true,epochs:1000,main_count:899,incoming_count:100})});
@@ -392,4 +392,45 @@ test('combined backend evidence cannot finish before incoming membership is rend
 for(const key of ['candidate_revision_uuid','candidate_scope_revision'])test(`combined context envelope refuses mismatched ${key}`,t=>{
   const {w,spec}=combinedPrepared(t,{returning:true});w.requests[0].result[key]='other';
   assert.equal(readiness(spec),false);assert.equal(readiness(spec),false);
+});
+
+function longTrace(t){
+  const {w,spec}=trace(t);const root='/protocols/p/workbench/candidates/c';
+  Object.assign(spec,{traceRoot:root,traceRevision:'revision'});
+  Object.assign(spec.trace,{start:0,count:300000,values_first:0,values_last:299999,ramp:true,source_sha256:'source'});
+  w.requests=Array.from({length:3},(_,i)=>({action_id:'current',status:200,end:10+i,url:'/api'+root+'/epochs/requested/trace?candidate_scope_revision=revision',result:{epoch_uuid:'requested',stream_uuid:'response',start:i*100000,count:100000,sample_rate:10,units:'pA',source_sha256:'source',total_samples:300000,decimated:false,values:Array.from({length:100000},(_,n)=>i*100000+n)}}));
+  w.draws=[{at:13,action_id:'current',stream_uuid:'response'}];return {w,spec};
+}
+test('frozen 300k trace requires every exact consecutive chunk before final drawing',t=>{
+ const {w,spec}=longTrace(t),last=w.requests.pop();
+ assert.equal(readiness(spec),false);w.requests.push(last);
+ assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
+ assert.equal(w.completed.current.evidence.trace.values_count,300000);
+ assert.equal(w.completed.current.evidence.trace.chunks,3);
+ assert.equal(w.completed.current.evidence.trace.candidate_scope_revision,'revision');
+});
+for(const defect of ['scope','gap','overlap','source','interior sample','draw'])test('long trace rejects '+defect,t=>{
+ const {w,spec}=longTrace(t),r=w.requests[1];
+ if(defect==='scope')r.url=r.url.replace('revision=revision','revision=stale');
+ if(defect==='gap')r.result.start++;
+ if(defect==='overlap')r.result.start--;
+ if(defect==='source')r.result.source_sha256='wrong';
+ if(defect==='interior sample')r.result.values[123]=0;
+ if(defect==='draw'){w.draws[0].at=11;assert.equal(readiness(spec),false);}
+ else assert.throws(()=>readiness(spec),/mismatch|Incorrect/);
+});
+
+test('300k frozen batch validates envelope and all windows before one-request drawing',t=>{
+ const {w,spec}=longTrace(t),windows=w.requests.map(r=>r.result),r=w.requests[0];
+ r.result={...windows[0],values:undefined,count:300000,candidate_scope_revision:'revision',windows};r.end=12;w.requests=[r];
+ assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
+ assert.equal(w.completed.current.evidence.trace.requests,1);assert.equal(w.completed.current.evidence.trace.chunks,3);
+});
+for(const defect of ['scope','header','missing'])test('long batch refuses '+defect,t=>{
+ const {w,spec}=longTrace(t),windows=w.requests.map(r=>({...r.result})),r=w.requests[0];
+ r.result={...windows[0],values:undefined,count:300000,candidate_scope_revision:'revision',windows};w.requests=[r];
+ if(defect==='scope')r.result.candidate_scope_revision='stale';
+ if(defect==='header')windows[1].source_sha256='wrong';
+ if(defect==='missing')windows.pop();
+ assert.throws(()=>readiness(spec),/batch .*mismatch/);
 });

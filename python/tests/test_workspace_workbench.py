@@ -3,6 +3,7 @@ import copy
 import contextlib
 import json
 import unittest
+from threading import Thread as RealThread
 import uuid
 from unittest.mock import patch
 
@@ -663,6 +664,82 @@ class WorkbenchTests(unittest.TestCase):
             with patch.object(self.case.service, 'trace', side_effect=AssertionError('Do not read outside scope')):
                 trace = self.case.client.get(self.root + '/epochs/' + self.fixture.before_ids[0] + '/trace', query_string={'candidate_scope_revision': token, 'stream_uuid': str(uuid.uuid4())})
                 self.assertEqual(trace.status_code, 400)
+
+    def test_trace_encoding_releases_guards_after_closing_scope_check(self):
+        import threading
+        context = self.get_context()
+        started, release, overview_done = threading.Event(), threading.Event(), threading.Event()
+        result = dict(epoch_uuid=self.added, values=[1.25, -0.0], tick=2**60)
+        original = self.case.app.json.dumps
+        responses, errors = {}, []
+        def encode(value, **kwargs):
+            if isinstance(value, dict) and value.get('values') == result['values']:
+                started.set()
+                if not release.wait(4):
+                    raise RuntimeError('Encoding test was not released')
+            return original(value, **kwargs)
+        def get(name, path, query=None):
+            try:
+                with self.case.app.test_client() as client:
+                    responses[name] = client.get(path, query_string=query)
+            except BaseException as error:
+                errors.append(error)
+            finally:
+                if name == 'overview': overview_done.set()
+        trace = RealThread(target=get, args=('trace', self.root + '/epochs/' + self.added + '/trace',
+            dict(candidate_scope_revision=context['candidate_scope_revision'], stream_uuid='stream')))
+        overview = RealThread(target=get, args=('overview', '/api/overview'))
+        with patch.object(self.case.service, 'trace', side_effect=lambda *args: copy.deepcopy(result)), \
+                patch.object(self.case.app.json, 'dumps', side_effect=encode):
+            try:
+                trace.start()
+                self.assertTrue(started.wait(2))
+                overview.start()
+                self.assertTrue(overview_done.wait(2), 'Workbench trace encoding blocks unrelated DB reads')
+            finally:
+                release.set()
+                trace.join(3)
+                if overview.ident is not None: overview.join(3)
+        self.assertFalse(trace.is_alive())
+        self.assertFalse(overview.is_alive())
+        self.assertEqual(errors, [])
+        self.assertEqual(responses['overview'].status_code, 200)
+        self.assertEqual(responses['trace'].status_code, 200)
+        body = responses['trace'].get_json()
+        self.assertEqual(body['values'], result['values'])
+        self.assertEqual(body['tick'], str(2**60))
+        self.assertEqual(body['candidate_scope_revision'], context['candidate_scope_revision'])
+
+    def test_trace_batch_uses_one_opening_and_closing_candidate_scope(self):
+        context = self.get_context()
+        result = dict(windows=[dict(values=[1.25])], count=1)
+        with patch.object(self.case.service, 'trace_batch', return_value=result) as batch, \
+                patch.object(self.manager, 'context', wraps=self.manager.context) as contexts:
+            response = self.case.client.get(self.root + '/epochs/' + self.added + '/trace', query_string=dict(
+                candidate_scope_revision=context['candidate_scope_revision'], stream_uuid='stream', count=100000, chunks=3))
+            self.assertEqual(response.status_code, 200, response.get_json())
+            batch.assert_called_once_with(self.added, 'stream', 0, 100000, 3)
+            self.assertEqual(contexts.call_count, 2)
+        self.assertEqual(response.get_json()['windows'], result['windows'])
+        self.assertEqual(response.get_json()['candidate_scope_revision'], context['candidate_scope_revision'])
+
+    def test_trace_refuses_scope_change_before_encoding(self):
+        context = self.get_context()
+        original = self.manager.context
+        calls = []
+        def changed(*args, **kwargs):
+            value = original(*args, **kwargs)
+            calls.append(value)
+            if len(calls) == 2:
+                value['candidate_scope_revision'] = 'changed'
+            return value
+        with patch.object(self.case.service, 'trace_batch', return_value=dict(windows=[dict(values=[1.25])])), \
+                patch.object(self.manager, 'context', side_effect=changed):
+            response = self.case.client.get(self.root + '/epochs/' + self.added + '/trace', query_string=dict(
+                candidate_scope_revision=context['candidate_scope_revision'], stream_uuid='stream', chunks=3))
+        self.assertEqual(response.status_code, 409)
+        self.assertNotIn('windows', response.get_json())
+        self.assertEqual(len(calls), 2)
 
     def test_candidate_summary_echoes_generation_and_rejects_a_changed_filter_authority(self):
         context = self.get_context()

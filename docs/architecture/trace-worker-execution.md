@@ -42,9 +42,12 @@ retirement, bounded admission, malformed IPC, cancellation, and close retry.
 `test_workspace_api.py` checks that actual JSON encoding releases the DB lock.
 These are source tests, not qualification of an assembled application.
 
-Global metadata-off progressive warming uses two background requests. Live metadata
-warming remains one; supplied/frozen request owners remain excluded from global
-warming. Cache limits, demand pause and generation retirement are unchanged.
+Global progressive warming uses two background trace requests from admitted page
+descriptors in both metadata modes. Live metadata loads only for the focused epoch
+and cannot delay its independently requested trace. Supplied/frozen request owners
+remain excluded from global warming; missing scoped descriptors still require
+attested detail admission. Cache limits, demand pause and generation retirement are
+unchanged.
 
 In the startup assembly, successful ProjectData activation publishes the worker
 close callback into the shell gateway. Partial activation cleanup closes workers
@@ -53,3 +56,42 @@ include the imported-snapshot backend; mapped checks therefore use its retained
 service/API and project-shell tests. The request-provider compatibility entry
 isolates trace and metadata resources when explicitly supplied; scoped predicate
 preference UI is outside this assembly.
+
+## Foreground exact-window batches
+
+Global and frozen Workbench trace GETs accept opt-in `chunks=1..5`, retaining the
+100,000-sample per-window bound (at most 500,000 total). A batch returns an envelope
+with contiguous ordinary window DTOs and shared identity/count fields; frozen
+responses carry their normal closing scope fences on the envelope. One source
+plan pins the signature across all windows and is revalidated before publication.
+No partial batch is published. The fast path admits only the captured canonical
+trace reader; custom trace policies refuse the option. Requests without `chunks`
+remain unchanged. Batches are foreground-only and execute under the caller's
+existing read guards, bypassing the workers' 4 MiB payload budget; JSON encoding
+runs after guard closure. This changes request granularity, never sample values,
+ordering, decimation, scientific membership or source validation.
+
+## Bounded foreground whole-trace batches
+
+Whole-epoch canonical and frozen Workbench demand can request up to five exact
+100,000-sample windows in one foreground response. The service captures one source
+plan, reads each bounded interval without filtering or resampling, then validates
+the source and publication witness before returning any windows. Custom trace
+reader overrides refuse batch admission. Workbench additionally performs its
+ordinary fresh opening and closing candidate checks around the entire batch;
+no candidate, pending-member or source authority is cached across requests.
+JSON encoding occurs after those checks, outside the shared database lock.
+Background worker response limits and imported snapshot endpoints are unchanged.
+
+The frontend checks the outer extent, source, rate, units and frozen candidate
+token, then every ordered contiguous window and sample count. Publication remains
+complete-only and cancellation retires later responses. An older endpoint returning
+one ordinary window to the opt-in request triggers ordinary remaining reads; it
+cannot be mistaken for a complete batch. Requests without the option retain their
+previous response shape. The adoption review covered source/publication closing
+checks, override refusal, exact envelope admission and legacy fallback. Existing
+observer and method-capture syntax/targets remain unchanged; the catalog refreshes
+only their reviewed owner-source witnesses. Scoped backend and frontend regressions
+cover changed sources, late cancellation, missing/corrupt windows and all samples
+of a 300,000-sample trace. These checks do not by themselves qualify installed
+application latency or release readiness.

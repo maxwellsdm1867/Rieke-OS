@@ -6,8 +6,16 @@ request/cache scope identity. All existing exports and viewer props remain publi
 
 ## Contract
 
-Display windows use safe integer bounds up to the stream length; each transport
-read remains bounded to at most 20,000 full-rate recorded samples. The active viewer defaults to Whole epoch:
+Display windows use safe integer bounds up to the stream length. Whole-epoch
+demand uses canonical/frozen windows of at most 100,000 full-rate samples,
+optionally batched up to five windows in one foreground HTTP request. Each
+response envelope and contiguous window must match the exact requested extent,
+source, rate, units and frozen candidate token before any result publishes.
+An older endpoint returning one ordinary window to the opt-in request is admitted
+only as that one window; remaining reads use the ordinary contract. Partial
+Sample windows and imported snapshot endpoints
+retain the 20,000-sample transport bound. No samples are omitted or resampled.
+The active viewer defaults to Whole epoch:
 `readWholeTrace.js` sequentially demand-reads exact chunks and publishes only the
 complete trace after count, identity, source hash, rate and unit checks. Complete
 arrays are never put in the shared cache. Cancellation and publication belong to

@@ -327,6 +327,73 @@ class ReadServiceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 service.trace(epoch_id, str(uuid.uuid4()), 0, 10)
 
+    def test_trace_batch_exact_contiguous_windows_bounds_and_eof(self):
+        with tempfile.TemporaryDirectory() as folder:
+            service, _, epoch, stream = self.make_trace_service(folder)
+            service.project = {'project_uuid': str(uuid.uuid4())}
+            result = service.trace_batch(epoch, stream, 13, 47, 5)
+            self.assertEqual([window['start'] for window in result['windows']], [13, 60, 107, 154])
+            self.assertEqual([window['count'] for window in result['windows']], [47, 47, 47, 46])
+            self.assertEqual([value for window in result['windows'] for value in window['values']],
+                             (np.arange(13, 200) / 7).tolist())
+            self.assertEqual(result['count'], 187)
+            self.assertFalse(result['decimated'])
+            self.assertEqual(service.trace_batch(epoch, stream, 200, 100000, 5)['windows'][0]['values'], [])
+            for chunks in (0, 6, True, 1.5):
+                with self.subTest(chunks=chunks), self.assertRaises(ValueError):
+                    service.trace_batch(epoch, stream, 0, 20, chunks)
+            for start, count in ((-1, 20), (201, 20), (0, 100001), (0, 0)):
+                with self.subTest(start=start, count=count), self.assertRaises(ValueError):
+                    service.trace_batch(epoch, stream, start, count, 3)
+
+    def test_trace_batch_does_not_bypass_custom_trace_policy(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as folder:
+            service, _, epoch, stream = self.make_trace_service(folder)
+            with patch.object(service, 'trace', side_effect=ValueError('Custom trace refusal')), \
+                    patch.object(service, 'capture_trace_read', side_effect=AssertionError('Must not bypass custom reader')):
+                with self.assertRaisesRegex(ValueError, 'custom trace reader'):
+                    service.trace_batch(epoch, stream, 0, 20, 3)
+            class CustomService(WorkspaceService):
+                def trace(self, *args):
+                    raise ValueError('Custom trace refusal')
+            service.__class__ = CustomService
+            with self.assertRaisesRegex(ValueError, 'custom trace reader'):
+                service.trace_batch(epoch, stream, 0, 20, 3)
+
+    def test_trace_batch_refuses_source_change_between_windows(self):
+        from unittest.mock import patch
+        import workspace_service
+        with tempfile.TemporaryDirectory() as folder:
+            service, path, epoch, stream = self.make_trace_service(folder)
+            service.project = {'project_uuid': str(uuid.uuid4())}
+            original = workspace_service.read_response_window
+            calls = []
+            def changed(*args):
+                result = original(*args)
+                calls.append(result)
+                if len(calls) == 1:
+                    with h5py.File(path, 'r+') as h5:
+                        h5.attrs['changed'] = True
+                return result
+            with patch('workspace_service.read_response_window', side_effect=changed), self.assertRaises(ValueError):
+                service.trace_batch(epoch, stream, 0, 20, 3)
+            self.assertEqual(len(calls), 1)
+
+    def test_trace_batch_refuses_closing_publication_change(self):
+        from unittest.mock import patch
+        import workspace_service
+        with tempfile.TemporaryDirectory() as folder:
+            service, _, epoch, stream = self.make_trace_service(folder)
+            service.project = {'project_uuid': str(uuid.uuid4())}
+            original = workspace_service.read_response_window
+            def changed(*args):
+                result = original(*args)
+                service._explore_publication = 'changed'
+                return result
+            with patch('workspace_service.read_response_window', side_effect=changed), self.assertRaisesRegex(ValueError, 'generation changed'):
+                service.trace_batch(epoch, stream, 0, 20, 3)
+
     def test_source_change_rejected_even_after_successful_read(self):
         with tempfile.TemporaryDirectory() as folder:
             service, path, epoch_id, stream_id = self.make_trace_service(folder)

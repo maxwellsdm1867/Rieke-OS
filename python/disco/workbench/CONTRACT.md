@@ -346,3 +346,28 @@ Rename changes only manifest display name with expected-name checking and an aud
 record, retaining creation retry identity, binding and prior export provenance.
 HTTP tests in `test_workspace_protocol_binding.py` cover mixed creation, export,
 mismatch rejection and rename/retry; native SQL durability remains unqualified.
+
+
+## Trace response encoding
+
+Frozen trace reads retain the opening candidate scope, pending-membership check,
+verified source window, closing generation/scope check, and native response
+attestation. After those guards close successfully, JSON encoding operates on
+the detached samples and response fences outside the DB/registration/annotation
+locks, matching the global trace endpoint. A changed closing scope still refuses
+before sample serialization. The Workbench integration tests hold encoding open
+and verify an unrelated overview read can complete, plus changed-scope refusal.
+
+Foreground trace GETs may opt into `chunks=1..5` with the existing per-window
+`count=1..100000` and nonnegative `start`. The response envelope contains exact
+`windows`, shared epoch/stream/source/rate/units/total-sample identity, the initial
+start and summed count, plus the ordinary candidate/query/binding/generation
+fences. Windows are contiguous and stop at EOF, with at most 500,000 samples.
+One opening/closing candidate scope covers the complete batch. A detached source
+plan pins one stat signature and row/manifest authority; every H5 window retains
+ordinary identity/rate/units/finite-value checks, and the final publication/source
+witness must still match. Failure returns no partial windows. Custom trace readers
+refuse batch admission rather than bypassing their policy. Requests without
+`chunks` retain their existing response. Background batches are refused; encoding
+occurs after the guards close. Source mutation between windows and final scope or
+publication changes are covered by service and HTTP integration tests.

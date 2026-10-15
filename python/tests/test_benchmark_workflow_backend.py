@@ -78,6 +78,33 @@ class WorkflowBackendTests(unittest.TestCase):
             self.assertFalse(later[-1]['module_timing'])
             self.assertEqual(later[-1]['module_timings'], [])
 
+    def test_frozen_long_trace_fixture_keeps_exact_scope_and_all_samples(self):
+        with tempfile.TemporaryDirectory() as folder:
+            fixture, app, meta = build(ROOT, Path(folder), 200)
+            self.addCleanup(fixture.doCleanups)
+            client = app.test_client()
+            headers = {'X-Workspace-Request': '1', 'Origin': 'http://localhost:8766'}
+            root = '/api/protocols/' + meta['protocol'] + '/workbench'
+            queue = client.get(root).get_json()
+            prepared = client.post(root + '/prepare', json={'expected_queue_revision': queue['queue_revision'], 'operation_uuid': str(uuid.uuid4())}, headers=headers).get_json()
+            expected = meta['incoming_trace_expected']
+            endpoint = root + '/candidates/' + prepared['candidate_revision_uuid'] + '/epochs/' + expected['epoch_uuid'] + '/trace'
+            revision = prepared['candidate_scope_revision']
+            values = []
+            for start in range(0, expected['count'], 20000):
+                response = client.get(endpoint, query_string={'candidate_scope_revision': revision, 'stream_uuid': expected['stream_uuid'], 'start': start, 'count': 20000}, headers=headers)
+                self.assertEqual(response.status_code, 200, response.get_json())
+                chunk = response.get_json()
+                for key in ('epoch_uuid', 'stream_uuid', 'sample_rate', 'units', 'source_sha256'):
+                    self.assertEqual(chunk[key], expected[key])
+                self.assertEqual(chunk['start'], start)
+                self.assertEqual(chunk['count'], 20000)
+                self.assertEqual(chunk['total_samples'], 300000)
+                values.extend(chunk['values'])
+            self.assertEqual(values, list(range(300000)))
+            stale = client.get(endpoint, query_string={'candidate_scope_revision': 'stale', 'stream_uuid': expected['stream_uuid'], 'start': 0, 'count': 20000}, headers=headers)
+            self.assertNotEqual(stale.status_code, 200)
+
     def test_module_capture_closes_after_propagated_exception(self):
         from flask import Flask
         from unittest.mock import patch

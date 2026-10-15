@@ -30,7 +30,7 @@ export function phasePlan(config){
 }
 
 // Fixed core inventory; variants not executed are retained as explicit gaps.
-export const inventory=[['view.open','cold-component'],['view.return','warm-resource'],['tree.open','main-columns'],['tree.expand','main-first-cell'],['tree.next_page','main-cell-epochs'],['tree.split_change','remove-epoch-block'],['tree.selection','incoming-select-all'],['tree.selection','incoming-deselect-all'],['predicate.search','cell-equality'],['workbench.prepare','fresh'],['workbench.prepare','receipt-replay'],['workbench.open','prepared-return'],['trace.inspect','first-owned-waveform']];
+export const inventory=[['view.open','cold-component'],['view.return','warm-resource'],['tree.open','main-columns'],['tree.expand','main-first-cell'],['tree.next_page','main-cell-epochs'],['tree.split_change','remove-epoch-block'],['tree.selection','incoming-select-all'],['tree.selection','incoming-deselect-all'],['predicate.search','cell-equality'],['workbench.prepare','fresh'],['workbench.prepare','receipt-replay'],['workbench.open','prepared-return'],['trace.inspect','first-owned-waveform'],['trace.inspect','frozen-workbench-300k']];
 const limits=['Owned shell mounts production components; full App navigation/session restoration unmeasured.','DOM/RAF and canvas calls are observations, not compositor presentation.','Development Vite/React runtime; not installed desktop performance.','Split add/reorder/recorded-field variants, hierarchy, queued/range selections, predicate selectivity/continuation, preparation invalidation/new-operation reuse, and trace supersession/scroll remain unmeasured.'];
 
 /** Browser-side gate uses only independently specified fixture expectations and
@@ -95,7 +95,44 @@ export function readiness(spec){
   if(spec.savedPrepared){const saved=w.incomingSession?.prepared;for(const key of ['candidate_revision_uuid','queue_revision','candidate_scope_revision'])if(saved?.[key]!==spec.savedPrepared[key])return pending();if(!document.querySelector('.incoming-browser .inspection-cell-tree[data-inspection-membership-ready="true"]'))return pending();const p=preparedPage(saved);if(!p||p.total!==spec.preparedUuids.length||JSON.stringify(p.epochs.map(e=>e.epoch_uuid))!==JSON.stringify(spec.preparedUuids.slice(0,60)))return pending();evidence.prepared=spec.savedPrepared;}
   if(spec.selected){const session=w.incomingSession;const draft=session?.drafts?.[session?.prepared?.candidate_revision_uuid];if(JSON.stringify(draft?.selected)!==JSON.stringify(spec.selected))return pending();evidence.selected_uuids=draft.selected;}
   if(spec.uuids){const got=current.map(el=>el.getAttribute('data-epoch-uuid'));if(JSON.stringify(got)!==JSON.stringify(spec.uuids))return pending();evidence.uuids=got;}
-  if(spec.trace){const expected=spec.trace;a.trace_expected={...expected,end:expected.start+expected.count};const r=[...requests].reverse().find(r=>r.result?.epoch_uuid===expected.epoch_uuid&&r.result?.stream_uuid===expected.stream_uuid&&Array.isArray(r.result?.values));if(!r)return pending();const d=r.result;for(const key of ['start','count','sample_rate','units'])if(expected[key]!==undefined&&d[key]!==expected[key])throw Error('Trace mismatch '+key);if(d.values.length!==d.count)throw Error('Incomplete trace values');if(expected.values_first!==undefined&&d.values[0]!==expected.values_first)throw Error('Incorrect first waveform sample');if(expected.values_last!==undefined&&d.values.at(-1)!==expected.values_last)throw Error('Incorrect last waveform sample');const control=window.__workflowReadStream(document);a.trace_control=control;if(control.status==='incompatible')throw Error('Harness incompatible with Response stream: '+JSON.stringify(control));if(control.status!=='ready'||control.stream_uuid!==expected.stream_uuid)return pending();if(!w.draws.some(v=>v.action_id===a.action_id&&v.at>=r.end&&v.stream_uuid===expected.stream_uuid))return pending();if(document.querySelector('.tv-status'))return pending();a.first_trace_at??=performance.now();evidence.trace={epoch_uuid:d.epoch_uuid,stream_uuid:d.stream_uuid,start:d.start,count:d.count,sample_rate:d.sample_rate,units:d.units,values_count:d.values.length};}
+  if(spec.trace){
+    const expected=spec.trace;a.trace_expected={...expected,end:expected.start+expected.count,...(spec.traceRoot?{root:spec.traceRoot,candidate_scope_revision:spec.traceRevision}:{})};
+    const traceRequests=requests.filter(r=>r.result?.epoch_uuid===expected.epoch_uuid&&r.result?.stream_uuid===expected.stream_uuid&&(Array.isArray(r.result?.values)||Object.hasOwn(r.result??{},'windows')));
+    const chunks=traceRequests.flatMap(r=>{
+      const d=r.result;
+      if(!Object.hasOwn(d,'windows'))return [r];
+      if(!Array.isArray(d.windows)||d.windows.length<2||d.windows.length>5||d.count!==d.windows.reduce((n,v)=>n+v.count,0)||d.start!==d.windows[0]?.start)throw Error('Trace batch envelope mismatch');
+      if(spec.traceRevision&&d.candidate_scope_revision!==spec.traceRevision)throw Error('Trace batch scope mismatch');
+      for(const child of d.windows)for(const key of ['epoch_uuid','stream_uuid','source_sha256','sample_rate','units','total_samples','decimated'])if(child[key]!==d[key])throw Error('Trace batch header mismatch');
+      return d.windows.map(result=>({...r,result}));
+    });
+    if(!chunks.length)return pending();
+    let cursor=expected.start,lastEnd=0;
+    for(const r of chunks){
+      const d=r.result;
+      for(const key of ['sample_rate','units','source_sha256'])if(expected[key]!==undefined&&d[key]!==expected[key])throw Error('Trace mismatch '+key);
+      if(spec.traceRoot){
+        const url=new URL(r.url,'http://fixture');
+        if(url.pathname!=='/api'+spec.traceRoot+'/epochs/'+expected.epoch_uuid+'/trace'||url.searchParams.get('candidate_scope_revision')!==spec.traceRevision)throw Error('Trace scope mismatch');
+      }
+      for(const key of ['start','count'])if(!Number.isSafeInteger(d[key]))throw Error('Trace mismatch '+key);
+      if(d.count<1||d.count>100000||d.start!==cursor||cursor+d.count>expected.start+expected.count)throw Error('Trace chunk gap, overlap or bounds mismatch');
+      if(d.values.length!==d.count)throw Error('Incomplete trace values');
+      if(expected.ramp&&(d.total_samples!==expected.count||d.decimated!==false))throw Error('Trace total or decimation mismatch');
+      if(expected.ramp&&d.values.some((v,i)=>v!==d.start+i))throw Error('Incorrect waveform sample');
+      if(cursor===expected.start&&expected.values_first!==undefined&&d.values[0]!==expected.values_first)throw Error('Incorrect first waveform sample');
+      cursor+=d.count;lastEnd=Math.max(lastEnd,r.end);
+      if(cursor===expected.start+expected.count&&expected.values_last!==undefined&&d.values.at(-1)!==expected.values_last)throw Error('Incorrect last waveform sample');
+    }
+    if(cursor!==expected.start+expected.count)return pending();
+    const control=window.__workflowReadStream(document);a.trace_control=control;
+    if(control.status==='incompatible')throw Error('Harness incompatible with Response stream: '+JSON.stringify(control));
+    if(control.status!=='ready'||control.stream_uuid!==expected.stream_uuid)return pending();
+    if(!w.draws.some(v=>v.action_id===a.action_id&&v.at>=lastEnd&&v.stream_uuid===expected.stream_uuid))return pending();
+    if(document.querySelector('.tv-status'))return pending();
+    a.first_trace_at??=performance.now();
+    evidence.trace={epoch_uuid:expected.epoch_uuid,stream_uuid:expected.stream_uuid,start:expected.start,count:expected.count,sample_rate:chunks[0].result.sample_rate,units:chunks[0].result.units,values_count:cursor-expected.start,chunks:chunks.length,requests:traceRequests.length,...(spec.traceRoot?{root:spec.traceRoot,candidate_scope_revision:spec.traceRevision}:{}),...(expected.source_sha256?{source_sha256:expected.source_sha256}:{})};
+  }
   if(spec.requestPath){const r=[...requests].reverse().find(r=>r.url.includes(spec.requestPath)&&r.result);if(!r)return pending();evidence.response=r.result;if(spec.prepared){if(typeof spec.expectedReused!=='boolean'||r.result.reused!==spec.expectedReused)throw Error('Preparation reuse classification mismatch');if(spec.expectedCandidate&&r.result.candidate_revision_uuid!==spec.expectedCandidate)throw Error('Preparation replay changed candidate');if(spec.expectedOperation&&r.result.operation_uuid!==spec.expectedOperation)throw Error('Preparation replay changed operation');if(spec.expectedPrepareStatus!==undefined&&r.status!==spec.expectedPrepareStatus)throw Error('Preparation HTTP status mismatch');const session=w.incomingSession,prepared=session?.prepared;if(!prepared?.candidate_revision_uuid)return pending();if(prepared.candidate_revision_uuid!==r.result.candidate_revision_uuid||prepared.queue_revision!==r.result.queue_revision||prepared.candidate_scope_revision!==r.result.candidate_scope_revision)return pending();if(prepared.context?.counts?.incoming_epochs!==spec.preparedUuids.length||prepared.context?.publication_blocked)return pending();const draft=session.drafts?.[prepared.candidate_revision_uuid];if(draft?.selected?.length||draft?.receipt)throw Error('Preparation silently selected or merged');const page=preparedPage(prepared);if(!page||page.total!==spec.preparedUuids.length||page.epochs.length!==Math.min(60,spec.preparedUuids.length))return pending();if(JSON.stringify(page.epochs.map(e=>e.epoch_uuid))!==JSON.stringify(spec.preparedUuids.slice(0,page.epochs.length)))throw Error('Wrong prepared membership');if(!document.querySelector('.incoming-browser .inspection-cell-tree[data-inspection-membership-ready="true"]'))return pending();evidence.prepared={candidate_revision_uuid:prepared.candidate_revision_uuid,queue_revision:prepared.queue_revision,candidate_scope_revision:prepared.candidate_scope_revision,total:page.total,epoch_uuids:page.epochs.map(e=>e.epoch_uuid),reused:r.result.reused,operation_uuid:r.result.operation_uuid,http_status:r.status};}if(spec.expectedCount!==undefined){const count=r.result.matched_count??r.result.count??r.result.total_epochs??r.result.pending_epoch_count;if(count!==spec.expectedCount)throw Error('Incorrect result count '+count+' expected '+spec.expectedCount);}}
   // Two successive RAF observations of the same correct result, in page clock.
   const signature=JSON.stringify(evidence);if(a.signature!==signature){a.signature=signature;a.frames=0;}a.frames++;
@@ -121,7 +158,7 @@ export function assertFinalizedRequests(sample){
 }
 
 export async function resetPreparation(meta,{timeoutMs=900000}={}){
-  if(meta.fixture!=='workflow-owned-v2')throw Error('Owned preparation reset contract unavailable');
+  if(meta.fixture!=='workflow-owned-v3')throw Error('Owned preparation reset contract unavailable');
   const start=performance.now();let attempts=0;
   while(performance.now()-start<timeoutMs){
     attempts++;
@@ -213,6 +250,11 @@ export async function run(config){
         await page.evaluate(()=>{delete window.__workflow.incomingSession;});
         const replay=await measure('workbench.prepare','receipt-replay',button('Benchmark Workbench'),{selector:'button',text:'Select all',enabled:true,requestPath:'/prepare',prepared:true,preparedUuids:meta.incoming_epochs,expectedReused:false,expectedPrepareStatus:200,expectedCandidate:preparation.correctness.prepared.candidate_revision_uuid,expectedOperation:preparation.correctness.prepared.operation_uuid});
         await button('Benchmark Away').click();await measure('workbench.open','prepared-return',button('Benchmark Workbench'),{selector:'button',text:'Select all',enabled:true,savedPrepared:replay.correctness.prepared,preparedUuids:meta.incoming_epochs});
+        await page.locator('.incoming-browser .cell-tree-date').first().evaluate(el=>{el.open=true;});
+        await page.locator('.incoming-browser .cell-tree-cell').first().evaluate(el=>{el.open=true;});
+        const incomingRow=page.getByRole('button',{name:`Inspect ${meta.date_label} · ${meta.incoming_cell_label} epoch 1`,exact:true});
+        const traceRoot='/protocols/'+meta.protocol+'/workbench/candidates/'+replay.correctness.prepared.candidate_revision_uuid;
+        await measure('trace.inspect','frozen-workbench-300k',incomingRow,{selector:'.tv-base',trace:meta.incoming_trace_expected,traceRoot,traceRevision:replay.correctness.prepared.candidate_scope_revision});
       }catch(error){receipt.failures.push({phase,sample,error:String(error)});}finally{ledger.detach();await fs.writeFile(path.join(output,`browser-requests-${phase}-${sample}.json`),JSON.stringify(await page.evaluate(()=>window.__workflow.requests.map(({result,...row})=>row)),null,2));await fs.writeFile(path.join(output,`ledger-${phase}-${sample}.json`),JSON.stringify(ledger.entries,null,2));await context.close();context=null;}
     }
     for(const action of receipt.actions)if(action.samples.filter(s=>s.phase==='ordinary').length!==config.samples)receipt.gaps.push(`Missing ordinary samples: ${action.id}/${action.variant}`);

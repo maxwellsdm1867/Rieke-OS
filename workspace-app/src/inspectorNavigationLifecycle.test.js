@@ -343,3 +343,17 @@ test('browse cell expansion preserves inspected epoch and existing rows, fetchin
   assert.ok(h.fixture.requests.slice(before).every(r=>r.path.includes('cell_uuid=cell-1')));
  }finally{await h.close();}
 });
+
+
+test('live initial off-page focus locates its admitted page before trace inspection',async()=>{
+ const h=await createInspectorHarness();
+ const distant={...epochs[0],epoch_uuid:'epoch-distant',streams:[]};
+ try{
+  h.fixture.epoch=distant;
+  h.fixture.resource=path=>path?.includes('/epochs?')?resource(path,path.includes('anchor_uuid=epoch-distant')?{...page,offset:60,epochs:[distant]}:page):null;
+  await h.render({...props,initialEpochUuid:'epoch-distant'});
+  assert.ok(h.fixture.resources.some(r=>r.path?.includes('anchor_uuid=epoch-distant')));
+  assert.equal(h.viewer.epoch.epoch_uuid,'epoch-distant');
+  assert.equal(h.viewer.resource.loading,false);
+ }finally{await h.close();}
+});

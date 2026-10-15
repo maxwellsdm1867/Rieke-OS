@@ -91,7 +91,10 @@ scroll restoration. Admitted keyboard focus reveals its cell page independently
 of sentinel visibility. The accessible Load more fallback replaces pagination.
 
 Fast trace-first navigation and optional metadata values use the tested cache and
-request owners; startup App/data activation remain unchanged. See
+request owners. Live metadata also loads independently of admitted trace rows;
+metadata failure cannot hide a valid trace. Missing scoped trace descriptors still
+require attested detail admission, with no global fallback. Neighbor warming reads
+only bounded traces in both modes. Startup App/data activation remain unchanged. See
 [trace worker execution](../../../docs/architecture/trace-worker-execution.md).
 
 

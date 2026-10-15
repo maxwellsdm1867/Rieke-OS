@@ -7,9 +7,10 @@ import {fileURLToPath} from 'node:url';
 import {createWorkflowHarness} from '../test-support/workflowHarness.js';
 
 const row=id=>({epoch_uuid:id,cell_uuid:'cell',cell_label:'Cell',export_count:6,date:'2026-10-05',streams:[{kind:'responses',uuid:`stream-${id}`,sample_count:3,sample_rate:10000,units:'mV'}]});
-async function harness({trace=false,viewer=false,fieldCatalog}={}){
+async function harness({trace=false,viewer=false,fieldCatalog,live=false}={}){
  const old={fetch:globalThis.fetch,localStorage:globalThis.localStorage},memory=new Map();
  globalThis.localStorage={getItem:key=>memory.get(key)??null,setItem:(key,value)=>memory.set(key,value)};
+ if(live)memory.set('workspace.inspector.liveMetadata','true');
  const calls=[];globalThis.fetch=(url,options)=>{
   const path=url.replace(/^\/api/,'');
   if(path.includes('/trace?')){const id=path.split('/')[2];calls.push({path,...options});return Promise.resolve(new Response(JSON.stringify({epoch_uuid:id,stream_uuid:`stream-${id}`,start:0,count:3,sample_rate:10000,units:'mV',values:[1,2,3]})));}
@@ -151,4 +152,83 @@ test('field-only catalog keeps scoped definition demand explicit and cancellable
  try{await h.render();const load=h.root.findAllByType('button').find(n=>n.props.children==='Load field names');assert.ok(load);await act(async()=>load.props.onClick());assert.equal(loads,1);assert.equal(h.calls.length,0);const text=h.root.findByProps({'aria-label':'Available metadata fields'}).findAll(()=>true).flatMap(n=>n.children.filter(c=>typeof c==='string')).join(' ');assert.doesNotMatch(text,/No registered fields/);}finally{await h.close();}
  const pending=await harness({fieldCatalog:{scoped:true,data:null,loading:true,cancel:()=>cancels++}});
  try{await pending.render();await act(async()=>pending.root.findAllByType('button').find(n=>n.props.children==='Cancel fields').props.onClick());assert.equal(cancels,1);}finally{await pending.close();}
+});
+
+
+test('live metadata never gates admitted trace reads or replaces their identity across focus and metadata failure',async()=>{
+ const h=await harness({trace:true,live:true});
+ try{
+  await h.render();
+  const first=h.calls.find(c=>c.path==='/epochs/a');
+  assert.ok(first,'live values still load automatically');
+  assert.ok(h.calls.some(c=>c.path==='/epochs/a/trace?stream_uuid=stream-a&start=0&count=3'),'trace starts while metadata is held');
+  assert.equal(h.current.resource.loading,false);
+  assert.equal(h.root.findByProps({'aria-label':'Exact sample index for cursor'}).props.disabled,false,'trace samples are ready while metadata remains unresolved');
+  assert.equal(h.current.resource.data.streams[0].uuid,'stream-a');
+  await h.render({id:'b'});
+  assert.equal(first.signal.aborted,true);
+  assert.ok(h.calls.some(c=>c.path==='/epochs/b/trace?stream_uuid=stream-b&start=0&count=3'));
+  await act(async()=>first.finish({...row('a'),parameters:{stale:true}}));
+  assert.equal(h.current.resource.data.epoch_uuid,'b');
+  assert.equal(h.current.metadata.values.data,null);
+  await act(async()=>h.calls.find(c=>c.path==='/epochs/b').finish({error:'Live values unavailable'},503));
+  assert.equal(h.current.resource.error,null);
+  assert.equal(h.current.resource.data.streams[0].uuid,'stream-b');
+  assert.match(h.current.metadata.values.error,/Live values unavailable/);
+  await act(async()=>h.current.metadata.load());
+  await act(async()=>h.calls.findLast(c=>c.path==='/epochs/b').finish({...row('b'),streams:[{...row('b').streams[0],uuid:'unadmitted-stream'}],parameters:{answer:42}}));
+  assert.equal(h.current.metadata.values.data.parameters.answer,42);
+  assert.equal(h.current.resource.data.streams[0].uuid,'stream-b');
+  assert.equal(h.calls.filter(c=>c.path.includes('unadmitted-stream')).length,0);
+ }finally{await h.close();}
+});
+
+test('live scoped inspection still requires descriptor admission and keeps failures scoped',async()=>{
+ const h=await harness({trace:true,live:true}),requests=[];
+ const port={identity:'scoped-live',request:(path,options)=>new Promise(resolve=>requests.push({path,...options,resolve}))};
+ try{
+  await h.render({},port);
+  assert.deepEqual(requests.map(c=>c.path),['/epochs/a']);
+  assert.equal(h.current.resource.data,null);
+  await act(async()=>requests[0].resolve(row('a')));
+  assert.match(h.current.resource.error,/Trace information is unavailable/);
+  assert.equal(h.current.resource.data,null);
+  assert.equal(requests.length,1,'missing attestation never starts a trace');
+  assert.equal(h.calls.length,0,'scoped live reads never escape through global transport');
+ }finally{await h.close();}
+});
+
+
+test('live frozen inspection requests its trace before optional metadata completes and survives metadata error',async()=>{
+ const h=await harness({trace:true,live:true}),requests=[];
+ const readContext={root:'/protocols/p/workbench/candidates/c',candidate_scope_revision:'candidate-1'};
+ const port={identity:'frozen-live',traceReadContext:readContext,request:(path,options)=>new Promise((resolve,reject)=>requests.push({path,...options,resolve,reject}))};
+ try{
+  await h.render({readContext},port);
+  const metadata=requests.find(c=>c.path==='/epochs/a'),trace=requests.find(c=>c.path.includes('/trace?'));
+  assert.ok(metadata);assert.ok(trace,'trace starts without waiting for optional values');
+  assert.ok(trace.path.startsWith(readContext.root+'/epochs/a/trace?'));
+  assert.ok(trace.path.includes('candidate_scope_revision=candidate-1'));
+  await act(async()=>trace.resolve({epoch_uuid:'a',stream_uuid:'stream-a',start:0,count:3,sample_rate:10000,units:'mV',values:[1,2,3]}));
+  assert.equal(h.root.findByProps({'aria-label':'Exact sample index for cursor'}).props.disabled,false);
+  await act(async()=>metadata.reject(Error('Frozen metadata unavailable')));
+  assert.equal(h.current.resource.error,null);
+  assert.match(h.current.metadata.values.error,/Frozen metadata unavailable/);
+  assert.equal(h.calls.length,0);
+ }finally{await h.close();}
+});
+
+
+test('live legacy detail fallback retries its failed read when no page descriptor exists',async()=>{
+ const h=await harness({live:true});
+ try{
+  await h.render({record:{epoch_uuid:'a'}});
+  await act(async()=>h.calls.find(c=>c.path==='/epochs/a').finish({error:'Detail unavailable'},503));
+  assert.match(h.current.resource.error,/Detail unavailable/);
+  await act(async()=>h.current.resource.reload());
+  assert.equal(h.calls.filter(c=>c.path==='/epochs/a').length,2);
+  await act(async()=>h.calls.at(-1).finish(row('a')));
+  assert.equal(h.current.resource.data.epoch_uuid,'a');
+  assert.equal(h.current.resource.error,null);
+ }finally{await h.close();}
 });

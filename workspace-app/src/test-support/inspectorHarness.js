@@ -9,7 +9,7 @@ export async function createInspectorHarness({liveMetadata=true}={}){
   const previousStorage=globalThis.localStorage;
   globalThis.localStorage={getItem:key=>key==='workspace.inspector.liveMetadata'?String(liveMetadata):previousStorage?.getItem(key)??null,setItem:(key,value)=>{if(key==='workspace.inspector.liveMetadata')liveMetadata=value==='true';else previousStorage?.setItem(key,value);}};
   const key=`__inspectorTest${Math.random().toString(36).slice(2)}`;
-  const fixture={resources:[],api:()=>{throw Error('Unexpected API request');},epoch:{epoch_uuid:'epoch-A',cell_uuid:'cell-A',curation:{tags:[],included:true,review_state:'unreviewed'}}};
+  const fixture={resources:[],api:()=>{throw Error('Unexpected API request');},epoch:{epoch_uuid:'epoch-A',cell_uuid:'cell-A',streams:[],curation:{tags:[],included:true,review_state:'unreviewed'}}};
   globalThis[key]=fixture;
   const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
     name:'inspector-fixtures',enforce:'pre',

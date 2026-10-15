@@ -24,7 +24,7 @@ test('whole default, explicit Sample, remembered window, independent views and c
  try{
   await render('a');assert.equal(button('Whole epoch').props['aria-pressed'],true);
   assert.match(text(renderer.toJSON()),/0–6.7499 s/);assert.match(text(renderer.toJSON()),/67,500 \/ 67,500 samples/);
-  assert.deepEqual(calls.filter(c=>c.id==='a').map(c=>c.count),[20000,20000,20000,7500]);
+  assert.deepEqual(calls.filter(c=>c.id==='a').map(c=>c.count),[67500]);
   await act(async()=>view().findByProps({'aria-label':'Zoom in'}).props.onClick());
   assert.equal(button('Whole epoch').props['aria-pressed'],true,'magnifier arms selection without choosing bounds');
   await act(async()=>view().findAllByProps({role:'group'}).find(n=>n.props.onKeyDown).props.onKeyDown({key:'+',preventDefault(){}}));
@@ -40,7 +40,7 @@ test('whole default, explicit Sample, remembered window, independent views and c
   const form=view().findByType('form'),inputs=form.findAllByType('input');
   await act(async()=>{inputs[0].props.onChange({target:{value:'30000'}});inputs[1].props.onChange({target:{value:'1000'}});});
   await act(async()=>form.props.onSubmit({preventDefault(){}}));
-  assert.deepEqual(calls.filter(c=>c.id==='a').map(c=>c.count),[20000,20000,20000,7500],'all viewport changes reuse the loaded samples');
+  assert.deepEqual(calls.filter(c=>c.id==='a').map(c=>c.count),[67500],'all viewport changes reuse the loaded samples');
   await render('b');assert.deepEqual(calls.filter(c=>c.id==='b').at(-1),{id:'b',start:30000,count:1000});
   await render('short');assert.deepEqual(calls.filter(c=>c.id==='short').at(-1),{id:'short',start:0,count:100});
   await render('c');assert.deepEqual(calls.filter(c=>c.id==='c').at(-1),{id:'c',start:30000,count:1000});
@@ -55,22 +55,22 @@ test('whole trace revision changes abort held chunks and refuse late A/B/A resul
  const {WorkspaceRequestProvider}=await server.ssrLoadModule('/src/workspaceRequest.js');
  const held=[];let renderer;
  const port={identity:'held-owner',request:(path,{signal})=>new Promise(resolve=>held.push({path,signal,resolve}))};
- const epoch={epoch_uuid:'a',streams:[{kind:'responses',uuid:'s',sample_count:25000,sample_rate:10000,units:'pA'}]};
+ const epoch={epoch_uuid:'a',streams:[{kind:'responses',uuid:'s',sample_count:125000,sample_rate:10000,units:'pA'}]};
  const render=async revision=>act(async()=>{
   const element=React.createElement(WorkspaceRequestProvider,{port},React.createElement(Trace,{epoch,revision}));
   if(renderer)renderer.update(element);else renderer=TestRenderer.create(element);
  });
  const complete=async(index,value)=>act(async()=>{
   const h=held[index],q=new URLSearchParams(h.path.split('?')[1]),start=+q.get('start'),count=+q.get('count');
-  h.resolve({epoch_uuid:'a',stream_uuid:'s',start,count,total_samples:25000,sample_rate:10000,units:'pA',source_sha256:'source',decimated:false,values:Array(count).fill(value)});
+  h.resolve({epoch_uuid:'a',stream_uuid:'s',start,count,total_samples:125000,sample_rate:10000,units:'pA',source_sha256:'source',decimated:false,values:Array(count).fill(value)});
  });
  try{
   await render('A');await render('B');await render('A');
   assert.equal(held.length,3);assert(held[0].signal.aborted);assert(held[1].signal.aborted);assert(!held[2].signal.aborted);
   await complete(0,90);await complete(1,80);assert.equal(held.length,3,'retired reads cannot schedule the next chunk');
-  assert.doesNotMatch(text(renderer.toJSON()),/0–2.4999 s/);
-  await complete(2,1);assert.equal(held.length,4);assert.doesNotMatch(text(renderer.toJSON()),/0–2.4999 s/);
-  await complete(3,2);assert.match(text(renderer.toJSON()),/0–2.4999 s/);
+  assert.doesNotMatch(text(renderer.toJSON()),/0–12.4999 s/);
+  await complete(2,1);assert.equal(held.length,4);assert.doesNotMatch(text(renderer.toJSON()),/0–12.4999 s/);
+  await complete(3,2);assert.match(text(renderer.toJSON()),/0–12.4999 s/);
  }finally{await act(async()=>renderer?.unmount());await server.close();}
 });
 

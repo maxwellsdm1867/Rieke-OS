@@ -61,7 +61,7 @@ async function harness({epochCount=1}={}){
  const button=label=>view().findAllByType('button').find(n=>text(n.props.children).trim()===label);
  function assertWhole(){
   assert.equal(button('Whole epoch').props['aria-pressed'],true);assert.match(text(renderer.toJSON()),/67,500 \/ 67,500 samples/);assert.match(text(renderer.toJSON()),/0–6.7499 s/);
-  assert(calls.some(c=>c.path.endsWith('/trace')&&c.query.get('start')==='60000'&&c.query.get('count')==='7500'),'complete mode reads through the final recorded sample');
+  assert(calls.some(c=>c.path.endsWith('/trace')&&Number(c.query.get('start'))+Number(c.query.get('count'))===67500),'complete mode reads through the final recorded sample');
   assert.equal(view().findAllByType('details').length,0);assert.equal(view().findAllByType('select').length,0);
   for(const label of ['Start sample','Sample count','Previous window','Next window'])assert.equal(view().findAllByProps({'aria-label':label}).length,0);
   assert.equal(view().findAllByType('form').length,0);
@@ -103,7 +103,7 @@ async function harness({epochCount=1}={}){
   assert.equal(button('Sample').props['aria-pressed'],true);
   await act(async()=>plot.props.onKeyDown({key:'Home',preventDefault(){}}));assertWhole();
   assert.equal(calls.filter(c=>c.path.endsWith('/trace')).length,readsBefore,'zoom, pan and Whole reuse the loaded full trace');
-  assert(calls.filter(c=>c.path.endsWith('/trace')).every(c=>Number(c.query.get('count'))<=20000),'all transport reads retain the full-rate request bound');
+  assert(calls.filter(c=>c.path.endsWith('/trace')).every(c=>Number(c.query.get('count'))<=100000),'all transport reads retain the full-rate whole-demand request bound');
  }
  async function rectangleAndPan(surface){
   const reads=calls.filter(c=>c.path.endsWith('/trace')).length;

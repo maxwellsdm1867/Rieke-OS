@@ -147,6 +147,23 @@ class WorkflowContractTests(unittest.TestCase):
                 with self.subTest(endpoint=endpoint, field=field), self.assertRaises(ValueError):
                     bench.validate_action(action, {'id': 'inspect', 'trace': True}, 2)
 
+    def test_long_trace_receipt_checks_full_count_source_and_frozen_scope(self):
+        action = self.action(True)
+        extra = {'count': 300000, 'sample_rate': 10000, 'source_sha256': 'source',
+                 'root': '/protocols/p/workbench/candidates/c', 'candidate_scope_revision': 'revision'}
+        for sample in action['samples']:
+            trace = sample['trace']
+            for boundary in ('expected', 'first', 'complete'):
+                trace[boundary].update(extra, values_count=300000, start=0, end=300000)
+        bench.validate_action(action, {'id': 'inspect', 'trace': True}, 2)
+        for field in (*extra, 'values_count'):
+            with self.subTest(field=field):
+                import copy
+                bad = copy.deepcopy(action)
+                bad['samples'][0]['trace']['complete'][field] = 'wrong'
+                with self.assertRaises(ValueError):
+                    bench.validate_action(bad, {'id': 'inspect', 'trace': True}, 2)
+
     def test_trace_missing_inverted_or_out_of_action_endpoints_refused(self):
         for change in (lambda t: t.pop('first'), lambda t: t.update(first_visible_ms=110),
                        lambda t: t.update(first_visible_ms=-1),
