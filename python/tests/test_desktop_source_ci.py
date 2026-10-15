@@ -245,19 +245,114 @@ class SourceCITests(unittest.TestCase):
 
 
 class ArtifactProofTests(unittest.TestCase):
+    def archive(self, entries=None):
+        output = io.BytesIO()
+        with zipfile.ZipFile(output, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+            for name, raw in entries or [('candidate/receipt.json', b'{ "status" : "passed" }\n')]:
+                archive.writestr(name, raw)
+        return output.getvalue()
+
+    def ports(self, raw, *, name='proof', declared=None, digest=None, status=0):
+        row = {'id': 7, 'name': name, 'expired': False,
+               'size_in_bytes': len(raw) if declared is None else declared}
+        if digest is not None: row['digest'] = digest
+        process = unittest.mock.Mock()
+        process.stdout = io.BytesIO(raw)
+        process.wait.return_value = status
+        process.poll.return_value = status
+        return patch.object(gate, 'api', return_value={'artifacts': [row]}), \
+            patch.object(gate.subprocess, 'Popen', return_value=process)
+
     def test_digest_binds_original_member_bytes_not_reserialized_json(self):
-        raw = b'{ "status" : "passed" }\n'
-        archive = io.BytesIO()
-        with zipfile.ZipFile(archive, 'w') as output:
-            output.writestr('candidate/receipt.json', raw)
-        listing = {'artifacts': [{'id': 7, 'name': 'proof', 'expired': False,
-                                 'size_in_bytes': len(archive.getvalue())}]}
-        with patch.object(gate, 'api', return_value=listing), \
-             patch.object(gate.subprocess, 'check_output', return_value=archive.getvalue()):
+        raw = b'{ "status" : "passed" }\n'; archive = self.archive()
+        api, process = self.ports(archive, digest='sha256:' + hashlib.sha256(archive).hexdigest())
+        with api, process:
             parsed, digest = gate.artifact(REPO, {'id': 2}, 'proof', 'candidate/receipt.json', with_digest=True)
         self.assertEqual(parsed, {'status': 'passed'})
         self.assertEqual(digest, hashlib.sha256(raw).hexdigest())
         self.assertNotEqual(digest, hashlib.sha256(json.dumps(parsed).encode()).hexdigest())
+
+    def test_only_exact_diagnostic_family_gets_larger_disk_budget(self):
+        self.assertEqual(gate.SMALL_ARCHIVE_LIMIT, 16 * 1024 * 1024)
+        self.assertEqual(gate.DIAGNOSTIC_ARCHIVE_LIMIT, 256 * 1024 * 1024)
+        self.assertEqual(gate.MEMBER_LIMIT, 8 * 1024 * 1024)
+        raw = self.archive()
+        for name in ('proof', 'everyday-million-2-1', 'everyday-million-2-2'):
+            api, process = self.ports(raw, name=name)
+            with api, process as download, patch.object(gate, 'SMALL_ARCHIVE_LIMIT', len(raw) - 1):
+                if name == 'everyday-million-2-1':
+                    self.assertEqual(gate.artifact(REPO, {'id': 2, 'run_attempt': 1}, name,
+                                                  'candidate/receipt.json')['status'], 'passed')
+                else:
+                    with self.assertRaisesRegex(ValueError, 'transport bound'):
+                        gate.artifact(REPO, {'id': 2, 'run_attempt': 1}, name, 'candidate/receipt.json')
+                    download.assert_not_called()
+
+    def test_actual_oversize_size_mismatch_digest_and_transport_errors_refuse(self):
+        raw = self.archive()
+        for options, message in [({'declared': len(raw) - 1}, 'size differs'),
+                ({'declared': len(raw) + 1}, 'size differs'),
+                ({'digest': 'sha256:' + '0' * 64}, 'digest differs'),
+                ({'digest': 'invalid'}, 'Malformed'), ({'status': 1}, 'download failed')]:
+            api, process = self.ports(raw, **options)
+            with api, process, self.assertRaisesRegex(ValueError, message):
+                gate.artifact(REPO, {'id': 2}, 'proof', 'candidate/receipt.json')
+
+    def test_actual_byte_limit_stops_running_download_and_cleans_partial_file(self):
+        raw = self.archive()
+        api, process = self.ports(raw, declared=1)
+        with api, process as download, patch.object(gate, 'SMALL_ARCHIVE_LIMIT', len(raw) - 1):
+            download.return_value.poll.return_value = None
+            with self.assertRaisesRegex(ValueError, 'actual-byte transport bound'):
+                with gate._artifact_scope():
+                    folder = gate._ARTIFACT_CACHE.get()[0]
+                    gate.artifact(REPO, {'id': 2}, 'proof', 'candidate/receipt.json')
+            download.return_value.kill.assert_called_once()
+            download.return_value.wait.assert_called_once()
+            self.assertTrue(download.return_value.stdout.closed)
+            self.assertFalse(folder.exists())
+        api, process = self.ports(raw, declared=1)
+        with api, process, patch.object(gate, 'SMALL_ARCHIVE_LIMIT', len(raw) - 1):
+            with self.assertRaisesRegex(ValueError, 'actual-byte transport bound'):
+                gate.artifact(REPO, {'id': 2}, 'proof', 'candidate/receipt.json')
+
+    def test_duplicate_missing_and_oversized_members_refuse_without_extracting(self):
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', UserWarning)
+            duplicate = self.archive([('candidate/receipt.json', b'{}'), ('candidate/receipt.json', b'{}')])
+        for raw, member, error in [(duplicate, 'candidate/receipt.json', 'duplicate'),
+                (self.archive(), 'missing.json', 'Missing'),
+                (self.archive([('candidate/receipt.json', b' ' * (gate.MEMBER_LIMIT + 1))]),
+                 'candidate/receipt.json', 'metadata bound')]:
+            api, process = self.ports(raw)
+            with api, process, patch.object(zipfile.ZipFile, 'extract') as extract, \
+                 patch.object(zipfile.ZipFile, 'extractall') as extractall:
+                with self.assertRaisesRegex(ValueError, error):
+                    gate.artifact(REPO, {'id': 2}, 'proof', member)
+                extract.assert_not_called(); extractall.assert_not_called()
+
+    def test_cache_is_scoped_and_removed_on_success_or_failure(self):
+        raw = self.archive()
+        for fail in (False, True):
+            api, process = self.ports(raw)
+            with api, process as download:
+                try:
+                    with gate._artifact_scope():
+                        folder = gate._ARTIFACT_CACHE.get()[0]
+                        for _ in range(2):
+                            gate.artifact(REPO, {'id': 2}, 'proof', 'candidate/receipt.json')
+                        self.assertEqual(download.call_count, 1)
+                        self.assertTrue(folder.exists())
+                        if fail: raise ValueError('owned failure')
+                except ValueError:
+                    if not fail: raise
+                self.assertFalse(folder.exists())
+                self.assertIsNone(gate._ARTIFACT_CACHE.get())
+            api, process = self.ports(raw)
+            with api, process as fresh:
+                gate.artifact(REPO, {'id': 2}, 'proof', 'candidate/receipt.json')
+                fresh.assert_called_once()
 
 
 class PublicationBoundaryTests(unittest.TestCase):

@@ -4302,6 +4302,18 @@
         "reason": "Desktop startup adds deferred parser API checks; existing settings fixture loader Call ASTs are unchanged and still load only owned test copies. Bounded manifest-difference diagnostics coverage is added; both fixture loader ASTs and targets are unchanged."
       },
       {
+        "file": "python/tests/test_desktop_testing_promote_workflow.py",
+        "file_sha256": "016522bd0355f75dcc9c4aeffb344b0a6640ae14bf68fb17fc7e27337047d4c6",
+        "sites": [
+          {
+            "selector": "call:exec:1",
+            "ast_sha256": "54de4a25daa3de8a8889df47fb79d66b389213fc32e175f09e6d5467228aa400",
+            "kind": "ast-call"
+          }
+        ],
+        "reason": "Reviewed publisher-only workflow regression harness: compiles the explicitly named tracked desktop-testing-promote.yml Python step, then executes that code only with owned temporary archive/app bytes, mocked subprocess command ports and an inert desktop_test_release.publish module. Tests prove signature, runtime, native audit, symbol and provenance failures prevent publication. This exact test-file and exec Call AST witness authorizes no application loader or real download, app launch or release mutation."
+      },
+      {
         "file": "python/tests/test_desktop_test_release.py",
         "file_sha256": "f912cc3b95dd3cccbe9a2c6404b36d04c75fd0ae1c3cc80ca72afb1c2faa6113",
         "sites": [

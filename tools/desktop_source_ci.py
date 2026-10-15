@@ -1,31 +1,103 @@
 """Read-only publication gate for exact-source GitHub regression evidence."""
 from __future__ import annotations
 
-import io
+import contextlib
+import contextvars
 import hashlib
 import json
 import re
 import subprocess
 import zipfile
+import tempfile
+from pathlib import Path
 
 
 def api(path):
     return json.loads(subprocess.check_output(['gh', 'api', path], text=True))
 
 
+SMALL_ARCHIVE_LIMIT = 16 * 1024 * 1024
+DIAGNOSTIC_ARCHIVE_LIMIT = 256 * 1024 * 1024
+MEMBER_LIMIT = 8 * 1024 * 1024
+_ARTIFACT_CACHE = contextvars.ContextVar('publication_artifact_cache', default=None)
+
+
+@contextlib.contextmanager
+def _artifact_scope():
+    # Each publication check obtains fresh evidence; no cache survives a recheck.
+    with tempfile.TemporaryDirectory(prefix='disco-ci-proof-') as folder:
+        token = _ARTIFACT_CACHE.set((Path(folder), {}))
+        try:
+            yield
+        finally:
+            _ARTIFACT_CACHE.reset(token)
+
+
+def _download_archive(repository, row, target, limit):
+    declared = row.get('size_in_bytes')
+    expected = row.get('digest')
+    if type(declared) is not int or not 0 < declared <= limit:
+        raise ValueError('CI proof artifact exceeds its transport bound or lacks a valid size')
+    if expected is not None and (not isinstance(expected, str) or
+            not re.fullmatch(r'sha256:[0-9a-f]{64}', expected)):
+        raise ValueError('Malformed CI artifact digest')
+    size, digest = 0, hashlib.sha256()
+    with tempfile.TemporaryFile() as errors, target.open('wb') as output:
+        process = subprocess.Popen(['gh', 'api',
+            f'repos/{repository}/actions/artifacts/{row["id"]}/zip'],
+            stdout=subprocess.PIPE, stderr=errors)
+        try:
+            while True:
+                block = process.stdout.read(1024 * 1024)
+                if not block:
+                    break
+                size += len(block)
+                if size > limit:
+                    raise ValueError('CI proof artifact exceeds its actual-byte transport bound')
+                digest.update(block)
+                output.write(block)
+            if process.wait() != 0:
+                raise ValueError('CI proof artifact download failed')
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+            process.stdout.close()
+    if size != declared:
+        raise ValueError('CI proof artifact size differs from its declared bytes')
+    if expected is not None and expected != 'sha256:' + digest.hexdigest():
+        raise ValueError('CI proof artifact digest differs')
+
+
 def artifact(repository, run, name, filename, *, with_digest=False):
+    if _ARTIFACT_CACHE.get() is None:
+        with _artifact_scope():
+            return artifact(repository, run, name, filename, with_digest=with_digest)
     rows = api(f'repos/{repository}/actions/runs/{run["id"]}/artifacts?per_page=100')['artifacts']
     found = [row for row in rows if row['name'] == name and not row['expired']]
     if len(found) != 1:
         raise ValueError(f'Missing or ambiguous CI artifact: {name}')
-    if found[0].get('size_in_bytes', 0) > 16 * 1024 * 1024:
-        raise ValueError('CI proof artifact exceeds its small-metadata bound')
-    raw = subprocess.check_output(['gh', 'api', f'repos/{repository}/actions/artifacts/{found[0]["id"]}/zip'])
-    # Read only an explicitly named member; never extract remote paths.
-    with zipfile.ZipFile(io.BytesIO(raw)) as archive:
-        if archive.getinfo(filename).file_size > 8 * 1024 * 1024:
+    # Only the exact aggregate diagnostic family receives the larger disk budget.
+    diagnostic = name == f'everyday-million-{run["id"]}-{run.get("run_attempt")}'
+    limit = DIAGNOSTIC_ARCHIVE_LIMIT if diagnostic else SMALL_ARCHIVE_LIMIT
+    row = found[0]
+    folder, cache = _ARTIFACT_CACHE.get()
+    key = (repository, row['id'], row.get('size_in_bytes'), row.get('digest'), limit)
+    if key not in cache:
+        target = folder / f'archive-{len(cache)}.zip'
+        _download_archive(repository, row, target, limit)
+        cache[key] = target
+    # Read only one unique explicitly named member; never extract remote paths.
+    with zipfile.ZipFile(cache[key]) as archive:
+        members = [member for member in archive.infolist() if member.filename == filename]
+        if len(members) != 1:
+            raise ValueError('Missing or duplicate CI proof member')
+        if members[0].file_size > MEMBER_LIMIT:
             raise ValueError('CI proof member exceeds its metadata bound')
-        raw = archive.read(filename)
+        with archive.open(members[0]) as stream:
+            raw = stream.read(MEMBER_LIMIT + 1)
+        if len(raw) > MEMBER_LIMIT:
+            raise ValueError('CI proof member exceeds its actual-byte metadata bound')
         parsed = json.loads(raw)
         return (parsed, hashlib.sha256(raw).hexdigest()) if with_digest else parsed
 
@@ -60,6 +132,11 @@ def require_tag(repository, tag, source, *, allow_missing=False):
 
 
 def require_source_ci(repository, source, candidate_run_id):
+    with _artifact_scope():
+        return _require_source_ci(repository, source, candidate_run_id)
+
+
+def _require_source_ci(repository, source, candidate_run_id):
     if repository not in {'maxwellsdm1867/Rieke-OS', 'maxwellsdm1867/disco'}:
         raise ValueError('Unexpected publication repository')
     if not isinstance(source, str) or not re.fullmatch('[0-9a-f]{40}', source):
