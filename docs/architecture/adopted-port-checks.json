@@ -3371,6 +3371,7 @@
             "os",
             "pathlib",
             "platform",
+            "re",
             "shutil",
             "statistics",
             "subprocess",

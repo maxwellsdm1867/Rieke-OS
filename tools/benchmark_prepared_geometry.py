@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import statistics
 import subprocess
@@ -57,6 +58,18 @@ def compile_helper(source, output):
 
 
 def validate(receipt, *, clean=False):
+    for key in ('source_start', 'source_end'):
+        identity = receipt.get(key)
+        if (not isinstance(identity, dict) or
+                any(not isinstance(identity.get(field), str) or not re.fullmatch(r'[0-9a-f]{40}', identity[field])
+                    for field in ('commit', 'tree')) or not isinstance(identity.get('dirty'), str)):
+            raise ValueError('Missing or malformed source identity')
+        files = identity.get('files')
+        if (not isinstance(files, dict) or not files or
+                any(not isinstance(name, str) or not name or name == '.' or Path(name).is_absolute() or
+                    '..' in Path(name).parts or not isinstance(sha, str) or not re.fullmatch(r'[0-9a-f]{64}', sha)
+                    for name, sha in files.items())):
+            raise ValueError('Missing or malformed source file hashes')
     if receipt.get('status') != 'passed' or receipt.get('source_start') != receipt.get('source_end'):
         raise ValueError('Failed or changed-source geometry receipt')
     if clean and receipt['source_start']['dirty']:
@@ -69,7 +82,7 @@ def validate(receipt, *, clean=False):
             raise ValueError('Missing independent geometry/raw cursor correctness')
         for key in ('first_visible_ms', 'first_raf_ms', 'complete_ms'):
             value = row.get('trace', {}).get(key)
-            if not isinstance(value, (int, float)) or not 0 < value < 180000:
+            if type(value) not in (int, float) or not 0 < value < 180000:
                 raise ValueError('Invalid trace observation')
         if not row['trace']['first_visible_ms'] <= row['trace']['first_raf_ms'] <= row['trace']['complete_ms']:
             raise ValueError('Trace observation order invalid')

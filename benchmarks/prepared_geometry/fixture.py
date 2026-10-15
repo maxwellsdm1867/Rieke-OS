@@ -1,5 +1,6 @@
 """Owned fixture adaptation: real source verification and sealed metadata index.
-No canonical service/index/policy method is replaced. SQL remains an explicit double.
+Trace/source/index owners and their admission policies remain canonical.
+Fixture refresh/events bindings are explicit setup adapters; SQL remains doubled.
 """
 import copy,hashlib,json,uuid
 from pathlib import Path

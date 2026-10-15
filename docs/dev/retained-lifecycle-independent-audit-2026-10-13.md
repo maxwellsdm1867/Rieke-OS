@@ -47,7 +47,7 @@ The reusable behavioral matrix should exercise: same identity reconnect, real id
 
 The integration owner and separate frontend/package reviewers reviewed these changes. Exactly twenty changed production modules receive updated receipts; unchanged modules retain their prior evidence. This does not waive later source changes.
 
-The first full frontend run retained 1,252 passing cases and two failures: an outdated review-receipt fixture caused a runaway React Fiber assertion dump, and the inventory correctly rejected changed/missing lifecycle reviews. The corrected fixture distinguishes a valid page receipt from absence in both page and detail. The full suite must be rerun after these corrections.
+The first full frontend run retained 1,252 passing cases and two failures: an outdated review-receipt fixture caused a runaway React Fiber assertion dump, and the inventory correctly rejected changed/missing lifecycle reviews. The corrected fixture distinguishes a valid page receipt from absence in both page and detail. The corrected full suite passed all 1,256 tests in 101.0 seconds at clean source `7d916bc7cbe7427df8b98251f3daba8b2f24fba6`; the raw first failure and successful rerun remain preserved.
 
 | Module | Reviewed lifetime and boundary | Behavioral evidence |
 | --- | --- | --- |
