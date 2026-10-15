@@ -105,7 +105,7 @@ export function useResource(path, revision = 0, delayMs = 0, options = {}) {
     const request=cached?(url,{signal})=>(warmEpoch?requestEpochWithTrace:cachedResourceRequest)(url,{request:api,signal,revision}):transport;
     return startResourceRequest({path,delayMs,request,
       onData:data=>{const next={data,loading:false,error:null,path,revision,nonce,owner,initialRead,retentionIdentity};completedRead.current=next;setState(next);},
-      onError:error=>{completedRead.current=null;setState({data:null,loading:false,error:error.message,path,revision,nonce,owner,initialRead,retentionIdentity});}});
+      onError:error=>{completedRead.current=null;setState({data:null,loading:false,error:error.message,errorStatus:Number.isInteger(error.status)?error.status:null,path,revision,nonce,owner,initialRead,retentionIdentity});}});
   }, [path, revision, nonce, delayMs,cached,warmEpoch,paused,active,owner,transport,initialRead,retained,retentionIdentity]);
   // Complete metadata/trace pairs publish in the same render; partial snapshots
   // start I/O immediately unless the caller explicitly requests a delay.

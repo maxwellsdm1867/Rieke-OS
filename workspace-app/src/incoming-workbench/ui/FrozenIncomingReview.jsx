@@ -34,7 +34,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   const loadOwner=useMemo(()=>({root,projectId,protocolId,revision,nonce,profileUuid:profile.profileUuid,
     profileReady:!!profile.profileUuid&&!profile.loading&&!profile.error,token:preparedContextToken}),
     [root,projectId,protocolId,revision,nonce,profile.profileUuid,profile.loading,profile.error,preparedContextToken]);
-  useLayoutEffect(()=>{closeDetails();},[loadOwner]);
+  useLayoutEffect(()=>{closeDetails();},[root,projectId,protocolId,profile.profileUuid]);
   const activeOwner=useRef(loadOwner),claimedContext=useRef(null);
   activeOwner.current=loadOwner;
   const mergeLifetime=useRef(null);
@@ -162,7 +162,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   },[visible?.context.bootstrap,contextFresh,context,root,protocolId,projectId,item.candidate_revision_uuid,profile.profileUuid,profile.loading,profile.error]);
   const initialPageRead=contextFresh&&!busy&&!externalBusy?pageOffer:null;
   const protocol=visible?.context.protocol;
-  const readContext=visible?{root,selection_manifests:visible.context.selection_manifests===true,candidate_scope_revision:visible.context.candidate_scope_revision,
+  const readContext=visible?{root,actor:visible.context.actor??null,selection_manifests:visible.context.selection_manifests===true,candidate_scope_revision:visible.context.candidate_scope_revision,
     ...(visible.context.tree_selection===true?{tree_selection:true}:{}),
     ...(visible.context.list_selection===true?{list_selection:true,expected_binding_version:visible.context.expected_binding_version}:{}),
     ...(visible.context.tree_column_pages===true?{tree_column_pages:true}:{}),

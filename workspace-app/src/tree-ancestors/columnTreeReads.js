@@ -13,6 +13,7 @@ export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,re
   const rootBody=treePageRequest(scope,{path:[],offset:0,reset:true});
   const root=await load(endpoint,{method:'POST',body:rootBody,signal});
   if(!current())throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
+  if(rootBody.revision&&root.revision!==rootBody.revision)throw Error('Tree revision changed; refresh the current tree');
   revisionOverride=root.revision;liveCapability=root.tree_column_pages===true;
  }
  const body=treePageRequest(scope,{path,offset,anchor,currentRevision:revisionOverride,reset:!revisionOverride});
@@ -26,6 +27,7 @@ export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,re
  if(batch){body.include_ancestors=true;body.ancestor_offsets=Array.from(columnPositions.slice(0,8),position=>position?.offset==null?null:Number.isSafeInteger(position.offset)&&position.offset>=0?position.offset:0);}
  const page=await load(endpoint,{method:'POST',body,signal});
  if(!current())throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
+ if(body.revision&&page.revision!==body.revision)throw Error('Tree revision changed; refresh the current tree');
  const {include_ancestors,ancestor_offsets,...ordinaryBody}=body;
  const lease=!scope.readContext&&endpoint==='/tree-pages'?readOwner?.attest(ordinaryBody,page):null;
  const targets=columnAncestorPages(page,{anchor:!!anchor,columnPositions});

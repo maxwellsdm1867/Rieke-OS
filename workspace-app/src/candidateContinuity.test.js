@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorkflowHarness} from './test-support/workflowHarness.js';
-import {frozenPresentationScope,frozenReadPath} from './epoch-browser/frozenReadContext.js';
+import {frozenPresentationScope,frozenReadPath,frozenTreePresentationScope} from './epoch-browser/frozenReadContext.js';
 const root='/protocols/protocol-A/workbench/candidates/candidate-A';
 const cohort=(route=root,binding=2)=>JSON.stringify([route,'immutable-recipe-A',binding]);
 function props(token='token-A',revision=0,route=root,binding=2){return {
@@ -25,7 +25,7 @@ function attach(h,{missing=false,failure=false,shifted=false}={}){
   }
   const epoch=record=>({...record,review_decision:{selected:true,reviewed:token==='token-B',excluded:false}});
   if(value.epochs){
-   if(missing&&token==='token-B'&&url.searchParams.has('anchor_uuid'))return failure?{failure:404,error:'Epoch is outside this frozen filtered scope'}:{...value,query_revision:token,epochs:[]};
+   if(missing&&token==='token-B'&&url.searchParams.has('anchor_uuid'))return failure?{failure:typeof failure==='number'?failure:404,error:failure===503?'Temporary read failure':'Epoch is outside this frozen filtered scope'}:{...value,query_revision:token,epochs:[]};
    return {...value,query_revision:token,epochs:value.epochs.filter(row=>!missing||token!=='token-B'||row.epoch_uuid!=='epoch-8').map(epoch)};
   }
   return value.epoch_uuid?epoch(value):value;
@@ -44,6 +44,17 @@ test('explicit cohort presentation key never replaces fresh read token and reset
  assert.match(frozenReadPath(b,'protocol-A','/epochs'),/candidate_scope_revision=token-B/);
  assert.notEqual(frozenPresentationScope({...a,cohort_key:undefined},'protocol-A','candidate_scope_revision=token-A'),frozenPresentationScope({...b,cohort_key:undefined},'protocol-A','candidate_scope_revision=token-B'));
  assert.notEqual(frozenPresentationScope(a,'protocol-A','tag=A'),frozenPresentationScope(b,'protocol-A','tag=B'));
+});
+
+test('frozen tree continuity excludes annotation-dependent filters and grouping and retains owner boundaries',()=>{
+ const base={projectId:'p',protocolId:'protocol-A',readContext:{...props().readContext,actor:'a'},filters:{},splits:'date,cell,block'};
+ const scope=frozenTreePresentationScope(base);assert.ok(scope);
+ assert.equal(frozenTreePresentationScope({...base,revision:7,readContext:{...base.readContext,candidate_scope_revision:'new'}}),scope);
+ for(const filters of [{tag:'a'},{tagged:'true'},{tag_predicate:'{}'},{metadata_predicate:JSON.stringify({not:{field:'annotations/epoch/tags',operator:'contains',value:'a'}})}])assert.equal(frozenTreePresentationScope({...base,filters}),null);
+ for(const splits of ['annotations/epoch/tags','date,curation/p/tags'])assert.equal(frozenTreePresentationScope({...base,splits}),null);
+ for(const changed of [{projectId:'other'},{filters:{cell_type:'ON'}},{splits:'cell,date'},
+  {readContext:{...base.readContext,actor:'b'}},{readContext:{...base.readContext,cohort_key:'other'}},{expectedRevision:'explicit'}])assert.notEqual(frozenTreePresentationScope({...base,...changed}),scope);
+ assert.equal(frozenTreePresentationScope({...base,readContext:{...base.readContext,cohort_key:null}}),null);
 });
 
 test('draft token advance keeps focus/date/cell/row nodes, old rows inert, and uses fresh authority once ready',async()=>{
@@ -107,6 +118,23 @@ test('restored focus absent from refreshed scope locates once then clears on mis
    assert.ok(h.root.findAllByProps({role:'alert'}).length);assert.equal(h.viewer.detailExtras,null);
   }finally{await h.close();}
  }
+});
+
+test('temporary focus-locator failure preserves the UUID and recovers only after explicit retry',async()=>{
+ const h=await createWorkflowHarness({total:100});attach(h,{missing:true,failure:503});const saved=[];
+ try{
+  const Inspector=await h.component('Inspector');
+  await h.mount(Inspector,{...props(),onSessionChange:value=>saved.push(value)});
+  await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-8'&&!h.viewer.treePane.listProps.disabled);
+  await h.render(Inspector,{...props('token-B',1),onSessionChange:value=>saved.push(value)});
+  await h.waitFor(()=>h.root.findAllByType('button').some(button=>button.children.includes('Refresh epoch list')));
+  assert.equal(saved.at(-1).focused,'epoch-8');assert.equal(h.viewer.treePane.listProps.disabled,true);
+  assert.equal(h.fixture.requests.filter(record=>record.path.includes('anchor_uuid=epoch-8')).length,1);
+  attach(h);
+  await h.act(()=>h.root.findAllByType('button').find(button=>button.children.includes('Refresh epoch list')).props.onClick());
+  await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-8'&&!h.viewer.treePane.listProps.disabled);
+  assert.equal(saved.at(-1).focused,'epoch-8');
+ }finally{await h.close();}
 });
 
 

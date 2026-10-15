@@ -4212,7 +4212,7 @@
         "provenance": "Frozen queue/context receipts establish membership; view restoration cannot reconstruct live merge consent. Original recorded UUIDs remain exact."
       },
       "errors_and_partial_success": "Unsupported contract/capabilities or changed paging token refuses operation. Failed refresh may retain inert data; duplicate/missing/wrong-cell selection refuses whole result.",
-      "freshness_and_invalidation": "Protocol/revision/nonce generation and AbortSignal prevent stale queue publication. Current draft/read tokens gate review controls; saved content may display while inert.",
+      "freshness_and_invalidation": "Protocol/revision/nonce generation and AbortSignal prevent stale queue publication. Current draft/read tokens gate review controls; saved content may display while inert. Stable cumulative content may retain presentation through annotation refresh; selected-view manifests renew under current authority before reads/actions resume.",
       "execution_contract": {
         "transactions": "Queue/selection reads are not scientific transactions. workbenchAuthority owns versioned multi-batch draft/preview/accept request choreography; backend owns atomic commits.",
         "idempotency": "Held source accept persists the exact operation before POST; recovery only reads receipts. A new explicit hold may retry the same body/UUID.",
@@ -4237,7 +4237,8 @@
         "workspace-app/src/incoming-workbench/incomingTreeSelection.js",
         "workspace-app/src/incoming-workbench/importedSelection.js",
         "workspace-app/src/incoming-workbench/sourceMerge.js",
-        "workspace-app/src/incoming-workbench/useSourceMerge.js"
+        "workspace-app/src/incoming-workbench/useSourceMerge.js",
+        "workspace-app/src/incoming-workbench/useSelectedEpochView.js"
       ],
       "verification": {
         "existing_tests": [

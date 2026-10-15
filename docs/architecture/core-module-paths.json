@@ -12084,6 +12084,30 @@
       ],
       "adoption": "New incoming-workbench bootstrap validator and single-consumer first-page offer; existing module boundaries retain recipe verification, bounded guarded list selection, protocol browse projection and resource-hook publication. No baseline path reclassification or count changes.",
       "qualification": "Source/contract adoption record only. No new test, benchmark, native, scientific or assembled-package qualification is asserted by this documentation update."
+    },
+    {
+      "id": "workbench-annotation-continuity-2026-10-15",
+      "implementation_commits": [],
+      "owner_ids": [
+        "frozen-workbench-review",
+        "incoming-read-presentation",
+        "renderer-resources",
+        "epoch-browser-readiness"
+      ],
+      "new_runtime_paths": [
+        "workspace-app/src/incoming-workbench/useSelectedEpochView.js"
+      ],
+      "new_test_paths": [
+        "workspace-app/src/incoming-workbench/useSelectedEpochView.test.js"
+      ],
+      "guidance_paths": [
+        "python/disco/workbench/CONTRACT.md",
+        "workspace-app/src/incoming-workbench/AGENTS.md",
+        "workspace-app/src/tree-browser/AGENTS.md",
+        "workspace-app/src/epoch-browser/AGENTS.md"
+      ],
+      "adoption": "Separate stable cumulative content and selected-view intent from fresh annotation, manifest and page authority. Existing owners retain all scientific commands.",
+      "qualification": "Independent source review and scoped regressions recorded in docs/dev/workbench-tagging-reset-audit-2026-10-15.md; installed app and release qualification remain separate."
     }
   ],
   "current_path_policy": "path preserves the 4c9e128 baseline assignment; current_path overrides it after reviewed moves. Accepted increments list new tests/guidance. Baseline counts are not current completion claims."

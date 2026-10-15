@@ -14,12 +14,14 @@ import {IncomingEpochSelect,useIncomingTreeSelection} from '../../incoming-workb
 import {TreeGroupTagButton,useTreeGroupTags} from '../../annotations/ui/TreeGroupTags.jsx';
 import './HierarchyTree.css';
 import {incomingRowAnnotation} from '../../annotations/annotationTags.js';
+import {frozenTreePresentationScope} from '../../epoch-browser/frozenReadContext.js';
 
 const blank=()=>({pages:[],expanded:[],loading:true,error:null,loadingPath:[],notice:''});
 export default function HierarchyTree(props){
   const {protocolId,readContext,predicate,filters={},splits='',revision=0,expectedRevision,initialNavigation,selected}=props;
   const groupTags=useTreeGroupTags(props);
   const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision});
+  const frozenPresentation=frozenTreePresentationScope(props),presentationScope=frozenPresentation||scopeKey;
   const callbacks=useRef(props);callbacks.current=props;
   const [state,setState]=useState(blank),current=useRef(state),controller=useRef(null),serial=useRef(0),scroll=useRef(null),container=useRef(null);
   const groupSelection=useIncomingTreeSelection(props,state.loadedScope===scopeKey&&!state.loading&&!state.error?state.pages.find(page=>!page.path.length):null);
@@ -29,7 +31,7 @@ export default function HierarchyTree(props){
   function captureNavigation(){
     if(current.current.loading||current.current.error||current.current.loadedScope!==scopeKey)return null;
     const snapshot=hierarchySnapshot(current.current,scroll.current?.scrollTop||0,scroll.current?.scrollLeft||0);
-    if(snapshot)retainedNavigation.current={scope:scopeKey,snapshot};
+    if(snapshot)retainedNavigation.current={scope:scopeKey,presentationScope,snapshot};
     return snapshot;
   }
   function remember(){const snapshot=captureNavigation();if(snapshot)callbacks.current.onNavigationChange?.(snapshot);}
@@ -42,12 +44,12 @@ export default function HierarchyTree(props){
       controller.current?.abort();if(scrollFrame.current)cancelAnimationFrame(scrollFrame.current);scrollFrame.current=null;
     };
   },[scopeKey]);
-  const load=useCallback(async({path=[],offset=0,reset=false,anchor=null,restore=null}={})=>{
+  const load=useCallback(async({path=[],offset=0,reset=false,anchor=null,restore=null,keepPresentation=false}={})=>{
     if(committedScope.current!==scopeKey)return;
     controller.current?.abort();const request=new AbortController();controller.current=request;const token=++serial.current;
     const startedScrollIntent=scrollIntent.current;
     restoreTop.current=reset&&!restore?0:null;restoreLeft.current=reset&&!restore?0:null;
-    commit(old=>({...(reset?blank():cancelUnloadedExpansion(old,path)),loading:true,error:null,loadingPath:path}));callbacks.current.onStatus?.({loading:true,error:null});
+    commit(old=>({...(reset&&!keepPresentation?blank():cancelUnloadedExpansion(old,path)),loading:true,error:null,loadingPath:path}));callbacks.current.onStatus?.({loading:true,error:null});
     const scope=JSON.parse(scopeKey),root=current.current.pages.find(page=>!page.path.length);
     let pinned=scope.expectedRevision||restore?.revision||(!reset?root?.revision:null);
     async function fetchPage(pagePath,pageOffset=0,focus=null){
@@ -84,9 +86,10 @@ export default function HierarchyTree(props){
     }catch(error){if(!request.signal.aborted&&token===serial.current){commit(old=>({...old,loading:false,error:error.message,loadingPath:null}));callbacks.current.onStatus?.({loading:false,error:error.message});}}
   },[scopeKey,commit]);
   useEffect(()=>{
-    const retained=retainedNavigation.current?.scope===scopeKey?retainedNavigation.current.snapshot:null;
+    const retained=retainedNavigation.current?.presentationScope===presentationScope?retainedNavigation.current.snapshot:null;
     const restore=hierarchyRestore(retained,splits)||(!initialized.current&&firstScope.current===scopeKey?hierarchyRestore(saved.current,splits):null);
-    load({reset:true,...(restore?{restore}:selected?{anchor:selected}:{})});
+    if(restore&&frozenPresentation&&retainedNavigation.current?.scope!==scopeKey)restore.revision=null;
+    load({reset:true,keepPresentation:!!(frozenPresentation&&retained&&restore),...(restore?{restore}:selected?{anchor:selected}:{})});
     return()=>controller.current?.abort();
   },[load]);
   const previousSelected=useRef(selected),revealSelected=useRef(selected),focusScroll=useRef(initialNavigation?null:selected);
@@ -130,13 +133,13 @@ export default function HierarchyTree(props){
     if(event.key==='ArrowRight'){event.preventDefault();event.stopPropagation();if(!opened)toggle(branch);else event.currentTarget.closest('li')?.querySelector('ul button')?.focus({preventScroll:true});}
     if(event.key==='ArrowLeft'){event.preventDefault();event.stopPropagation();if(opened)toggle(branch);else event.currentTarget.closest('ul')?.closest('li')?.querySelector(':scope > button')?.focus({preventScroll:true});}
   }
-  const root=state.pages.find(page=>!page.path.length),blocked=!!state.error;
+  const root=state.pages.find(page=>!page.path.length),blocked=!!state.error||state.loadedScope!==scopeKey;
   function renderPage(page,isRoot=false){
     const entries=page.kind==='epochs'?page.epochs:page.branches,field=page.levels?.[page.depth];
     const label=page.kind==='epochs'?'Epochs':readableField(field?.label,field?.field);
     return <ul className={isRoot?'ht-root':'ht-children'} role={isRoot?'tree':'group'} aria-label={isRoot?'Recording hierarchy':label}>
       {entries.map((item,index)=>{
-        if(page.kind==='epochs'){const epoch=props.inclusionForEpoch?props.inclusionForEpoch(item):item,tags=readContext?incomingRowAnnotation(epoch):undefined;return <li className={`ht-leaf ${props.highlightedEpochs?.includes(item.epoch_uuid)?'is-highlighted':''} ${readContext?props.selectedEpochs?.includes(item.epoch_uuid)?'incoming-epoch-on':'incoming-epoch-off':''} ${tags?'has-saved-tags':''}`} key={item.epoch_uuid} role="treeitem" aria-selected={props.highlightedEpochs?props.highlightedEpochs.includes(item.epoch_uuid):props.selectedEpochs?.includes(item.epoch_uuid)||(!readContext&&!props.selectedCell&&selected===item.epoch_uuid)}><button data-epoch-uuid={item.epoch_uuid} className={(props.selectedEpochs?.includes(item.epoch_uuid)||(!readContext&&!props.selectedCell&&selected===item.epoch_uuid))?'selected':''} disabled={blocked||state.loading||props.actionsDisabled} aria-description={tags} title={[item.epoch_uuid,tags].filter(Boolean).join('\n')} onKeyDown={event=>{if(event.key==='ArrowLeft'){event.preventDefault();event.stopPropagation();event.currentTarget.closest('ul')?.closest('li')?.querySelector(':scope > button')?.focus({preventScroll:true});}}} onClick={event=>{remember();callbacks.current.onSelectEpoch?.(item.epoch_uuid,item,event,page,index);}}><Activity size={14}/><span className="ht-value">{epochLeafLabel(item)}<small>{datedCellLabel(item)}</small></span>{tags&&<small className="tree-tag-marker" title={tags}>Tagged</small>}</button>{readContext&&<><IncomingEpochSelect epoch={item} selected={props.selectedEpochs} onSelect={props.setSelectedEpochs} onToggle={props.onSelectEpochToggle?event=>callbacks.current.onSelectEpochToggle(item.epoch_uuid,item,event,page,index):undefined} disabled={blocked||props.actionsDisabled}/><TreeGroupTagButton showLabel label="Tag This Epoch" count={1} disabled={blocked||props.actionsDisabled} onClick={event=>groupTags.openEpoch(item,event)}/></>}{props.onToggleInclusion&&<EpochInclusionToggle incoming={!!props.readContext} epoch={epoch} label={`epoch ${epochLeafLabel(item)}`} disabled={blocked||state.loading||props.actionsDisabled} onToggle={props.onToggleInclusion}/>}{!props.onToggleInclusion&&<span className={`ht-inclusion-state ${epochIncluded(epoch,!!props.readContext)===false?'excluded':''}`}>{epochIncluded(epoch,!!props.readContext)===null?'Proposal decision unavailable':epochIncluded(epoch,!!props.readContext)===false?(props.readContext?'Excluded from incoming draft':'Excluded'):(props.readContext?'Allowed incoming addition':'Included')}</span>}</li>;}
+        if(page.kind==='epochs'){const epoch=props.inclusionForEpoch?props.inclusionForEpoch(item):item,tags=readContext?incomingRowAnnotation(epoch):undefined;return <li className={`ht-leaf ${props.highlightedEpochs?.includes(item.epoch_uuid)?'is-highlighted':''} ${readContext?props.selectedEpochs?.includes(item.epoch_uuid)?'incoming-epoch-on':'incoming-epoch-off':''} ${tags?'has-saved-tags':''}`} key={item.epoch_uuid} role="treeitem" aria-selected={props.highlightedEpochs?props.highlightedEpochs.includes(item.epoch_uuid):props.selectedEpochs?.includes(item.epoch_uuid)||(!readContext&&!props.selectedCell&&selected===item.epoch_uuid)}><button data-epoch-uuid={item.epoch_uuid} className={(props.selectedEpochs?.includes(item.epoch_uuid)||(!readContext&&!props.selectedCell&&selected===item.epoch_uuid))?'selected':''} disabled={blocked||state.loading||props.actionsDisabled} aria-description={tags} title={[item.epoch_uuid,tags].filter(Boolean).join('\n')} onKeyDown={event=>{if(event.key==='ArrowLeft'){event.preventDefault();event.stopPropagation();event.currentTarget.closest('ul')?.closest('li')?.querySelector(':scope > button')?.focus({preventScroll:true});}}} onClick={event=>{remember();callbacks.current.onSelectEpoch?.(item.epoch_uuid,item,event,page,index);}}><Activity size={14}/><span className="ht-value">{epochLeafLabel(item)}<small>{datedCellLabel(item)}</small></span>{tags&&<small className="tree-tag-marker" title={tags}>Tagged</small>}</button>{readContext&&<><IncomingEpochSelect epoch={item} selected={props.selectedEpochs} onSelect={props.setSelectedEpochs} onToggle={props.onSelectEpochToggle?event=>callbacks.current.onSelectEpochToggle(item.epoch_uuid,item,event,page,index):undefined} disabled={blocked||state.loading||props.actionsDisabled}/><TreeGroupTagButton showLabel label="Tag This Epoch" count={1} disabled={blocked||state.loading||props.actionsDisabled} onClick={event=>groupTags.openEpoch(item,event)}/></>}{props.onToggleInclusion&&<EpochInclusionToggle incoming={!!props.readContext} epoch={epoch} label={`epoch ${epochLeafLabel(item)}`} disabled={blocked||state.loading||props.actionsDisabled} onToggle={props.onToggleInclusion}/>}{!props.onToggleInclusion&&<span className={`ht-inclusion-state ${epochIncluded(epoch,!!props.readContext)===false?'excluded':''}`}>{epochIncluded(epoch,!!props.readContext)===null?'Proposal decision unavailable':epochIncluded(epoch,!!props.readContext)===false?(props.readContext?'Excluded from incoming draft':'Excluded'):(props.readContext?'Allowed incoming addition':'Included')}</span>}</li>;}
         const key=hierarchyKey(item.path),opened=state.expanded.some(path=>hierarchyKey(path)===key),children=state.pages.find(child=>hierarchyKey(child.path)===key),loading=state.loading&&hierarchyKey(state.loadingPath||[])===key;
         const branchOn=readContext&&!blocked&&props.active!==false&&state.loadedScope===scopeKey&&groupSelection.on(item,page);
         const tags=readContext&&field?.field==='cell'?incomingRowAnnotation(props.cells?.find(cell=>cell.cell_uuid===item.value),'cell'):undefined;

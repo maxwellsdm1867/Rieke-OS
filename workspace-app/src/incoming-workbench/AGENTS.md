@@ -142,8 +142,8 @@ bounded range readers and freshness fences. The top selection toolbar has one
 counted highlight action: Select Highlighted unions this set; when every highlighted
 UUID is selected, Deselect Highlighted subtracts it, without imposing a Workbench selection-count ceiling.
 The action is disabled for an empty set or while selection authority is unavailable.
-Candidate/query/revision/split or presentation changes mask old highlights before
-paint; highlights are not persisted and never imply merge/export consent.
+Changed cohort, filter, split or presentation masks old highlights before
+paint; authority-only refresh of a proven annotation-independent Workbench view retains UUID highlights; highlights are not persisted and never imply merge/export consent.
 Left browsing suppresses branch actions; Edit Tree keeps group controls. Individual
 epoch switches retain actual selection and show Select/Deselect action labels.
 
@@ -291,3 +291,21 @@ using the original preview and operation UUID, including after a pre-submit save
 was retired by navigation. Restored acceptPending state cannot recreate consent.
 
 Portaled filter, toolbar and draft-selection chrome inherits retained panel visibility via RetainedPortal. Accepted operations may finish while hidden, but their completion cannot switch a different current Protocol tab; current-data invalidation still runs.
+
+## Annotation refresh continuity
+
+Tag-only cumulative preparation reuses the exact sealed candidate when the backend
+content proof matches. Fresh queue/context/page receipts still gate all actions;
+there is no client shortcut around preparation. The mounted browser retains local
+selection and navigation because its candidate root remains the same. A genuinely
+different candidate keeps the existing no-consent/no-edit handoff contract.
+
+`useSelectedEpochView.js` owns selected-view intent separately from a manifest's
+request lifetime. Same-cohort pauses and scope-token changes keep the chosen view,
+but abort uploads and renew its exact UUID manifest before reads/actions resume.
+An old token stays paired with its old inert context. Failed renewal displays
+Retry selected view and allows Return to all; it never silently widens membership.
+Project, actor, cohort, filter and selection changes retire incompatible intent.
+Its presentation key only preserves navigation and is never HTTP authority.
+The hook tests plus `workbenchSessionLifecycle.test.js` cover held/failing refresh,
+stale completions, exact selection, expanded rows, focus and scroll.
