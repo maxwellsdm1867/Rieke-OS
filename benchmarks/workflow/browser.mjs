@@ -103,7 +103,7 @@ export function readiness(spec){
     const chunks=traceRequests.flatMap(r=>{
       const d=r.result;
       if(!Object.hasOwn(d,'windows'))return [r];
-      if(!Array.isArray(d.windows)||d.windows.length<2||d.windows.length>5||d.count!==d.windows.reduce((n,v)=>n+v.count,0)||d.start!==d.windows[0]?.start)throw Error('Trace batch envelope mismatch');
+      if(!Array.isArray(d.windows)||d.windows.length<2||d.windows.length>10||!Number.isSafeInteger(d.count)||d.count<1||d.count>1000000||d.count!==d.windows.reduce((n,v)=>n+v.count,0)||d.start!==d.windows[0]?.start)throw Error('Trace batch envelope mismatch');
       if(spec.traceRevision&&d.candidate_scope_revision!==spec.traceRevision)throw Error('Trace batch scope mismatch');
       for(const child of d.windows)for(const key of ['epoch_uuid','stream_uuid','source_sha256','sample_rate','units','total_samples','decimated'])if(child[key]!==d[key])throw Error('Trace batch header mismatch');
       return d.windows.map(result=>({...r,result}));

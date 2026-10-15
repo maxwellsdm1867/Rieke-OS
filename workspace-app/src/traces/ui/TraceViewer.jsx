@@ -1,21 +1,22 @@
+import {traceSampleStatistics,traceStatisticsExtent} from '../traceStatistics.js';
 import {useSemanticReset} from '../../useSemanticReset.js';
 import {normalizeTraceViewPreference,useTraceViewPreference} from '../traceViewPreference.jsx';
 import {useWorkspaceRequestScope} from '../../workspaceRequest.js';
 import {useEffect,useId,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {Activity,ArrowLeft,ArrowRight,Hand,LoaderCircle,MousePointer2,ZoomIn,ZoomOut} from 'lucide-react';
 import {api,number,useResource,requestTraceWindow} from '../../api.js';
-import {clampWindow,dragWindow,finiteExtent,formatTick,MAX_TRACE_SAMPLES,sampleAtPixel,ticks,timeRange,traceDisplaySegments,zoomWindow} from './traceGeometry.js';
+import {clampWindow,dragWindow,formatTick,MAX_TRACE_SAMPLES,sampleAtPixel,ticks,timeRange,traceDisplaySegments,zoomWindow} from './traceGeometry.js';
 import './TraceViewer.css';
 import {readWholeTrace,MAX_WHOLE_TRACE_CHUNK_SAMPLES} from '../readWholeTrace.js';
 import {traceRequestPath,traceCacheRevision,traceResponseMatches} from '../traceReadContext.js';
 import {useNavigationLoading,useDelayedLoading} from '../../components/NavigationLoading.jsx';
 
-function paintTrace(canvas,data,amplitude){
+function paintTrace(canvas,data,amplitude,statistics){
   const rect=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio || 1;
   canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);
   const ctx=canvas.getContext('2d');ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,rect.width,rect.height);
   if(!data||!rect.width)return null;
-  const autoExtent=finiteExtent(data.values),extent=autoExtent&&amplitude?{...autoExtent,...amplitude}:autoExtent,range=timeRange(data.start,data.values.length,data.sample_rate);
+  const autoExtent=traceStatisticsExtent(statistics),extent=autoExtent&&amplitude?{...autoExtent,...amplitude}:autoExtent,range=timeRange(data.start,data.values.length,data.sample_rate);
   if(!extent||!range)return null;
   const left=82,right=21,top=25,bottom=57,w=Math.max(1,rect.width-left-right),h=Math.max(1,rect.height-top-bottom);
   const style=getComputedStyle(canvas),color=name=>style.getPropertyValue(name).trim();
@@ -37,7 +38,11 @@ function paintTrace(canvas,data,amplitude){
   ctx.fillStyle=ink;ctx.font='13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('Time from stream start (s)',left+w/2,rect.height-4);
   ctx.save();ctx.translate(16,top+h/2);ctx.rotate(-Math.PI/2);ctx.textBaseline='top';ctx.fillText(data.units?`Response (${data.units})`:'Response (unit not recorded)',0,0);ctx.restore();
   ctx.save();ctx.beginPath();ctx.rect(left-1,top-1,w+2,h+2);ctx.clip();ctx.strokeStyle=trace;ctx.lineWidth=1.1;ctx.beginPath();const isolated=[];
-  for(const segment of traceDisplaySegments(data.values,w*ratio)){
+  // Clipping magnifies subpixel crossings and can change apparent density.
+  // Preserve the complete raw polyline whenever the chosen y range excludes
+  // any visible finite sample; use raw extrema, not the padded axis extent.
+  const clipped=!!amplitude&&(amplitude.min>statistics.min||amplitude.max<statistics.max);
+  for(const segment of traceDisplaySegments(data.values,w*ratio,{exact:clipped})){
     const first=segment[0];ctx.moveTo(x(first),y(data.values[first]));
     for(let position=1;position<segment.length;position++){const index=segment[position];ctx.lineTo(x(index),y(data.values[index]));}
     if(segment.length===1)isolated.push(first);
@@ -96,7 +101,8 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   const resource=useResource(requestPath,identity,0,{cache:false,requestPort});
   const loaded=traceResponseMatches(resource.data,readContext)&&resource.path===requestPath&&resource.data?.epoch_uuid===epoch?.epoch_uuid&&resource.data?.stream_uuid===stream?.uuid&&resource.data?.start===readWindow.start&&resource.data?.count===readWindow.count&&resource.data?.values?.length===readWindow.count?resource.data:null;
   const data=useMemo(()=>loaded?bounded.start===loaded.start&&bounded.count===loaded.count?loaded:{...loaded,start:bounded.start,count:bounded.count,values:loaded.values instanceof Float64Array?loaded.values.subarray(bounded.start-loaded.start,bounded.start-loaded.start+bounded.count):loaded.values.slice(bounded.start-loaded.start,bounded.start-loaded.start+bounded.count)}:null,[loaded,bounded.start,bounded.count]);
-  const getLoadedExtent=useMemo(()=>{let measured;return()=>{if(measured===undefined)measured=finiteExtent(loaded?.values);return measured;};},[loaded]);
+  const statistics=useMemo(()=>data?traceSampleStatistics(data.values):null,[data]);
+  const getLoadedExtent=useMemo(()=>{let measured;return()=>{if(measured===undefined)measured=loaded?traceStatisticsExtent(traceSampleStatistics(loaded.values)):null;return measured;};},[loaded]);
   const valid=data&&data.sample_rate>0&&Number.isFinite(data.sample_rate)&&(!imported||data.sample_rate===stream?.sample_rate&&(typeof stream?.units==='string'||stream?.units===null)&&data.units===stream.units)&&data.values?.length===data.count;
   const base=useRef(null),overlay=useRef(null),geometry=useRef(null),cursor=useRef(null),drag=useRef(null),frame=useRef(null),sampleReadout=useRef(null),timeReadout=useRef(null),responseReadout=useRef(null),cursorInput=useRef(null),surface=useRef(null);
   const cursorHelp=useId();
@@ -110,7 +116,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   const showLoading=useDelayedLoading(pending&&!coordinated);
   const invalidResponse=resource.path===requestPath&&resource.data&&(!data||!valid);
   const range=valid?timeRange(data.start,data.count,data.sample_rate):null;
-  const gapCount=useMemo(()=>valid?data.values.reduce((count,value)=>count+(typeof value!=='number'||!Number.isFinite(value)?1:0),0):0,[valid,data]);
+  const gapCount=valid?statistics.missingCount:0;
   const total=stream?.sample_count || 0;
   const amplitude=whole?null:preference.amplitude;
   const canPan=bounded.count<total||!!amplitude;
@@ -159,7 +165,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
     const draw=()=>{
       // A pending window keeps its bitmap only within the same frozen authority.
       // Failed/invalid responses clear it; only validated samples get new axes.
-      geometry.current=valid?paintTrace(base.current,data,amplitude):pending&&paintedAuthority.current===authorityKey?null:paintTrace(base.current,null);
+      geometry.current=valid?paintTrace(base.current,data,amplitude,statistics):pending&&paintedAuthority.current===authorityKey?null:paintTrace(base.current,null);
       if(valid){painted.current=true;paintedAuthority.current=authorityKey;}else if(!pending||paintedAuthority.current!==authorityKey){painted.current=false;paintedAuthority.current=authorityKey;}
       const rect=base.current.getBoundingClientRect(),ratio=window.devicePixelRatio || 1;
       lastSize={width:rect.width,height:rect.height,ratio};
@@ -178,7 +184,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
     const windowResize=()=>resizeIfChanged();
     draw();const observer=new ResizeObserver(()=>resizeIfChanged(true));observer.observe(base.current);window.addEventListener('resize',windowResize);window.addEventListener('disco:appearance',resize);
     return()=>{observer.disconnect();window.removeEventListener('resize',windowResize);window.removeEventListener('disco:appearance',resize);cancelAnimationFrame(resizedFrame);if(frame.current!=null){cancelAnimationFrame(frame.current);frame.current=null;}};
-  },[data,valid,pending,authorityKey,amplitude,identity,owner]);
+  },[data,valid,pending,authorityKey,amplitude,identity,owner,statistics]);
   function local(event){const rect=overlay.current.getBoundingClientRect(),g=geometry.current;return g?{rawX:event.clientX-rect.left-g.left,rawY:event.clientY-rect.top-g.top,x:Math.max(0,Math.min(g.w,event.clientX-rect.left-g.left)),y:Math.max(0,Math.min(g.h,event.clientY-rect.top-g.top)),inside:event.clientX-rect.left>=g.left&&event.clientX-rect.left<=g.left+g.w&&event.clientY-rect.top>=g.top&&event.clientY-rect.top<=g.top+g.h}:null;}
   function panTo(gesture,at){
     if(gesture.identity!==identity||gesture.owner!==owner)return;

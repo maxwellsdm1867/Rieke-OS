@@ -64,6 +64,7 @@ if _os.environ.get("RIEKE_DESKTOP_MODE") != "1":
     _load_public_api()
 '''
 from desktop_application_profile import copy_python_application, audit_application
+from desktop_build_trace_native import build_trace_native
 sys.path.insert(0, str(ROOT / 'python'))
 from workspace_bootstrap import verify_checkout
 from workspace_mysql_runtime import install_mysql_runtime, mysql_runtime
@@ -466,6 +467,7 @@ def build(output, skip_frontend=False):
         link.symlink_to('../../python/lib/python3.11/site-packages/retinanalysis', target_is_directory=True)
     frontend = ROOT / 'workspace-app/dist' if skip_frontend else build_frontend()
     copy_application(ROOT, output, frontend)
+    trace_native = build_trace_native(output / 'native')
     relocated = relocate_native(output)
     scientific = scientific_preflight(interpreter, output)
     dependency_inventory(output)
@@ -481,6 +483,7 @@ def build(output, skip_frontend=False):
                'scientific_runtime': scientific}
     receipt['relocated_native_files'] = relocated
     receipt['excluded_optional_features'] = exclusions
+    receipt['trace_native'] = trace_native
     (output / 'build-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
     run([sys.executable, ROOT / 'tools/desktop_runtime_manifest.py', '--runtime', output, '--write'])
 
@@ -499,6 +502,7 @@ def main():
         receipt['scientific_runtime'] = scientific_preflight(args.output.resolve() / 'python/bin/python3.11', args.output.resolve())
         frontend = ROOT / 'workspace-app/dist' if args.skip_frontend else build_frontend()
         copy_application(ROOT, args.output.resolve(), frontend)
+        receipt['trace_native'] = build_trace_native(args.output.resolve() / 'native')
         refresh_native_license_inventory(args.output.resolve())
         receipt_path.write_text(json.dumps(receipt, indent=2) + '\n')
         run([sys.executable, ROOT / 'tools/desktop_runtime_manifest.py', '--runtime', args.output.resolve(), '--write'])

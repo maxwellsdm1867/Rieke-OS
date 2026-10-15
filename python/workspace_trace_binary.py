@@ -15,7 +15,7 @@ from workspace_http_boundary import browser_safe_metadata
 BINARY_CONTENT_TYPE = 'application/vnd.disco.trace-f64le.v1'
 MAGIC = b'DTF1'
 MAX_HEADER_BYTES = 65536
-MAX_SAMPLES = 500000
+MAX_SAMPLES = 1000000
 _IDENTITY = ('epoch_uuid', 'stream_uuid', 'source_sha256', 'sample_rate', 'units', 'total_samples', 'decimated')
 
 
@@ -31,7 +31,7 @@ def encode_trace_batch(batch, *, dumps=json.dumps):
     Per-window byte offsets are relative to the sample payload, not the body.
     """
     windows = batch.get('windows') if isinstance(batch, dict) else None
-    if (not isinstance(windows, list) or not 1 <= len(windows) <= 5 or
+    if (not isinstance(windows, list) or not 1 <= len(windows) <= 10 or
             not _integer(batch.get('start')) or not _integer(batch.get('count'), 1) or
             batch['count'] > MAX_SAMPLES or not _integer(batch.get('total_samples'), 1) or
             batch['start'] + batch['count'] > batch['total_samples'] or
@@ -45,19 +45,26 @@ def encode_trace_batch(batch, *, dumps=json.dumps):
     offset, sample_start = 0, batch['start']
     for window in windows:
         values = window.get('values') if isinstance(window, dict) else None
-        if (not isinstance(values, list) or not _integer(window.get('count'), 1) or
+        import numpy as np
+        is_array = type(values) is np.ndarray
+        valid_values = (values.ndim == 1 and values.dtype.kind == 'f' and values.dtype.itemsize == 8
+                        and bool(np.isfinite(values).all())) if is_array else (
+                            isinstance(values, list) and all(type(value) is float and math.isfinite(value) for value in values))
+        if (not valid_values or not _integer(window.get('count'), 1) or
                 window['count'] > 100000 or len(values) != window['count'] or
                 window.get('start') != sample_start or type(window.get('start')) is not int or
                 not _integer(window.get('total_samples'), 1) or window.get('decimated') is not False or
-                any(window.get(key) != batch[key] for key in _IDENTITY) or
-                any(type(value) is not float or not math.isfinite(value) for value in values)):
+                any(window.get(key) != batch[key] for key in _IDENTITY)):
             raise ValueError('Malformed exact trace batch window')
-        samples = array('d', values)
-        if samples.itemsize != 8:
-            raise ValueError('Binary64 trace transport is unavailable on this platform')
-        if sys.byteorder != 'little':
-            samples.byteswap()
-        payload = samples.tobytes()
+        if is_array:
+            payload = values.astype('<f8', copy=False).tobytes(order='C')
+        else:
+            samples = array('d', values)
+            if samples.itemsize != 8:
+                raise ValueError('Binary64 trace transport is unavailable on this platform')
+            if sys.byteorder != 'little':
+                samples.byteswap()
+            payload = samples.tobytes()
         header_windows.append({**{key: value for key, value in window.items() if key != 'values'},
                                'byte_offset': offset, 'byte_length': len(payload)})
         payloads.append(payload)
@@ -88,13 +95,28 @@ def mark_trace_timing(timing, stage):
         timing['_last'] = now
 
 
-def trace_batch_response(app, batch, timing=None):
+def wants_binary_trace():
+    from flask import request
+    return any(media == BINARY_CONTENT_TYPE and quality > 0
+               for media, quality in request.accept_mimetypes)
+
+
+def read_trace_batch(service, epoch, stream, start, count, chunks, *, binary):
+    """Pass the internal array option only to the unchanged canonical method."""
+    from workspace_service import _CANONICAL_TRACE_BATCH
+    if binary and getattr(service.trace_batch, '__func__', None) is _CANONICAL_TRACE_BATCH:
+        return service.trace_batch(epoch, stream, start, count, chunks, array_windows=True)
+    if type(chunks) is not int or not 1 <= chunks <= 5:
+        raise ValueError('Trace batch requires 1–5 chunks')
+    return service.trace_batch(epoch, stream, start, count, chunks)
+
+
+def trace_batch_response(app, batch, timing=None, *, binary=None):
     """Negotiate only explicit binary opt-in; legacy and error JSON stay intact."""
     from flask import jsonify, request
     started = time.perf_counter() if timing is not None else None
-    explicit = any(media == BINARY_CONTENT_TYPE and quality > 0
-                   for media, quality in request.accept_mimetypes)
-    if explicit:
+    explicit = wants_binary_trace() if binary is None else binary
+    if explicit and batch.get('count', 0) > 0:
         response = app.response_class(encode_trace_batch(batch, dumps=app.json.dumps),
                                       mimetype=BINARY_CONTENT_TYPE)
     else:

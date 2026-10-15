@@ -57,14 +57,14 @@ export function installTraceControlReader({streams=[]}={}) {
 export function installBinaryTraceOracle(){
  window.__workflowDecodeBinaryTrace=buffer=>{
   const fail=()=>{throw Error('Invalid binary trace oracle envelope');};
-  if(!(buffer instanceof ArrayBuffer)||buffer.byteLength<8||buffer.byteLength>8+65536+7+500000*8)fail();
+  if(!(buffer instanceof ArrayBuffer)||buffer.byteLength<8||buffer.byteLength>8+65536+7+1000000*8)fail();
   const view=new DataView(buffer),bytes=new Uint8Array(buffer);
   if(String.fromCharCode(...bytes.subarray(0,4))!=='DTF1')fail();
   const length=view.getUint32(4,true),offset=Math.ceil((8+length)/8)*8;
   if(!length||length>65536||offset>buffer.byteLength)fail();
   for(let i=8+length;i<offset;i++)if(bytes[i]!==0)fail();
   let header;try{header=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes.subarray(8,8+length)));}catch{fail();}
-  if(!header||!Array.isArray(header.windows)||!header.windows.length||header.windows.length>5||!Number.isSafeInteger(header.start)||header.start<0||!Number.isSafeInteger(header.count)||header.count<1||header.count>500000||!Number.isSafeInteger(header.total_samples)||header.start+header.count>header.total_samples)fail();
+  if(!header||!Array.isArray(header.windows)||!header.windows.length||header.windows.length>10||!Number.isSafeInteger(header.start)||header.start<0||!Number.isSafeInteger(header.count)||header.count<1||header.count>1000000||!Number.isSafeInteger(header.total_samples)||header.start+header.count>header.total_samples)fail();
   const little=new Uint8Array(new Uint16Array([1]).buffer)[0]===1;
   let position=0,cursor=header.start;
   const windows=header.windows.map(window=>{

@@ -390,6 +390,16 @@ class ProtocolStateReader:
             raise RevisionConflict({'query_revision':'metadata changed during mutation'})
         return context['query_revision']
 
+    def read_revision(self, protocol_uuid):
+        """Fresh revision for a caller that already owns bound membership.
+
+        The native proof still compares exact current metadata and generations.
+        Unsupported authority uses the same full-state oracle, exactly once.
+        Callers retain independent opening and closing checks.
+        """
+        context = self.native_context(protocol_uuid)
+        return context['query_revision'] if context is not None else self.full_state(protocol_uuid)[2]
+
     def materialized_state(self, protocol_uuid):
         context=self.native_context(protocol_uuid)
         if context is None:return self.full_state(protocol_uuid)

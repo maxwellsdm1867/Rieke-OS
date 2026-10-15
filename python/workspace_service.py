@@ -226,13 +226,27 @@ def number_block_epochs(rows):
             row['epoch_number'] = number
 
 
-def read_response_window(path, signature, row, stream, start=0, count=20000):
-    """Read bounded samples after the caller verifies the source SHA-256.
+def _check_trace_signature(path, signature):
+    after = path.stat()
+    current = ((str(path), after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns)
+               if len(signature) == 6 else (str(path), after.st_size, after.st_mtime_ns, after.st_ctime_ns))
+    if signature != current:
+        raise ValueError('Source recording changed while reading trace')
 
-    Shared by the live catalog and standalone SQLite handoff consumer. This
-    function never opens a database; identity, units and source stat checks are
-    identical for both workflows.
-    """
+
+def _trace_units_match(units, expected):
+    import numpy as np
+    # Compare every value without sorting the repeated fixed-width unit field.
+    if units.dtype.kind == 'S':
+        return bool(np.all(units == expected.encode('utf-8')))
+    if units.dtype.kind == 'U':
+        return bool(np.all(units == expected))
+    return all(_text(unit) == expected for unit in np.unique(units))
+
+
+@contextlib.contextmanager
+def _response_window_reader(path, signature, row, stream, *, native_range=None):
+    """One source-checked H5 handle; all returned arrays own their samples."""
     import h5py
     import numpy as np
     from recording_workspace import resolve_sealed_h5_path
@@ -246,24 +260,46 @@ def read_response_window(path, signature, row, stream, start=0, count=20000):
         data = resolve_sealed_h5_path(h5, stream['h5_path'].rstrip('/') + '/data')
         if not isinstance(data, h5py.Dataset) or not data.dtype.names or not {'quantity', 'units'} <= set(data.dtype.names):
             raise ValueError('Unsupported response representation')
-        if len(data) != stream['sample_count']:
-            raise ValueError('Trace sample count changed')
-        begin, end = bounded_window(start, count, len(data))
-        samples = data[begin:end]
-        if any(_text(unit) != stream['units'] for unit in np.unique(samples['units'])):
-            raise ValueError('Trace sample units are inconsistent')
-        values = samples['quantity'].astype(float)
-        if not np.isfinite(values).all():
-            raise ValueError('Trace contains nonfinite samples; explicit handling required')
-    after = path.stat()
-    current_signature = ((str(path), after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns)
-                         if len(signature) == 6 else (str(path), after.st_size, after.st_mtime_ns, after.st_ctime_ns))
-    if signature != current_signature:
-        raise ValueError('Source recording changed while reading trace')
-    return {'epoch_uuid': row['epoch_uuid'], 'stream_uuid': stream['uuid'],
-            'values': values.tolist(), 'sample_rate': stream['sample_rate'], 'units': stream['units'],
-            'total_samples': stream['sample_count'], 'start': begin, 'count': end - begin,
-            'source_sha256': row['source_sha256'], 'decimated': False}
+        prepared = None
+        if native_range is not None:
+            if len(data) != stream['sample_count']:
+                raise ValueError('Trace sample count changed')
+            from workspace_trace_native import read_native_samples
+            prepared = read_native_samples(data, signature, *native_range)
+
+        def read(start, count, *, array_values=False):
+            if len(data) != stream['sample_count']:
+                raise ValueError('Trace sample count changed')
+            begin, end = bounded_window(start, count, len(data))
+            samples = (data[begin:end] if prepared is None else
+                       prepared[begin - native_range[0]:end - native_range[0]])
+            if not _trace_units_match(samples['units'], stream['units']):
+                raise ValueError('Trace sample units are inconsistent')
+            values = samples['quantity'].astype(float)
+            if not np.isfinite(values).all():
+                raise ValueError('Trace contains nonfinite samples; explicit handling required')
+            _check_trace_signature(path, signature)
+            return {'epoch_uuid': row['epoch_uuid'], 'stream_uuid': stream['uuid'],
+                    'values': values if array_values else values.tolist(),
+                    'sample_rate': stream['sample_rate'], 'units': stream['units'],
+                    'total_samples': stream['sample_count'], 'start': begin, 'count': end - begin,
+                    'source_sha256': row['source_sha256'], 'decimated': False}
+        yield read
+    _check_trace_signature(path, signature)
+
+
+def read_response_window(path, signature, row, stream, start=0, count=20000):
+    """Read bounded samples after the caller verifies the source SHA-256.
+
+    Shared by the live catalog and standalone SQLite handoff consumer. This
+    function never opens a database; identity, units and source stat checks are
+    identical for both workflows.
+    """
+    with _response_window_reader(path, signature, row, stream) as read:
+        return read(start, count)
+
+
+_CANONICAL_RESPONSE_WINDOW = read_response_window
 
 
 from disco.navigation.tree import materialize_combinations, predicate_scope, component_display
@@ -1456,25 +1492,36 @@ class WorkspaceService:
             path, signature = self._verified_source(manifest)
             return read_response_window(path, signature, row, stream, start, count)
 
-    def trace_batch(self, epoch_uuid, stream_uuid, start=0, count=100000, chunks=1):
-        """Read at most five exact windows under one caller-owned read scope.
+    def trace_batch(self, epoch_uuid, stream_uuid, start=0, count=100000, chunks=1, *, array_windows=False):
+        """Read bounded exact windows under one caller-owned read scope.
 
         One immutable source plan covers every window. No partial batch escapes
         if a later read or closing source/publication witness fails.
         """
         if getattr(self.trace, '__func__', None) is not _CANONICAL_TRACE_READER:
             raise ValueError('Trace batches are unavailable for a custom trace reader')
-        if type(chunks) is not int or not 1 <= chunks <= 5:
-            raise ValueError('Trace batch requires 1–5 chunks')
+        maximum_chunks = 10 if array_windows and read_response_window is _CANONICAL_RESPONSE_WINDOW else 5
+        if type(chunks) is not int or not 1 <= chunks <= maximum_chunks:
+            raise ValueError(f'Trace batch requires 1–{maximum_chunks} chunks')
         plan, witness = self.capture_trace_read(epoch_uuid, stream_uuid, start, count)
         windows, offset = [], start
-        for _ in range(chunks):
-            window = read_response_window(plan['path'], tuple(plan['signature']),
-                plan['row'], plan['stream'], offset, count)
-            windows.append(window)
-            offset += window['count']
-            if offset >= window['total_samples']:
-                break
+        # Explicit binary requests can retain detached arrays and share one H5
+        # handle. Custom sample readers and legacy JSON keep their public path.
+        direct = (array_windows and read_response_window is _CANONICAL_RESPONSE_WINDOW
+                  and start < plan['stream']['sample_count'])
+        reader = (_response_window_reader(plan['path'], tuple(plan['signature']),
+                    plan['row'], plan['stream'], native_range=(start, min(
+                        plan['stream']['sample_count'], start + count * chunks)))
+                  if direct else contextlib.nullcontext(None))
+        with reader as read:
+            for _ in range(chunks):
+                window = (read(offset, count, array_values=True) if direct else
+                    read_response_window(plan['path'], tuple(plan['signature']),
+                        plan['row'], plan['stream'], offset, count))
+                windows.append(window)
+                offset += window['count']
+                if offset >= window['total_samples']:
+                    break
         self.validate_trace_read(witness)
         return {key: windows[0][key] for key in ('epoch_uuid', 'stream_uuid',
                     'total_samples', 'source_sha256', 'sample_rate', 'units', 'decimated')} | {
@@ -1533,3 +1580,5 @@ _PROTOCOL_SUMMARY_READS = {name: getattr(WorkspaceService, name) for name in
 
 # Batch admission must never bypass a custom trace policy.
 _CANONICAL_TRACE_READER = WorkspaceService.trace
+
+_CANONICAL_TRACE_BATCH = WorkspaceService.trace_batch

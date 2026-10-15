@@ -17,12 +17,11 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
                                 '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
               'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
-              'rationale': 'Relative to add33d153ae8f533d5c4a68c50690764323c4336, '
-                           'recording_workspace only adds recording_location during NEW import CLI '
-                           'handling. Existing-project projection construction, codecs and '
-                           'verification are unchanged. WorkspaceService only delegates its '
-                           'contract selection to this exact reviewed resolver. Native index, '
-                           'typed index and scientific-input witnesses remain unchanged.',
+              'rationale': 'Relative to add33d153ae8f533d5c4a68c50690764323c4336, recording_workspace only '
+                           'adds recording_location during NEW import CLI handling. Existing-project '
+                           'projection construction, codecs and verification are unchanged. WorkspaceService '
+                           'only delegates its contract selection to this exact reviewed resolver. Native '
+                           'index, typed index and scientific-input witnesses remain unchanged.',
               'evidence': ('git:add33d153ae8f533d5c4a68c50690764323c4336',
                            'docs/dev/project-version-first-open-2026-10-14.md',
                            'python/tests/test_workspace_projection_contract.py',
@@ -41,9 +40,9 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
               'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
               'rationale': 'Relative to 6b81372, workspace_service only adds recorded cell_type to '
                            'cell-level tree presentation inside the existing row loop. Projection '
-                           'construction, codecs, scientific input checks and all other vector '
-                           'owners are unchanged. Independently reviewed as additive display '
-                           'metadata; no reads, membership or authority changes.',
+                           'construction, codecs, scientific input checks and all other vector owners are '
+                           'unchanged. Independently reviewed as additive display metadata; no reads, '
+                           'membership or authority changes.',
               'evidence': ('git:6b81372',
                            'docs/dev/cell-identity-placement-2026-10-14.md',
                            'python/tests/test_workspace_projection_contract.py',
@@ -61,12 +60,11 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
                                 '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
               'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
-              'rationale': 'Relative to b82de83, WorkspaceService only wraps refresh in the '
-                           'explicitly installed dedicated-process heap lifetime. Removing that '
-                           'wrapper and its contextlib import produces an identical whole-file '
-                           'AST. Projection construction, codecs, source verification, recorded '
-                           'values and all other vector owners are unchanged. Collector state '
-                           'grants no scientific authority.',
+              'rationale': 'Relative to b82de83, WorkspaceService only wraps refresh in the explicitly '
+                           'installed dedicated-process heap lifetime. Removing that wrapper and its '
+                           'contextlib import produces an identical whole-file AST. Projection construction, '
+                           'codecs, source verification, recorded values and all other vector owners are '
+                           'unchanged. Collector state grants no scientific authority.',
               'evidence': ('git:b82de83c3ea388e326288e3356770edc9518616f',
                            'docs/dev/process-heap-performance-2026-10-14.md',
                            'python/tests/test_workspace_process_heap.py',
@@ -84,17 +82,63 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
                                 '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
               'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
-              'rationale': 'Relative to installed source82d541e, removing only the new trace_batch '
-                           'method and its canonical trace-reader identity capture yields an '
-                           'identical WorkspaceService AST. All other projection owners and the '
-                           'resolver are byte-identical. The batch is a foreground sample-read '
-                           'API; projection construction, codecs, metadata values, scientific '
-                           'source verification and cache formats are unchanged. Independently '
-                           'reviewed by the integration owner. Typed lifecycle recovery separately '
-                           'reopens fully verified sidecars when old live witnesses become stale; '
-                           'it grants no projection compatibility or authority.',
+              'rationale': 'Relative to installed source82d541e, removing only the new trace_batch method '
+                           'and its canonical trace-reader identity capture yields an identical '
+                           'WorkspaceService AST. All other projection owners and the resolver are '
+                           'byte-identical. The batch is a foreground sample-read API; projection '
+                           'construction, codecs, metadata values, scientific source verification and cache '
+                           'formats are unchanged. Independently reviewed by the integration owner. Typed '
+                           'lifecycle recovery separately reopens fully verified sidecars when old live '
+                           'witnesses become stale; it grants no projection compatibility or authority.',
               'evidence': ('git:82d541e8300eb1b6930ff7f1bd35f974a6ca343e',
                            'docs/dev/trace-click-latency-2026-10-15.md',
                            'python/tests/test_workspace_projection_contract.py',
                            'python/tests/test_workspace_refresh_cache.py',
-                           'python/tests/test_workspace_explore_queries.py')})}
+                           'python/tests/test_workspace_explore_queries.py')},
+             {'id': 'direct-trace-read-compatibility-2026-10-15',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 '5c1934805538f2852c9d5ca43f7ecf46d9413a97fc21c18c1708611e8a16d008',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to bf5064d, changes in workspace_service are restricted to exact '
+                           'foreground H5 sample readers, trace_batch and their canonical identity captures. '
+                           'Removing these trace-only nodes produces an identical whole-file AST. Other '
+                           'projection owners and resolver are byte-identical. Metadata construction, '
+                           'codecs, source projections and cache formats are unchanged. The direct reader '
+                           'separately preserves identity, units, finite values, per-window and closing '
+                           'source witnesses; it grants no projection authority.',
+              'evidence': ('git:bf5064d7ad9ef4f6541395496bcd56c4c39a9003',
+                           'docs/dev/trace-direct-read-2026-10-15.md',
+                           'python/tests/test_workspace_projection_contract.py',
+                           'python/tests/test_workspace_refresh_cache.py',
+                           'python/tests/test_workspace_service.py')},
+             {'id': 'native-trace-read-compatibility-2026-10-15',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 '4465a19b6a350561c0fd2c2bb8cc289fddce632cda1b56ee8f20fb9f12db1e71',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to bf5064d, removing only foreground trace sample readers, trace_batch '
+                           'and their canonical identity captures yields an identical whole-file AST. Other '
+                           'projection owners and resolver are byte-identical. Native decompression affects '
+                           'only exact trace sample reading, with separate type, filter, unit, finite and '
+                           'closing source checks. No metadata projection, codec, membership or cache '
+                           'authority changes.',
+              'evidence': ('git:bf5064d7ad9ef4f6541395496bcd56c4c39a9003',
+                           'docs/architecture/trace-worker-execution.md',
+                           'python/tests/test_trace_native.py',
+                           'python/tests/test_workspace_projection_contract.py',
+                           'python/tests/test_workspace_service.py')})}

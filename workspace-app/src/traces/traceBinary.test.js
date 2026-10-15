@@ -1,3 +1,5 @@
+import {traceSampleStatistics,traceStatisticsExtent} from './traceStatistics.js';
+import {finiteExtent} from './ui/traceGeometry.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {decodeTraceBinary,TRACE_BINARY_TYPE} from './traceBinary.js';
@@ -24,7 +26,7 @@ test('binary decoding preserves every binary64 bit and exposes contiguous zero-c
  assert.equal(decoded.windows[0].values.byteOffset,payload);
  assert.equal(decoded.windows[2].values.byteOffset,payload+4*8);
 });
-for(const [name,mutateHeader] of Object.entries({count:h=>h.count++,total:h=>h.total_samples--,start:h=>h.start=-1,oversized:h=>h.count=500001,empty:h=>h.windows=[],tooMany:h=>h.windows=Array(6).fill(h.windows[0]),gap:h=>h.windows[1].byte_offset+=8,overlap:h=>h.windows[1].byte_offset=0,unaligned:h=>h.windows[0].byte_offset=1,length:h=>h.windows[0].byte_length++,order:h=>h.windows.reverse(),windowCount:h=>h.windows[0].count=100001,values:h=>h.windows[0].values=[],outerValues:h=>h.values=[]})){
+for(const [name,mutateHeader] of Object.entries({count:h=>h.count++,total:h=>h.total_samples--,start:h=>h.start=-1,oversized:h=>h.count=1000001,empty:h=>h.windows=[],tooMany:h=>h.windows=Array(11).fill(h.windows[0]),gap:h=>h.windows[1].byte_offset+=8,overlap:h=>h.windows[1].byte_offset=0,unaligned:h=>h.windows[0].byte_offset=1,length:h=>h.windows[0].byte_length++,order:h=>h.windows.reverse(),windowCount:h=>h.windows[0].count=100001,values:h=>h.windows[0].values=[],outerValues:h=>h.values=[]})){
  test(`binary framing rejects ${name}`,()=>assert.throws(()=>decodeTraceBinary(encoded({mutateHeader}).buffer),/Invalid binary trace/));
 }
 for(const [name,mutate] of Object.entries({magic:({buffer})=>new Uint8Array(buffer)[0]=0,version:({buffer})=>new Uint8Array(buffer)[3]=50,hugeHeader:({buffer})=>new DataView(buffer).setUint32(4,65537,true),utf8:({buffer})=>new Uint8Array(buffer)[8]=255,nan:({buffer,payload})=>new DataView(buffer).setFloat64(payload,NaN,true),infinity:({buffer,payload})=>new DataView(buffer).setFloat64(payload,Infinity,true)})){
@@ -64,25 +66,25 @@ test('whole trace reuses one admitted binary payload and retains scoped identity
  await assert.rejects(readWholeTrace({...options,request:async()=>{const data=decodeTraceBinary(frame.buffer);data.candidate_scope_revision='stale';return data;}}),/does not match/);
 });
 test('multiple binary batches join into one exact array and cancellation rejects the later response',async()=>{
- const options={epochUuid:'e',stream:{uuid:'s',sample_count:700001,sample_rate:10000,units:'pA'},maxChunkSamples:100000},frames=[],controller=new AbortController();
+ const options={epochUuid:'e',stream:{uuid:'s',sample_count:1200001,sample_rate:10000,units:'pA'},maxChunkSamples:100000},frames=[],controller=new AbortController();
  let cancel=false;
  const request=async(path)=>{
-  const q=new URLSearchParams(path.split('?')[1]),start=+q.get('start'),count=Math.min(+q.get('count')*(+q.get('chunks')||1),700001-start);
-  const frame=encoded({start,count,total:700001,chunkSize:100000});frames.push(frame);
+  const q=new URLSearchParams(path.split('?')[1]),start=+q.get('start'),count=Math.min(+q.get('count')*(+q.get('chunks')||1),1200001-start);
+  const frame=encoded({start,count,total:1200001,chunkSize:100000});frames.push(frame);
   if(cancel&&start)controller.abort();return decodeTraceBinary(frame.buffer);
  };
  const data=await readWholeTrace({...options,request});
- assert.equal(frames.length,2);assert(data.values instanceof Float64Array);assert.notEqual(data.values.buffer,frames[0].buffer);assert.equal(data.values[500000],500000.25);assert.equal(data.values.at(-1),700000.25);
+ assert.equal(frames.length,2);assert(data.values instanceof Float64Array);assert.notEqual(data.values.buffer,frames[0].buffer);assert.equal(data.values[500000],500000.25);assert.equal(data.values.at(-1),1200000.25);
  cancel=true;await assert.rejects(readWholeTrace({...options,request,signal:controller.signal}),{name:'AbortError'});
 });
 test('mixed binary and JSON response windows preserve null gaps without numeric coercion',async()=>{
- const total=600000,options={epochUuid:'e',stream:{uuid:'s',sample_count:total},maxChunkSamples:100000};
+ const total=1100000,options={epochUuid:'e',stream:{uuid:'s',sample_count:total},maxChunkSamples:100000};
  const data=await readWholeTrace({...options,request:async path=>{
   const q=new URLSearchParams(path.split('?')[1]),start=+q.get('start');
-  if(!start)return decodeTraceBinary(encoded({count:500000,total,chunkSize:100000}).buffer);
+  if(!start)return decodeTraceBinary(encoded({count:1000000,total,chunkSize:100000}).buffer);
   return {epoch_uuid:'e',stream_uuid:'s',start,count:100000,total_samples:total,sample_rate:10000,units:'pA',source_sha256:'source',decimated:false,values:Array(100000).fill(null)};
  }});
- assert(Array.isArray(data.values));assert.equal(data.values[499999],499999.25);assert.equal(data.values[500000],null);
+ assert(Array.isArray(data.values));assert.equal(data.values[999999],999999.25);assert.equal(data.values[1000000],null);
 });
 
 test('actual viewer keeps typed samples valid through whole extent and zero-copy sample navigation',async()=>{
@@ -109,20 +111,66 @@ test('actual viewer keeps typed samples valid through whole extent and zero-copy
  }finally{await act(async()=>renderer?.unmount());await server.close();}
 });
 
-test('one million full-rate samples join two bounded binary batches and publish only after both validate',async()=>{
+test('one million full-rate samples use one bounded request and a direct exact payload view',async()=>{
  const total=1000000,calls=[];let release,published=false;
- const second=new Promise(resolve=>{release=resolve;});
+ const ready=new Promise(resolve=>{release=resolve;});
  const sample=index=>index===500000?-0:index+.25;
+ const frame=encoded({count:total,total,chunkSize:100000,sample});
  const request=async(path,options)=>{
-  const q=new URLSearchParams(path.split('?')[1]),start=+q.get('start'),count=+q.get('count')*+q.get('chunks');calls.push({start,count,headers:options.headers});
-  if(start)await second;
-  return decodeTraceBinary(encoded({start,count,total,chunkSize:100000,sample}).buffer);
+  const q=new URLSearchParams(path.split('?')[1]);calls.push({start:+q.get('start'),count:+q.get('count'),chunks:+q.get('chunks'),headers:options.headers});
+  await ready;return decodeTraceBinary(frame.buffer);
  };
  const pending=readWholeTrace({request,epochUuid:'e',stream:{uuid:'s',sample_count:total,sample_rate:10000,units:'pA'},maxChunkSamples:100000}).then(value=>{published=true;return value;});
  await new Promise(resolve=>setImmediate(resolve));
- assert.deepEqual(calls.map(({start,count})=>[start,count]),[[0,500000],[500000,500000]]);
- assert(calls.every(call=>call.headers.Accept===TRACE_BINARY_TYPE));assert.equal(published,false,'first half never publishes as a whole trace');
+ assert.deepEqual(calls.map(({start,count,chunks})=>[start,count,chunks]),[[0,100000,10]]);
+ assert.equal(calls[0].headers.Accept,TRACE_BINARY_TYPE);assert.equal(published,false,'nothing publishes before the whole response validates');
  release();const data=await pending;
  assert(data.values instanceof Float64Array);assert.equal(data.values.length,total);assert.equal(data.count,total);
+ assert.equal(data.values.buffer,frame.buffer,'one million samples never require a join copy');assert.equal(data.values.byteOffset,frame.payload);
  for(let i=0;i<total;i++)assert.ok(Object.is(data.values[i],sample(i)),`sample ${i} stays exact`);
+});
+
+test('one million plus one samples require one bounded binary batch and the exact remaining sample',async()=>{
+ const total=1000001,calls=[];
+ const data=await readWholeTrace({epochUuid:'e',stream:{uuid:'s',sample_count:total},maxChunkSamples:100000,request:async(path)=>{
+  const q=new URLSearchParams(path.split('?')[1]),start=+q.get('start'),count=+q.get('count'),chunks=+(q.get('chunks')||1);calls.push([start,count,chunks]);
+  if(!start)return decodeTraceBinary(encoded({count:1000000,total,chunkSize:100000}).buffer);
+  return {epoch_uuid:'e',stream_uuid:'s',start,count,total_samples:total,sample_rate:10000,units:'pA',source_sha256:'source',decimated:false,values:[-0]};
+ }});
+ assert.deepEqual(calls,[[0,100000,10],[1000000,1,1]]);assert.equal(data.values.length,total);assert(Object.is(data.values.at(-1),-0));
+});
+
+test('binary frame above one million samples is refused even with consistent metadata and payload',()=>{
+ assert.throws(()=>decodeTraceBinary(encoded({count:1000001,chunkSize:100000}).buffer),/Invalid binary trace/);
+});
+
+
+test('decoded statistics come from exact samples and survive whole-interval admission without trusting wire metadata',async()=>{
+ const sample=i=>i===12345?-99.25:i===198765?101.5:i===50000?-0:2.25;
+ const frame=encoded({count:300000,chunkSize:100000,sample,mutateHeader:header=>{
+  header.statistics={min:0,max:0,finiteCount:0,missingCount:300000};
+  for(const window of header.windows)window.statistics=header.statistics;
+ }});
+ const data=await readWholeTrace({request:async()=>decodeTraceBinary(frame.buffer),epochUuid:'e',stream:{uuid:'s',sample_count:300000},maxChunkSamples:100000});
+ const facts=traceSampleStatistics(data.values);
+ assert.deepEqual(facts,{min:-99.25,max:101.5,finiteCount:300000,missingCount:0});
+ assert(Object.isFrozen(facts));assert.equal(traceSampleStatistics(data.values),facts,'admitted exact buffer facts need no repeated scan');
+ assert.deepEqual(traceStatisticsExtent(facts),finiteExtent(data.values));
+ const viewport=data.values.subarray(70000,70200),viewportFacts=traceSampleStatistics(viewport);
+ assert.deepEqual(viewportFacts,{min:2.25,max:2.25,finiteCount:200,missingCount:0});
+ assert.deepEqual(traceStatisticsExtent(viewportFacts),finiteExtent(viewport));
+ assert(Object.is(data.values[50000],-0));
+});
+
+test('JSON and custom array statistics retain gaps, viewport extrema and producer mutations',()=>{
+ for(const values of [[null,NaN,Infinity,-Infinity,-5,8,-0],new Float64Array([NaN,Infinity,-Infinity,-5,8,-0])]){
+  const first=traceSampleStatistics(values);
+  assert.equal(first.finiteCount,3);assert.equal(first.missingCount,values.length-3);
+  assert.deepEqual(traceStatisticsExtent(first),finiteExtent(values));
+  values[values.length-2]=77;
+  assert.equal(traceSampleStatistics(values).max,77,'producer-owned arrays are never granted decoder statistics');
+  const viewport=values.slice(-2);
+  assert.deepEqual(traceStatisticsExtent(traceSampleStatistics(viewport)),finiteExtent(viewport));
+ }
+ assert.equal(traceStatisticsExtent(traceSampleStatistics([null,NaN,Infinity])),null);
 });

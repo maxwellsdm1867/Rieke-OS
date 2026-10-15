@@ -81,3 +81,27 @@ test('display width and device scale set the point budget; zoomed windows natura
  assert.deepEqual(traceDisplaySegments([1,null,2,3],0),[[0],[2,3]],'unavailable display geometry never drops samples');
  assert.deepEqual(traceDisplaySegments([null,NaN],100),[]);assert.deepEqual(traceDisplaySegments([7],1),[[0]]);
 });
+
+test('QC display reduction preserves pixel-boundary extrema, clipping plateaus and alternating samples across widths and DPR',()=>{
+ const count=12000;
+ for(const width of [37,121,333])for(const dpr of [1,1.5,2]){
+  const physical=width*dpr;
+  const traces=[Float64Array.from({length:count},(_,i)=>i%2?20:-20),Float64Array.from({length:count},(_,i)=>Math.max(-3,Math.min(3,10*Math.sin(i/23))))];
+  const boundaries=new Float64Array(count);
+  for(let column=1;column<Math.ceil(physical);column+=11){const at=Math.round(column/physical*(count-1));for(const delta of [-1,0,1])if(at+delta<count)boundaries[at+delta]=delta===0?-100:100;}
+  traces.push(boundaries);
+  for(const values of traces){
+   const before=Buffer.from(values.buffer).toString('base64');
+   const segments=traceDisplaySegments(values,physical),kept=new Set(segments.flat());
+   assert.equal(segments.length,1);assert(kept.has(0)&&kept.has(count-1));
+   const buckets=new Map();
+   for(let index=0;index<count;index++){const column=Math.min(Math.ceil(physical)-1,Math.floor(index/(count-1)*physical));if(!buckets.has(column))buckets.set(column,[]);buckets.get(column).push(index);}
+   for(const indices of buckets.values()){
+    const minimum=Math.min(...indices.map(i=>values[i])),maximum=Math.max(...indices.map(i=>values[i]));
+    assert(kept.has(indices[0])&&kept.has(indices.at(-1)));
+    assert(indices.some(i=>values[i]===minimum&&kept.has(i)));assert(indices.some(i=>values[i]===maximum&&kept.has(i)));
+   }
+   assert.equal(Buffer.from(values.buffer).toString('base64'),before);
+  }
+ }
+});

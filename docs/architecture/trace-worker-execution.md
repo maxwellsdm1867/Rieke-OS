@@ -59,8 +59,9 @@ preference UI is outside this assembly.
 
 ## Foreground exact-window batches
 
-Global and frozen Workbench trace GETs accept opt-in `chunks=1..5`, retaining the
-100,000-sample per-window bound (at most 500,000 total). A batch returns an envelope
+Global and frozen Workbench trace GETs accept opt-in `chunks=1..5` for JSON and
+`chunks=1..10` for canonical binary reads, retaining the 100,000-sample per-window
+bound (at most 500,000 JSON or 1,000,000 binary samples). A batch returns an envelope
 with contiguous ordinary window DTOs and shared identity/count fields; frozen
 responses carry their normal closing scope fences on the envelope. One source
 plan pins the signature across all windows and is revalidated before publication.
@@ -100,12 +101,21 @@ application latency or release readiness.
 
 An explicit `Accept: application/vnd.disco.trace-f64le.v1` on a foreground batch
 request selects the same Content-Type. Default and unsupported Accept values keep
-JSON; errors remain JSON. The service's scientific batch reader is unchanged.
-Only after its source/publication and HTTP scope guards close does the response
-codec convert the already-admitted finite Python floats into little-endian IEEE754
-binary64 samples, preserving negative zero and every sample bit. Binary batches
-are nonempty (1–500,000 samples, 1–5 nonempty windows); ordinary JSON retains valid
-empty EOF windows. Background execution and its payload budget remain unchanged.
+JSON; errors remain JSON. Negotiation is captured once before reading. The
+canonical binary batch retains detached finite float64 arrays and shares one H5
+handle across its bounded windows. Every window checks count, all recorded units,
+finiteness and source signature; H5 closure checks the signature again, followed
+by the unchanged source/publication and HTTP scope guards. Fixed byte/unicode
+units use exact vector equality; other representations retain decoded validation.
+Custom batch/window readers retain their legacy call/representation policy.
+Only after closing guards succeed does the codec encode little-endian IEEE754
+binary64 bytes, preserving negative zero and every sample bit. It accepts only
+one-dimensional finite float64 arrays or existing finite Python-float lists;
+non-native byte order and strided arrays are serialized exactly. Binary batches
+are nonempty (1–1,000,000 samples, 1–10 nonempty windows); valid empty EOF windows
+remain JSON even with binary Accept. Background execution and its payload budget
+remain unchanged. Canonical binary requests permit ten 100,000-sample windows
+under one H5 handle; JSON and custom readers retain the five-window limit.
 
 The body begins with ASCII `DTF1` followed by a little-endian uint32 UTF-8 JSON
 header length. The header retains every envelope/window metadata and scope field,
@@ -125,3 +135,45 @@ wall-clock stages: `trace_open` (guard entry, context and frozen adapter),
 Global routes use lock entry/read/exit for the first three. Values contain only
 milliseconds, no scientific metadata. Ordinary requests do not read these clocks.
 These elapsed groups do not claim CPU attribution or include browser/network time.
+
+## Optional bounded native gzip64 decoding
+
+Canonical binary batches may use `workspace_trace_native.read_native_samples`
+inside the same H5/source/publication guards. Admission requires a requested span
+of at least 100,000 samples, a one-dimensional dataset of at most 1,000,000 samples,
+exact packed `quantity:<f8, units:S10` records, 64-record chunks, sole DEFLATE filter,
+sec2 file driver, and dense chunks with no skipped filters. This initial lower
+bound avoids indexing an entire large stream for a tiny slice; it is not a
+universal measured crossover. Other layouts, endian variants, sparse chunks,
+filter masks, unavailable helpers or occupied native capacity retain ordinary H5.
+No sample data is cached between reads. Exact H5 datatype equality admits ASCII
+NULLPAD or NULLTERM unit strings only. For NULLTERM, the helper zeros bytes after
+the first NUL exactly as H5 converts to NumPy NULLPAD strings; full-width strings
+and quantity bits remain unchanged. UTF-8/padded/custom H5 types retain generic H5.
+
+HDF5 resolves sealed paths and chunk metadata on the caller thread. Physical
+ranges must not overlap and must remain within the source file. Reads coalesce
+only up to 4 MiB per span with gaps no larger than 64 KiB, and at most 32 MiB total.
+A duplicate of the admitted H5 sec2 descriptor supplies `pread`; its source stat
+must match before and after the read. Logical chunk order is independent of file
+placement. A tail chunk inflates its full 1,152 bytes, then requested sample bounds
+exclude padding. Original per-window all-unit, finite-value, count and source
+checks and final publication/frozen-scope checks remain required.
+
+`desktop/native/trace_inflate.c` exposes ABI 2 and calls only system zlib and
+pthread functions, never HDF5 or filesystem APIs. At most one native operation
+per Python process uses at most four threads. Count is capped at 15,625 chunks,
+output at 18,000,000 bytes, input at 32 MiB; compressed buffers may briefly coexist
+with their coalesced pieces during assembly. `uncompress2` must consume each whole
+compressed chunk and produce exactly 1,152 bytes. Corruption, trailing compressed
+bytes, truncation, malformed chunk locations and source changes fail the read;
+no partial samples or successful fallback are published after those failures.
+
+The optional helper is loaded from `RIEKE_DESKTOP_RUNTIME/native/` in a packaged
+runtime, or the repository's `.rieke-runtime/trace-native/` development build.
+There is no launch-time compilation or dependency download. Packaging owns its
+compiler/platform flags, signature, integrity manifest and ABI verification.
+Owned `test_trace_native` fixtures compile the C helper on macOS/Linux and exercise
+actual decoding, tails, fragmentation, skipped filters, sparse allocation,
+unsupported layouts, malformed bytes, bounds, source changes and missing-helper
+fallback. Those checks do not establish installed-app latency or release readiness.

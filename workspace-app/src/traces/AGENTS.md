@@ -8,7 +8,7 @@ request/cache scope identity. All existing exports and viewer props remain publi
 
 Display windows use safe integer bounds up to the stream length. Whole-epoch
 demand uses canonical/frozen windows of at most 100,000 full-rate samples,
-optionally batched up to five windows in one foreground HTTP request. Each
+optionally batched up to ten windows in one negotiated binary foreground HTTP request. Each
 response envelope and contiguous window must match the exact requested extent,
 source, rate, units and frozen candidate token before any result publishes.
 An older endpoint returning one ordinary window to the opt-in request is admitted
@@ -153,7 +153,7 @@ sample copy. Multiple binary batches copy once into a preallocated Float64Array;
 mixed/JSON batches preserve null gaps in an ordinary array. Viewport slices of
 typed samples use subarray views. No trace sample is omitted, resampled or coerced
 from null to zero. Complete arrays remain outside the shared epoch cache. The
-binary frame is at most 500,000 samples and a 64 KiB metadata header; request and
+binary frame is at most 1,000,000 samples and a 64 KiB metadata header; request and
 cancellation bounds are unchanged. `traceBinary.test.js` exercises framing faults,
 bit-exact finite values and signed zero, transport fallback, source/scope checks,
 zero-copy admission, multiple batches and cancellation. Binary transport does not change recorded sample geometry; the separate display
@@ -176,3 +176,27 @@ with exact cursor values. `traceGeometry.test.js` and `traceDisplayLifecycle.tes
 cover million-sample spikes, endpoints, ordered gaps, physical-pixel bounds,
 resize/DPR, zoomed all-sample drawing and full-precision cursor readout. Independent
 pixel comparisons remain separate from these geometry and drawing-call checks.
+
+The binary decoder fuses its mandatory finite-value validation with exact
+min/max/count statistics. `traceStatistics.js` associates those facts only with
+locally decoded sample views and the exact admitted arrays assembled from them;
+wire fields never grant statistics authority. This is weak metadata attached to
+the response lifetime, not a cross-navigation sample cache. Trace owners do not
+mutate decoded samples. Arbitrary/custom Float64Array and JSON producers receive
+no persistent statistics and retain ordinary missing/nonfinite handling.
+The viewer obtains one statistics result for its visible sample view and reuses
+it for axes and missing-count presentation. Partial viewport slices obtain their
+own statistics; whole-stream extrema must never substitute for a zoomed range.
+Exact raw values, gap breaks, source/scope admission and full-precision cursor
+inspection are unchanged. No background reads or prefetch are added.
+
+Manual amplitude clipping is an exact-display exception: if the chosen response
+range excludes any finite sample in the current viewport, the painter submits
+every original finite sample, with the original gap breaks and isolated points.
+The decision uses raw viewport min/max, not padded axes or whole-stream extrema.
+Line joins and scientific data stay unchanged. Auto extent and nonclipping
+manual ranges retain the existing physical-pixel first/last/min/max policy.
+This prioritizes waveform appearance over paint speed when clipping can amplify
+subpixel interpolation or apparent-density differences. Exact clipped views can
+be slower, especially at large sample counts; no speed claim overrides this
+fidelity rule. See the fused-statistics QC audit for raw-raster comparisons.

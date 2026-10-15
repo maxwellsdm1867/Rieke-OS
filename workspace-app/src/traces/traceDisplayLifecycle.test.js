@@ -36,7 +36,7 @@ test('actual million-sample canvas retains spikes and exact cursor while resize,
  const latest=()=>strokes.at(-1),indices=()=>latest().map(p=>Math.round((p.x-82)/(rect.width-103)*(values.length-1)));
  try{
   await act(async()=>{renderer=TestRenderer.create(React.createElement(WorkspaceRequestProvider,{port},React.createElement(Trace,{epoch})),{createNodeMock:node=>node.type==='canvas'?(node.props.className==='tv-base'?base:overlay):node.props['aria-label']==='Recorded response and scientific units'?responseReadout:otherRef});});
-  assert.equal(reads,2);assert(latest().length<=2000);assert.deepEqual([indices()[0],indices().at(-1)],[0,999999]);assert(indices().includes(positive));assert(indices().includes(negative));
+  assert.equal(reads,1);assert(latest().length<=2000);assert.deepEqual([indices()[0],indices().at(-1)],[0,999999]);assert(indices().includes(positive));assert(indices().includes(negative));
   const firstCount=latest().length;
   window.devicePixelRatio=2;listeners.get('resize')();await frame();assert(latest().length<=4000);assert(latest().length>firstCount);assert.equal(base.width,1206);
   rect={...rect,width:403};notify();assert(latest().length<=2400);assert(indices().includes(positive));assert(indices().includes(negative));
@@ -44,7 +44,34 @@ test('actual million-sample canvas retains spikes and exact cursor while resize,
   assert.equal(responseReadout.textContent,`${String(values[positive])} pA`,'exact cursor retains the full-precision original sample');
   await act(async()=>renderer.root.findAllByType('button').find(b=>b.props.children==='Sample').props.onClick());
   assert.equal(latest().length,200,'a zoomed sample window draws every sample');
-  assert.equal(reads,2,'display changes never fetch or alter scientific data');
+  assert.equal(reads,1,'display changes never fetch or alter scientific data');
   assert.equal(Buffer.from(values.buffer).toString('base64'),before);
+ }finally{await act(async()=>renderer?.unmount());await server.close();for(const name of names){if(previous[name]===undefined)delete globalThis[name];else globalThis[name]=previous[name];}}
+});
+
+test('manual amplitude clipping draws every raw sample and exact gaps, including isolated finite points',async()=>{
+ const names=['window','document','getComputedStyle','ResizeObserver','requestAnimationFrame','cancelAnimationFrame'];
+ const previous=Object.fromEntries(names.map(name=>[name,globalThis[name]]));
+ globalThis.window={devicePixelRatio:1,addEventListener(){},removeEventListener(){}};globalThis.document={activeElement:null};
+ globalThis.getComputedStyle=()=>({getPropertyValue:name=>name==='--plot-trace'?'trace':name});
+ globalThis.requestAnimationFrame=()=>1;globalThis.cancelAnimationFrame=()=>{};globalThis.ResizeObserver=class{observe(){}disconnect(){}};
+ const strokes=[],isolated=[];const width=603,height=300,count=6000;let renderer;
+ const canvas=base=>{const element={getBoundingClientRect:()=>({left:0,top:0,width,height})};let path=[];const context=new Proxy({canvas:element,beginPath(){path=[];},moveTo(x,y){path.push({move:true,x,y});},lineTo(x,y){path.push({move:false,x,y});},stroke(){if(base&&this.strokeStyle==='trace')strokes.push(path.slice());},arc(x){if(base)isolated.push(x);}},{get:(object,key)=>key in object?object[key]:()=>{}});element.getContext=()=>context;return element;};
+ const base=canvas(true),overlay=canvas(false),values=Array.from({length:count},(_,i)=>Math.sin(i/30));
+ values[100]=50;values[300]=null;values[302]=NaN;values[500]=Infinity;values[501]=-Infinity;
+ const port={identity:'raw-clipped',request:async()=>({epoch_uuid:'e',stream_uuid:'s',start:0,count,total_samples:count,sample_rate:10000,units:'pA',source_sha256:'source',decimated:false,values})};
+ const epoch={epoch_uuid:'e',streams:[{kind:'responses',uuid:'s',sample_count:count,sample_rate:10000,units:'pA'}]};
+ const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
+ const {default:Trace}=await server.ssrLoadModule('/src/traces/ui/TraceViewer.jsx'),{WorkspaceRequestProvider}=await server.ssrLoadModule('/src/workspaceRequest.js');
+ const render=async amplitude=>act(async()=>{const element=React.createElement(WorkspaceRequestProvider,{port},React.createElement(Trace,{epoch,viewPreference:{kind:'sample',start:0,count,amplitude},onViewPreference:()=>{}}));if(renderer)renderer.update(element);else renderer=TestRenderer.create(element,{createNodeMock:node=>node.type==='canvas'?(node.props.className==='tv-base'?base:overlay):{}});});
+ const index=x=>Math.round((x-82)/(width-103)*(count-1));
+ try{
+  await render({min:-2,max:2});const path=strokes.at(-1),expected=values.flatMap((value,i)=>typeof value==='number'&&Number.isFinite(value)?[i]:[]);
+  assert.deepEqual(path.map(point=>index(point.x)),expected,'clipped trace submits every original finite sample in order');
+  for(const point of path){const i=index(point.x);assert.equal(point.move,i===0||typeof values[i-1]!=='number'||!Number.isFinite(values[i-1]),'only exact gap boundaries start a new path');}
+  assert(isolated.some(x=>index(x)===301),'isolated finite point remains drawn');
+  assert.match(renderer.root.findByProps({className:'tv-gap-notice'}).children.join(''),/^4 missing/);
+  await render({min:-100,max:100});assert(strokes.at(-1).length<expected.length,'nonclipping manual bounds retain screen-resolution rendering');
+  assert(strokes.at(-1).some(point=>index(point.x)===100),'the actual spike remains visible');
  }finally{await act(async()=>renderer?.unmount());await server.close();for(const name of names){if(previous[name]===undefined)delete globalThis[name];else globalThis[name]=previous[name];}}
 });

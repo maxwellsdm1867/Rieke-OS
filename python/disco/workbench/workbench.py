@@ -160,9 +160,11 @@ def _members(recipe):
 
 
 class ProtocolWorkbench:
-    def __init__(self, service, history, suggestions, state, revision_guard, *, tables=None):
+    def __init__(self, service, history, suggestions, state, revision_guard, *, tables=None, read_revision=None):
         self.service, self.history, self.suggestions = service, history, suggestions
         self.state, self.revision_guard = state, revision_guard
+        self.read_revision = read_revision
+        self._read_revision_state = state
         self.project = service.project['project_uuid']
         self._tables = tables
         self.selection_manifests = {}
@@ -332,7 +334,15 @@ class ProtocolWorkbench:
             binding = (self.history.protocol_binding_header(protocol) if reads.canonical
                        else self.history.protocol_binding(protocol))
             if query_revision_guard is None:
-                result, _, query_revision = self.state(protocol)
+                # A bound main owns its saved membership below. A fresh native
+                # revision proof can avoid materializing unused curation rows;
+                # unsupported/custom/unbound readers keep the full-state oracle.
+                query_revision = (self.read_revision(protocol) if binding and reads.canonical
+                                  and self.read_revision is not None and self.state is self._read_revision_state else None)
+                if query_revision is None:
+                    result, _, query_revision = self.state(protocol)
+                else:
+                    result = None
             else:
                 query_revision = query_revision_guard()
                 result = self.service.query_result(protocol) if binding is None else None
@@ -846,13 +856,13 @@ def public_receipt(receipt):
 
 
 def register_workbench_routes(app, service, history, suggestions, state, revision_guard,
-                              db_lock, registration_locks):
+                              db_lock, registration_locks, *, read_revision=None):
     import os
     from flask import jsonify, request
     from workspace_service import validate_filters
     from disco.navigation.tag_predicates import annotation_locks
     from disco.navigation.tree_pages import TreePages, StaleTreePage
-    manager = ProtocolWorkbench(service, history, suggestions, state, revision_guard)
+    manager = ProtocolWorkbench(service, history, suggestions, state, revision_guard, read_revision=read_revision)
     if hasattr(service.dj, 'Schema'):
         manager.tables  # Additive DDL before startup recovery/checkpoint capture.
     app.extensions['protocol_workbench'] = manager
@@ -1119,7 +1129,9 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
     @app.get(candidate + '/epochs/<epoch>/trace')
     def workbench_trace(protocol, revision, epoch):
         query_filters({'candidate_scope_revision', 'stream_uuid', 'start', 'count', 'chunks'})
-        from workspace_trace_binary import begin_trace_timing, mark_trace_timing, trace_batch_response
+        from workspace_trace_binary import (begin_trace_timing, mark_trace_timing, trace_batch_response,
+            wants_binary_trace, read_trace_batch)
+        binary = wants_binary_trace() if 'chunks' in request.args else False
         timing = begin_trace_timing() if 'chunks' in request.args else None
         with guarded(protocol, revision) as owner:
             context = checked(protocol, revision, owner, request.args.get('candidate_scope_revision'))
@@ -1130,9 +1142,9 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                 if request.headers.get('X-Disco-Trace-Priority') == 'background':
                     raise ValueError('Trace batches require a foreground request')
                 mark_trace_timing(timing, 'open')
-                result = scoped.trace_batch(epoch, request.args.get('stream_uuid'),
+                result = read_trace_batch(scoped, epoch, request.args.get('stream_uuid'),
                     int(request.args.get('start', 0)), int(request.args.get('count', 20000)),
-                    int(request.args['chunks']))
+                    int(request.args['chunks']), binary=binary)
                 mark_trace_timing(timing, 'read')
             else:
                 result = scoped.trace(epoch, request.args.get('stream_uuid'),
@@ -1142,7 +1154,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         # before encoding so a large window does not block unrelated DB reads.
         if 'chunks' in request.args:
             mark_trace_timing(timing, 'close')
-            return trace_batch_response(app, result, timing)
+            return trace_batch_response(app, result, timing, binary=binary)
         return jsonify(result)
 
     @app.get(candidate + '/tree')

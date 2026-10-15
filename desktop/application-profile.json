@@ -120,6 +120,7 @@
     "workspace_state_generation.py",
     "workspace_state_snapshot.py",
     "workspace_trace_binary.py",
+    "workspace_trace_native.py",
     "workspace_trace_workers.py",
     "workspace_updates.py"
   ],

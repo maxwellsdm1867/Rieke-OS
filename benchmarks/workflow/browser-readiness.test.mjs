@@ -453,7 +453,7 @@ for(const defect of ['magic','length','padding','trailing','offset','missing','s
  if(defect==='offset')header.windows[1].byte_offset=8;
  if(defect==='missing')header.windows.pop();
  if(defect==='source')header.windows[1].source_sha256='b'.repeat(64);
- if(defect==='count')header.count=500001;
+ if(defect==='count')header.count=1000001;
  if(defect==='nan')values[1]=NaN;
  let buffer=wire(header,values),view=new DataView(buffer);
  if(defect==='magic')view.setUint8(0,0);
@@ -476,4 +476,36 @@ test('million-sample gate admits exactly two bounded binary batches only after e
  w.draws=[{at:12,action_id:'current',stream_uuid:'response'}];
  assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
  const result=w.completed.current.evidence.trace;assert.equal(result.values_count,1000000);assert.equal(result.chunks,10);assert.equal(result.requests,2);
+});
+
+function millionBinaryBatch(total=1000000){
+ const base={epoch_uuid:'requested',stream_uuid:'response',source_sha256:'a'.repeat(64),sample_rate:10,units:'pA',total_samples:total,decimated:false};
+ const header={...base,start:0,count:total,candidate_scope_revision:'revision',windows:Array.from({length:Math.ceil(total/100000)},(_,i)=>({...base,start:i*100000,count:Math.min(100000,total-i*100000),byte_offset:i*800000,byte_length:Math.min(100000,total-i*100000)*8}))};
+ return {header,values:Float64Array.from({length:total},(_,i)=>i)};
+}
+test('million-sample gate admits one bounded ten-window binary response only after every sample and final draw',t=>{
+ const {w,spec}=longTrace(t);installBinaryTraceOracle();
+ Object.assign(spec.trace,{count:1000000,values_last:999999,source_sha256:'a'.repeat(64)});
+ const {header,values}=millionBinaryBatch();
+ w.requests=[{action_id:'current',status:200,end:10,url:'/api'+spec.traceRoot+'/epochs/requested/trace?candidate_scope_revision=revision',content_type:'application/vnd.disco.trace-f64le.v1',binary:wire(header,values)}];
+ w.draws=[];assert.equal(readiness(spec),false);
+ w.draws=[{at:12,action_id:'current',stream_uuid:'response'}];
+ assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
+ const result=w.completed.current.evidence.trace;assert.equal(result.values_count,1000000);assert.equal(result.chunks,10);assert.equal(result.requests,1);
+});
+test('single million-sample binary gate rejects an incorrect interior sample',t=>{
+ const {w,spec}=longTrace(t);installBinaryTraceOracle();
+ Object.assign(spec.trace,{count:1000000,values_last:999999,source_sha256:'a'.repeat(64)});
+ const {header,values}=millionBinaryBatch();values[500001]=-123;
+ w.requests=[{action_id:'current',status:200,end:10,url:'/api'+spec.traceRoot+'/epochs/requested/trace?candidate_scope_revision=revision',content_type:'application/vnd.disco.trace-f64le.v1',binary:wire(header,values)}];
+ assert.throws(()=>readiness(spec),/Incorrect waveform sample/);
+});
+test('independent binary oracle refuses a complete response exceeding one million samples',t=>{
+ setup(t);installBinaryTraceOracle();const {header,values}=millionBinaryBatch(1000001);
+ assert.throws(()=>window.__workflowDecodeBinaryTrace(wire(header,values)),/Invalid binary/);
+});
+test('independent binary oracle refuses more than ten windows even below the sample limit',t=>{
+ setup(t);installBinaryTraceOracle();const {header}=millionBinaryBatch(11),base=header.windows[0];
+ header.windows=Array.from({length:11},(_,i)=>({...base,start:i,count:1,byte_offset:i*8,byte_length:8}));
+ assert.throws(()=>window.__workflowDecodeBinaryTrace(wire(header,Float64Array.from({length:11},(_,i)=>i))),/Invalid binary/);
 });

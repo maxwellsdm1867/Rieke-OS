@@ -1,3 +1,4 @@
+import {combineDecodedTraceStatistics} from './traceStatistics.js';
 import {TRACE_BINARY_TYPE} from './traceBinary.js';
 import {MAX_TRACE_SAMPLES} from './ui/traceGeometry.js';
 import {traceRequestPath,traceResponseMatches} from './traceReadContext.js';
@@ -27,7 +28,7 @@ export async function readWholeTrace({request,epochUuid,stream,readContext,sourc
     (!first||chunk.sample_rate===first.sample_rate&&chunk.units===first.units&&chunk.source_sha256===first.source_sha256);
   for(let start=window.start;start<end;){
     signal?.throwIfAborted();
-    const count=Math.min(chunkSize,end-start),chunks=batchEnabled?Math.min(5,Math.ceil((end-start)/chunkSize)):1;
+    const count=Math.min(chunkSize,end-start),chunks=batchEnabled?Math.min(10,Math.ceil((end-start)/chunkSize)):1;
     const path=traceRequestPath(epochUuid,stream,{start,count},readContext)+(chunks>1?`&chunks=${chunks}`:'');
     const response=await request(path,{signal,...(chunks>1?{headers:{Accept:TRACE_BINARY_TYPE}}:{})});
     signal?.throwIfAborted();
@@ -61,5 +62,6 @@ export async function readWholeTrace({request,epochUuid,stream,readContext,sourc
     // JSON fallback retains null gaps and exact existing values, without coercion.
     values=new Array(window.count);let at=0;for(const part of parts)for(const value of part)values[at++]=value;
   }
+  combineDecodedTraceStatistics(values,parts);
   return {...first,start:window.start,count:window.count,values};
 }

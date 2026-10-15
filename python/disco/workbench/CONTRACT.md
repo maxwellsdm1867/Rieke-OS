@@ -379,3 +379,23 @@ response codec runs only after guard closure; its metadata header retains all
 candidate/query/binding/generation fences. Default JSON and source/scope refusal
 are unchanged. Optional fixed-name elapsed headers separate guard opening, read,
 closing and encoding without including project or scientific metadata.
+
+## Bound-main revision-only context reads
+
+Canonical bound-main context derivation may obtain its current query revision
+through `ProtocolStateReader.read_revision`. The method obtains a fresh native
+metadata/generation proof and returns the identical v3 revision without
+materializing unused curation state. If native authority is unsupported or
+unavailable, it executes the unchanged full-state oracle once. Unbound membership
+and custom history readers keep the original materialized-state path. Explicit
+transaction revision guards take precedence and retain their locked checks.
+
+This stores no context or authority receipt. Main/candidate/base recipes,
+cohort fingerprints, source eligibility, actor draft and pending membership are
+still independently checked. Closing context derivation performs another fresh
+revision read; foreign generation, in-place metadata and draft changes still
+reject the response. Native metadata proof itself remains cohort-sized and can
+fall back; this is not an O(1) authority claim. Workbench tests exercise the actual
+native metadata reader with explicit generation doubles and verify equivalent
+revisions, one fallback invocation, custom/unbound behavior and late-change
+refusal. Actual MySQL timing and transaction qualification remain separate.

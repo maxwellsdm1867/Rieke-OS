@@ -259,6 +259,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def state(protocol_uuid):
         return selected_state.materialized_state(protocol_uuid)
 
+    def workbench_read_revision(protocol_uuid):
+        # Fresh native proof or the unchanged full-state fallback, once.
+        # Workbench still owns its independent opening and closing contexts.
+        return selected_state.read_revision(protocol_uuid)
+
     def revision_guard(protocol_uuid):
         # Bind invokes this callback inside its transaction. Native scope locks
         # validate the outside-transaction v3 receipt without silently switching
@@ -1367,14 +1372,16 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     request.headers.get('X-Disco-Trace-Priority') == 'background'):
                 raise ValueError('Trace batches require a foreground request with unique window options')
             # Batches exceed the worker response budget and stay foreground.
-            from workspace_trace_binary import begin_trace_timing, mark_trace_timing, trace_batch_response
+            from workspace_trace_binary import (begin_trace_timing, mark_trace_timing, trace_batch_response,
+            wants_binary_trace, read_trace_batch)
+            binary = wants_binary_trace()
             timing = begin_trace_timing()
             with db_lock:
                 mark_trace_timing(timing, 'open')
-                result = service.trace_batch(epoch_uuid, stream, start, count, int(request.args['chunks']))
+                result = read_trace_batch(service, epoch_uuid, stream, start, count, int(request.args['chunks']), binary=binary)
                 mark_trace_timing(timing, 'read')
             mark_trace_timing(timing, 'close')
-            return trace_batch_response(app, result, timing)
+            return trace_batch_response(app, result, timing, binary=binary)
         # A custom serializer must retain its own response behavior.
         eligible = (trace_workers is not None and type(app.json) is ExactMetadataJSON and
                     request.headers.get('X-Disco-Trace-Priority') == 'background')
@@ -2119,7 +2126,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     register_candidate_export_routes(app, service, store, explorer_history, db_lock, data_stores.registration_locks)
     from disco.workbench.workbench import register_workbench_routes
     register_workbench_routes(app, service, explorer_history, protocol_suggestions, state, revision_guard,
-                              db_lock, data_stores.registration_locks)
+                              db_lock, data_stores.registration_locks, read_revision=workbench_read_revision)
     from disco.decisions.annotation_groups import register_group_annotation_routes
     register_group_annotation_routes(app, service, shared_annotations, db_lock, data_stores.registration_locks,
                                     revision_guard=revision_guard, receipt_table=annotation_group_receipts)

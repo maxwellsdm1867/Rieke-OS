@@ -346,6 +346,128 @@ class ReadServiceTests(unittest.TestCase):
                 with self.subTest(start=start, count=count), self.assertRaises(ValueError):
                     service.trace_batch(epoch, stream, start, count, 3)
 
+    def test_array_batch_opens_once_and_retains_exact_detached_samples(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as folder:
+            service, _, epoch, stream = self.make_trace_service(folder)
+            service.project = {'project_uuid': str(uuid.uuid4())}
+            # Capture first: the source-hash admission can independently open H5.
+            service.capture_trace_read(epoch, stream, 13, 47)
+            with patch('h5py.File', wraps=h5py.File) as opened:
+                result = service.trace_batch(epoch, stream, 13, 47, 5, array_windows=True)
+            self.assertEqual(opened.call_count, 1)
+            self.assertEqual([w['count'] for w in result['windows']], [47, 47, 47, 46])
+            self.assertTrue(all(isinstance(w['values'], np.ndarray) and w['values'].flags.owndata
+                                for w in result['windows']))
+            self.assertEqual(np.concatenate([w['values'] for w in result['windows']]).tobytes(),
+                             (np.arange(13, 200) / 7).tobytes())
+            eof = service.trace_batch(epoch, stream, 200, 47, 5, array_windows=True)
+            self.assertEqual(eof['windows'][0]['values'], [])
+
+    def test_million_sample_binary_batch_uses_one_handle_and_exact_payload(self):
+        import struct
+        from unittest.mock import patch
+        from workspace_trace_binary import encode_trace_batch
+        with tempfile.TemporaryDirectory() as folder:
+            service, path, epoch, stream = self.make_trace_service(folder)
+            service.project = {'project_uuid': str(uuid.uuid4())}
+            row = service.rows[epoch]
+            descriptor = row['streams'][0]
+            samples = np.zeros(1000000, dtype=[('quantity', '<f8'), ('units', 'S10')])
+            samples['quantity'] = np.arange(1000000) / 7
+            samples['quantity'][0] = -0.0
+            samples['units'] = b'mV'
+            with h5py.File(path, 'r+') as h5:
+                group = h5[descriptor['h5_path']]
+                del group['data']
+                group.create_dataset('data', data=samples)
+            source_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+            descriptor['sample_count'] = 1000000
+            row['source_sha256'] = source_hash
+            service.manifests = {source_hash: dict(source_path=str(path), source_sha256=source_hash,
+                                                  source_size=path.stat().st_size)}
+            service.capture_trace_read(epoch, stream, 0, 100000)
+            with patch('h5py.File', wraps=h5py.File) as opened:
+                batch = service.trace_batch(epoch, stream, 0, 100000, 10, array_windows=True)
+            self.assertEqual(opened.call_count, 1)
+            self.assertEqual(batch['count'], 1000000)
+            self.assertEqual(len(batch['windows']), 10)
+            body = encode_trace_batch(batch)
+            header_length = struct.unpack('<I', body[4:8])[0]
+            payload = body[(8 + header_length + 7) // 8 * 8:]
+            self.assertEqual(len(payload), 8000000)
+            self.assertEqual(payload, samples['quantity'].astype('<f8').tobytes())
+            with self.assertRaisesRegex(ValueError, '1–10'):
+                service.trace_batch(epoch, stream, 0, 100000, 11, array_windows=True)
+            with self.assertRaisesRegex(ValueError, '1–5'):
+                service.trace_batch(epoch, stream, 0, 100000, 6)
+            with self.assertRaises(ValueError):
+                encode_trace_batch(dict(batch, windows=batch['windows'] + [batch['windows'][-1]]))
+
+    def test_array_opt_in_preserves_custom_window_reader(self):
+        import workspace_service
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as folder:
+            service, _, epoch, stream = self.make_trace_service(folder)
+            service.project = {'project_uuid': str(uuid.uuid4())}
+            with patch('workspace_service.read_response_window', wraps=workspace_service.read_response_window) as reader:
+                result = service.trace_batch(epoch, stream, 0, 20, 3, array_windows=True)
+            self.assertEqual(reader.call_count, 3)
+            self.assertTrue(all(isinstance(w['values'], list) for w in result['windows']))
+            with patch('workspace_service.read_response_window', wraps=workspace_service.read_response_window), self.assertRaisesRegex(ValueError, '1–5'):
+                service.trace_batch(epoch, stream, 0, 20, 6, array_windows=True)
+
+    def test_array_batch_checks_closing_publication_and_source_signature(self):
+        import workspace_service
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as folder:
+            service, path, epoch, stream = self.make_trace_service(folder)
+            service.project = {'project_uuid': str(uuid.uuid4())}
+            original = workspace_service._trace_units_match
+            def changed(*args):
+                service._explore_publication = 'changed'
+                return original(*args)
+            with patch('workspace_service._trace_units_match', side_effect=changed), self.assertRaisesRegex(ValueError, 'generation changed'):
+                service.trace_batch(epoch, stream, 0, 20, 3, array_windows=True)
+            def changed_stat(*args):
+                import os
+                stat = path.stat()
+                os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1000000))
+                return original(*args)
+            with patch('workspace_service._trace_units_match', side_effect=changed_stat), self.assertRaisesRegex(ValueError, 'changed while reading'):
+                service.trace_batch(epoch, stream, 0, 20, 3, array_windows=True)
+
+    def test_units_fast_path_checks_every_value_and_exact_encoding(self):
+        from workspace_service import _trace_units_match
+        for dtype in ('S10', 'U10', object):
+            with self.subTest(dtype=dtype):
+                values = np.array(['mV'] * 100, dtype=dtype)
+                self.assertTrue(_trace_units_match(values, 'mV'))
+                values[-1] = 'pA'
+                self.assertFalse(_trace_units_match(values, 'mV'))
+        self.assertTrue(_trace_units_match(np.array(['µV'.encode()], dtype='S10'), 'µV'))
+        self.assertFalse(_trace_units_match(np.array([b'mV ', b'mV'], dtype='S10'), 'mV'))
+        self.assertFalse(_trace_units_match(np.array([b'\xff'], dtype='S10'), 'mV'))
+
+    def test_array_batch_refuses_late_nonfinite_or_mixed_units(self):
+        for field, value in (('quantity', float('nan')), ('units', b'pA')):
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as folder:
+                service, path, epoch, stream = self.make_trace_service(folder)
+                service.project = {'project_uuid': str(uuid.uuid4())}
+                row = service.rows[epoch]
+                with h5py.File(path, 'r+') as h5:
+                    data = h5[row['streams'][0]['h5_path'] + '/data']
+                    sample = data[55]
+                    sample[field] = value
+                    data[55] = sample
+                source_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+                manifest = next(iter(service.manifests.values()))
+                manifest.update(source_sha256=source_hash, source_size=path.stat().st_size)
+                row['source_sha256'] = source_hash
+                service.manifests = {source_hash: manifest}
+                with self.assertRaisesRegex(ValueError, 'nonfinite|units are inconsistent'):
+                    service.trace_batch(epoch, stream, 0, 20, 3, array_windows=True)
+
     def test_trace_batch_does_not_bypass_custom_trace_policy(self):
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as folder:

@@ -40,9 +40,9 @@ export function finiteSegments(values){
 // Display geometry only: exact source samples remain owned by the viewer.
 // Each physical pixel column retains its first/last and both extrema, emitted
 // in recorded time order. A missing sample always ends a connected segment.
-export function traceDisplaySegments(values,physicalWidth){
+export function traceDisplaySegments(values,physicalWidth,{exact=false}={}){
   const count=values?.length||0,columns=Math.ceil(physicalWidth);
-  const reduced=Number.isFinite(physicalWidth)&&physicalWidth>0&&count>4*columns;
+  const reduced=!exact&&Number.isFinite(physicalWidth)&&physicalWidth>0&&count>4*columns;
   const segments=[];
   let segment=[],column=-1,first=-1,last=-1,min=-1,max=-1;
   const flush=()=>{

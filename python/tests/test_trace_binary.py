@@ -53,6 +53,47 @@ class TraceBinaryTests(unittest.TestCase):
         self.assertTrue(all('values' not in window for window in header['windows']))
         self.assertEqual(batch, before)
 
+    def test_array_payload_is_bit_exact_for_both_endians_and_strides(self):
+        import numpy as np
+        expected = encode_trace_batch(batch_fixture())
+        for dtype in ('<f8', '>f8'):
+            batch = batch_fixture()
+            for window in batch['windows']:
+                storage = np.repeat(np.array(window['values'], dtype=dtype), 2)
+                window['values'] = storage[::2]
+            self.assertEqual(encode_trace_batch(batch), expected)
+
+    def test_array_codec_refuses_object_float32_nonfinite_and_wrong_dimensions(self):
+        import numpy as np
+        invalid = [np.array([1., 2., 3.], dtype=object), np.array([1., 2., 3.], dtype='f4'),
+                   np.array([1., 2., float('inf')]), np.zeros((3, 1)), np.array(1.),
+                   np.ma.array([1., 2., float('inf')], mask=[False, False, True])]
+        for values in invalid:
+            batch = batch_fixture()
+            batch['windows'][0]['values'] = values
+            with self.subTest(dtype=values.dtype, shape=values.shape), self.assertRaises(ValueError):
+                encode_trace_batch(batch)
+
+    def test_custom_batch_method_keeps_legacy_call_signature(self):
+        from workspace_trace_binary import read_trace_batch
+        class Custom:
+            def trace_batch(self, epoch, stream, start, count, chunks):
+                return (epoch, stream, start, count, chunks)
+        self.assertEqual(read_trace_batch(Custom(), 'epoch', 'stream', 0, 20, 3, binary=True),
+                         ('epoch', 'stream', 0, 20, 3))
+        with self.assertRaisesRegex(ValueError, '1–5'):
+            read_trace_batch(Custom(), 'epoch', 'stream', 0, 20, 6, binary=True)
+
+    def test_explicit_binary_eof_retains_json_contract(self):
+        batch = batch_fixture()
+        batch.update(start=6, count=0)
+        batch['windows'] = [dict(batch['windows'][0], start=6, count=0, values=[])]
+        app = Flask(__name__)
+        with app.test_request_context(headers={'Accept': BINARY_CONTENT_TYPE}):
+            response = trace_batch_response(app, batch)
+        self.assertEqual(response.mimetype, 'application/json')
+        self.assertEqual(response.get_json()['windows'][0]['values'], [])
+
     def test_header_serializer_never_receives_sample_arrays(self):
         seen = []
         def dumps(header, **kwargs):
@@ -69,7 +110,7 @@ class TraceBinaryTests(unittest.TestCase):
             batch['windows'][0]['values'][0] = value
             with self.subTest(value=value), self.assertRaises(ValueError):
                 encode_trace_batch(batch)
-        mutations = [lambda b: b.update(count=500001), lambda b: b.update(count=5),
+        mutations = [lambda b: b.update(count=1000001), lambda b: b.update(count=5),
                      lambda b: b.update(sample_rate=float('nan')),
                      lambda b: b['windows'][1].update(start=4),
                      lambda b: b['windows'][1].update(source_sha256='different'),

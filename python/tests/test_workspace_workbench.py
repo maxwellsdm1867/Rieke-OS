@@ -3,6 +3,7 @@ import copy
 import contextlib
 import json
 import unittest
+from pathlib import Path
 from threading import Thread as RealThread
 import uuid
 from unittest.mock import patch
@@ -1264,6 +1265,141 @@ class WorkbenchTests(unittest.TestCase):
         preview = self.case.client.post(self.root + '/preview', json=dict(expected_candidate_scope_revision=context['candidate_scope_revision'],
             expected_draft_version=context['draft']['draft_version'], mode='all'), headers=self.case.headers)
         self.assertEqual(preview.status_code, 409)
+
+
+    def native_revision_fixture(self):
+        # Existing native metadata proof with an explicit generation double;
+        # this is not native MySQL transaction qualification.
+        from disco.metadata.disk_index import DiskMetadataIndex
+        from disco.workbench.recipes import checksum
+        from workspace_service import WorkspaceService
+        from workspace_state_generation import GenerationToken
+        service = self.case.service
+        service.__class__ = WorkspaceService
+        index = DiskMetadataIndex.build(Path(self.case.temp.name) / 'workbench-revision.sqlite',
+            service.rows, service.details, service.sources, 'workbench-revision', service.project['project_uuid'])
+        self.addCleanup(index.close)
+        service.disk_index, service.details = index, index.details
+        owner = self
+        class FixtureAuthority:
+            disabled = False
+            def token(self, protocol=None):
+                if self.disabled:
+                    return None
+                current = int(checksum(owner.case.curation.rows)[:12], 16)
+                return GenerationToken('workbench-native-proof-double', service.project['project_uuid'],
+                    'shared', 0, protocol, 'protocol' if protocol else None, current if protocol else None)
+        tracker = FixtureAuthority()
+        self.case.store.state_generation = tracker
+        service._explore_state_generation = tracker
+        return self.case.app.extensions['protocol_state_reader'], tracker
+
+    def test_bound_native_context_uses_same_revision_without_materializing_curation(self):
+        reader, _ = self.native_revision_fixture()
+        callback = self.manager.read_revision
+        self.assertIsNotNone(callback, 'API wires the native-only revision callback')
+        with patch.object(self.manager, 'read_revision', None):
+            expected = self.manager.context(self.protocol, self.revision, 'actor-one')
+        self.assertTrue(expected['expected_query_revision'].startswith('protocol-state-v3:'))
+        with patch.object(reader, 'full_state', side_effect=AssertionError('Unused full curation must not load')):
+            actual = self.manager.context(self.protocol, self.revision, 'actor-one')
+            repeated = self.manager.context(self.protocol, self.revision, 'actor-one')
+        for result in (actual, repeated):
+            self.assertEqual(result['expected_query_revision'], expected['expected_query_revision'])
+            self.assertEqual(result['candidate_scope_revision'], expected['candidate_scope_revision'])
+            self.assertEqual(result['pending'], expected['pending'])
+            self.assertEqual(result['main'], expected['main'])
+
+    def test_revision_only_context_keeps_unavailable_custom_and_unbound_fallbacks(self):
+        reader, tracker = self.native_revision_fixture()
+        tracker.disabled = True
+        with patch.object(reader, 'full_state', wraps=reader.full_state) as oracle, \
+                patch.object(reader, 'native_context', wraps=reader.native_context) as native_read:
+            result = self.manager.context(self.protocol, self.revision, 'actor-one')
+        self.assertEqual(oracle.call_count, 1)
+        self.assertEqual(native_read.call_count, 1, 'unsupported proof is attempted once before the unchanged oracle')
+        self.assertFalse(result['expected_query_revision'].startswith('protocol-state-v3:'))
+        tracker.disabled = False
+        for method in ('protocol_binding', 'protocol_binding_header', 'get'):
+            with self.subTest(method=method), \
+                    patch.object(self.manager.history, method, wraps=getattr(self.manager.history, method)), \
+                    patch.object(self.manager, 'read_revision', side_effect=AssertionError('Custom history must retain oracle')), \
+                    patch.object(self.manager, 'state', wraps=self.manager.state) as oracle:
+                self.manager.context(self.protocol, self.revision, 'actor-one')
+                self.assertEqual(oracle.call_count, 1)
+        self.case.protocol_bindings.rows.clear()
+        with patch.object(self.manager, 'read_revision', side_effect=AssertionError('Unbound membership needs full state')), \
+                patch.object(self.manager, 'state', wraps=self.manager.state) as oracle:
+            self.manager.context(self.protocol, self.revision, 'actor-one')
+            self.assertEqual(oracle.call_count, 1)
+
+    def test_revision_only_context_respects_explicit_transaction_guard_and_fresh_metadata(self):
+        reader, _ = self.native_revision_fixture()
+        before = self.manager.context(self.protocol, self.revision, 'actor-one')
+        with patch.object(self.manager, 'read_revision', side_effect=AssertionError('Transaction guard takes precedence')), \
+                patch.object(self.manager, 'state', side_effect=AssertionError('Explicit guard does not hydrate state')):
+            actual = self.manager.context(self.protocol, self.revision, 'actor-one',
+                query_revision_guard=lambda: before['expected_query_revision'])
+        self.assertEqual(actual['candidate_scope_revision'], before['candidate_scope_revision'])
+        member = next(iter(before['previous']))
+        self.case.service.rows[member]['cell_label'] = 'Changed in place without a new fingerprint'
+        with patch.object(reader, 'full_state', side_effect=AssertionError('Fresh native metadata proof owns revision')):
+            after = self.manager.context(self.protocol, self.revision, 'actor-one')
+        self.assertNotEqual(after['expected_query_revision'], before['expected_query_revision'])
+        self.assertNotEqual(after['candidate_scope_revision'], before['candidate_scope_revision'])
+
+    def test_revision_only_closing_context_rejects_changed_draft_without_partial_response(self):
+        reader, _ = self.native_revision_fixture()
+        original = self.manager.frozen_service
+        def changing(context):
+            scoped = original(context)
+            page = scoped.epoch_page
+            def read(*args, **kwargs):
+                result = page(*args, **kwargs)
+                self.tables[0].insert1(dict(**self.manager.key(self.protocol, self.revision, 'actor-one'),
+                    version=1, selection_mode='selected', deferred=True))
+                return result
+            scoped.epoch_page = read
+            return scoped
+        with patch.object(reader, 'full_state', side_effect=AssertionError('Opening/closing cannot hydrate unused curation')), \
+                patch.object(self.manager, 'read_revision', wraps=self.manager.read_revision) as revisions, \
+                patch.object(self.manager, 'frozen_service', side_effect=changing):
+            response = self.case.client.get(self.root + '/context?include_initial_page=true')
+        self.assertEqual(response.status_code, 409, response.get_json())
+        self.assertGreaterEqual(revisions.call_count, 2, 'closing performs a fresh native revision read')
+        self.assertNotIn('bootstrap', response.get_json())
+        self.assertNotIn('protocol', response.get_json())
+
+
+    def test_revision_only_closing_read_rejects_foreign_generation_and_in_place_metadata_changes(self):
+        reader, _ = self.native_revision_fixture()
+        original = self.manager.frozen_service
+        member = next(iter(self.manager.context(self.protocol, self.revision, 'actor-one')['previous']))
+        for kind in ('foreign-curation', 'metadata-row'):
+            with self.subTest(kind=kind):
+                saved_rows = copy.deepcopy(self.case.curation.rows)
+                old_label = self.case.service.rows[member]['cell_label']
+                def changing(context):
+                    scoped = original(context)
+                    page = scoped.epoch_page
+                    def read(*args, **kwargs):
+                        result = page(*args, **kwargs)
+                        if kind == 'foreign-curation':
+                            self.case.curation.rows.append(dict(project_uuid=self.manager.project,
+                                protocol_uuid=self.protocol, epoch_uuid=member, revision=1, tags=['external writer']))
+                        else:
+                            self.case.service.rows[member]['cell_label'] = 'Changed after opening native proof'
+                        return result
+                    scoped.epoch_page = read
+                    return scoped
+                with patch.object(reader, 'full_state', side_effect=AssertionError('Native closing proof remains metadata-only')), \
+                        patch.object(self.manager, 'frozen_service', side_effect=changing):
+                    response = self.case.client.get(self.root + '/context?include_initial_page=true')
+                self.assertEqual(response.status_code, 409, response.get_json())
+                self.assertNotIn('bootstrap', response.get_json())
+                self.assertNotIn('protocol', response.get_json())
+                self.case.curation.rows[:] = saved_rows
+                self.case.service.rows[member]['cell_label'] = old_label
 
 
 if __name__ == '__main__':

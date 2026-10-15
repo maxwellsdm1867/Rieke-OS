@@ -90,11 +90,11 @@ for(const [name,change] of Object.entries({missing:d=>d.windows.splice(1,1),orde
   const f=batchFixture({frozen:true,change});await assert.rejects(readWholeTrace(f),/does not match/);assert.equal(f.calls.length,1);
  });
 }
-test('large whole trace batches at most five windows and cancels a later response before publication',async()=>{
- const f=batchFixture({total:700001}),data=await readWholeTrace(f);
- assert.deepEqual(f.calls.map(({start,count,chunks})=>[start,count,chunks]),[[0,100000,5],[500000,100000,3]]);
- assert.equal(data.values.length,700001);assert.equal(data.values.at(-1),700000);
- const controller=new AbortController(),cancelled=batchFixture({total:700001,change:(_data,n)=>{if(n===2)controller.abort();}});
+test('large whole trace batches at most ten windows and cancels a later response before publication',async()=>{
+ const f=batchFixture({total:1200001}),data=await readWholeTrace(f);
+ assert.deepEqual(f.calls.map(({start,count,chunks})=>[start,count,chunks]),[[0,100000,10],[1000000,100000,3]]);
+ assert.equal(data.values.length,1200001);assert.equal(data.values.at(-1),1200000);
+ const controller=new AbortController(),cancelled=batchFixture({total:1200001,change:(_data,n)=>{if(n===2)controller.abort();}});
  await assert.rejects(readWholeTrace({...cancelled,signal:controller.signal}),{name:'AbortError'});assert.equal(cancelled.calls.length,2);
 });
 test('legacy ordinary response to batch opt-in finishes every sample with ordinary fallback reads',async()=>{
