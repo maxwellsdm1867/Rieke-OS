@@ -88,3 +88,9 @@ test('discovery deadlines bound a nonresponsive main snapshot or project DOM',as
   assert.ok(Date.now()-began<500,'A stalled CDP operation must respect the bounded discovery deadline');
  }
 });
+
+test('project navigation explicitly opens a collapsed sidebar without toggling an open one',async()=>{
+ const {showProjectSidebar}=require('./renderer-target.cjs');let hidden=true,clicks=0;
+ const page={getByRole:(role,options)=>{assert.equal(role,'button');assert.deepEqual(options,{name:'Show sidebar',exact:true});return{isVisible:async()=>hidden,click:async()=>{assert.ok(hidden);hidden=false;clicks++;}};}};
+ await showProjectSidebar(page);await showProjectSidebar(page);assert.equal(clicks,1);
+});

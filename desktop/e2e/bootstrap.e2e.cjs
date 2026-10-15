@@ -6,7 +6,8 @@ const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=r
 const {createHash}=require('node:crypto');
 const {_electron}=require('playwright');
 const asar=require('@electron/asar');
-const {createFixture,launch,gracefulQuit,run}=require('./qualification-helpers.cjs');
+const {createFixture,launch,gracefulQuit,cleanupOwnedFixture,run}=require('./qualification-helpers.cjs');
+const {captureRendererFailure}=require('./renderer-target.cjs');
 const {verifyResources}=require('../updater-validation.cjs');
 const {bundleDigest,quarantinePreserved}=require('../bootstrap.cjs');
 const output=path.resolve(__dirname,'../../docs/dev/desktop-ui-e2e/bootstrap-receipt.json');
@@ -87,4 +88,13 @@ execFile[require('node:util').promisify.custom] = async (file, args) => {
  });
  assert.equal(receipt.failures.length,0);await write();console.log('Bootstrap receipt: '+output);
 }
-main().catch(async error=>{console.error(error.stack);receipt.failures.push({name:'bootstrap-suite',message:error.message});await write();process.exitCode=1;});
+main().catch(async error=>{
+ application=error.launchedApplication||application||fixture?.activeApplication;
+ page=error.launchedPage||page||fixture?.activePage;
+ if(application)try{receipt.failure_targets=await captureRendererFailure(application,'bootstrap');}catch{}
+ console.error(error.stack);receipt.failures.push({name:'bootstrap-suite',message:error.message});
+ receipt.failure_cleanup=await cleanupOwnedFixture(application,page);await write();
+
+ // Exit only this controller; a deferred owned app is retained for inspection.
+ process.exit(1);
+});

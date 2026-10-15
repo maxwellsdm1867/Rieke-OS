@@ -1,7 +1,7 @@
 /** Readiness fault tests. Fake DOM only; no browser/server/large fixtures. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readiness,snapshotAction,assertFinalizedRequests,resetPreparation,options,phasePlan,moduleTimingEnabled} from './browser.mjs';
+import {readiness,snapshotAction,assertFinalizedRequests,resetPreparation,options,phasePlan,moduleTimingEnabled,armAction,observationFinished} from './browser.mjs';
 import {installObserver,installTraceControlReader,installBinaryTraceOracle} from './fixture-app.mjs';
 
 function element(text='', attributes={}) {
@@ -508,4 +508,85 @@ test('independent binary oracle refuses more than ten windows even below the sam
  setup(t);installBinaryTraceOracle();const {header}=millionBinaryBatch(11),base=header.windows[0];
  header.windows=Array.from({length:11},(_,i)=>({...base,start:i,count:1,byte_offset:i*8,byte_length:8}));
  assert.throws(()=>window.__workflowDecodeBinaryTrace(wire(header,Float64Array.from({length:11},(_,i)=>i))),/Invalid binary/);
+});
+
+// Deterministic browser frame/clock model: each step executes only the RAFs
+// queued before that frame. Driver retrieval can be delayed independently.
+function actionClock(t,selectors){
+  const w=setup(t,selectors);w.active=null;w.completed={};window.__workflowReadiness=readiness;
+  const keys=['performance','requestAnimationFrame','cancelAnimationFrame','setTimeout','clearTimeout'];
+  const previous=Object.fromEntries(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
+  let now=100,id=0;const frames=new Map(),timers=new Map();
+  Object.defineProperty(globalThis,'performance',{configurable:true,value:{now:()=>now}});
+  globalThis.requestAnimationFrame=fn=>{frames.set(++id,fn);return id;};
+  globalThis.cancelAnimationFrame=id=>frames.delete(id);
+  globalThis.setTimeout=(fn,delay)=>{timers.set(++id,{fn,at:now+delay});return id;};
+  globalThis.clearTimeout=id=>timers.delete(id);
+  t.after(()=>{for(const k of keys){if(previous[k])Object.defineProperty(globalThis,k,previous[k]);else delete globalThis[k];}});
+  return {w,frames,timers,advance(ms){now+=ms;for(const [id,v] of [...timers])if(v.at<=now){timers.delete(id);v.fn();}},frame(){now+=16;const batch=[...frames.values()];frames.clear();for(const fn of batch)fn(now);}};
+}
+const armData=spec=>({action_id:'owned',phase:'ordinary',spec,timeoutMs:1000});
+
+test('prearmed oracle completes on two distinct RAFs before a delayed driver returns',async t=>{
+  const selectors={'.epochs':[]},clock=actionClock(t,selectors),{w}=clock;
+  const el={isConnected:true,disabled:false,click(){
+    assert.equal(clock.frames.size,1,'observer is scheduled before click');
+    assert.ok(w.active.observer_armed_at<=w.active.intent);
+    selectors['.epochs']=[element('',{'data-epoch-uuid':'a'})];
+  }};
+  await armAction(el,armData({selector:'.epochs',uuids:['a']}));
+  assert.equal(w.active.frames,0,'no synchronous readiness observation');
+  clock.frame();assert.equal(w.active.frames,1);assert.equal(w.completed.owned,undefined);
+  clock.frame();assert.equal(w.active,null);assert.equal(w.completed.owned.observer_raf_count,2);
+  const ready=w.completed.owned.ready;clock.advance(160);
+  assert.equal(observationFinished('owned'),true);
+  const result=snapshotAction('owned');
+  assert.equal(result.total_ms,32);assert.equal(result.observer.driver_retrieval_lag_ms,160);
+  assert.equal(result.observer.first_correct_ms,16);assert.equal(w.completed.owned.ready,ready);
+  assert.deepEqual(result.correctness.uuids,['a']);assert.equal(clock.frames.size,0);assert.equal(clock.timers.size,0);
+});
+
+test('a correct one-frame flash cannot complete and a pending frame resets the streak',async t=>{
+  const selectors={'.epochs':[element('',{'data-epoch-uuid':'a'})]},clock=actionClock(t,selectors);
+  await armAction({isConnected:true,click(){}},armData({selector:'.epochs',uuids:['a']}));
+  clock.frame();selectors['.epochs']=[];clock.frame();
+  assert.equal(clock.w.completed.owned,undefined);assert.equal(clock.w.active.frames,0);
+  selectors['.epochs']=[element('',{'data-epoch-uuid':'a'})];clock.frame();
+  assert.equal(clock.w.completed.owned,undefined);clock.frame();
+  assert.equal(clock.w.completed.owned.ready-clock.w.completed.owned.intent,64);
+});
+
+test('prearmed checks preserve exact membership order and current-action response freshness',async t=>{
+  const selectors={'.epochs':[element('',{'data-epoch-uuid':'b'}),element('',{'data-epoch-uuid':'a'})]},clock=actionClock(t,selectors);
+  clock.w.requests.push({action_id:'old',url:'/api/query',result:{count:2}});
+  await armAction({isConnected:true,click(){}},armData({selector:'.epochs',uuids:['a','b'],requestPath:'/query',expectedCount:2}));
+  clock.frame();clock.frame();assert.equal(clock.w.active.frames,0);
+  selectors['.epochs'].reverse();clock.frame();assert.equal(clock.w.active.frames,0,'old response cannot satisfy current action');
+  clock.w.requests.push({action_id:'owned',request_id:'fresh',url:'/api/query',status:200,start:100,end:148,result:{count:2}});
+  clock.frame();assert.equal(clock.w.completed.owned,undefined);clock.frame();
+  const result=snapshotAction('owned');assertFinalizedRequests(result);
+  assert.deepEqual(result.correctness.uuids,['a','b']);assert.deepEqual(result.correctness.response,{count:2});
+  assert.equal(result.requests.length,1);assert.equal(result.requests[0].request_id,'fresh');
+});
+
+test('prearmed oracle failures propagate and cancel polling',async t=>{
+  const clock=actionClock(t,{button:[element('Ready')]});
+  clock.w.requests.push({action_id:'owned',url:'/api/query',status:500,error:'failed'});
+  await armAction({isConnected:true,click(){}},armData({selector:'button'}));clock.frame();
+  assert.throws(()=>observationFinished('owned'),/Action API request failed/);
+  assert.equal(clock.frames.size,0);assert.equal(clock.timers.size,0);assert.equal(clock.w.completed.owned,undefined);
+});
+
+test('prearmed readiness has a page-owned timeout even without another driver call',async t=>{
+  const clock=actionClock(t,{});
+  await armAction({isConnected:true,click(){}},armData({selector:'button'}));
+  clock.advance(1001);assert.throws(()=>observationFinished('owned'),/readiness timed out/);
+  assert.equal(clock.frames.size,0);assert.equal(clock.timers.size,0);
+});
+
+test('prearmed readiness refuses changed action ownership',async t=>{
+  const clock=actionClock(t,{button:[element('Ready')]});
+  await armAction({isConnected:true,click(){}},armData({selector:'button'}));
+  clock.w.active={action_id:'replacement',frames:0};clock.frame();
+  assert.throws(()=>observationFinished('owned'),/ownership changed/);assert.equal(clock.w.active.action_id,'replacement');
 });

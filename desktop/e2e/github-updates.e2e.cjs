@@ -4,8 +4,8 @@
 // UI, draft/writer drain and ordinary Quit all run the packaged implementation.
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),nativeFs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {createHash}=require('node:crypto'),asar=require('@electron/asar');
-const {createFixture,launch,gracefulQuit,ownedControl,run}=require('./qualification-helpers.cjs');
-const {createRendererWatcher,waitForRenderer,captureRendererFailure}=require('./renderer-target.cjs');
+const {createFixture,launch,gracefulQuit,cleanupOwnedFixture,ownedControl,run}=require('./qualification-helpers.cjs');
+const {showProjectSidebar,createRendererWatcher,waitForRenderer,captureRendererFailure}=require('./renderer-target.cjs');
 const {verifyResources}=require('../updater-validation.cjs');
 const {releaseVersions}=require('./release-versions.cjs');
 const output=path.resolve(__dirname,'../../docs/dev/desktop-ui-e2e/github-update-receipt.json');
@@ -67,8 +67,10 @@ async function main(){
  if(process.env.RIEKE_E2E_H5)await check('Restart to update defers an actual importer while the current app remains usable',async()=>{
   await page.keyboard.press('Escape');await fs.mkdir(fixture.projects,{recursive:true});await page.getByRole('button',{name:/^Create a new project/}).click();const form=page.locator('.onboarding-create-form');await form.getByRole('textbox').first().fill('Testing update writer fixture');
   await application.evaluate(({dialog},directory)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[directory]});},fixture.projects);
-  await form.getByRole('button',{name:'Browse: New project folder',exact:true}).click();const picker=page.getByRole('dialog',{name:'New project folder',exact:true});await picker.getByRole('checkbox',{name:'Create a new folder inside this location'}).check();await picker.getByRole('textbox',{name:'New folder name',exact:true}).fill('writer');await picker.getByRole('button',{name:'Use new folder',exact:true}).click();await page.getByRole('button',{name:'Create & open',exact:true}).click();page=watchRenderer(await waitForRenderer(application,{projectName:'Testing update writer fixture',bundle:fixture.bundle}));await page.getByRole('button',{name:'Project overview',exact:true}).waitFor({timeout:90000});
-  const author=page.getByRole('dialog',{name:'Tag author',exact:true});if(await author.waitFor({state:'visible',timeout:3000}).then(()=>true,()=>false)){await author.getByRole('textbox').fill('Update E2E');await author.getByRole('button',{name:'Create profile',exact:true}).click();}
+  await form.getByRole('button',{name:'Browse: New project folder',exact:true}).click();const picker=page.getByRole('dialog',{name:'New project folder',exact:true});await picker.getByRole('checkbox',{name:'Create a new folder inside this location'}).check();await picker.getByRole('textbox',{name:'New folder name',exact:true}).fill('writer');await picker.getByRole('button',{name:'Use new folder',exact:true}).click();await page.getByRole('button',{name:'Create & open',exact:true}).click();page=watchRenderer(await waitForRenderer(application,{projectName:'Testing update writer fixture',bundle:fixture.bundle}));
+  const author=page.getByRole('dialog',{name:'Tag author',exact:true});if(await author.waitFor({state:'visible',timeout:3000}).then(()=>true,()=>false)){await author.getByRole('textbox').fill('Update E2E');await author.getByRole('button',{name:'Create profile',exact:true}).click();await author.waitFor({state:'hidden'});}
+  await showProjectSidebar(page);
+  await page.getByRole('button',{name:'Project overview',exact:true}).waitFor({timeout:90000});
   const source=path.join(fixture.home,'writer.h5');await fs.copyFile(path.resolve(process.env.RIEKE_E2E_H5),source);
   const job=await page.evaluate(async source=>{const response=await fetch('/api/imports',{method:'POST',headers:{'content-type':'application/json','X-Workspace-Request':'1'},body:JSON.stringify({source_path:source})});if(!response.ok)throw new Error(await response.text());return response.json();},source);
   const before=await ownedControl(fixture,'health');await page.getByRole('button',{name:/^App Updates(?: —|$)/}).first().click();const dialog=page.getByRole('dialog',{name:'App Updates',exact:true});
@@ -85,4 +87,13 @@ async function main(){
  });
  assert.equal(receipt.failures.length,0);await write();await new Promise(resolve=>server.close(resolve));server=null;console.log('GitHub update UI receipt: '+output);
 }
-main().catch(async error=>{application=application||error.launchedApplication||fixture?.activeApplication;page=page||error.launchedPage||fixture?.activePage;receipt.failure_cleanup=application?'owned-fixture-retained':'not-launched';if(application)try{receipt.failure_targets=await captureRendererFailure(application,'github-updates');}catch{}console.error(error.stack);receipt.failures.push({name:'github-update-suite',message:error.message});await write();server?.close();process.exitCode=1;});
+main().catch(async error=>{
+ application=error.launchedApplication||application||fixture?.activeApplication;
+ page=error.launchedPage||page||fixture?.activePage;
+ if(application)try{receipt.failure_targets=await captureRendererFailure(application,'github-updates');}catch{}
+ console.error(error.stack);receipt.failures.push({name:'github-update-suite',message:error.message});
+ receipt.failure_cleanup=await cleanupOwnedFixture(application,page);await write();
+ server?.close();
+ // Exit only this controller; a deferred owned app is retained for inspection.
+ process.exit(1);
+});

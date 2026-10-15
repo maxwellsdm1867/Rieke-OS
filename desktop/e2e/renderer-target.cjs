@@ -55,6 +55,10 @@ async function captureRendererFailure(application,label='renderer-discovery'){
  await fs.writeFile(filename,JSON.stringify(await rendererDiagnostics(application),null,2)+'\n');
  return filename;
 }
+async function showProjectSidebar(page){
+ const toggle=page.getByRole('button',{name:'Show sidebar',exact:true});
+ if(await toggle.isVisible())await toggle.click();
+}
 function createRendererWatcher(onError){
  const watched=new WeakSet();
  return (page,name='renderer-pageerror')=>{
@@ -95,4 +99,4 @@ async function waitForRenderer(application,{mode='application',bundle,projectNam
  }
 }
 async function nativeWindowCount(application){return application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().filter(window=>!window.isDestroyed()).length);}
-module.exports={createRendererWatcher,rendererSnapshot,rendererOwner,rendererId,rendererDiagnostics,captureRendererFailure,waitForRenderer,nativeWindowCount};
+module.exports={showProjectSidebar,createRendererWatcher,rendererSnapshot,rendererOwner,rendererId,rendererDiagnostics,captureRendererFailure,waitForRenderer,nativeWindowCount};

@@ -7,7 +7,7 @@ const {chromium}=require('playwright');
 const {spawn} = require('node:child_process');
 const {createHash, randomUUID} = require('node:crypto');
 const {createFixture, launch, gracefulQuit, ownedControl, run} = require('./qualification-helpers.cjs');
-const {createRendererWatcher,waitForRenderer,rendererId,rendererSnapshot,nativeWindowCount,captureRendererFailure}=require('./renderer-target.cjs');
+const {showProjectSidebar,createRendererWatcher,waitForRenderer,rendererId,rendererSnapshot,nativeWindowCount,captureRendererFailure}=require('./renderer-target.cjs');
 const {verifyResources} = require('../updater-validation.cjs');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const output = path.resolve(__dirname, '../../docs/dev/desktop-ui-e2e');
@@ -46,6 +46,11 @@ async function chooseTestProfile() {
     else {await dialog.getByRole('textbox').fill('Electron E2E'); await dialog.getByRole('button', {name: 'Create profile', exact: true}).click();}
     await dialog.waitFor({state: 'hidden'});
   }
+  await showProjectSidebar(page);
+}
+async function bindProject(projectName) {
+  page=watchRenderer(await waitForRenderer(application,{projectName,bundle:fixture.bundle}));
+  await chooseTestProfile();
 }
 async function saveNextOwnedDownload(filename, click) {
   await application.evaluate(({session}, filename) => {
@@ -92,7 +97,7 @@ async function verifyHeaderIcon(selector, headerSelector, screenName) {
       }, {selector, headerSelector});
       await page.screenshot({path: path.join(output, `${screenName}-${width}.png`)});
       assert.equal(geometry.source, '/disco-icon.png'); assert.ok(geometry.naturalWidth > 0);
-      const expectedSize = selector === '.onboarding-app-icon' ? 48 : 32;
+      const expectedSize = selector === '.onboarding-app-icon' ? 48 : 42;
       assert.equal(geometry.icon.width, expectedSize); assert.equal(geometry.icon.height, expectedSize);
       assert.ok(geometry.icon.left >= geometry.header.left && geometry.icon.right <= geometry.header.right + 1 && geometry.icon.right <= width + 1,
         'App icon must remain inside its header and viewport: ' + JSON.stringify(geometry));
@@ -257,12 +262,11 @@ async function main() {
     assert.equal(await form.getByRole('button',{name:'Create & open',exact:true}).isDisabled(),true);
     await chooseNewProjectFolder(form, receipt.run_id);
     await page.getByRole('button', {name: 'Create & open', exact: true}).click();
-    page=watchRenderer(await waitForRenderer(application,{projectName,bundle:fixture.bundle}));
+    await bindProject(projectName);
     await page.getByRole('button', {name: 'Project overview', exact: true}).waitFor({timeout: 90000});
     assert.match(await page.title(), /Electron lifecycle fixture/);
     const project = await page.evaluate(() => fetch('/api/projects').then(response => response.json()));
     receipt.test_project_uuid = project.current_project_uuid; assert.ok(project.current_project_uuid);
-    await chooseTestProfile();
     await page.screenshot({path: path.join(output, 'project.png')});
   });
   await check('workspace actual app icon loads at upper right without overlap at normal and narrow native widths',
@@ -274,22 +278,24 @@ async function main() {
     const form = page.locator('.onboarding-create-form'); await form.getByRole('textbox').nth(0).fill(secondName);
     await chooseNewProjectFolder(form, receipt.run_id + '-second');
     await page.getByRole('button', {name: 'Create & open', exact: true}).click();
-    page=watchRenderer(await waitForRenderer(application,{projectName:secondName,bundle:fixture.bundle}));
-    await page.waitForFunction(expected => document.title.startsWith(expected), secondName, {timeout: 90000}); await chooseTestProfile();
+    await bindProject(secondName);
+    await page.waitForFunction(expected => document.title.startsWith(expected), secondName, {timeout: 90000});
     receipt.second_project_uuid = (await page.evaluate(() => fetch('/api/projects').then(response => response.json()))).current_project_uuid;
     assert.ok(receipt.second_project_uuid);
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: projectName, exact: true}).click();
-    page=watchRenderer(await waitForRenderer(application,{projectName:projectName,bundle:fixture.bundle}));
+    await bindProject(projectName);
     await page.waitForFunction(expected => document.title.startsWith(expected) && !document.title.includes(' second'), projectName, {timeout: 30000});
     const navigationStart = Date.now();
     await page.getByRole('button', {name: 'Logs', exact: true}).click();
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: secondName, exact: true}).click();
-    page=watchRenderer(await waitForRenderer(application,{projectName:secondName,bundle:fixture.bundle}));
+    await bindProject(secondName);
     await page.waitForFunction(expected => document.title.startsWith(expected), secondName, {timeout: 30000});
-    const saved = JSON.parse(await fs.readFile(path.join(fixture.userData, 'drafts', receipt.test_project_uuid + '.json')));
+    // Retained switches keep the renderer alive; its normal idle autosave runs every three seconds.
+    const savedDeadline=Date.now()+10000;let saved;
+    do{saved=JSON.parse(await fs.readFile(path.join(fixture.userData,'drafts',receipt.test_project_uuid+'.json')));if(saved.value.route.page==='activity')break;await delay(100);}while(Date.now()<savedDeadline);
     assert.equal(saved.value.route.page, 'activity');
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: projectName, exact: true}).click();
-    page=watchRenderer(await waitForRenderer(application,{projectName:projectName,bundle:fixture.bundle}));
+    await bindProject(projectName);
     await page.waitForFunction(expected => document.title.startsWith(expected) && !document.title.includes(' second'), projectName, {timeout: 30000});
     await page.waitForFunction(() => [...document.querySelectorAll('.nav-item.active')].some(item => item.textContent.includes('Logs')));
     return {warm_document_handoff: true, route_persisted: 'activity', elapsed_ms: Date.now() - navigationStart};
@@ -298,16 +304,17 @@ async function main() {
     const missing = path.join(fixture.userData, 'drafts', receipt.second_project_uuid + '.json');
     const secondName = projectName + ' second';
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: secondName, exact: true}).click();
-    page=watchRenderer(await waitForRenderer(application,{projectName:secondName,bundle:fixture.bundle}));
+    await bindProject(secondName);
     await gracefulQuit(application,page);application=null;page=null;
     await fs.unlink(missing);
     await start(null);
+    await chooseTestProfile();
     await page.getByRole('button',{name:secondName+', current project',exact:true}).waitFor({timeout:90000});
     await page.waitForFunction(expected => document.title.startsWith(expected), secondName, {timeout: 30000});
     await page.waitForFunction(() => [...document.querySelectorAll('.nav-item.active')].some(item => item.textContent.includes('Project overview')));
     assert.equal(await page.getByRole('heading', {name: 'Saved view needs recovery', exact: true}).count(), 0);
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: projectName, exact: true}).click();
-    page=watchRenderer(await waitForRenderer(application,{projectName:projectName,bundle:fixture.bundle}));
+    await bindProject(projectName);
     await page.waitForFunction(expected => document.title.startsWith(expected) && !document.title.includes(' second'), projectName, {timeout: 30000});
     return {missing_draft_treated_as_new_view: true};
   });
@@ -420,8 +427,8 @@ async function main() {
     const saved = JSON.parse(await fs.readFile(path.join(fixture.userData, 'drafts', receipt.test_project_uuid + '.json')));
     assert.equal(saved.format, 'rieke-renderer-draft'); assert.equal(saved.value.route.page, 'files');
     await start(null); // The persisted startup preference restores this project directly.
-    await page.getByRole('button', {name: 'Project files', exact: true}).waitFor({timeout: 90000});
     await chooseTestProfile();
+    await page.getByRole('button', {name: 'Project files', exact: true}).waitFor({timeout: 90000});
     await page.waitForFunction(() => [...document.querySelectorAll('.nav-item.active')].some(item => item.textContent.includes('Project files')), undefined, {timeout: 10000});
   });
   await check('project draft identity mismatch requires visible preserved recovery', async () => {
@@ -436,8 +443,8 @@ async function main() {
     await start(null); // The persisted startup preference restores this project directly.
     await page.getByRole('heading', {name: 'Saved view needs recovery', exact: true}).waitFor({timeout: 90000});
     await page.getByRole('button', {name: 'Start with a new view', exact: true}).click();
-    await page.getByRole('button', {name: 'Project overview', exact: true}).waitFor({timeout: 30000});
     await chooseTestProfile();
+    await page.getByRole('button', {name: 'Project overview', exact: true}).waitFor({timeout: 30000});
     const backups = (await fs.readdir(path.dirname(filename))).filter(name => name.startsWith(receipt.test_project_uuid + '.corrupt-'));
     assert.ok((await Promise.all(backups.map(name => fs.readFile(path.join(path.dirname(filename), name), 'utf8')))).includes(corrupted));
     return {project_identity_validated: true, mismatched_bytes_preserved: true, ordinary_quit_preserved_bytes: true, owned_processes_exited: true, explicit_reset: true,
@@ -476,6 +483,7 @@ async function main() {
     await assert.rejects(fs.stat(path.join(fixture.userData,'desktop-service.json')),{code:'ENOENT'});
     deliberateCrash = false;
     await start(null);
+    await chooseTestProfile();
     await page.getByRole('button',{name:projectName+', current project',exact:true}).waitFor({timeout:90000});
     await page.waitForFunction(()=>[...document.querySelectorAll('.nav-item.active')].some(item=>item.textContent.includes('Project files')));
     assert.notEqual((await ownedControl(fixture,'health')).session_id,before.session_id);
@@ -491,7 +499,7 @@ async function main() {
   receipt.completed = true; await writeReceipt(); console.log('Packaged UI E2E completed');
 }
 main().catch(async error => {
-  application=application||error.launchedApplication||fixture?.activeApplication;page=page||error.launchedPage||fixture?.activePage;
+  application=error.launchedApplication||application||fixture?.activeApplication;page=error.launchedPage||page||fixture?.activePage;
   process.exitCode = 1; await writeReceipt();
   if(application)try{receipt.failure_targets=await captureRendererFailure(application,'packaged-ui');await writeReceipt();}catch{}
   if (page) await page.screenshot({path: path.join(output, 'failure.png')}).catch(() => {});

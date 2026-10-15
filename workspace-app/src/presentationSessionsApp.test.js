@@ -277,3 +277,33 @@ for(const outcome of ['hit','miss','refused','invalid','legacy'])test(`native pr
   if(['refused','invalid'].includes(outcome))assert.ok(h.root.findAllByProps({role:'alert'}).some(node=>node.children.some(child=>typeof child==='string'&&child.includes(outcome==='refused'?'Retained owner changed':'did not confirm'))));
  }finally{await h.close();}
 });
+
+for(const callback of ['onCreated','onSelect'])for(const outcome of ['opened','refused','needs-migration'])test(`retained setup ${callback} ${outcome} closes only a completed project open`,async()=>{
+ const h=await createPresentationSessionHarness(),target={uuid:'created-project',path:'/owned-created',available:true,name:'Created'};
+ try{
+  await h.mount();await h.act(()=>h.probe('project-navigation').onNewProject());
+  const setup=()=>h.root.findAllByType('presentation-project-setup');
+  assert.equal(setup().length,1);assert.equal(h.root.findAllByType('presentation-setup-dialog').length,1);
+  const bridge=h.browser.window.riekeDesktop,originalFetch=globalThis.fetch;
+  let finish,reject,activations=0;
+  const held=new Promise((resolve,rejectPromise)=>{finish=resolve;reject=rejectPromise;});
+  bridge.activateRetainedProject=async()=>({activated:false});
+  bridge.activateProject=async()=>{activations++;await held;return {activated:true};};
+  globalThis.fetch=async(input,options={})=>{
+   const endpoint=new URL(input,'http://fixture').pathname;
+   if(endpoint==='/api/projects/inspect-folder')return {ok:true,status:200,json:async()=>({valid:true,kind:'project',desktop_compatibility:{requires_migration:outcome==='needs-migration'}})};
+   if(endpoint==='/api/projects/open-folder')return {ok:true,status:200,json:async()=>({url:'http://127.0.0.1:41234/'})};
+   return originalFetch(input,options);
+  };
+  let work;await h.act(async()=>{work=setup()[0].props[callback](target);await Promise.resolve();});
+  if(outcome!=='needs-migration'){
+   await h.waitFor(()=>activations===1);
+   assert.equal(setup().length,1,'A pending activation must preserve the originating setup');
+   await h.act(async()=>{if(outcome==='refused')reject(Error('Owned activation refused'));else finish();await work;});
+  }else await h.act(()=>work);
+  assert.equal(setup().length,outcome==='opened'?0:1,'The retained source may dismiss setup only after successful activation');
+  assert.equal(h.root.findAllByType('presentation-setup-dialog').length,outcome==='opened'?0:1);
+  if(outcome==='refused')assert.match(setup()[0].props.error,/Owned activation refused/);
+  if(outcome==='needs-migration')assert.equal(activations,0,'Migration still requires its separate user workflow');
+ }finally{await h.close();}
+});

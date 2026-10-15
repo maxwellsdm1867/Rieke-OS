@@ -92,3 +92,9 @@ desktop bridges and ordinary browser navigation retain their existing behavior.
 The native owner revalidates live backend and caller identity; the renderer does
 not supply a cached URL or restore scientific authority. App composition cases
 live in `presentationSessionsApp.test.js`.
+
+Project setup stays mounted while an open is pending, refused, or handed to a
+restore/migration chooser. App closes the originating setup only after project
+selection completes successfully, including a retained desktop activation. This
+also completes create-and-open before returning to the originating retained view;
+`presentationSessionsApp.test.js` exercises both setup callbacks and failures.

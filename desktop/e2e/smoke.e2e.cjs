@@ -4,7 +4,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path');
 const {createHash,randomUUID}=require('node:crypto');
 const {createFixture,launch,gracefulQuit,ownedControl,run}=require('./qualification-helpers.cjs');
-const {createRendererWatcher,waitForRenderer,captureRendererFailure}=require('./renderer-target.cjs');
+const {showProjectSidebar,createRendererWatcher,waitForRenderer,captureRendererFailure}=require('./renderer-target.cjs');
 const output=path.resolve(__dirname,'../../docs/dev/desktop-smoke-e2e.json');
 const started=Date.now(),workDeadline=started+240000,totalDeadline=started+300000;
 const receipt={format:'rieke-packaged-smoke-e2e',version:1,started_at:new Date().toISOString(),total_deadline_ms:300000,
@@ -45,10 +45,12 @@ async function authorProfile(){
   if(await existing.count())await existing.first().click();else{await dialog.getByRole('textbox').fill('Smoke test');await dialog.getByRole('button',{name:'Create profile',exact:true}).click();}
   await dialog.waitFor({state:'hidden',timeout:10000});
  }
+ await showProjectSidebar(page);
 }
 async function start(restoredProjectName=null){
  ({application,page}=await bounded(launch(fixture),'Packaged launch'));
  page.setDefaultTimeout(20000);watchRenderer(page);
+ if(restoredProjectName)await authorProfile();
  if(restoredProjectName)await page.getByRole('button',{name:restoredProjectName+', current project',exact:true}).waitFor({timeout:Math.min(60000,remaining())});
  else await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:Math.min(60000,remaining())});
 }
@@ -98,7 +100,7 @@ async function main(){
   await picker.getByRole('checkbox',{name:'Create a new folder inside this location'}).check();await picker.getByRole('textbox',{name:'New folder name',exact:true}).fill(leaf);await picker.getByRole('button',{name:'Use new folder',exact:true}).click();
   assert.equal(await form.locator('#new-project-directory').inputValue(),projectPath);await form.getByRole('button',{name:'Create & open',exact:true}).click();
   page=watchRenderer(await waitForRenderer(application,{projectName,bundle:fixture.bundle,timeout:Math.min(60000,remaining())}));
-  await page.getByRole('button',{name:'Project overview',exact:true}).waitFor({timeout:Math.min(60000,remaining())});await authorProfile();
+  await authorProfile();await page.getByRole('button',{name:'Project overview',exact:true}).waitFor({timeout:Math.min(60000,remaining())});
   const project=await page.evaluate(()=>fetch('/api/projects').then(response=>response.json()));projectUuid=project.current_project_uuid;assert.ok(projectUuid);
   assert.ok((await fs.stat(projectPath)).isDirectory());const health=await bounded(ownedControl(fixture,'health'),'Project readiness');firstSession=health.session_id;
   assert.ok(health.services.some(service=>service.project_uuid===projectUuid&&service.project_path===projectPath&&service.bound===true));receipt.project_uuid=projectUuid;
@@ -106,7 +108,7 @@ async function main(){
  });
  await check('first orderly quit exits root and project services',quitAndVerify);
  await check('cold restart reopens the persisted project',async()=>{
-  await start(projectName);await page.getByRole('button',{name:'Project overview',exact:true}).waitFor({timeout:Math.min(60000,remaining())});await authorProfile();
+  await start(projectName);await page.getByRole('button',{name:'Project overview',exact:true}).waitFor({timeout:Math.min(60000,remaining())});
   const project=await page.evaluate(()=>fetch('/api/projects').then(response=>response.json()));assert.equal(project.current_project_uuid,projectUuid);
   const health=await bounded((async()=>{
    while(true){const current=await ownedControl(fixture,'health');if(current.services.some(service=>service.project_uuid===projectUuid&&service.project_path===projectPath&&service.bound===true))return current;remaining();await delay(100);}
@@ -121,7 +123,7 @@ async function main(){
 }
 async function finish(error){
  if(finishing)return;finishing=true;aborted=true;clearTimeout(workTimer);
- if(error){application=application||error.launchedApplication||fixture?.activeApplication;page=page||error.launchedPage||fixture?.activePage;receipt.failures.push({name:'smoke-suite',message:error.message});receipt.elapsed_ms=Date.now()-started;
+ if(error){application=error.launchedApplication||application||fixture?.activeApplication;page=error.launchedPage||page||fixture?.activePage;receipt.failures.push({name:'smoke-suite',message:error.message});receipt.elapsed_ms=Date.now()-started;
   if(application)try{receipt.failure_targets=await captureRendererFailure(application,'smoke');}catch(snapshot){receipt.warnings.push(String(snapshot));}
   if(application&&page){try{const child=application.process(),exit=child.exitCode!==null?Promise.resolve(child.exitCode):new Promise(resolve=>child.once('exit',resolve));const left=Math.max(1,Math.min(45000,totalDeadline-Date.now()));
    let result;
