@@ -65,10 +65,16 @@ def build_trace_native(output: Path, root: Path = ROOT) -> dict:
         if (feature_version() != 1 or feature_size() != 80 or
                 tuple(feature_offset(i) for i in range(len(offsets))) != offsets):
             raise ValueError('Unexpected native chunk metadata feature ABI')
+        parallel_version = library.disco_trace_m4_parallel_v1_abi
+        parallel_version.argtypes, parallel_version.restype = [], ctypes.c_uint
+        if parallel_version() != 1:
+            raise ValueError('Unexpected parallel trace geometry feature ABI')
+        getattr(library, 'disco_trace_m4_parallel_v1')
         built.replace(target)
     receipt = {
         'abi': 4, 'library': LIBRARY,
         'chunk_metadata_feature': {'abi': 1, 'context_size': 80},
+        'parallel_m4_feature': {'abi': 1},
         'source': 'desktop/native/trace_inflate.c',
         'source_sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
         'sha256': hashlib.sha256(target.read_bytes()).hexdigest(),

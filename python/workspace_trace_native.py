@@ -547,6 +547,24 @@ def _read_admitted(data, signature, begin, end, helper, dtype, normalize_units, 
         os.close(fd)
 
 
+@lru_cache(maxsize=1)
+def _parallel_m4(helper):
+    """Optional feature binding; old ABI 4 helpers retain the serial reducer."""
+    try:
+        version = helper.disco_trace_m4_parallel_v1_abi
+        parallel = helper.disco_trace_m4_parallel_v1
+        version.argtypes, version.restype = [], ctypes.c_uint
+        if version() != 1:
+            return None
+        parallel.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double,
+            ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+            ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint]
+        parallel.restype = ctypes.c_int
+        return parallel
+    except AttributeError:
+        return None
+
+
 def reduce_native_display(values, physical_width):
     """Return exact M4 point indices/bits and raw extrema, or unavailable-helper None.
 
@@ -573,9 +591,21 @@ def reduce_native_display(values, physical_width):
         written = ctypes.c_size_t()
         minimum, maximum = ctypes.c_double(), ctypes.c_double()
         if diagnostic is not None: diagnostic.mark('reduce')
-        status = helper.disco_trace_m4_v1(values.ctypes.data, len(values), physical_width,
+        arguments = (values.ctypes.data, len(values), physical_width,
             indices.ctypes.data, selected.ctypes.data, capacity, ctypes.byref(written),
             ctypes.byref(minimum), ctypes.byref(maximum))
+        workers = min(_NATIVE_WORKERS, 8 if len(values) >= 500000 else 4,
+                      math.ceil(physical_width))
+        parallel = _parallel_m4(helper) if len(values) >= 300000 and workers >= 2 else None
+        parallel_slot = parallel is not None and _NATIVE_SLOT.acquire(blocking=False)
+        try:
+            # Extraction and parallel reduction share one process-wide worker
+            # budget. Busy/missing features keep serial behavior before invocation.
+            status = (parallel(*arguments, workers) if parallel_slot else
+                      helper.disco_trace_m4_v1(*arguments))
+        finally:
+            if parallel_slot:
+                _NATIVE_SLOT.release()
         if diagnostic is not None: diagnostic.mark('reduce_finish')
         if status != 0 or not 0 < written.value <= capacity:
             raise ValueError('Trace exact display geometry failed')

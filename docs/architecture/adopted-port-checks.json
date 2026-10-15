@@ -3155,7 +3155,8 @@
           "python/tests/test_trace_native.py",
           "python/tests/test_trace_native_initialization.py",
           "python/tests/test_trace_native_timing.py",
-          "python/tests/test_trace_chunk_iteration.py"
+          "python/tests/test_trace_chunk_iteration.py",
+          "python/tests/test_trace_parallel_m4.py"
         ],
         "javascript": [
           "workspace-app/src/apiCommandPolicy.test.js",

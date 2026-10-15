@@ -76,9 +76,11 @@ not removed or averaged into different runs.
 
 Sibling CSS layout containment was rejected after screenshot comparison showed
 changed Select/Tag label wrapping. Earlier request dispatch was also rejected
-for the first-focus path: there is no canvas before commit, opening metadata
-changes its width, and the current hook already dispatches at the first exact
-measurement. Predicting that width or creating an event-owned request would
+for the general first-focus path: there is no canvas before commit, and opening
+metadata can change its width in narrow or saved-closed sessions. The measured
+1500px fresh fixture already has metadata open; its first focus does not change
+the pane columns. The current hook dispatches at the first exact canvas
+measurement. Predicting dimensions or creating an event-owned request would
 need a different lifetime contract. Neither change is part of this fix.
 
 ## Integration checks
@@ -94,3 +96,43 @@ skip because the pinned parser source was not provisioned. The actual strict
 macOS 14 arm64 helper build and signature check passed; dependencies remain
 zlib and libSystem. These checks precede clean-source full-path timing and do not
 qualify an installed package or the 50 ms target.
+
+
+## Combined callback result and remaining layout cost
+
+Clean commit `6b9959840c513a4dbfba9c4fe8f7d86543a341a3` passed all three ordinary
+geometry/cursor oracles. Click-to-stroke was 63.4, 50.1 and 47.4 ms; the later
+second-RAF observations were 86.8, 68.9 and 70.4 ms. The complete-display target
+remained unmet. Its core gate passed in 17.55 seconds. The first pinned query
+comparison flagged repeated-root and setup timings; it remains retained. An
+unchanged matched repeat and the previous-483e00b comparison both passed with no
+flags. Neither tree run opened HDF5. No reproducible query regression was
+established, but the particular cause of the first flagged run is unproven.
+
+A separate production-render attribution capture passed all exact oracles. The
+first canvas bounds read contained 6.5–8.6 ms of document-root layout. Selected
+component bodies used 1.3–2.1 ms and persistence at most 0.1 ms; those intervals
+overlap layout and must not be added. No retinal icon body ran before dispatch.
+The first focus replaces the 620px blank placeholder with the complete detail
+UI and adds metadata controls; the plot itself is already fixed-height with
+absolutely positioned canvases. The 704-object layout-tree count is not a claim
+that every object was recalculated equally. Diagnostic timings are not ordinary
+latency improvements. The external report is `focus-attribution-6b99598-run-v1`.
+
+## Parallel reduction experiment
+
+The external parallel-M4 prototype matched 3,300 independent valid cases and
+130 rejection cases. Allocation failures and thread-start failures preserved
+caller-output canaries and joined every started worker. All 320 timing rows are
+retained in `parallel-m4-prototype/timing-matrix.json`. At width 751, one million
+samples reduced in 3.603 ms serial versus 0.793 ms with eight workers, including
+boundaries, allocation, thread startup, joins and publication. The 300k comparison
+was 1.073 versus 0.515 ms with four workers; the 100k gain was only 0.059 ms.
+These component results justify a 300k activation threshold, not a complete-path
+performance claim. No raw data or display algorithm changes are involved.
+
+The separately pinned zlib-ng 2.3.3 experiment passed its bounded checks but saved
+only about 0.96 ms on an eight-worker fresh million-sample read. It is held out
+of production because the gain does not justify an additional packaged decoder
+dependency. Its failures, build repairs, corpus and all timing rows remain in
+`zlib-ng-prototype`; no system library or source recording was replaced.

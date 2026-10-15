@@ -283,3 +283,122 @@ int disco_trace_chunk_collect_v1(const uint64_t *coordinate, unsigned mask, uint
     if (mask) ctx->masked = 1;
     return 0;
 }
+
+/* Optional parallel M4 v1: complete physical bins belong to one worker.
+ * Existing serial M4 and base helper ABI remain unchanged.
+ */
+#include <stdlib.h>
+typedef struct {
+    const double *raw;
+    const size_t *boundaries;
+    size_t first_bin, stop_bin;
+    uint32_t *indices;
+    double *values;
+    size_t written;
+    double minimum, maximum;
+    int error;
+} ParallelM4Task;
+
+static void *parallel_m4_task(void *opaque) {
+    ParallelM4Task *task = opaque;
+    size_t out = 0;
+    double low = task->raw[task->boundaries[task->first_bin]];
+    double high = low;
+    for (size_t bin = task->first_bin; bin < task->stop_bin; ++bin) {
+        size_t begin = task->boundaries[bin], end = task->boundaries[bin + 1];
+        uint32_t min_index = (uint32_t)begin, max_index = (uint32_t)begin;
+        for (size_t i = begin; i < end; ++i) {
+            double value = task->raw[i];
+            if (!isfinite(value)) { task->error = -5; return NULL; }
+            if (value < low || (value == 0 && low == 0 && signbit(value))) low = value;
+            if (value > high || (value == 0 && high == 0 && !signbit(value))) high = value;
+            if (value < task->raw[min_index]) min_index = (uint32_t)i;
+            if (value > task->raw[max_index]) max_index = (uint32_t)i;
+        }
+        out = emit_bin(task->raw, task->indices, task->values, out,
+                       (uint32_t)begin, min_index, max_index, (uint32_t)(end - 1));
+    }
+    task->written = out;
+    task->minimum = low;
+    task->maximum = high;
+    return NULL;
+}
+
+unsigned disco_trace_m4_parallel_v1_abi(void) { return 1; }
+int disco_trace_m4_parallel_v1(const double *raw, size_t count, double width,
+    uint32_t *indices, double *values, size_t capacity, size_t *written,
+    double *minimum, double *maximum, unsigned workers) {
+    if (!raw || !indices || !values || !written || !minimum || !maximum ||
+        !count || count > 1000000 || !isfinite(width) || width <= 0 || width > 16384 ||
+        workers < 1 || workers > 8) return -1;
+    size_t columns = (size_t)ceil(width);
+    size_t bound = count <= 4 * columns ? count : 4 * columns;
+    if (capacity < bound) return -1;
+    uint32_t *temporary_indices = malloc(bound * sizeof(*temporary_indices));
+    double *temporary_values = malloc(bound * sizeof(*temporary_values));
+    if (!temporary_indices || !temporary_values) {
+        free(temporary_indices); free(temporary_values); return -3;
+    }
+    if (count <= 4 * columns) {
+        size_t out;
+        double low, high;
+        int status = disco_trace_m4_v1(raw, count, width, temporary_indices,
+                                     temporary_values, bound, &out, &low, &high);
+        if (!status) {
+            memcpy(indices, temporary_indices, out * sizeof(*indices));
+            memcpy(values, temporary_values, out * sizeof(*values));
+            *written = out; *minimum = low; *maximum = high;
+        }
+        free(temporary_indices); free(temporary_values);
+        return status;
+    }
+    size_t *boundaries = malloc((columns + 1) * sizeof(*boundaries));
+    if (!boundaries) { free(temporary_indices); free(temporary_values); return -3; }
+    boundaries[0] = 0;
+    boundaries[columns] = count;
+    for (size_t column = 1; column < columns; ++column) {
+        size_t low = boundaries[column - 1], high = count;
+        while (low < high) {
+            size_t middle = low + (high - low) / 2;
+            size_t next = (size_t)floor(((double)middle / (double)(count - 1)) * width);
+            if (next >= columns) next = columns - 1;
+            if (next < column) low = middle + 1;
+            else high = middle;
+        }
+        boundaries[column] = low;
+    }
+    if (workers > columns) workers = (unsigned)columns;
+    ParallelM4Task tasks[8];
+    pthread_t threads[8];
+    unsigned created = 0;
+    int error = 0;
+    for (unsigned i = 0; i < workers; ++i) {
+        size_t first = columns * i / workers, stop = columns * (i + 1) / workers;
+        tasks[i] = (ParallelM4Task){raw, boundaries, first, stop,
+            temporary_indices + 4 * first, temporary_values + 4 * first, 0, 0, 0, 0};
+        if (workers == 1) parallel_m4_task(tasks + i);
+        else {
+            if (pthread_create(threads + i, NULL, parallel_m4_task, tasks + i)) { error = -3; break; }
+            ++created;
+        }
+    }
+    for (unsigned i = 0; i < created; ++i) pthread_join(threads[i], NULL);
+    for (unsigned i = 0; i < (workers == 1 ? 1 : created); ++i) {
+        if (tasks[i].error) error = tasks[i].error;
+    }
+    if (!error) {
+        size_t out = 0;
+        double low = tasks[0].minimum, high = tasks[0].maximum;
+        for (unsigned i = 0; i < workers; ++i) {
+            double a = tasks[i].minimum, b = tasks[i].maximum;
+            if (a < low || (a == 0 && low == 0 && signbit(a))) low = a;
+            if (b > high || (b == 0 && high == 0 && !signbit(b))) high = b;
+            memcpy(indices + out, tasks[i].indices, tasks[i].written * sizeof(*indices));
+            memcpy(values + out, tasks[i].values, tasks[i].written * sizeof(*values));
+            out += tasks[i].written;
+        }
+        *written = out; *minimum = low; *maximum = high;
+    }
+    free(boundaries); free(temporary_indices); free(temporary_values);
+    return error;
+}

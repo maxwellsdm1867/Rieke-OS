@@ -284,6 +284,24 @@ ties. Unsupported helper availability uses a bounded NumPy reducer; source or na
 corruption never silently retries. The representation is explicitly sparse display
 geometry, never a raw million-sample array or a claim of `decimated: false`.
 
+For at least 300,000 samples, an optional version-1 parallel M4 feature assigns
+whole screen columns to workers. Exact monotone searches use the same floating
+bin expression. Each worker preserves earliest extrema ties within its complete
+columns; the ordered merge preserves global signed-zero extrema. There are at
+most four workers below 500,000 samples and eight above, capped by available CPUs
+and column count. Fewer than two available workers, smaller inputs or a missing
+feature retain the existing serial native reducer.
+
+Parallel reduction acquires the existing native execution slot without waiting.
+If it is already occupied, reduction uses the existing serial native path before
+invoking the parallel feature. Consequently extraction and parallel reduction
+cannot each start a separate eight-worker group concurrently. Private temporary
+arrays use less than 1 MiB; caller outputs and statistics are published only after
+all started workers are joined successfully. Allocation or thread-start failures,
+invalid input and nonfinite values fail the invoked operation without retry.
+The slot is released on success and failure. Required ABI 4 symbols and the
+independently versioned chunk-collection feature remain compatible.
+
 Wire format is `DTM1`, uint32-LE JSON header length, JSON and zero padding to eight
 bytes, uint32-LE original indices, zero padding to eight bytes, and binary64-LE
 original point values. Header identity includes the exact prepared context,
