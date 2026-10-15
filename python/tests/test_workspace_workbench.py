@@ -723,6 +723,42 @@ class WorkbenchTests(unittest.TestCase):
         self.assertEqual(response.get_json()['windows'], result['windows'])
         self.assertEqual(response.get_json()['candidate_scope_revision'], context['candidate_scope_revision'])
 
+    def test_binary_trace_batch_retains_frozen_fences_and_closing_refusal(self):
+        from test_trace_binary import batch_fixture, independent_decode
+        from workspace_trace_binary import BINARY_CONTENT_TYPE
+        context = self.get_context()
+        result = batch_fixture()
+        result['epoch_uuid'] = self.added
+        for window in result['windows']:
+            window['epoch_uuid'] = self.added
+        query = dict(candidate_scope_revision=context['candidate_scope_revision'], stream_uuid='stream', count=100000, chunks=3)
+        path = self.root + '/epochs/' + self.added + '/trace'
+        with patch.object(self.case.service, 'trace_batch', return_value=result):
+            response = self.case.client.get(path, query_string=query, headers={'Accept': BINARY_CONTENT_TYPE})
+            self.assertNotIn('Server-Timing', response.headers)
+            timed = self.case.client.get(path, query_string=query, headers={
+                'Accept': BINARY_CONTENT_TYPE, 'X-Disco-Trace-Timing': '1'})
+            self.assertEqual(timed.status_code, 200)
+            for stage in ('open', 'read', 'close', 'encode'):
+                self.assertIn('trace_' + stage + ';dur=', timed.headers['Server-Timing'])
+        self.assertEqual(response.status_code, 200, response.data)
+        header, samples = independent_decode(response.data)
+        self.assertEqual(header['candidate_scope_revision'], context['candidate_scope_revision'])
+        self.assertEqual(header['query_revision'], context['candidate_scope_revision'])
+        self.assertEqual(len(samples), 6)
+        original, calls = self.manager.context, []
+        def changed(*args, **kwargs):
+            value = original(*args, **kwargs); calls.append(value)
+            if len(calls) == 2:
+                value['candidate_scope_revision'] = 'changed'
+            return value
+        with patch.object(self.case.service, 'trace_batch', return_value=result), \
+                patch.object(self.manager, 'context', side_effect=changed), \
+                patch('workspace_trace_binary.encode_trace_batch', side_effect=AssertionError('Must not serialize stale samples')):
+            response = self.case.client.get(path, query_string=query, headers={'Accept': BINARY_CONTENT_TYPE})
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.mimetype, 'application/json')
+
     def test_trace_refuses_scope_change_before_encoding(self):
         context = self.get_context()
         original = self.manager.context

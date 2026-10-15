@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readiness,snapshotAction,assertFinalizedRequests,resetPreparation,options,phasePlan,moduleTimingEnabled} from './browser.mjs';
-import {installObserver,installTraceControlReader} from './fixture-app.mjs';
+import {installObserver,installTraceControlReader,installBinaryTraceOracle} from './fixture-app.mjs';
 
 function element(text='', attributes={}) {
   return {textContent:text, disabled:false, ...attributes,
@@ -252,14 +252,14 @@ test('receipt replay must retain operation identity and use replay HTTP status',
 
 test('owned preparation reset retries only explicit busy refusal and records setup',async t=>{
   const previous=globalThis.fetch;t.after(()=>{globalThis.fetch=previous;});let calls=0;
-  const meta={fixture:'workflow-owned-v3',port:1234,epochs:1000,main_count:900,incoming_count:100};
+  const meta={fixture:'workflow-owned-v4',port:1234,epochs:1000,main_count:900,incoming_count:100};
   globalThis.fetch=async(url,options)=>{assert.equal(url,'http://127.0.0.1:1234/__benchmark__/reset-preparation');assert.equal(options.headers['X-Workspace-Request'],'1');calls++;return calls===1?{status:409,ok:false,text:async()=>'Other owned fixture requests are still active'}:{status:200,ok:true,text:async()=>JSON.stringify({reset:true,ready:true,epochs:1000,main_count:900,incoming_count:100})};};
   const result=await resetPreparation(meta,{timeoutMs:3000});assert.equal(result.attempts,2);assert.equal(result.included_in_headline,false);
 });
 
 test('owned preparation reset never retries changed authority or wrong counts',async t=>{
   const previous=globalThis.fetch;t.after(()=>{globalThis.fetch=previous;});let calls=0;
-  const meta={fixture:'workflow-owned-v3',port:1234,epochs:1000,main_count:900,incoming_count:100};
+  const meta={fixture:'workflow-owned-v4',port:1234,epochs:1000,main_count:900,incoming_count:100};
   globalThis.fetch=async()=>{calls++;return {status:409,ok:false,text:async()=>'Main/source/annotation authority changed; refusing reset'};};
   await assert.rejects(resetPreparation(meta),/changed/);assert.equal(calls,1);
   globalThis.fetch=async()=>({status:200,ok:true,text:async()=>JSON.stringify({reset:true,ready:true,epochs:1000,main_count:899,incoming_count:100})});
@@ -433,4 +433,47 @@ for(const defect of ['scope','header','missing'])test('long batch refuses '+defe
  if(defect==='header')windows[1].source_sha256='wrong';
  if(defect==='missing')windows.pop();
  assert.throws(()=>readiness(spec),/batch .*mismatch/);
+});
+
+// Wire fixtures are constructed independently of product codecs.
+function binaryFixture(){
+ const base={epoch_uuid:'epoch',stream_uuid:'response',source_sha256:'a'.repeat(64),sample_rate:10,units:'pA',total_samples:3,decimated:false};
+ return {header:{...base,start:0,count:3,candidate_scope_revision:'revision',windows:[{...base,start:0,count:2,byte_offset:0,byte_length:16},{...base,start:2,count:1,byte_offset:16,byte_length:8}]},values:[-0,Math.PI,Number.MIN_VALUE]};
+}
+function wire(header,values){
+ const text=new TextEncoder().encode(JSON.stringify(header)),offset=Math.ceil((8+text.length)/8)*8,buffer=new ArrayBuffer(offset+values.length*8),view=new DataView(buffer);
+ new Uint8Array(buffer).set([68,84,70,49]);view.setUint32(4,text.length,true);new Uint8Array(buffer).set(text,8);values.forEach((value,i)=>view.setFloat64(offset+i*8,value,true));return buffer;
+}
+test('independent binary oracle preserves exact finite doubles and signed zero',t=>{
+ setup(t);installBinaryTraceOracle();const {header,values}=binaryFixture(),result=window.__workflowDecodeBinaryTrace(wire(header,values));
+ assert(result.windows[0].values instanceof Float64Array);assert(Object.is(result.windows[0].values[0],-0));assert.equal(result.windows[0].values[1],Math.PI);assert.equal(result.windows[1].values[0],Number.MIN_VALUE);
+});
+for(const defect of ['magic','length','padding','trailing','offset','missing','source','count','nan'])test('independent binary oracle refuses '+defect,t=>{
+ setup(t);installBinaryTraceOracle();const {header,values}=binaryFixture();
+ if(defect==='offset')header.windows[1].byte_offset=8;
+ if(defect==='missing')header.windows.pop();
+ if(defect==='source')header.windows[1].source_sha256='b'.repeat(64);
+ if(defect==='count')header.count=500001;
+ if(defect==='nan')values[1]=NaN;
+ let buffer=wire(header,values),view=new DataView(buffer);
+ if(defect==='magic')view.setUint8(0,0);
+ if(defect==='length')view.setUint32(4,65537,true);
+ if(defect==='padding'){const at=8+view.getUint32(4,true);assert(at%8);view.setUint8(at,1);}
+ if(defect==='trailing'){const extra=new Uint8Array(buffer.byteLength+8);extra.set(new Uint8Array(buffer));buffer=extra.buffer;}
+ assert.throws(()=>window.__workflowDecodeBinaryTrace(buffer),/Invalid binary/);
+});
+
+test('million-sample gate admits exactly two bounded binary batches only after every sample and final draw',t=>{
+ const {w,spec}=longTrace(t);installBinaryTraceOracle();
+ Object.assign(spec.trace,{count:1000000,values_last:999999,source_sha256:'a'.repeat(64)});
+ const root=spec.traceRoot;w.requests=[];
+ for(let batch=0;batch<2;batch++){
+  const base={epoch_uuid:'requested',stream_uuid:'response',source_sha256:'a'.repeat(64),sample_rate:10,units:'pA',total_samples:1000000,decimated:false};
+  const header={...base,start:batch*500000,count:500000,candidate_scope_revision:'revision',windows:Array.from({length:5},(_,i)=>({...base,start:batch*500000+i*100000,count:100000,byte_offset:i*800000,byte_length:800000}))};
+  w.requests.push({action_id:'current',status:200,end:10+batch,url:'/api'+root+'/epochs/requested/trace?candidate_scope_revision=revision',content_type:'application/vnd.disco.trace-f64le.v1',binary:wire(header,Array.from({length:500000},(_,i)=>batch*500000+i))});
+ }
+ const second=w.requests.pop();assert.equal(readiness(spec),false);w.requests.push(second);
+ w.draws=[{at:12,action_id:'current',stream_uuid:'response'}];
+ assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
+ const result=w.completed.current.evidence.trace;assert.equal(result.values_count,1000000);assert.equal(result.chunks,10);assert.equal(result.requests,2);
 });

@@ -102,6 +102,12 @@ class WorkflowBackendTests(unittest.TestCase):
                 self.assertEqual(chunk['total_samples'], 300000)
                 values.extend(chunk['values'])
             self.assertEqual(values, list(range(300000)))
+            million = meta['million_trace_expected']
+            million_endpoint = root + '/candidates/' + prepared['candidate_revision_uuid'] + '/epochs/' + million['epoch_uuid'] + '/trace'
+            last = client.get(million_endpoint, query_string={'candidate_scope_revision': revision, 'stream_uuid': million['stream_uuid'], 'start': 999999, 'count': 1}, headers=headers)
+            self.assertEqual(last.status_code, 200, last.get_json())
+            self.assertEqual(last.get_json()['total_samples'], 1000000)
+            self.assertEqual(last.get_json()['values'], [999999.0])
             stale = client.get(endpoint, query_string={'candidate_scope_revision': 'stale', 'stream_uuid': expected['stream_uuid'], 'start': 0, 'count': 20000}, headers=headers)
             self.assertNotEqual(stale.status_code, 200)
 

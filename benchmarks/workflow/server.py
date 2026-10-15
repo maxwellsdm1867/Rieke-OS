@@ -3,7 +3,7 @@
 
 SQL transaction tables, source admission and metadata index admission/projection
 are doubles. Production Flask, protocol, predicate evaluator, tree paging, frozen
-recipe and Workbench authority algorithms run unchanged. Only two synthetic H5
+recipe and Workbench authority algorithms run unchanged. Only three synthetic H5
 waveforms exist. This cannot qualify native SQL/index/parser or installed apps.
 """
 import argparse
@@ -126,8 +126,8 @@ def build(source, output, epochs, protocol_epochs=None):
                    'cell_label': f'Cell {i // 100}', 'epoch_number': i % 20 + 1,
                    'source_sha256': sha, 'streams': [], 'group_uuid': uid(4_000_000),
                    'protocol_name': 'ambient' if main_count <= i < incoming_start else 'example'}
-            if i in (0, incoming_start):
-                row['streams'] = [{'uuid': stream, 'kind': 'responses', 'sample_count': 10000 if i == 0 else 300000,
+            if i in (0, incoming_start, incoming_start + 1):
+                row['streams'] = [{'uuid': stream, 'kind': 'responses', 'sample_count': 10000 if i == 0 else 300000 if i == incoming_start else 1000000,
                     'sample_rate': 10000.0, 'units': 'pA',
                     'h5_path': '/epochs/' + uid(i) + '/responses/' + stream}]
             service.rows[uid(i)] = row
@@ -156,11 +156,11 @@ def build(source, output, epochs, protocol_epochs=None):
         service._tree_catalog_cache = {}
         service._registered_tree_cache = service._registered_predicate_cache = service._predicate_catalog_cache = None
     with h5py.File(tracefile, 'w') as h:
-        for i in (0, incoming_start):
+        for i in (0, incoming_start, incoming_start + 1):
             group = h.create_group('/epochs/' + uid(i)); group.attrs['uuid'] = uid(i)
             response = group.create_group('responses/' + stream)
             response.attrs['uuid'] = stream; response.attrs['sampleRate'] = 10000.0
-            count = 10000 if i == 0 else 300000
+            count = 10000 if i == 0 else 300000 if i == incoming_start else 1000000
             data = np.zeros(count, dtype=[('quantity', 'f8'), ('units', 'S2')])
             data['quantity'] = np.arange(count); data['units'] = b'pA'
             response.create_dataset('data', data=data)
@@ -242,11 +242,12 @@ def build(source, output, epochs, protocol_epochs=None):
             'date_label': original['date'], 'cell_label': 'Cell 0', 'incoming_cell_label': f'Cell {incoming_start // 100}',
             'trace_expected': {'epoch_uuid': uid(0), 'stream_uuid': stream, 'start': 0, 'count': 10000, 'sample_rate': 10000, 'units': 'pA', 'values_first': 0, 'values_last': 9999},
             'incoming_trace_expected': {'epoch_uuid': uid(incoming_start), 'stream_uuid': stream, 'start': 0, 'count': 300000, 'sample_rate': 10000, 'units': 'pA', 'values_first': 0, 'values_last': 299999, 'ramp': True, 'source_sha256': fixture.source_sha},
+            'million_trace_expected': {'epoch_uuid': uid(incoming_start + 1), 'stream_uuid': stream, 'start': 0, 'count': 1000000, 'sample_rate': 10000, 'units': 'pA', 'values_first': 0, 'values_last': 999999, 'ramp': True, 'source_sha256': fixture.source_sha},
             'trace_streams': copy.deepcopy(service.rows[uid(0)]['streams']),
             'trace_stream': stream, 'trace_samples': 10000, 'trace_rate_hz': 10000,
-            'qualifying_scale': epochs == 1_000_000, 'fixture': 'workflow-owned-v3',
+            'qualifying_scale': epochs == 1_000_000, 'fixture': 'workflow-owned-v4',
             'admissions': ['transactional SQL doubles', 'synthetic metadata index catalog/projection; production predicate evaluator', 'source verification double'],
-            'trace': 'two owned synthetic H5 ramps; real lazy reads',
+            'trace': 'three owned synthetic H5 ramps; real lazy reads',
             'owned_h5_path': str(tracefile.resolve()), 'native_qualification': False}
     return fixture, case.app, meta
 

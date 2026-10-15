@@ -1119,6 +1119,8 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
     @app.get(candidate + '/epochs/<epoch>/trace')
     def workbench_trace(protocol, revision, epoch):
         query_filters({'candidate_scope_revision', 'stream_uuid', 'start', 'count', 'chunks'})
+        from workspace_trace_binary import begin_trace_timing, mark_trace_timing, trace_batch_response
+        timing = begin_trace_timing() if 'chunks' in request.args else None
         with guarded(protocol, revision) as owner:
             context = checked(protocol, revision, owner, request.args.get('candidate_scope_revision'))
             scoped = manager.frozen_service(context)
@@ -1127,15 +1129,20 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             if 'chunks' in request.args:
                 if request.headers.get('X-Disco-Trace-Priority') == 'background':
                     raise ValueError('Trace batches require a foreground request')
+                mark_trace_timing(timing, 'open')
                 result = scoped.trace_batch(epoch, request.args.get('stream_uuid'),
                     int(request.args.get('start', 0)), int(request.args.get('count', 20000)),
                     int(request.args['chunks']))
+                mark_trace_timing(timing, 'read')
             else:
                 result = scoped.trace(epoch, request.args.get('stream_uuid'),
                     int(request.args.get('start', 0)), int(request.args.get('count', 20000)))
             result = finish(context, result)
         # Samples and response fences are detached. Complete the closing guards
         # before encoding so a large window does not block unrelated DB reads.
+        if 'chunks' in request.args:
+            mark_trace_timing(timing, 'close')
+            return trace_batch_response(app, result, timing)
         return jsonify(result)
 
     @app.get(candidate + '/tree')

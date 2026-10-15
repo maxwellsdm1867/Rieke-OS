@@ -95,3 +95,33 @@ only their reviewed owner-source witnesses. Scoped backend and frontend regressi
 cover changed sources, late cancellation, missing/corrupt windows and all samples
 of a 300,000-sample trace. These checks do not by themselves qualify installed
 application latency or release readiness.
+
+## Opt-in binary64 foreground transport
+
+An explicit `Accept: application/vnd.disco.trace-f64le.v1` on a foreground batch
+request selects the same Content-Type. Default and unsupported Accept values keep
+JSON; errors remain JSON. The service's scientific batch reader is unchanged.
+Only after its source/publication and HTTP scope guards close does the response
+codec convert the already-admitted finite Python floats into little-endian IEEE754
+binary64 samples, preserving negative zero and every sample bit. Binary batches
+are nonempty (1–500,000 samples, 1–5 nonempty windows); ordinary JSON retains valid
+empty EOF windows. Background execution and its payload budget remain unchanged.
+
+The body begins with ASCII `DTF1` followed by a little-endian uint32 UTF-8 JSON
+header length. The header retains every envelope/window metadata and scope field,
+removes only each window's `values`, and adds `byte_offset` and `byte_length`
+relative to the sample payload. Zero padding aligns the payload to eight bytes.
+The header is at most 64 KiB; the payload is exactly eight times the admitted sample
+count, contiguous and without trailing bytes. Custom JSON providers still encode
+the header metadata. No float32 conversion, resampling, compression or lossy
+fallback occurs. Unsupported requests stay on existing JSON; malformed binary is
+an error, never silently interpreted as JSON. The client independently validates
+identity, scope, source, rate/units, counts, offsets, padding, length and finiteness.
+
+`X-Disco-Trace-Timing: 1` optionally adds `Server-Timing` with four fixed elapsed
+wall-clock stages: `trace_open` (guard entry, context and frozen adapter),
+`trace_read` (batch source admission, sample reads and source closing witness),
+`trace_close` (final candidate context and guard closure), and `trace_encode`.
+Global routes use lock entry/read/exit for the first three. Values contain only
+milliseconds, no scientific metadata. Ordinary requests do not read these clocks.
+These elapsed groups do not claim CPU attribution or include browser/network time.

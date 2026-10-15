@@ -53,6 +53,34 @@ export function installTraceControlReader({streams=[]}={}) {
   };
 }
 
+/** Independent wire oracle: no production decoder imports or cloned body reads. */
+export function installBinaryTraceOracle(){
+ window.__workflowDecodeBinaryTrace=buffer=>{
+  const fail=()=>{throw Error('Invalid binary trace oracle envelope');};
+  if(!(buffer instanceof ArrayBuffer)||buffer.byteLength<8||buffer.byteLength>8+65536+7+500000*8)fail();
+  const view=new DataView(buffer),bytes=new Uint8Array(buffer);
+  if(String.fromCharCode(...bytes.subarray(0,4))!=='DTF1')fail();
+  const length=view.getUint32(4,true),offset=Math.ceil((8+length)/8)*8;
+  if(!length||length>65536||offset>buffer.byteLength)fail();
+  for(let i=8+length;i<offset;i++)if(bytes[i]!==0)fail();
+  let header;try{header=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes.subarray(8,8+length)));}catch{fail();}
+  if(!header||!Array.isArray(header.windows)||!header.windows.length||header.windows.length>5||!Number.isSafeInteger(header.start)||header.start<0||!Number.isSafeInteger(header.count)||header.count<1||header.count>500000||!Number.isSafeInteger(header.total_samples)||header.start+header.count>header.total_samples)fail();
+  const little=new Uint8Array(new Uint16Array([1]).buffer)[0]===1;
+  let position=0,cursor=header.start;
+  const windows=header.windows.map(window=>{
+   if(!window||Object.hasOwn(window,'values')||!Number.isSafeInteger(window.count)||window.count<1||window.count>100000||window.start!==cursor||window.byte_offset!==position||window.byte_length!==window.count*8||position+window.byte_length>buffer.byteLength-offset)fail();
+   for(const key of ['epoch_uuid','stream_uuid','source_sha256','sample_rate','units','total_samples','decimated'])if(window[key]!==header[key])fail();
+   if(typeof window.epoch_uuid!=='string'||!window.epoch_uuid||typeof window.stream_uuid!=='string'||!window.stream_uuid||typeof window.source_sha256!=='string'||!/^[a-f0-9]{64}$/.test(window.source_sha256)||!Number.isFinite(window.sample_rate)||window.sample_rate<=0||window.decimated!==false)fail();
+   const values=little?new Float64Array(buffer,offset+position,window.count):Float64Array.from({length:window.count},(_,i)=>view.getFloat64(offset+position+i*8,true));
+   if(values.some(v=>!Number.isFinite(v)))fail();
+   position+=window.byte_length;cursor+=window.count;
+   return {...window,values};
+  });
+  if(cursor!==header.start+header.count||position!==buffer.byteLength-offset)fail();
+  return {...header,windows};
+ };
+}
+
 /** Runs before product code. Ordinary and profile runs share the same lightweight
  * transport observer; React CPU collection and server profiler opt in separately. */
 export function installObserver(config={}) {
@@ -67,13 +95,17 @@ export function installObserver(config={}) {
     const headers=new Headers(options.headers||(input instanceof Request?input.headers:undefined));
     if(state.module_timing)headers.set('X-Disco-Timing','1');
     if(action){headers.set('X-Benchmark-Action',action.action_id);headers.set('X-Benchmark-Profile',action.phase==='profile'?'1':'0');}
-    try {const response=await original(input,{...options,headers});row.headers=absolute();row.status=response.status;row.request_id=response.headers.get('X-Benchmark-Request-Id');
+    try {const response=await original(input,{...options,headers});row.headers=absolute();row.status=response.status;row.request_id=response.headers.get('X-Benchmark-Request-Id');row.content_type=response.headers.get('Content-Type');
       // Observe the actual consumer, avoiding a cloned body/read in timed path.
       const json=response.json.bind(response);response.json=async()=>{try{row.decode_start=absolute();const value=await json();row.end=absolute();row.result=value;return value;}catch(e){row.end=absolute();row.error=String(e);throw e;}};
+      if(typeof response.arrayBuffer==='function'){
+       const arrayBuffer=response.arrayBuffer.bind(response);
+       response.arrayBuffer=async()=>{try{row.decode_start=absolute();const value=await arrayBuffer();row.end=absolute();row.binary=value;return value;}catch(e){row.end=absolute();row.error=String(e);throw e;}};
+      }
       return response;
     }catch(e){row.end=absolute();row.error=String(e);throw e;}
   };
   function absolute(){return performance.now();}
   const stroke=CanvasRenderingContext2D.prototype.stroke;
-  CanvasRenderingContext2D.prototype.stroke=function(...args){if(this.canvas.classList.contains('tv-base')&&this.strokeStyle===getComputedStyle(this.canvas).getPropertyValue('--plot-trace').trim()){const control=window.__workflowReadStream(this.canvas.closest('.trace-viewer'));state.draws.push({at:absolute(),action_id:state.active?.action_id,stream_uuid:control.stream_uuid,control});}return stroke.apply(this,args);};
+  CanvasRenderingContext2D.prototype.stroke=function(...args){const tracked=this.canvas.classList.contains('tv-base')&&this.strokeStyle===getComputedStyle(this.canvas).getPropertyValue('--plot-trace').trim();const result=stroke.apply(this,args);if(tracked){const control=window.__workflowReadStream(this.canvas.closest('.trace-viewer'));state.draws.push({at:absolute(),action_id:state.active?.action_id,stream_uuid:control.stream_uuid,control});}return result;};
 }

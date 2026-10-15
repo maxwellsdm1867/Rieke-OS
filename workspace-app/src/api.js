@@ -1,3 +1,4 @@
+import {decodeTraceBinary,TRACE_BINARY_TYPE} from './traces/traceBinary.js';
 import {useRetainedView,retainablePresentationRead} from './retainedWorkspaceViews.js';
 import {useWorkspaceRequestScope} from './workspaceRequest.js';
 import {mutationUndo,isUndoableRequest} from "./undo/mutationUndo.js";
@@ -50,7 +51,12 @@ export async function requestApi(path, options = {}) {
     return options.notModified;
   }
   let decoded=true;
-  const data = await response.json().catch(() => {decoded=false;return {};});
+  const contentType=(response.headers?.get('Content-Type')||'').split(';')[0].trim().toLowerCase();
+  const binaryRequested=options.headers?.Accept===TRACE_BINARY_TYPE;
+  if(contentType===TRACE_BINARY_TYPE&&!binaryRequested||binaryRequested&&response.ok&&![TRACE_BINARY_TYPE,'application/json'].includes(contentType))
+    throw Error('Unexpected trace response representation. No plot is shown.');
+  const data = contentType===TRACE_BINARY_TYPE?decodeTraceBinary(await response.arrayBuffer()):
+    await response.json().catch(() => {decoded=false;return {};});
   if (!response.ok) {const message=typeof data.error==='string'?data.error:typeof data.error?.message==='string'?data.error.message:typeof data.message==='string'?data.message:`Request failed (${response.status})`;const error=new Error(message);error.status=response.status;error.data=data;if(data.saved===true)error.saved=true;if(data.persistence)error.persistence=data.persistence;throw error;}
   if(decoded&&typeof options.onResponse==='function')options.onResponse({status:response.status,headers:response.headers});
   return data;

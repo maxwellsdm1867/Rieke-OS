@@ -1839,7 +1839,8 @@
           "file": "workspace-app/src/traces/readWholeTrace.js",
           "allow": [
             "workspace-app/src/traces/ui/traceGeometry.js",
-            "workspace-app/src/traces/traceReadContext.js"
+            "workspace-app/src/traces/traceReadContext.js",
+            "workspace-app/src/traces/traceBinary.js"
           ]
         },
         {
@@ -1849,6 +1850,11 @@
             "react",
             "workspace-app/src/traces/ui/traceGeometry.js"
           ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/traces/traceBinary.js",
+          "allow": []
         }
       ],
       "tests": {
@@ -1864,7 +1870,8 @@
           "workspace-app/src/traces/epochTracePreference.test.js",
           "workspace-app/src/traces/traceViewPreference.test.js",
           "workspace-app/src/traces/traceSurfaceIntegration.test.js",
-          "workspace-app/src/traces/responsePreferenceRetention.test.js"
+          "workspace-app/src/traces/responsePreferenceRetention.test.js",
+          "workspace-app/src/traces/traceBinary.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
@@ -2925,7 +2932,8 @@
             "workspace_audit",
             "workspace_protocol_identity",
             "workspace_service",
-            "workspace_state_generation"
+            "workspace_state_generation",
+            "workspace_trace_binary"
           ]
         },
         {
@@ -2992,7 +3000,8 @@
         "python/workspace_desktop.py",
         "workspace-app/src/api.js",
         "workspace-app/src/epoch-browser/ui/Inspector.jsx",
-        "workspace-app/src/epoch-browser/ui/MatchingEpochs.jsx"
+        "workspace-app/src/epoch-browser/ui/MatchingEpochs.jsx",
+        "python/workspace_trace_binary.py"
       ],
       "rules": [
         {
@@ -3009,6 +3018,20 @@
             "workspace_http_boundary",
             "workspace_service"
           ]
+        },
+        {
+          "language": "python",
+          "file": "python/workspace_trace_binary.py",
+          "allow": [
+            "array",
+            "flask",
+            "json",
+            "math",
+            "struct",
+            "sys",
+            "time",
+            "workspace_http_boundary"
+          ]
         }
       ],
       "tests": {
@@ -3018,7 +3041,8 @@
           "python/tests/test_workspace_service.py",
           "python/tests/test_workspace_project_shell.py",
           "python/tests/test_workspace_protocol_browse.py",
-          "python/tests/test_workspace_protocol_summary.py"
+          "python/tests/test_workspace_protocol_summary.py",
+          "python/tests/test_trace_binary.py"
         ],
         "javascript": [
           "workspace-app/src/apiCommandPolicy.test.js",
@@ -3781,6 +3805,13 @@
               "normalizeTraceViewPreference",
               "TraceViewPreferenceProvider",
               "useTraceViewPreference"
+            ]
+          },
+          {
+            "path": "workspace-app/src/traces/traceBinary.js",
+            "exports": [
+              "TRACE_BINARY_TYPE",
+              "decodeTraceBinary"
             ]
           }
         ]
@@ -4982,7 +5013,7 @@
       {
         "file": "python/lifecycle_diagnostic.py",
         "file_sha256": "88ab25a0b97bdd65dab7b3fba42b58ce30165a47be3c07d43efef186cd5c42a3",
-        "reason": "Opt-in observer registration ASTs, fixed module/function targets and observer source are unchanged versus main5aaf0be. WorkspaceService now admits source fingerprints only after exact or bounded converter proof; its source owner witnesses are refreshed. See docs/dev/h5-json-precision-2026-10-09.md. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Dedicated process heap lifecycle: reviewed syntax and targets remain unchanged; owner bytes add explicit refresh and shutdown collector ownership. Recording-rig DTO extension preserves reviewed observer targets and ASTs; combined owner bytes require validation. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md.",
+        "reason": "Opt-in observer registration ASTs, fixed module/function targets and observer source are unchanged versus main5aaf0be. WorkspaceService now admits source fingerprints only after exact or bounded converter proof; its source owner witnesses are refreshed. See docs/dev/h5-json-precision-2026-10-09.md. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Dedicated process heap lifecycle: reviewed syntax and targets remain unchanged; owner bytes add explicit refresh and shutdown collector ownership. Recording-rig DTO extension preserves reviewed observer targets and ASTs; combined owner bytes require validation. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md. Binary64 transport review: existing observer and captured method syntax, origins and targets are unchanged; admitted batch route responses now negotiate exact finite binary64 after the same closing guards, with optional fixed-name elapsed timing. See docs/architecture/trace-worker-execution.md.",
         "sites": [
           {
             "selector": "Name:56",
@@ -5023,7 +5054,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "fb423d7ff4d368009176c92eef99ce6c3bff5f140391fc562e04b18163f67ca0",
+                "file_sha256": "e8e1697115f5f538f4c7fa863c94e0c3f4690d9b347ef324d3d3b03ff244a3cb",
                 "contract_id": null
               }
             ]
@@ -5197,11 +5228,11 @@
       },
       {
         "file": "python/tests/test_workspace_api.py",
-        "file_sha256": "2317cd6ea18e713d5e9674c4a24c969ea117b9099c9a05967080cf5872333e37",
-        "reason": "Inject owned in-memory workspace/curation table fixtures during CurationStore construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Added display-cache HTTP coverage; existing CurationStore fixture injection AST and targets are unchanged. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch regression additions retain existing reviewed mocks and observer syntax.",
+        "file_sha256": "651a2b9d9ce751c0dd72a238c0ae17684ac9d5fa768f721fb9321d0171e92c3d",
+        "reason": "Inject owned in-memory workspace/curation table fixtures during CurationStore construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Added display-cache HTTP coverage; existing CurationStore fixture injection AST and targets are unchanged. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch regression additions retain existing reviewed mocks and observer syntax. Binary64 integration tests were added; the existing curation mock AST, origin and target are unchanged, with its exact selector relocated after review.",
         "sites": [
           {
-            "selector": "Call:145",
+            "selector": "Call:168",
             "ast_sha256": "0bf6ec386fe05c1092dd0d5f5b55eb0162cbfa70997b0211d832edae4400897f",
             "category": "test-mock-target",
             "origins": [
@@ -5417,7 +5448,7 @@
       {
         "file": "python/tests/test_workspace_export_boundary.py",
         "file_sha256": "91e363a0f2e0ee82aabfe20b46a48347ffe80fbb289d1b3fedb999fd58ee709d",
-        "reason": "Select protocol/candidate owner in one existing fixture, inject serializer/report faults or alternate artifact paths, and assert publication/failure boundaries. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md.",
+        "reason": "Select protocol/candidate owner in one existing fixture, inject serializer/report faults or alternate artifact paths, and assert publication/failure boundaries. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md. Binary64 transport review: existing observer and captured method syntax, origins and targets are unchanged; admitted batch route responses now negotiate exact finite binary64 after the same closing guards, with optional fixed-name elapsed timing. See docs/architecture/trace-worker-execution.md.",
         "sites": [
           {
             "selector": "Assign:7",
@@ -5458,7 +5489,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "fb423d7ff4d368009176c92eef99ce6c3bff5f140391fc562e04b18163f67ca0",
+                "file_sha256": "e8e1697115f5f538f4c7fa863c94e0c3f4690d9b347ef324d3d3b03ff244a3cb",
                 "contract_id": null
               }
             ]
@@ -5491,7 +5522,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "fb423d7ff4d368009176c92eef99ce6c3bff5f140391fc562e04b18163f67ca0",
+                "file_sha256": "e8e1697115f5f538f4c7fa863c94e0c3f4690d9b347ef324d3d3b03ff244a3cb",
                 "contract_id": null
               }
             ]
@@ -6061,7 +6092,7 @@
       {
         "file": "python/tests/test_workspace_registered_recovery_policy.py",
         "file_sha256": "af49005f724489faf1d4ecc4b387f694daf835ad3b8b5a363f368374a63d5f0e",
-        "reason": "Inject create_app with harmless shared annotations so real registration branches are present when checking registered mutation recovery policy. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch tests add coverage without changing the imported fixture or reviewed mock syntax.",
+        "reason": "Inject create_app with harmless shared annotations so real registration branches are present when checking registered mutation recovery policy. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch tests add coverage without changing the imported fixture or reviewed mock syntax. Binary64 test-owner review: the existing API test fixture and reviewed method targets remain unchanged; owner bytes add lossless binary transport and timing assertions.",
         "sites": [
           {
             "selector": "Name:33",
@@ -6080,7 +6111,7 @@
               {
                 "module": "tests.test_workspace_api",
                 "file": "python/tests/test_workspace_api.py",
-                "file_sha256": "2317cd6ea18e713d5e9674c4a24c969ea117b9099c9a05967080cf5872333e37",
+                "file_sha256": "651a2b9d9ce751c0dd72a238c0ae17684ac9d5fa768f721fb9321d0171e92c3d",
                 "contract_id": null
               }
             ]

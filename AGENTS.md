@@ -40,7 +40,7 @@ Before any application update, changing release tooling or claiming a performanc
   with the exact documented Python/Node profile and frontend dependencies.
   Local development remains possible; a dirty run is diagnostic only.
 - The agreed [end-to-end benchmark workflow](docs/dev/benchmarks.md#end-to-end-benchmark-workflow-and-module-attribution)
-  compares the same fixed fixture and fourteen real user actions using ordinary
+  compares the same fixed fixture and fifteen real user actions using ordinary
   click-to-correct-result medians, trace endpoints and exact correctness checks.
   `--profile` is optional diagnostic work; module timings never gate comparison
   or block optimization. CI uses a million-row project with 20,000 active-protocol

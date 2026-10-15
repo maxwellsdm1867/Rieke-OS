@@ -371,3 +371,11 @@ refuse batch admission rather than bypassing their policy. Requests without
 `chunks` retain their existing response. Background batches are refused; encoding
 occurs after the guards close. Source mutation between windows and final scope or
 publication changes are covered by service and HTTP integration tests.
+
+Frozen foreground batches can explicitly request the lossless binary64 transport
+specified in [trace execution](../../../docs/architecture/trace-worker-execution.md#opt-in-binary64-foreground-transport).
+The same opening/closing scope encloses the unchanged scientific batch read. The
+response codec runs only after guard closure; its metadata header retains all
+candidate/query/binding/generation fences. Default JSON and source/scope refusal
+are unchanged. Optional fixed-name elapsed headers separate guard opening, read,
+closing and encoding without including project or scientific metadata.

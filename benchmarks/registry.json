@@ -1,7 +1,7 @@
 {
   "format": "rieke-benchmark-registry",
   "version": 1,
-  "suite_version": "1.0.6",
+  "suite_version": "1.0.7",
   "fixture_version": "native-truth-v1+mounted-workflow-500-v1",
   "samples": 4,
   "method": {
@@ -321,13 +321,14 @@
           "id": "trace.inspect",
           "variants": [
             "first-owned-waveform",
-            "frozen-workbench-300k"
+            "frozen-workbench-300k",
+            "frozen-workbench-1m"
           ],
           "trace": true
         }
       ],
       "scope": "Owned browser production components and real Flask route composition over actual million metadata epochs. Transactional SQL, metadata index admission/projection and source verification are explicit fixture doubles. Ordinary action latency and instrumented module evidence are separate. Broader scenario variants, native desktop/compositor and storage qualification remain explicitly unmeasured.",
-      "fixture_version": "workflow-owned-v3",
+      "fixture_version": "workflow-owned-v4",
       "default_protocol_epochs": 1000000,
       "ci_protocol_epochs": 20000
     }

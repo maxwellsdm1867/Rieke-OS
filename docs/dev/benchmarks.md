@@ -56,7 +56,7 @@ declaration. Earlier runners without it retain their original flat schema paths
 and receipt keys; current runners use the metadata package paths. Neither lookup
 imports historical code or rewrites an existing receipt.
 
-The core receipt schema is unchanged. Registry suite version 1.0.6 includes the separate everyday-million and
+The core receipt schema is unchanged. Registry suite version 1.0.7 includes the separate everyday-million and
 workflow-million tracks; core cases and sampling are unchanged, but
 the registry edit intentionally changes the core suite fingerprint. Retain older
 receipts as historical evidence and establish a matched current-suite baseline.
@@ -96,7 +96,7 @@ permitted-read runs on the corrected commit are required for qualification.
 
 ## End-to-end benchmark workflow and module attribution
 
-The required workflow compares the same fixed fixture and fourteen real user-action
+The required workflow compares the same fixed fixture and fifteen real user-action
 variants across implementations, using ordinary elapsed time and exact correctness
 checks. Three ordinary samples produce each action median; action totals and the
 trace-readiness endpoints determine performance review. `--profile` is an optional
@@ -127,7 +127,7 @@ The headline boundary is user intent to the correct, current, usable rendered re
 | Click epoch to show its lazy-loaded trace | First correct visible trace, then complete requested visible trace window; two elapsed endpoints from the same click | focus/selection, lazy-load scheduling, cache/coalescing, request admission, source verification, bounded waveform read, decode/transfer, frontend validation, trace drawing/frame observation |
 
 The table maps action families and possible diagnostic owners; it does not add
-cases to the fixed fourteen-variant suite below. Additional presentations, split
+cases to the fixed fifteen-variant suite below. Additional presentations, split
 operations, selection gestures, predicate distributions, preparation invalidation
 and trace cache/supersession/scroll cases remain unmeasured. These gaps do not block
 comparison or optimization of measured actions. Trace readiness must identify the
@@ -153,10 +153,10 @@ supply missing qualification.
 components in an owned browser, and a request ledger. Optional `--profile` adds
 module diagnostics. It writes
 `receipt.json`, `workflow.html`, `workflow.md`, and raw browser/server evidence.
-The current core measures fourteen variants: main open/return, Edit Tree open,
+The current core measures fifteen variants: main open/return, Edit Tree open,
 cell expansion, next epoch page, split removal, incoming select/deselect,
 cell-equality predicate search, fresh Workbench preparation, receipt replay, prepared return, and lazy trace
-inspection plus a frozen Workbench 300,000-sample Whole trace. The latter validates all consecutive bounded chunks (20,000 or 100,000 samples per request), every ramp sample, exact source and scoped request identity, and final draw/DOM readiness. Existing thirteen variants remain present. Workflow fixture v3 and suite 1.0.6 intentionally require matched fresh receipts; historical v2 receipts are not comparable. Full App navigation, additional split operations, range/queued
+inspection plus frozen Workbench 300,000- and 1,000,000-sample Whole traces. The latter validates all consecutive bounded windows (20,000 or 100,000 samples each; opt-in batches at most 500,000 samples), every ramp sample, exact source and scoped request identity, and final draw/DOM readiness. Existing thirteen variants remain present. Workflow fixture v4 and suite 1.0.7 intentionally require matched fresh receipts; historical v2/v3 receipts are not comparable. Full App navigation, additional split operations, range/queued
 selection, other predicate distributions, preparation invalidation and trace
 supersession/scroll remain explicitly unmeasured; a core pass does not cover them.
 
@@ -240,7 +240,7 @@ committed source before delivery.
 
 CI first runs `tools/benchmark_workflow.py run --smoke` for the pinned, previous
 and candidate sources with the same harness and locked browser dependencies.
-All fourteen actions use a 1,000-row owned fixture and 30-second action/setup
+All fifteen actions use a 1,000-row owned fixture and 30-second action/setup
 waits. A failed compatibility check stops the expensive lane with retained
 failure receipts; a passing check is diagnostic only. Full million-row results
 and unchanged comparison thresholds remain required.
@@ -543,3 +543,11 @@ This oracle change alters the harness hash. Rerun retained baseline, previous
 version and candidate with the same updated harness before comparison; old
 receipts remain attributed to their original harness. Lightweight refusal checks
 remain in `node --test benchmarks/workflow/browser-readiness.test.mjs`.
+
+The trace observer records completion of the actual Canvas stroke and the second
+stable DOM/RAF observation before that observation's independent correctness
+work. The receipt reports correctness validation after the observation separately.
+First-observation validation can still delay the second RAF; this remains an
+explicit observer overhead, and neither endpoint claims compositor presentation.
+Binary bodies are independently decoded from the actual consumer's ArrayBuffer;
+no cloned response is read and no product decoder supplies the oracle.

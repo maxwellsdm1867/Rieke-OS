@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
-import {fixtureSource,installObserver,installTraceControlReader} from './fixture-app.mjs';
+import {fixtureSource,installObserver,installTraceControlReader,installBinaryTraceOracle} from './fixture-app.mjs';
 import {attachLedger} from '../navigation-probe.mjs';
 
 export function options(argv){const value={samples:3,profile:false,module_timing:false};for(let i=0;i<argv.length;i+=2){if(!argv[i].startsWith('--')||argv[i+1]===undefined)throw Error('Expected --key value');value[argv[i].slice(2).replaceAll('-','_')]=argv[i+1];}for(const key of ['source_root','server_json','output'])if(!value[key])throw Error(`Missing --${key.replaceAll('_','-')}`);value.samples=Number(value.samples);if(!Number.isInteger(value.samples)||value.samples<1)throw Error('samples must be positive');value.profile=profileEnabled(value.profile);value.module_timing=moduleTimingEnabled(value.module_timing);return value;}
@@ -30,13 +30,14 @@ export function phasePlan(config){
 }
 
 // Fixed core inventory; variants not executed are retained as explicit gaps.
-export const inventory=[['view.open','cold-component'],['view.return','warm-resource'],['tree.open','main-columns'],['tree.expand','main-first-cell'],['tree.next_page','main-cell-epochs'],['tree.split_change','remove-epoch-block'],['tree.selection','incoming-select-all'],['tree.selection','incoming-deselect-all'],['predicate.search','cell-equality'],['workbench.prepare','fresh'],['workbench.prepare','receipt-replay'],['workbench.open','prepared-return'],['trace.inspect','first-owned-waveform'],['trace.inspect','frozen-workbench-300k']];
+export const inventory=[['view.open','cold-component'],['view.return','warm-resource'],['tree.open','main-columns'],['tree.expand','main-first-cell'],['tree.next_page','main-cell-epochs'],['tree.split_change','remove-epoch-block'],['tree.selection','incoming-select-all'],['tree.selection','incoming-deselect-all'],['predicate.search','cell-equality'],['workbench.prepare','fresh'],['workbench.prepare','receipt-replay'],['workbench.open','prepared-return'],['trace.inspect','first-owned-waveform'],['trace.inspect','frozen-workbench-300k'],['trace.inspect','frozen-workbench-1m']];
 const limits=['Owned shell mounts production components; full App navigation/session restoration unmeasured.','DOM/RAF and canvas calls are observations, not compositor presentation.','Development Vite/React runtime; not installed desktop performance.','Split add/reorder/recorded-field variants, hierarchy, queued/range selections, predicate selectivity/continuation, preparation invalidation/new-operation reuse, and trace supersession/scroll remain unmeasured.'];
 
 /** Browser-side gate uses only independently specified fixture expectations and
  * rendered state. Network payload validation adds identity/count evidence, never
  * replaces the visible readiness boundary. */
 export function readiness(spec){
+  const observedAt=performance.now();
   const w=window.__workflow, a=w.active;
   const pending=()=>{a.frames=0;a.signature=null;return false;};
   const visible=el=>!!el&&el.getBoundingClientRect().width>0&&el.getBoundingClientRect().height>0&&getComputedStyle(el).visibility!=='hidden';
@@ -97,6 +98,7 @@ export function readiness(spec){
   if(spec.uuids){const got=current.map(el=>el.getAttribute('data-epoch-uuid'));if(JSON.stringify(got)!==JSON.stringify(spec.uuids))return pending();evidence.uuids=got;}
   if(spec.trace){
     const expected=spec.trace;a.trace_expected={...expected,end:expected.start+expected.count,...(spec.traceRoot?{root:spec.traceRoot,candidate_scope_revision:spec.traceRevision}:{})};
+    for(const r of requests)if(r.binary&&!r.result){if(r.content_type?.split(';')[0]!=='application/vnd.disco.trace-f64le.v1')throw Error('Unexpected binary trace media type');r.result=window.__workflowDecodeBinaryTrace(r.binary);}
     const traceRequests=requests.filter(r=>r.result?.epoch_uuid===expected.epoch_uuid&&r.result?.stream_uuid===expected.stream_uuid&&(Array.isArray(r.result?.values)||Object.hasOwn(r.result??{},'windows')));
     const chunks=traceRequests.flatMap(r=>{
       const d=r.result;
@@ -130,14 +132,15 @@ export function readiness(spec){
     if(control.status!=='ready'||control.stream_uuid!==expected.stream_uuid)return pending();
     if(!w.draws.some(v=>v.action_id===a.action_id&&v.at>=lastEnd&&v.stream_uuid===expected.stream_uuid))return pending();
     if(document.querySelector('.tv-status'))return pending();
-    a.first_trace_at??=performance.now();
+    a.first_trace_at??=w.draws.find(v=>v.action_id===a.action_id&&v.at>=lastEnd&&v.stream_uuid===expected.stream_uuid).at;
+    a.trace_observation_at=observedAt;
     evidence.trace={epoch_uuid:expected.epoch_uuid,stream_uuid:expected.stream_uuid,start:expected.start,count:expected.count,sample_rate:chunks[0].result.sample_rate,units:chunks[0].result.units,values_count:cursor-expected.start,chunks:chunks.length,requests:traceRequests.length,...(spec.traceRoot?{root:spec.traceRoot,candidate_scope_revision:spec.traceRevision}:{}),...(expected.source_sha256?{source_sha256:expected.source_sha256}:{})};
   }
   if(spec.requestPath){const r=[...requests].reverse().find(r=>r.url.includes(spec.requestPath)&&r.result);if(!r)return pending();evidence.response=r.result;if(spec.prepared){if(typeof spec.expectedReused!=='boolean'||r.result.reused!==spec.expectedReused)throw Error('Preparation reuse classification mismatch');if(spec.expectedCandidate&&r.result.candidate_revision_uuid!==spec.expectedCandidate)throw Error('Preparation replay changed candidate');if(spec.expectedOperation&&r.result.operation_uuid!==spec.expectedOperation)throw Error('Preparation replay changed operation');if(spec.expectedPrepareStatus!==undefined&&r.status!==spec.expectedPrepareStatus)throw Error('Preparation HTTP status mismatch');const session=w.incomingSession,prepared=session?.prepared;if(!prepared?.candidate_revision_uuid)return pending();if(prepared.candidate_revision_uuid!==r.result.candidate_revision_uuid||prepared.queue_revision!==r.result.queue_revision||prepared.candidate_scope_revision!==r.result.candidate_scope_revision)return pending();if(prepared.context?.counts?.incoming_epochs!==spec.preparedUuids.length||prepared.context?.publication_blocked)return pending();const draft=session.drafts?.[prepared.candidate_revision_uuid];if(draft?.selected?.length||draft?.receipt)throw Error('Preparation silently selected or merged');const page=preparedPage(prepared);if(!page||page.total!==spec.preparedUuids.length||page.epochs.length!==Math.min(60,spec.preparedUuids.length))return pending();if(JSON.stringify(page.epochs.map(e=>e.epoch_uuid))!==JSON.stringify(spec.preparedUuids.slice(0,page.epochs.length)))throw Error('Wrong prepared membership');if(!document.querySelector('.incoming-browser .inspection-cell-tree[data-inspection-membership-ready="true"]'))return pending();evidence.prepared={candidate_revision_uuid:prepared.candidate_revision_uuid,queue_revision:prepared.queue_revision,candidate_scope_revision:prepared.candidate_scope_revision,total:page.total,epoch_uuids:page.epochs.map(e=>e.epoch_uuid),reused:r.result.reused,operation_uuid:r.result.operation_uuid,http_status:r.status};}if(spec.expectedCount!==undefined){const count=r.result.matched_count??r.result.count??r.result.total_epochs??r.result.pending_epoch_count;if(count!==spec.expectedCount)throw Error('Incorrect result count '+count+' expected '+spec.expectedCount);}}
   // Two successive RAF observations of the same correct result, in page clock.
   const signature=JSON.stringify(evidence);if(a.signature!==signature){a.signature=signature;a.frames=0;}a.frames++;
   if(a.frames<2)return false;
-  a.ready=performance.now();a.evidence=evidence;
+  a.ready=a.trace_observation_at??performance.now();a.correctness_validation_finished_at=performance.now();a.evidence=evidence;
   // Close capture in the same browser task that declares readiness. Delayed
   // effects can no longer acquire this completed action's correlation header.
   a.captured_requests=requests.filter(r=>r.start<=a.ready);
@@ -146,7 +149,7 @@ export function readiness(spec){
   return true;
 }
 
-export function snapshotAction(action_id){const w=window.__workflow,a=w.completed?.[action_id];if(!a)throw Error('Missing completed action');const requests=a.captured_requests;return {action_id:a.action_id,total_ms:a.ready-a.intent,phase:a.phase,correctness:{passed:true,...a.evidence},...(a.first_trace_at?{trace:{expected:a.trace_expected,first:{...a.evidence.trace,end:a.evidence.trace.start+a.evidence.trace.count},complete:{...a.evidence.trace,end:a.evidence.trace.start+a.evidence.trace.count},first_visible_ms:a.first_trace_at-a.intent,complete_ms:a.ready-a.intent,observation:'correct response plus canvas stroke plus DOM/RAF; no compositor claim'}}:{}),requests:requests.map(({start,headers,end,result,decode_start,...r})=>({...r,start_ms:start-a.intent,headers_ms:headers===undefined?null:headers-a.intent,end_ms:end===undefined?null:end-a.intent})),frontend_spans:requests.filter(r=>r.start<a.ready).flatMap((r,i)=>{const parent={id:'request-'+i,module:'api-transport',name:'request-through-consumption',request_id:r.request_id,start_ms:r.start-a.intent,end_ms:Math.min(r.end??a.ready,a.ready)-a.intent,clipped_at_ready:r.end===undefined||r.end>a.ready,clock:'browser',inclusive:true,interpretation:'HTTP wait plus response consumption; backend work is nested, not exclusive CPU'};return [parent,...(r.decode_start!==undefined&&r.decode_start<a.ready?[{id:'body-'+i,parent_id:parent.id,module:'api-response-consumption',name:'response-json-consumption',request_id:r.request_id,start_ms:r.decode_start-a.intent,end_ms:parent.end_ms,clipped_at_ready:parent.clipped_at_ready,clock:'browser',inclusive:true,interpretation:'Includes body wait and JSON decode, not exclusive CPU'}]:[])];}),react_renders:a.captured_renders,cache_classification:requests.length?'requests-observed':'no-request-observed'};}
+export function snapshotAction(action_id){const w=window.__workflow,a=w.completed?.[action_id];if(!a)throw Error('Missing completed action');const requests=a.captured_requests;return {action_id:a.action_id,total_ms:a.ready-a.intent,phase:a.phase,correctness:{passed:true,...a.evidence},...(a.first_trace_at?{trace:{expected:a.trace_expected,first:{...a.evidence.trace,end:a.evidence.trace.start+a.evidence.trace.count},complete:{...a.evidence.trace,end:a.evidence.trace.start+a.evidence.trace.count},first_visible_ms:a.first_trace_at-a.intent,complete_ms:a.ready-a.intent,observation:'post-stroke timestamp plus second stable DOM/RAF observation captured before that observation correctness work; first-frame oracle work can delay second RAF; no compositor claim',correctness_validation_after_observation_ms:Math.max(0,a.correctness_validation_finished_at-a.ready)}}:{}),requests:requests.map(({start,headers,end,result,binary,decode_start,...r})=>({...r,start_ms:start-a.intent,headers_ms:headers===undefined?null:headers-a.intent,end_ms:end===undefined?null:end-a.intent})),frontend_spans:requests.filter(r=>r.start<a.ready).flatMap((r,i)=>{const parent={id:'request-'+i,module:'api-transport',name:'request-through-consumption',request_id:r.request_id,start_ms:r.start-a.intent,end_ms:Math.min(r.end??a.ready,a.ready)-a.intent,clipped_at_ready:r.end===undefined||r.end>a.ready,clock:'browser',inclusive:true,interpretation:'HTTP wait plus response consumption; backend work is nested, not exclusive CPU'};return [parent,...(r.decode_start!==undefined&&r.decode_start<a.ready?[{id:'body-'+i,parent_id:parent.id,module:'api-response-consumption',name:'response-json-consumption',request_id:r.request_id,start_ms:r.decode_start-a.intent,end_ms:parent.end_ms,clipped_at_ready:parent.clipped_at_ready,clock:'browser',inclusive:true,interpretation:'Includes body wait and JSON decode, not exclusive CPU'}]:[])];}),react_renders:a.captured_renders,cache_classification:requests.length?'requests-observed':'no-request-observed'};}
 
 export function assertFinalizedRequests(sample){
   const seen=new Set();
@@ -158,7 +161,7 @@ export function assertFinalizedRequests(sample){
 }
 
 export async function resetPreparation(meta,{timeoutMs=900000}={}){
-  if(meta.fixture!=='workflow-owned-v3')throw Error('Owned preparation reset contract unavailable');
+  if(meta.fixture!=='workflow-owned-v4')throw Error('Owned preparation reset contract unavailable');
   const start=performance.now();let attempts=0;
   while(performance.now()-start<timeoutMs){
     attempts++;
@@ -193,7 +196,7 @@ export async function run(config){
     browser=await chromium.launch({headless:true,...((config.browser_executable||process.env.WORKFLOW_BROWSER_EXECUTABLE)?{executablePath:config.browser_executable||process.env.WORKFLOW_BROWSER_EXECUTABLE}:{}),args:['--no-first-run','--no-default-browser-check']});
     receipt.environment={node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},device_scale_factor:1,headless:true,runtime:'vite-react-development'};
     for(const {phase,samples:phaseSamples} of phases)for(let sample=0;sample<phaseSamples;sample++){
-      context=await browser.newContext({viewport:{width:1500,height:1100}});const page=await context.newPage();await page.addInitScript(installTraceControlReader,{streams:meta.trace_streams});await page.addInitScript(installObserver,{phase,module_timing:receipt.module_timing});const ledger=attachLedger(page,'workflow');
+      context=await browser.newContext({viewport:{width:1500,height:1100}});const page=await context.newPage();await page.addInitScript(installTraceControlReader,{streams:meta.trace_streams});await page.addInitScript(installBinaryTraceOracle);await page.addInitScript(installObserver,{phase,module_timing:receipt.module_timing});const ledger=attachLedger(page,'workflow');
       page.on('pageerror',e=>receipt.failures.push({phase,sample,error:e.message}));
       await page.goto(`http://127.0.0.1:${receipt.frontend_port}/__workflow__`);await page.getByRole('button',{name:'Benchmark Main',exact:true}).waitFor();
       const button=name=>page.getByRole('button',{name,exact:true});
@@ -213,7 +216,7 @@ export async function run(config){
           await fs.appendFile(path.join(output,'action-samples.jsonl'),JSON.stringify({id,variant,...result})+'\n');
           // React actualDuration is CPU accounting, deliberately not a wall span.
           receipt.actions.find(a=>a.id===id&&a.variant===variant).samples.push(result);console.log(JSON.stringify({action:id,variant,phase,total_ms:result.total_ms,status:'finalized'}));return result;
-        }catch(error){receipt.failures.push({action_id,error:String(error)});await fs.appendFile(path.join(output,'action-failures.jsonl'),JSON.stringify({id,variant,action_id,phase,status:'failed',error:String(error)})+'\n');console.log(JSON.stringify({action:id,variant,phase,status:'failed',error:String(error)}));await fs.writeFile(path.join(output,`${action_id}.txt`),await page.locator('body').innerText());await page.screenshot({path:path.join(output,`${action_id}.png`)});await fs.writeFile(path.join(output,`${action_id}-requests.json`),JSON.stringify(await page.evaluate(()=>window.__workflow.requests.map(({result,...row})=>row)),null,2));await page.evaluate(()=>{window.__workflow.active=null;});throw error;}
+        }catch(error){receipt.failures.push({action_id,error:String(error)});await fs.appendFile(path.join(output,'action-failures.jsonl'),JSON.stringify({id,variant,action_id,phase,status:'failed',error:String(error)})+'\n');console.log(JSON.stringify({action:id,variant,phase,status:'failed',error:String(error)}));await fs.writeFile(path.join(output,`${action_id}.txt`),await page.locator('body').innerText());await page.screenshot({path:path.join(output,`${action_id}.png`)});await fs.writeFile(path.join(output,`${action_id}-requests.json`),JSON.stringify(await page.evaluate(()=>window.__workflow.requests.map(({result,binary,...row})=>row)),null,2));await page.evaluate(()=>{window.__workflow.active=null;});throw error;}
       }
       try{
         const edit={selector:'button',text:'Edit Tree',enabled:true,membership:meta.main_count};
@@ -255,7 +258,8 @@ export async function run(config){
         const incomingRow=page.getByRole('button',{name:`Inspect ${meta.date_label} · ${meta.incoming_cell_label} epoch 1`,exact:true});
         const traceRoot='/protocols/'+meta.protocol+'/workbench/candidates/'+replay.correctness.prepared.candidate_revision_uuid;
         await measure('trace.inspect','frozen-workbench-300k',incomingRow,{selector:'.tv-base',trace:meta.incoming_trace_expected,traceRoot,traceRevision:replay.correctness.prepared.candidate_scope_revision});
-      }catch(error){receipt.failures.push({phase,sample,error:String(error)});}finally{ledger.detach();await fs.writeFile(path.join(output,`browser-requests-${phase}-${sample}.json`),JSON.stringify(await page.evaluate(()=>window.__workflow.requests.map(({result,...row})=>row)),null,2));await fs.writeFile(path.join(output,`ledger-${phase}-${sample}.json`),JSON.stringify(ledger.entries,null,2));await context.close();context=null;}
+        await measure('trace.inspect','frozen-workbench-1m',page.getByRole('button',{name:`Inspect ${meta.date_label} · ${meta.incoming_cell_label} epoch 2`,exact:true}),{selector:'.tv-base',trace:meta.million_trace_expected,traceRoot,traceRevision:replay.correctness.prepared.candidate_scope_revision});
+      }catch(error){receipt.failures.push({phase,sample,error:String(error)});}finally{ledger.detach();await fs.writeFile(path.join(output,`browser-requests-${phase}-${sample}.json`),JSON.stringify(await page.evaluate(()=>window.__workflow.requests.map(({result,binary,...row})=>row)),null,2));await fs.writeFile(path.join(output,`ledger-${phase}-${sample}.json`),JSON.stringify(ledger.entries,null,2));await context.close();context=null;}
     }
     for(const action of receipt.actions)if(action.samples.filter(s=>s.phase==='ordinary').length!==config.samples)receipt.gaps.push(`Missing ordinary samples: ${action.id}/${action.variant}`);
     receipt.status=receipt.failures.length?'failed':receipt.gaps.length?'incomplete':'passed';

@@ -1367,9 +1367,14 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     request.headers.get('X-Disco-Trace-Priority') == 'background'):
                 raise ValueError('Trace batches require a foreground request with unique window options')
             # Batches exceed the worker response budget and stay foreground.
+            from workspace_trace_binary import begin_trace_timing, mark_trace_timing, trace_batch_response
+            timing = begin_trace_timing()
             with db_lock:
+                mark_trace_timing(timing, 'open')
                 result = service.trace_batch(epoch_uuid, stream, start, count, int(request.args['chunks']))
-            return jsonify(result)
+                mark_trace_timing(timing, 'read')
+            mark_trace_timing(timing, 'close')
+            return trace_batch_response(app, result, timing)
         # A custom serializer must retain its own response behavior.
         eligible = (trace_workers is not None and type(app.json) is ExactMetadataJSON and
                     request.headers.get('X-Disco-Trace-Priority') == 'background')

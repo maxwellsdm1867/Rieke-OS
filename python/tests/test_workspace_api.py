@@ -168,6 +168,32 @@ class WorkspaceAPITests(unittest.TestCase):
                 self.assertEqual(response.status_code, 400)
             batch.assert_not_called()
 
+    def test_binary_batch_opt_in_does_not_change_legacy_trace_or_json_errors(self):
+        from test_trace_binary import batch_fixture, independent_decode
+        from workspace_trace_binary import BINARY_CONTENT_TYPE
+        batch = batch_fixture()
+        path = '/api/epochs/' + self.service.ids[0] + '/trace'
+        query = dict(stream_uuid='stream', start=0, count=100000, chunks=3)
+        headers = {'Accept': BINARY_CONTENT_TYPE}
+        with patch.object(self.service, 'trace_batch', return_value=batch):
+            response = self.client.get(path, query_string=query, headers=headers)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.mimetype, BINARY_CONTENT_TYPE)
+            self.assertEqual(len(independent_decode(response.data)[1]), 6)
+            self.assertNotIn('Server-Timing', response.headers)
+            timed = self.client.get(path, query_string=query, headers={**headers, 'X-Disco-Trace-Timing': '1'})
+            self.assertEqual(timed.status_code, 200)
+            for stage in ('open', 'read', 'close', 'encode'):
+                self.assertIn('trace_' + stage + ';dur=', timed.headers['Server-Timing'])
+        with patch.object(self.service, 'trace', return_value={'values': [1.25]}):
+            response = self.client.get(path, query_string={'stream_uuid': 'stream'}, headers=headers)
+            self.assertEqual(response.mimetype, 'application/json')
+        with patch.object(self.service, 'trace_batch', side_effect=ValueError('Source changed')):
+            response = self.client.get(path, query_string=query, headers=headers)
+            self.assertEqual(response.status_code, 400)
+            self.assertEqual(response.mimetype, 'application/json')
+            self.assertEqual(response.get_json()['error'], 'Source changed')
+
     def test_trace_encoding_does_not_hold_the_database_lock(self):
         import threading
         started, release, shell_done = threading.Event(), threading.Event(), threading.Event()

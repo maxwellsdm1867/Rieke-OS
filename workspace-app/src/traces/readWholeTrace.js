@@ -1,3 +1,4 @@
+import {TRACE_BINARY_TYPE} from './traceBinary.js';
 import {MAX_TRACE_SAMPLES} from './ui/traceGeometry.js';
 import {traceRequestPath,traceResponseMatches} from './traceReadContext.js';
 
@@ -15,7 +16,7 @@ export async function readWholeTrace({request,epochUuid,stream,readContext,sourc
   // whole-stream demand can use the existing 100k HTTP bound.
   const chunkSize=imported?MAX_TRACE_SAMPLES:maxChunkSamples;
   let first;
-  const values=[],end=window.start+window.count;
+  const parts=[],end=window.start+window.count;
   let batchEnabled=!imported&&maxChunkSamples===MAX_WHOLE_TRACE_CHUNK_SAMPLES&&window.start===0&&window.count===total;
   const invalid=()=>{throw Error('Trace identity, sample rate, units or window does not match the request. No plot is shown.');};
   const matchesHeader=chunk=>traceResponseMatches(chunk,readContext)&&chunk?.epoch_uuid===epochUuid&&chunk?.stream_uuid===stream.uuid&&
@@ -28,7 +29,7 @@ export async function readWholeTrace({request,epochUuid,stream,readContext,sourc
     signal?.throwIfAborted();
     const count=Math.min(chunkSize,end-start),chunks=batchEnabled?Math.min(5,Math.ceil((end-start)/chunkSize)):1;
     const path=traceRequestPath(epochUuid,stream,{start,count},readContext)+(chunks>1?`&chunks=${chunks}`:'');
-    const response=await request(path,{signal});
+    const response=await request(path,{signal,...(chunks>1?{headers:{Accept:TRACE_BINARY_TYPE}}:{})});
     signal?.throwIfAborted();
     const batch=Object.hasOwn(response??{},'windows');
     if(batch){
@@ -43,12 +44,22 @@ export async function readWholeTrace({request,epochUuid,stream,readContext,sourc
     for(const chunk of batch?response.windows:[response]){
       const expectedCount=Math.min(chunkSize,end-start);
       if(!matchesHeader(chunk)||chunk.start!==start||chunk.count!==expectedCount||
-        !Array.isArray(chunk.values)||chunk.values.length!==expectedCount)invalid();
+        !(Array.isArray(chunk.values)||!imported&&chunk.values instanceof Float64Array)||chunk.values.length!==expectedCount)invalid();
       if(batch&&(chunk.sample_rate!==response.sample_rate||chunk.units!==response.units||chunk.source_sha256!==response.source_sha256))invalid();
       if(!first)first={...chunk,values:undefined};
-      for(const value of chunk.values)values.push(value);
+      parts.push(chunk.values);
       start+=expectedCount;
     }
+  }
+  let values;
+  if(parts.every(part=>part instanceof Float64Array)){
+    let offset=parts[0].byteOffset;
+    const contiguous=parts.every(part=>{const valid=part.buffer===parts[0].buffer&&part.byteOffset===offset;offset+=part.byteLength;return valid;});
+    if(contiguous)values=new Float64Array(parts[0].buffer,parts[0].byteOffset,window.count);
+    else{values=new Float64Array(window.count);let at=0;for(const part of parts){values.set(part,at);at+=part.length;}}
+  }else{
+    // JSON fallback retains null gaps and exact existing values, without coercion.
+    values=new Array(window.count);let at=0;for(const part of parts)for(const value of part)values[at++]=value;
   }
   return {...first,start:window.start,count:window.count,values};
 }

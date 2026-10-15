@@ -137,3 +137,24 @@ its own current selection. Window, Whole and zoom changes preserve the pair.
 This is one presentation preference, not a per-epoch history or read capability.
 `responsePreferenceRetention.test.js` covers remount, hide/reveal, delayed
 descriptors and mismatched identities; native dual-channel/H5 checks are separate.
+
+
+Canonical/frozen foreground batches optionally negotiate
+`application/vnd.disco.trace-f64le.v1`. `traceBinary.js` checks the DTF1/versioned
+framing, bounded UTF-8 metadata, zero alignment padding, exact payload length,
+ordered contiguous windows and finite binary64 values. The normal whole-trace
+owner still validates every scientific identity and frozen authority field.
+Malformed binary never falls back to JSON. An ordinary application/json response
+from an older endpoint retains the existing decoder and legacy window fallback.
+Imported snapshot reads and custom scientific authority remain unchanged.
+
+One admitted binary batch supplies contiguous Float64Array views without another
+sample copy. Multiple binary batches copy once into a preallocated Float64Array;
+mixed/JSON batches preserve null gaps in an ordinary array. Viewport slices of
+typed samples use subarray views. No trace sample is omitted, resampled or coerced
+from null to zero. Complete arrays remain outside the shared epoch cache. The
+binary frame is at most 500,000 samples and a 64 KiB metadata header; request and
+cancellation bounds are unchanged. `traceBinary.test.js` exercises framing faults,
+bit-exact finite values and signed zero, transport fallback, source/scope checks,
+zero-copy admission, multiple batches and cancellation. Rendering geometry and
+full-rate canvas drawing remain unchanged.
