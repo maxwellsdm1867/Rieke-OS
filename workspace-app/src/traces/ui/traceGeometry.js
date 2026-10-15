@@ -37,6 +37,33 @@ export function finiteSegments(values){
   values.forEach((value,index)=>{if(typeof value==='number'&&Number.isFinite(value))current.push({index,value});else if(current.length){segments.push(current);current=[];}});
   if(current.length)segments.push(current);return segments;
 }
+// Display geometry only: exact source samples remain owned by the viewer.
+// Each physical pixel column retains its first/last and both extrema, emitted
+// in recorded time order. A missing sample always ends a connected segment.
+export function traceDisplaySegments(values,physicalWidth){
+  const count=values?.length||0,columns=Math.ceil(physicalWidth);
+  const reduced=Number.isFinite(physicalWidth)&&physicalWidth>0&&count>4*columns;
+  const segments=[];
+  let segment=[],column=-1,first=-1,last=-1,min=-1,max=-1;
+  const flush=()=>{
+    if(first<0)return;
+    let previous=-1;
+    for(const index of [first,min,max,last].sort((a,b)=>a-b))if(index!==previous){segment.push(index);previous=index;}
+    first=-1;
+  };
+  for(let index=0;index<count;index++){
+    const value=values[index];
+    if(typeof value!=='number'||!Number.isFinite(value)){
+      flush();if(segment.length)segments.push(segment);segment=[];column=-1;continue;
+    }
+    if(!reduced){segment.push(index);continue;}
+    const next=Math.min(columns-1,Math.floor(index/(count-1)*physicalWidth));
+    if(first<0||next!==column){flush();column=next;first=last=min=max=index;}
+    else{last=index;if(value<values[min])min=index;if(value>values[max])max=index;}
+  }
+  flush();if(segment.length)segments.push(segment);
+  return segments;
+}
 export function ticks(min,max,target=5){
   if(!Number.isFinite(min)||!Number.isFinite(max)||max<min)return [];
   if(max===min)return [min];

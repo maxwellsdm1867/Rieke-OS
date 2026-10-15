@@ -156,5 +156,23 @@ from null to zero. Complete arrays remain outside the shared epoch cache. The
 binary frame is at most 500,000 samples and a 64 KiB metadata header; request and
 cancellation bounds are unchanged. `traceBinary.test.js` exercises framing faults,
 bit-exact finite values and signed zero, transport fallback, source/scope checks,
-zero-copy admission, multiple batches and cancellation. Rendering geometry and
-full-rate canvas drawing remain unchanged.
+zero-copy admission, multiple batches and cancellation. Binary transport does not change recorded sample geometry; the separate display
+policy follows below.
+
+
+Dense display rendering is explicitly separate from scientific sample storage.
+`traceDisplaySegments(values, physicalWidth)` visits the original samples once and
+returns selected original indices: first, last, minimum and maximum in each
+physical plot column, unique and in time order. Every nonfinite/missing sample
+ends a connected segment; isolated samples and finite segment endpoints remain.
+The plotted column width is CSS plot width multiplied by device pixel ratio.
+Windows at or below four samples per physical column retain every sample.
+Resize, DPR and viewport changes recompute display indices; colors, axes and
+coordinates retain their existing geometry. Original arrays, HTTP requests,
+recorded values, exact sample cursor and zoom navigation are unchanged. This is
+an authorized display approximation, never a filtered or resampled recording.
+The response heading tooltip and cursor help explain screen-resolution display
+with exact cursor values. `traceGeometry.test.js` and `traceDisplayLifecycle.test.js`
+cover million-sample spikes, endpoints, ordered gaps, physical-pixel bounds,
+resize/DPR, zoomed all-sample drawing and full-precision cursor readout. Independent
+pixel comparisons remain separate from these geometry and drawing-call checks.

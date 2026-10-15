@@ -1871,7 +1871,9 @@
           "workspace-app/src/traces/traceViewPreference.test.js",
           "workspace-app/src/traces/traceSurfaceIntegration.test.js",
           "workspace-app/src/traces/responsePreferenceRetention.test.js",
-          "workspace-app/src/traces/traceBinary.test.js"
+          "workspace-app/src/traces/traceBinary.test.js",
+          "workspace-app/src/traces/traceDisplayLifecycle.test.js",
+          "workspace-app/src/traces/tracePaintLifecycle.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
@@ -3789,7 +3791,8 @@
               "finiteExtent",
               "finiteSegments",
               "ticks",
-              "formatTick"
+              "formatTick",
+              "traceDisplaySegments"
             ]
           },
           {

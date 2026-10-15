@@ -4,7 +4,7 @@ import {useWorkspaceRequestScope} from '../../workspaceRequest.js';
 import {useEffect,useId,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {Activity,ArrowLeft,ArrowRight,Hand,LoaderCircle,MousePointer2,ZoomIn,ZoomOut} from 'lucide-react';
 import {api,number,useResource,requestTraceWindow} from '../../api.js';
-import {clampWindow,dragWindow,finiteExtent,formatTick,MAX_TRACE_SAMPLES,sampleAtPixel,ticks,timeRange,zoomWindow} from './traceGeometry.js';
+import {clampWindow,dragWindow,finiteExtent,formatTick,MAX_TRACE_SAMPLES,sampleAtPixel,ticks,timeRange,traceDisplaySegments,zoomWindow} from './traceGeometry.js';
 import './TraceViewer.css';
 import {readWholeTrace,MAX_WHOLE_TRACE_CHUNK_SAMPLES} from '../readWholeTrace.js';
 import {traceRequestPath,traceCacheRevision,traceResponseMatches} from '../traceReadContext.js';
@@ -36,9 +36,13 @@ function paintTrace(canvas,data,amplitude){
   ctx.strokeStyle=axis;ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left,top+h);ctx.lineTo(left+w,top+h);ctx.stroke();
   ctx.fillStyle=ink;ctx.font='13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('Time from stream start (s)',left+w/2,rect.height-4);
   ctx.save();ctx.translate(16,top+h/2);ctx.rotate(-Math.PI/2);ctx.textBaseline='top';ctx.fillText(data.units?`Response (${data.units})`:'Response (unit not recorded)',0,0);ctx.restore();
-  ctx.save();ctx.beginPath();ctx.rect(left-1,top-1,w+2,h+2);ctx.clip();ctx.strokeStyle=trace;ctx.lineWidth=1.1;ctx.beginPath();let runLength=0,runStart=0;const isolated=[];
-  data.values.forEach((value,index)=>{if(typeof value!=='number'||!Number.isFinite(value)){if(runLength===1)isolated.push(runStart);runLength=0;return;}if(runLength)ctx.lineTo(x(index),y(value));else{ctx.moveTo(x(index),y(value));runStart=index;}runLength++;});ctx.stroke();
-  if(runLength===1)isolated.push(runStart);
+  ctx.save();ctx.beginPath();ctx.rect(left-1,top-1,w+2,h+2);ctx.clip();ctx.strokeStyle=trace;ctx.lineWidth=1.1;ctx.beginPath();const isolated=[];
+  for(const segment of traceDisplaySegments(data.values,w*ratio)){
+    const first=segment[0];ctx.moveTo(x(first),y(data.values[first]));
+    for(let position=1;position<segment.length;position++){const index=segment[position];ctx.lineTo(x(index),y(data.values[index]));}
+    if(segment.length===1)isolated.push(first);
+  }
+  ctx.stroke();
   ctx.fillStyle=getComputedStyle(ctx.canvas).getPropertyValue('--plot-trace').trim();ctx.beginPath();for(const index of isolated){ctx.moveTo(x(index)+2.5,y(data.values[index]));ctx.arc(x(index),y(data.values[index]),2.5,0,Math.PI*2);}ctx.fill();
   ctx.restore();
   return {left,top,w,h,width:rect.width,height:rect.height,ratio,extent,range,x,y,data};
@@ -246,7 +250,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   return <section className="trace-viewer trace-section" aria-label="Recorded response viewer">
     <header className="tv-controls" aria-label="Response and viewing controls">
       <div className="tv-response-line">
-        <h3 title="Full-rate recorded samples. No filtering or resampling."><Activity size={14}/> Response</h3>
+        <h3 title="All recorded samples are retained. The display follows screen resolution; cursor values remain exact."><Activity size={14}/> Response</h3>
         <div className="tv-streams" aria-label="Response stream">
           {streams.length===1?<span>{stream.device} · {stream.units||'unit not recorded'}</span>:streams.map((item,index)=><button key={item.uuid} aria-pressed={stream?.uuid===item.uuid} aria-label={`Response ${index+1}: ${item.device} · ${item.units||'unit not recorded'}`} title={item.uuid} onClick={()=>{setSelectedStream(item.uuid);setEntryError('');drag.current=null;cursor.current=null;}}>{item.device}{streams.filter(other=>other.device===item.device).length>1?` ${index+1}`:''} · {item.units||'unit not recorded'}</button>)}
         </div>
@@ -276,7 +280,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
     </div>
     <div className="tv-readout"><output aria-live="off" aria-label="Recorded sample readout" aria-describedby={cursorHelp}><span className="tv-measure"><small>Sample</small><span className="tv-value" ref={sampleReadout} tabIndex={0} aria-label="Recorded sample index">—</span></span><span className="tv-measure"><small>Time</small><span className="tv-value" ref={timeReadout} tabIndex={0} aria-label="Time from stream start in seconds">—</span></span><span className="tv-measure"><small>Response</small><span className="tv-value" ref={responseReadout} tabIndex={0} aria-label="Recorded response and scientific units">—</span></span></output><label>Sample cursor<input ref={cursorInput} type="number" step="1" min={bounded.start} max={bounded.start+bounded.count-1} disabled={!valid||pending} aria-label="Exact sample index for cursor" onChange={event=>{const sample=Number(event.target.value);if(event.target.value!==''&&Number.isInteger(sample)&&sample>=bounded.start&&sample<bounded.start+bounded.count){cursor.current=sample-bounded.start;scheduleOverlay();}}}/></label></div>
     <div className="tv-footer"><div className="tv-range" tabIndex={0} aria-label="Available trace window" title={stream?`Samples ${number(bounded.start)}–${number(bounded.start+bounded.count-1)} · zero-based, inclusive`:undefined}><span>{range?`${formatTick(range.first,1/data.sample_rate)}–${formatTick(range.last,1/data.sample_rate)} s`:'—'}</span><small>{stream?`${number(bounded.count)} / ${number(total)} samples`:'—'}</small>{stream&&<span aria-label="Selected sample bounds">Start {number(bounded.start)} · Stop {number(bounded.start+bounded.count-1)} (inclusive)</span>}{amplitude&&<span aria-label="Selected response bounds">{formatTick(amplitude.min,amplitude.max-amplitude.min)}–{formatTick(amplitude.max,amplitude.max-amplitude.min)} {data?.units||stream?.units||''}</span>}</div><span className="tv-shortcuts">← → cursor · Shift ← → pan · + / − zoom · Home whole</span></div>
-    <p id={cursorHelp} className="tv-cursor-help">Drag a rectangle to zoom in time and response. Move over the plot or use the sample cursor to read a recorded value.</p>
+    <p id={cursorHelp} className="tv-cursor-help">Drag a rectangle to zoom. Move over the plot or use the sample cursor to read an exact recorded value.</p>
     <div className="tv-gap-notice" role="status" tabIndex={gapCount>0?0:undefined}>{gapCount>0?`${number(gapCount)} missing or non-finite samples appear as gaps; they are not plotted as zero.`:''}</div>
   </section>;
 }

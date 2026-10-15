@@ -71,7 +71,7 @@ test('box zoom commits only on release; pan preserves width and reuses whole sam
  const event=(x,y=100)=>({button:0,pointerId:1,clientX:82+x,clientY:y,currentTarget:overlay});
  try{
   await act(async()=>{renderer=TestRenderer.create(React.createElement(WorkspaceRequestProvider,{port},React.createElement(Trace,{epoch})),{createNodeMock:node=>node.type==='canvas'?(node.props.className==='tv-base'?base:overlay):node.props.role==='group'?surface:{}});});
-  assert.equal(calls.length,4);
+  assert.equal(calls.length,1);
   await act(async()=>renderer.root.findByProps({'aria-label':'Zoom in'}).props.onClick());assert.equal(button('Whole epoch').props['aria-pressed'],true);
   await act(async()=>{pointer().onPointerDown(event(100,65));pointer().onPointerMove(event(400,195));});
   assert.equal(button('Whole epoch').props['aria-pressed'],true,'dragging does not switch mode before release');
@@ -93,14 +93,14 @@ test('box zoom commits only on release; pan preserves width and reuses whole sam
   assert.equal(input('Start sample'),'5400','release does not apply the delta twice');
   assert.notEqual(boundsText(),beforePan,'vertical panning moves response bounds');
   assert.equal(input('Start sample'),'5400');assert.equal(input('Sample count'),'40500');
-  assert.equal(calls.length,4,'box zoom and pan do not reload any samples');
-  await act(async()=>button('Whole epoch').props.onClick());assert.equal(calls.length,4);assert.equal(renderer.root.findAllByProps({'aria-label':'Selected response bounds'}).length,0);
+  assert.equal(calls.length,1,'box zoom and pan do not reload any samples');
+  await act(async()=>button('Whole epoch').props.onClick());assert.equal(calls.length,1);assert.equal(renderer.root.findAllByProps({'aria-label':'Selected response bounds'}).length,0);
   await act(async()=>{pointer().onPointerDown(event(200,65));pointer().onPointerMove(event(200,195));pointer().onPointerUp(event(200,195));});
   assert.equal(input('Sample count'),'67500','vertical-only zoom preserves the whole time range');
   assert.equal(renderer.root.findByProps({'aria-label':'Zoom out'}).props.disabled,false);
   await act(async()=>renderer.root.findByProps({'aria-label':'Zoom out'}).props.onClick());
   assert.equal(renderer.root.findAllByProps({'aria-label':'Selected response bounds'}).length,0,'zoom out recovers the whole response range');
-  assert.equal(calls.length,4,'vertical zoom and zoom out require no reads');
-  await act(async()=>button('Sample').props.onClick());assert.equal(input('Start sample'),'0');assert.equal(input('Sample count'),'200');assert.equal(calls.length,4);
+  assert.equal(calls.length,1,'vertical zoom and zoom out require no reads');
+  await act(async()=>button('Sample').props.onClick());assert.equal(input('Start sample'),'0');assert.equal(input('Sample count'),'200');assert.equal(calls.length,1);
  }finally{await act(async()=>renderer?.unmount());await server.close();for(const name of names){if(previous[name]===undefined)delete globalThis[name];else globalThis[name]=previous[name];}}
 });

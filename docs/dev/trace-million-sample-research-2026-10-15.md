@@ -1,6 +1,6 @@
 # One-million-sample trace latency: evidence and proposed experiments
 
-Date: 2026-10-15. Scope: lossless full-trace delivery and drawing. This note does not authorize data decimation, altered scientific membership, relaxed provenance, new release promotion, or claims that a synthetic browser measurement is installed-app performance.
+Date: 2026-10-15. Scope: lossless full-trace delivery and drawing. The user subsequently authorized display-only resolution shortcuts. That approval does not change raw samples, scientific membership, provenance, or release qualification; a synthetic browser measurement is not installed-app performance.
 
 ## Findings first
 
@@ -39,7 +39,7 @@ The current H5 reader opens a file per window, validates epoch/stream/rate/count
 
 The M4 paper selects first, last, minimum and maximum points per pixel-column interval and derives a result for a two-color line-rasterization model. Its anti-aliased discussion is not a blanket proof of identical output for Disco's current fractional-width Canvas stroke, device-pixel ratios, clipping, joins and isolated samples. MinMaxLTTB is explicitly a point-selection/downsampling method aiming at visual representativeness, not retention of every scientific sample in a plotted polyline. Neither paper licenses changing source data or analysis. [M4 primary paper](https://www.vldb.org/pvldb/vol7/p797-jugel.pdf), [MinMaxLTTB primary paper](https://arxiv.org/abs/2305.00332).
 
-If the scientist later chooses a display-only overview algorithm, keep all one million samples for exact cursor reads, zoom and export; label any overview representation honestly. First compare actual Canvas pixels and exact extrema/isolated spikes against the current path at several widths, device-pixel ratios, axis ranges and gap patterns. Pixel differences must be reported, not hidden behind a claim of lossless samples. No such algorithm is implemented or automatically selected in this work.
+Following explicit user approval, the candidate now uses display-only first/last/minimum/maximum selection per physical pixel column and finite segment. All one million binary64 samples remain available for exact cursor reads, zoom and export. This reduces Canvas vertices, not recording samples. Independent diagnostics compare the actual candidate painter with the prior full polyline across viewport widths, device-pixel ratios, zoom sizes, themes, spikes, constant signals, gaps and isolated points. Pixel differences must be reported, not hidden behind a claim of lossless samples; the paper's restricted raster proof is not claimed for this Canvas implementation. NumPy/H5 handle and WebGL side paths remain proposals, not implemented optimizations.
 
 ## One-million-sample regression and measurement contract
 
@@ -53,3 +53,23 @@ The observer records the return from the real Canvas stroke and the stable DOM/R
 The first current-harness Chrome smoke passed all 15 actions on the owned 1,000-metadata-row fixture. For the one-million-value trace it verified all 1,000,000 samples, two HTTP responses and ten windows: post-stroke observation 304.8 ms, second stable DOM/RAF observation 323.8 ms. The final observation's independent correctness scan took another 9.1 ms, recorded separately. The retained 300,000-value action measured 167.2/174.1 ms. Evidence: `/private/tmp/disco-binary-million-chrome-smoke/receipt.json` and its raw browser files.
 
 Receipt flags are `status=diagnostic`, `smoke=true`, `epochs=1000`, `protocol_epochs=1000`, `samples=1`. Its source base is `4140371e72916b9dcfb9d390dd8e93d1c2088553` with the explicitly recorded uncommitted binary/harness changes; the recorded source fingerprint is `db6efb6d6fb3182324efd2a8a01f503e7935f053bfee713cfb0af8fee013be47`. This is one ordinary smoke sample of dirty source in development Chrome with real owned H5 reads and explicit SQL/metadata fixture doubles. It proves the complete million-value rendering path executes and passes correctness; it does not establish a median, a native-app latency guarantee, or equivalence to the user's recording. A matched current-harness 4140371 JSON baseline is the next comparison, followed by repeated ordinary candidate samples and native confirmation as authorized.
+
+
+## Read-only estimate for an optional import-time sidecar
+
+The imported response-descriptor inventory covers five source recordings, 5,669 epochs, 8,529 response streams and 182,630,000 response samples. Their original H5 files total 1,359,994,920 bytes (1.360 GB, decimal). An uncompressed float64 response sidecar would add 1,461,040,000 bytes (1.461 GB), before indexes, headers or filesystem overhead; it would not replace the original scientific files. The representative datasets are compound quantity/units records (`<f8` plus `S10`), gzip-compressed in 64-record chunks. Evidence: `/private/tmp/disco-real-trace-sidecar-estimate-inventory.json`.
+
+A read-only stratified sample of 30 streams, 1,965,000 values, took about 0.44 seconds for reading, validating, packing and output hashing. Per-source linear extrapolation gives about 41.4 seconds across this project. This is a planning estimate, not measured import time: it excludes writing the sidecar, cold-cache effects and differences in per-stream overhead. Evidence: `/private/tmp/disco-real-read-conversion-estimate.json`. No sidecar was written and no import/cache behavior changed.
+
+A separate display-summary proposal could use base blocks of 128 samples and a balanced hierarchy retaining four source-index/float64 pairs per node. Assuming 32-bit local indices, four 12-byte pairs and fewer than two nodes per base block, the asymptotic storage is about 0.75 bytes per source sample: roughly 137 MB here, plus per-stream rounding, metadata and alignment. This is a rough design estimate, not an implemented format or a measured acceleration. Exact cursors and zoom would still need the admitted original samples; source hashes, interval identity, invalidation and fallback would require explicit tests before adoption.
+
+
+## Independent display-reducer QA
+
+The actual candidate Canvas painter passed 72 independent path and raw-byte cases against the previous full-polyline painter at `97ac4d50759d0032cda645d3fe53e1bc2b7e8565`. The candidate was that commit plus the recorded uncommitted display changes, not a packaged release. The harness imports the actual painter through a test-only export and builds its expected coordinates independently, without importing the product reducer. The matrix covers Light/Dark, 640/1,200 CSS-pixel widths, DPR 1/2, million/10,000/100-sample windows, and noisy sinusoids with isolated positive/negative spikes, constant signals, and gaps with isolated finite points.
+
+Every case matched the exact expected chronological first/last/minimum/maximum path per physical column and finite run. The original million-sample buffer's SHA-256 stayed unchanged. Independent source-index checks retained exact sample values; actual cursor interactions are covered separately by frontend lifecycle tests. Million-sample paths retained 1,074–8,440 vertices across the tested signals and geometries.
+
+Raster comparisons were identical in 40 cases and different in 32; the maximum changed-pixel fraction was 4.5721% of the whole canvas. All constant-signal cases and all 100-sample zooms were identical. Reduced noisy/gapped traces differ in fine line density and antialias coverage, so this is explicitly not a pixel-identical rendering claim. Saved Light and Dark baseline/candidate images were visually reviewed: axes, waveform envelope and both large isolated spikes remain visible, with fine-density differences in the reduced waveform.
+
+Evidence: `/private/tmp/disco-pixel-qa-v2/receipt.json`, `cases.jsonl` and the four paired PNGs; harness `/private/tmp/disco-pixel-qa.mjs`. The earlier v1 retained the same quantitative results but mistakenly displayed Dark colors on a white page; v2 corrects the diagnostic background and is the visual-review evidence. These deliberately instrumented synthetic checks make no native latency or compositor timing claim.
