@@ -172,6 +172,20 @@ jobs:
           "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_ci.py run --family browser \
             --plan "$RUNNER_TEMP/performance-plan/source-plan.json" --output "$RUNNER_TEMP/everyday-browser" \
             --worktrees "$RUNNER_TEMP/browser-sources"
+      - name: Canonical prepared geometry correctness and matched latency
+        run: |
+          unset RIEKE_TEST_DOM_MODULE
+          geometry_baseline="$RUNNER_TEMP/geometry-baseline"
+          git worktree add --detach "$geometry_baseline" a25b437c22b8dca220cff2797c4d48e3ed63a603
+          for package in workspace-app desktop; do
+            "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$geometry_baseline/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json"
+            ln -s "$GITHUB_WORKSPACE/$package/node_modules" "$geometry_baseline/$package/node_modules"
+          done
+          candidate=$(python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/performance-plan/source-plan.json")); r=p["canonical"]["candidate"]; print(os.environ["GITHUB_WORKSPACE"] if p["sources"][r]==p["harness"] else os.environ["RUNNER_TEMP"]+"/browser-sources/"+r)')
+          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_prepared_geometry.py -v
+          "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_prepared_geometry.py run --source-root "$geometry_baseline" --output "$RUNNER_TEMP/everyday-browser/geometry-baseline"
+          "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_prepared_geometry.py run --source-root "$candidate" --output "$RUNNER_TEMP/everyday-browser/geometry-candidate"
+          "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_prepared_geometry.py compare "$RUNNER_TEMP/everyday-browser/geometry-baseline/receipt.json" "$RUNNER_TEMP/everyday-browser/geometry-candidate/receipt.json" --output "$RUNNER_TEMP/everyday-browser/geometry-comparison.json"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

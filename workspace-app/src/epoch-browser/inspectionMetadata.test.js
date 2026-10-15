@@ -316,3 +316,106 @@ test('Inspector keeps captured trace descriptor independent of held tag-page ref
   await h.act(()=>release());
  }finally{await h.close();}
 });
+
+
+async function offPageDisplayHarness({selected=false,focusCell=null}={}){
+ const uid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
+ const capability={kind:'prepared_display',token:uid(1),project_uuid:uid(2),publication_revision:uid(3),view_kind:'workbench_pending',protocol_uuid:uid(4),candidate_revision_uuid:uid(5),membership_sha256:'a'.repeat(64)};
+ const pageCapability=selected?{...capability,token:uid(11),view_kind:'workbench_selected'}:capability;
+ const root=`/protocols/${uid(4)}/workbench/candidates/${uid(5)}`;
+ const make=(n,cell,streams)=>({...row(uid(n)),cell_uuid:cell,source_sha256:'b'.repeat(64),streams,annotations:{epoch_uuid:uid(n),cell_uuid:cell,epoch_tags:[],cell_tags:[],effective_tags:[],revisions:{epoch:{},cell:{}}}});
+ const a=make(6,'cell-a',[]),b=make(8,'cell-b',[{kind:'responses',uuid:uid(7),sample_count:10000,sample_rate:10000,units:'mV'}]);
+ const cells=[{cell_uuid:'cell-a',label:'A',date:'2026-10-05',epochs:1},{cell_uuid:'cell-b',label:'B',date:'2026-10-05',epochs:1}];
+ const h=await createWorkflowHarness({total:2,liveMetadata:false});
+ const names=['ResizeObserver','getComputedStyle','requestAnimationFrame','cancelAnimationFrame'],old=Object.fromEntries(names.map(name=>[name,globalThis[name]]));
+ globalThis.ResizeObserver=class{observe(){}disconnect(){}};globalThis.getComputedStyle=()=>({getPropertyValue:()=>''});globalThis.requestAnimationFrame=()=>1;globalThis.cancelAnimationFrame=()=>{};
+ const canvas={getBoundingClientRect:()=>({width:603,height:300}),getContext:()=>new Proxy({},{get:()=>()=>{}})};
+ h.fixture.createNodeMock=element=>element.type==='canvas'?canvas:undefined;
+ h.fixture.traceComponent=await h.component('TraceViewer');
+ const page=(epochs,extra={})=>({epochs,cells,total:2,offset:0,query_revision:'scope-A',candidate_scope_revision:'scope-A',expected_binding_version:2,trace_read_context:pageCapability,...extra});
+ const clickedPage=page([b],{total:1});let releaseAnchor;
+ h.fixture.respond=(url,options,fallback)=>{
+  if(url.pathname===`/api${root}/epochs`){
+   if(url.searchParams.has('anchor_uuid'))return new Promise(resolve=>{releaseAnchor=()=>resolve(page([a,b]));});
+   if(url.searchParams.get('cell_uuid')==='cell-b')return clickedPage;
+   if(url.searchParams.get('cell_uuid')==='cell-a')return page([a],{total:1});
+   return page([a]);
+  }
+  if(url.pathname.endsWith('/display'))return new Promise(()=>{});
+  return fallback();
+ };
+ const Inspector=await h.component('Inspector'),props={projectId:uid(2),protocol:{definition:{protocol_uuid:uid(4)},query_revision:'scope-A',expected_binding_version:2,cells},readContext:{root,candidate_scope_revision:'scope-A',cohort_key:'cohort-A',...(selected?{selection_token:uid(12)}:{})},traceReadContext:capability,filters:{},revision:0,initialEpochUuid:a.epoch_uuid,...(focusCell?{initialNavigation:{focusCell}}:{})};
+ await h.mount(Inspector,props);await h.waitFor(()=>h.viewer.epoch?.epoch_uuid===a.epoch_uuid);
+ return {h,Inspector,props,a,b,page:clickedPage,capability,pageCapability,release:()=>releaseAnchor?.(),get pending(){return !!releaseAnchor;},async close(){await h.close();for(const name of names){if(old[name]===undefined)delete globalThis[name];else globalThis[name]=old[name];}}};
+}
+
+test('off-central-page native list click starts prepared geometry before held anchor grants curation',async()=>{
+ const f=await offPageDisplayHarness(),{h,b}=f;
+ try{
+  const date=h.root.findAllByType('details').find(n=>n.props.className==='cell-tree-date');await h.act(()=>date.props.onToggle({currentTarget:{open:true}}));
+  const cell=h.root.findAllByType('details').find(n=>n.props.className?.includes('cell-tree-cell')&&n.findByType('summary').props['aria-label']?.includes('B'));
+  await h.act(()=>cell.props.onToggle({currentTarget:{open:true}}));
+  await h.waitFor(()=>h.root.findAllByType('button').some(n=>n.props['aria-label']?.includes('B epoch 1')));
+  const button=h.root.findAllByType('button').find(n=>n.props['aria-label']?.includes('B epoch 1'));
+  await h.act(()=>button.props.onClick({shiftKey:false,metaKey:false,ctrlKey:false}));
+  await h.waitFor(()=>f.pending&&h.fixture.requests.some(r=>r.path.includes(`/epochs/${b.epoch_uuid}/display?`)));
+  assert.equal(h.viewer.traceEpoch,b);assert.equal(h.viewer.epoch,null);assert.equal(h.viewer.navigation.loading,true);assert.equal(h.viewer.inclusion.disabled,true);
+  assert.equal(h.fixture.requests.filter(r=>r.path.includes('/display?')).length,1);
+  assert.equal(h.fixture.requests.some(r=>r.path.includes('/trace?')),false,'no raw/background fallback');
+  const oldClick=h.viewer.treePane.listProps.onFocus;
+  await h.render(f.Inspector,{...f.props,revision:1});
+  assert.equal(h.viewer.traceEpoch,null,'unconfirmed click descriptor cannot survive navigation revision change');
+  await h.act(()=>oldClick(b.epoch_uuid,b,f.page));assert.equal(h.viewer.traceEpoch,null,'retired callback cannot re-admit an old row');
+  await h.render(f.Inspector,f.props);assert.equal(h.viewer.traceEpoch,null,'returning to the same navigation key does not resurrect its retired clicked offer');
+ }finally{await f.close();}
+});
+
+test('off-page trace admission rejects stale revision, wrong capability and arbitrary row hints',async()=>{
+ for(const variant of ['query','binding','capability','row']){
+  const f=await offPageDisplayHarness(),{h,b}=f;
+  try{
+   const page={...f.page,...(variant==='query'?{query_revision:'stale'}:variant==='binding'?{expected_binding_version:99}:variant==='capability'?{trace_read_context:{...f.capability,token:'00000000-0000-4000-8000-000000000099'}}:{})};
+   await h.act(()=>h.viewer.treePane.listProps.onFocus(b.epoch_uuid,variant==='row'?{...b}:b,page));
+   await h.waitFor(()=>f.pending);
+   assert.equal(h.viewer.traceEpoch,null,variant);assert.equal(h.fixture.requests.some(r=>r.path.includes('/display?')),false,variant);
+  }finally{await f.close();}
+ }
+});
+
+test('off-page clicked display and callbacks retire when the workspace request owner changes',async()=>{
+ const f=await offPageDisplayHarness(),{h,b}=f;
+ const {WorkspaceRequestProvider}=await h.module('workspaceRequest.js');
+ const request=async(path,options)=>{const response=await fetch('/api'+path,options);return response.json();};
+ const a={identity:'actor-A',request},other={identity:'actor-B',request};
+ function Owned({port}){return React.createElement(WorkspaceRequestProvider,{port},React.createElement(f.Inspector,f.props));}
+ try{
+  await h.render(Owned,{port:a});await h.waitFor(()=>h.viewer.epoch?.epoch_uuid===f.a.epoch_uuid);
+  const stale=h.viewer.treePane.listProps.onFocus;
+  await h.act(()=>stale(b.epoch_uuid,b,f.page));await h.waitFor(()=>h.viewer.traceEpoch===b);
+  await h.render(Owned,{port:other});await h.waitFor(()=>h.viewer.epoch?.epoch_uuid===f.a.epoch_uuid);
+  assert.notEqual(h.viewer.traceEpoch,b);
+  const before=h.fixture.requests.filter(r=>r.path.includes('/display?')).length;
+  await h.act(()=>stale(b.epoch_uuid,b,f.page));
+  assert.notEqual(h.viewer.traceEpoch,b);assert.equal(h.fixture.requests.filter(r=>r.path.includes('/display?')).length,before);
+ }finally{await f.close();}
+});
+
+
+test('selected off-page offers never borrow parent capabilities and cell-focus changes retire offers',async()=>{
+ const selected=await offPageDisplayHarness({selected:true});
+ try{
+  const {h,b}=selected;
+  assert.equal(h.viewer.traceReadContext.view_kind,'workbench_selected');
+  await h.act(()=>h.viewer.treePane.listProps.onFocus(b.epoch_uuid,b,{...selected.page,trace_read_context:selected.capability}));
+  await h.waitFor(()=>selected.pending);
+  assert.equal(h.viewer.traceEpoch,null);assert.equal(h.fixture.requests.some(r=>r.path.includes('/display?')),false,'parent pending capability cannot admit a selected-view click');
+ }finally{await selected.close();}
+ const focused=await offPageDisplayHarness({focusCell:'cell-a'});
+ try{
+  const {h,b}=focused;
+  await h.act(()=>h.viewer.treePane.listProps.onFocus(b.epoch_uuid,b,focused.page));
+  await h.waitFor(()=>focused.pending);
+  assert.equal(h.viewer.traceEpoch,null,'clearing focused-cell scope needs the new scope receipt');
+  assert.equal(h.fixture.requests.some(r=>r.path.includes('/display?')),false);
+ }finally{await focused.close();}
+});

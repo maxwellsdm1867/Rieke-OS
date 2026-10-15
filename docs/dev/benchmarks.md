@@ -551,3 +551,40 @@ First-observation validation can still delay the second RAF; this remains an
 explicit observer overhead, and neither endpoint claims compositor presentation.
 Binary bodies are independently decoded from the actual consumer's ArrayBuffer;
 no cloned response is read and no product decoder supplies the oracle.
+
+## Canonical prepared geometry lane
+
+`tools/benchmark_prepared_geometry.py run --source-root CHECKOUT --output NEW_DIR`
+uses the current committed harness against the explicit application checkout. It
+adds one separate three-sample prepared Workbench trace case; the fifteen existing
+workflow variants and their baselines remain unchanged. The fixture has 1,000
+synthetic metadata rows, a 200-epoch protocol and a real one-million-sample gzip64
+H5 response (`quantity` little-endian f64, `units` S10). SQL tables are explicit
+doubles. Source SHA verification, sealed metadata index, prepared capability,
+DTM1 endpoint, production React and real Canvas paint run together.
+
+The host smoke builds the same native C source with strict floating-point flags
+and requires ABI 4 and actual native admission. Linux's host helper is not a
+macOS release artifact; desktop deployment checks remain unchanged. The HTTP
+server is threaded Werkzeug, not packaged Waitress. Setup warms owned files and
+prepares metadata outside the trace clock. Each sample starts a fresh renderer.
+The receipt records post-stroke, first RAF and second RAF observations, not
+compositor presentation. An independent scalar oracle verifies every selected
+source index and f64 point byte, whole-source statistics and actual Canvas path
+coordinates after observation. The matched lightweight observer records Canvas
+path coordinates in both runs.
+The exact cursor then demands one 20,000-sample raw tile and checks every value
+against the source and the rendered readout. No whole raw waveform request is
+allowed during initial display. Missing prerequisites, fallback geometry,
+incomplete samples and cleanup failures are failures.
+
+`compare BASELINE/receipt.json CANDIDATE/receipt.json --output comparison.json`
+requires clean unchanged sources, identical harness, dependencies, fixture and
+environment. It applies the existing workflow policy to the median second-RAF
+and post-stroke metrics: regression review above the greater of 25% or 5 ms.
+There is no universal 50 ms CI target. CI runs the immutable geometry ancestor
+`a25b437c22b8dca220cff2797c4d48e3ed63a603` and candidate serially on the same host,
+after the legacy browser lane, preserving both raw receipts and comparison.
+This lane does not establish million-metadata scale, real SQL, native application
+or release qualification. Local `PREPARED_GEOMETRY_BROWSER` may select an explicit
+browser executable; CI uses its pinned Playwright Chromium installation.

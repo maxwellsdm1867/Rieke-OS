@@ -62,14 +62,32 @@ test('candidate save/reopen displays persisted proposal review and exclusion wit
  }
 });
 
-test('candidate detail with missing proposal receipt exposes no review action',async()=>{
+test('candidate page and detail with missing proposal receipt expose no review action',async()=>{
  const h=await createWorkflowHarness({total:10});
  try{
   incomingFixture(h,decision());const respond=h.fixture.respond;
-  h.fixture.respond=(...args)=>{const value=respond(...args);if(value.epoch_uuid)delete value.review_decision;return value;};
+  // The compact page owns review authority independently of optional Live values.
+  // Remove both receipts to model genuinely unavailable incoming decisions.
+  h.fixture.respond=(...args)=>{const value=respond(...args);if(value.epoch_uuid)delete value.review_decision;for(const row of value.epochs||[])delete row.review_decision;return value;};
   const Inspector=await h.component('Inspector');await h.mount(Inspector,{...props,onReviewDecision:()=>{throw Error('Must not write');}});
   await h.waitFor(()=>!!h.viewer.epoch&&!h.viewer.treePane.listProps.disabled);
-  assert.equal(reviewButton(h),undefined);assert.equal(epochIncluded(h.viewer.epoch,true),null);
+  assert.equal(!!reviewButton(h),false,'missing incoming receipt must hide review action');assert.equal(epochIncluded(h.viewer.epoch,true),null);
   assert.equal(h.viewer.epoch.curation.included,true);
+ }finally{await h.close();}
+});
+
+
+test('fresh candidate page owns its review receipt when optional detail has none',async()=>{
+ const h=await createWorkflowHarness({total:10});
+ try{
+  incomingFixture(h,decision(true,false));const respond=h.fixture.respond;
+  h.fixture.respond=(...args)=>{const value=respond(...args);if(value.epoch_uuid)delete value.review_decision;return value;};
+  const Inspector=await h.component('Inspector');await h.mount(Inspector,{...props,onReviewDecision:()=>{throw Error('No implicit write');}});
+  await h.waitFor(()=>!!h.viewer.epoch&&!h.viewer.treePane.listProps.disabled);
+  await h.waitFor(()=>h.fixture.requests.some(row=>row.path.includes('/epochs/epoch-0')&&row.completed));
+  assert.equal(!!reviewButton(h),true,'fresh compact page still supplies the valid proposal decision');
+  assert.match(text(h),/Reviewed/);assert.equal(epochIncluded(h.viewer.epoch,true),true);
+  assert.equal(h.viewer.epoch.curation.review_state,'unreviewed','incoming receipt does not rewrite scientific curation');
+  assert.equal(h.fixture.requests.some(row=>row.method!=='GET'),false,'viewing page or optional metadata never submits a decision');
  }finally{await h.close();}
 });

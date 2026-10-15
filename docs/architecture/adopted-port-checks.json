@@ -1873,7 +1873,8 @@
           "language": "javascript",
           "file": "workspace-app/src/traces/usePreparedTraceRead.js",
           "allow": [
-            "react"
+            "react",
+            "workspace-app/src/retainedWorkspaceViews.js"
           ]
         },
         {
@@ -1888,7 +1889,8 @@
           "file": "workspace-app/src/traces/useExactTraceCursor.js",
           "allow": [
             "react",
-            "workspace-app/src/traces/readWholeTrace.js"
+            "workspace-app/src/traces/readWholeTrace.js",
+            "workspace-app/src/retainedWorkspaceViews.js"
           ]
         },
         {
@@ -3218,7 +3220,12 @@
         "workspace-app/src/useSemanticReset.js",
         "workspace-app/src/useSemanticReset.test.js",
         "workspace-app/retainedLifecyclePolicy.mjs",
-        "docs/architecture/retained-ui-lifetimes.json"
+        "docs/architecture/retained-ui-lifetimes.json",
+        "workspace-app/src/traces/retainedReadLifecycle.test.js",
+        "workspace-app/src/epoch-browser/useEpochBrowserPage.js",
+        "workspace-app/src/traces/usePreparedTraceRead.js",
+        "workspace-app/src/traces/useExactTraceCursor.js",
+        "workspace-app/src/summary-jobs/useFieldRegistry.js"
       ],
       "rules": [
         {
@@ -3261,7 +3268,8 @@
           "workspace-app/src/retainedHiddenControls.test.js",
           "workspace-app/src/hierarchyRetention.test.js",
           "workspace-app/src/semanticPresentationControls.test.js",
-          "workspace-app/src/authoredDrafts.test.js"
+          "workspace-app/src/authoredDrafts.test.js",
+          "workspace-app/src/traces/retainedReadLifecycle.test.js"
         ],
         "python": [
           "python/tests/test_workspace_presentation_cache.py",
@@ -3336,6 +3344,47 @@
           "workspace-app/src/traces/exactTraceCursor.test.js",
           "workspace-app/src/traces/traceGeometryLifecycle.test.js"
         ]
+      }
+    },
+    {
+      "id": "canonical-prepared-geometry-regression",
+      "contract": {
+        "path": "docs/dev/benchmarks.md",
+        "heading": "Canonical prepared geometry lane"
+      },
+      "affected_paths": [
+        "tools/benchmark_prepared_geometry.py",
+        "benchmarks/prepared_geometry/**",
+        "python/tests/test_benchmark_prepared_geometry.py",
+        ".github/workflows/everyday-million.yml"
+      ],
+      "rules": [
+        {
+          "language": "python",
+          "file": "tools/benchmark_prepared_geometry.py",
+          "allow": [
+            "argparse",
+            "ctypes",
+            "hashlib",
+            "importlib.metadata",
+            "json",
+            "os",
+            "pathlib",
+            "platform",
+            "shutil",
+            "statistics",
+            "subprocess",
+            "sys",
+            "time",
+            "benchmark_workflow"
+          ]
+        }
+      ],
+      "tests": {
+        "python": [
+          "python/tests/test_benchmark_prepared_geometry.py"
+        ],
+        "javascript": []
       }
     }
   ],
@@ -3915,6 +3964,14 @@
           {
             "from": "workspace-app/src/traces/traceGeometryLifecycle.test.js",
             "to": "workspace-app/src/traces/traceStatistics.js"
+          },
+          {
+            "from": "workspace-app/src/traces/retainedReadLifecycle.test.js",
+            "to": "workspace-app/src/traces/usePreparedTraceRead.js"
+          },
+          {
+            "from": "workspace-app/src/traces/retainedReadLifecycle.test.js",
+            "to": "workspace-app/src/traces/useExactTraceCursor.js"
           }
         ],
         "public_entries": [

@@ -1,3 +1,4 @@
+import {useRetainedView} from '../retainedWorkspaceViews.js';
 import {useCallback,useLayoutEffect,useState} from 'react';
 
 // Captured display reads start during commit, before unrelated passive metadata
@@ -7,8 +8,9 @@ import {useCallback,useLayoutEffect,useState} from 'react';
 export function usePreparedTraceRead(path,revision,requestPort){
  const [state,setState]=useState(null),[nonce,setNonce]=useState(0);
  const reload=useCallback(()=>setNonce(value=>value+1),[]);
- const request=requestPort?.request;
+ const request=requestPort?.request,active=useRetainedView()?.active!==false;
  useLayoutEffect(()=>{
+  if(!active)return;
   if(!path){setState(previous=>previous===null?previous:null);return;}
   const controller=new AbortController();
   const publish=value=>{if(!controller.signal.aborted)setState({...value,path,revision,nonce,requestPort,request,signal:controller.signal});};
@@ -19,7 +21,7 @@ export function usePreparedTraceRead(path,revision,requestPort){
   }catch(error){pending=Promise.reject(error);}
   Promise.resolve(pending).then(data=>publish({data,loading:false,error:null}),error=>publish({data:null,loading:false,error:error.message}));
   return()=>controller.abort();
- },[path,revision,nonce,requestPort,request]);
+ },[path,revision,nonce,requestPort,request,active]);
  // Cleanup retires completed results too: A-B-A and Activity reconnects must
  // not resurrect an earlier request with the same path/owner tuple.
  const current=state?.signal&&!state.signal.aborted&&state.path===path&&state.revision===revision&&state.nonce===nonce&&state.requestPort===requestPort&&state.request===request;

@@ -1,4 +1,5 @@
-import {useEffect,useLayoutEffect,useMemo,useRef,useSyncExternalStore} from 'react';
+import {useRetainedView} from '../retainedWorkspaceViews.js';
+import {useEffect,useLayoutEffect,useMemo,useRef,useState,useSyncExternalStore} from 'react';
 import {api,useResource} from '../api.js';
 import {useWorkspaceRequestScope} from '../workspaceRequest.js';
 import {createOverviewCache} from './overviewCache.js';
@@ -41,8 +42,10 @@ export function useOverviewCache(scope,revision,structureRevision=revision){
 }
 
 const subscribeNothing=()=>()=>{},zero=()=>0;
-export function useOverviewResource(path,revision,{cache,scope,active=true}={}){
- const owner=useWorkspaceRequestScope(),enabled=!!cache&&!owner;
+export function useOverviewResource(path,revision,{cache,scope,active:requestedActive=true}={}){
+ const owner=useWorkspaceRequestScope(),view=useRetainedView(),enabled=!!cache&&!owner,active=requestedActive&&view?.active!==false;
+ const [reloadNonce,setReloadNonce]=useState(0),pendingReload=useRef(null),visible=useRef(false);
+ useLayoutEffect(()=>{visible.current=active;return()=>{visible.current=false;};},[active]);
  const fallback=useResource(enabled||!active?null:path,revision);
  useSyncExternalStore(enabled?cache.subscribe:subscribeNothing,enabled?cache.snapshot:zero,zero);
  const descriptor=useMemo(()=>path?{path,scope,revision}:null,[path,scope,revision]);
@@ -57,12 +60,13 @@ export function useOverviewResource(path,revision,{cache,scope,active=true}={}){
  useEffect(()=>{
   if(!enabled||!active||!descriptor)return;
   cache.acquire(descriptor);
-  void cache.read(descriptor,{request:api}).catch(()=>{});
+  const force=pendingReload.current===descriptor;pendingReload.current=null;
+  void cache.read(descriptor,{request:api,...(force?{force:true}:{})}).catch(()=>{});
   return()=>cache.release(descriptor);
- },[enabled,active,cache,descriptor,missingInvalidated]);
+ },[enabled,active,cache,descriptor,missingInvalidated,reloadNonce]);
  const displayData=display.current&&display.current.cache===cache&&display.current.path===path&&display.current.scope===scope?display.current.data:null;
  if(!enabled)return {...fallback,displayData};
  return {data:entry?.data||null,displayData,error:entry?.error||null,
-  loading:!!path&&(!entry||entry.loading||entry.invalidated||entry.revision!==revision),
-  reload:()=>{if(descriptor)void cache.read(descriptor,{request:api,force:true}).catch(()=>{});}};
+  loading:!!path&&(pendingReload.current===descriptor||!entry||entry.loading||entry.invalidated||entry.revision!==revision),
+  reload:()=>{if(!descriptor)return;if(!visible.current){pendingReload.current=descriptor;setReloadNonce(value=>value+1);return;}void cache.read(descriptor,{request:api,force:true}).catch(()=>{});}};
 }

@@ -176,3 +176,14 @@ annotation refresh may gate tags/tree actions without clearing those samples.
 Actual epoch/source/token/publication and workspace owner changes fence display.
 A selected subset requires its own admitted page capability. Undefined capability
 means legacy routing; null means unavailable and cannot fall back globally.
+
+
+A normal click in an admitted Workbench cell page may offer its exact row and
+page receipt for focused display before the central anchor page resolves. The
+original row reference, query/binding receipt, complete prepared capability and
+current request/navigation lifetime must match. A selected view cannot borrow
+its parent capability. This single focused offer does not enter central-page
+refresh retention and cannot survive owner, navigation scope or capability
+replacement. Anchor/offset reads and all curation/selection readiness gates remain
+unchanged. `inspectionMetadata.test.js` holds the anchor while the real shared
+TraceViewer starts geometry, and rejects stale/replaced/foreign offers.

@@ -68,7 +68,7 @@ export function useResource(path, revision = 0, delayMs = 0, options = {}) {
   const inherited=useWorkspaceRequestScope(),owner=options.requestPort===undefined?inherited:options.requestPort;
   const transport=owner?(typeof owner.request==='function'?owner.request:()=>Promise.reject(Error('Workspace request authority is unavailable.'))):api;
   const cached=!owner&&options.cache===true,warmEpoch=!owner&&options.warmEpoch===true,paused=options.paused===true;
-  const retainedView=useRetainedView(),retentionIdentity=retainedView?.identity;
+  const retainedView=useRetainedView(),retentionIdentity=retainedView?.identity,active=retainedView?.active!==false;
   const retained=!!retainedView&&!owner&&!options.initialRead&&!cached&&retainablePresentationRead(path);
   const completedRead=useRef(null);
   const [state, setState] = useState({data: null, loading: true, error: null});
@@ -79,15 +79,17 @@ export function useResource(path, revision = 0, delayMs = 0, options = {}) {
   // A-B-A transitions. Custom ports and caches never consume an HTTP offer.
   if(!initialLifetime.current||initialLifetime.current.offer!==initialRead){
     if(initialLifetime.current?.offer&&typeof initialLifetime.current.offer==='object')retiredOffers.current.add(initialLifetime.current.offer);
-    initialLifetime.current={offer:initialRead,path,revision,owner,retired:nonce!==0||paused||!!owner||cached||!!initialRead&&retiredOffers.current.has(initialRead)};
-  }else if(initialLifetime.current.path!==path||initialLifetime.current.revision!==revision||initialLifetime.current.owner!==owner||nonce!==0||paused||cached)initialLifetime.current.retired=true;
+    initialLifetime.current={offer:initialRead,path,revision,owner,retired:nonce!==0||paused||!active||!!owner||cached||!!initialRead&&retiredOffers.current.has(initialRead)};
+  }else if(initialLifetime.current.path!==path||initialLifetime.current.revision!==revision||initialLifetime.current.owner!==owner||nonce!==0||paused||!active||cached)initialLifetime.current.retired=true;
   if(initialLifetime.current.retired&&initialRead&&typeof initialRead==='object')retiredOffers.current.add(initialRead);
 
   const reload = useCallback(() => {if(cached)epochResourceCache.invalidate(path,{related:warmEpoch});setNonce(n => n + 1);}, [path,cached,warmEpoch]);
   useEffect(() => {
     // A draft write invalidates its read token before the replacement receipt
     // arrives. Cancel delayed/in-flight reads while retaining inert content.
-    if(paused)return;
+    // Pending writes may keep a hidden Activity mounted. Read demand follows
+    // retained visibility independently; write/command owners stay untouched.
+    if(paused||!active)return;
     if (!path) {completedRead.current=null;setState({data: null, loading: false, error: null}); return;}
     const completed=completedRead.current;
     if(retained&&completed?.path===path&&completed.revision===revision&&completed.nonce===nonce&&completed.retentionIdentity===retentionIdentity)return;
@@ -104,7 +106,7 @@ export function useResource(path, revision = 0, delayMs = 0, options = {}) {
     return startResourceRequest({path,delayMs,request,
       onData:data=>{const next={data,loading:false,error:null,path,revision,nonce,owner,initialRead,retentionIdentity};completedRead.current=next;setState(next);},
       onError:error=>{completedRead.current=null;setState({data:null,loading:false,error:error.message,path,revision,nonce,owner,initialRead,retentionIdentity});}});
-  }, [path, revision, nonce, delayMs,cached,warmEpoch,paused,owner,transport,initialRead,retained,retentionIdentity]);
+  }, [path, revision, nonce, delayMs,cached,warmEpoch,paused,active,owner,transport,initialRead,retained,retentionIdentity]);
   // Complete metadata/trace pairs publish in the same render; partial snapshots
   // start I/O immediately unless the caller explicitly requests a delay.
   // Both paths retain exact path/revision/reload publication fences.
@@ -115,9 +117,9 @@ export function useResource(path, revision = 0, delayMs = 0, options = {}) {
 export function useEpochResource(path,revision=0,delayMs=0){return useResource(path,revision,delayMs,{cache:true,warmEpoch:true});}
 export function prefetchResources(paths,revision=0,{delayMs=180}={}){return prefetchEpochMetadata(paths,{request:api,revision,delayMs});}
 export function useEpochPrefetch(paths,revision=0,delayMs=180,{traces=false,traceOnly=false,progressive=false,concurrency=1}={}){
-  const owner=useWorkspaceRequestScope();
+  const owner=useWorkspaceRequestScope(),active=useRetainedView()?.active!==false;
   const identity=JSON.stringify(paths||[]);
-  useEffect(()=>owner?undefined:traceOnly?prefetchTraceWindows(JSON.parse(identity),{request:api,revision,delayMs,progressive,concurrency}):traces?prefetchEpochTraces(JSON.parse(identity),{request:api,revision,delayMs,progressive,concurrency}):prefetchResources(JSON.parse(identity),revision,{delayMs}),[identity,revision,delayMs,owner,traces,traceOnly,progressive,concurrency]);
+  useEffect(()=>!active||owner?undefined:traceOnly?prefetchTraceWindows(JSON.parse(identity),{request:api,revision,delayMs,progressive,concurrency}):traces?prefetchEpochTraces(JSON.parse(identity),{request:api,revision,delayMs,progressive,concurrency}):prefetchResources(JSON.parse(identity),revision,{delayMs}),[identity,revision,delayMs,owner,active,traces,traceOnly,progressive,concurrency]);
 }
 export const number = value => Number(value || 0).toLocaleString();
 export const duration = seconds => seconds == null ? 'Unknown' : seconds < 60 ? `${seconds.toFixed(1)} s` : `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;

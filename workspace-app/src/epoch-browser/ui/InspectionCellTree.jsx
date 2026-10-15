@@ -187,7 +187,7 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
     try{
       target={...target,explicit,revision:epochPageRevision(props.source,page)};
       if(!epoch?.epoch_uuid||epoch.epoch_uuid!==target.uuid||epoch.cell_uuid!==target.cellUuid)throw new Error('Epoch selection ownership changed. Refresh and select again.');
-      if(!explicit)callbacks.current.onFocus?.(target.uuid,epoch);
+      if(!explicit)callbacks.current.onFocus?.(target.uuid,epoch,page);
       if(!explicit&&!multiple&&!shift){if(callbacks.current.setHighlightedEpochs)callbacks.current.setHighlightedEpochs([target.uuid]);else if(!props.source.readContext)callbacks.current.setTargets([]);}
       if(shift&&anchor.current&&anchor.current.explicit===explicit){
         controller=new AbortController();request.current=controller;setSelecting(true);

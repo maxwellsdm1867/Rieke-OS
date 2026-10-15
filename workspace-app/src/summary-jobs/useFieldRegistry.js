@@ -6,9 +6,10 @@ import {api} from '../api.js';
 // permits fallback; generation/validation failures remain visible failures.
 export function useFieldRegistry(revision=0,fallbackPath='/explore/predicate-fields'){
   const [state,setState]=useState({data:null,loading:true,error:null}),[attempt,setAttempt]=useState(0);
-  const view=useRetainedView(),identity=view?.identity,completed=useRef(null);
+  const view=useRetainedView(),identity=view?.identity,active=view?.active!==false,completed=useRef(null);
   const key=JSON.stringify([revision,fallbackPath,attempt,identity]);
   useEffect(()=>{
+    if(!active)return;
     if(view&&completed.current===key)return;
     const controller=new AbortController();let live=true;
     setState({key,data:null,loading:true,error:null});
@@ -22,6 +23,6 @@ export function useFieldRegistry(revision=0,fallbackPath='/explore/predicate-fie
       }catch(error){if(live){completed.current=null;setState({key,data:null,loading:false,error:error.message,supportsSummaries:false});}}
     }
     load();return()=>{live=false;controller.abort();};
-  },[key]);
+  },[key,active]);
   return {...(state.key===key?state:{data:null,loading:true,error:null,supportsSummaries:false}),reload:()=>setAttempt(value=>value+1)};
 }

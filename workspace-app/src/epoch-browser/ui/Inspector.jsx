@@ -215,10 +215,21 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   // freshness. Retain only the focused row; never broaden a selected page.
   const displayRow=rows.data?.epochs?.find(row=>row.epoch_uuid===focused);
   const displayKey=preparedTraceReadContext?JSON.stringify([projectId,requestScope?.identity,preparedTraceReadContext,readContext?.selection_token,focused]):null;
+  const [clickedDisplay,setClickedDisplay]=useState(null);
+  const displayLifetime=useMemo(()=>({}),[requestScope,navigationReadKey,JSON.stringify(preparedTraceReadContext)]);
+  const committedDisplayLifetime=useRef(null);
+  useLayoutEffect(()=>{committedDisplayLifetime.current=displayLifetime;return()=>{committedDisplayLifetime.current=null;};},[displayLifetime]);
   const capturedDisplay=useRef(null);
+  const clickedDisplayCurrent=clickedDisplay?.lifetime===displayLifetime&&clickedDisplay.key===displayKey;
   const traceEpoch=displayKey&&Array.isArray(displayRow?.streams)?displayRow:
-    displayKey&&capturedDisplay.current?.key===displayKey?capturedDisplay.current.row:null;
-  useLayoutEffect(()=>{capturedDisplay.current=displayKey&&traceEpoch?{key:displayKey,row:traceEpoch}:null;},[displayKey,traceEpoch]);
+    displayKey&&clickedDisplayCurrent?clickedDisplay.row:
+    displayKey&&capturedDisplay.current?.key===displayKey&&capturedDisplay.current.owner===requestScope?capturedDisplay.current.row:null;
+  // Only central-page rows enter refresh retention. A clicked-row offer cannot
+  // outlive its exact navigation/owner lifetime while its anchor is pending.
+  useLayoutEffect(()=>{
+    if(displayKey&&Array.isArray(displayRow?.streams))capturedDisplay.current={key:displayKey,row:displayRow,owner:requestScope};
+    else if(capturedDisplay.current?.key!==displayKey||capturedDisplay.current?.owner!==requestScope)capturedDisplay.current=null;
+  },[displayKey,displayRow,requestScope]);
   const neighborIndex=rows.data?.epochs?.findIndex(row=>row.epoch_uuid===focused)??-1;
   useEpochPrefetch(!readContext&&!annotationState.dirty&&!epoch.loading&&!rows.loading&&neighborIndex>=0?epochPrefetchPaths(rows.data.epochs,neighborIndex,initialEpochTracePath,{progressive:true,activeCellOnly:true}):[],annotationState.epochRevision,180,{traces:true,traceOnly:true,progressive:true,concurrency:2});
   const metadataCatalog=useResource(metadataOpen&&!designMode?'/metadata/fields':null,structureRevision);
@@ -285,8 +296,25 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     if(focusCell){navigationIntent.current=null;anchorSteps.current=0;setFocusCell(null);setOffset(0);setPendingNavigation(null);}
     selectTargets(update);
   }
-  function focusTreeEpoch(uuid,epochInfo){setCellTagRequest(null);toggleMetadata(true);
-    if(busy||!navigationReady||committedNavigationReadKey.current!==navigationReadKey)return;
+  function focusTreeEpoch(uuid,epochInfo,sourcePage){setCellTagRequest(null);toggleMetadata(true);
+    if(busy||!navigationReady||committedNavigationReadKey.current!==navigationReadKey||committedDisplayLifetime.current!==displayLifetime)return;
+    let displayOffer=null;
+    // The clicked cell page already carries a bounded, revision-checked row.
+    // Its own exact capability can start display while central navigation and
+    // curation receipts continue independently. Arbitrary row hints cannot.
+    if(preparedTraceReadContext&&sourcePage?.trace_read_context&&
+      sourcePage.query_revision===listQueryRevision&&sourcePage.expected_binding_version===selectionReceipt?.bindingVersion&&
+      sourcePage.epochs?.includes(epochInfo)&&epochInfo?.epoch_uuid===uuid&&Array.isArray(epochInfo.streams)&&
+      /^[0-9a-f]{64}$/.test(epochInfo.source_sha256??'')){
+      try{
+        const context=selectPreparedTraceContext({page:sourcePage,context:contextTraceReadContext,
+          selected:!!selectedView||!!readContext?.selection_token,projectUuid:projectId,protocolUuid:id,
+          candidateUuid:readContext?.root?.split('/').at(-1)});
+        if(context&&Object.keys(preparedTraceReadContext).every(key=>context[key]===preparedTraceReadContext[key]))
+          displayOffer={row:epochInfo,lifetime:displayLifetime,key:JSON.stringify([projectId,requestScope?.identity,preparedTraceReadContext,readContext?.selection_token,uuid])};
+      }catch{/* An unusable display offer never replaces normal guarded navigation. */}
+    }
+    setClickedDisplay(displayOffer);
     setListNavigationRequest(value=>value+1);
     const loadedMember=pageReady&&rows.data?.epochs?.some(row=>row.epoch_uuid===uuid&&row.cell_uuid===epochInfo?.cell_uuid);
     if(focusCell&&epochInfo?.cell_uuid!==focusCell)clearCellFocus();
