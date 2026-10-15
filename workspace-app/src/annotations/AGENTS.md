@@ -61,3 +61,11 @@ and existing assertions. No import/export workload, scientific fixture, native
 annotation transaction or performance qualification follows from this organization.
 
 AnnotationTags resets local draft text when its epoch identity changes, not merely when Activity reconnects effects. Mutation scope/generation fences still reestablish on every reconnect. The existing nonempty unmount guard also prevents retained-view eviction of standalone CellQC tag text.
+
+Inspect and Search editors consume shared annotations already present on their
+admitted epoch rows, independently of the Live metadata setting. Frozen
+Workbench uses the same Inspector path. Turning Live metadata off must not force
+a second per-epoch annotation request or temporarily relock complete page-backed
+controls during ordinary sibling navigation. Missing annotations, explicit
+refresh, and required whole-cell counts keep their existing read/lock behavior;
+per-author expected revisions and late-response scope fences remain unchanged.

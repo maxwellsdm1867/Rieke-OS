@@ -12,7 +12,7 @@ export async function readWholeTrace({request,epochUuid,stream,readContext,sourc
   if(!Number.isSafeInteger(total)||total<1)throw Error('Invalid recorded sample count.');
   if(!Number.isSafeInteger(window.start)||!Number.isSafeInteger(window.count)||window.start<0||window.count<1||window.start+window.count>total)throw Error('Invalid recorded sample window.');
   if(![MAX_TRACE_SAMPLES,MAX_WHOLE_TRACE_CHUNK_SAMPLES].includes(maxChunkSamples))throw Error('Invalid trace transport bound.');
-  const imported=['imported_snapshot','imported_cell_snapshot'].includes(readContext?.kind);
+  const imported=['imported_snapshot','imported_cell_snapshot'].includes(readContext?.kind),prepared=readContext?.kind==='prepared_display';
   // Snapshot endpoints retain their separate 20k contract. Canonical/frozen
   // whole-stream demand can use the existing 100k HTTP bound.
   const chunkSize=imported?MAX_TRACE_SAMPLES:maxChunkSamples;
@@ -23,8 +23,10 @@ export async function readWholeTrace({request,epochUuid,stream,readContext,sourc
   const matchesHeader=chunk=>traceResponseMatches(chunk,readContext)&&chunk?.epoch_uuid===epochUuid&&chunk?.stream_uuid===stream.uuid&&
     chunk.sample_rate>0&&Number.isFinite(chunk.sample_rate)&&chunk.decimated===false&&chunk.total_samples===total&&
     typeof chunk.source_sha256==='string'&&!!chunk.source_sha256&&(!sourceSha256||chunk.source_sha256===sourceSha256)&&
-    (!imported||chunk.source_sha256===readContext.source_sha256&&chunk.sample_rate===stream.sample_rate&&
+    (!imported||chunk.source_sha256===readContext.source_sha256)&&
+    (!(imported||prepared)||chunk.sample_rate===stream.sample_rate&&
       (typeof stream.units==='string'||stream.units===null)&&chunk.units===stream.units)&&
+    (!prepared||/^[0-9a-f]{64}$/.test(chunk.source_sha256))&&
     (!first||chunk.sample_rate===first.sample_rate&&chunk.units===first.units&&chunk.source_sha256===first.source_sha256);
   for(let start=window.start;start<end;){
     signal?.throwIfAborted();
@@ -36,7 +38,7 @@ export async function readWholeTrace({request,epochUuid,stream,readContext,sourc
     if(batch){
       if(chunks===1||!Array.isArray(response.windows)||response.windows.length!==chunks||
         !matchesHeader(response)||response.start!==start||response.count!==Math.min(chunks*count,end-start)||
-        (readContext&&response.candidate_scope_revision!==readContext.candidate_scope_revision))invalid();
+        (readContext&&!prepared&&response.candidate_scope_revision!==readContext.candidate_scope_revision))invalid();
     }else if(chunks>1){
       // Older endpoints ignore the opt-in parameter. Admit their one ordinary
       // window and finish with ordinary requests; never treat it as a full batch.

@@ -902,6 +902,32 @@ class WorkbenchTests(unittest.TestCase):
         self.assertEqual(detail.get_json()['curation']['revision'], 0)
         self.assertFalse(self.case.curation.rows)
 
+    def test_prepared_selected_display_keeps_prior_metadata_and_tag_filters(self):
+        context = self.get_context()
+        token = str(uuid.uuid4())
+        upload = self.case.client.post(self.root + '/selection-manifest', headers=self.case.headers,
+            json=dict(candidate_scope_revision=context['candidate_scope_revision'], upload_uuid=token,
+                offset=0, total=1, epoch_uuids=[self.added]))
+        self.assertEqual(upload.status_code, 200, upload.get_json())
+        views = self.case.app.extensions['trace_views']
+        selected = {'field':'epoch', 'operator':'in', 'value':[self.added]}
+        cases = [
+            ({'metadata_predicate':json.dumps({'all':[
+                {'field':'parameters/example', 'operator':'eq', 'value':1}, selected]})}, set()),
+            ({'metadata_predicate':json.dumps(selected), 'tag':'not-present'}, set()),
+            ({'metadata_predicate':json.dumps({'all':[
+                {'field':'parameters/example', 'operator':'eq', 'value':0}, selected]})}, {self.added}),
+        ]
+        for filters, expected in cases:
+            captured = []
+            with self.subTest(filters=filters), patch.object(views, '_canonical', return_value=True), patch.object(
+                    views, 'prepare', side_effect=lambda value: captured.append(value) or None):
+                page = self.case.client.get(self.root + '/epochs', query_string=dict(
+                    candidate_scope_revision=context['candidate_scope_revision'], selection_token=token, **filters))
+                self.assertEqual(page.status_code, 200, page.get_json())
+                self.assertEqual({row['epoch_uuid'] for row in page.get_json()['epochs']}, expected)
+                self.assertEqual(captured[-1]['_view_ids'], expected)
+
     def test_scoped_predicate_dependency_intersects_only_frozen_incoming_across_read_surfaces(self):
         if not hasattr(self.case.service, 'validate_metadata_filters'):
             self.skipTest('Compose the protocol-scoped-predicate commits to qualify this adapter')
@@ -1293,6 +1319,41 @@ class WorkbenchTests(unittest.TestCase):
         self.case.store.state_generation = tracker
         service._explore_state_generation = tracker
         return self.case.app.extensions['protocol_state_reader'], tracker
+
+    def test_ordinary_epoch_filter_stays_pending_but_explicit_selected_capability_is_exact(self):
+        self.native_revision_fixture()
+        views = self.case.app.extensions['trace_views']
+        # Source eligibility is already covered by the owned H5 registry tests;
+        # this checks real HTTP preparation/filter routing with the SQL double.
+        with patch.object(views, '_canonical', return_value=True):
+            context = self.get_context()
+            self.assertTrue(context['selection_manifests'])
+            pending = context['trace_read_context']
+            self.assertEqual(pending['view_kind'], 'workbench_pending')
+            clause = dict(field='epoch', operator='in', value=[self.added])
+            for predicate in [clause, {'all':[{'all':[]}, {'any':[clause]}]}]:
+                page = self.case.client.get(self.root + '/epochs', query_string=dict(
+                    candidate_scope_revision=context['candidate_scope_revision'],
+                    metadata_predicate=json.dumps(predicate)))
+                self.assertEqual(page.status_code, 200, page.get_json())
+                self.assertEqual([row['epoch_uuid'] for row in page.get_json()['epochs']], [self.added])
+                self.assertEqual(page.get_json()['trace_read_context'], pending)
+            token = str(uuid.uuid4())
+            upload = self.case.client.post(self.root + '/selection-manifest', headers=self.case.headers,
+                json=dict(candidate_scope_revision=context['candidate_scope_revision'],
+                    upload_uuid=token, offset=0, total=1, epoch_uuids=[self.added]))
+            self.assertEqual(upload.status_code, 200, upload.get_json())
+            for allowed in [True, False]:
+                predicate = dict(field='epoch', operator='in', value=[self.added if allowed else self.fixture.before_ids[0]])
+                page = self.case.client.get(self.root + '/epochs', query_string=dict(
+                    candidate_scope_revision=context['candidate_scope_revision'], selection_token=token,
+                    metadata_predicate=json.dumps(predicate)))
+                self.assertEqual(page.status_code, 200, page.get_json())
+                public = page.get_json()['trace_read_context']
+                self.assertEqual(public['view_kind'], 'workbench_selected')
+                self.assertNotEqual(public['token'], pending['token'])
+                self.assertEqual(len(views.entries[public['token']]['members']), 48 if allowed else 0)
+                self.assertEqual([row['epoch_uuid'] for row in page.get_json()['epochs']], [self.added] if allowed else [])
 
     def test_bound_native_context_uses_same_revision_without_materializing_curation(self):
         reader, _ = self.native_revision_fixture()

@@ -160,12 +160,15 @@ placement. A tail chunk inflates its full 1,152 bytes, then requested sample bou
 exclude padding. Original per-window all-unit, finite-value, count and source
 checks and final publication/frozen-scope checks remain required.
 
-`desktop/native/trace_inflate.c` exposes ABI 2 and calls only system zlib and
+`desktop/native/trace_inflate.c` exposes ABI 3 and calls only system zlib and
 pthread functions, never HDF5 or filesystem APIs. At most one native operation
-per Python process uses at most four threads. Count is capped at 15,625 chunks,
+per Python process uses at most eight threads, capped by available logical CPUs.
+Requests below 500,000 samples use at most four. Count is capped at 15,625 chunks,
 output at 18,000,000 bytes, input at 32 MiB; compressed buffers may briefly coexist
-with their coalesced pieces during assembly. `uncompress2` must consume each whole
-compressed chunk and produce exactly 1,152 bytes. Corruption, trailing compressed
+with their coalesced pieces during assembly. Each worker initializes one zlib
+decoder and resets it between independent chunks. Every chunk must end with
+`Z_STREAM_END`, consume its entire input and produce exactly 1,152 bytes.
+Decoder state is released on success or failure; worker joins precede publication. Corruption, trailing compressed
 bytes, truncation, malformed chunk locations and source changes fail the read;
 no partial samples or successful fallback are published after those failures.
 
@@ -177,3 +180,31 @@ Owned `test_trace_native` fixtures compile the C helper on macOS/Linux and exerc
 actual decoding, tails, fragmentation, skipped filters, sparse allocation,
 unsupported layouts, malformed bytes, bounds, source changes and missing-helper
 fallback. Those checks do not establish installed-app latency or release readiness.
+
+
+## Prepared display views
+
+A prepared trace view is a server-owned, display-only snapshot of exact pending
+or selected membership. It is issued during the existing checked Workbench view
+preparation. It is not a receipt for current draft, annotation, binding or merge
+state. Later tag or review changes do not rewrite this captured membership.
+Mutation endpoints retain their current authority and never accept the display
+token as permission to save or accept changes.
+
+`workspace_trace_views.py` owns bounded immutable member/source witnesses and an
+opaque session-local token. Reads use `/trace-views/<token>/epochs/<epoch>/trace`.
+They check the same project, owner and source publication, exact selected member,
+sealed single-epoch row/fingerprint, stream identity and source file before and
+after reading. They do not acquire the catalog/annotation lock, run a query,
+rebuild a cohort, or read tags. Metadata publication replacement revokes old
+views and releases their retained publication roots. Expired, mismatched and
+unsupported capabilities fail closed; legacy/custom callers keep their existing
+checked route rather than being admitted by object identity alone.
+
+The renderer keeps `trace_read_context` separate from tree and mutation context.
+The dedicated token identifies trace request and paint lifetimes independently
+of tag revisions; the response envelope and every window must echo that exact
+context. Selected pages require their own captured subset, never a broader
+pending-view capability. Actual epoch, source, stream or display-publication
+changes still replace the trace lifetime. Tag reads and saves do not grant or
+revoke a historical display capability.

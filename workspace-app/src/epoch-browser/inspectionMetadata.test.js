@@ -77,18 +77,30 @@ test('on-demand metadata and selected descriptors are fenced by scope and suppli
  }finally{await h.close();}
 });
 
-test('actual Inspector keeps shared tag reads and saves working with automatic metadata off',async()=>{
+test('actual Inspector uses admitted page annotations without relocking tags on epoch navigation with metadata off',async t=>{
  const h=await createWorkflowHarness({total:40});localStorage.setItem('workspace.inspector.liveMetadata','false');
  const input=()=>h.root.findAllByType('input').find(n=>n.props['aria-label']?.startsWith('Tag ')&&!n.props['aria-label'].startsWith('Tag to add'));
+ const commits=[];let tracking=false;
+ function ProfiledApp(){return React.createElement(React.Profiler,{id:'tag-navigation',onRender:()=>{if(tracking){const editor=input(),add=h.root.findAllByType('button').find(node=>node.props['aria-label']==='Add epoch tag');commits.push({epoch:h.viewer.epoch?.epoch_uuid,inputDisabled:editor?.props.disabled,addDisabled:add?.props.disabled,missing:!editor||!add,pending:h.viewer.navigation.loading,treeDisabled:h.viewer.treePane.listProps.disabled});}}},React.createElement(h.App));}
  try{
-  await h.mount();await h.waitFor(()=>!!input()&&!input().props.disabled);
-  assert.equal(h.viewer.epoch.epoch_uuid,'epoch-0');assert(h.fixture.requests.some(r=>r.path==='/epochs/epoch-0/annotations?include_cell_epoch_count=false'));
+  await h.mount(ProfiledApp);await h.waitFor(()=>!!input()&&!input().props.disabled);
+  assert.equal(h.viewer.epoch.epoch_uuid,'epoch-0');assert.equal(h.fixture.requests.filter(r=>r.path.includes('/annotations')).length,0,'the admitted row already contains exact annotation revisions');
   assert.equal(h.fixture.requests.filter(r=>/^\/epochs\/[^/?]+(?:\?|$)/.test(r.path)).length,0);
   await h.act(()=>input().props.onChange({target:{value:'trace inspection'}}));await h.act(()=>input().parent.props.onSubmit({preventDefault(){}}));
   await h.waitFor(()=>!!input()&&!input().props.disabled);assert.deepEqual(h.fixture.annotations.get('epoch-0'),['trace inspection']);
+  await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);
+  const originalInput=h.fixture.nodes.get('Tag this epoch');
+  tracking=true;
   await h.act(()=>h.viewer.navigation.onMove(1));await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-1'&&!!input()&&!input().props.disabled);
-  assert(h.fixture.requests.some(r=>r.path==='/epochs/epoch-1/annotations?include_cell_epoch_count=false'));assert.equal(h.fixture.requests.filter(r=>/^\/epochs\/[^/?]+(?:\?|$)/.test(r.path)).length,0);
- }finally{await h.close();}
+  assert.equal(h.fixture.requests.filter(r=>r.method==='GET'&&r.path.includes('/annotations')).length,0,'navigation does not start a duplicate annotation loading cycle');
+  assert.equal(h.fixture.nodes.get('Tag this epoch'),originalInput,'tag editor input remains mounted');
+  assert.equal(h.fixture.requests.filter(r=>/^\/epochs\/[^/?]+(?:\?|$)/.test(r.path)).length,0);
+  assert.equal(input().props.disabled,false);
+  tracking=false;assert(commits.length>=2,'profile captures navigation and its follow-up effect commits');
+  assert(commits.some(commit=>commit.epoch==='epoch-1'));
+  assert(commits.every(commit=>!commit.missing&&!commit.inputDisabled&&!commit.addDisabled&&!commit.pending&&!commit.treeDisabled),JSON.stringify(commits));
+  t.diagnostic(`All ${commits.length} same-page navigation commits retain enabled tag and tree controls.`);
+ }finally{tracking=false;await h.close();}
 });
 
 
@@ -230,5 +242,77 @@ test('live legacy detail fallback retries its failed read when no page descripto
   await act(async()=>h.calls.at(-1).finish(row('a')));
   assert.equal(h.current.resource.data.epoch_uuid,'a');
   assert.equal(h.current.resource.error,null);
+ }finally{await h.close();}
+});
+
+
+test('Inspector still locks tags and reads authoritative annotations when the admitted row has none',async()=>{
+ const h=await createWorkflowHarness({total:3});localStorage.setItem('workspace.inspector.liveMetadata','false');let release;
+ const input=()=>h.root.findAllByType('input').find(n=>n.props['aria-label']==='Tag this epoch');
+ h.fixture.respond=(url,options,fallback)=>{
+  if(url.pathname==='/api/protocols/protocol-A/epochs'){const page=fallback();return {...page,epochs:page.epochs.map(({annotations,...row})=>row)};}
+  if(url.pathname==='/api/epochs/epoch-0/annotations')return new Promise(resolve=>{release=()=>resolve(fallback());});
+  return fallback();
+ };
+ try{
+  await h.mount();await h.waitFor(()=>!!release&&!!input());
+  assert.equal(input().props.disabled,true);assert(h.root.findAllByProps({role:'status'}).some(node=>node.children.includes('Loading annotations…')));
+  await h.act(()=>release());await h.waitFor(()=>!input().props.disabled);
+  assert.equal(h.fixture.requests.filter(r=>r.path==='/epochs/epoch-0/annotations?include_cell_epoch_count=false').length,1);
+ }finally{await h.close();}
+});
+
+test('page annotation revision conflicts remain visible and cannot commit or navigate with stale author state',async()=>{
+ const h=await createWorkflowHarness({total:3});localStorage.setItem('workspace.inspector.liveMetadata','false');
+ const input=()=>h.root.findAllByType('input').find(n=>n.props['aria-label']==='Tag this epoch');
+ try{
+  await h.mount();await h.waitFor(()=>!!input()&&!input().props.disabled);
+  h.fixture.annotationVersions.set('epoch:epoch-0',1);h.fixture.annotations.set('epoch-0',['external author revision']);
+  await h.act(()=>input().props.onChange({target:{value:'must not overwrite'}}));
+  await h.act(()=>h.root.findByProps({'aria-label':'Shared cell and epoch tags'}).props.onKeyDown({key:'Tab',target:h.fixture.nodes.get('Tag this epoch'),preventDefault(){},stopPropagation(){}}));
+  assert.equal(h.viewer.epoch.epoch_uuid,'epoch-0');assert.equal(input().props.value,'must not overwrite');
+  assert.deepEqual(h.fixture.annotations.get('epoch-0'),['external author revision']);
+  const write=h.fixture.requests.find(r=>r.path==='/annotations');assert.equal(write.status,409);assert.deepEqual(write.body.expected_revisions,{'epoch-0':0});
+  assert(h.root.findAllByProps({role:'alert'}).some(node=>node.children.includes('Annotation revision conflict')));
+ }finally{await h.close();}
+});
+
+
+test('frozen Inspector has no disabled tag or tree-control commit during ordinary same-page epoch navigation',async t=>{
+ const h=await createWorkflowHarness({total:3});localStorage.setItem('workspace.inspector.liveMetadata','false');
+ const root='/protocols/protocol-A/workbench/candidates/candidate-A';
+ const cells=[{cell_uuid:'cell-0',label:'Cell0',date:'2026-10-01',epochs:3}];
+ const epochs=Array.from({length:3},(_,i)=>({epoch_uuid:`epoch-${i}`,cell_uuid:'cell-0',date:'2026-10-01',cell_label:'Cell0',streams:[],curation:{included:true,tags:[]},annotations:{epoch_uuid:`epoch-${i}`,cell_uuid:'cell-0',epoch_tags:[],cell_tags:[],effective_tags:[],revisions:{epoch:{},cell:{}}}}));
+ h.fixture.respond=(url,options,fallback)=>url.pathname===`/api${root}/epochs`?{epochs,cells,total:3,offset:0,query_revision:'scope-A',candidate_scope_revision:'scope-A',expected_binding_version:2}:fallback();
+ const Inspector=await h.component('Inspector'),commits=[];let tracking=false;
+ function ProfiledInspector(){return React.createElement(React.Profiler,{id:'frozen-tag-navigation',onRender:()=>{if(tracking){const input=h.root.findAllByProps({'aria-label':'Tag this epoch'})[0],add=h.root.findAllByProps({'aria-label':'Add epoch tag'})[0];commits.push({epoch:h.viewer.epoch?.epoch_uuid,inputDisabled:input?.props.disabled,addDisabled:add?.props.disabled,missing:!input||!add,pending:h.viewer.navigation.loading,treeDisabled:h.viewer.treePane.listProps.disabled});}}},React.createElement(Inspector,{projectId:'project',protocol:{definition:{protocol_uuid:'protocol-A'},query_revision:'scope-A',expected_binding_version:2,cells},readContext:{root,candidate_scope_revision:'scope-A',cohort_key:'cohort-A'},filters:{},revision:0,initialEpochUuid:'epoch-0'}));}
+ try{
+  await h.mount(ProfiledInspector);await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-0'&&!h.viewer.treePane.listProps.disabled);
+  const before=h.fixture.requests.length;tracking=true;
+  for(const direction of [1,1,-1])await h.act(()=>h.viewer.navigation.onMove(direction));
+  tracking=false;assert.equal(h.viewer.epoch.epoch_uuid,'epoch-1');assert(commits.length>=6,'each navigation includes follow-up effect commits');
+  assert(commits.some(commit=>commit.epoch==='epoch-2'));
+  assert(commits.every(commit=>!commit.missing&&!commit.inputDisabled&&!commit.addDisabled&&!commit.pending&&!commit.treeDisabled),JSON.stringify(commits));
+  assert.equal(h.fixture.requests.slice(before).filter(read=>read.path.includes('/annotations')||read.path.startsWith(root+'/epochs?')).length,0);
+  t.diagnostic(`All ${commits.length} frozen same-page navigation commits retain enabled tag and tree controls.`);
+ }finally{tracking=false;await h.close();}
+});
+
+test('Inspector keeps captured trace descriptor independent of held tag-page refresh and fences a new publication',async()=>{
+ const uid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
+ const capability={kind:'prepared_display',token:uid(1),project_uuid:uid(2),publication_revision:uid(3),view_kind:'workbench_pending',protocol_uuid:uid(4),candidate_revision_uuid:uid(5),membership_sha256:'a'.repeat(64)};
+ const root=`/protocols/${uid(4)}/workbench/candidates/${uid(5)}`,epoch={...row(uid(6)),source_sha256:'b'.repeat(64),streams:[{kind:'responses',uuid:uid(7),sample_count:3,sample_rate:10000,units:'mV'}],annotations:{epoch_uuid:uid(6),cell_uuid:'cell',epoch_tags:[],cell_tags:[],effective_tags:[],revisions:{epoch:{},cell:{}}}};
+ const cells=[{cell_uuid:'cell',label:'Cell',epochs:1}],h=await createWorkflowHarness({total:1});let hold=false,release;
+ const page=()=>({epochs:[epoch],cells,total:1,offset:0,query_revision:'scope-A',candidate_scope_revision:'scope-A',expected_binding_version:2,trace_read_context:capability});
+ h.fixture.respond=(url,options,fallback)=>url.pathname===`/api${root}/epochs`?hold?new Promise(resolve=>{release=()=>resolve(page());}):page():fallback();
+ const Inspector=await h.component('Inspector'),props={projectId:uid(2),protocol:{definition:{protocol_uuid:uid(4)},query_revision:'scope-A',expected_binding_version:2,cells},readContext:{root,candidate_scope_revision:'scope-A',cohort_key:'cohort-A'},traceReadContext:capability,filters:{},revision:0,initialEpochUuid:epoch.epoch_uuid};
+ try{
+  await h.mount(Inspector,props);await h.waitFor(()=>h.viewer.epoch?.epoch_uuid===epoch.epoch_uuid);
+  assert.equal(h.viewer.traceEpoch,epoch);assert.deepEqual(h.viewer.traceReadContext,capability);assert.equal(h.viewer.readContext.trace_read_context,undefined);
+  hold=true;await h.render(Inspector,{...props,revision:1});await h.waitFor(()=>!!release);
+  assert.equal(h.viewer.epoch,null,'tag authority is waiting for its refreshed page');assert.equal(h.viewer.traceEpoch.epoch_uuid,epoch.epoch_uuid);assert.deepEqual(h.viewer.traceReadContext,capability);assert.equal(h.viewer.treePane.listProps.disabled,true,'display capability cannot grant mutation authority');
+  const refreshed={...capability,token:uid(9),publication_revision:uid(10)};await h.render(Inspector,{...props,revision:1,traceReadContext:refreshed});
+  assert.equal(h.viewer.traceReadContext.token,refreshed.token);assert.equal(h.viewer.traceEpoch,null,'old source publication cannot supply a descriptor');
+  await h.act(()=>release());
  }finally{await h.close();}
 });

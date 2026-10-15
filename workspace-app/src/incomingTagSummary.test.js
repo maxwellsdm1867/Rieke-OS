@@ -65,6 +65,14 @@ test('incoming rows expose shared tag descriptions without pills and retain expl
   assert.match(branch.findByType('summary').props['aria-description'],/Cell tag: Quality · Alice \(alice\)/);
   assert.deepEqual(selected,[]);assert.deepEqual(focused,[]);
   await act(async()=>button.props.onClick({}));assert.equal(focused[0][0],'a');assert.deepEqual(selected,[],'inspection must not change incoming selection');
+  const beforeFocusReads=requests.length;
+  const tagButton=()=>renderer.root.findAllByType('button').find(node=>node.props['aria-label']?.startsWith('Tag This Epoch'));
+  const mountedTag=tagButton();assert.equal(mountedTag.props.disabled,false);
+  for(const focus of ['a',null,'a']){
+   await act(async()=>renderer.update(React.createElement(Tree,{...props,focused:focus})));
+   assert.equal(tagButton(),mountedTag,'focus keeps the exact tag button mounted');assert.equal(tagButton().props.disabled,false);
+  }
+  assert.equal(requests.length,beforeFocusReads,'focus does not reload frozen tree pages');
   await act(async()=>renderer.update(React.createElement(Tree,{...props,disabled:true,navigationDisabled:true})));
   assert.equal(renderer.root.findByProps({'aria-label':'Inspect 2026-10-01 · Cell1 epoch 1'}).props.disabled,true);
   assert.ok(requests.length>0);assert.ok(requests.every(r=>r.method==='GET'));

@@ -20,6 +20,7 @@ MAX_SPAN_BYTES = 4 * 1024 * 1024
 MAX_INPUT_BYTES = 32 * 1024 * 1024
 MAX_GAP_BYTES = 64 * 1024
 _NATIVE_SLOT = threading.BoundedSemaphore(1)
+_NATIVE_WORKERS = min(8, max(1, os.cpu_count() or 1))
 
 
 @lru_cache(maxsize=1)
@@ -31,7 +32,7 @@ def _load_helper():
     try:
         library = ctypes.CDLL(str(path))
         library.disco_trace_inflate_abi.restype = ctypes.c_uint
-        if library.disco_trace_inflate_abi() != 2:
+        if library.disco_trace_inflate_abi() != 3:
             return None
         library.disco_trace_inflate_v1.argtypes = [ctypes.c_void_p, ctypes.c_size_t,
             ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p,
@@ -154,7 +155,7 @@ def _read_admitted(data, signature, begin, end, helper, dtype, normalize_units):
         compressed = b''.join(pieces)
         output = np.empty(len(selected) * 64, dtype=dtype)
         status = helper.disco_trace_inflate_v1(compressed, len(compressed), offsets.ctypes.data,
-            sizes.ctypes.data, len(selected), output.ctypes.data, output.nbytes, CHUNK_BYTES, 4)
+            sizes.ctypes.data, len(selected), output.ctypes.data, output.nbytes, CHUNK_BYTES, min(_NATIVE_WORKERS, 8 if end - begin >= 500000 else 4))
         if status != 0:
             raise ValueError('Trace compressed chunks failed exact decompression')
         if normalize_units and helper.disco_trace_normalize_units_v1(output.ctypes.data, output.nbytes) != 0:

@@ -75,3 +75,31 @@ test('manual amplitude clipping draws every raw sample and exact gaps, including
   assert(strokes.at(-1).some(point=>index(point.x)===100),'the actual spike remains visible');
  }finally{await act(async()=>renderer?.unmount());await server.close();for(const name of names){if(previous[name]===undefined)delete globalThis[name];else globalThis[name]=previous[name];}}
 });
+
+test('prepared EpochViewer paints while tag authority is held and reuses samples after tag revision changes',async()=>{
+ const uid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
+ const context={kind:'prepared_display',token:uid(1),project_uuid:uid(2),publication_revision:uid(3),view_kind:'workbench_pending',protocol_uuid:uid(4),candidate_revision_uuid:uid(5),membership_sha256:'a'.repeat(64)};
+ const epoch={epoch_uuid:uid(6),source_sha256:'b'.repeat(64),cell_label:'Cell',streams:[{kind:'responses',uuid:uid(7),sample_count:3,sample_rate:10000,units:'pA'}]};
+ const names=['window','document','getComputedStyle','ResizeObserver','requestAnimationFrame','cancelAnimationFrame'];const previous=Object.fromEntries(names.map(name=>[name,globalThis[name]]));
+ globalThis.window={devicePixelRatio:1,addEventListener(){},removeEventListener(){}};globalThis.document={activeElement:null};globalThis.getComputedStyle=()=>({getPropertyValue:name=>name});globalThis.ResizeObserver=class{observe(){}disconnect(){}};globalThis.requestAnimationFrame=()=>1;globalThis.cancelAnimationFrame=()=>{};
+ const strokes=[];const canvas={getBoundingClientRect:()=>({width:603,height:300})};const ctx=new Proxy({canvas,stroke(){if(this.strokeStyle==='--plot-trace')strokes.push(true);}},{get:(o,k)=>k in o?o[k]:()=>{}});canvas.getContext=()=>ctx;
+ const calls=[];let activeContext=context,activeEpoch=epoch;
+ const port={identity:'prepared-workspace',request:async path=>{calls.push(path);return {epoch_uuid:activeEpoch.epoch_uuid,stream_uuid:activeEpoch.streams[0].uuid,start:0,count:3,total_samples:3,sample_rate:10000,units:'pA',source_sha256:activeEpoch.source_sha256,decimated:false,read_context:activeContext,values:[1,2,3]};}};
+ const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
+ const {default:Viewer}=await server.ssrLoadModule('/src/epoch-browser/ui/EpochViewer.jsx'),{WorkspaceRequestProvider}=await server.ssrLoadModule('/src/workspaceRequest.js');
+ let renderer;const render=async(ready,revision,displayContext=context,displayEpoch=epoch)=>act(async()=>{activeEpoch=displayEpoch;const props={epoch:ready?displayEpoch:null,traceEpoch:displayEpoch,traceReadContext:displayContext,readContext:{root:`/protocols/${uid(4)}/workbench/candidates/${uid(5)}`,candidate_scope_revision:`tag-${revision}`},traceRevision:revision,resource:{loading:!ready},layout:{treeOpen:false,metadataOpen:false,sizes:{columns:'1fr'},onResize(){}},treePane:{},tags:React.createElement('button',{'aria-label':'test mutation','data-epoch':displayEpoch.epoch_uuid,disabled:!ready},'Tag'),detailExtras:React.createElement('span',{'data-review-epoch':displayEpoch.epoch_uuid},'Review')};const node=React.createElement(WorkspaceRequestProvider,{port},React.createElement(Viewer,props));if(renderer)renderer.update(node);else renderer=TestRenderer.create(node,{createNodeMock:node=>node.type==='canvas'?canvas:null});});
+ try{
+  await render(false,1);assert.equal(calls.length,1);assert(calls[0].startsWith(`/trace-views/${context.token}/`));assert(strokes.length>0);assert.equal(renderer.root.findByProps({'aria-label':'Exact sample index for cursor'}).props.disabled,false,'captured trace paints before tag receipt');
+  await render(true,1);const painted=strokes.length;await render(false,2);assert.equal(calls.length,1);assert.equal(strokes.length,painted,'tag refresh neither reads nor repaints samples');assert.equal(renderer.root.findByProps({'aria-label':'Exact sample index for cursor'}).props.disabled,false);
+  await render(true,2);assert.equal(calls.length,1);assert.equal(renderer.root.findByProps({'aria-label':'test mutation'}).props.disabled,false);
+  activeContext={...context,token:uid(8)};await render(true,2,activeContext);assert.equal(calls.length,2,'new captured token replaces sample lifetime');
+  const nextEpoch={...epoch,epoch_uuid:uid(9),source_sha256:'c'.repeat(64)};
+  await render(false,3,activeContext,nextEpoch);
+  assert.equal(calls.length,3);assert.equal(renderer.root.findByProps({'aria-label':'Exact sample index for cursor'}).props.disabled,false);
+  assert.equal(renderer.root.findAllByProps({'aria-label':'test mutation'}).length,0,'old epoch tag controls are not visible under the new trace');
+  assert.equal(renderer.root.findAllByProps({'data-review-epoch':epoch.epoch_uuid}).length,0,'old epoch review status cannot accompany the new trace');
+  await render(true,3,activeContext,nextEpoch);assert.equal(renderer.root.findByProps({'aria-label':'test mutation'}).props['data-epoch'],nextEpoch.epoch_uuid);
+  assert.equal(renderer.root.findAllByProps({'data-review-epoch':nextEpoch.epoch_uuid}).length,1);assert.equal(calls.length,3);
+
+ }finally{await act(async()=>renderer?.unmount());await server.close();for(const name of names){if(previous[name]===undefined)delete globalThis[name];else globalThis[name]=previous[name];}}
+});

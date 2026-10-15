@@ -37,7 +37,7 @@ class NativeTraceTests(unittest.TestCase):
         cls.helper.disco_trace_inflate_v1.restype = ctypes.c_int
         cls.helper.disco_trace_normalize_units_v1.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
         cls.helper.disco_trace_normalize_units_v1.restype = ctypes.c_int
-        assert cls.helper.disco_trace_inflate_abi() == 2
+        assert cls.helper.disco_trace_inflate_abi() == 3
 
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory()
@@ -203,6 +203,30 @@ class NativeTraceTests(unittest.TestCase):
                     expected = h5['data'][:]
                     self.assertEqual(expected[:64].tobytes(), values[:64].tobytes())
 
+    def test_reused_decoder_keeps_independent_streams_and_refuses_late_corruption(self):
+        # More chunks than workers forces reset/reuse within every worker.
+        values = self.values(64 * 33)
+        chunks = [zlib.compress(values[i:i + 64].tobytes(), level=(i // 64) % 10)
+                  for i in range(0, len(values), 64)]
+        offsets = np.array([sum(map(len, chunks[:i])) for i in range(len(chunks))], dtype='u8')
+        sizes = np.array(list(map(len, chunks)), dtype='u8')
+        for workers in (1, 4, 8):
+            for corrupt in (False, True):
+                with self.subTest(workers=workers, corrupt=corrupt):
+                    parts = list(chunks)
+                    if corrupt:
+                        parts[-1] = parts[-1][:-1] + bytes([parts[-1][-1] ^ 1])
+                    compressed = b''.join(parts)
+                    output = np.empty(values.nbytes, dtype='u1')
+                    status = self.helper.disco_trace_inflate_v1(compressed, len(compressed),
+                        offsets.ctypes.data, sizes.ctypes.data, len(parts), output.ctypes.data,
+                        output.nbytes, native.CHUNK_BYTES, workers)
+                    if corrupt:
+                        self.assertEqual(status, -2)
+                    else:
+                        self.assertEqual(status, 0)
+                        self.assertEqual(output.tobytes(), values.tobytes())
+
     def test_corrupt_truncated_or_trailing_zlib_bytes_are_hard_errors(self):
         values = self.values(64)
         original = zlib.compress(values.tobytes())
@@ -282,6 +306,62 @@ class NativeTraceTests(unittest.TestCase):
         self.assertTrue(native._NATIVE_SLOT.acquire(blocking=False))
         native._NATIVE_SLOT.release()
 
+    def test_decoder_reset_failure_releases_all_workers_and_native_slot(self):
+        import json
+        compiler = shutil.which('cc') or shutil.which('clang') or shutil.which('gcc')
+        source = Path(__file__).resolve().parents[2] / 'desktop/native/trace_inflate.c'
+        wrapper = Path(self.folder.name) / 'failing-reset.c'
+        wrapper.write_text(
+            '#include <pthread.h>\n#include <zlib.h>\n#include <stdatomic.h>\n'
+            'static atomic_int resets=0, initialized=0, ended=0, joined=0;\n'
+            'static int test_init(z_streamp,const char*,int);\n'
+            'static int test_reset(z_streamp);\nstatic int test_end(z_streamp);\n'
+            'static int test_join(pthread_t,void**);\n'
+            '#define inflateInit_ test_init\n#define inflateReset test_reset\n'
+            '#define inflateEnd test_end\n#define pthread_join test_join\n'
+            '#include ' + json.dumps(str(source)) + '\n'
+            '#undef inflateInit_\n#undef inflateReset\n#undef inflateEnd\n#undef pthread_join\n'
+            'static int test_init(z_streamp s,const char*v,int n){int r=inflateInit_(s,v,n);'
+            'if(r==Z_OK)atomic_fetch_add(&initialized,1);return r;}\n'
+            'static int test_reset(z_streamp s){if(atomic_fetch_add(&resets,1)==0)return Z_STREAM_ERROR;'
+            'return inflateReset(s);}\n'
+            'static int test_end(z_streamp s){atomic_fetch_add(&ended,1);return inflateEnd(s);}\n'
+            'static int test_join(pthread_t t,void**p){int r=pthread_join(t,p);'
+            'if(!r)atomic_fetch_add(&joined,1);return r;}\n'
+            'int test_initialized(void){return initialized;}\nint test_ended(void){return ended;}\n'
+            'int test_joined(void){return joined;}\n')
+        library = Path(self.folder.name) / 'failing-reset.so'
+        sdk = ['-isysroot', subprocess.check_output(['xcrun','--sdk','macosx','--show-sdk-path'],text=True).strip()] if sys.platform == 'darwin' else []
+        subprocess.run([compiler,*sdk,'-std=c11','-O2','-dynamiclib' if sys.platform == 'darwin' else '-shared',
+                        '-fPIC',str(wrapper),'-o',str(library),'-lz','-pthread'],check=True,capture_output=True)
+        helper = ctypes.CDLL(str(library))
+        helper.disco_trace_inflate_v1.argtypes = self.helper.disco_trace_inflate_v1.argtypes
+        helper.disco_trace_inflate_v1.restype = ctypes.c_int
+        self.create()
+        with patch.object(native, '_load_helper', return_value=helper), patch.object(native, '_NATIVE_WORKERS', 4):
+            with self.assertRaisesRegex(ValueError, 'failed exact decompression'):
+                self.read()
+        self.assertEqual(helper.test_initialized(), 4)
+        self.assertEqual(helper.test_ended(), 4)
+        self.assertEqual(helper.test_joined(), 4)
+        self.assertTrue(native._NATIVE_SLOT.acquire(blocking=False))
+        native._NATIVE_SLOT.release()
+
+    def test_old_abi_falls_back_before_raw_io_or_decoder_resolution(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        self.create()
+        self.loader.stop()
+        native._load_helper.cache_clear()
+        try:
+            old = SimpleNamespace(disco_trace_inflate_abi=Mock(return_value=2))
+            with patch.object(native.ctypes, 'CDLL', return_value=old), \
+                 patch.object(native.os, 'pread', side_effect=AssertionError('No raw I/O')):
+                self.assertIsNone(self.read())
+                old.disco_trace_inflate_abi.assert_called_once_with()
+        finally:
+            native._load_helper.cache_clear()
+
     def test_helper_absence_and_busy_slot_fall_back(self):
         self.create()
         with patch.object(native, '_load_helper', return_value=None):
@@ -311,7 +391,7 @@ class NativeTraceTests(unittest.TestCase):
                 sizes.ctypes.data,args['count'],out.ctypes.data,args['output_size'],args['chunk_size'],args['workers'])
         self.assertEqual(call(), 0)
         for kwargs in (dict(count=0),dict(count=15626),dict(output_size=1151),dict(chunk_size=18),
-                       dict(workers=0),dict(workers=5),dict(input_size=33*1024*1024)):
+                       dict(workers=0),dict(workers=9),dict(input_size=33*1024*1024)):
             self.assertEqual(call(**kwargs), -1)
         offsets[0] = len(compressed)+1
         self.assertEqual(call(), -1)

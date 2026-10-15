@@ -200,3 +200,26 @@ This prioritizes waveform appearance over paint speed when clipping can amplify
 subpixel interpolation or apparent-density differences. Exact clipped views can
 be slower, especially at large sample counts; no speed claim overrides this
 fidelity rule. See the fused-statistics QC audit for raw-raster comparisons.
+
+Prepared Workbench display capabilities use a separate strict `prepared_display`
+context and `/trace-views/<token>/epochs/<epoch>/trace` route. They authorize
+historical raw display only. The envelope and every window echo the exact context
+and must not claim candidate scope authority. Source, stream, rate, units and
+window admission remain exact. Display identity includes the captured token and
+source, excluding annotation revision; owner changes still retire all reads.
+No prepared capability enters tree, tag or inclusion mutations. Unsupported
+backends omit the field and retain existing routes; malformed capabilities fail
+closed. Selected views wait for their own page capability, never their parent's.
+
+`usePreparedTraceRead.js` owns only the mounted prepared-display request lifetime.
+It dispatches synchronously from a layout effect, with loading derived from the
+read identity rather than a pre-dispatch state update. Publication requires exact
+path, captured revision, reload nonce, request-port object, request function and
+a non-aborted request signal;
+cleanup aborts the transport and rejects late completions even if it ignores
+cancellation. It has no sample cache, prefetch, membership or mutation authority.
+The ordinary `useResource` implementation and legacy scheduling are unchanged.
+`preparedTraceRead.test.js` exercises A-B-A replacement, reload, owner replacement,
+abort, late success/error and unavailable authority. The real canvas lifecycle
+also covers held tag refresh and cross-epoch curation pairing. Timing evidence is
+qualified in `docs/dev/prepared-trace-request-scheduling-2026-10-15.md`.

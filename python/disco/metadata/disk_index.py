@@ -257,6 +257,12 @@ class DiskMetadataIndex:
         with self._connect() as connection:
             return {identity:json.loads(raw) for identity,raw in connection.execute('SELECT epoch_uuid,row_json FROM epochs ORDER BY epoch_id')}
 
+    def trace_record(self, epoch_uuid):
+        """One exact row/fingerprint from this sealed publication, with no cohort scan."""
+        with self._connect([epoch_uuid]) as connection:
+            record = connection.execute('SELECT row_json,fingerprint FROM scope JOIN epochs USING(epoch_id)').fetchone()
+            return {'row': json.loads(record[0]), 'fingerprint': record[1]} if record else None
+
     def cell_epoch_ids(self, cell_uuid):
         """Exact registered cell membership from this checked generation."""
         with self._connect() as connection:

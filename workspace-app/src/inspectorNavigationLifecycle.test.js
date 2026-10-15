@@ -357,3 +357,24 @@ test('live initial off-page focus locates its admitted page before trace inspect
   assert.equal(h.viewer.resource.loading,false);
  }finally{await h.close();}
 });
+
+
+test('frozen same-page focus retains tree read scope and enabled actions with metadata off',async()=>{
+ const h=await createInspectorHarness({liveMetadata:false});
+ const readContext={root:'/protocols/protocol-A/workbench/candidates/candidate-A',candidate_scope_revision:'scope-A',cohort_key:'cohort-A'};
+ const admitted=epochs.map(row=>({...row,streams:[],annotations:{epoch_uuid:row.epoch_uuid,cell_uuid:row.cell_uuid,epoch_tags:[],cell_tags:[],revisions:{epoch:{},cell:{}}}}));
+ const frozenProps={...props,readContext,protocol:{...props.protocol,query_revision:'scope-A'}};
+ try{
+  h.fixture.page={...page,epochs:admitted,query_revision:'scope-A'};await h.render(frozenProps);
+  const source=JSON.stringify(h.viewer.treePane.listProps.source),revision=h.viewer.treePane.listProps.revision;
+  const request=h.fixture.resources.find(row=>row.path?.includes('/epochs?'));
+  h.fixture.resources.length=0;
+  for(const row of [admitted[1],admitted[2],admitted[0]]){
+   await h.act(()=>h.viewer.treePane.listProps.onFocus(row.epoch_uuid,row));
+   assert.equal(h.viewer.epoch.epoch_uuid,row.epoch_uuid);assert.equal(h.viewer.treePane.listProps.disabled,false);
+   assert.equal(JSON.stringify(h.viewer.treePane.listProps.source),source);assert.equal(h.viewer.treePane.listProps.revision,revision);
+   assert.notEqual(h.viewer.tags.props.readSeparately,true,'metadata policy does not force a duplicate annotation reader');
+  }
+  assert(h.fixture.resources.filter(row=>row.path?.includes('/epochs?')).every(row=>row.path===request.path&&row.revision===request.revision));
+ }finally{await h.close();}
+});

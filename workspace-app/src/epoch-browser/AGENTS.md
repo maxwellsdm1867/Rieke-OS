@@ -168,3 +168,11 @@ scopes. `../navigationSurfaces.test.js` exercises actual list composition across
 pinned, frozen Workbench and predicate sources, delayed and failed reads, rapid
 Tab navigation, retained view transitions and per-view session isolation. Its
 action timings use synthetic responses and exclude native paint.
+
+`EpochViewer` accepts optional `traceReadContext` and `traceEpoch` separately
+from scientific mutation `readContext` and the live metadata resource. Inspector
+retains only the focused descriptor under an exact captured display capability;
+annotation refresh may gate tags/tree actions without clearing those samples.
+Actual epoch/source/token/publication and workspace owner changes fence display.
+A selected subset requires its own admitted page capability. Undefined capability
+means legacy routing; null means unavailable and cannot fall back globally.

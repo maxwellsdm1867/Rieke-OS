@@ -1378,7 +1378,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             timing = begin_trace_timing()
             with db_lock:
                 mark_trace_timing(timing, 'open')
-                result = read_trace_batch(service, epoch_uuid, stream, start, count, int(request.args['chunks']), binary=binary)
+                result = read_trace_batch(service, epoch_uuid, stream, start, count, int(request.args['chunks']), binary=binary, timing=timing)
                 mark_trace_timing(timing, 'read')
             mark_trace_timing(timing, 'close')
             return trace_batch_response(app, result, timing, binary=binary)

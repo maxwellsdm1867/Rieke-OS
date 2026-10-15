@@ -346,6 +346,20 @@ class ReadServiceTests(unittest.TestCase):
                 with self.subTest(start=start, count=count), self.assertRaises(ValueError):
                     service.trace_batch(epoch, stream, start, count, 3)
 
+    def test_trace_batch_substage_timing_is_opt_in_and_nested_within_read(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as folder:
+            service, _, epoch, stream = self.make_trace_service(folder)
+            service.project = {'project_uuid': str(uuid.uuid4())}
+            with patch('workspace_service.time.perf_counter', side_effect=AssertionError('No default clocks')):
+                service.trace_batch(epoch, stream, 0, 20, 3, array_windows=True)
+            timing = {}
+            with patch('workspace_service.time.perf_counter', side_effect=[1., 1.01, 1.04, 1.06]):
+                service.trace_batch(epoch, stream, 0, 20, 3, array_windows=True, timing=timing)
+            self.assertAlmostEqual(timing['capture'], 10.)
+            self.assertAlmostEqual(timing['samples'], 30.)
+            self.assertAlmostEqual(timing['validate'], 20.)
+
     def test_array_batch_opens_once_and_retains_exact_detached_samples(self):
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as folder:

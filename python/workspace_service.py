@@ -1492,7 +1492,7 @@ class WorkspaceService:
             path, signature = self._verified_source(manifest)
             return read_response_window(path, signature, row, stream, start, count)
 
-    def trace_batch(self, epoch_uuid, stream_uuid, start=0, count=100000, chunks=1, *, array_windows=False):
+    def trace_batch(self, epoch_uuid, stream_uuid, start=0, count=100000, chunks=1, *, array_windows=False, timing=None):
         """Read bounded exact windows under one caller-owned read scope.
 
         One immutable source plan covers every window. No partial batch escapes
@@ -1503,7 +1503,12 @@ class WorkspaceService:
         maximum_chunks = 10 if array_windows and read_response_window is _CANONICAL_RESPONSE_WINDOW else 5
         if type(chunks) is not int or not 1 <= chunks <= maximum_chunks:
             raise ValueError(f'Trace batch requires 1–{maximum_chunks} chunks')
+        stage_started = time.perf_counter() if timing is not None else None
         plan, witness = self.capture_trace_read(epoch_uuid, stream_uuid, start, count)
+        if timing is not None:
+            stage_finished = time.perf_counter()
+            timing['capture'] = (stage_finished - stage_started) * 1000
+            stage_started = stage_finished
         windows, offset = [], start
         # Explicit binary requests can retain detached arrays and share one H5
         # handle. Custom sample readers and legacy JSON keep their public path.
@@ -1522,7 +1527,13 @@ class WorkspaceService:
                 offset += window['count']
                 if offset >= window['total_samples']:
                     break
+        if timing is not None:
+            stage_finished = time.perf_counter()
+            timing['samples'] = (stage_finished - stage_started) * 1000
+            stage_started = stage_finished
         self.validate_trace_read(witness)
+        if timing is not None:
+            timing['validate'] = (time.perf_counter() - stage_started) * 1000
         return {key: windows[0][key] for key in ('epoch_uuid', 'stream_uuid',
                     'total_samples', 'source_sha256', 'sample_rate', 'units', 'decimated')} | {
                 'start': start, 'count': offset - start, 'windows': windows}

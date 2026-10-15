@@ -1,3 +1,4 @@
+import {usePreparedTraceRead} from '../usePreparedTraceRead.js';
 import {traceSampleStatistics,traceStatisticsExtent} from '../traceStatistics.js';
 import {useSemanticReset} from '../../useSemanticReset.js';
 import {normalizeTraceViewPreference,useTraceViewPreference} from '../traceViewPreference.jsx';
@@ -65,7 +66,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   const preference=viewPreference;
   const setPreference=onViewPreference;
   const whole=preference.kind==='whole';
-  const imported=['imported_snapshot','imported_cell_snapshot'].includes(readContext?.kind);
+  const imported=['imported_snapshot','imported_cell_snapshot'].includes(readContext?.kind),prepared=readContext?.kind==='prepared_display';
   const streams=(epoch?.streams || []).filter(stream=>stream.kind==='responses'&&stream.sample_count>0);
   const savedSelection=preference.responseSelection;
   const preferredStream=savedSelection?.epoch_uuid===epoch?.epoch_uuid&&streams.some(item=>item.uuid===savedSelection.stream_uuid)?savedSelection.stream_uuid:streams[0]?.uuid||'';
@@ -94,19 +95,21 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   const chunked=readWindow.count>MAX_TRACE_SAMPLES;
   const requestPath=traceRequestPath(epoch?.epoch_uuid,stream,clampWindow(readWindow.start,readWindow.count,stream?.sample_count),readContext);
   const requestPort=useMemo(()=>{
-    if(chunked)return {request:(_path,{signal})=>readWholeTrace({request:owner?.request??api,epochUuid:epoch.epoch_uuid,sourceSha256:epoch.source_sha256,stream,readContext,signal,window:{start:readWindow.start,count:readWindow.count},maxChunkSamples:readWindow.start===0&&readWindow.count===stream.sample_count?MAX_WHOLE_TRACE_CHUNK_SAMPLES:MAX_TRACE_SAMPLES})};
+    if(chunked||prepared)return {request:(_path,{signal})=>readWholeTrace({request:owner?.request??api,epochUuid:epoch.epoch_uuid,sourceSha256:epoch.source_sha256,stream,readContext,signal,window:{start:readWindow.start,count:readWindow.count},maxChunkSamples:readWindow.start===0&&readWindow.count===stream.sample_count?MAX_WHOLE_TRACE_CHUNK_SAMPLES:MAX_TRACE_SAMPLES})};
     if(owner||imported||!stream)return undefined;
     return {request:(path,{signal})=>requestTraceWindow(path,{revision:contextKey,signal,epoch,stream,window:readWindow})};
-  },[chunked,owner,epoch?.epoch_uuid,epoch?.source_sha256,stream?.uuid,stream?.sample_count,stream?.sample_rate,stream?.units,contextKey,readWindow.start,readWindow.count,imported]);
-  const resource=useResource(requestPath,identity,0,{cache:false,requestPort});
+  },[chunked,owner,epoch?.epoch_uuid,epoch?.source_sha256,stream?.uuid,stream?.sample_count,stream?.sample_rate,stream?.units,contextKey,readWindow.start,readWindow.count,imported,prepared]);
+  const ordinaryResource=useResource(prepared?null:requestPath,identity,0,{cache:false,requestPort});
+  const preparedResource=usePreparedTraceRead(prepared?requestPath:null,identity,requestPort);
+  const resource=prepared?preparedResource:ordinaryResource;
   const loaded=traceResponseMatches(resource.data,readContext)&&resource.path===requestPath&&resource.data?.epoch_uuid===epoch?.epoch_uuid&&resource.data?.stream_uuid===stream?.uuid&&resource.data?.start===readWindow.start&&resource.data?.count===readWindow.count&&resource.data?.values?.length===readWindow.count?resource.data:null;
   const data=useMemo(()=>loaded?bounded.start===loaded.start&&bounded.count===loaded.count?loaded:{...loaded,start:bounded.start,count:bounded.count,values:loaded.values instanceof Float64Array?loaded.values.subarray(bounded.start-loaded.start,bounded.start-loaded.start+bounded.count):loaded.values.slice(bounded.start-loaded.start,bounded.start-loaded.start+bounded.count)}:null,[loaded,bounded.start,bounded.count]);
   const statistics=useMemo(()=>data?traceSampleStatistics(data.values):null,[data]);
   const getLoadedExtent=useMemo(()=>{let measured;return()=>{if(measured===undefined)measured=loaded?traceStatisticsExtent(traceSampleStatistics(loaded.values)):null;return measured;};},[loaded]);
-  const valid=data&&data.sample_rate>0&&Number.isFinite(data.sample_rate)&&(!imported||data.sample_rate===stream?.sample_rate&&(typeof stream?.units==='string'||stream?.units===null)&&data.units===stream.units)&&data.values?.length===data.count;
+  const valid=data&&data.sample_rate>0&&Number.isFinite(data.sample_rate)&&(!(imported||prepared)||data.sample_rate===stream?.sample_rate&&(typeof stream?.units==='string'||stream?.units===null)&&data.units===stream.units)&&data.values?.length===data.count;
   const base=useRef(null),overlay=useRef(null),geometry=useRef(null),cursor=useRef(null),drag=useRef(null),frame=useRef(null),sampleReadout=useRef(null),timeReadout=useRef(null),responseReadout=useRef(null),cursorInput=useRef(null),surface=useRef(null);
   const cursorHelp=useId();
-  const authorityKey=traceCacheRevision('paint',readContext);
+  const authorityKey=prepared?identity:traceCacheRevision('paint',readContext);
   const painted=useRef(false),paintedAuthority=useRef(authorityKey);
   const canRetainPaint=painted.current&&paintedAuthority.current===authorityKey;
   const dataRef=useRef(null);dataRef.current=valid?data:null;

@@ -45,11 +45,11 @@ def build_trace_native(output: Path, root: Path = ROOT) -> dict:
         library = ctypes.CDLL(str(built))
         library.disco_trace_inflate_abi.argtypes = []
         library.disco_trace_inflate_abi.restype = ctypes.c_uint
-        if library.disco_trace_inflate_abi() != 2:
+        if library.disco_trace_inflate_abi() != 3:
             raise ValueError('Unexpected native trace inflater ABI')
         built.replace(target)
     receipt = {
-        'abi': 2, 'library': LIBRARY,
+        'abi': 3, 'library': LIBRARY,
         'source': 'desktop/native/trace_inflate.c',
         'source_sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
         'sha256': hashlib.sha256(target.read_bytes()).hexdigest(),

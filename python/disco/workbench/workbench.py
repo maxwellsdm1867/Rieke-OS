@@ -855,6 +855,10 @@ def public_receipt(receipt):
     return result
 
 
+_PREPARED_CONTEXT = ProtocolWorkbench.context
+_PREPARED_FROZEN_SERVICE = ProtocolWorkbench.frozen_service
+
+
 def register_workbench_routes(app, service, history, suggestions, state, revision_guard,
                               db_lock, registration_locks, *, read_revision=None):
     import os
@@ -866,11 +870,36 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
     if hasattr(service.dj, 'Schema'):
         manager.tables  # Additive DDL before startup recovery/checkpoint capture.
     app.extensions['protocol_workbench'] = manager
+    from workspace_trace_views import TraceViews, TraceViewConflict
+    from disco.decisions.annotations import SharedAnnotations
+    canonical_default_profile = SharedAnnotations.default_profile
+    def display_policy():
+        from workspace_protocol_state import ProtocolStateReader
+        reader = app.extensions.get('protocol_state_reader')
+        return (type(reader) is ProtocolStateReader and reader._native_contract() and
+                (getattr(service, 'shared_annotations', None) is None or
+                 (type(service.shared_annotations) is SharedAnnotations and
+                  SharedAnnotations.default_profile is canonical_default_profile)) and
+                manager.state is manager._read_revision_state and
+                getattr(manager.context, '__func__', None) is _PREPARED_CONTEXT and
+                getattr(manager.frozen_service, '__func__', None) is _PREPARED_FROZEN_SERVICE)
+    trace_views = TraceViews(service, policy=display_policy)
+    app.extensions['trace_views'] = trace_views
 
     def actor():
         shared = getattr(service, 'shared_annotations', None)
         from disco.decisions.author_preferences import selected_author
         profile = selected_author() or (shared.default_profile if shared else None)
+        return profile['profile_uuid'] if profile else os.environ.get('USER', 'local-user')
+
+    def display_actor():
+        # Canonical fallback is pure local UUID derivation; never dispatch an
+        # overridable annotation property on this independent display route.
+        from disco.decisions.author_preferences import selected_author
+        profile = selected_author()
+        shared = getattr(service, 'shared_annotations', None)
+        if profile is None and shared is not None:
+            profile = canonical_default_profile.fget(shared)
         return profile['profile_uuid'] if profile else os.environ.get('USER', 'local-user')
 
     def body(required, optional=(), *, query_options=()):
@@ -935,6 +964,8 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
     def start_read(context, filters=None):
         from disco.metadata.explore_queries import generation, StaleQuery
         token = request.args.get('selection_token') if request.method == 'GET' else ((request.get_json(silent=True) or {}).get('selection_token') if request.endpoint != 'workbench_selected_review' else None)
+        # An ordinary epoch predicate is not a View selected receipt. New
+        # clients use the explicitly advertised selection-manifest contract.
         if token is not None:
             context['_view_ids'] = manager.selection_manifest(context, token)['seen']
         context['_read_context'] = dict(predicate={'all': []}, protocol_uuid=context['protocol_uuid'], filters=filters or {})
@@ -951,6 +982,16 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         return start_read(context, filters)
 
     def finish(context, value):
+        display_membership = context
+        filters = context.get('_read_context', {}).get('filters', {})
+        if '_view_ids' in context and filters and trace_views._canonical():
+            # Capture exactly the selected display intersection, including every
+            # pre-existing metadata/tag filter. This runs under the ordinary
+            # guarded preparation and its closing generation checks, never on
+            # the independent sample-read route. Keep tree/mutation context intact.
+            scoped = manager.frozen_service(context)
+            display_membership = dict(context, _view_ids={row['epoch_uuid']
+                for row in scoped.filtered_rows(context['protocol_uuid'], filters)})
         if '_read_generation' in context:
             from disco.metadata.explore_queries import generation, StaleQuery
             try:
@@ -967,6 +1008,9 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                             context['candidate_scope_revision'])
         value.update(candidate_scope_revision=context['candidate_scope_revision'],
             query_revision=context['candidate_scope_revision'], expected_binding_version=context['expected_binding_version'])
+        display_context = trace_views.prepare(display_membership)
+        if display_context is not None:
+            value['trace_read_context'] = display_context
         return value
 
     def row_decisions(context, rows):
@@ -1014,6 +1058,8 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             return result
         page.update({key: result[key] for key in ('generation', 'candidate_scope_revision',
             'query_revision', 'expected_binding_version')})
+        if 'trace_read_context' in result:
+            page['trace_read_context'] = dict(result['trace_read_context'])
         # Keep the fresh projection separate from durable prepare receipt data.
         bootstrap = dict(contract_version=1, kind='workbench_initial_page', context=result, page=page,
             actor=context['actor'], project_uuid=context['project_uuid'], protocol_uuid=context['protocol_uuid'],
@@ -1126,6 +1172,36 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             row_decisions(context, [row])
             return jsonify(finish(context, row))
 
+    @app.errorhandler(TraceViewConflict)
+    def trace_view_conflict(error):
+        return jsonify(error=str(error), code='trace_view_conflict'), 409
+
+    @app.get('/api/trace-views/<token>/epochs/<epoch>/trace')
+    def prepared_trace(token, epoch):
+        # Display-only historical membership: no SQL, DB lock, tag/draft reads,
+        # or current-candidate claims. Mutation endpoints never accept this token.
+        if (request.args.keys() - {'stream_uuid', 'start', 'count', 'chunks'} or
+                any(len(request.args.getlist(key)) != 1 for key in request.args) or
+                request.headers.get('X-Disco-Trace-Priority') == 'background'):
+            raise ValueError('Display trace requires unique foreground window options')
+        from workspace_trace_binary import (begin_trace_timing, mark_trace_timing,
+            read_trace_batch, trace_batch_response, wants_binary_trace)
+        timing = begin_trace_timing()
+        owner = display_actor()
+        entry = trace_views.capture(token, epoch, owner)
+        mark_trace_timing(timing, 'open')
+        start, count = int(request.args.get('start', 0)), int(request.args.get('count', 20000))
+        binary = wants_binary_trace()
+        if 'chunks' in request.args:
+            result = read_trace_batch(service, epoch, request.args['stream_uuid'], start, count,
+                int(request.args['chunks']), binary=binary, timing=timing)
+        else:
+            result = service.trace(epoch, request.args['stream_uuid'], start, count)
+        mark_trace_timing(timing, 'read')
+        result = trace_views.finish(token, epoch, owner, entry, result)
+        mark_trace_timing(timing, 'close')
+        return trace_batch_response(app, result, timing, binary=binary) if 'chunks' in request.args else jsonify(result)
+
     @app.get(candidate + '/epochs/<epoch>/trace')
     def workbench_trace(protocol, revision, epoch):
         query_filters({'candidate_scope_revision', 'stream_uuid', 'start', 'count', 'chunks'})
@@ -1144,7 +1220,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                 mark_trace_timing(timing, 'open')
                 result = read_trace_batch(scoped, epoch, request.args.get('stream_uuid'),
                     int(request.args.get('start', 0)), int(request.args.get('count', 20000)),
-                    int(request.args['chunks']), binary=binary)
+                    int(request.args['chunks']), binary=binary, timing=timing)
                 mark_trace_timing(timing, 'read')
             else:
                 result = scoped.trace(epoch, request.args.get('stream_uuid'),

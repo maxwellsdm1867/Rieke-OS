@@ -22,21 +22,28 @@ import AnnotationTags from '../../annotations/ui/AnnotationTags.jsx';
 import useTreeCellSelection from '../../annotations/useTreeCellSelection.js';
 
 // Source adapters provide data and mutations; every viewer assembles its UI here.
-export default function EpochViewer({className='epoch-inspector-mode',ariaLabel='Epoch inspection',onKeyDown,toolbar,toolbarChildren,viewFilters,onViewFilters,filterRevision,filterDisabled=false,hideFilterControl=false,before,layout,designMode=false,builder,columnTree,treePane,resource={},epoch,targets=[],navigation,traceRevision,tracePreference:providedTracePreference,onTracePreference,readContext=null,inclusion,detailDisabled=false,onQC,tags,detailExtras,metadata}){
+export default function EpochViewer({className='epoch-inspector-mode',ariaLabel='Epoch inspection',onKeyDown,toolbar,toolbarChildren,viewFilters,onViewFilters,filterRevision,filterDisabled=false,hideFilterControl=false,before,layout,designMode=false,builder,columnTree,treePane,resource={},epoch,targets=[],navigation,traceRevision,tracePreference:providedTracePreference,onTracePreference,readContext=null,traceReadContext=undefined,traceEpoch=null,inclusion,detailDisabled=false,onQC,tags,detailExtras,metadata}){
   const [tracePreference,setTracePreference]=useTraceViewPreference(providedTracePreference,onTracePreference);
   const [previewOpen,setPreviewOpen]=useState(true);
   const [tagsOpen,setTagsOpen]=useState(false);
   const cellSelection=useTreeCellSelection(designMode&&!readContext?columnTree:null);
+  const independentTrace=traceReadContext!==undefined;
+  const shownEpoch=independentTrace?traceEpoch:epoch;
+  const displayResource=independentTrace?{data:shownEpoch,loading:!shownEpoch,scope:JSON.stringify([traceReadContext,shownEpoch?.epoch_uuid,shownEpoch?.source_sha256])}:resource;
+  // Historical display can advance while mutation receipts are refreshing.
+  // Never retain another epoch's tags/review beneath the new recorded trace.
+  const curationScope=JSON.stringify([resource.scope,readContext,traceReadContext,shownEpoch?.epoch_uuid,shownEpoch?.source_sha256]);
   const hasPreview=!!(epoch||columnTree?.selected);
   const showPreview=designMode&&previewOpen&&hasPreview;
-  const tracePane=showPreview&&!columnTree?.actionsDisabled?<section className="tree-trace-pane" aria-label="Raw recording preview"><header><strong><Activity size={14}/> Raw recording</strong><button className="icon-button" aria-label="Close raw recording preview" onClick={()=>setPreviewOpen(false)}><X size={15}/></button></header><div className="tree-trace-body"><StableContent {...resource} data={epoch}>{epoch&&<><div className="tree-preview-identity"><strong>{datedCellLabel(epoch)}</strong><span>Epoch {epoch.epoch_number??'—'} · {epoch.start_time?.split(/[T ]/)[1]?.slice(0,8)||'Time not recorded'}</span></div><Trace viewPreference={tracePreference} onViewPreference={setTracePreference} epoch={epoch} revision={traceRevision} readContext={readContext}/></>}</StableContent></div></section>:null;
+  const tracePane=showPreview&&!columnTree?.actionsDisabled?<section className="tree-trace-pane" aria-label="Raw recording preview"><header><strong><Activity size={14}/> Raw recording</strong><button className="icon-button" aria-label="Close raw recording preview" onClick={()=>setPreviewOpen(false)}><X size={15}/></button></header><div className="tree-trace-body"><StableContent {...resource} data={epoch}>{epoch&&<><div className="tree-preview-identity"><strong>{datedCellLabel(epoch)}</strong><span>Epoch {epoch.epoch_number??'—'} · {epoch.start_time?.split(/[T ]/)[1]?.slice(0,8)||'Time not recorded'}</span></div><Trace viewPreference={tracePreference} onViewPreference={setTracePreference} epoch={traceReadContext===null?null:shownEpoch} revision={traceRevision} readContext={traceReadContext===undefined?readContext:traceReadContext}/></>}</StableContent></div></section>:null;
   const treeTags=<div className="tree-selection-tags" hidden={!tagsOpen}>{cellSelection.cells.length?<><div className="tree-cell-selection" aria-label="Selected cells"><strong>{cellSelection.cells.length} cells selected</strong><button disabled={cellSelection.blocked} onClick={cellSelection.clear}>Clear cell selection</button><div>{cellSelection.cells.map(cell=><span key={cell.cell_uuid}>{cell.label}</span>)}</div></div><AnnotationTags composer={cellSelection.composer} selectedCells={cellSelection.ids} targetScope="selected-cells" revision={cellSelection.revision} disabled={cellSelection.blocked} reconcileReceipt onChange={columnTree?.onAnnotationsChanged}/></>:<StableContent {...resource} data={epoch}>{tags}</StableContent>}</div>;
-  const detail=<StableContent {...resource} data={epoch}>{!readContext&&!designMode&&targets.length?<SelectionOverview count={targets.length}/>:epoch?<>
-    {designMode?<div className="tree-preview-identity"><strong>{datedCellLabel(epoch)}</strong><span>Epoch {epoch.epoch_number??'—'} · {epoch.start_time?.split(/[T ]/)[1]?.slice(0,8)||'Time not recorded'}</span></div>:<EpochDetailHeading epoch={epoch} disabled={detailDisabled} onQC={onQC}/>}
+  const curation=<><div className="curation-bar">{inclusion&&<EpochAnalysisInclusion epoch={epoch} {...inclusion}/>} {!designMode&&!layout.metadataOpen&&(!layout.treeOpen||treePane?.treeMode)&&tags}</div>
+{detailExtras}</>;
+  const detail=<StableContent {...displayResource} data={shownEpoch}>{!readContext&&!designMode&&targets.length?<SelectionOverview count={targets.length}/>:shownEpoch?<>
+    {designMode?<div className="tree-preview-identity"><strong>{datedCellLabel(epoch)}</strong><span>Epoch {epoch.epoch_number??'—'} · {epoch.start_time?.split(/[T ]/)[1]?.slice(0,8)||'Time not recorded'}</span></div>:<EpochDetailHeading epoch={shownEpoch} disabled={detailDisabled||!epoch||resource.loading} onQC={onQC}/>}
     {navigation&&!designMode&&<EpochNavigation {...navigation}/>}
-    <Trace viewPreference={tracePreference} onViewPreference={setTracePreference} epoch={epoch} revision={traceRevision} readContext={readContext}/>
-    <div className="curation-bar">{inclusion&&<EpochAnalysisInclusion epoch={epoch} {...inclusion}/>} {!designMode&&!layout.metadataOpen&&(!layout.treeOpen||treePane?.treeMode)&&tags}</div>
-    {detailExtras}
+    <Trace viewPreference={tracePreference} onViewPreference={setTracePreference} epoch={traceReadContext===null?null:shownEpoch} revision={traceRevision} readContext={traceReadContext===undefined?readContext:traceReadContext}/>
+    {independentTrace?<StableContent {...resource} scope={curationScope} data={epoch}>{curation}</StableContent>:curation}
   </>:<Empty title="Choose an epoch">Select an epoch from the tree to inspect its response and metadata.</Empty>}</StableContent>;
   const valuesEpoch=metadata?.loadingPolicy?metadata.loadingPolicy.values.data:epoch;
   const metadataPanel=metadata&&<MetadataPanel {...metadata} epoch={metadata.loadingPolicy?.row||epoch} tags={tags} context={valuesEpoch&&<ScientificContext epoch={valuesEpoch}/>}/>;
