@@ -124,6 +124,9 @@ class TraceViewTests(unittest.TestCase):
             self.assertIsNone(self.views.prepare(self.context))
             with self.assertRaises(TraceViewConflict): self.capture()
 
+    def test_unsupported_service_does_not_require_native_publication_fields(self):
+        self.assertIsNone(TraceViews(types.SimpleNamespace()).prepare(self.context))
+
     def test_late_source_change_rejected(self):
         witness = self.capture()
         value = self.service.trace(self.epoch, self.stream, 0, 100)

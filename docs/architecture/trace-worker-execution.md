@@ -250,3 +250,11 @@ cases and 46 valid Canvas raster comparisons across Light/Dark and DPR 1/2.
 These establish equivalence to the existing whole-view M4 renderer, not universal
 pixel equivalence to a full raw polyline. Full application and package measurements
 remain separately attributed to the implementation they execute.
+
+Desktop startup starts one isolated, standard-library-only child after runtime
+validation to map the packaged helper and check ABI 4 symbols. It reads no
+samples and grants no trace authority. A five-second deadline and bounded
+shutdown cleanup own the child; missing helpers or probe failures retain the
+ordinary optional-helper path. Actual reads independently load and validate
+the helper. `test_trace_native_initialization` checks ordering, one-shot
+startup, isolation, deadline, and normal/error cleanup.

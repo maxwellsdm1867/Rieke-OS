@@ -3102,6 +3102,7 @@
             "numpy",
             "os",
             "pathlib",
+            "subprocess",
             "threading"
           ]
         }
@@ -3115,7 +3116,8 @@
           "python/tests/test_workspace_protocol_browse.py",
           "python/tests/test_workspace_protocol_summary.py",
           "python/tests/test_trace_binary.py",
-          "python/tests/test_trace_native.py"
+          "python/tests/test_trace_native.py",
+          "python/tests/test_trace_native_initialization.py"
         ],
         "javascript": [
           "workspace-app/src/apiCommandPolicy.test.js",

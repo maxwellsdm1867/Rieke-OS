@@ -110,6 +110,10 @@ class TraceViews:
             self.publication = owner
 
     def prepare(self, context):
+        # Optional display support must not inspect native-only state on a
+        # legacy/custom service that cannot issue this capability at all.
+        if type(self.service) is not WorkspaceService:
+            return None
         self._sync_publication()
         if not self._canonical() or not context.get('main_revision_uuid'):
             return None

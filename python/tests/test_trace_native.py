@@ -499,7 +499,8 @@ class NativeTraceTests(unittest.TestCase):
         for invalid in (0, -1, float('nan'), float('inf'), 16385, True):
             with self.subTest(width=invalid), self.assertRaises(ValueError):
                 native.reduce_native_display(raw, invalid)
-        for invalid in (np.array([],dtype='<f8'), raw[::2], raw.astype('<f4'), raw.reshape(4,4)):
+        for invalid in (np.array([],dtype='<f8'), raw[::2], raw.astype('<f4'), raw.reshape(4,4),
+                        np.ma.array(raw, mask=[True] + [False] * 15)):
             with self.assertRaises(ValueError):
                 native.reduce_native_display(invalid, 10.)
         with patch.object(native, '_load_helper', return_value=None):

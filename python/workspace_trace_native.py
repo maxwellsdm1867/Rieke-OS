@@ -9,6 +9,7 @@ from __future__ import annotations
 import ctypes
 from functools import lru_cache
 import os
+import subprocess
 from pathlib import Path
 import threading
 
@@ -21,6 +22,109 @@ MAX_INPUT_BYTES = 32 * 1024 * 1024
 MAX_GAP_BYTES = 64 * 1024
 _NATIVE_SLOT = threading.BoundedSemaphore(1)
 _NATIVE_WORKERS = min(8, max(1, os.cpu_count() or 1))
+
+
+_INITIALIZER_LOCK = threading.Lock()
+_INITIALIZER = None
+_INITIALIZER_DEADLINE = 5.0
+_INITIALIZER_STOP_TIMEOUT = 0.25
+_INITIALIZER_JOIN_TIMEOUT = 0.25
+# Isolated stdlib-only process: load the trusted helper and inspect its ABI and
+# symbols. Never import application/data readers or call any sample operation.
+_HELPER_PROBE = """import ctypes, sys
+helper = ctypes.CDLL(sys.argv[1])
+helper.disco_trace_inflate_abi.restype = ctypes.c_uint
+if helper.disco_trace_inflate_abi() != 4:
+    raise SystemExit(1)
+for name in ('disco_trace_inflate_v1', 'disco_trace_normalize_units_v1',
+             'disco_trace_extract_v1', 'disco_trace_m4_v1'):
+    getattr(helper, name)
+"""
+
+
+class _HelperInitialization:
+    """Own one optional, bounded child; its result never grants read authority."""
+    def __init__(self, runtime):
+        self.process = None
+        self.thread = None
+        self.done = threading.Event()
+        self._stop_lock = threading.Lock()
+        try:
+            runtime = Path(runtime).resolve(strict=True)
+            python = runtime / 'python/bin/python3.11'
+            helper = runtime / 'native/libdisco_trace_inflate.dylib'
+            if any(not path.is_file() or not path.resolve(strict=True).is_relative_to(runtime)
+                   for path in (python, helper)):
+                self.done.set()
+                return
+            self.process = subprocess.Popen(
+                [str(python), '-I', '-S', '-B', '-c', _HELPER_PROBE, str(helper)],
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                close_fds=True, shell=False, cwd=str(runtime), env={})
+            self.thread = threading.Thread(target=self._reap,
+                name='disco-trace-helper-probe', daemon=True)
+            self.thread.start()
+        except (OSError, RuntimeError):
+            # Missing helpers, spawn failure or unavailable threads keep normal
+            # optional-helper fallback; project/UI startup does not depend on it.
+            self._stop_child()
+            self.done.set()
+
+    def _stop_child(self):
+        with self._stop_lock:
+            child = self.process
+            if child is None:
+                return
+            try:
+                if child.poll() is not None:
+                    return
+                child.terminate()
+                try:
+                    child.wait(timeout=_INITIALIZER_STOP_TIMEOUT)
+                    return
+                except subprocess.TimeoutExpired:
+                    child.kill()
+                child.wait(timeout=_INITIALIZER_STOP_TIMEOUT)
+            except (OSError, subprocess.SubprocessError):
+                # The daemon reaper retains this exact child handle, including
+                # delayed exit after SIGKILL; shutdown itself remains bounded.
+                pass
+
+    def _reap(self):
+        try:
+            try:
+                self.process.wait(timeout=_INITIALIZER_DEADLINE)
+            except (OSError, subprocess.SubprocessError):
+                self._stop_child()
+                self.process.wait()
+        except (OSError, subprocess.SubprocessError):
+            pass
+        finally:
+            self.done.set()
+
+    def close(self):
+        self._stop_child()
+        if self.thread is not None and self.thread.ident is not None:
+            self.thread.join(timeout=_INITIALIZER_JOIN_TIMEOUT)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()
+
+
+def initialize_desktop_helper(runtime):
+    """Start once after desktop runtime validation, without waiting for the probe.
+
+    The child loads only the helper library. Actual trace reads still load and
+    check the helper in their own process and retain all scientific admission.
+    """
+    global _INITIALIZER
+    with _INITIALIZER_LOCK:
+        if _INITIALIZER is None:
+            _INITIALIZER = _HelperInitialization(runtime)
+        return _INITIALIZER
 
 
 @lru_cache(maxsize=1)
@@ -214,7 +318,7 @@ def reduce_native_display(values, physical_width):
     """
     import math
     import numpy as np
-    if (not isinstance(values, np.ndarray) or values.ndim != 1 or
+    if (type(values) is not np.ndarray or values.ndim != 1 or
             values.dtype != np.dtype('<f8') or not values.flags.c_contiguous or
             not 0 < len(values) <= MAX_SAMPLES or isinstance(physical_width, bool) or
             not isinstance(physical_width, (int, float)) or

@@ -816,132 +816,137 @@ def main(argv=None):
     # and explicit Verify. Normal launches check compatibility and required paths;
     # project ownership, recovery and scientific source validation remain separate.
     manifest = validate_desktop_runtime(runtime)
-    runtime_config = {'retinanalysis': str(runtime / 'parser'),
-                      'managed_root': str(Path(os.environ.get('RECORDING_WORKSPACE_ROOT') or
-                                              Path.home() / 'Documents/RecordingWorkspace').expanduser().resolve())}
-    preference = user_state / 'preferences/workspace-selection.json'
-    if preference.exists():
-        if preference.is_symlink() or preference.stat().st_size > 65536:
-            raise ValueError('Desktop workspace preference is invalid')
-        selected = json.loads(preference.read_text())
-        if selected.get('version') != 1 or not isinstance(selected.get('managed_root'), str):
-            raise ValueError('Desktop workspace preference is invalid')
-        runtime_config['managed_root'] = selected['managed_root']
-    retinanalysis = Path(runtime_config['retinanalysis'])
-    identity = {'pid': os.getpid(), 'session_id': session_id,
-                'application_version': manifest['application_version'],
-                'source_commit': manifest['source_commit'],
-                'workspace_formats': manifest['workspace_formats'],
-                'database_compatibility': manifest['database_compatibility'],
-                'project_uuid': None, 'project_path': None}
-    global _SERVICES
-    session_lock = None
-    if args.project_dir:
-        project = args.project_dir.resolve(strict=True)
-        if project.is_relative_to(resources):
-            raise ValueError('Projects must be outside the signed resources')
-        catalog = json.loads((project / 'catalog.json').read_text())
-        if catalog.get('connection', {}).get('credential_provider', {}).get('kind') != 'native-project':
-            raise ValueError('Desktop requires a project-owned native database; migrate legacy projects before opening them')
-        session_lock = acquire_project_session(project)
-        from lifecycle_diagnostic import install_read_observers
-        install_read_observers()
-        from workspace_projects import _project_record
-        record = _project_record(project, current=True)
-        identity.update(project_uuid=record['uuid'], project_path=str(project), data_deferred=True)
+    from workspace_trace_native import initialize_desktop_helper
+    # Mapping a new signed helper can hold the interpreter lock. A no-sample
+    # child probe prepares that executable path without delaying the shell.
+    # Its bounded lifetime includes configuration failures and normal shutdown.
+    with initialize_desktop_helper(runtime):
+        runtime_config = {'retinanalysis': str(runtime / 'parser'),
+                          'managed_root': str(Path(os.environ.get('RECORDING_WORKSPACE_ROOT') or
+                                                  Path.home() / 'Documents/RecordingWorkspace').expanduser().resolve())}
+        preference = user_state / 'preferences/workspace-selection.json'
+        if preference.exists():
+            if preference.is_symlink() or preference.stat().st_size > 65536:
+                raise ValueError('Desktop workspace preference is invalid')
+            selected = json.loads(preference.read_text())
+            if selected.get('version') != 1 or not isinstance(selected.get('managed_root'), str):
+                raise ValueError('Desktop workspace preference is invalid')
+            runtime_config['managed_root'] = selected['managed_root']
+        retinanalysis = Path(runtime_config['retinanalysis'])
+        identity = {'pid': os.getpid(), 'session_id': session_id,
+                    'application_version': manifest['application_version'],
+                    'source_commit': manifest['source_commit'],
+                    'workspace_formats': manifest['workspace_formats'],
+                    'database_compatibility': manifest['database_compatibility'],
+                    'project_uuid': None, 'project_path': None}
+        global _SERVICES
+        session_lock = None
+        if args.project_dir:
+            project = args.project_dir.resolve(strict=True)
+            if project.is_relative_to(resources):
+                raise ValueError('Projects must be outside the signed resources')
+            catalog = json.loads((project / 'catalog.json').read_text())
+            if catalog.get('connection', {}).get('credential_provider', {}).get('kind') != 'native-project':
+                raise ValueError('Desktop requires a project-owned native database; migrate legacy projects before opening them')
+            session_lock = acquire_project_session(project)
+            from lifecycle_diagnostic import install_read_observers
+            install_read_observers()
+            from workspace_projects import _project_record
+            record = _project_record(project, current=True)
+            identity.update(project_uuid=record['uuid'], project_path=str(project), data_deferred=True)
 
-        def build_project(capture, begin_database):
-            # These checks belong to the requested data load, not shell startup.
-            from disco.projects.project_validation import validate_project_folder
-            selected = validate_project_folder(project)['project']
-            if selected['uuid'] != identity['project_uuid']:
-                raise ValueError('Project identity changed; reopen its folder')
-            if (project / '.app-state-restore.pending').exists():
-                raise ValueError('An app-state restore was interrupted. Complete recovery before loading data.')
-            from workspace_bootstrap import prepare_desktop_parser_config
-            prepare_desktop_parser_config(user_state)
-            from workspace_native_mysql import native_binary
-            native_binary()  # Missing dependencies fail before any database effect.
-            begin_database()
-            from disco.projects.project_database import ensure_project_database
-            ensure_project_database(project)
-            from workspace_api import create_app
-            application = create_app(project, retinanalysis, desktop_session_lock=session_lock, on_created=capture)
-            from workspace_process_heap import install as install_project_heap
-            install_project_heap(application)
-            return application
+            def build_project(capture, begin_database):
+                # These checks belong to the requested data load, not shell startup.
+                from disco.projects.project_validation import validate_project_folder
+                selected = validate_project_folder(project)['project']
+                if selected['uuid'] != identity['project_uuid']:
+                    raise ValueError('Project identity changed; reopen its folder')
+                if (project / '.app-state-restore.pending').exists():
+                    raise ValueError('An app-state restore was interrupted. Complete recovery before loading data.')
+                from workspace_bootstrap import prepare_desktop_parser_config
+                prepare_desktop_parser_config(user_state)
+                from workspace_native_mysql import native_binary
+                native_binary()  # Missing dependencies fail before any database effect.
+                begin_database()
+                from disco.projects.project_database import ensure_project_database
+                ensure_project_database(project)
+                from workspace_api import create_app
+                application = create_app(project, retinanalysis, desktop_session_lock=session_lock, on_created=capture)
+                from workspace_process_heap import install as install_project_heap
+                install_project_heap(application)
+                return application
 
-        def cleanup_failed_project():
-            from workspace_native_mysql import stop_native_database
-            stop_native_database(project)
-            if not DesktopServices._clean_database(identity):
-                raise ValueError('Database cleanup could not be confirmed; its files were preserved for recovery')
+            def cleanup_failed_project():
+                from workspace_native_mysql import stop_native_database
+                stop_native_database(project)
+                if not DesktopServices._clean_database(identity):
+                    raise ValueError('Database cleanup could not be confirmed; its files were preserved for recovery')
 
-        from disco.projects.project_shell import create_project_shell
-        app = create_project_shell(project, retinanalysis, user_state=user_state,
-            identity=identity, build=build_project, cleanup_failed=cleanup_failed_project)
-    else:
-        lock_path = user_state / 'desktop-session.lock'
-        if lock_path.is_symlink():
-            raise ValueError('Desktop session lock cannot be a symbolic link')
-        session_lock = lock_path.open('a')
-        fcntl.flock(session_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        _SERVICES = DesktopServices(user_state, resources, manifest_path, session_id, capability, identity)
-        os.environ['RIEKE_DESKTOP_LAUNCHER_PORT'] = str(args.port)
-        from workspace_launcher import create_launcher
-        app = create_launcher(runtime_config['managed_root'], retinanalysis,
-                              application_dir=runtime / 'application')
-    boundary = DesktopBoundary(app, port=args.port, capability=capability, identity=identity, services=_SERVICES)
-    from waitress import create_server
-    server = create_server(boundary, host=args.host, port=args.port, threads=8,
-                           clear_untrusted_proxy_headers=True, max_request_body_size=16 * 1024**3)
-    stopped = threading.Event()
-    def close_server():
-        server.close()
-        # Scientific WSGI requests already acknowledged completion. Close idle
-        # connections so Waitress's event loop exits, then join its dispatcher.
-        # No process signal or writer cancellation is involved.
-        server.asyncore.close_all(map=server._map, ignore_all=True)
-        server.task_dispatcher.shutdown(cancel_pending=False, timeout=30)
-        stopped.set()
-    # Schedule closure on the event-loop thread. Closing sockets from a timer
-    # races select() and gives an otherwise orderly shutdown EBADF.
-    def request_server_stop():
-        server.trigger.pull_trigger(close_server)
-    boundary.stop_callback = request_server_stop
-    app.extensions['shutdown_project_server'] = request_server_stop
-    inbox = app.extensions.get('h5_inbox')
-    if inbox:
-        inbox.start()
-    # The private spawned-process channel proves this listener was successfully
-    # bound before any supervisor sends a capability over loopback HTTP.
-    receipt = 'RIEKE_DESKTOP_BOUND=' + json.dumps({**identity, 'port': args.port, 'ready': True}) + '\n'
-    if args.ready_fd is None:
-        print(receipt, end='', flush=True)
-    else:
-        if args.ready_fd < 3:
-            raise ValueError('Desktop readiness descriptor must be a private pipe')
-        with os.fdopen(args.ready_fd, 'w') as pipe:
-            pipe.write(receipt)
-            pipe.flush()
-    try:
-        server.run()
-    finally:
+            from disco.projects.project_shell import create_project_shell
+            app = create_project_shell(project, retinanalysis, user_state=user_state,
+                identity=identity, build=build_project, cleanup_failed=cleanup_failed_project)
+        else:
+            lock_path = user_state / 'desktop-session.lock'
+            if lock_path.is_symlink():
+                raise ValueError('Desktop session lock cannot be a symbolic link')
+            session_lock = lock_path.open('a')
+            fcntl.flock(session_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            _SERVICES = DesktopServices(user_state, resources, manifest_path, session_id, capability, identity)
+            os.environ['RIEKE_DESKTOP_LAUNCHER_PORT'] = str(args.port)
+            from workspace_launcher import create_launcher
+            app = create_launcher(runtime_config['managed_root'], retinanalysis,
+                                  application_dir=runtime / 'application')
+        boundary = DesktopBoundary(app, port=args.port, capability=capability, identity=identity, services=_SERVICES)
+        from waitress import create_server
+        server = create_server(boundary, host=args.host, port=args.port, threads=8,
+                               clear_untrusted_proxy_headers=True, max_request_body_size=16 * 1024**3)
+        stopped = threading.Event()
+        def close_server():
+            server.close()
+            # Scientific WSGI requests already acknowledged completion. Close idle
+            # connections so Waitress's event loop exits, then join its dispatcher.
+            # No process signal or writer cancellation is involved.
+            server.asyncore.close_all(map=server._map, ignore_all=True)
+            server.task_dispatcher.shutdown(cancel_pending=False, timeout=30)
+            stopped.set()
+        # Schedule closure on the event-loop thread. Closing sockets from a timer
+        # races select() and gives an otherwise orderly shutdown EBADF.
+        def request_server_stop():
+            server.trigger.pull_trigger(close_server)
+        boundary.stop_callback = request_server_stop
+        app.extensions['shutdown_project_server'] = request_server_stop
+        inbox = app.extensions.get('h5_inbox')
+        if inbox:
+            inbox.start()
+        # The private spawned-process channel proves this listener was successfully
+        # bound before any supervisor sends a capability over loopback HTTP.
+        receipt = 'RIEKE_DESKTOP_BOUND=' + json.dumps({**identity, 'port': args.port, 'ready': True}) + '\n'
+        if args.ready_fd is None:
+            print(receipt, end='', flush=True)
+        else:
+            if args.ready_fd < 3:
+                raise ValueError('Desktop readiness descriptor must be a private pipe')
+            with os.fdopen(args.ready_fd, 'w') as pipe:
+                pipe.write(receipt)
+                pipe.flush()
         try:
-            current_inbox = app.extensions.get('h5_inbox')
-            if current_inbox:
-                current_inbox.stop()
-            close_traces = app.extensions.get('close_trace_workers')
-            if close_traces is not None:
-                close_traces()
+            server.run()
         finally:
             try:
-                close_heap = app.extensions.get('close_project_heap')
-                if close_heap is not None:
-                    close_heap()
+                current_inbox = app.extensions.get('h5_inbox')
+                if current_inbox:
+                    current_inbox.stop()
+                close_traces = app.extensions.get('close_trace_workers')
+                if close_traces is not None:
+                    close_traces()
             finally:
-                if session_lock:
-                    session_lock.close()
+                try:
+                    close_heap = app.extensions.get('close_project_heap')
+                    if close_heap is not None:
+                        close_heap()
+                finally:
+                    if session_lock:
+                        session_lock.close()
 
 
 
