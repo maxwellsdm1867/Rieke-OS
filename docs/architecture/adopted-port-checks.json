@@ -1759,7 +1759,8 @@
           "allow": [
             "react",
             "workspace-app/src/incoming-workbench/workbenchAuthority.js",
-            "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js"
+            "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js",
+            "workspace-app/src/retainedWorkspaceViews.js"
           ]
         }
       ],

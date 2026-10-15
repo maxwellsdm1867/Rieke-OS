@@ -1816,23 +1816,23 @@
       ]
     },
     "src/incoming-workbench/useSelectedEpochView.js": {
-      "reason": "Selected-view intent is separate from fresh manifest authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md.",
+      "reason": "Selected-view intent is separate from fresh manifest authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Final independent review: active retained visibility gates manifest acquisition and captured callbacks; hidden pending-write Activity test proves abort, late rejection and exact renewal on reveal.",
       "lifetime": "Mounted same-owner presentation; abort and current-owner gates fence each exact manifest upload.",
       "tests": [
         "src/incoming-workbench/useSelectedEpochView.test.js",
         "src/workbenchSessionLifecycle.test.js"
       ],
-      "fingerprint": "892219c28dcbc71073163b0e82c0385d8e3bd26a27db5d854f5c00108a9d4023",
+      "fingerprint": "6544eaa946dec1177819136b6b45047adc60efe571078e5fb1cb6b6cdad09f3b",
       "sites": [
         {
           "owner": "useSelectedEpochView",
           "kind": "useLayoutEffect",
-          "fingerprint": "87c436f8811974206ec3f9a6006134193ed616999af2d2620a2c5b0f37603271"
+          "fingerprint": "62c1327832d9bbb5496dfa594f7fb8e5c04176fed6a47f5e193aff9862263ec8"
         },
         {
           "owner": "useSelectedEpochView",
           "kind": "useEffect",
-          "fingerprint": "2df2825c683de3a6d27e52597e39e698e189cc49d671b03c7e7d7119ea391e8b"
+          "fingerprint": "5ead7120ccda304d12e3633475bffb12d3b8c9bc962d0807b14e617ba1d4c5a5"
         }
       ]
     },

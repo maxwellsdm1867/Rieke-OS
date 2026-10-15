@@ -52,12 +52,13 @@ That is a bounded read-count test, not a large-history latency measurement.
   membership/group validation. Their value text alone cannot prove an unchanged
   visible UUID set. This branch does not freeze a tag-filter result across later
   tag changes; that would need an explicit bounded result-snapshot contract.
-- Main Inspect and Search Predicate were inspected for related reset paths.
-  Main's per-cell page identity still includes the read revision, and Search's
-  presentation identity includes the preview revision. They can do extra reloads
-  or resets after refresh. This branch's semantic continuity is deliberately
-  limited to a verified frozen Workbench cohort, not applied to unproven live
-  query results. These are follow-up audit findings, not claimed fixes.
+- Search retains annotation-edited results until explicit refresh; its new mounted
+  regression verifies the same result owner and preview stay in place while
+  export/design actions pause. Explicit refresh admits the new live query result.
+- Main Inspect's existing same-scope branch-retention regression passes. Its
+  per-cell page authority still refreshes, but no additional instance of the
+  Workbench candidate-reset bug was demonstrated. Deep pagination, native focus
+  and browser paint remain separately qualified.
 - Revision-bound branch-command markers remain separate from selected UUIDs.
   Preserving a painted branch command must not implicitly replay a selection.
 
@@ -79,3 +80,20 @@ paths, transient errors and confirmed absence. Evidence is retained locally in
 Full source checks and exact-commit core/million-query results are recorded with
 the final handoff. Browser paint, native installed-app behavior, packaging and
 release qualification remain separate.
+
+## Next-release follow-up
+
+A final independent standards review found one retained-lifetime gap: a pending
+write can keep a hidden Workbench mounted, allowing selected-view manifest renewal
+without active visibility. The hook now aborts/defer renewal while hidden, fences
+captured callbacks and late completions, and renews the exact IDs on reveal. The
+real retained-wrapper test failed before the fix and passes afterward. Both final
+standards and specification reviews found no remaining source blocker.
+
+The application changes belong in the release after 0.1.15. Preserve the existing
+release version until that release is assembled. The tested source and evidence
+are recorded in `workbench-tagging-release-handoff.json`; do not attribute old
+receipts to a later merged or packaged commit. At packaging, verify an owned
+Workbench fixture through real tag saves in list, column, hierarchy and selected
+views, with focus/scroll/selection retained and stale actions refused. This native
+package check remains a release gate, not a claim made by source tests.

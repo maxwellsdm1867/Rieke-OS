@@ -309,3 +309,8 @@ Project, actor, cohort, filter and selection changes retire incompatible intent.
 Its presentation key only preserves navigation and is never HTTP authority.
 The hook tests plus `workbenchSessionLifecycle.test.js` cover held/failing refresh,
 stale completions, exact selection, expanded rows, focus and scroll.
+
+Selected-view manifest renewal independently requires active retained visibility.
+Hiding aborts/defer reads even when an unrelated accepted write keeps Activity
+mounted; old callbacks and late responses cannot change the hidden view. Reveal
+renews exact UUIDs under current authority without clearing selected intent.
