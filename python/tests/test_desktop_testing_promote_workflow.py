@@ -75,12 +75,13 @@ class TestingPromoteWorkflowTests(unittest.TestCase):
                 self.assertEqual(command, ['git', 'rev-parse', 'HEAD'])
                 self.assertTrue(options.get('text'))
                 return PUBLISHER + '\n'
-            def publish(*arguments):
+            def publish(*arguments, **options):
                 commands.append('publish')
                 self.assertEqual(commands[:-1], ['extract', 'signature', 'runtime', 'native', 'trace-symbols'])
                 self.assertTrue((directory / 'publication-audit/identity.json').is_file())
                 self.assertEqual(arguments, (directory / 'extracted/Disco.app', archive,
                     directory / 'desktop-release.json', notes, '42'))
+                self.assertEqual(options, {'verification_run_id': '43'})
                 return {'source_commit': SOURCE, 'candidate_run': 42}
             publisher = Mock(side_effect=publish)
             module = types.ModuleType('desktop_test_release'); module.publish = publisher
@@ -88,7 +89,7 @@ class TestingPromoteWorkflowTests(unittest.TestCase):
             error = None
             try:
                 os.chdir(root)
-                with patch.dict(os.environ, {'SOURCE_COMMIT': SOURCE, 'CANDIDATE_RUN_ID': '42',
+                with patch.dict(os.environ, {'SOURCE_COMMIT': SOURCE, 'CANDIDATE_RUN_ID': '42', 'VERIFICATION_RUN_ID': '43',
                         'NOTES_PATH': 'release-evidence/notes.md', 'RUNNER_TEMP': str(root / 'runner')}), \
                      patch.dict(sys.modules, {'desktop_test_release': module}), \
                      patch.object(sys, 'path', list(sys.path)), \
@@ -109,6 +110,7 @@ class TestingPromoteWorkflowTests(unittest.TestCase):
         self.assertEqual(identity['source_commit'], SOURCE)
         self.assertEqual(identity['publisher_commit'], PUBLISHER)
         self.assertEqual(identity['candidate_run_id'], '42')
+        self.assertEqual(identity['verification_run_id'], '43')
         self.assertEqual(identity['archive_sha256'], archive_hash)
         self.assertEqual(identity['native_source_sha256'], source_hash)
         self.assertEqual(identity['read_only_artifact_checks'], commands[1:-1])

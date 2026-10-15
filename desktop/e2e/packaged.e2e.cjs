@@ -3,18 +3,20 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const http = require('node:http');
+const {chromium}=require('playwright');
 const {spawn} = require('node:child_process');
 const {createHash, randomUUID} = require('node:crypto');
-const {chromium} = require('playwright');
-const {createFixture, launch, gracefulQuit, ownedControl, run} = require('./helpers.cjs');
+const {createFixture, launch, gracefulQuit, ownedControl, run} = require('./qualification-helpers.cjs');
+const {createRendererWatcher,waitForRenderer,rendererId,rendererSnapshot,nativeWindowCount,captureRendererFailure}=require('./renderer-target.cjs');
 const {verifyResources} = require('../updater-validation.cjs');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const output = path.resolve(__dirname, '../../docs/dev/desktop-ui-e2e');
-let fixture, application, page, recoveredBrowser, deliberateCrash = false;
+let fixture, application, page, deliberateCrash = false;
 const receipt = {format: 'rieke-packaged-ui-e2e', version: 1, signed_qualification: false, checks: [], failures: [],
   method: 'Playwright Electron 1.63.0; exact packaged app clone; isolated HOME and standard --user-data-dir; sandbox enabled and CSP intact; native chooser return values stubbed only'};
 receipt.run_id = randomUUID().slice(0, 8);
 const projectName = 'Electron lifecycle fixture ' + receipt.run_id;
+const watchRenderer=createRendererWatcher(error=>receipt.failures.push(error));
 process.on('uncaughtException', error => {
   // Pinned Playwright throws this client assertion when Electron recovers the
   // same target after forcefullyCrashRenderer. The app is inspected through
@@ -114,8 +116,8 @@ async function check(name, fn) {
 }
 async function start(heading = 'Your projects') {
   const launched = await launch(fixture); ({application, page} = launched);
-  page.on('pageerror', error => receipt.failures.push({name: 'renderer-pageerror', message: error.message}));
-  await page.getByRole('heading', {name: heading, exact: true}).waitFor({timeout: 90000});
+  watchRenderer(page);
+  if(heading)await page.getByRole('heading', {name: heading, exact: true}).waitFor({timeout: 90000});
   return launched.actual;
 }
 async function main() {
@@ -130,10 +132,11 @@ async function main() {
   await check('launcher actual app icon loads at upper right at normal and narrow native widths',
     () => verifyHeaderIcon('.onboarding-app-icon', '.project-onboarding>header', 'launcher-icon'));
   await check('renderer isolation, sandbox and CSP', async () => {
-    const settings = await application.evaluate(({BrowserWindow}) => {
-      const prefs = BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences();
+    const selectedId=await rendererId(application,page);
+    const settings = await application.evaluate(({webContents},id) => {
+      const prefs = webContents.fromId(id).getLastWebPreferences();
       return {contextIsolation: prefs.contextIsolation, sandbox: prefs.sandbox, nodeIntegration: prefs.nodeIntegration, webSecurity: prefs.webSecurity};
-    });
+    },selectedId);
     assert.deepEqual(settings, {contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true});
     assert.deepEqual(await page.evaluate(() => ({require: typeof require, process: typeof process, rawIpc: typeof window.riekeDesktop.ipcRenderer})), {require: 'undefined', process: 'undefined', rawIpc: 'undefined'});
     const inlineRan = await page.evaluate(() => { const script = document.createElement('script'); script.textContent = 'window.__inline_e2e=true'; document.body.append(script); return window.__inline_e2e === true; });
@@ -186,13 +189,13 @@ async function main() {
     const previous = page.url();
     try {
       await page.evaluate(url => {window.open(url); window.location.assign(url);}, target); await delay(600);
-      assert.equal(page.url(), previous); assert.equal(application.windows().length, 1); assert.equal(visits, 0);
+      assert.equal(page.url(), previous); assert.equal(await nativeWindowCount(application), 1); assert.equal(visits, 0);
       const blocked = await page.evaluate(async url => {try {await fetch(url); return false;} catch {return true;}}, target); assert.equal(blocked, true);
       await page.evaluate(url => {const frame = document.createElement('iframe'); frame.src = url; document.body.append(frame);}, target); await delay(100); assert.equal(visits, 0);
       await page.evaluate(() => document.querySelectorAll('iframe').forEach(frame => frame.remove()));
       // Chromium reports the deliberately denied navigation to CDP before
       // Electron cancels it. Reset this test-created pending-navigation state.
-      await application.evaluate(({BrowserWindow}) => BrowserWindow.getAllWindows()[0].webContents.reload());
+      await application.evaluate(({webContents},id) => webContents.fromId(id).reload(),await rendererId(application,page));
       await page.getByRole('heading', {name: 'Your projects', exact: true}).waitFor({timeout: 15000});
     } finally { await new Promise(resolve => server.close(resolve)); }
   });
@@ -217,7 +220,7 @@ async function main() {
     const before = await ownedControl(fixture, 'health');
     const child = spawn(fixture.executable, [`--user-data-dir=${fixture.userData}`], {env: {...process.env, HOME: fixture.home, TMPDIR: fixture.root}, stdio: 'ignore'});
     const code = await Promise.race([new Promise(resolve => child.once('exit', resolve)), delay(10000).then(() => {throw new Error('Duplicate app did not exit');})]);
-    assert.equal(code, 0); assert.equal((await ownedControl(fixture, 'health')).pid, before.pid); assert.equal(application.windows().length, 1);
+    assert.equal(code, 0); assert.equal((await ownedControl(fixture, 'health')).pid, before.pid); assert.equal(await nativeWindowCount(application), 1);
   });
   await check('corrupted saved view is visible, blocks overwrite and supports preserved quit or explicit reset', async () => {
     await gracefulQuit(application, page); application = null; page = null;
@@ -254,6 +257,7 @@ async function main() {
     assert.equal(await form.getByRole('button',{name:'Create & open',exact:true}).isDisabled(),true);
     await chooseNewProjectFolder(form, receipt.run_id);
     await page.getByRole('button', {name: 'Create & open', exact: true}).click();
+    page=watchRenderer(await waitForRenderer(application,{projectName,bundle:fixture.bundle}));
     await page.getByRole('button', {name: 'Project overview', exact: true}).waitFor({timeout: 90000});
     assert.match(await page.title(), /Electron lifecycle fixture/);
     const project = await page.evaluate(() => fetch('/api/projects').then(response => response.json()));
@@ -270,31 +274,40 @@ async function main() {
     const form = page.locator('.onboarding-create-form'); await form.getByRole('textbox').nth(0).fill(secondName);
     await chooseNewProjectFolder(form, receipt.run_id + '-second');
     await page.getByRole('button', {name: 'Create & open', exact: true}).click();
+    page=watchRenderer(await waitForRenderer(application,{projectName:secondName,bundle:fixture.bundle}));
     await page.waitForFunction(expected => document.title.startsWith(expected), secondName, {timeout: 90000}); await chooseTestProfile();
     receipt.second_project_uuid = (await page.evaluate(() => fetch('/api/projects').then(response => response.json()))).current_project_uuid;
     assert.ok(receipt.second_project_uuid);
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: projectName, exact: true}).click();
+    page=watchRenderer(await waitForRenderer(application,{projectName:projectName,bundle:fixture.bundle}));
     await page.waitForFunction(expected => document.title.startsWith(expected) && !document.title.includes(' second'), projectName, {timeout: 30000});
     const navigationStart = Date.now();
     await page.getByRole('button', {name: 'Logs', exact: true}).click();
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: secondName, exact: true}).click();
+    page=watchRenderer(await waitForRenderer(application,{projectName:secondName,bundle:fixture.bundle}));
     await page.waitForFunction(expected => document.title.startsWith(expected), secondName, {timeout: 30000});
     const saved = JSON.parse(await fs.readFile(path.join(fixture.userData, 'drafts', receipt.test_project_uuid + '.json')));
     assert.equal(saved.value.route.page, 'activity');
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: projectName, exact: true}).click();
+    page=watchRenderer(await waitForRenderer(application,{projectName:projectName,bundle:fixture.bundle}));
     await page.waitForFunction(expected => document.title.startsWith(expected) && !document.title.includes(' second'), projectName, {timeout: 30000});
     await page.waitForFunction(() => [...document.querySelectorAll('.nav-item.active')].some(item => item.textContent.includes('Logs')));
     return {warm_document_handoff: true, route_persisted: 'activity', elapsed_ms: Date.now() - navigationStart};
   });
   await check('missing saved view opens normally without corrupt-draft recovery', async () => {
     const missing = path.join(fixture.userData, 'drafts', receipt.second_project_uuid + '.json');
-    await fs.unlink(missing);
     const secondName = projectName + ' second';
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: secondName, exact: true}).click();
+    page=watchRenderer(await waitForRenderer(application,{projectName:secondName,bundle:fixture.bundle}));
+    await gracefulQuit(application,page);application=null;page=null;
+    await fs.unlink(missing);
+    await start(null);
+    await page.getByRole('button',{name:secondName+', current project',exact:true}).waitFor({timeout:90000});
     await page.waitForFunction(expected => document.title.startsWith(expected), secondName, {timeout: 30000});
     await page.waitForFunction(() => [...document.querySelectorAll('.nav-item.active')].some(item => item.textContent.includes('Project overview')));
     assert.equal(await page.getByRole('heading', {name: 'Saved view needs recovery', exact: true}).count(), 0);
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: projectName, exact: true}).click();
+    page=watchRenderer(await waitForRenderer(application,{projectName:projectName,bundle:fixture.bundle}));
     await page.waitForFunction(expected => document.title.startsWith(expected) && !document.title.includes(' second'), projectName, {timeout: 30000});
     return {missing_draft_treated_as_new_view: true};
   });
@@ -406,7 +419,7 @@ async function main() {
     await gracefulQuit(application, page); application = null; page = null;
     const saved = JSON.parse(await fs.readFile(path.join(fixture.userData, 'drafts', receipt.test_project_uuid + '.json')));
     assert.equal(saved.format, 'rieke-renderer-draft'); assert.equal(saved.value.route.page, 'files');
-    await start(); await page.getByRole('button', {name: new RegExp('^Open ' + projectName + ',')}).click();
+    await start(null); // The persisted startup preference restores this project directly.
     await page.getByRole('button', {name: 'Project files', exact: true}).waitFor({timeout: 90000});
     await chooseTestProfile();
     await page.waitForFunction(() => [...document.querySelectorAll('.nav-item.active')].some(item => item.textContent.includes('Project files')), undefined, {timeout: 10000});
@@ -416,11 +429,11 @@ async function main() {
     const filename = path.join(fixture.userData, 'drafts', receipt.test_project_uuid + '.json');
     const saved = JSON.parse(await fs.readFile(filename, 'utf8'));
     const corrupted = JSON.stringify({...saved, projectId: 'launcher'}); await fs.writeFile(filename, corrupted);
-    await start(); await page.getByRole('button', {name: new RegExp('^Open ' + projectName + ',')}).click();
+    await start(null); // The persisted startup preference restores this project directly.
     await page.getByRole('heading', {name: 'Saved view needs recovery', exact: true}).waitFor({timeout: 90000});
     await quitAndVerifyOwnedExit();
     assert.equal(await fs.readFile(filename, 'utf8'), corrupted);
-    await start(); await page.getByRole('button', {name: new RegExp('^Open ' + projectName + ',')}).click();
+    await start(null); // The persisted startup preference restores this project directly.
     await page.getByRole('heading', {name: 'Saved view needs recovery', exact: true}).waitFor({timeout: 90000});
     await page.getByRole('button', {name: 'Start with a new view', exact: true}).click();
     await page.getByRole('button', {name: 'Project overview', exact: true}).waitFor({timeout: 30000});
@@ -430,29 +443,43 @@ async function main() {
     return {project_identity_validated: true, mismatched_bytes_preserved: true, ordinary_quit_preserved_bytes: true, owned_processes_exited: true, explicit_reset: true,
       preserved_sha256: createHash('sha256').update(corrupted).digest('hex')};
   });
-  await check('renderer crash retains recovery and ordinary Quit closes owned services before cold relaunch', async () => {
+  await check('root renderer crash retains recovery and ordinary Quit saves healthy project views before cold relaunch', async () => {
     const before = await ownedControl(fixture, 'health');
+    const projectId=await rendererId(application,page);
+    const roots=(await rendererSnapshot(application)).filter(window=>window.visible);
+    assert.equal(roots.length,1);
+    const rootId=roots[0].shell.id;
+    assert.notEqual(rootId,projectId,'This fault exercises the root shell separately from the healthy project view');
+    await page.getByRole('button',{name:'Project files',exact:true}).click();
     deliberateCrash = true;
-    receipt.crash_test_method = 'Actual renderer crash; original stale Playwright target replaced by fresh CDP connection to the same isolated app; real recovery UI, bridge and backend health assertions';
-    await application.evaluate(({BrowserWindow}) => {const target = BrowserWindow.getAllWindows()[0]; setTimeout(() => target.webContents.forcefullyCrashRenderer(), 100);});
+    receipt.crash_test_method = 'Actual root BrowserWindow renderer crash; fresh CDP connection selects the same main-owned recovery shell; healthy project draft survives and owned services exit on ordinary Quit';
+    await application.evaluate(({webContents},id)=>{setTimeout(()=>webContents.fromId(id).forcefullyCrashRenderer(),100);},rootId);
     await delay(300);
-    // Attach a fresh software-test session to this isolated app's existing CDP
-    // endpoint. Pinned Playwright cannot revive its original crashed Page.
-    const port = Number((await fs.readFile(path.join(fixture.userData, 'DevToolsActivePort'), 'utf8')).split('\n')[0]);
-    recoveredBrowser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
-    page = recoveredBrowser.contexts()[0].pages()[0];
-    page.on('pageerror', error => receipt.failures.push({name: 'recovered-renderer-pageerror', message: error.message}));
-    await page.getByRole('heading', {name: 'Disco recovery', exact: true}).waitFor({timeout: 15000});
-    assert.equal((await ownedControl(fixture, 'health')).pid, before.pid);
-    await page.screenshot({path: path.join(output, 'renderer-recovery.png')});
+    const port=Number((await fs.readFile(path.join(fixture.userData,'DevToolsActivePort'),'utf8')).split('\n')[0]);
+    const recoveredBrowser=await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
+    assert.equal(recoveredBrowser.contexts().length,1);
+    page=watchRenderer(await waitForRenderer(application,{mode:'shell',bundle:fixture.bundle,pagesContext:recoveredBrowser.contexts()[0],timeout:15000}),'recovered-renderer-pageerror');
+    assert.equal(await rendererId(application,page),rootId);
+    await page.getByRole('heading',{name:'Disco recovery',exact:true}).waitFor({timeout:15000});
+    assert.equal(await application.evaluate(({webContents},id)=>!webContents.fromId(id).isDestroyed(),projectId),true);
+    const after=await ownedControl(fixture,'health');
+    assert.equal(after.pid,before.pid);
+    for(const service of before.services){
+      assert.ok(after.services.some(current=>current.project_uuid===service.project_uuid&&current.pid===service.pid),
+        'Root renderer failure must not replace an owned scientific service');
+    }
+    await page.screenshot({path:path.join(output,'renderer-recovery.png')});
     await quitAndVerifyOwnedExit();
-    const interrupted = JSON.parse(await fs.readFile(path.join(fixture.userData, 'desktop-service.json'), 'utf8'));
-    assert.equal(interrupted.quit.drafts_saved, false);
-    assert.equal(interrupted.quit.state, 'services_closed');
+    const saved=JSON.parse(await fs.readFile(path.join(fixture.userData,'drafts',receipt.test_project_uuid+'.json'),'utf8'));
+    assert.equal(saved.projectId,receipt.test_project_uuid);
+    assert.equal(saved.value.route.page,'files');
+    await assert.rejects(fs.stat(path.join(fixture.userData,'desktop-service.json')),{code:'ENOENT'});
     deliberateCrash = false;
-    await start();
-    assert.notEqual((await ownedControl(fixture, 'health')).session_id, before.session_id);
-    return {renderer_recovery_visible: true, ordinary_quit_exited_owned_processes: true, latest_view_not_claimed_saved: true, cold_relaunch_ready: true};
+    await start(null);
+    await page.getByRole('button',{name:projectName+', current project',exact:true}).waitFor({timeout:90000});
+    await page.waitForFunction(()=>[...document.querySelectorAll('.nav-item.active')].some(item=>item.textContent.includes('Project files')));
+    assert.notEqual((await ownedControl(fixture,'health')).session_id,before.session_id);
+    return {root_renderer_recovery_visible:true,healthy_project_draft_saved:true,healthy_services_retained:true,ordinary_quit_exited_owned_processes:true,cold_relaunch_ready:true};
   });
   await check('final orderly quit and packaged resource immutability', async () => {
     await gracefulQuit(application, page); application = null; page = null;
@@ -464,7 +491,9 @@ async function main() {
   receipt.completed = true; await writeReceipt(); console.log('Packaged UI E2E completed');
 }
 main().catch(async error => {
+  application=application||error.launchedApplication||fixture?.activeApplication;page=page||error.launchedPage||fixture?.activePage;
   process.exitCode = 1; await writeReceipt();
+  if(application)try{receipt.failure_targets=await captureRendererFailure(application,'packaged-ui');await writeReceipt();}catch{}
   if (page) await page.screenshot({path: path.join(output, 'failure.png')}).catch(() => {});
   if (application && page) { try {await gracefulQuit(application, page);} catch {console.error('Isolated app retained because orderly closure was not acknowledged.');} }
   console.error(error.message);

@@ -6,7 +6,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=r
 const {createHash}=require('node:crypto');
 const {_electron}=require('playwright');
 const asar=require('@electron/asar');
-const {createFixture,launch,gracefulQuit,run}=require('./helpers.cjs');
+const {createFixture,launch,gracefulQuit,run}=require('./qualification-helpers.cjs');
 const {verifyResources}=require('../updater-validation.cjs');
 const {bundleDigest,quarantinePreserved}=require('../bootstrap.cjs');
 const output=path.resolve(__dirname,'../../docs/dev/desktop-ui-e2e/bootstrap-receipt.json');

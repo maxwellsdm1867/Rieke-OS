@@ -3,7 +3,8 @@
 // return value is mapped to this owned scratch fixture; no updater/install mock.
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path');
 const {createHash,randomUUID}=require('node:crypto');
-const {createFixture,launch,gracefulQuit,ownedControl,run}=require('./helpers.cjs');
+const {createFixture,launch,gracefulQuit,ownedControl,run}=require('./qualification-helpers.cjs');
+const {createRendererWatcher,waitForRenderer,captureRendererFailure}=require('./renderer-target.cjs');
 const output=path.resolve(__dirname,'../../docs/dev/desktop-smoke-e2e.json');
 const started=Date.now(),workDeadline=started+240000,totalDeadline=started+300000;
 const receipt={format:'rieke-packaged-smoke-e2e',version:1,started_at:new Date().toISOString(),total_deadline_ms:300000,
@@ -12,6 +13,7 @@ const receipt={format:'rieke-packaged-smoke-e2e',version:1,started_at:new Date()
  limits:['Routine smoke only; no import/export, fault, signing or full runtime-hash qualification.']};
 let fixture,application,page,aborted=false,finishing=false;
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const watchRenderer=createRendererWatcher(error=>receipt.failures.push(error));
 async function write(){await fs.mkdir(path.dirname(output),{recursive:true});await fs.writeFile(output,JSON.stringify(receipt,null,2)+'\n');}
 function remaining(){if(aborted||Date.now()>=workDeadline)throw new Error('Routine smoke reached its four-minute work budget; one minute reserved for orderly shutdown');return workDeadline-Date.now();}
 async function bounded(promise,name,budget=45000){
@@ -46,7 +48,7 @@ async function authorProfile(){
 }
 async function start(restoredProjectName=null){
  ({application,page}=await bounded(launch(fixture),'Packaged launch'));
- page.setDefaultTimeout(20000);page.on('pageerror',error=>receipt.failures.push({name:'renderer-pageerror',message:error.message}));
+ page.setDefaultTimeout(20000);watchRenderer(page);
  if(restoredProjectName)await page.getByRole('button',{name:restoredProjectName+', current project',exact:true}).waitFor({timeout:Math.min(60000,remaining())});
  else await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:Math.min(60000,remaining())});
 }
@@ -95,6 +97,7 @@ async function main(){
   await form.getByRole('button',{name:'Browse: New project folder',exact:true}).click();const picker=page.getByRole('dialog',{name:'New project folder',exact:true});
   await picker.getByRole('checkbox',{name:'Create a new folder inside this location'}).check();await picker.getByRole('textbox',{name:'New folder name',exact:true}).fill(leaf);await picker.getByRole('button',{name:'Use new folder',exact:true}).click();
   assert.equal(await form.locator('#new-project-directory').inputValue(),projectPath);await form.getByRole('button',{name:'Create & open',exact:true}).click();
+  page=watchRenderer(await waitForRenderer(application,{projectName,bundle:fixture.bundle,timeout:Math.min(60000,remaining())}));
   await page.getByRole('button',{name:'Project overview',exact:true}).waitFor({timeout:Math.min(60000,remaining())});await authorProfile();
   const project=await page.evaluate(()=>fetch('/api/projects').then(response=>response.json()));projectUuid=project.current_project_uuid;assert.ok(projectUuid);
   assert.ok((await fs.stat(projectPath)).isDirectory());const health=await bounded(ownedControl(fixture,'health'),'Project readiness');firstSession=health.session_id;
@@ -118,7 +121,8 @@ async function main(){
 }
 async function finish(error){
  if(finishing)return;finishing=true;aborted=true;clearTimeout(workTimer);
- if(error){receipt.failures.push({name:'smoke-suite',message:error.message});receipt.elapsed_ms=Date.now()-started;
+ if(error){application=application||error.launchedApplication||fixture?.activeApplication;page=page||error.launchedPage||fixture?.activePage;receipt.failures.push({name:'smoke-suite',message:error.message});receipt.elapsed_ms=Date.now()-started;
+  if(application)try{receipt.failure_targets=await captureRendererFailure(application,'smoke');}catch(snapshot){receipt.warnings.push(String(snapshot));}
   if(application&&page){try{const child=application.process(),exit=child.exitCode!==null?Promise.resolve(child.exitCode):new Promise(resolve=>child.once('exit',resolve));const left=Math.max(1,Math.min(45000,totalDeadline-Date.now()));
    let result;
    try{result=await Promise.race([page.evaluate(()=>window.riekeDesktop.quit()),delay(left).then(()=>{throw new Error('Cleanup deadline reached');})]);}

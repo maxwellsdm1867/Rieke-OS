@@ -4303,7 +4303,7 @@
       },
       {
         "file": "python/tests/test_desktop_testing_promote_workflow.py",
-        "file_sha256": "016522bd0355f75dcc9c4aeffb344b0a6640ae14bf68fb17fc7e27337047d4c6",
+        "file_sha256": "63af5c5b2f46a2901af820767a1c259e485f8171be934b7fcd864c13a5e2855b",
         "sites": [
           {
             "selector": "call:exec:1",

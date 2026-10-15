@@ -80,13 +80,14 @@ def build_descriptor(bundle,archive):
             'source_commit':manifest.get('source_commit'),'source_dirty':manifest.get('source_dirty'),
             'production_ready':False}
 
-def publish(bundle, archive, output, notes, candidate_run_id):
+def publish(bundle, archive, output, notes, candidate_run_id, verification_run_id=None):
     """Publish only a fully checked exact-byte unsigned candidate; never replace assets."""
     from desktop_source_ci import api, artifact, require_source_ci, require_tag
     descriptor = build_descriptor(bundle, archive)
     if descriptor['source_dirty'] is not False:
         raise ValueError('Cannot publish a dirty or unproven source')
-    proof = require_source_ci(REPOSITORY, descriptor['source_commit'], candidate_run_id)
+    verification = {} if verification_run_id is None else {'verification_run_id': verification_run_id}
+    proof = require_source_ci(REPOSITORY, descriptor['source_commit'], candidate_run_id, **verification)
     qualified = artifact(REPOSITORY, {'id': proof['candidate_run']},
                          'desktop-release-metadata', 'desktop-release.json')
     if qualified != descriptor:
@@ -135,7 +136,7 @@ def publish(bundle, archive, output, notes, candidate_run_id):
             if row.get('digest') != 'sha256:' + hashes(path)[0] or row.get('size') != path.stat().st_size:
                 raise ValueError('Uploaded bytes differ; release remains a draft')
         # Recheck immediately before visibility: a newer pending/failed CI run blocks it.
-        require_source_ci(REPOSITORY, descriptor['source_commit'], candidate_run_id)
+        require_source_ci(REPOSITORY, descriptor['source_commit'], candidate_run_id, **verification)
         require_tag(REPOSITORY, tag, descriptor['source_commit'])
         subprocess.run(['gh', 'release', 'edit', tag, '--repo', REPOSITORY,
                         '--draft=false', '--prerelease', '--latest=false'], check=True)
@@ -147,11 +148,12 @@ if __name__=='__main__':
     parser.add_argument('--app',type=Path,required=True);parser.add_argument('--archive',type=Path,required=True);parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--publish', action='store_true')
     parser.add_argument('--candidate-run-id')
+    parser.add_argument('--verification-run-id', help='Separate full-suite run verifying the original candidate archive')
     parser.add_argument('--notes', type=Path)
     args=parser.parse_args()
     if args.publish:
         if not args.candidate_run_id or not args.notes: parser.error('--publish requires --candidate-run-id and --notes')
-        print(json.dumps(publish(args.app, args.archive, args.output, args.notes, args.candidate_run_id)))
+        print(json.dumps(publish(args.app, args.archive, args.output, args.notes, args.candidate_run_id, args.verification_run_id)))
     else:
         descriptor=build_descriptor(args.app,args.archive)
         args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(descriptor,indent=2)+'\n')

@@ -61,6 +61,17 @@ class SourceCITests(unittest.TestCase):
                 ['Backend million query regression', 'Browser million workflow regression',
                  'Actual million metadata query regression', 'macOS foreground trace regression']],
             3: [dict(name=name, conclusion='success') for name in ['build', 'Verify smoke', 'Verify updater']]}
+        self.verification = dict(id=4, run_attempt=2, path='.github/workflows/desktop-candidate.yml',
+            status='completed', conclusion='success', head_sha='d' * 40)
+        self.verification_plan = copy.deepcopy(self.plans['release-plan.json'])
+        self.jobs[4] = [dict(name='Verify ' + suite, conclusion='success')
+                        for suite in ('smoke', 'updater', 'database', 'packaging', 'ui')]
+        self.descriptor = dict(source_commit=SHA, source_dirty=False,
+            archive=dict(filename='Disco-0.1.15-arm64.zip', sha256='e' * 64, size=12345))
+        self.provenance = {suite: dict(format='rieke-desktop-verification', source_commit=SHA,
+            candidate_run_id='3', suite=suite, harness_commit='d' * 40,
+            artifacts={'Disco-0.1.15-arm64.zip': dict(sha256='e' * 64, size=12345)})
+            for suite in ('smoke', 'updater', 'database', 'packaging', 'ui')}
         self.api_patch = patch.object(gate, 'api', side_effect=self.api)
         self.artifact_patch = patch.object(gate, 'artifact', side_effect=self.artifact)
         self.api_mock = self.api_patch.start(); self.addCleanup(self.api_patch.stop)
@@ -75,11 +86,21 @@ class SourceCITests(unittest.TestCase):
             identity = int(path.split('/actions/runs/')[1].split('/')[0])
             self.assertIn('/attempts/2/jobs?', path)
             return {'jobs': self.jobs[identity]}
+        if path == f'repos/{REPO}/actions/runs/4': return self.verification
         self.assertEqual(path, f'repos/{REPO}/actions/runs/3')
         return self.runs['desktop-candidate.yml']
 
     def artifact(self, repository, run, name, filename, *, with_digest=False):
         self.assertEqual(repository, REPO)
+        if name == 'desktop-release-metadata':
+            self.assertEqual(run['id'], 3); self.assertEqual(filename, 'desktop-release.json')
+            return self.descriptor
+        if name.startswith('desktop-proof-'):
+            self.assertEqual(run['id'], 4); self.assertEqual(filename, 'desktop-verification-provenance.json')
+            suite = name.removeprefix('desktop-proof-')
+            if suite not in self.provenance: raise ValueError('Missing or ambiguous CI artifact: ' + name)
+            return self.provenance[suite]
+        if run['id'] == 4 and filename == 'release-plan.json': return self.verification_plan
         if filename in self.plans: return self.plans[filename]
         if name.startswith('trace-macos-proof-'):
             self.assertEqual(name, 'trace-macos-proof-2-2')
@@ -231,6 +252,99 @@ class SourceCITests(unittest.TestCase):
         self.plans['release-plan.json']['head'] = SHA
         del self.plans['release-plan.json']['packaging']
         with self.assertRaises(ValueError): self.check()
+
+    def verify(self):
+        return gate.require_source_ci(REPO, SHA, '3', verification_run_id='4')
+
+    def all_suites(self):
+        for flag in ('updater', 'database', 'packaging', 'full_ui'):
+            self.plans['release-plan.json'][flag] = True
+        self.verification_plan = copy.deepcopy(self.plans['release-plan.json'])
+
+    def test_separate_full_verification_can_qualify_failed_original_smoke_only_with_original_build(self):
+        self.all_suites()
+        self.runs['desktop-candidate.yml']['conclusion'] = 'failure'
+        self.jobs[3][1]['conclusion'] = 'failure'
+        self.assertEqual(self.verify(), dict(source_commit=SHA, regression_run=1,
+            million_run=2, candidate_run=3, verification_run=4))
+        with self.assertRaises(ValueError): self.check()
+
+    def test_original_candidate_must_complete_correct_workflow_and_successful_build(self):
+        original = copy.deepcopy(self.runs['desktop-candidate.yml'])
+        for change in ({'status':'in_progress'}, {'status':'queued'},
+                       {'path':'.github/workflows/other.yml'}, {'id':5}):
+            self.runs['desktop-candidate.yml'] = {**original, **change}
+            with self.assertRaises(ValueError): self.verify()
+        self.runs['desktop-candidate.yml'] = original
+        for conclusion in ('failure', 'skipped', None, 'cancelled'):
+            self.jobs[3][0]['conclusion'] = conclusion
+            with self.assertRaisesRegex(ValueError, 'build'): self.verify()
+
+    def test_verification_must_be_separate_completed_successful_exact_workflow_run(self):
+        for identity in ('3', '', '0', '-1', '4x'):
+            with self.assertRaises(ValueError): gate.require_source_ci(REPO, SHA, '3', identity)
+        original = copy.deepcopy(self.verification)
+        for change in ({'status':'in_progress'}, {'conclusion':'failure'}, {'conclusion':'cancelled'},
+                       {'path':'.github/workflows/workspace-ci.yml'}, {'id':9}, {'head_sha':None},
+                       {'head_sha':'short'}):
+            self.verification = {**original, **change}
+            with self.assertRaises(ValueError): self.verify()
+        self.verification = original
+
+    def test_verification_plan_requires_exact_source_flags_and_plan_not_focused_substitution(self):
+        original = copy.deepcopy(self.verification_plan)
+        for change in ({'head':'f'*40}, {'build_required':False}, {'updater':False},
+                       {'updater':1}, {'packaging':None}, {'extra':'not original'}):
+            self.verification_plan = {**original, **change}
+            with self.assertRaisesRegex(ValueError, 'Verification plan'): self.verify()
+        self.verification_plan = original
+        self.all_suites()
+        self.jobs[4] = [dict(name='Verify smoke', conclusion='success')]
+        with self.assertRaisesRegex(ValueError, 'Verify updater'): self.verify()
+
+    def test_each_original_required_verification_suite_and_compact_proof_is_required(self):
+        self.all_suites(); original = copy.deepcopy(self.jobs[4])
+        for i, job in enumerate(original):
+            for conclusion in ('failure', 'skipped', None, 'cancelled'):
+                self.jobs[4] = copy.deepcopy(original); self.jobs[4][i]['conclusion'] = conclusion
+                with self.assertRaisesRegex(ValueError, 'required successful job'): self.verify()
+            for duplicate in (False, True):
+                self.jobs[4] = copy.deepcopy(original)
+                if duplicate: self.jobs[4].append(job.copy())
+                else: self.jobs[4].pop(i)
+                with self.assertRaisesRegex(ValueError, 'required successful job'): self.verify()
+        self.jobs[4] = original
+        for suite in tuple(self.provenance):
+            value = self.provenance.pop(suite)
+            with self.assertRaisesRegex(ValueError, 'Missing or ambiguous'): self.verify()
+            self.provenance[suite] = value
+
+    def test_verification_provenance_binds_source_original_run_suite_harness_and_exact_archive(self):
+        original = copy.deepcopy(self.provenance['smoke'])
+        changes = [{'format':'other'}, {'source_commit':'f'*40}, {'candidate_run_id':'4'},
+                   {'suite':'updater'}, {'harness_commit':SHA}, {'artifacts':{}},
+                   {'artifacts':{'other.zip':dict(sha256='e'*64,size=12345)}},
+                   {'artifacts':{'Disco-0.1.15-arm64.zip':dict(sha256='f'*64,size=12345)}},
+                   {'artifacts':{'Disco-0.1.15-arm64.zip':dict(sha256='e'*64,size=12346)}},
+                   {'artifacts':{'Disco-0.1.15-arm64.zip':dict(sha256='e'*64,size=12345.0)}}]
+        for change in changes:
+            self.provenance['smoke'] = {**original, **change}
+            with self.assertRaisesRegex(ValueError, 'Verification provenance'): self.verify()
+        self.provenance['smoke'] = original
+
+    def test_original_metadata_and_latest_source_performance_remain_mandatory(self):
+        original = copy.deepcopy(self.descriptor)
+        for change in ({'source_commit':'f'*40}, {'source_dirty':True}, {'archive':{}},
+                       {'archive':dict(filename='../other.zip',sha256='e'*64,size=12345)},
+                       {'archive':dict(filename='Disco-0.1.15-arm64.zip',sha256='e'*64,size=True)}):
+            self.descriptor = {**original, **change}
+            with self.assertRaisesRegex(ValueError, 'Original candidate metadata'): self.verify()
+        self.descriptor = original
+        self.runs['everyday-million.yml']['status'] = 'in_progress'
+        with self.assertRaises(ValueError): self.verify()
+        self.runs['everyday-million.yml']['status'] = 'completed'
+        self.comparison['status'] = 'failed'
+        with self.assertRaisesRegex(ValueError, 'performance comparison'): self.verify()
 
     def test_immutable_tag_must_resolve_to_qualified_source(self):
         tag = 'desktop-test-v0.1.14'
@@ -407,6 +521,26 @@ class PublicationBoundaryTests(unittest.TestCase):
         self.assertEqual(self.require_tag_mock.call_count, 2)
         self.assertEqual(self.require_tag_mock.call_args_list[0].kwargs, {})
         self.assertEqual(self.check_output_mock.call_args.args[0][:3], ['gh', 'release', 'view'])
+
+    def test_separate_verification_id_is_rechecked_before_draft_and_visibility(self):
+        self.require_source_ci_mock.return_value = {'candidate_run':3,'verification_run':4}
+        result = testing.publish(self.root/'Disco.app', self.archive, self.output,
+                                 self.notes, '3', verification_run_id='4')
+        self.assertEqual(result, {'candidate_run':3,'verification_run':4})
+        self.assertEqual(self.require_source_ci_mock.call_count, 2)
+        for call in self.require_source_ci_mock.call_args_list:
+            self.assertEqual(call.args, (REPO, SHA, '3'))
+            self.assertEqual(call.kwargs, {'verification_run_id':'4'})
+        self.assertEqual(self.artifact_mock.call_args.args[1], {'id':3})
+
+    def test_new_verification_failure_during_upload_keeps_release_draft(self):
+        self.require_source_ci_mock.side_effect = [
+            {'candidate_run':3,'verification_run':4}, ValueError('verification failed')]
+        with self.assertRaisesRegex(ValueError, 'verification failed'):
+            testing.publish(self.root/'Disco.app', self.archive, self.output,
+                            self.notes, '3', verification_run_id='4')
+        self.assertEqual([row[2] for row in self.mutations], ['create'])
+        self.assertEqual(self.require_source_ci_mock.call_args.kwargs, {'verification_run_id':'4'})
 
     def test_missing_preexisting_tag_blocks_before_draft_creation(self):
         self.require_tag_mock.side_effect = ValueError('Missing publication tag')

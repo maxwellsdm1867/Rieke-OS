@@ -1,6 +1,6 @@
 'use strict';
 const fs=require('node:fs/promises'),path=require('node:path'),assert=require('node:assert/strict');
-const {createFixture,launch,gracefulQuit,run}=require('./helpers.cjs');
+const {createFixture,launch,gracefulQuit,run}=require('./qualification-helpers.cjs');
 const {verifyResources}=require('../updater-validation.cjs');
 const output=path.resolve(__dirname,'../../docs/dev/startup-boundary');
 (async()=>{

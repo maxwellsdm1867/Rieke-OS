@@ -10,6 +10,10 @@ on:
         description: 'Successful complete desktop candidate run for the same source'
         required: true
         type: string
+      verification_run_id:
+        description: 'Optional successful complete verification run against the original immutable candidate bytes'
+        required: false
+        type: string
       notes_path:
         description: 'Reviewed Markdown release notes under release-evidence in this checkout'
         required: true
@@ -32,6 +36,7 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       SOURCE_COMMIT: ${{ inputs.source_commit }}
       CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+      VERIFICATION_RUN_ID: ${{ inputs.verification_run_id }}
       NOTES_PATH: ${{ inputs.notes_path }}
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +49,7 @@ jobs:
           import json, os, sys
           sys.path.insert(0, 'tools')
           from desktop_source_ci import require_source_ci
-          print(json.dumps(require_source_ci(os.environ['GITHUB_REPOSITORY'], os.environ['SOURCE_COMMIT'], os.environ['CANDIDATE_RUN_ID'])))
+          print(json.dumps(require_source_ci(os.environ['GITHUB_REPOSITORY'], os.environ['SOURCE_COMMIT'], os.environ['CANDIDATE_RUN_ID'], verification_run_id=os.environ.get('VERIFICATION_RUN_ID') or None)))
           PY
       - uses: actions/download-artifact@v4
         with:
@@ -107,6 +112,7 @@ jobs:
               'source_commit': manifest['source_commit'],
               'publisher_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
               'candidate_run_id': os.environ['CANDIDATE_RUN_ID'],
+              'verification_run_id': os.environ.get('VERIFICATION_RUN_ID') or None,
               'archive_sha256': digest.hexdigest(), 'runtime_manifest_sha256': sha(manifest_file),
               'asar_sha256': sha(app / 'Contents/Resources/app.asar'),
               'native_helper_sha256': sha(helper), 'native_source_sha256': native_build['source_sha256'],
@@ -114,7 +120,7 @@ jobs:
           }, indent=2) + '\n')
           sys.path.insert(0, str(root / 'tools'))
           from desktop_test_release import publish
-          proof = publish(extracted / 'Disco.app', archive, directory / 'desktop-release.json', notes, os.environ['CANDIDATE_RUN_ID'])
+          proof = publish(extracted / 'Disco.app', archive, directory / 'desktop-release.json', notes, os.environ['CANDIDATE_RUN_ID'], verification_run_id=os.environ.get('VERIFICATION_RUN_ID') or None)
           (directory / 'publication.json').write_text(json.dumps(proof, indent=2) + '\n')
           PY
       - uses: actions/upload-artifact@v4

@@ -4,7 +4,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs/promises');
 const path=require('node:path');
-const {createFixture,launch,gracefulQuit,ownedControl}=require('./helpers.cjs');
+const {createFixture,launch,gracefulQuit,ownedControl}=require('./qualification-helpers.cjs');
 const resultPath=process.env.RIEKE_E2E_RESULT;
 if(!resultPath)throw Error('Set RIEKE_E2E_RESULT to a new evidence file');
 const receipt={format:'disco-project-inventory-failure-v1',passed:false,checks:[],failures:[]};

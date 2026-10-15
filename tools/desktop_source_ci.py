@@ -131,18 +131,21 @@ def require_tag(repository, tag, source, *, allow_missing=False):
         raise ValueError('Publication tag differs from the qualified source')
 
 
-def require_source_ci(repository, source, candidate_run_id):
+def require_source_ci(repository, source, candidate_run_id, verification_run_id=None):
     with _artifact_scope():
-        return _require_source_ci(repository, source, candidate_run_id)
+        return _require_source_ci(repository, source, candidate_run_id, verification_run_id)
 
 
-def _require_source_ci(repository, source, candidate_run_id):
+def _require_source_ci(repository, source, candidate_run_id, verification_run_id=None):
     if repository not in {'maxwellsdm1867/Rieke-OS', 'maxwellsdm1867/disco'}:
         raise ValueError('Unexpected publication repository')
     if not isinstance(source, str) or not re.fullmatch('[0-9a-f]{40}', source):
         raise ValueError('Publication requires a full source commit')
     if not re.fullmatch('[1-9][0-9]*', str(candidate_run_id)):
         raise ValueError('Publication requires a successful desktop candidate run ID')
+    if verification_run_id is not None and (not re.fullmatch('[1-9][0-9]*', str(verification_run_id))
+            or str(verification_run_id) == str(candidate_run_id)):
+        raise ValueError('Publication requires a separate desktop verification run ID')
     receipts = {}
     for workflow in ('workspace-ci.yml', 'everyday-million.yml'):
         rows = api(f'repos/{repository}/actions/workflows/{workflow}/runs?head_sha={source}&per_page=1')['workflow_runs']
@@ -200,13 +203,60 @@ def _require_source_ci(repository, source, candidate_run_id):
                 or comparison.get('candidate_receipt_sha256') != candidate_digests[receipt_name]):
             raise ValueError('Performance comparison differs from the exact candidate receipt')
     candidate = api(f'repos/{repository}/actions/runs/{candidate_run_id}')
-    successful(candidate, 'desktop-candidate.yml')
+    if verification_run_id is None:
+        successful(candidate, 'desktop-candidate.yml')
+    elif (candidate.get('path') != '.github/workflows/desktop-candidate.yml'
+            or candidate.get('status') != 'completed'):
+        raise ValueError('Original desktop candidate must be completed in the required workflow')
     plan = artifact(repository, candidate, 'desktop-release-plan', 'release-plan.json')
+    flags = ('updater', 'database', 'packaging', 'full_ui')
     if (plan.get('head') != source or plan.get('build_required') is not True
-            or any(type(plan.get(flag)) is not bool for flag in ('updater', 'database', 'packaging', 'full_ui'))):
+            or any(type(plan.get(flag)) is not bool for flag in flags)):
         raise ValueError('Candidate plan does not build the publication source')
-    required = ['build', 'Verify smoke'] + [f'Verify {suite}' for flag, suite in
-        [('updater', 'updater'), ('database', 'database'), ('packaging', 'packaging'), ('full_ui', 'ui')] if plan.get(flag)]
-    require_jobs(repository, candidate, required)
-    return {'source_commit': source, 'regression_run': receipts['workspace-ci.yml']['id'],
-            'million_run': run['id'], 'candidate_run': candidate['id']}
+    suites = ['smoke'] + [suite for flag, suite in
+        [('updater', 'updater'), ('database', 'database'), ('packaging', 'packaging'), ('full_ui', 'ui')]
+        if plan[flag]]
+    proof = {'source_commit': source, 'regression_run': receipts['workspace-ci.yml']['id'],
+             'million_run': run['id'], 'candidate_run': candidate['id']}
+    if verification_run_id is None:
+        require_jobs(repository, candidate, ['build', *[f'Verify {suite}' for suite in suites]])
+        return proof
+    # A repaired test harness may verify immutable original build bytes. It does
+    # not replace the original build or relax exact-source/performance gates.
+    if candidate.get('id') != int(candidate_run_id):
+        raise ValueError('Original candidate run identity differs')
+    require_jobs(repository, candidate, ['build'])
+    verification = api(f'repos/{repository}/actions/runs/{verification_run_id}')
+    successful(verification, 'desktop-candidate.yml')
+    if verification.get('id') != int(verification_run_id):
+        raise ValueError('Verification run identity differs')
+    harness = verification.get('head_sha')
+    if not isinstance(harness, str) or not re.fullmatch('[0-9a-f]{40}', harness):
+        raise ValueError('Verification requires an exact harness commit')
+    verified_plan = artifact(repository, verification, 'desktop-release-plan', 'release-plan.json')
+    if (verified_plan != plan or verified_plan.get('build_required') is not True
+            or any(type(verified_plan.get(flag)) is not bool for flag in flags)):
+        raise ValueError('Verification plan differs from the original exact-source candidate plan')
+    require_jobs(repository, verification, [f'Verify {suite}' for suite in suites])
+    descriptor = artifact(repository, candidate, 'desktop-release-metadata', 'desktop-release.json')
+    archive = descriptor.get('archive', {})
+    if (descriptor.get('source_commit') != source or descriptor.get('source_dirty') is not False
+            or not isinstance(archive, dict) or not isinstance(archive.get('filename'), str)
+            or not re.fullmatch(r'Disco-[0-9]+\.[0-9]+\.[0-9]+-arm64\.zip', archive['filename'])
+            or not isinstance(archive.get('sha256'), str)
+            or not re.fullmatch('[0-9a-f]{64}', archive['sha256'])
+            or type(archive.get('size')) is not int or archive['size'] <= 0):
+        raise ValueError('Original candidate metadata lacks an exact clean archive identity')
+    for suite in suites:
+        provenance = artifact(repository, verification, f'desktop-proof-{suite}',
+                              'desktop-verification-provenance.json')
+        inventory = provenance.get('artifacts')
+        measured = inventory.get(archive['filename']) if isinstance(inventory, dict) else None
+        if (provenance.get('format') != 'rieke-desktop-verification'
+                or provenance.get('source_commit') != source
+                or str(provenance.get('candidate_run_id')) != str(candidate_run_id)
+                or provenance.get('suite') != suite or provenance.get('harness_commit') != harness
+                or not isinstance(measured, dict) or measured.get('sha256') != archive['sha256']
+                or type(measured.get('size')) is not int or measured['size'] != archive['size']):
+            raise ValueError(f'Verification provenance does not bind the original archive and harness: {suite}')
+    return {**proof, 'verification_run': verification['id']}

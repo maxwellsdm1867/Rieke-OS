@@ -4,7 +4,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),nativeFs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {spawn}=require('node:child_process'),{createHash}=require('node:crypto'),asar=require('@electron/asar');
 async function fileSha256(file){const hash=createHash('sha256');for await(const chunk of nativeFs.createReadStream(file))hash.update(chunk);return hash.digest('hex');}
-const {createFixture,launch,gracefulQuit,ownedControl,run}=require('./helpers.cjs');
+const {createFixture,launch,gracefulQuit,ownedControl,run}=require('./qualification-helpers.cjs');
 const {bundleDigest}=require('../bootstrap.cjs');
 const {verifyResources}=require('../updater-validation.cjs');
 const {waitForHelperResult,captureHelperDiagnostics}=require('./helper-result.cjs');

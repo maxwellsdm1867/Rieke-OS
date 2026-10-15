@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises'), path = require('node:path');
 const {createHash} = require('node:crypto');
-const {createFixture, launch, gracefulQuit, run} = require('./helpers.cjs');
+const {createFixture, launch, gracefulQuit, run} = require('./qualification-helpers.cjs');
 const {resealRuntimeManifest} = require('../sign-runtime.cjs');
 const {verifyResources} = require('../updater-validation.cjs');
 (async () => {
@@ -16,7 +16,7 @@ const {verifyResources} = require('../updater-validation.cjs');
   const literalFailure = "raise RuntimeError('Injected packaged backend failure before imports, binding, projects or databases')\n";
   await fs.writeFile(entry, literalFailure);
   const manifest = await resealRuntimeManifest(runtime); await verifyResources(runtime, manifest.resources);
-  const {application, page} = await launch(fixture);
+  const {application, page} = await launch(fixture,{renderer:'shell'});
   await page.getByRole('heading', {name: 'Disco recovery', exact: true}).waitFor({timeout: 90000});
   const status = await page.evaluate(() => window.riekeDesktop.status());
   assert.equal(status.state, 'Recovery'); assert.match(status.detail, /exited before owning its listener/);
