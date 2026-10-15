@@ -77,7 +77,7 @@ def validate(receipt, *, clean=False):
     samples = receipt.get('samples', [])
     if len(samples) != 3:
         raise ValueError('Exactly three ordinary samples required')
-    for row in samples:
+    for index, row in enumerate(samples):
         if not all(row.get('exact', {}).get(key) is True for key in ('all_emitted_point_bytes_match', 'all_source_indices_match', 'whole_statistics_exact', 'all_canvas_coordinates_exact', 'prepared_display_context_exact')) or not row.get('cursor', {}).get('all_tile_bytes_exact'):
             raise ValueError('Missing independent geometry/raw cursor correctness')
         for key in ('first_visible_ms', 'first_raf_ms', 'complete_ms'):
@@ -86,6 +86,9 @@ def validate(receipt, *, clean=False):
                 raise ValueError('Invalid trace observation')
         if not row['trace']['first_visible_ms'] <= row['trace']['first_raf_ms'] <= row['trace']['complete_ms']:
             raise ValueError('Trace observation order invalid')
+        if row.get('authority', {}).get('foreground_extraction') != {
+                'requested': index + 1, 'entry_calls': index + 1, 'default_entry_calls': 0}:
+            raise ValueError('Missing actual foreground extraction evidence')
     if receipt.get('cleanup') != {'server_closed': True, 'fixture_closed': True}:
         raise ValueError('Owned fixture cleanup incomplete')
 
@@ -99,7 +102,12 @@ def compare(before, after):
     policy = json.loads((ROOT / 'benchmarks/registry.json').read_text())['stress_tracks']['workflow-million']['comparison']
     def metrics(value):
         return {'prepared.geometry.million': {'total_ms': statistics.median(row['trace']['complete_ms'] for row in value['samples']),
-            'endpoints': {'post_stroke': statistics.median(row['trace']['first_visible_ms'] for row in value['samples'])}}}
+            'endpoints': {
+                'post_stroke': statistics.median(row['trace']['first_visible_ms'] for row in value['samples']),
+                'first_raf': statistics.median(row['trace']['first_raf_ms'] for row in value['samples']),
+                'max_post_stroke': max(row['trace']['first_visible_ms'] for row in value['samples']),
+                'max_first_raf': max(row['trace']['first_raf_ms'] for row in value['samples']),
+                'max_complete': max(row['trace']['complete_ms'] for row in value['samples'])}}}
     return {**compare_metrics(metrics(before), metrics(after), policy), 'policy': policy}
 
 
@@ -111,7 +119,7 @@ def run(source, output):
             'packages': {name: importlib.metadata.version(name) for name in ('numpy', 'h5py', 'Flask', 'Werkzeug', 'scipy')},
             'node': subprocess.check_output(['node', '--version'], text=True).strip(), 'cpus': os.cpu_count()},
         'dependencies': {name: digest(source / name) for name in ['workspace-app/package-lock.json', 'desktop/package-lock.json', 'benchmarks/requirements-py311.txt']},
-        'fixture': 'prepared-geometry-v1:1000-metadata:200-protocol:1000000-samples:gzip64-f64-S10',
+        'fixture': 'prepared-geometry-v2:foreground:1000-metadata:200-protocol:1000000-samples:gzip64-f64-S10',
         'limits': 'Owned SQL doubles, canonical sealed index/source/geometry, production React, threaded Werkzeug. No native MySQL, packaged Waitress, compositor or cold disk qualification.'}
     server = None
     try:

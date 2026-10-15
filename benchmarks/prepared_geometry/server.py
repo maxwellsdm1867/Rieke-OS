@@ -16,7 +16,20 @@ assert reader._native_contract(), 'Canonical protocol policy rejected owned fixt
 assert app.extensions['trace_views']._canonical(), 'Prepared-display canonical policy rejected owned fixture'
 import workspace_trace_native as native_trace
 native_counts={'admitted':0,'fallback':0};original_native_read=native_trace.read_native_values
+foreground_extraction={'requested':0,'entry_calls':0,'default_entry_calls':0}
+helper=native_trace._load_helper()
+assert helper is not None and hasattr(helper,'disco_trace_extract_foreground_v1'), 'Foreground extraction helper required'
+foreground_entry=helper.disco_trace_extract_foreground_v1
+default_entry=helper.disco_trace_extract_v1
+def observed_foreground_entry(*values):
+ foreground_extraction['entry_calls']+=1;return foreground_entry(*values)
+def observed_default_entry(*values):
+ foreground_extraction['default_entry_calls']+=1;return default_entry(*values)
+helper.disco_trace_extract_foreground_v1=observed_foreground_entry
+helper.disco_trace_extract_v1=observed_default_entry
 def observed_native_read(*values,**options):
+ assert options.get('foreground') is True, 'Prepared display lost foreground admission'
+ foreground_extraction['requested']+=1
  result=original_native_read(*values,**options);native_counts['admitted' if result is not None else 'fallback']+=1;return result
 native_trace.read_native_values=observed_native_read
 original_reduce=native_trace.reduce_native_display
@@ -31,7 +44,7 @@ from flask import Response,request,g,jsonify
 @app.get('/__diagnostic__/expected-f64le')
 def expected_payload():return Response(expected,mimetype='application/octet-stream')
 @app.get('/__diagnostic__/status')
-def diagnostic_status():return jsonify(native_contract=reader._native_contract(),authority='prepared-display-sql-double',native_counts=native_counts,reduce_counts=reduce_counts,helper_abi=native_trace._load_helper().disco_trace_inflate_abi() if native_trace._load_helper() else None,prepared_display_canonical=app.extensions['trace_views']._canonical(),source_verifier_canonical=getattr(service._verified_source,'__func__',None).__module__=='workspace_service')
+def diagnostic_status():return jsonify(native_contract=reader._native_contract(),authority='prepared-display-sql-double',native_counts=native_counts,foreground_extraction=foreground_extraction,reduce_counts=reduce_counts,helper_abi=native_trace._load_helper().disco_trace_inflate_abi() if native_trace._load_helper() else None,prepared_display_canonical=app.extensions['trace_views']._canonical(),source_verifier_canonical=getattr(service._verified_source,'__func__',None).__module__=='workspace_service')
 heap=None
 if (source/'python/workspace_process_heap.py').is_file():
  from workspace_process_heap import install as install_heap

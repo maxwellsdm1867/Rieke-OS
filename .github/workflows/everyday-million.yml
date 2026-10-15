@@ -176,7 +176,7 @@ jobs:
         run: |
           unset RIEKE_TEST_DOM_MODULE
           geometry_baseline="$RUNNER_TEMP/geometry-baseline"
-          git worktree add --detach "$geometry_baseline" a25b437c22b8dca220cff2797c4d48e3ed63a603
+          git worktree add --detach "$geometry_baseline" 4de896f2e0b4ea966b5a428c3d2314f93fba935f
           for package in workspace-app desktop; do
             "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$geometry_baseline/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json"
             ln -s "$GITHUB_WORKSPACE/$package/node_modules" "$geometry_baseline/$package/node_modules"
@@ -194,11 +194,83 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  trace-macos:
+    name: macOS foreground trace regression
+    needs: scope
+    if: needs.scope.outputs.documentation_only != 'true'
+    runs-on: macos-15
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Initialize trace failure evidence
+        run: |
+          mkdir -p "$RUNNER_TEMP/trace-macos"
+          printf 'Missing or failed trace evidence cannot qualify.\n' > "$RUNNER_TEMP/trace-macos/start.txt"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.scope.outputs.harness }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: performance-source-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/performance-plan
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: workspace-app/package-lock.json
+      - uses: astral-sh/setup-uv@v6
+      - name: Install fixed trace runtime and browser
+        run: |
+          test "$(uname -s)" = Darwin
+          command -v cc
+          uv venv --python 3.11.13 "$RUNNER_TEMP/trace-python"
+          uv pip install --python "$RUNNER_TEMP/trace-python/bin/python" -r benchmarks/requirements-py311.txt
+          npm ci --prefix workspace-app
+          npm ci --prefix desktop --ignore-scripts
+          desktop/node_modules/.bin/playwright install chromium
+      - name: Bind exact baseline and candidate
+        run: |
+          candidate=$(python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/performance-plan/source-plan.json")); print(p["sources"][p["canonical"]["candidate"]])')
+          if ! git cat-file -e "$candidate^{commit}" 2>/dev/null; then
+            git fetch --no-tags origin "$candidate"
+          fi
+          git worktree add --detach "$RUNNER_TEMP/trace-baseline" 4de896f2e0b4ea966b5a428c3d2314f93fba935f
+          git worktree add --detach "$RUNNER_TEMP/trace-candidate" "$candidate"
+          for source in trace-baseline trace-candidate; do
+            for package in workspace-app desktop; do
+              "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$RUNNER_TEMP/$source/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json"
+              ln -s "$GITHUB_WORKSPACE/$package/node_modules" "$RUNNER_TEMP/$source/$package/node_modules"
+            done
+          done
+      - name: Require candidate foreground scheduling and admission behavior
+        working-directory: ${{ runner.temp }}/trace-candidate
+        run: |
+          unset RIEKE_TEST_DOM_MODULE
+          PYTHONPATH=python "$RUNNER_TEMP/trace-python/bin/python" -B -m unittest discover -s python/tests -p test_trace_native.py -v 2>&1 | tee "$RUNNER_TEMP/trace-macos/native-tests.log"
+          PYTHONPATH=python "$RUNNER_TEMP/trace-python/bin/python" -B -m unittest discover -s python/tests -p test_trace_views.py -v 2>&1 | tee "$RUNNER_TEMP/trace-macos/admission-tests.log"
+      - name: Compare exact million-sample drawing and tail timings serially
+        run: |
+          unset RIEKE_TEST_DOM_MODULE PREPARED_GEOMETRY_TIMING
+          "$RUNNER_TEMP/trace-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_prepared_geometry.py -v
+          "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_prepared_geometry.py run --source-root "$RUNNER_TEMP/trace-baseline" --output "$RUNNER_TEMP/trace-macos/baseline"
+          "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_prepared_geometry.py run --source-root "$RUNNER_TEMP/trace-candidate" --output "$RUNNER_TEMP/trace-macos/candidate"
+          "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_prepared_geometry.py compare "$RUNNER_TEMP/trace-macos/baseline/receipt.json" "$RUNNER_TEMP/trace-macos/candidate/receipt.json" --output "$RUNNER_TEMP/trace-macos/comparison.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-macos-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/trace-macos/
+          if-no-files-found: error
+          retention-days: 30
+
   everyday-million:
     # Keep the required normal check name. Measuring an explicit other source is
     # diagnostic and must not create a green qualification check on this HEAD.
     name: ${{ inputs.candidate_sha != '' && 'Diagnostic million metadata query regression' || 'Actual million metadata query regression' }}
-    needs: [scope, backend, browser]
+    needs: [scope, backend, browser, trace-macos]
     if: always() && needs.scope.outputs.documentation_only != 'true'
     runs-on: ubuntu-latest
     steps:
@@ -220,11 +292,18 @@ jobs:
         with:
           name: everyday-browser-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/everyday-results
-      - name: Require both complete families and all unchanged comparisons
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: trace-macos-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/everyday-results/trace-macos
+      - name: Require complete families and foreground trace comparisons
         env:
           BACKEND_RESULT: ${{ needs.backend.result }}
           BROWSER_RESULT: ${{ needs.browser.result }}
+          TRACE_RESULT: ${{ needs.trace-macos.result }}
         run: |
+          test "$TRACE_RESULT" = success
           python3 -B tools/benchmark_ci.py aggregate --plan "$RUNNER_TEMP/performance-plan/source-plan.json" \
             --output "$RUNNER_TEMP/everyday-results" --backend-result "$BACKEND_RESULT" --browser-result "$BROWSER_RESULT"
       - name: Preserve combined evidence including failures

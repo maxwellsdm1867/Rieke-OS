@@ -587,11 +587,35 @@ incomplete samples and cleanup failures are failures.
 
 `compare BASELINE/receipt.json CANDIDATE/receipt.json --output comparison.json`
 requires clean unchanged sources, identical harness, dependencies, fixture and
-environment. It applies the existing workflow policy to the median second-RAF
-and post-stroke metrics: regression review above the greater of 25% or 5 ms.
-There is no universal 50 ms CI target. CI runs the immutable geometry ancestor
-`a25b437c22b8dca220cff2797c4d48e3ed63a603` and candidate serially on the same host,
-after the legacy browser lane, preserving both raw receipts and comparison.
-This lane does not establish million-metadata scale, real SQL, native application
-or release qualification. Local `PREPARED_GEOMETRY_BROWSER` may select an explicit
-browser executable; CI uses its pinned Playwright Chromium installation.
+environment. It applies the existing workflow policy (greater of 25% or 5 ms)
+to median and maximum post-stroke, first-RAF and second-RAF observations. One slow
+sample therefore cannot be hidden by an unchanged median. Fault tests cover a
+single slow sample, first-frame-only regressions and missing foreground evidence.
+There is no universal 50 ms CI target: hosted hardware and browser observations
+are distinct from the installed application's native measurements.
+
+Both Linux and the required `macOS foreground trace regression` job compare the
+verified fix `4de896f2e0b4ea966b5a428c3d2314f93fba935f` with the resolved candidate,
+serially on each host using the same current harness. This deliberately tightens
+the trace baseline from the older, slower a25b437 implementation; it does not
+change the pinned million-query or fifteen legacy workflow baselines. The v2
+fixture additionally requires explicit foreground admission and counts actual
+foreground native-entry calls with zero default-entry calls. Removing the route
+flag, reverting the native dispatch or falling back fails correctness independently
+of timing. Both receipts must contain that execution evidence.
+
+The macOS job runs the candidate's native worker-QoS and prepared-admission tests,
+including a deterministic test that fails if the worker priority request is
+removed, verifies no caller/background promotion, and checks exact decoding when
+the priority request fails. Candidate overrides use their own immutable source
+and retain the workflow's diagnostic-only aggregate name. The normal required
+aggregate fails when the macOS job fails, is cancelled or is skipped. Every job
+preserves logs and partial receipts on failure.
+
+Three-sample maxima are a tail-sensitive smoke check, not a universal tail bound.
+The deterministic worker/admission checks protect the specific scheduling fix;
+the exact geometry, cursor and request-count oracles protect against the earlier
+sequential raw-request regression. This lane uses SQL doubles and host-compiled
+helpers, not native MySQL, packaged Waitress or compositor instrumentation, and
+does not grant release qualification. Local `PREPARED_GEOMETRY_BROWSER` may select
+an explicit browser executable; CI uses its pinned Playwright Chromium installation.

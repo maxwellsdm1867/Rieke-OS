@@ -273,6 +273,29 @@ class WorkflowWiringTests(unittest.TestCase):
         self.workflow = yaml.safe_load((ROOT / '.github/workflows/everyday-million.yml').read_text())
         self.jobs = self.workflow['jobs']
 
+    def test_macos_trace_job_binds_candidate_and_preserves_failures(self):
+        job = self.jobs['trace-macos']
+        self.assertEqual(job['runs-on'], 'macos-15')
+        self.assertEqual(job['needs'], 'scope')
+        commands = '\n'.join(step.get('run', '') for step in job['steps'])
+        self.assertIn('p["sources"][p["canonical"]["candidate"]]', commands)
+        self.assertIn('git cat-file -e "$candidate^{commit}"', commands)
+        self.assertIn('git fetch --no-tags origin "$candidate"', commands)
+        self.assertIn('4de896f2e0b4ea966b5a428c3d2314f93fba935f', commands)
+        self.assertIn('dependencies-match', commands)
+        native = next(step for step in job['steps'] if 'test_trace_native.py' in step.get('run', ''))
+        self.assertEqual(native['working-directory'], '${{ runner.temp }}/trace-candidate')
+        self.assertIn('test_trace_views.py', native['run'])
+        self.assertIn('test "$(uname -s)" = Darwin', commands)
+        self.assertIn('command -v cc', commands)
+        self.assertLess(commands.index('run --source-root "$RUNNER_TEMP/trace-baseline"'),
+                        commands.index('run --source-root "$RUNNER_TEMP/trace-candidate"'))
+        self.assertIn('benchmark_prepared_geometry.py compare', commands)
+        self.assertFalse(any(step.get('continue-on-error', False) for step in job['steps']))
+        upload = next(step for step in job['steps'] if step.get('uses') == 'actions/upload-artifact@v4')
+        self.assertEqual(upload['if'], 'always()')
+        self.assertEqual(upload['with']['if-no-files-found'], 'error')
+
     def test_only_automatic_pr_runs_share_a_cancelling_group(self):
         concurrency = self.workflow['concurrency']
         self.assertEqual(concurrency['cancel-in-progress'], "${{ github.event_name == 'pull_request' }}")
@@ -294,13 +317,19 @@ class WorkflowWiringTests(unittest.TestCase):
             self.assertEqual(uploads[0]['if'], 'always()')
             self.assertEqual(uploads[0]['with']['name'], f'everyday-{family}-${{{{ github.run_id }}}}-${{{{ github.run_attempt }}}}')
         aggregate = self.jobs['everyday-million']
-        self.assertEqual(set(aggregate['needs']), {'scope', 'backend', 'browser'})
+        self.assertEqual(set(aggregate['needs']), {'scope', 'backend', 'browser', 'trace-macos'})
         self.assertIn('Actual million metadata query regression', aggregate['name'])
         self.assertIn('always()', aggregate['if'])
         check = next(step for step in aggregate['steps'] if 'benchmark_ci.py aggregate' in step.get('run', ''))
         self.assertFalse(check.get('continue-on-error', False))
         self.assertEqual(check['env']['BACKEND_RESULT'], '${{ needs.backend.result }}')
         self.assertEqual(check['env']['BROWSER_RESULT'], '${{ needs.browser.result }}')
+        self.assertEqual(check['env']['TRACE_RESULT'], '${{ needs.trace-macos.result }}')
+        self.assertIn('test \"$TRACE_RESULT\" = success', check['run'])
+        for status in ('failure', 'cancelled', 'skipped', '', 'success'):
+            guard = check['run'].split('python3 -B tools/benchmark_ci.py aggregate')[0]
+            result = subprocess.run(['bash', '-e', '-c', guard], env={**os.environ, 'TRACE_RESULT': status})
+            self.assertEqual(result.returncode == 0, status == 'success')
         upload = next(step for step in aggregate['steps'] if step.get('uses') == 'actions/upload-artifact@v4')
         self.assertEqual(upload['if'], 'always()')
         self.assertEqual(upload['with']['name'], 'everyday-million-${{ github.run_id }}-${{ github.run_attempt }}')
