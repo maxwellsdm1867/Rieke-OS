@@ -32,7 +32,7 @@ def _load_helper():
     try:
         library = ctypes.CDLL(str(path))
         library.disco_trace_inflate_abi.restype = ctypes.c_uint
-        if library.disco_trace_inflate_abi() != 3:
+        if library.disco_trace_inflate_abi() != 4:
             return None
         library.disco_trace_inflate_v1.argtypes = [ctypes.c_void_p, ctypes.c_size_t,
             ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p,
@@ -40,6 +40,15 @@ def _load_helper():
         library.disco_trace_inflate_v1.restype = ctypes.c_int
         library.disco_trace_normalize_units_v1.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
         library.disco_trace_normalize_units_v1.restype = ctypes.c_int
+        library.disco_trace_extract_v1.argtypes = [ctypes.c_void_p, ctypes.c_size_t,
+            ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p,
+            ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p,
+            ctypes.c_int, ctypes.c_uint]
+        library.disco_trace_extract_v1.restype = ctypes.c_int
+        library.disco_trace_m4_v1.argtypes = [ctypes.c_void_p, ctypes.c_size_t,
+            ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+            ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+        library.disco_trace_m4_v1.restype = ctypes.c_int
         return library
     except (OSError, AttributeError):
         return None
@@ -77,6 +86,21 @@ def _chunk_spans(infos, file_size):
 
 def read_native_samples(data, signature, begin, end):
     """Return owned compound samples or None for a pre-admission fallback."""
+    return _read_native(data, signature, begin, end)
+
+
+def read_native_values(data, signature, begin, end, expected_units):
+    """Return detached, unit-checked finite f64 values; no truncation of units."""
+    try:
+        encoded_units = expected_units.encode('utf-8')
+    except (AttributeError, UnicodeEncodeError):
+        return None
+    if len(encoded_units) > 10:
+        return None
+    return _read_native(data, signature, begin, end, encoded_units.ljust(10, b'\x00'))
+
+
+def _read_native(data, signature, begin, end, expected_units=None):
     import h5py
     import numpy as np
     dtype = np.dtype([('quantity', '<f8'), ('units', 'S10')])
@@ -103,12 +127,12 @@ def read_native_samples(data, signature, begin, end):
     if helper is None or not _NATIVE_SLOT.acquire(blocking=False):
         return None
     try:
-        return _read_admitted(data, signature, begin, end, helper, dtype, normalize_units)
+        return _read_admitted(data, signature, begin, end, helper, dtype, normalize_units, expected_units)
     finally:
         _NATIVE_SLOT.release()
 
 
-def _read_admitted(data, signature, begin, end, helper, dtype, normalize_units):
+def _read_admitted(data, signature, begin, end, helper, dtype, normalize_units, expected_units=None):
     import numpy as np
     infos = []
     data.id.chunk_iter(lambda item: infos.append(item))
@@ -153,16 +177,60 @@ def _read_admitted(data, signature, begin, end, helper, dtype, normalize_units):
             pieces.append(block)
             input_size += len(block)
         compressed = b''.join(pieces)
-        output = np.empty(len(selected) * 64, dtype=dtype)
-        status = helper.disco_trace_inflate_v1(compressed, len(compressed), offsets.ctypes.data,
-            sizes.ctypes.data, len(selected), output.ctypes.data, output.nbytes, CHUNK_BYTES, min(_NATIVE_WORKERS, 8 if end - begin >= 500000 else 4))
-        if status != 0:
-            raise ValueError('Trace compressed chunks failed exact decompression')
-        if normalize_units and helper.disco_trace_normalize_units_v1(output.ctypes.data, output.nbytes) != 0:
-            raise ValueError('Trace units failed exact H5 string conversion')
+        workers = min(_NATIVE_WORKERS, 8 if end - begin >= 500000 else 4)
+        if expected_units is None:
+            output = np.empty(len(selected) * 64, dtype=dtype)
+            status = helper.disco_trace_inflate_v1(compressed, len(compressed), offsets.ctypes.data,
+                sizes.ctypes.data, len(selected), output.ctypes.data, output.nbytes, CHUNK_BYTES, workers)
+            if status != 0:
+                raise ValueError('Trace compressed chunks failed exact decompression')
+            if normalize_units and helper.disco_trace_normalize_units_v1(output.ctypes.data, output.nbytes) != 0:
+                raise ValueError('Trace units failed exact H5 string conversion')
+            output = output[begin - first * 64:end - first * 64]
+        else:
+            output = np.empty(end - begin, dtype='<f8')
+            status = helper.disco_trace_extract_v1(compressed, len(compressed), offsets.ctypes.data,
+                sizes.ctypes.data, len(selected), output.ctypes.data, output.nbytes,
+                begin - first * 64, end - first * 64, expected_units, int(normalize_units), workers)
+            if status == -4:
+                raise ValueError('Trace sample units are inconsistent')
+            if status == -5:
+                raise ValueError('Trace contains nonfinite samples; explicit handling required')
+            if status != 0:
+                raise ValueError('Trace compressed chunks failed exact decompression')
         if not _signature_matches(os.fstat(fd), signature):
             raise ValueError('Source recording changed while reading trace chunks')
         # The final allocated chunk includes padding. Never expose that padding.
-        return output[begin - first * 64:end - first * 64]
+        return output
     finally:
         os.close(fd)
+
+
+def reduce_native_display(values, physical_width):
+    """Return exact M4 point indices/bits and raw extrema, or unavailable-helper None.
+
+    Geometry is display-only, never an exact raw sample array. Callers retain
+    original sample count/timing and explicitly choose this finite-data contract.
+    """
+    import math
+    import numpy as np
+    if (not isinstance(values, np.ndarray) or values.ndim != 1 or
+            values.dtype != np.dtype('<f8') or not values.flags.c_contiguous or
+            not 0 < len(values) <= MAX_SAMPLES or isinstance(physical_width, bool) or
+            not isinstance(physical_width, (int, float)) or
+            not math.isfinite(physical_width) or not 0 < physical_width <= 16384):
+        raise ValueError('Unsupported exact display geometry input')
+    helper = _load_helper()
+    if helper is None:
+        return None
+    capacity = min(len(values), 4 * math.ceil(physical_width))
+    indices = np.empty(capacity, dtype='<u4')
+    selected = np.empty(capacity, dtype='<f8')
+    written = ctypes.c_size_t()
+    minimum, maximum = ctypes.c_double(), ctypes.c_double()
+    status = helper.disco_trace_m4_v1(values.ctypes.data, len(values), physical_width,
+        indices.ctypes.data, selected.ctypes.data, capacity, ctypes.byref(written),
+        ctypes.byref(minimum), ctypes.byref(maximum))
+    if status != 0 or not 0 < written.value <= capacity:
+        raise ValueError('Trace exact display geometry failed')
+    return indices[:written.value], selected[:written.value], minimum.value, maximum.value

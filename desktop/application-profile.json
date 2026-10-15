@@ -122,6 +122,7 @@
     "workspace_trace_binary.py",
     "workspace_trace_native.py",
     "workspace_trace_views.py",
+    "workspace_trace_geometry.py",
     "workspace_trace_workers.py",
     "workspace_updates.py"
   ],

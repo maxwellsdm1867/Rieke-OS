@@ -26,7 +26,7 @@ class NativeTraceTests(unittest.TestCase):
         library = Path(cls.build.name) / 'owned-inflate.so'
         source = Path(__file__).resolve().parents[2] / 'desktop/native/trace_inflate.c'
         sdk = ['-isysroot', subprocess.check_output(['xcrun', '--sdk', 'macosx', '--show-sdk-path'], text=True).strip()] if sys.platform == 'darwin' else []
-        subprocess.run([compiler, *sdk, '-O2', '-dynamiclib' if sys.platform == 'darwin' else '-shared',
+        subprocess.run([compiler, *sdk, '-O2', '-fno-fast-math', '-ffp-contract=off', '-dynamiclib' if sys.platform == 'darwin' else '-shared',
                         '-fPIC', str(source), '-o', str(library), '-lz', '-pthread'], check=True,
                        capture_output=True)
         cls.helper = ctypes.CDLL(str(library))
@@ -37,7 +37,16 @@ class NativeTraceTests(unittest.TestCase):
         cls.helper.disco_trace_inflate_v1.restype = ctypes.c_int
         cls.helper.disco_trace_normalize_units_v1.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
         cls.helper.disco_trace_normalize_units_v1.restype = ctypes.c_int
-        assert cls.helper.disco_trace_inflate_abi() == 3
+        cls.helper.disco_trace_extract_v1.argtypes = [ctypes.c_void_p, ctypes.c_size_t,
+            ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p,
+            ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p,
+            ctypes.c_int, ctypes.c_uint]
+        cls.helper.disco_trace_extract_v1.restype = ctypes.c_int
+        cls.helper.disco_trace_m4_v1.argtypes = [ctypes.c_void_p, ctypes.c_size_t,
+            ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+            ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+        cls.helper.disco_trace_m4_v1.restype = ctypes.c_int
+        assert cls.helper.disco_trace_inflate_abi() == 4
 
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory()
@@ -106,7 +115,7 @@ class NativeTraceTests(unittest.TestCase):
             row = dict(epoch_uuid=epoch, source_sha256='verified-by-caller')
             stream = dict(uuid=stream_id, h5_path='/epoch/responses/stream',
                           sample_rate=10000., sample_count=len(values), units='pA')
-            with patch.object(native, 'read_native_samples', wraps=native.read_native_samples) as used:
+            with patch.object(native, 'read_native_values', wraps=native.read_native_values) as used:
                 with self.assertRaisesRegex(ValueError, 'units are inconsistent|nonfinite'):
                     with _response_window_reader(self.path, self.signature(), row, stream,
                                                  native_range=(0,len(values))) as read:
@@ -288,19 +297,19 @@ class NativeTraceTests(unittest.TestCase):
         subprocess.run([compiler,*sdk,'-O2','-dynamiclib' if sys.platform == 'darwin' else '-shared',
                         '-fPIC',str(wrapper),'-o',str(library),'-lz','-pthread'],check=True,capture_output=True)
         helper = ctypes.CDLL(str(library))
-        helper.disco_trace_inflate_v1.argtypes = self.helper.disco_trace_inflate_v1.argtypes
-        helper.disco_trace_inflate_v1.restype = ctypes.c_int
-        original_inflate = helper.disco_trace_inflate_v1
+        helper.disco_trace_extract_v1.argtypes = self.helper.disco_trace_extract_v1.argtypes
+        helper.disco_trace_extract_v1.restype = ctypes.c_int
+        original_inflate = helper.disco_trace_extract_v1
         statuses = []
         def observed(*args):
             status = original_inflate(*args)
             statuses.append(status)
             return status
-        helper.disco_trace_inflate_v1 = observed
+        helper.disco_trace_extract_v1 = observed
         self.create()
         with patch.object(native, '_load_helper', return_value=helper):
             with self.assertRaisesRegex(ValueError, 'failed exact decompression'):
-                self.read()
+                self.read_values()
         self.assertEqual(statuses, [-3])
         self.assertEqual(helper.test_joined(), 1)
         self.assertTrue(native._NATIVE_SLOT.acquire(blocking=False))
@@ -335,12 +344,12 @@ class NativeTraceTests(unittest.TestCase):
         subprocess.run([compiler,*sdk,'-std=c11','-O2','-dynamiclib' if sys.platform == 'darwin' else '-shared',
                         '-fPIC',str(wrapper),'-o',str(library),'-lz','-pthread'],check=True,capture_output=True)
         helper = ctypes.CDLL(str(library))
-        helper.disco_trace_inflate_v1.argtypes = self.helper.disco_trace_inflate_v1.argtypes
-        helper.disco_trace_inflate_v1.restype = ctypes.c_int
+        helper.disco_trace_extract_v1.argtypes = self.helper.disco_trace_extract_v1.argtypes
+        helper.disco_trace_extract_v1.restype = ctypes.c_int
         self.create()
         with patch.object(native, '_load_helper', return_value=helper), patch.object(native, '_NATIVE_WORKERS', 4):
             with self.assertRaisesRegex(ValueError, 'failed exact decompression'):
-                self.read()
+                self.read_values()
         self.assertEqual(helper.test_initialized(), 4)
         self.assertEqual(helper.test_ended(), 4)
         self.assertEqual(helper.test_joined(), 4)
@@ -354,7 +363,7 @@ class NativeTraceTests(unittest.TestCase):
         self.loader.stop()
         native._load_helper.cache_clear()
         try:
-            old = SimpleNamespace(disco_trace_inflate_abi=Mock(return_value=2))
+            old = SimpleNamespace(disco_trace_inflate_abi=Mock(return_value=3))
             with patch.object(native.ctypes, 'CDLL', return_value=old), \
                  patch.object(native.os, 'pread', side_effect=AssertionError('No raw I/O')):
                 self.assertIsNone(self.read())
@@ -395,3 +404,122 @@ class NativeTraceTests(unittest.TestCase):
             self.assertEqual(call(**kwargs), -1)
         offsets[0] = len(compressed)+1
         self.assertEqual(call(), -1)
+
+
+    def read_values(self, begin=0, end=None, units='pA'):
+        with h5py.File(self.path, 'r') as h5:
+            data = h5['data']
+            return native.read_native_values(data, self.signature(), begin,
+                len(data) if end is None else end, units)
+
+    def test_fused_values_preserve_bits_partial_chunks_and_only_requested_validation(self):
+        values = self.create()
+        for workers in (1, 2, 4, 8):
+            for begin, end in ((0, len(values)), (1, 1024), (63, 129), (1024, 1025)):
+                with self.subTest(workers=workers, begin=begin, end=end), patch.object(native, '_NATIVE_WORKERS', workers):
+                    actual = self.read_values(begin, end)
+                    self.assertEqual(actual.dtype, np.dtype('<f8'))
+                    self.assertTrue(actual.flags.owndata)
+                    self.assertEqual(actual.tobytes(), values['quantity'][begin:end].tobytes())
+        values['units'][70] = b'mV'
+        values['quantity'][80] = float('nan')
+        self.create(values)
+        self.assertEqual(self.read_values(0, 64).tobytes(), values['quantity'][:64].tobytes())
+        with self.assertRaisesRegex(ValueError, 'units are inconsistent'):
+            self.read_values(64, 80)
+        with self.assertRaisesRegex(ValueError, 'nonfinite'):
+            self.read_values(80, 81)
+
+    def test_fused_units_never_truncate_and_match_h5_nullterm(self):
+        self.create()
+        with patch.object(native.os, 'pread', side_effect=AssertionError('No raw I/O')):
+            self.assertIsNone(self.read_values(units='pA' + 'x' * 10))
+        # Reuse the adversarial NULLTERM fixture: only the requested record is validated.
+        self.test_nullterm_units_match_h5_conversion_including_embedded_null_and_full_width()
+        self.assertEqual(self.read_values(0, 1).tobytes(), self.values(64)['quantity'][:1].tobytes())
+        self.assertEqual(len(self.read_values(1, 2, 'abcdefghij')), 1)
+        self.assertEqual(len(self.read_values(2, 3, '')), 1)
+        with self.assertRaisesRegex(ValueError, 'units are inconsistent'):
+            self.read_values(4, 5)
+        self.assertEqual(len(self.read_values(5, 6)), 1)
+        values = self.values(64)
+        values['units'][0] = b'pA\0garbage'
+        self.create(values)
+        with self.assertRaisesRegex(ValueError, 'units are inconsistent'):
+            self.read_values(0, 1)
+
+    def test_fused_corrupt_streams_source_changes_and_busy_slot_do_not_publish(self):
+        values = self.values(64)
+        original = zlib.compress(values.tobytes())
+        for chunk in (b'invalid zlib', original[:-1], original + b'extra', zlib.compress(b'wrong size')):
+            with self.subTest(length=len(chunk)):
+                with h5py.File(self.path, 'w') as h5:
+                    d = h5.create_dataset('data', shape=(64,), dtype=values.dtype, chunks=(64,), compression='gzip')
+                    d.id.write_direct_chunk((0,), chunk)
+                with self.assertRaisesRegex(ValueError, 'decompression'):
+                    self.read_values()
+        self.create()
+        original_read = os.pread
+        def mutate(fd, length, offset):
+            block = original_read(fd, length, offset)
+            stat = self.path.stat()
+            os.utime(self.path, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1000000))
+            return block
+        with patch.object(native.os, 'pread', side_effect=mutate):
+            with self.assertRaisesRegex(ValueError, 'changed while'):
+                self.read_values()
+        native._NATIVE_SLOT.acquire()
+        try:
+            self.assertIsNone(self.read_values())
+        finally:
+            native._NATIVE_SLOT.release()
+
+    def test_exact_m4_fractional_bins_point_bits_and_signed_zero_statistics(self):
+        raw = np.zeros(64, dtype='<f8')
+        raw[[13, 39, 60]] = -2
+        raw[[14, 40, 61]] = 3
+        raw[0] = -0.
+        expected = np.array([0, 13, 14, 27, 28, 39, 40, 55, 56, 60, 61, 63], dtype='<u4')
+        indices, selected, low, high = native.reduce_native_display(raw, 2.25)
+        self.assertEqual(indices.tobytes(), expected.tobytes())
+        self.assertEqual(selected.tobytes(), raw[expected].tobytes())
+        self.assertEqual((low, high), (-2., 3.))
+        for raw in (np.array([0., -0.]), np.array([-0., 0.]), np.array([-0.])):
+            indices, selected, low, high = native.reduce_native_display(raw, 1.)
+            self.assertEqual(indices.tolist(), list(range(len(raw))))
+            self.assertEqual(selected.tobytes(), raw.tobytes())
+            self.assertTrue(np.signbit(low))
+            self.assertEqual(bool(np.signbit(high)), len(raw) == 1)
+        # Constant/tied bins retain first and last, never duplicate candidates.
+        indices, _, _, _ = native.reduce_native_display(np.ones(64), 2.25)
+        self.assertEqual(indices.tolist(), [0, 27, 28, 55, 56, 63])
+
+    def test_m4_input_bounds_missing_helper_and_native_failure_are_distinct(self):
+        raw = np.arange(16, dtype='<f8')
+        for invalid in (0, -1, float('nan'), float('inf'), 16385, True):
+            with self.subTest(width=invalid), self.assertRaises(ValueError):
+                native.reduce_native_display(raw, invalid)
+        for invalid in (np.array([],dtype='<f8'), raw[::2], raw.astype('<f4'), raw.reshape(4,4)):
+            with self.assertRaises(ValueError):
+                native.reduce_native_display(invalid, 10.)
+        with patch.object(native, '_load_helper', return_value=None):
+            self.assertIsNone(native.reduce_native_display(raw, 10.))
+        raw[4] = float('nan')
+        with self.assertRaisesRegex(ValueError, 'geometry failed'):
+            native.reduce_native_display(raw, 10.)
+
+    def test_fused_native_abi_rejects_bounds_before_output(self):
+        compressed = zlib.compress(self.values(64).tobytes())
+        offsets = np.array([0], dtype='u8'); sizes = np.array([len(compressed)], dtype='u8')
+        output = np.empty(64, dtype='<f8')
+        def call(**kw):
+            args = dict(count=1, begin=0, end=64, size=512, nullterm=0, workers=4)
+            args.update(kw)
+            return self.helper.disco_trace_extract_v1(compressed, len(compressed), offsets.ctypes.data,
+                sizes.ctypes.data, args['count'], output.ctypes.data, args['size'], args['begin'],
+                args['end'], b'pA' + b'\0' * 8, args['nullterm'], args['workers'])
+        self.assertEqual(call(), 0)
+        for kwargs in (dict(count=0), dict(count=15626), dict(begin=64), dict(end=65),
+                       dict(size=511), dict(nullterm=2), dict(workers=0), dict(workers=9)):
+            with self.subTest(kwargs=kwargs):
+                self.assertEqual(call(**kwargs), -1)

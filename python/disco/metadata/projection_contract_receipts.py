@@ -162,4 +162,27 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
                            'docs/architecture/trace-worker-execution.md',
                            'python/tests/test_trace_native.py',
                            'python/tests/test_workspace_projection_contract.py',
+                           'python/tests/test_workspace_service.py')},
+             {'id': 'geometry-display-compatibility-2026-10-15',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 '3c9fc897975c3345b6290e33c8b10fa63f4b93386642eefed112ae29fcb29121',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to 9097d52, removing only _response_window_reader yields an identical '
+                           'whole-file AST. The function consumes optional native unit-checked finite f64 '
+                           'values instead of compound records; the generic reader retains its validations. '
+                           'Other projection owners and resolver are byte-identical. Display geometry is a '
+                           'separate response representation and changes no metadata projection, codec, '
+                           'membership or cache authority.',
+              'evidence': ('git:9097d5245deea6dc594a9ae17e63158804e6190b',
+                           'docs/architecture/trace-worker-execution.md',
+                           'python/tests/test_trace_native.py',
+                           'python/tests/test_workspace_projection_contract.py',
                            'python/tests/test_workspace_service.py')})}

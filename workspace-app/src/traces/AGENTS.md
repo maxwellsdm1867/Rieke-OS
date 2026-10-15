@@ -223,3 +223,44 @@ The ordinary `useResource` implementation and legacy scheduling are unchanged.
 abort, late success/error and unavailable authority. The real canvas lifecycle
 also covers held tag refresh and cross-epoch curation pairing. Timing evidence is
 qualified in `docs/dev/prepared-trace-request-scheduling-2026-10-15.md`.
+
+## Prepared whole-epoch display geometry
+
+`traceDisplayGeometry.js` owns the distinct negotiated DTM1 representation
+(`application/vnd.disco.trace-m4le.v1`), separate from full-rate DTF1 samples.
+Only prepared whole/automatic-amplitude views with at most one million samples,
+physical width in (0, 16384], and count > 4 ceil(width) request geometry. Exact
+floating width is `(max(1, canvas CSS width - 103)) * DPR`; it is never rounded.
+The response echoes the complete prepared context and exact source/stream/rate/
+units/count/width. Bounded aligned binary framing, original ordered uint32 indices,
+finite binary64 point values, full-stream statistics and exact body length are
+validated. Each physical bin must include its original first/last indices and at
+most four points; boundaries use binary search over the exact reduction formula.
+The original point bits are retained. Wire statistics remain separate from raw
+sample statistics and must agree with extrema among emitted points.
+
+The painter has an explicit admitted geometry branch using raw sample count for
+coordinates and the supplied original indices. It performs no second reduction.
+A geometry response never masquerades as a raw values array. Manual amplitude,
+clipping and sample/zoom views retain the exact raw route. Only typed HTTP 409
+`trace_geometry_unavailable` permits the same prepared raw fallback; malformed
+geometry, wrong representation or authority errors fail closed. Unsupported
+geometry retains its single raw interval across resize, scoped to the current
+source/context/request owner. No automatic background raw trace is loaded.
+
+`useTraceViewport.js` measures the mounted canvas and observes CSS size and
+resolution changes, rearming the DPR media query. Width changes retire geometry
+reads. The painter independently clears/refuses old-width geometry before a new
+state commit, so observer delivery order cannot paint the wrong bins.
+
+`useExactTraceCursor.js` owns at most one 20k raw tile and one in-flight cursor
+request. Hover waits 50 ms and coalesces to the latest tile; explicit cursor input
+or click dispatches immediately or joins the same tile. Returning to a loaded
+sample cancels delayed work elsewhere. Pending/unavailable values are explicit,
+never interpolated, guessed or mislabeled as missing. Owner/source changes and
+replacement dispatch abort old requests; old index intents cannot publish after
+newer ones. Raw sample views use their existing local exact interval directly.
+`traceDisplayGeometry.test.js`, `exactTraceCursor.test.js` and
+`traceGeometryLifecycle.test.js` cover framing/negotiation, owner and cursor races,
+no hidden whole reads, raw fallback, actual painting, resize and DPR-only changes.
+The external native/JS/RGBA oracle remains separate performance/fidelity evidence.

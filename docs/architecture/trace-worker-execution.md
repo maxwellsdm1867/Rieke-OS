@@ -157,14 +157,16 @@ only up to 4 MiB per span with gaps no larger than 64 KiB, and at most 32 MiB to
 A duplicate of the admitted H5 sec2 descriptor supplies `pread`; its source stat
 must match before and after the read. Logical chunk order is independent of file
 placement. A tail chunk inflates its full 1,152 bytes, then requested sample bounds
-exclude padding. Original per-window all-unit, finite-value, count and source
-checks and final publication/frozen-scope checks remain required.
+exclude padding. Every requested unit and finite value remains checked, either in the fused native
+extraction or the generic per-window reader. Count/source checks and final
+publication/frozen-scope checks remain required.
 
-`desktop/native/trace_inflate.c` exposes ABI 3 and calls only system zlib and
-pthread functions, never HDF5 or filesystem APIs. At most one native operation
+`desktop/native/trace_inflate.c` exposes ABI 4 and uses system zlib,
+pthreads and bounded memory/math operations, never HDF5 or filesystem APIs. At most one native operation
 per Python process uses at most eight threads, capped by available logical CPUs.
 Requests below 500,000 samples use at most four. Count is capped at 15,625 chunks,
-output at 18,000,000 bytes, input at 32 MiB; compressed buffers may briefly coexist
+compound output at 18,000,000 bytes or fused float64 output at 8,000,000 bytes,
+input at 32 MiB; compressed buffers may briefly coexist
 with their coalesced pieces during assembly. Each worker initializes one zlib
 decoder and resets it between independent chunks. Every chunk must end with
 `Z_STREAM_END`, consume its entire input and produce exactly 1,152 bytes.
@@ -208,3 +210,43 @@ context. Selected pages require their own captured subset, never a broader
 pending-view capability. Actual epoch, source, stream or display-publication
 changes still replace the trace lifetime. Tag reads and saves do not grant or
 revoke a historical display capability.
+
+
+### Whole-view display geometry
+
+The prepared `/display` endpoint has a distinct `application/vnd.disco.trace-m4le.v1`
+representation. It accepts only a complete stream of at most one million samples,
+a finite physical plot width in `(0, 16384]`, and the explicit
+`first-last-extrema-v1` algorithm. The same exact source/units/finite checks run
+before reduction, and the display source witness closes after reduction. No tag,
+draft or current membership read is added to the click path.
+
+For each screen column, reduction preserves the first, earliest minimum, earliest
+maximum and last original sample indices in sorted unique order. The floating
+bin expression matches the existing browser renderer without rounding the physical
+width. Fused extraction checks all requested units and finite values while copying
+original float64 bits. Geometry computes full-stream extrema, including signed-zero
+ties. Unsupported helper availability uses a bounded NumPy reducer; source or native
+corruption never silently retries. The representation is explicitly sparse display
+geometry, never a raw million-sample array or a claim of `decimated: false`.
+
+Wire format is `DTM1`, uint32-LE JSON header length, JSON and zero padding to eight
+bytes, uint32-LE original indices, zero padding to eight bytes, and binary64-LE
+original point values. Header identity includes the exact prepared context,
+source/epoch/stream, sample rate, units, raw start/count, physical width, point count
+and full-stream finite extrema/counts. The browser admits this separately from raw
+sample decoding and draws the supplied ordered points without reducing them again.
+Width, DPR, owner, source or epoch changes retire incompatible geometry.
+
+Whole automatic-amplitude views can use geometry. Raw zoom and manually clipped
+amplitude preserve their exact sample path. An exact cursor uses a bounded demand
+sample window and reports pending while its value is unavailable; it never substitutes
+an adjacent geometry point. No full raw request runs automatically behind a geometry
+read. Only the explicit `trace_geometry_unavailable` response permits ordinary raw
+fallback; identity, source, malformed response and lifetime failures fail closed.
+
+The initial native prototype matched all 14 independent index/value/statistics
+cases and 46 valid Canvas raster comparisons across Light/Dark and DPR 1/2.
+These establish equivalence to the existing whole-view M4 renderer, not universal
+pixel equivalence to a full raw polyline. Full application and package measurements
+remain separately attributed to the implementation they execute.

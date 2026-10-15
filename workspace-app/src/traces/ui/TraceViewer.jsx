@@ -1,3 +1,6 @@
+import {GEOMETRY_UNAVAILABLE,geometryEligible,readTraceGeometry,traceDisplayPath} from '../traceDisplayGeometry.js';
+import {useTraceViewport} from '../useTraceViewport.js';
+import {useExactTraceCursor} from '../useExactTraceCursor.js';
 import {usePreparedTraceRead} from '../usePreparedTraceRead.js';
 import {traceSampleStatistics,traceStatisticsExtent} from '../traceStatistics.js';
 import {useSemanticReset} from '../../useSemanticReset.js';
@@ -12,17 +15,18 @@ import {readWholeTrace,MAX_WHOLE_TRACE_CHUNK_SAMPLES} from '../readWholeTrace.js
 import {traceRequestPath,traceCacheRevision,traceResponseMatches} from '../traceReadContext.js';
 import {useNavigationLoading,useDelayedLoading} from '../../components/NavigationLoading.jsx';
 
-function paintTrace(canvas,data,amplitude,statistics){
+function paintTrace(canvas,data,amplitude,statistics,displayGeometry=null){
   const rect=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio || 1;
   canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);
   const ctx=canvas.getContext('2d');ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,rect.width,rect.height);
-  if(!data||!rect.width)return null;
-  const autoExtent=traceStatisticsExtent(statistics),extent=autoExtent&&amplitude?{...autoExtent,...amplitude}:autoExtent,range=timeRange(data.start,data.values.length,data.sample_rate);
+  if(!data||!rect.width||displayGeometry&&(amplitude||displayGeometry.physical_width!==Math.max(1,rect.width-103)*ratio))return null;
+  const sampleCount=displayGeometry?displayGeometry.raw_count:data.values.length;
+  const autoExtent=traceStatisticsExtent(statistics),extent=autoExtent&&amplitude?{...autoExtent,...amplitude}:autoExtent,range=timeRange(data.start,sampleCount,data.sample_rate);
   if(!extent||!range)return null;
   const left=82,right=21,top=25,bottom=57,w=Math.max(1,rect.width-left-right),h=Math.max(1,rect.height-top-bottom);
   const style=getComputedStyle(canvas),color=name=>style.getPropertyValue(name).trim();
   const ink=color('--plot-ink'),grid=color('--plot-grid'),axis=color('--plot-axis'),trace=color('--plot-trace');
-  const x=index=>left+(data.values.length>1?index/(data.values.length-1):.5)*w;
+  const x=index=>left+(sampleCount>1?index/(sampleCount-1):.5)*w;
   const y=value=>top+(extent.max-value)/(extent.max-extent.min)*h;
   ctx.font='12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';ctx.lineWidth=1;
   for(const value of ticks(extent.min,extent.max,5)){
@@ -43,13 +47,16 @@ function paintTrace(canvas,data,amplitude,statistics){
   // Preserve the complete raw polyline whenever the chosen y range excludes
   // any visible finite sample; use raw extrema, not the padded axis extent.
   const clipped=!!amplitude&&(amplitude.min>statistics.min||amplitude.max<statistics.max);
-  for(const segment of traceDisplaySegments(data.values,w*ratio,{exact:clipped})){
-    const first=segment[0];ctx.moveTo(x(first),y(data.values[first]));
-    for(let position=1;position<segment.length;position++){const index=segment[position];ctx.lineTo(x(index),y(data.values[index]));}
+  const positions=displayGeometry?[Array.from({length:displayGeometry.point_count},(_,index)=>index)]:traceDisplaySegments(data.values,w*ratio,{exact:clipped});
+  const original=index=>displayGeometry?displayGeometry.indices[index]:index;
+  const value=index=>displayGeometry?displayGeometry.point_values[index]:data.values[index];
+  for(const segment of positions){
+    const first=segment[0];ctx.moveTo(x(original(first)),y(value(first)));
+    for(let position=1;position<segment.length;position++){const index=segment[position];ctx.lineTo(x(original(index)),y(value(index)));}
     if(segment.length===1)isolated.push(first);
   }
   ctx.stroke();
-  ctx.fillStyle=getComputedStyle(ctx.canvas).getPropertyValue('--plot-trace').trim();ctx.beginPath();for(const index of isolated){ctx.moveTo(x(index)+2.5,y(data.values[index]));ctx.arc(x(index),y(data.values[index]),2.5,0,Math.PI*2);}ctx.fill();
+  ctx.fillStyle=getComputedStyle(ctx.canvas).getPropertyValue('--plot-trace').trim();ctx.beginPath();for(const index of isolated){ctx.moveTo(x(original(index))+2.5,y(value(index)));ctx.arc(x(original(index)),y(value(index)),2.5,0,Math.PI*2);}ctx.fill();
   ctx.restore();
   return {left,top,w,h,width:rect.width,height:rect.height,ratio,extent,range,x,y,data};
 }
@@ -85,13 +92,30 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   const [entryError,setEntryError]=useState('');
   useEffect(()=>{if(!sameEpoch){setSelection({epoch:epoch?.epoch_uuid,stream:preferredStream});setEntryError('');}},[epoch?.epoch_uuid,sameEpoch,preferredStream]);
   const contextKey=traceCacheRevision(revision,readContext);
-  // Keep one loaded interval for this mounted viewer. Presentation changes inside
-  // it reuse exact samples; identity/authority changes replace the read lifetime.
   const identity=JSON.stringify([contextKey,epoch?.epoch_uuid,epoch?.source_sha256,stream?.uuid,stream?.sample_count,stream?.sample_rate,stream?.units]);
-  const [retainedRead,setRetainedRead]=useState(()=>({identity,owner,...bounded}));
-  const covered=retainedRead.identity===identity&&retainedRead.owner===owner&&bounded.start>=retainedRead.start&&bounded.start+bounded.count<=retainedRead.start+retainedRead.count;
-  const readWindow=covered?retainedRead:{identity,owner,...bounded};
-  if(!covered)setRetainedRead(readWindow);
+  const base=useRef(null),overlay=useRef(null),geometry=useRef(null),cursor=useRef(null),drag=useRef(null),frame=useRef(null),sampleReadout=useRef(null),timeReadout=useRef(null),responseReadout=useRef(null),cursorInput=useRef(null),surface=useRef(null);
+  const geometryCandidate=prepared&&whole&&Number.isSafeInteger(stream?.sample_count)&&stream.sample_count<=1000000&&/^[0-9a-f]{64}$/.test(epoch?.source_sha256??'');
+  const physicalWidth=useTraceViewport(base,geometryCandidate);
+  const [rawFallback,setRawFallback]=useState(null);
+  const fallbackCurrent=rawFallback?.identity===identity&&rawFallback.owner===owner;
+  useLayoutEffect(()=>setRawFallback(previous=>previous?.identity===identity&&previous.owner===owner?previous:null),[identity,owner]);
+  const useGeometry=geometryCandidate&&!fallbackCurrent&&geometryEligible(stream?.sample_count,physicalWidth);
+  const displayPath=useGeometry?traceDisplayPath(epoch.epoch_uuid,stream,readContext,physicalWidth):null;
+  const displayIdentity=JSON.stringify([identity,physicalWidth]);
+  const displayPort=useMemo(()=>useGeometry?{request:(path,options)=>readTraceGeometry(owner?.request??api,path,options,
+    {epochUuid:epoch.epoch_uuid,sourceSha256:epoch.source_sha256,stream,readContext,physicalWidth})}:undefined,
+    [useGeometry,owner,identity,physicalWidth]);
+  const displayResource=usePreparedTraceRead(displayPath,displayIdentity,displayPort);
+  const unavailable=fallbackCurrent||displayResource.data===GEOMETRY_UNAVAILABLE;
+  useLayoutEffect(()=>{if(displayResource.data===GEOMETRY_UNAVAILABLE)setRawFallback({identity,owner});},[displayResource.data,identity,owner]);
+  const rawEnabled=!geometryCandidate||physicalWidth!==null&&!useGeometry||unavailable;
+  // A geometry interval is not a retained raw interval. Sample/zoom demand starts
+  // with exactly its requested raw window, never a hidden whole-trace fetch.
+  const [retainedRead,setRetainedRead]=useState(()=>({identity:null,owner,...bounded}));
+  const covered=rawEnabled&&retainedRead.identity===identity&&retainedRead.owner===owner&&bounded.start>=retainedRead.start&&bounded.start+bounded.count<=retainedRead.start+retainedRead.count;
+  const nextWindow={identity:rawEnabled?identity:null,owner,...bounded};
+  const readWindow=covered?retainedRead:nextWindow;
+  if(!covered&&(retainedRead.identity!==nextWindow.identity||retainedRead.owner!==owner||retainedRead.start!==bounded.start||retainedRead.count!==bounded.count))setRetainedRead(nextWindow);
   const chunked=readWindow.count>MAX_TRACE_SAMPLES;
   const requestPath=traceRequestPath(epoch?.epoch_uuid,stream,clampWindow(readWindow.start,readWindow.count,stream?.sample_count),readContext);
   const requestPort=useMemo(()=>{
@@ -100,24 +124,28 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
     return {request:(path,{signal})=>requestTraceWindow(path,{revision:contextKey,signal,epoch,stream,window:readWindow})};
   },[chunked,owner,epoch?.epoch_uuid,epoch?.source_sha256,stream?.uuid,stream?.sample_count,stream?.sample_rate,stream?.units,contextKey,readWindow.start,readWindow.count,imported,prepared]);
   const ordinaryResource=useResource(prepared?null:requestPath,identity,0,{cache:false,requestPort});
-  const preparedResource=usePreparedTraceRead(prepared?requestPath:null,identity,requestPort);
-  const resource=prepared?preparedResource:ordinaryResource;
-  const loaded=traceResponseMatches(resource.data,readContext)&&resource.path===requestPath&&resource.data?.epoch_uuid===epoch?.epoch_uuid&&resource.data?.stream_uuid===stream?.uuid&&resource.data?.start===readWindow.start&&resource.data?.count===readWindow.count&&resource.data?.values?.length===readWindow.count?resource.data:null;
-  const data=useMemo(()=>loaded?bounded.start===loaded.start&&bounded.count===loaded.count?loaded:{...loaded,start:bounded.start,count:bounded.count,values:loaded.values instanceof Float64Array?loaded.values.subarray(bounded.start-loaded.start,bounded.start-loaded.start+bounded.count):loaded.values.slice(bounded.start-loaded.start,bounded.start-loaded.start+bounded.count)}:null,[loaded,bounded.start,bounded.count]);
-  const statistics=useMemo(()=>data?traceSampleStatistics(data.values):null,[data]);
-  const getLoadedExtent=useMemo(()=>{let measured;return()=>{if(measured===undefined)measured=loaded?traceStatisticsExtent(traceSampleStatistics(loaded.values)):null;return measured;};},[loaded]);
-  const valid=data&&data.sample_rate>0&&Number.isFinite(data.sample_rate)&&(!(imported||prepared)||data.sample_rate===stream?.sample_rate&&(typeof stream?.units==='string'||stream?.units===null)&&data.units===stream.units)&&data.values?.length===data.count;
-  const base=useRef(null),overlay=useRef(null),geometry=useRef(null),cursor=useRef(null),drag=useRef(null),frame=useRef(null),sampleReadout=useRef(null),timeReadout=useRef(null),responseReadout=useRef(null),cursorInput=useRef(null),surface=useRef(null);
+  const preparedResource=usePreparedTraceRead(prepared&&rawEnabled?requestPath:null,identity,requestPort);
+  const rawResource=prepared?preparedResource:ordinaryResource;
+  const resource=rawEnabled?rawResource:displayResource,activePath=rawEnabled?requestPath:displayPath;
+  const loaded=traceResponseMatches(rawResource.data,readContext)&&rawResource.path===requestPath&&rawResource.data?.epoch_uuid===epoch?.epoch_uuid&&rawResource.data?.stream_uuid===stream?.uuid&&rawResource.data?.start===readWindow.start&&rawResource.data?.count===readWindow.count&&rawResource.data?.values?.length===readWindow.count?rawResource.data:null;
+  const rawData=useMemo(()=>loaded?bounded.start===loaded.start&&bounded.count===loaded.count?loaded:{...loaded,start:bounded.start,count:bounded.count,values:loaded.values instanceof Float64Array?loaded.values.subarray(bounded.start-loaded.start,bounded.start-loaded.start+bounded.count):loaded.values.slice(bounded.start-loaded.start,bounded.start-loaded.start+bounded.count)}:null,[loaded,bounded.start,bounded.count]);
+  const displayGeometry=useGeometry&&!unavailable?displayResource.data:null;
+  const data=useMemo(()=>displayGeometry?{start:0,count:displayGeometry.raw_count,sample_rate:displayGeometry.sample_rate,units:displayGeometry.units}:rawData,[displayGeometry,rawData]);
+  const statistics=useMemo(()=>displayGeometry?displayGeometry.statistics:data?traceSampleStatistics(data.values):null,[data,displayGeometry]);
+  const getLoadedExtent=useMemo(()=>{let measured;return()=>{if(measured===undefined)measured=displayGeometry?traceStatisticsExtent(displayGeometry.statistics):loaded?traceStatisticsExtent(traceSampleStatistics(loaded.values)):null;return measured;};},[loaded,displayGeometry]);
+  const valid=!!displayGeometry||data&&data.sample_rate>0&&Number.isFinite(data.sample_rate)&&(!(imported||prepared)||data.sample_rate===stream?.sample_rate&&(typeof stream?.units==='string'||stream?.units===null)&&data.units===stream.units)&&data.values?.length===data.count;
+  const exactCursor=useExactTraceCursor({enabled:!!displayGeometry,identity,owner,request:owner?.request??api,epochUuid:epoch?.epoch_uuid,sourceSha256:epoch?.source_sha256,stream,readContext});
   const cursorHelp=useId();
-  const authorityKey=prepared?identity:traceCacheRevision('paint',readContext);
+  const authorityKey=prepared?rawEnabled?identity:displayIdentity:traceCacheRevision('paint',readContext);
   const painted=useRef(false),paintedAuthority=useRef(authorityKey);
   const canRetainPaint=painted.current&&paintedAuthority.current===authorityKey;
   const dataRef=useRef(null);dataRef.current=valid?data:null;
-  const currentError=resource.path===requestPath?resource.error:null;
-  const pending=!!stream&&!currentError&&(resource.loading||resource.path!==requestPath||!resource.data);
+  const displayRef=useRef(null);displayRef.current=displayGeometry;
+  const currentError=resource.path===activePath?resource.error:null;
+  const pending=!!stream&&!currentError&&(resource.loading||resource.path!==activePath||!resource.data);
   const coordinated=useNavigationLoading(pending);
   const showLoading=useDelayedLoading(pending&&!coordinated);
-  const invalidResponse=resource.path===requestPath&&resource.data&&(!data||!valid);
+  const invalidResponse=resource.path===activePath&&resource.data&&(!data||!valid);
   const range=valid?timeRange(data.start,data.count,data.sample_rate):null;
   const gapCount=valid?statistics.missingCount:0;
   const total=stream?.sample_count || 0;
@@ -127,6 +155,8 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
     const window=clampWindow(next.start,next.count,total,total);drag.current=null;cursor.current=null;setEntryError('');setWindowPreference({kind:'sample',...window,...(nextAmplitude?{amplitude:nextAmplitude}:{})});
   }
   function resetWhole(){setMode('zoom');setEntryError('');drag.current=null;cursor.current=null;setWindowPreference({kind:'whole',start:preference.start,count:preference.count});}
+  function readCursor(immediate=false){if(displayRef.current&&cursor.current!==null)exactCursor.read(dataRef.current.start+cursor.current,{immediate});}
+  useEffect(()=>{if(displayGeometry)scheduleOverlay();},[exactCursor.version,displayGeometry]);
 
   const entryWindow=JSON.stringify([epoch?.epoch_uuid,stream?.uuid,bounded.start,bounded.count]);
   useSemanticReset(entryWindow,()=>{setEntryStart(String(bounded.start));setEntryCount(String(bounded.count));});
@@ -148,14 +178,14 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
       ctx.strokeRect(x,y,w,h);ctx.setLineDash([]);
     }
     if(cursor.current==null)return;
-    const index=Math.max(0,Math.min(d.count-1,cursor.current)),value=d.values[index],x=g.x(index),finite=typeof value==='number'&&Number.isFinite(value);
+    const index=Math.max(0,Math.min(d.count-1,cursor.current)),sample=displayRef.current?exactCursor.sample(d.start+index):{state:'ready',value:d.values[index]},value=sample.value,x=g.x(index),finite=sample.state==='ready'&&typeof value==='number'&&Number.isFinite(value);
     ctx.strokeStyle=getComputedStyle(ctx.canvas).getPropertyValue('--plot-cursor').trim();ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(x,g.top);ctx.lineTo(x,g.top+g.h);
     if(finite&&value>=g.extent.min&&value<=g.extent.max){const y=g.y(value);ctx.moveTo(g.left,y);ctx.lineTo(g.left+g.w,y);}ctx.stroke();ctx.setLineDash([]);
     if(finite&&value>=g.extent.min&&value<=g.extent.max){ctx.fillStyle=getComputedStyle(ctx.canvas).getPropertyValue('--plot-trace').trim();ctx.beginPath();ctx.arc(x,g.y(value),3,0,Math.PI*2);ctx.fill();}
     const absolute=d.start+index,time=absolute/d.sample_rate;
     if(sampleReadout.current)sampleReadout.current.textContent=number(absolute);
     if(timeReadout.current)timeReadout.current.textContent=`${String(time)} s`;
-    if(responseReadout.current)responseReadout.current.textContent=`${finite?String(value):'Missing sample'}${finite&&d.units?` ${d.units}`:''}`;
+    if(responseReadout.current)responseReadout.current.textContent=`${sample.state==='pending'?'Loading sample…':sample.state==='error'?'Sample unavailable':finite?String(value):'Missing sample'}${finite&&d.units?` ${d.units}`:''}`;
     if(cursorInput.current&&document.activeElement!==cursorInput.current)cursorInput.current.value=String(absolute);
   }
   useLayoutEffect(()=>{
@@ -168,8 +198,8 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
     const draw=()=>{
       // A pending window keeps its bitmap only within the same frozen authority.
       // Failed/invalid responses clear it; only validated samples get new axes.
-      geometry.current=valid?paintTrace(base.current,data,amplitude,statistics):pending&&paintedAuthority.current===authorityKey?null:paintTrace(base.current,null);
-      if(valid){painted.current=true;paintedAuthority.current=authorityKey;}else if(!pending||paintedAuthority.current!==authorityKey){painted.current=false;paintedAuthority.current=authorityKey;}
+      geometry.current=valid?paintTrace(base.current,data,amplitude,statistics,displayGeometry):pending&&paintedAuthority.current===authorityKey?null:paintTrace(base.current,null);
+      if(valid&&geometry.current){painted.current=true;paintedAuthority.current=authorityKey;}else if(!pending||paintedAuthority.current!==authorityKey){painted.current=false;paintedAuthority.current=authorityKey;}
       const rect=base.current.getBoundingClientRect(),ratio=window.devicePixelRatio || 1;
       lastSize={width:rect.width,height:rect.height,ratio};
       overlay.current.width=Math.round(rect.width*ratio);overlay.current.height=Math.round(rect.height*ratio);
@@ -187,7 +217,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
     const windowResize=()=>resizeIfChanged();
     draw();const observer=new ResizeObserver(()=>resizeIfChanged(true));observer.observe(base.current);window.addEventListener('resize',windowResize);window.addEventListener('disco:appearance',resize);
     return()=>{observer.disconnect();window.removeEventListener('resize',windowResize);window.removeEventListener('disco:appearance',resize);cancelAnimationFrame(resizedFrame);if(frame.current!=null){cancelAnimationFrame(frame.current);frame.current=null;}};
-  },[data,valid,pending,authorityKey,amplitude,identity,owner,statistics]);
+  },[data,valid,pending,authorityKey,amplitude,identity,owner,statistics,displayGeometry]);
   function local(event){const rect=overlay.current.getBoundingClientRect(),g=geometry.current;return g?{rawX:event.clientX-rect.left-g.left,rawY:event.clientY-rect.top-g.top,x:Math.max(0,Math.min(g.w,event.clientX-rect.left-g.left)),y:Math.max(0,Math.min(g.h,event.clientY-rect.top-g.top)),inside:event.clientX-rect.left>=g.left&&event.clientX-rect.left<=g.left+g.w&&event.clientY-rect.top>=g.top&&event.clientY-rect.top<=g.top+g.h}:null;}
   function panTo(gesture,at){
     if(gesture.identity!==identity||gesture.owner!==owner)return;
@@ -203,14 +233,14 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
     const at=local(event);if(!at||!dataRef.current)return;
     if(drag.current){drag.current.current=at;if(drag.current.kind==='pan'){panTo(drag.current,at);return;}}
     if(mode==='pan')return;
-    if(at.inside||drag.current)cursor.current=sampleAtPixel(at.x,geometry.current.w,dataRef.current.count);scheduleOverlay();
+    if(at.inside||drag.current)cursor.current=sampleAtPixel(at.x,geometry.current.w,dataRef.current.count);readCursor();scheduleOverlay();
   }
   function pointerDown(event){
     const at=local(event);if(event.button!==0||pending||!dataRef.current||!at?.inside||mode==='pan'&&!canPan)return;
     surface.current.focus({preventScroll:true});event.currentTarget.setPointerCapture(event.pointerId);
     const g=geometry.current;
     drag.current={kind:mode,origin:at,current:at,identity,owner,window:{...bounded},amplitude:{min:g.extent.min,max:g.extent.max},width:g.w,height:g.h};
-    cursor.current=mode==='pan'?null:sampleAtPixel(at.x,g.w,data.count);scheduleOverlay();
+    cursor.current=mode==='pan'?null:sampleAtPixel(at.x,g.w,data.count);readCursor(true);scheduleOverlay();
   }
   function pointerUp(event){
     if(!drag.current)return;const current=drag.current;drag.current=null;
@@ -248,7 +278,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
     if(['ArrowLeft','ArrowRight'].includes(event.key)){
       event.preventDefault();const direction=event.key==='ArrowLeft'?-1:1;
       if(event.shiftKey&&canPan)moveWindow({...bounded,start:bounded.start+direction*Math.max(1,Math.round(bounded.count/2))});
-      else{cursor.current=Math.max(0,Math.min(data.count-1,(cursor.current??0)+direction));scheduleOverlay();}
+      else{cursor.current=Math.max(0,Math.min(data.count-1,(cursor.current??0)+direction));readCursor(true);scheduleOverlay();}
     }else if(['+','=','-','Home'].includes(event.key)){event.preventDefault();if(event.key==='Home')resetWhole();else if(event.key!=='-'||!whole)zoom(event.key==='-'?2:.5);}
   }
   function submitWindow(event){
@@ -259,7 +289,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   return <section className="trace-viewer trace-section" aria-label="Recorded response viewer">
     <header className="tv-controls" aria-label="Response and viewing controls">
       <div className="tv-response-line">
-        <h3 title="All recorded samples are retained. The display follows screen resolution; cursor values remain exact."><Activity size={14}/> Response</h3>
+        <h3 title={displayGeometry?'Whole-epoch display follows screen resolution; exact cursor and zoom samples load on demand.':'All recorded samples are retained. The display follows screen resolution; cursor values remain exact.'}><Activity size={14}/> Response</h3>
         <div className="tv-streams" aria-label="Response stream">
           {streams.length===1?<span>{stream.device} · {stream.units||'unit not recorded'}</span>:streams.map((item,index)=><button key={item.uuid} aria-pressed={stream?.uuid===item.uuid} aria-label={`Response ${index+1}: ${item.device} · ${item.units||'unit not recorded'}`} title={item.uuid} onClick={()=>{setSelectedStream(item.uuid);setEntryError('');drag.current=null;cursor.current=null;}}>{item.device}{streams.filter(other=>other.device===item.device).length>1?` ${index+1}`:''} · {item.units||'unit not recorded'}</button>)}
         </div>
@@ -287,7 +317,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
       {currentError&&<div className="tv-status tv-error" role="alert">{currentError}<button onClick={resource.reload}>Retry trace</button></div>}
       {invalidResponse&&<div className="tv-status tv-error" role="alert">Trace identity, sample rate, units or window does not match the request. No plot is shown.<button onClick={resource.reload}>Retry trace</button></div>}
     </div>
-    <div className="tv-readout"><output aria-live="off" aria-label="Recorded sample readout" aria-describedby={cursorHelp}><span className="tv-measure"><small>Sample</small><span className="tv-value" ref={sampleReadout} tabIndex={0} aria-label="Recorded sample index">—</span></span><span className="tv-measure"><small>Time</small><span className="tv-value" ref={timeReadout} tabIndex={0} aria-label="Time from stream start in seconds">—</span></span><span className="tv-measure"><small>Response</small><span className="tv-value" ref={responseReadout} tabIndex={0} aria-label="Recorded response and scientific units">—</span></span></output><label>Sample cursor<input ref={cursorInput} type="number" step="1" min={bounded.start} max={bounded.start+bounded.count-1} disabled={!valid||pending} aria-label="Exact sample index for cursor" onChange={event=>{const sample=Number(event.target.value);if(event.target.value!==''&&Number.isInteger(sample)&&sample>=bounded.start&&sample<bounded.start+bounded.count){cursor.current=sample-bounded.start;scheduleOverlay();}}}/></label></div>
+    <div className="tv-readout"><output aria-live="off" aria-label="Recorded sample readout" aria-describedby={cursorHelp}><span className="tv-measure"><small>Sample</small><span className="tv-value" ref={sampleReadout} tabIndex={0} aria-label="Recorded sample index">—</span></span><span className="tv-measure"><small>Time</small><span className="tv-value" ref={timeReadout} tabIndex={0} aria-label="Time from stream start in seconds">—</span></span><span className="tv-measure"><small>Response</small><span className="tv-value" ref={responseReadout} tabIndex={0} aria-label="Recorded response and scientific units">—</span></span></output><label>Sample cursor<input ref={cursorInput} type="number" step="1" min={bounded.start} max={bounded.start+bounded.count-1} disabled={!valid||pending} aria-label="Exact sample index for cursor" onChange={event=>{const sample=Number(event.target.value);if(event.target.value!==''&&Number.isInteger(sample)&&sample>=bounded.start&&sample<bounded.start+bounded.count){cursor.current=sample-bounded.start;readCursor(true);scheduleOverlay();}}}/></label></div>
     <div className="tv-footer"><div className="tv-range" tabIndex={0} aria-label="Available trace window" title={stream?`Samples ${number(bounded.start)}–${number(bounded.start+bounded.count-1)} · zero-based, inclusive`:undefined}><span>{range?`${formatTick(range.first,1/data.sample_rate)}–${formatTick(range.last,1/data.sample_rate)} s`:'—'}</span><small>{stream?`${number(bounded.count)} / ${number(total)} samples`:'—'}</small>{stream&&<span aria-label="Selected sample bounds">Start {number(bounded.start)} · Stop {number(bounded.start+bounded.count-1)} (inclusive)</span>}{amplitude&&<span aria-label="Selected response bounds">{formatTick(amplitude.min,amplitude.max-amplitude.min)}–{formatTick(amplitude.max,amplitude.max-amplitude.min)} {data?.units||stream?.units||''}</span>}</div><span className="tv-shortcuts">← → cursor · Shift ← → pan · + / − zoom · Home whole</span></div>
     <p id={cursorHelp} className="tv-cursor-help">Drag a rectangle to zoom. Move over the plot or use the sample cursor to read an exact recorded value.</p>
     <div className="tv-gap-notice" role="status" tabIndex={gapCount>0?0:undefined}>{gapCount>0?`${number(gapCount)} missing or non-finite samples appear as gaps; they are not plotted as zero.`:''}</div>

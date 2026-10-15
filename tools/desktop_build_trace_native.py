@@ -34,7 +34,7 @@ def build_trace_native(output: Path, root: Path = ROOT) -> dict:
     compiler = subprocess.check_output(['/usr/bin/xcrun', '--find', 'clang'], text=True).strip()
     sdk = subprocess.check_output(['/usr/bin/xcrun', '--sdk', 'macosx', '--show-sdk-path'], text=True).strip()
     version = subprocess.check_output([compiler, '--version'], text=True).strip()
-    options = ['-O3', '-std=c11', '-Wall', '-Wextra', '-Werror', '-dynamiclib',
+    options = ['-O3', '-fno-fast-math', '-ffp-contract=off', '-std=c11', '-Wall', '-Wextra', '-Werror', '-dynamiclib',
                '-arch', 'arm64', '-isysroot', sdk, '-mmacosx-version-min=14.0',
                '-Wl,-install_name,@rpath/' + LIBRARY, '-pthread']
     with tempfile.TemporaryDirectory(prefix='trace-native-', dir=output) as temporary:
@@ -45,11 +45,14 @@ def build_trace_native(output: Path, root: Path = ROOT) -> dict:
         library = ctypes.CDLL(str(built))
         library.disco_trace_inflate_abi.argtypes = []
         library.disco_trace_inflate_abi.restype = ctypes.c_uint
-        if library.disco_trace_inflate_abi() != 3:
+        if library.disco_trace_inflate_abi() != 4:
             raise ValueError('Unexpected native trace inflater ABI')
+        # ABI alone must not accept an incomplete helper build.
+        for symbol in ('disco_trace_extract_v1', 'disco_trace_m4_v1'):
+            getattr(library, symbol)
         built.replace(target)
     receipt = {
-        'abi': 3, 'library': LIBRARY,
+        'abi': 4, 'library': LIBRARY,
         'source': 'desktop/native/trace_inflate.c',
         'source_sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
         'sha256': hashlib.sha256(target.read_bytes()).hexdigest(),

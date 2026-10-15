@@ -264,20 +264,23 @@ def _response_window_reader(path, signature, row, stream, *, native_range=None):
         if native_range is not None:
             if len(data) != stream['sample_count']:
                 raise ValueError('Trace sample count changed')
-            from workspace_trace_native import read_native_samples
-            prepared = read_native_samples(data, signature, *native_range)
+            from workspace_trace_native import read_native_values
+            prepared = read_native_values(data, signature, *native_range, stream['units'])
 
         def read(start, count, *, array_values=False):
             if len(data) != stream['sample_count']:
                 raise ValueError('Trace sample count changed')
             begin, end = bounded_window(start, count, len(data))
-            samples = (data[begin:end] if prepared is None else
-                       prepared[begin - native_range[0]:end - native_range[0]])
-            if not _trace_units_match(samples['units'], stream['units']):
-                raise ValueError('Trace sample units are inconsistent')
-            values = samples['quantity'].astype(float)
-            if not np.isfinite(values).all():
-                raise ValueError('Trace contains nonfinite samples; explicit handling required')
+            if prepared is not None and native_range[0] <= begin <= end <= native_range[1]:
+                # Detached, unit-checked finite f64 storage; slices never borrow H5 buffers.
+                values = prepared[begin - native_range[0]:end - native_range[0]]
+            else:
+                samples = data[begin:end]
+                if not _trace_units_match(samples['units'], stream['units']):
+                    raise ValueError('Trace sample units are inconsistent')
+                values = samples['quantity'].astype(float)
+                if not np.isfinite(values).all():
+                    raise ValueError('Trace contains nonfinite samples; explicit handling required')
             _check_trace_signature(path, signature)
             return {'epoch_uuid': row['epoch_uuid'], 'stream_uuid': stream['uuid'],
                     'values': values if array_values else values.tolist(),

@@ -224,5 +224,63 @@ class TraceViewTests(unittest.TestCase):
                 query_string=dict(stream_uuid=self.stream, selection_token='mutation-authority'))
         self.assertGreaterEqual(invalid.status_code, 400)
 
+    def test_display_geometry_is_separate_exact_and_independent_of_current_locks(self):
+        from workspace_trace_geometry import CONTENT_TYPE, ALGORITHM
+        from test_trace_geometry import decode, reference_indices
+        app = Flask(__name__)
+        app.extensions['curation_store'] = None
+        app.register_error_handler(ValueError, lambda error: ({'error': str(error)}, 400))
+        lock = threading.Lock()
+        def forbidden(*a, **kw): raise AssertionError('Geometry touched current SQL/context/annotations')
+        register_workbench_routes(app, self.service, None, None, forbidden, forbidden, lock, forbidden)
+        views = app.extensions['trace_views']; views.policy = lambda: True
+        public = views.prepare(self.context)
+        app.extensions['protocol_workbench'].context = forbidden
+        path = f"/api/trace-views/{public['token']}/epochs/{self.epoch}/display"
+        query = dict(stream_uuid=self.stream, count=200, physical_width=7.5, algorithm=ALGORITHM)
+        with lock, patch('disco.decisions.author_preferences.selected_author', return_value={'profile_uuid': 'owner'}):
+            result = []
+            def read():
+                with app.test_client() as client:
+                    result.append(client.get(path, query_string=query, headers={'Accept': CONTENT_TYPE}))
+            thread = threading.Thread(target=read, daemon=True); thread.start(); thread.join(3)
+            self.assertFalse(thread.is_alive(), 'Geometry blocked behind catalog/tag work')
+        self.assertEqual(result[0].status_code, 200, result[0].get_json())
+        header, indices, values = decode(result[0].data)
+        raw = np.arange(200)/7
+        self.assertEqual(indices.tolist(), reference_indices(raw, 7.5))
+        self.assertEqual(values.tobytes(), raw[indices].tobytes())
+        self.assertEqual(header['read_context'], public)
+        with app.test_client() as client, patch('disco.decisions.author_preferences.selected_author', return_value={'profile_uuid': 'owner'}):
+            for options in ({}, {'Accept': 'application/json'}, {'Accept': CONTENT_TYPE, 'X-Disco-Trace-Priority': 'background'}):
+                self.assertEqual(client.get(path, query_string=query, headers=options).status_code, 400)
+            self.assertEqual(client.get(path, query_string=dict(query, count=199), headers={'Accept':CONTENT_TYPE}).status_code, 400)
+            self.assertEqual(client.get(path, query_string=dict(query, selection_token='mutation'), headers={'Accept':CONTENT_TYPE}).status_code, 400)
+
+    def test_display_geometry_closing_source_check_and_typed_unavailable(self):
+        import workspace_trace_geometry
+        app = Flask(__name__); app.extensions['curation_store'] = None
+        app.register_error_handler(ValueError, lambda error: ({'error': str(error)}, 400))
+        register_workbench_routes(app, self.service, None, None, lambda *a: None, lambda *a: None,
+                                  threading.Lock(), lambda *a: None)
+        views = app.extensions['trace_views']; views.policy = lambda: True
+        public = views.prepare(self.context)
+        path = f"/api/trace-views/{public['token']}/epochs/{self.epoch}/display"
+        query = dict(stream_uuid=self.stream, count=200, physical_width=7.5, algorithm=workspace_trace_geometry.ALGORITHM)
+        headers={'Accept':workspace_trace_geometry.CONTENT_TYPE}
+        original = workspace_trace_geometry.prepare_display_geometry
+        def changed(*args):
+            value=original(*args)
+            os.utime(self.path, ns=(self.path.stat().st_atime_ns, self.path.stat().st_mtime_ns+1000000))
+            return value
+        with app.test_client() as client, patch('disco.decisions.author_preferences.selected_author', return_value={'profile_uuid':'owner'}):
+            unavailable=client.get(path, query_string=dict(query, physical_width=100), headers=headers)
+            self.assertEqual(unavailable.status_code, 409)
+            self.assertEqual(unavailable.get_json()['code'], 'trace_geometry_unavailable')
+            with patch('workspace_trace_geometry.prepare_display_geometry', side_effect=changed):
+                result=client.get(path, query_string=query, headers=headers)
+            self.assertGreaterEqual(result.status_code, 400)
+            self.assertNotEqual(result.get_json().get('code'), 'trace_geometry_unavailable')
+
 
 if __name__ == '__main__': unittest.main()

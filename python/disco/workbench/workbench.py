@@ -1176,6 +1176,46 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
     def trace_view_conflict(error):
         return jsonify(error=str(error), code='trace_view_conflict'), 409
 
+    @app.get('/api/trace-views/<token>/epochs/<epoch>/display')
+    def prepared_trace_display(token, epoch):
+        from workspace_trace_geometry import (ALGORITHM, CONTENT_TYPE, GeometryUnavailable,
+            MAX_SAMPLES, prepare_display_geometry, encode_display_geometry)
+        from workspace_trace_binary import begin_trace_timing, mark_trace_timing, read_trace_batch
+        if (set(request.args) != {'stream_uuid', 'count', 'physical_width', 'algorithm'} or
+                any(len(request.args.getlist(key)) != 1 for key in request.args) or
+                request.args['algorithm'] != ALGORITHM or
+                request.headers.get('X-Disco-Trace-Priority') == 'background' or
+                not any(media == CONTENT_TYPE and quality > 0 for media, quality in request.accept_mimetypes)):
+            raise ValueError('Display geometry requires explicit foreground whole-view options')
+        count, width = int(request.args['count']), float(request.args['physical_width'])
+        if not 0 < count <= MAX_SAMPLES or not 0 < width <= 16384:
+            raise ValueError('Display geometry window exceeds its bound')
+        timing = begin_trace_timing()
+        owner = display_actor()
+        witness = trace_views.capture(token, epoch, owner)
+        mark_trace_timing(timing, 'open')
+        batch = read_trace_batch(service, epoch, request.args['stream_uuid'], 0,
+            min(count, 100000), (count + 99999) // 100000, binary=True, timing=timing)
+        if batch.get('total_samples') != count:
+            raise ValueError('Display geometry sample count changed')
+        try:
+            geometry = prepare_display_geometry(batch, width)
+        except GeometryUnavailable as error:
+            # Only this explicit non-reduction case permits the client to use
+            # its ordinary exact prepared read. Identity failures never do.
+            return jsonify(error=str(error), code='trace_geometry_unavailable'), 409
+        mark_trace_timing(timing, 'read')
+        geometry = trace_views.finish(token, epoch, owner, witness, geometry)
+        mark_trace_timing(timing, 'close')
+        response = app.response_class(encode_display_geometry(geometry, dumps=app.json.dumps), mimetype=CONTENT_TYPE)
+        mark_trace_timing(timing, 'encode')
+        if timing is not None:
+            response.headers['Server-Timing'] = ', '.join(
+                f'trace_{stage};dur={timing[stage]:.3f}' for stage in
+                ('open', 'capture', 'samples', 'validate', 'read', 'close', 'encode') if stage in timing)
+        response.vary.add('Accept')
+        return response
+
     @app.get('/api/trace-views/<token>/epochs/<epoch>/trace')
     def prepared_trace(token, epoch):
         # Display-only historical membership: no SQL, DB lock, tag/draft reads,
