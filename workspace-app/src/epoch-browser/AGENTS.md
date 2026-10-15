@@ -187,3 +187,14 @@ refresh retention and cannot survive owner, navigation scope or capability
 replacement. Anchor/offset reads and all curation/selection readiness gates remain
 unchanged. `inspectionMetadata.test.js` holds the anchor while the real shared
 TraceViewer starts geometry, and rejects stale/replaced/foreign offers.
+
+
+For admitted prepared display outside tree design and SelectionOverview,
+EpochViewer keeps one empty Trace shell in the existing 620px placeholder. It is
+hidden, inert, excluded from accessibility and clipped without changing scroll
+extents. The hidden child bounds its absolute accessibility helper as well.
+Focus reveals the same canvas with normal heading/navigation and separately
+guarded curation. It does not preload samples or borrow the empty canvas width:
+the existing trace owner measures the focused committed canvas before every read.
+Clearing focus retires reads and resets shell interactions; scientific context,
+curation scope, legacy views and SelectionOverview precedence remain unchanged.

@@ -1932,7 +1932,8 @@
           "workspace-app/src/traces/traceDisplayGeometry.test.js",
           "workspace-app/src/traces/exactTraceCursor.test.js",
           "workspace-app/src/traces/traceGeometryLifecycle.test.js",
-          "workspace-app/src/traces/preparedTraceGeometryCommit.test.js"
+          "workspace-app/src/traces/preparedTraceGeometryCommit.test.js",
+          "workspace-app/src/traces/preparedEmptyShell.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
@@ -3379,7 +3380,8 @@
           "workspace-app/src/epoch-browser/inspectionMetadata.test.js",
           "workspace-app/src/traces/traceDisplayGeometry.test.js",
           "workspace-app/src/traces/exactTraceCursor.test.js",
-          "workspace-app/src/traces/traceGeometryLifecycle.test.js"
+          "workspace-app/src/traces/traceGeometryLifecycle.test.js",
+          "workspace-app/src/traces/preparedEmptyShell.test.js"
         ]
       }
     },
@@ -4017,6 +4019,10 @@
           },
           {
             "from": "workspace-app/src/traces/preparedTraceGeometryCommit.test.js",
+            "to": "workspace-app/src/traces/traceStatistics.js"
+          },
+          {
+            "from": "workspace-app/src/traces/preparedEmptyShell.test.js",
             "to": "workspace-app/src/traces/traceStatistics.js"
           }
         ],

@@ -333,3 +333,27 @@ shutdown cleanup own the child; missing helpers or probe failures retain the
 ordinary optional-helper path. Actual reads independently load and validate
 the helper. `test_trace_native_initialization` checks ordering, one-shot
 startup, isolation, deadline, and normal/error cleanup.
+
+
+### Empty prepared display presentation
+
+The prepared, non-design EpochViewer can construct an empty hidden Trace shell
+while retaining the existing blank 620px placeholder. It performs no sample I/O
+and retains no source/map/sample cache. The first focused layout still measures
+the actual current canvas and dispatches through usePreparedTraceGeometry.
+The shell is inert, excluded from accessibility and clipped; its hidden child
+bounds the absolute cursor-help element so it cannot enlarge scroll extents.
+Focused heading, navigation, dimensions and curation scopes stay unchanged.
+SelectionOverview and legacy/detail-design routing keep their existing priority.
+
+Only this shell opts into Trace's resetInteractionOnEmpty presentation policy.
+A committed empty state releases held pointer captures and resets Zoom before
+paint, preserving the previous unmount semantics. Global Whole/Sample, window
+and response preferences remain unchanged; generic Trace callers default out.
+Existing source/owner/capability fences still abort and reject stale reads.
+
+The external 24-case responsive/theme/DPR matrix checks empty and focused views,
+including exact geometry/cursor oracles and accessibility/keyboard behavior.
+It is synthetic fixture evidence, not native recording or compositor evidence.
+Performance observations and retained failed comparisons are documented in the
+trace-read-spikes follow-up; setup work moves earlier rather than disappearing.

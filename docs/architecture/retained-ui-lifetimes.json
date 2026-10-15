@@ -879,14 +879,15 @@
       ]
     },
     "src/epoch-browser/ui/EpochViewer.jsx": {
-      "fingerprint": "510b538e84a374bea7e3c33cde5094f4659f03bc3e24c8be416e49601be4544d",
+      "fingerprint": "77fa9b91c579cb7b9bc81f3b0a1a68328d948cf1f1bf52810bcff0eee0cfcc6c",
       "sites": [],
       "lifetime": "display-projection",
-      "reason": "Separately admitted trace row/context reaches the shared viewer without granting curation from display state.",
+      "reason": "Separately admitted trace row/context reaches the shared viewer without granting curation from display state. The prepared-only empty shell retains inert, hidden presentation with no sample demand; current focus supplies the exact epoch/context, curation remains independently scoped, and SelectionOverview precedence is preserved.",
       "tests": [
         "src/epoch-browser/inspectionMetadata.test.js",
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/traces/preparedEmptyShell.test.js"
       ]
     },
     "src/epoch-browser/ui/InspectionCellTree.jsx": {
@@ -3120,8 +3121,13 @@
       ]
     },
     "src/traces/ui/TraceViewer.jsx": {
-      "fingerprint": "dfac034f77459bac87470f1f73713ac36869d2afcb02202423e8cf144b77b501",
+      "fingerprint": "beacc04db228a68d419221d1cb79ae3de349a6ba6d4c86480a52655d21bddb8d",
       "sites": [
+        {
+          "owner": "TraceViewer",
+          "kind": "useLayoutEffect",
+          "fingerprint": "cfdfc59ef2de740c57e944915b18c227c7f5b35ad855c7d60907d180fc05ee33"
+        },
         {
           "owner": "TraceViewer",
           "kind": "useEffect",
@@ -3159,7 +3165,7 @@
         }
       ],
       "lifetime": "exact-presentation-and-read-lifetime",
-      "reason": "Whole geometry uses one committed measurement/request owner; raw windows and exact cursor tiles remain separate. Source/context/width and live signal fences reject stale display; first mount dispatch precedes following sibling layout and no raw prefetch occurs.",
+      "reason": "Whole geometry uses one committed measurement/request owner; raw windows and exact cursor tiles remain separate. Source/context/width and live signal fences reject stale display; first mount dispatch precedes following sibling layout and no raw prefetch occurs. Only the prepared empty-shell opt-in resets interaction to Zoom and releases captured pointers during the empty committed layout; global Sample/window preference and generic Trace null behavior remain unchanged.",
       "tests": [
         "src/retainedControls.test.js",
         "src/traces/responsePreferenceRetention.test.js",
@@ -3167,7 +3173,8 @@
         "src/traces/traceExtentLifecycle.test.js",
         "src/traces/traceGeometryLifecycle.test.js",
         "src/traces/tracePaintLifecycle.test.js",
-        "src/traces/preparedTraceGeometryCommit.test.js"
+        "src/traces/preparedTraceGeometryCommit.test.js",
+        "src/traces/preparedEmptyShell.test.js"
       ]
     },
     "src/traces/ui/traceGeometry.js": {

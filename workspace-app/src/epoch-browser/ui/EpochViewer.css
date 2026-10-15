@@ -17,3 +17,9 @@
 .tree-cell-selection>button{margin-left:auto;padding:3px 5px;font-size:10px}
 .tree-cell-selection>div{display:flex;flex-wrap:wrap;gap:4px;width:100%}
 .tree-cell-selection>div>span{padding:3px 5px;border:1px solid var(--border);border-radius:4px;color:var(--ink-secondary)}
+
+/* Empty prepared shell occupies exactly the existing blank 620px footprint.
+   It remains laid out but cannot paint, receive focus or grow the scroll range. */
+.prepared-trace-detail>.prepared-trace-empty{height:620px;overflow:hidden;visibility:hidden}
+
+.prepared-trace-detail>.prepared-trace-empty>.trace-viewer{position:relative;max-height:620px;margin-bottom:0}

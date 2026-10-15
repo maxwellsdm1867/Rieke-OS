@@ -62,13 +62,13 @@ function paintTrace(canvas,data,amplitude,statistics,displayGeometry=null){
 }
 
 // Keep the canvas mounted; retain the page preference while changing epoch identity.
-export default function Trace({epoch,revision=0,readContext=null,viewPreference,onViewPreference}){
+export default function Trace({epoch,revision=0,readContext=null,viewPreference,onViewPreference,resetInteractionOnEmpty=false}){
   const owner=useWorkspaceRequestScope();
   const [preference,setPreference]=useTraceViewPreference(viewPreference,onViewPreference);
-  return <TraceViewer viewPreference={preference} onViewPreference={setPreference} epoch={epoch} revision={revision} readContext={readContext??(owner?epoch?.trace_read_context??owner.traceReadContext:null)??null}/>;
+  return <TraceViewer resetInteractionOnEmpty={resetInteractionOnEmpty} viewPreference={preference} onViewPreference={setPreference} epoch={epoch} revision={revision} readContext={readContext??(owner?epoch?.trace_read_context??owner.traceReadContext:null)??null}/>;
 }
 Trace.supportsFrozenReadContext=true;
-function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference}){
+function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference,resetInteractionOnEmpty=false}){
   const owner=useWorkspaceRequestScope();
   const preference=viewPreference;
   const setPreference=onViewPreference;
@@ -90,6 +90,12 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   const bounded=whole?{start:0,count:stream?.sample_count||0}:clampWindow(preference.start,preference.count,stream?.sample_count,stream?.sample_count);
   const [mode,setMode]=useState('zoom'),[entryStart,setEntryStart]=useState('0'),[entryCount,setEntryCount]=useState(String(bounded.count));
   const [entryError,setEntryError]=useState('');
+  const capturedPointers=useRef(new Set());
+  useLayoutEffect(()=>{if(resetInteractionOnEmpty&&!epoch){
+    setMode('zoom');
+    for(const pointerId of capturedPointers.current)if(overlay.current?.hasPointerCapture(pointerId))overlay.current.releasePointerCapture(pointerId);
+    capturedPointers.current.clear();
+  }},[resetInteractionOnEmpty,epoch]);
   useEffect(()=>{if(!sameEpoch){setSelection({epoch:epoch?.epoch_uuid,stream:preferredStream});setEntryError('');}},[epoch?.epoch_uuid,sameEpoch,preferredStream]);
   const contextKey=traceCacheRevision(revision,readContext);
   const identity=JSON.stringify([contextKey,epoch?.epoch_uuid,epoch?.source_sha256,stream?.uuid,stream?.sample_count,stream?.sample_rate,stream?.units]);
@@ -232,12 +238,13 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   }
   function pointerDown(event){
     const at=local(event);if(event.button!==0||pending||!dataRef.current||!at?.inside||mode==='pan'&&!canPan)return;
-    surface.current.focus({preventScroll:true});event.currentTarget.setPointerCapture(event.pointerId);
+    surface.current.focus({preventScroll:true});event.currentTarget.setPointerCapture(event.pointerId);capturedPointers.current.add(event.pointerId);
     const g=geometry.current;
     drag.current={kind:mode,origin:at,current:at,identity,owner,window:{...bounded},amplitude:{min:g.extent.min,max:g.extent.max},width:g.w,height:g.h};
     cursor.current=mode==='pan'?null:sampleAtPixel(at.x,g.w,data.count);readCursor(true);scheduleOverlay();
   }
   function pointerUp(event){
+    capturedPointers.current.delete(event.pointerId);
     if(!drag.current)return;const current=drag.current;drag.current=null;
     if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
     const g=geometry.current,from=current.origin,to=local(event)||current.current;
@@ -304,7 +311,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
       {entryError&&<p className="tv-warning" role="alert">{entryError}</p>}
     </header>
     <div ref={surface} data-epoch-arrows="ignore" className={`tv-plot tv-${mode}`} tabIndex={0} role="group" aria-label="Trace plot. Left/Right move the sample cursor. Shift and Left/Right pan. Plus and minus zoom. Home resets." onKeyDown={keyDown}>
-      <canvas ref={base} className="tv-base" aria-hidden="true"/><canvas ref={overlay} className="tv-overlay" aria-hidden="true" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={()=>{drag.current=null;scheduleOverlay();}}/>
+      <canvas ref={base} className="tv-base" aria-hidden="true"/><canvas ref={overlay} className="tv-overlay" aria-hidden="true" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={event=>{capturedPointers.current.delete(event.pointerId);drag.current=null;scheduleOverlay();}} onLostPointerCapture={event=>capturedPointers.current.delete(event.pointerId)}/>
       {!stream&&<div className="tv-status">This epoch has no indexed response stream.</div>}
       {valid&&gapCount===data.count&&<div className="tv-status" role="status">No finite samples in this window.</div>}
       {pending&&canRetainPaint&&<span className="tv-previous-trace">Previous trace · inactive</span>}

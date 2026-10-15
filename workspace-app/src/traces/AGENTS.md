@@ -277,3 +277,16 @@ newer ones. Raw sample views use their existing local exact interval directly.
 `traceGeometryLifecycle.test.js` cover framing/negotiation, owner and cursor races,
 no hidden whole reads, raw fallback, actual painting, resize and DPR-only changes.
 The external native/JS/RGBA oracle remains separate performance/fidelity evidence.
+
+
+Prepared EpochViewer can retain an empty, hidden and inert Trace presentation
+shell before focus. A null epoch grants no read; the existing committed geometry
+owner still measures the current canvas before dispatch after focus. The optional
+`resetInteractionOnEmpty` prop defaults false. Only this shell opts in: committing
+a null epoch releases its captured pointers and resets Zoom during layout,
+preserving the old unmount behavior without changing the global Sample/window
+preference. Other transient trace state retains its existing identity fences.
+Generic Trace callers preserve their previous null-epoch behavior.
+`preparedEmptyShell.test.js` exercises actual Viewer/Trace composition, no empty
+reads, capability arrival, current first-focus width, stale replies, source changes,
+error/retry, cursor-capture release, interaction reset and preference preservation.

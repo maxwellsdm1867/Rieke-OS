@@ -1,7 +1,8 @@
 import {useTraceViewPreference} from '../../traces/traceViewPreference.jsx';
 import ScientificContext from '../../components/ScientificContext.jsx';
 import {useState} from 'react';
-import {Activity,ArrowLeft,Tags,X} from 'lucide-react';
+import {Activity,ArrowLeft,Tags,X,LoaderCircle,AlertTriangle} from 'lucide-react';
+import {useNavigationLoading,useDelayedLoading} from '../../components/NavigationLoading.jsx';
 import './EpochViewer.css';
 import {EpochBrowserToolbar,EpochNavigation} from './EpochBrowserChrome.jsx';
 import EpochBrowserLayout from './EpochBrowserLayout.jsx';
@@ -22,6 +23,28 @@ import AnnotationTags from '../../annotations/ui/AnnotationTags.jsx';
 import useTreeCellSelection from '../../annotations/useTreeCellSelection.js';
 
 // Source adapters provide data and mutations; every viewer assembles its UI here.
+// Retain only the prepared empty presentation shell. The
+// existing trace owner still admits and measures the first focused request.
+function PreparedTraceDetail({resource,epoch,trace,heading,navigation,curation}){
+  const waiting=!!resource.loading||!!resource.error||!!resource.blocked;
+  const empty=!epoch||waiting;
+  const coordinated=useNavigationLoading(resource.loading&&!resource.error);
+  const showLoading=useDelayedLoading(resource.loading&&!coordinated);
+  return <div className="stable-content prepared-trace-detail" aria-busy={!!resource.loading}>
+    <div className={`stable-content-body${empty?' stable-content-placeholder prepared-trace-empty':''}`} inert={empty} aria-hidden={empty?true:undefined}>
+      {!empty&&heading}
+      {!empty&&navigation}
+      <Trace key="prepared-recorded-trace" {...trace} resetInteractionOnEmpty epoch={empty?null:epoch}/>
+      {!empty&&curation}
+    </div>
+    {(resource.error||showLoading)&&<div className={`stable-content-notice ${resource.error?'failed':''}`} role={resource.error?'alert':'status'}>
+      {resource.error?<AlertTriangle size={15}/>:<LoaderCircle size={15}/>}
+      <span>{resource.error||'Loading selected epoch'}</span>
+      {resource.error&&resource.retry&&<button onClick={resource.retry}>Retry</button>}
+    </div>}
+  </div>;
+}
+
 export default function EpochViewer({className='epoch-inspector-mode',ariaLabel='Epoch inspection',onKeyDown,toolbar,toolbarChildren,viewFilters,onViewFilters,filterRevision,filterDisabled=false,hideFilterControl=false,before,layout,designMode=false,builder,columnTree,treePane,resource={},epoch,targets=[],navigation,traceRevision,tracePreference:providedTracePreference,onTracePreference,readContext=null,traceReadContext=undefined,traceEpoch=null,inclusion,detailDisabled=false,onQC,tags,detailExtras,metadata}){
   const [tracePreference,setTracePreference]=useTraceViewPreference(providedTracePreference,onTracePreference);
   const [previewOpen,setPreviewOpen]=useState(true);
@@ -39,7 +62,12 @@ export default function EpochViewer({className='epoch-inspector-mode',ariaLabel=
   const treeTags=<div className="tree-selection-tags" hidden={!tagsOpen}>{cellSelection.cells.length?<><div className="tree-cell-selection" aria-label="Selected cells"><strong>{cellSelection.cells.length} cells selected</strong><button disabled={cellSelection.blocked} onClick={cellSelection.clear}>Clear cell selection</button><div>{cellSelection.cells.map(cell=><span key={cell.cell_uuid}>{cell.label}</span>)}</div></div><AnnotationTags composer={cellSelection.composer} selectedCells={cellSelection.ids} targetScope="selected-cells" revision={cellSelection.revision} disabled={cellSelection.blocked} reconcileReceipt onChange={columnTree?.onAnnotationsChanged}/></>:<StableContent {...resource} data={epoch}>{tags}</StableContent>}</div>;
   const curation=<><div className="curation-bar">{inclusion&&<EpochAnalysisInclusion epoch={epoch} {...inclusion}/>} {!designMode&&!layout.metadataOpen&&(!layout.treeOpen||treePane?.treeMode)&&tags}</div>
 {detailExtras}</>;
-  const detail=<StableContent {...displayResource} data={shownEpoch}>{!readContext&&!designMode&&targets.length?<SelectionOverview count={targets.length}/>:shownEpoch?<>
+  const preparedShell=!designMode&&traceReadContext?.kind==='prepared_display'&&!(!readContext&&targets.length);
+  const detail=preparedShell?<PreparedTraceDetail resource={displayResource} epoch={shownEpoch}
+    trace={{viewPreference:tracePreference,onViewPreference:setTracePreference,revision:traceRevision,readContext:traceReadContext}}
+    heading={shownEpoch&&<EpochDetailHeading epoch={shownEpoch} disabled={detailDisabled||!epoch||resource.loading} onQC={onQC}/>}
+    navigation={navigation&&<EpochNavigation {...navigation}/>}
+    curation={<StableContent {...resource} scope={curationScope} data={epoch}>{curation}</StableContent>}/>:<StableContent {...displayResource} data={shownEpoch}>{!readContext&&!designMode&&targets.length?<SelectionOverview count={targets.length}/>:shownEpoch?<>
     {designMode?<div className="tree-preview-identity"><strong>{datedCellLabel(epoch)}</strong><span>Epoch {epoch.epoch_number??'—'} · {epoch.start_time?.split(/[T ]/)[1]?.slice(0,8)||'Time not recorded'}</span></div>:<EpochDetailHeading epoch={shownEpoch} disabled={detailDisabled||!epoch||resource.loading} onQC={onQC}/>}
     {navigation&&!designMode&&<EpochNavigation {...navigation}/>}
     <Trace viewPreference={tracePreference} onViewPreference={setTracePreference} epoch={traceReadContext===null?null:shownEpoch} revision={traceRevision} readContext={traceReadContext===undefined?readContext:traceReadContext}/>

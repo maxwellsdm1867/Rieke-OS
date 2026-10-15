@@ -136,3 +136,80 @@ only about 0.96 ms on an eight-worker fresh million-sample read. It is held out
 of production because the gain does not justify an additional packaged decoder
 dependency. Its failures, build repairs, corpus and all timing rows remain in
 `zlib-ng-prototype`; no system library or source recording was replaced.
+
+
+## Parallel reduction and empty prepared viewer follow-up
+
+Clean 09a2e58 passed all 104 trace checks, 23 packaging checks (one existing
+parser-source skip), architecture checks, the 17.834-second core suite and both
+required million-epoch comparisons against the pinned and preceding 6b99598
+baselines, without new review flags. Ordinary fresh million-sample observations
+were 56.4/49.4/45.1 ms to stroke, 57.8/54.7/54.3 ms to first RAF and
+67.8/72.2/70.9 ms to second RAF. A separate diagnostic confirmed parallel M4
+reduction at 0.892/1.118/0.927 ms, compared with the earlier serial 3.6 ms.
+
+An additional same-view sequence first displayed a distinct 300k dataset, then
+used Next to a never-before-requested million-sample dataset in the same canvas.
+All six stages passed exact point/index/statistics/Canvas and 20k cursor checks.
+The million-sample stages reached stroke in 36.8/31.5/31.5 ms, first RAF in
+47.9/36.0/39.2 ms, and second RAF in 65.2/52.6/53.8 ms. The reused outer runner
+rejected six rows because it expects three; that failed receipt is retained.
+A separate sequence receipt validates both three-row stages with the unchanged
+validator and checks all six transitions. This does not replace fresh-view data.
+
+The isolated empty-viewer candidate 8315179 reduced dispatch median from 14.3 to
+8.5 ms. Fresh matched baseline/candidate observations, all in milliseconds:
+
+| Source | Dispatch | HTTP | Stroke | First RAF | Second RAF |
+| --- | --- | --- | --- | --- | --- |
+| 09 baseline | 14.3 / 14.9 / 14.3 | 86.4 / 43.5 / 32.4 | 106.2 / 63.9 / 51.6 | 115.2 / 76.3 / 52.5 | 131.8 / 92.9 / 67.4 |
+| 831 candidate | 8.5 / 8.5 / 9.0 | 32.7 / 26.2 / 27.4 | 45.8 / 39.2 / 41.2 | 54.1 / 52.2 / 51.4 | 70.6 / 68.8 / 68.0 |
+
+The HTTP outlier remains in evidence. Backend code did not change between these
+UI sources; do not attribute the entire stroke/frame improvement to the shell.
+The complete under-50-ms target remains unmet. A separate single setup
+observation was 193.4 versus 203.5 ms, descriptive only: UI construction moves
+to setup and has not been shown to improve setup-plus-focus as a whole.
+
+All 48 empty/focused matrix cases matched geometry, scroll extents, accessibility
+and keyboard behavior; all 24 focused plot crops matched pixel-for-pixel and
+passed independent scientific oracles. Strict whole-image comparison retained
+a failure for four pixels outside plots. The same differences reproduced with
+unchanged baseline code; the supplemental proof documents that raster variation,
+without rewriting the strict failure. Early Pan-reset, pointer-capture, hidden
+overflow and Tab-contaminated screenshot failures remain recorded. Final isolated
+9672804 adds tested SelectionOverview precedence after the 8315179 browser runs.
+Integrated-source evidence must be recorded separately.
+
+These screenshots use a synthetic sine/cosine million-sample fixture with
+deliberate extrema, not user recordings. The saved complete project inventory
+contains 8,529 registered responses across five sources, with a maximum of
+600,000 samples. Actual-recording native checks therefore have that separate
+limit; traces are not padded or concatenated to claim real million-sample data.
+
+A Darwin worker-QoS experiment was not integrated: ordinary ABBA medians were
+17.746 versus 17.729 ms, with unchanged process CPU. All first calls, including
+275.919/231.720-ms lazy-load observations, remain recorded. Diagnostic getters
+confirmed requested QoS, not effective priority or core placement. Exact output,
+unchanged caller QoS and forced setter-failure checks passed; no meaningful gain
+or cause for the earlier live read spikes was established.
+
+A bounded diagnostic on unchanged 09a2e58 reproduced a fresh-read spike on the
+eleventh observation: HTTP 114 ms, server trace read 106.784 ms and native
+extraction 93.624 ms. The ten preceding extractions were 14.411–18.266 ms.
+Process CPU during extraction remained comparable (101.380 ms on the spike,
+94.959–98.622 ms before it), while the request thread used only 0.366 ms.
+This localizes that observation to the parallel extraction interval and shows
+reduced aggregate parallel progress; it does not identify scheduler placement,
+worker startup, allocation or a particular worker as the cause. Browser main-thread
+tasks totaled 15.166 ms across the HTTP interval and do not explain the measured
+server extraction delay. All eleven exact-output observations and the earlier
+browser-launch failure remain in `read-spike-09a2e58-diagnostic-v2`. Per-worker
+instrumentation is separate diagnostic work and is not production code.
+
+The integrated empty-shell iteration passed all 1,273 frontend checks and the
+complete architecture guard using the pinned arm64 Python environment. An earlier
+run retained 20 architecture-parser failures: inherited PATH selected Intel
+Anaconda Python 3.9.13, whose Node subprocess requested an unavailable x64
+rolldown binding. Its other 1,253 checks passed; the corrected full run is
+separate evidence. Core and matched million-query checks follow the clean commit.
