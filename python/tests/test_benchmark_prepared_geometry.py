@@ -41,6 +41,13 @@ class PreparedGeometryTests(unittest.TestCase):
         self.assertEqual(result['policy'], {'relative': .25, 'absolute_ms': 5.})
         self.assertEqual(runner.compare(receipt(), receipt())['status'], 'passed')
 
+    def test_ordinary_and_diagnostic_modes_cannot_be_compared(self):
+        ordinary, diagnostic = receipt(), receipt()
+        ordinary['environment']['browser'] = {'timing_mode': 'ordinary'}
+        diagnostic['environment']['browser'] = {'timing_mode': 'diagnostic'}
+        with self.assertRaisesRegex(ValueError, 'Incomparable geometry environment'):
+            runner.compare(ordinary, diagnostic)
+
     def test_incomplete_or_malformed_source_identity_refuses(self):
         for field in ('commit', 'tree', 'dirty', 'files'):
             changed = receipt()

@@ -568,6 +568,13 @@ and requires ABI 4 and actual native admission. Linux's host helper is not a
 macOS release artifact; desktop deployment checks remain unchanged. The HTTP
 server is threaded Werkzeug, not packaged Waitress. Setup warms owned files and
 prepares metadata outside the trace clock. Each sample starts a fresh renderer.
+Ordinary runs, including the three-sample CI lane, send no trace timing header.
+For a separate diagnostic run, `PREPARED_GEOMETRY_TIMING=1` enables
+`X-Disco-Trace-Timing: 1` and records the existing display responses' `Server-Timing`
+headers by exact action and URL. It does not read an extra body or issue an extra
+request. The browser environment records `timing_mode` as `ordinary` or
+`diagnostic`; comparisons reject different modes along with other environment
+mismatches. Preserve diagnostic receipts separately from ordinary latency claims.
 The receipt records post-stroke, first RAF and second RAF observations, not
 compositor presentation. An independent scalar oracle verifies every selected
 source index and f64 point byte, whole-source statistics and actual Canvas path

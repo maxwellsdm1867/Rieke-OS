@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';import path from 'node:path';import {createRequire} from 'node:module';import {pathToFileURL} from 'node:url';
 const [root,serverJson,output,samplesText='3']=process.argv.slice(2),samples=Number(samplesText);if(!root||!serverJson||!output||!Number.isInteger(samples)||samples<1)throw Error('source server-json output samples required');await fs.mkdir(output,{recursive:false});
+const timingEnabled=process.env.PREPARED_GEOMETRY_TIMING==='1';
 const meta=JSON.parse(await fs.readFile(serverJson,'utf8')),workspace=path.join(root,'workspace-app');
 const {fixtureSource,installObserver,installTraceControlReader,installBinaryTraceOracle}=await import(pathToFileURL(path.resolve(import.meta.dirname,'../workflow/fixture-app.mjs')));
 const {readiness,snapshotAction,resetPreparation,assertFinalizedRequests}=await import(pathToFileURL(path.resolve(import.meta.dirname,'../workflow/browser.mjs')));
@@ -7,9 +8,17 @@ const require=createRequire(path.join(root,'desktop/package.json')),{chromium}=r
 let server,browser,context;const results=[];const receipt={status:'running',diagnostic_only:true,native_mysql:false,metadata_epochs:meta.epochs,cohort_epochs:meta.protocol_epochs,trace_samples:1000000,source:root,conditions:meta.diagnostic};
 try{
  const {buildOwnedProduction}=await import('./build.mjs');receipt.production_build=await buildOwnedProduction(root,meta,output);
- browser=await chromium.launch({headless:true,...(process.env.PREPARED_GEOMETRY_BROWSER?{executablePath:process.env.PREPARED_GEOMETRY_BROWSER}:{}),args:['--no-first-run','--no-default-browser-check']});receipt.environment={node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},dpr:1,runtime:'production-react-direct-werkzeug',http_server:meta.http_server,vite_proxy:false};
+ browser=await chromium.launch({headless:true,...(process.env.PREPARED_GEOMETRY_BROWSER?{executablePath:process.env.PREPARED_GEOMETRY_BROWSER}:{}),args:['--no-first-run','--no-default-browser-check']});receipt.environment={node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},dpr:1,runtime:'production-react-direct-werkzeug',http_server:meta.http_server,vite_proxy:false,timing_mode:timingEnabled?'diagnostic':'ordinary'};
  for(let sample=0;sample<samples;sample++){
-  context=await browser.newContext({viewport:{width:1500,height:1100},extraHTTPHeaders:{'X-Disco-Trace-Timing':'1'}});const page=await context.newPage();
+  context=await browser.newContext({viewport:{width:1500,height:1100},...(timingEnabled?{extraHTTPHeaders:{'X-Disco-Trace-Timing':'1'}}:{})});const page=await context.newPage();
+  const displayTimings=new Map();
+  if(timingEnabled)page.on('response',response=>{
+   const url=new URL(response.url()),action=response.request().headers()['x-benchmark-action'];
+   if(url.origin!==`http://127.0.0.1:${meta.port}`||!url.pathname.endsWith('/display')||!action)return;
+   // Diagnostic headers only: observe the existing response without consuming,
+   // cloning or fetching its body. Exact action+URL excludes setup/cursor reads.
+   displayTimings.set(JSON.stringify([action,url.pathname+url.search]),response.headers()['server-timing']??null);
+  });
   await page.addInitScript(installTraceControlReader,{streams:meta.trace_streams});await page.addInitScript(installBinaryTraceOracle);await page.addInitScript(installObserver,{phase:'ordinary',module_timing:false});
   await page.addInitScript(()=>{
    const paths=new WeakMap(),proto=CanvasRenderingContext2D.prototype;
@@ -31,6 +40,14 @@ try{
   const traceRoot='/trace-views/'+display.token;
   const epochNumber=2; // UI labels the ordinal within this incoming cell, not recorded epoch_number.
   const id=`ordinary-${sample}-million`,row=await clickAndObserve(page.getByRole('button',{name:`Inspect ${meta.date_label} · ${meta.incoming_cell_label} epoch ${epochNumber}`,exact:true}),{selector:'.tv-base',trace:meta.million_trace_expected},id);
+  if(timingEnabled)for(const request of row.requests){
+   const key=JSON.stringify([row.action_id,request.url]);
+   if(new URL(request.url,`http://127.0.0.1:${meta.port}`).pathname.endsWith('/display')){
+    const timing=displayTimings.get(key);
+    if(typeof timing!=='string'||!timing.includes('trace_'))throw Error('Missing diagnostic display Server-Timing');
+    request.server_timing=timing;
+   }
+  }
   // Independent wire, source-index, exact point-byte and whole-statistics oracle.
   row.exact=await page.evaluate(({action_id,display,traceRoot,epoch,stream})=>{
    const fail=message=>{throw Error(message);},requests=window.__workflow.completed[action_id].captured_requests;
