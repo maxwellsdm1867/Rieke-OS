@@ -587,7 +587,10 @@ incomplete samples and cleanup failures are failures.
 
 `compare BASELINE/receipt.json CANDIDATE/receipt.json --output comparison.json`
 requires clean unchanged sources, identical harness, dependencies, fixture and
-environment. It applies the existing workflow policy (greater of 25% or 5 ms)
+environment. Locked dependencies use the existing workflow identity: only the
+root application version is omitted so a version bump can be compared with its
+predecessor; transitive versions, integrity fields and Python requirements remain
+exact. Raw lockfile hashes are also retained in each receipt. It applies the existing workflow policy (greater of 25% or 5 ms)
 to median and maximum post-stroke, first-RAF and second-RAF observations. One slow
 sample therefore cannot be hidden by an unchanged median. Fault tests cover a
 single slow sample, first-frame-only regressions and missing foreground evidence.
@@ -610,7 +613,12 @@ removed, verifies no caller/background promotion, and checks exact decoding when
 the priority request fails. Candidate overrides use their own immutable source
 and retain the workflow's diagnostic-only aggregate name. The normal required
 aggregate fails when the macOS job fails, is cancelled or is skipped. Every job
-preserves logs and partial receipts on failure.
+preserves logs and partial receipts on failure. Compact same-run/attempt trace
+receipts and the comparison are uploaded separately for the bounded publication
+checker; the full trace diagnostics remain in their own retained artifact.
+Publication recomputes this same comparison through the geometry runner
+(importable as `tools.benchmark_prepared_geometry`); both package and direct-script
+imports use the same reviewed `benchmark_workflow` policy owner.
 
 Three-sample maxima are a tail-sensitive smoke check, not a universal tail bound.
 The deterministic worker/admission checks protect the specific scheduling fix;

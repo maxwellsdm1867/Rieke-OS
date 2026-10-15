@@ -3416,7 +3416,8 @@
             "subprocess",
             "sys",
             "time",
-            "benchmark_workflow"
+            "benchmark_workflow",
+            "tools.benchmark_workflow"
           ]
         }
       ],

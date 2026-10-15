@@ -295,6 +295,14 @@ class WorkflowWiringTests(unittest.TestCase):
         upload = next(step for step in job['steps'] if step.get('uses') == 'actions/upload-artifact@v4')
         self.assertEqual(upload['if'], 'always()')
         self.assertEqual(upload['with']['if-no-files-found'], 'error')
+        proof = next(step for step in job['steps']
+                     if step.get('name') == 'Preserve compact publication proof')
+        self.assertEqual(proof['if'], 'always()')
+        self.assertEqual(proof['with']['name'], 'trace-macos-proof-${{ github.run_id }}-${{ github.run_attempt }}')
+        self.assertEqual(proof['with']['if-no-files-found'], 'error')
+        self.assertEqual(len(proof['with']['path'].splitlines()), 3)
+        self.assertNotIn('node_modules', proof['with']['path'])
+        self.assertIn('comparison.json', proof['with']['path'])
 
     def test_ci_dependency_symlinks_are_ignored_without_hiding_source_edits(self):
         bind = next(step['run'] for step in self.jobs['trace-macos']['steps']

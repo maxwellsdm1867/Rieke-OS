@@ -1,6 +1,8 @@
 """Receipt refusal and relative timing policy for the canonical geometry lane."""
 import copy
 import importlib.util
+import json
+import tempfile
 from pathlib import Path
 import sys
 import unittest
@@ -21,6 +23,30 @@ def receipt():
 
 
 class PreparedGeometryTests(unittest.TestCase):
+    def test_release_version_only_changes_preserve_locked_dependency_comparability(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for package in ('workspace-app', 'desktop'):
+                (root / package).mkdir()
+                (root / package / 'package-lock.json').write_text(json.dumps({
+                    'version': '0.1.14', 'lockfileVersion': 3,
+                    'packages': {'': {'version': '0.1.14'}, 'node_modules/example': {'version': '1.2.3'}}}))
+            (root / 'benchmarks').mkdir()
+            (root / 'benchmarks/requirements-py311.txt').write_text('numpy==2.2.6\n')
+            before = runner.dependency_fingerprints(root)
+            for package in ('workspace-app', 'desktop'):
+                path = root / package / 'package-lock.json'
+                lock = json.loads(path.read_text())
+                lock['version'] = lock['packages']['']['version'] = '0.1.15'
+                path.write_text(json.dumps(lock))
+            self.assertEqual(before, runner.dependency_fingerprints(root))
+            lock['packages']['node_modules/example']['version'] = '1.2.4'
+            path.write_text(json.dumps(lock))
+            self.assertNotEqual(before, runner.dependency_fingerprints(root))
+            (root / 'benchmarks/requirements-py311.txt').write_text('numpy==2.3.0\n')
+            self.assertNotEqual(before['benchmarks/requirements-py311.txt'],
+                                runner.dependency_fingerprints(root)['benchmarks/requirements-py311.txt'])
+
     def test_missing_failed_dirty_changed_or_unclean_evidence_is_not_comparable(self):
         for mutate in [lambda r: r.update(status='failed'), lambda r: r['samples'].pop(),
                        lambda r: r['samples'][0]['cursor'].clear(), lambda r: r['samples'][0]['exact'].clear(),

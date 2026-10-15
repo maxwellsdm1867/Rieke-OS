@@ -272,6 +272,18 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Preserve compact publication proof
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-macos-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/trace-macos/baseline/receipt.json
+            ${{ runner.temp }}/trace-macos/candidate/receipt.json
+            ${{ runner.temp }}/trace-macos/comparison.json
+          if-no-files-found: error
+          retention-days: 30
+
   everyday-million:
     # Keep the required normal check name. Measuring an explicit other source is
     # diagnostic and must not create a green qualification check on this HEAD.
@@ -301,7 +313,7 @@ jobs:
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with:
-          name: trace-macos-${{ github.run_id }}-${{ github.run_attempt }}
+          name: trace-macos-proof-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/everyday-results/trace-macos
       - name: Require complete families and foreground trace comparisons
         env:

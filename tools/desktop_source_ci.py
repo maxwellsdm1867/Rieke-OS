@@ -84,7 +84,24 @@ def require_source_ci(repository, source, candidate_run_id):
     run = receipts['everyday-million.yml']
     require_jobs(repository, run,
         ['Backend million query regression', 'Browser million workflow regression',
-         'Actual million metadata query regression'])
+         'Actual million metadata query regression', 'macOS foreground trace regression'])
+    # Read the bounded proof, never the full browser/native diagnostic archive.
+    # Recompute the existing policy so a stale green comparison cannot qualify
+    # changed, incomplete or incomparable trace observations.
+    if __package__:
+        from tools.benchmark_prepared_geometry import compare as compare_trace
+    else:
+        from benchmark_prepared_geometry import compare as compare_trace
+    trace_name = f'trace-macos-proof-{run["id"]}-{run["run_attempt"]}'
+    trace_before = artifact(repository, run, trace_name, 'baseline/receipt.json')
+    trace_after = artifact(repository, run, trace_name, 'candidate/receipt.json')
+    trace_comparison = artifact(repository, run, trace_name, 'comparison.json')
+    if (trace_before.get('source_start', {}).get('commit') != '4de896f2e0b4ea966b5a428c3d2314f93fba935f'
+            or trace_after.get('source_start', {}).get('commit') != source):
+        raise ValueError('Foreground trace proof differs from the pinned baseline or publication source')
+    expected_trace = compare_trace(trace_before, trace_after)
+    if expected_trace.get('status') != 'passed' or trace_comparison != expected_trace:
+        raise ValueError('Missing, failed or mismatched foreground trace comparison')
     name = f'everyday-million-{run["id"]}-{run["run_attempt"]}'
     candidate_digests = {}
     for filename in ('candidate/receipt.json', 'workflow-candidate/receipt.json'):

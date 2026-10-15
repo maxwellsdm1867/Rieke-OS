@@ -17,10 +17,13 @@ sys.path.pop(0)
 
 SHA = 'a' * 40
 REPO = 'maxwellsdm1867/Rieke-OS'
+ROOT = Path(__file__).resolve().parents[2]
 
 
 class SourceCITests(unittest.TestCase):
     def setUp(self):
+        module_path = patch.object(sys, 'path', [str(ROOT / 'tools'), str(ROOT), *sys.path])
+        module_path.start(); self.addCleanup(module_path.stop)
         self.runs = {name: dict(id=index, run_attempt=2, path='.github/workflows/' + name,
             status='completed', conclusion='success', head_sha=SHA) for index, name in
             enumerate(['workspace-ci.yml', 'everyday-million.yml', 'desktop-candidate.yml'], 1)}
@@ -32,12 +35,31 @@ class SourceCITests(unittest.TestCase):
         self.benchmark = dict(status='passed', source_start=source, source_end=copy.deepcopy(source))
         self.comparison = dict(status='passed', review_required=[], candidate_commit=SHA,
                                candidate_receipt_sha256='c' * 64)
+        trace_source = dict(commit=SHA, tree='b' * 40, dirty='', files={'app.py': 'd' * 64})
+        self.trace_candidate = dict(status='passed', source_start=trace_source,
+            source_end=copy.deepcopy(trace_source), harness={'fixture': 'same'},
+            environment={'browser': 'same'}, dependencies={'lock': 'same'},
+            fixture='prepared-geometry-v2', payload_sha256='e' * 64,
+            cleanup={'server_closed': True, 'fixture_closed': True},
+            samples=[{'exact': {key: True for key in ('all_emitted_point_bytes_match',
+                'all_source_indices_match', 'whole_statistics_exact',
+                'all_canvas_coordinates_exact', 'prepared_display_context_exact')},
+                'cursor': {'all_tile_bytes_exact': True},
+                'authority': {'foreground_extraction': {'requested': index + 1,
+                    'entry_calls': index + 1, 'default_entry_calls': 0}},
+                'trace': {'first_visible_ms': 20, 'first_raf_ms': 25, 'complete_ms': 30}}
+                for index in range(3)])
+        self.trace_baseline = copy.deepcopy(self.trace_candidate)
+        for key in ('source_start', 'source_end'):
+            self.trace_baseline[key]['commit'] = '4de896f2e0b4ea966b5a428c3d2314f93fba935f'
+        from benchmark_prepared_geometry import compare
+        self.trace_comparison = compare(self.trace_baseline, self.trace_candidate)
         self.jobs = {1: [dict(name=name, conclusion='success') for name in
             ['Adopted architecture contract discovery', 'frontend', 'python',
              'Scoped desktop lifecycle contracts', 'Apple Silicon native project lifecycle and transfer']],
             2: [dict(name=name, conclusion='success') for name in
                 ['Backend million query regression', 'Browser million workflow regression',
-                 'Actual million metadata query regression']],
+                 'Actual million metadata query regression', 'macOS foreground trace regression']],
             3: [dict(name=name, conclusion='success') for name in ['build', 'Verify smoke', 'Verify updater']]}
         self.api_patch = patch.object(gate, 'api', side_effect=self.api)
         self.artifact_patch = patch.object(gate, 'artifact', side_effect=self.artifact)
@@ -59,6 +81,11 @@ class SourceCITests(unittest.TestCase):
     def artifact(self, repository, run, name, filename, *, with_digest=False):
         self.assertEqual(repository, REPO)
         if filename in self.plans: return self.plans[filename]
+        if name.startswith('trace-macos-proof-'):
+            self.assertEqual(name, 'trace-macos-proof-2-2')
+            return {'baseline/receipt.json': self.trace_baseline,
+                    'candidate/receipt.json': self.trace_candidate,
+                    'comparison.json': self.trace_comparison}[filename]
         self.assertEqual(name, 'everyday-million-2-2')
         if with_digest: return self.benchmark, 'c' * 64
         return self.comparison if filename.endswith('comparison.json') else self.benchmark
@@ -68,6 +95,49 @@ class SourceCITests(unittest.TestCase):
 
     def test_full_matching_evidence_passes(self):
         self.assertEqual(self.check(), dict(source_commit=SHA, regression_run=1, million_run=2, candidate_run=3))
+
+    def test_package_import_uses_the_same_trace_gate(self):
+        from tools import desktop_source_ci as package_gate
+        with patch.object(package_gate, 'api', side_effect=self.api), \
+             patch.object(package_gate, 'artifact', side_effect=self.artifact), \
+             patch.object(sys, 'path', [path for path in sys.path if path != str(ROOT / 'tools')]):
+            result = package_gate.require_source_ci(REPO, SHA, '3')
+        self.assertEqual(result, self.check())
+
+    def test_missing_or_wrong_attempt_trace_proof_blocks(self):
+        def missing(repository, run, name, filename, **kwargs):
+            if name.startswith('trace-macos-proof-'):
+                raise ValueError('Missing or ambiguous CI artifact: ' + name)
+            return self.artifact(repository, run, name, filename, **kwargs)
+        with patch.object(gate, 'artifact', side_effect=missing):
+            with self.assertRaisesRegex(ValueError, 'trace-macos-proof-2-2'): self.check()
+
+    def test_trace_source_or_correctness_failure_blocks_publication(self):
+        original = copy.deepcopy(self.trace_candidate)
+        mutations = [lambda r: r.update(status='failed'),
+            lambda r: r['source_start'].update(commit='f' * 40),
+            lambda r: (r['source_start'].update(dirty=' M app.py'), r['source_end'].update(dirty=' M app.py')),
+            lambda r: r['source_end'].update(tree='f' * 40),
+            lambda r: r['samples'].pop(),
+            lambda r: r['samples'][0]['authority']['foreground_extraction'].update(default_entry_calls=1),
+            lambda r: r.update(environment={'browser': 'different'})]
+        for mutation in mutations:
+            self.trace_candidate = copy.deepcopy(original); mutation(self.trace_candidate)
+            with self.assertRaises(ValueError): self.check()
+        self.trace_candidate = original
+        self.trace_baseline['source_start']['commit'] = 'f' * 40
+        with self.assertRaisesRegex(ValueError, 'pinned baseline'): self.check()
+
+    def test_trace_comparison_is_recomputed_not_trusted(self):
+        original = copy.deepcopy(self.trace_comparison)
+        for value in ({}, {**original, 'status': 'review_required'},
+                      {**original, 'metrics': []}):
+            self.trace_comparison = value
+            with self.assertRaisesRegex(ValueError, 'foreground trace comparison'): self.check()
+        self.trace_comparison = original
+        self.trace_candidate['samples'][2]['trace'] = {
+            'first_visible_ms': 120, 'first_raf_ms': 125, 'complete_ms': 130}
+        with self.assertRaisesRegex(ValueError, 'foreground trace comparison'): self.check()
 
     def test_latest_required_run_must_finish_successfully(self):
         for workflow in self.runs:

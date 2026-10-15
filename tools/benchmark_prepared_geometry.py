@@ -35,6 +35,18 @@ def source_identity(source):
                       if (source / name).is_file() and not (source / name).is_symlink()}}
 
 
+def dependency_fingerprints(source):
+    if __package__:
+        from tools.benchmark_workflow import dependency_identity
+    else:
+        from benchmark_workflow import dependency_identity
+    locks = ('workspace-app/package-lock.json', 'desktop/package-lock.json')
+    # Match the existing workflow policy: only the application's version may
+    # differ; every locked dependency and the Python requirements remain exact.
+    return {name: hashlib.sha256(dependency_identity(source / name).encode()).hexdigest()
+            for name in locks} | {'benchmarks/requirements-py311.txt': digest(source / 'benchmarks/requirements-py311.txt')}
+
+
 def compile_helper(source, output):
     compiler = shutil.which('cc')
     if not compiler or platform.system() not in ('Darwin', 'Linux'):
@@ -98,7 +110,10 @@ def compare(before, after):
     for key in ('harness', 'environment', 'fixture', 'dependencies', 'payload_sha256'):
         if before.get(key) is None or before[key] != after.get(key):
             raise ValueError('Incomparable geometry ' + key)
-    from benchmark_workflow import compare_metrics
+    if __package__:
+        from tools.benchmark_workflow import compare_metrics
+    else:
+        from benchmark_workflow import compare_metrics
     policy = json.loads((ROOT / 'benchmarks/registry.json').read_text())['stress_tracks']['workflow-million']['comparison']
     def metrics(value):
         return {'prepared.geometry.million': {'total_ms': statistics.median(row['trace']['complete_ms'] for row in value['samples']),
@@ -118,7 +133,8 @@ def run(source, output):
         'environment': {'platform': platform.platform(), 'machine': platform.machine(), 'python': platform.python_version(),
             'packages': {name: importlib.metadata.version(name) for name in ('numpy', 'h5py', 'Flask', 'Werkzeug', 'scipy')},
             'node': subprocess.check_output(['node', '--version'], text=True).strip(), 'cpus': os.cpu_count()},
-        'dependencies': {name: digest(source / name) for name in ['workspace-app/package-lock.json', 'desktop/package-lock.json', 'benchmarks/requirements-py311.txt']},
+        'dependencies': dependency_fingerprints(source),
+        'dependency_file_sha256': {name: digest(source / name) for name in ['workspace-app/package-lock.json', 'desktop/package-lock.json', 'benchmarks/requirements-py311.txt']},
         'fixture': 'prepared-geometry-v2:foreground:1000-metadata:200-protocol:1000000-samples:gzip64-f64-S10',
         'limits': 'Owned SQL doubles, canonical sealed index/source/geometry, production React, threaded Werkzeug. No native MySQL, packaged Waitress, compositor or cold disk qualification.'}
     server = None
