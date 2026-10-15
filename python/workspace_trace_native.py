@@ -366,8 +366,13 @@ def _read_native(data, signature, begin, end, expected_units=None):
         if diagnostic is not None: diagnostic.mark(None)
 
 
-def _enumerate_chunk_arrays(data):
+def _enumerate_chunk_arrays(data, helper=None):
     """Bounded arrays; callback retains neither StoreInfo nor coordinate tuples."""
+    if helper is not None:
+        from workspace_trace_chunk_iteration import UNSUPPORTED, try_enumerate_chunks
+        result = try_enumerate_chunks(data, helper)
+        if result is not UNSUPPORTED:
+            return result
     import numpy as np
     total = len(data)
     expected_count = (total + 63) // 64
@@ -466,7 +471,7 @@ def _read_admitted(data, signature, begin, end, helper, dtype, normalize_units, 
     import numpy as np
     diagnostic = _current_native_timing()
     if diagnostic is not None: diagnostic.mark('enumeration')
-    chunk_count, arrays = _enumerate_chunk_arrays(data)
+    chunk_count, arrays = _enumerate_chunk_arrays(data, helper)
     if diagnostic is not None:
         diagnostic.count('chunks', chunk_count)
         diagnostic.mark('map')

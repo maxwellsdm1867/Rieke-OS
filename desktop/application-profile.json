@@ -121,6 +121,7 @@
     "workspace_state_snapshot.py",
     "workspace_trace_binary.py",
     "workspace_trace_native.py",
+    "workspace_trace_chunk_iteration.py",
     "workspace_trace_views.py",
     "workspace_trace_geometry.py",
     "workspace_trace_workers.py",

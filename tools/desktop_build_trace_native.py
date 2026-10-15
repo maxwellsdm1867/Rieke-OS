@@ -50,9 +50,25 @@ def build_trace_native(output: Path, root: Path = ROOT) -> dict:
         # ABI alone must not accept an incomplete helper build.
         for symbol in ('disco_trace_extract_v1', 'disco_trace_m4_v1'):
             getattr(library, symbol)
+        # Optional at runtime for old ABI 4 helpers, required in newly built bytes.
+        callback = library.disco_trace_chunk_collect_v1
+        callback.argtypes = [ctypes.POINTER(ctypes.c_uint64), ctypes.c_uint,
+                             ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p]
+        callback.restype = ctypes.c_int
+        feature_version = library.disco_trace_chunk_context_v1_version
+        feature_size = library.disco_trace_chunk_context_v1_size
+        feature_offset = library.disco_trace_chunk_context_v1_offset
+        feature_version.argtypes, feature_version.restype = [], ctypes.c_uint64
+        feature_size.argtypes, feature_size.restype = [], ctypes.c_uint64
+        feature_offset.argtypes, feature_offset.restype = [ctypes.c_uint], ctypes.c_uint64
+        offsets = (0, 8, 16, 24, 32, 40, 48, 56, 64, 68, 72, 76)
+        if (feature_version() != 1 or feature_size() != 80 or
+                tuple(feature_offset(i) for i in range(len(offsets))) != offsets):
+            raise ValueError('Unexpected native chunk metadata feature ABI')
         built.replace(target)
     receipt = {
         'abi': 4, 'library': LIBRARY,
+        'chunk_metadata_feature': {'abi': 1, 'context_size': 80},
         'source': 'desktop/native/trace_inflate.c',
         'source_sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
         'sha256': hashlib.sha256(target.read_bytes()).hexdigest(),

@@ -3069,6 +3069,7 @@
         "workspace-app/src/epoch-browser/ui/MatchingEpochs.jsx",
         "python/workspace_trace_binary.py",
         "python/workspace_trace_native.py",
+        "python/workspace_trace_chunk_iteration.py",
         "desktop/native/trace_inflate.c",
         "tools/desktop_build_trace_native.py"
       ],
@@ -3122,7 +3123,23 @@
             "subprocess",
             "threading",
             "time",
-            "types"
+            "types",
+            "workspace_trace_chunk_iteration"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/workspace_trace_chunk_iteration.py",
+          "allow": [
+            "__future__",
+            "ctypes",
+            "functools",
+            "h5py",
+            "numpy",
+            "os",
+            "pathlib",
+            "platform",
+            "sys"
           ]
         }
       ],
@@ -3137,7 +3154,8 @@
           "python/tests/test_trace_binary.py",
           "python/tests/test_trace_native.py",
           "python/tests/test_trace_native_initialization.py",
-          "python/tests/test_trace_native_timing.py"
+          "python/tests/test_trace_native_timing.py",
+          "python/tests/test_trace_chunk_iteration.py"
         ],
         "javascript": [
           "workspace-app/src/apiCommandPolicy.test.js",

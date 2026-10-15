@@ -151,10 +151,32 @@ NULLPAD or NULLTERM unit strings only. For NULLTERM, the helper zeros bytes afte
 the first NUL exactly as H5 converts to NumPy NULLPAD strings; full-width strings
 and quantity bits remain unchanged. UTF-8/padded/custom H5 types retain generic H5.
 
-HDF5 resolves sealed paths and chunk metadata on the caller thread. Enumeration
-writes physical offsets, sizes and enumeration order into fixed NumPy integer
-arrays through scalar memoryviews, with a bounded bytearray for seen logical
-chunks. It retains neither HDF5 StoreInfo objects nor their coordinate tuples.
+HDF5 resolves sealed paths and chunk metadata on the caller thread. The private
+`workspace_trace_chunk_iteration.py` bridge optionally collects the fresh chunk
+map into fixed arrays through a native callback. Its sole production caller is
+`workspace_trace_native.py`, which passes the already loaded, trusted helper.
+The bridge neither loads a second helper nor imports the native owner back.
+
+The callback feature has its own version-1 context contract, independent of the
+required ABI 4 extraction/reduction symbols. Missing optional symbols retain the
+Python enumeration path. Admission is restricted to Darwin arm64, h5py 3.16.0 and
+HDF5 2.0.0 with the checked scalar ABI. `RTLD_NOLOAD` handles for the already loaded
+h5py dataset and identifier extensions must resolve identical HDF5 symbols from
+the same private library inside the real h5py package; escaped symlinks, foreign
+images or a loaded-library version mismatch refuse this optional path. Other
+platforms and versions retain Python enumeration until separately qualified.
+
+The bridge holds h5py's `phil` lock across dataset-ID validation and the complete
+HDF5 call. Dataset, library, callback, context and array references remain alive
+until iteration returns. The callback writes only bounded request-local arrays;
+it performs no allocation, Python calls or HDF5 API calls. Context version, size
+and every field offset must match before use. Once iteration starts, any failure
+or early-stop return fails the read without retry. Sparse or masked maps retain
+the existing unsupported-layout result and its validation order.
+
+The Python fallback writes physical offsets, sizes and enumeration order through
+scalar memoryviews, with a bounded bytearray for seen logical chunks. Neither
+path retains HDF5 StoreInfo objects or their coordinate tuples between callbacks.
 Sparse allocation and skipped-filter fallback precede physical-map validation;
 invalid logical coordinates and duplicate counts still fail. Stable physical
 sorting preserves enumeration order for tied offsets. Vectorized bounds and
@@ -185,6 +207,9 @@ decoder and resets it between independent chunks. Every chunk must end with
 Decoder state is released on success or failure; worker joins precede publication. Corruption, trailing compressed
 bytes, truncation, malformed chunk locations and source changes fail the read;
 no partial samples or successful fallback are published after those failures.
+
+The [read-overhead audit](../dev/trace-read-spikes-2026-10-15.md) records the
+component experiments, retained slow samples and separate complete-path limits.
 
 The optional helper is loaded from `RIEKE_DESKTOP_RUNTIME/native/` in a packaged
 runtime, or the repository's `.rieke-runtime/trace-native/` development build.

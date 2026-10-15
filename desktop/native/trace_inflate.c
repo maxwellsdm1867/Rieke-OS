@@ -233,3 +233,53 @@ int disco_trace_m4_v1(const double *raw, size_t count, double width,
     *maximum = high;
     return 0;
 }
+
+/* Optional chunk metadata feature v1 for explicitly qualified HDF5 2.0.0 builds.
+ * No HDF5 headers, linked libraries, API calls, filesystem access or allocation.
+ */
+#include <stdint.h>
+#include <stddef.h>
+#include <limits.h>
+_Static_assert(sizeof(uint64_t) == 8 && sizeof(int64_t) == 8, "64-bit scalars required");
+_Static_assert(sizeof(int) == 4 && sizeof(unsigned) == 4, "32-bit C int ABI required");
+_Static_assert(sizeof(void *) == 8, "Qualified 64-bit platforms only");
+typedef struct {
+    uint64_t version, capacity, total, count;
+    uint64_t *physical, *lengths;
+    int64_t *order;
+    unsigned char *seen;
+    uint32_t invalid_logical, masked, invalid_context, reserved;
+} ChunkContext;
+uint64_t disco_trace_chunk_context_v1_size(void) { return sizeof(ChunkContext); }
+uint64_t disco_trace_chunk_context_v1_version(void) { return 1; }
+uint64_t disco_trace_chunk_context_v1_offset(unsigned field) {
+    const uint64_t offsets[] = {offsetof(ChunkContext, version), offsetof(ChunkContext, capacity),
+        offsetof(ChunkContext, total), offsetof(ChunkContext, count), offsetof(ChunkContext, physical),
+        offsetof(ChunkContext, lengths), offsetof(ChunkContext, order), offsetof(ChunkContext, seen),
+        offsetof(ChunkContext, invalid_logical), offsetof(ChunkContext, masked),
+        offsetof(ChunkContext, invalid_context), offsetof(ChunkContext, reserved)};
+    return field < 12 ? offsets[field] : UINT64_MAX;
+}
+int disco_trace_chunk_collect_v1(const uint64_t *coordinate, unsigned mask, uint64_t address,
+                        uint64_t size, void *opaque) {
+    ChunkContext *ctx = opaque;
+    if (!ctx) return -1;
+    if (!coordinate || ctx->version != 1 || !ctx->total || ctx->total > 1000000 ||
+        ctx->capacity != (ctx->total + 63) / 64 || !ctx->physical || !ctx->lengths ||
+        !ctx->order || !ctx->seen || ctx->reserved) {
+        ctx->invalid_context = 1;
+        return -1;
+    }
+    if (ctx->count != UINT64_MAX) ++ctx->count;
+    if (ctx->count > ctx->capacity) return 0;
+    uint64_t position = coordinate[0];
+    if (position >= ctx->total || position % 64) { ctx->invalid_logical = 1; return 0; }
+    uint64_t index = position / 64;
+    if (ctx->seen[index]) { ctx->invalid_logical = 1; return 0; }
+    ctx->seen[index] = 1;
+    ctx->order[ctx->count - 1] = (int64_t)index;
+    ctx->physical[index] = address;
+    ctx->lengths[index] = size;
+    if (mask) ctx->masked = 1;
+    return 0;
+}
