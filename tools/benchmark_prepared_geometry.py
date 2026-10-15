@@ -170,7 +170,8 @@ def main():
         try: result = compare(json.loads(args.baseline.read_text()), json.loads(args.candidate.read_text()))
         except Exception as error: result = {'status': 'failed', 'error': str(error)}
         args.output.write_text(json.dumps(result, indent=2))
-    print(json.dumps({'status': result['status'], 'output': str(args.output)}))
+    summary = result if args.command == 'compare' else {'status': result['status']}
+    print(json.dumps({**summary, 'output': str(args.output)}))
     return 0 if result['status'] == 'passed' else 1
 
 if __name__ == '__main__': raise SystemExit(main())

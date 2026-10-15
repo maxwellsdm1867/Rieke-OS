@@ -8,7 +8,7 @@
 
 #define MAX_CHUNKS 15625u
 #define CHUNK_BYTES 1152u
-#define MAX_INPUT (32u * 1024u * 1024u)
+#define DISCO_TRACE_MAX_INPUT (32u * 1024u * 1024u)
 
 typedef struct {
     const unsigned char *input;
@@ -46,7 +46,7 @@ int disco_trace_inflate_v1(const unsigned char *input, size_t input_size,
                           size_t count, unsigned char *output, size_t output_size,
                           size_t chunk_size, unsigned workers) {
     if (!input || !offsets || !sizes || !output || !count || count > MAX_CHUNKS ||
-        !input_size || input_size > MAX_INPUT || chunk_size != CHUNK_BYTES ||
+        !input_size || input_size > DISCO_TRACE_MAX_INPUT || chunk_size != CHUNK_BYTES ||
         output_size != count * CHUNK_BYTES || workers < 1 || workers > 8) return -1;
     for (size_t i = 0; i < count; ++i) {
         if (!sizes[i] || offsets[i] > input_size || sizes[i] > input_size - offsets[i]) return -1;
@@ -154,7 +154,7 @@ static int extract_values(const unsigned char *input, size_t input_size,
                            unsigned char *output, size_t output_size, size_t begin, size_t end,
                            const unsigned char *units, int nullterm, unsigned workers, int foreground) {
     if (!input || !offsets || !sizes || !output || !units || !count || count > MAX_CHUNKS ||
-        !input_size || input_size > MAX_INPUT || begin >= end || end > count * 64 ||
+        !input_size || input_size > DISCO_TRACE_MAX_INPUT || begin >= end || end > count * 64 ||
         output_size != (end - begin) * 8 || workers < 1 || workers > 8 ||
         (nullterm != 0 && nullterm != 1)) return -1;
     for (size_t i = 0; i < count; ++i) {
@@ -394,7 +394,7 @@ int disco_trace_m4_parallel_v1(const double *raw, size_t count, double width,
         boundaries[column] = low;
     }
     if (workers > columns) workers = (unsigned)columns;
-    ParallelM4Task tasks[8];
+    ParallelM4Task tasks[8] = {0};
     pthread_t threads[8];
     unsigned created = 0;
     int error = 0;

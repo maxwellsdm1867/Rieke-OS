@@ -266,7 +266,9 @@ jobs:
         if: always()
         with:
           name: trace-macos-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/trace-macos/
+          path: |
+            ${{ runner.temp }}/trace-macos/
+            !${{ runner.temp }}/trace-macos/**/node_modules/**
           if-no-files-found: error
           retention-days: 30
 
