@@ -239,6 +239,10 @@ jobs:
           fi
           git worktree add --detach "$RUNNER_TEMP/trace-baseline" 4de896f2e0b4ea966b5a428c3d2314f93fba935f
           git worktree add --detach "$RUNNER_TEMP/trace-candidate" "$candidate"
+          # Directory-only ignore rules do not cover dependency symlinks.
+          # Exclude only these lockfile-verified, CI-owned links; retain the
+          # comparator's strict tracked/untracked source cleanliness check.
+          printf '/workspace-app/node_modules\n/desktop/node_modules\n' >> "$(git rev-parse --git-path info/exclude)"
           for source in trace-baseline trace-candidate; do
             for package in workspace-app desktop; do
               "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$RUNNER_TEMP/$source/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json"

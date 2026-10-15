@@ -296,6 +296,26 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertEqual(upload['if'], 'always()')
         self.assertEqual(upload['with']['if-no-files-found'], 'error')
 
+    def test_ci_dependency_symlinks_are_ignored_without_hiding_source_edits(self):
+        bind = next(step['run'] for step in self.jobs['trace-macos']['steps']
+                    if step.get('name') == 'Bind exact baseline and candidate')
+        exclude = next(line.strip() for line in bind.splitlines()
+                       if 'git rev-parse --git-path info/exclude' in line)
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            subprocess.run(['git', 'init', '-q', str(root)], check=True)
+            for package in ('workspace-app', 'desktop'):
+                (root / package).mkdir()
+                (root / package / 'node_modules').symlink_to(root / 'dependencies')
+            subprocess.run(['bash', '-e', '-c', exclude], cwd=root, check=True)
+            status = lambda: subprocess.check_output(
+                ['git', 'status', '--porcelain', '--untracked-files=all'], cwd=root, text=True)
+            self.assertEqual(status(), '')
+            (root / 'workspace-app/source.ts').write_text('changed source')
+            self.assertIn('workspace-app/source.ts', status())
+            (root / 'unexpected-link').symlink_to(root / 'dependencies')
+            self.assertIn('unexpected-link', status())
+
     def test_only_automatic_pr_runs_share_a_cancelling_group(self):
         concurrency = self.workflow['concurrency']
         self.assertEqual(concurrency['cancel-in-progress'], "${{ github.event_name == 'pull_request' }}")
