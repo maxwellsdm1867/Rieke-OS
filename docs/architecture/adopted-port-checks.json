@@ -5387,8 +5387,8 @@
       },
       {
         "file": "python/tests/test_workspace_explore_queries.py",
-        "file_sha256": "4305e7c74f9cfa4718e5098500e9aa9f975ae09c57cae59c00a8cac4541c3573",
-        "reason": "Choose the existing typed/native summary target and block it to exercise asynchronous request lifecycle.",
+        "file_sha256": "8eb815d3cdc0c34a5bce89be0a0a6668c7d22b8ce04d4773459bd07b7c670441",
+        "reason": "Choose the existing typed/native summary target and block it to exercise asynchronous request lifecycle. Explicit refresh recovery tests added; existing reviewed mock syntax and targets remain unchanged. Stale live readers still refuse; refresh reopens only fully verified sidecars.",
         "sites": [
           {
             "selector": "Name:384",

@@ -158,8 +158,15 @@ def prepare(native, previous=None):
     namespace = CacheNamespace(native.path.parent.parent / 'typed-metadata', 'metadata', native.project_uuid)
     path = namespace.directory / name
     if previous is not None and previous.reader.path == path:
-        previous._check()
-        return previous, 'reused'
+        try:
+            previous._check()
+        except (OSError, ValueError, sqlite3.DatabaseError):
+            # A stale live proof cannot be reused, but must not prevent an
+            # explicit refresh from fully verifying/rebuilding the sidecar.
+            # Existing readers keep their original witnesses and still refuse.
+            pass
+        else:
+            return previous, 'reused'
     lease = namespace.lease(name)
     try:
         with namespace.writer(name):

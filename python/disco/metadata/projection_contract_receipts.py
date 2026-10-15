@@ -71,4 +71,30 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
                            'docs/dev/process-heap-performance-2026-10-14.md',
                            'python/tests/test_workspace_process_heap.py',
                            'python/tests/test_workspace_projection_contract.py',
-                           'python/tests/test_workspace_refresh_cache.py')})}
+                           'python/tests/test_workspace_refresh_cache.py')},
+             {'id': 'whole-trace-batch-compatibility-2026-10-14',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 '86606d41763c9b745cf303c50efbed3b13d3e7255ac6e9667d24fd7237a5420b',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to installed source82d541e, removing only the new trace_batch '
+                           'method and its canonical trace-reader identity capture yields an '
+                           'identical WorkspaceService AST. All other projection owners and the '
+                           'resolver are byte-identical. The batch is a foreground sample-read '
+                           'API; projection construction, codecs, metadata values, scientific '
+                           'source verification and cache formats are unchanged. Independently '
+                           'reviewed by the integration owner. Typed lifecycle recovery separately '
+                           'reopens fully verified sidecars when old live witnesses become stale; '
+                           'it grants no projection compatibility or authority.',
+              'evidence': ('git:82d541e8300eb1b6930ff7f1bd35f974a6ca343e',
+                           'docs/dev/trace-click-latency-2026-10-15.md',
+                           'python/tests/test_workspace_projection_contract.py',
+                           'python/tests/test_workspace_refresh_cache.py',
+                           'python/tests/test_workspace_explore_queries.py')})}

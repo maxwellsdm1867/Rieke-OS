@@ -472,6 +472,43 @@ class PublicationCacheTests(unittest.TestCase):
         self.service.refresh()
         self.assertEqual(self.service.last_refresh['typed_metadata_index'], 'reused')
 
+    def test_refresh_reopens_changed_typed_seal_with_full_verification(self):
+        from pathlib import Path
+        import os
+        owner = self.service.typed_index
+        seal = Path(str(owner.reader.path) + '.sha256.json')
+        original = seal.read_bytes()
+        # A fresh metadata signature invalidates the previous live proof even
+        # when the independently verified seal bytes remain identical.
+        stat = seal.stat()
+        os.utime(seal, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000))
+        with self.assertRaisesRegex(ValueError, 'generation changed'):
+            owner._check()
+        self.service.refresh()
+        self.assertEqual(self.service.last_refresh['typed_metadata_index'], 'reopened')
+        self.assertIsNot(self.service.typed_index, owner)
+        self.assertEqual(seal.read_bytes(), original)
+        self.service.typed_index._check()
+        with self.assertRaisesRegex(ValueError, 'generation changed'):
+            owner._check()
+        self.assertTrue(self.service._loaded)
+
+    def test_refresh_rebuilds_invalid_typed_seal_but_refuses_changed_native(self):
+        from pathlib import Path
+        import os
+        owner = self.service.typed_index
+        seal = Path(str(owner.reader.path) + '.sha256.json')
+        seal.write_text('{}')
+        self.service.refresh()
+        self.assertEqual(self.service.last_refresh['typed_metadata_index'], 'built')
+        self.service.typed_index._check()
+        native = self.service.disk_index.path
+        stat = native.stat()
+        os.utime(native, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000))
+        with self.assertRaises(ValueError):
+            self.service.refresh()
+        self.assertFalse(self.service._loaded)
+
     def test_rebuild_pins_old_native_and_typed_assets_for_existing_readers(self):
         owner = self.service.typed_index
         self.fixture.add_source('three')

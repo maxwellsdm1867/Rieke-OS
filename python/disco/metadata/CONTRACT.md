@@ -224,3 +224,16 @@ qualification receipts and suite identity remain tied to their measured revision
 The fixed [benchmark guide](../../../docs/dev/benchmarks.md) and
 [registry](../../../benchmarks/registry.json) retain unmeasured field completeness,
 fallback, native authority, memory/build/open and whole-app qualification gaps.
+
+## Explicit refresh after a stale typed reader
+
+`typed_lifecycle.prepare` reuses a same-path owner only while its live checks pass.
+If that old proof has become stale, an explicit refresh enters the existing full
+sealed open/rebuild path under the writer lock. Default opening hashes the typed
+file and validates the seal and native identity; invalid disposable typed assets
+are rebuilt from the independently verified native reader. Existing readers keep
+their original witnesses and continue refusing, and native `_check` still runs
+before any recovery attempt. No signature is rewritten on an old reader and no
+source or scientific metadata check is relaxed. The publication-cache examples
+cover identical seal bytes with changed file metadata, invalid-seal rebuild and
+unchanged rejection of a changed native generation.
