@@ -330,6 +330,46 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertIn('github.event_name', concurrency['group'])
         self.assertIn("github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id", concurrency['group'])
 
+    def test_linux_geometry_raw_diagnostics_are_separate_from_compact_proof(self):
+        steps = self.jobs['browser']['steps']
+        copy_step = next(step for step in steps if step.get('name') ==
+                         'Retain compact Linux geometry proof without changing raw evidence')
+        self.assertEqual(copy_step['if'], 'always()')
+        uploads = [step for step in steps if step.get('uses') == 'actions/upload-artifact@v4']
+        self.assertEqual(len(uploads), 2)
+        full = next(step for step in uploads if step['with']['name'].startswith('geometry-linux-diagnostics-'))
+        compact = next(step for step in uploads if step['with']['name'].startswith('everyday-browser-'))
+        for step in uploads:
+            self.assertEqual(step['if'], 'always()')
+        self.assertEqual(full['with']['if-no-files-found'], 'warn')  # Geometry may not have started.
+        self.assertEqual(compact['with']['if-no-files-found'], 'error')
+        for role in ('baseline', 'candidate'):
+            self.assertIn(f'/geometry-{role}/', full['with']['path'])
+            self.assertIn(f'!${{{{ runner.temp }}}}/everyday-browser/geometry-{role}/**', compact['with']['path'])
+        self.assertIn('geometry-comparison.json', full['with']['path'])
+        self.assertIn('!${{ runner.temp }}/everyday-browser/**/node_modules/**', full['with']['path'])
+        self.assertNotIn('geometry-proof', compact['with']['path'])  # Included by the root, never excluded.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder) / 'everyday-browser'; root.mkdir()
+            raw = b'{ "status": "failed", "partial": true }\n'
+            baseline = root / 'geometry-baseline'; baseline.mkdir()
+            (baseline / 'receipt.json').write_bytes(raw)
+            (baseline / 'raw-diagnostic.bin').write_bytes(b'preserve raw evidence')
+            run = lambda: subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', copy_step['run']],
+                env={**os.environ, 'RUNNER_TEMP': folder}, check=True)
+            run()  # Partial failure: no candidate or comparison yet.
+            self.assertEqual((root / 'geometry-proof/baseline/receipt.json').read_bytes(), raw)
+            self.assertFalse((root / 'geometry-proof/candidate').exists())
+            candidate = root / 'geometry-candidate'; candidate.mkdir()
+            (candidate / 'receipt.json').write_bytes(raw + b' ')
+            (root / 'geometry-comparison.json').write_bytes(b'{"status":"failed"}\n')
+            run()
+            self.assertEqual((root / 'geometry-proof/candidate/receipt.json').read_bytes(), raw + b' ')
+            self.assertEqual((root / 'geometry-proof/comparison.json').read_bytes(),
+                             (root / 'geometry-comparison.json').read_bytes())
+            self.assertEqual((baseline / 'receipt.json').read_bytes(), raw)
+            self.assertEqual((baseline / 'raw-diagnostic.bin').read_bytes(), b'preserve raw evidence')
+
     def test_independent_families_join_a_fail_closed_stable_aggregate(self):
         for family, name in (('backend', 'Backend million query regression'),
                              ('browser', 'Browser million workflow regression')):
@@ -341,9 +381,10 @@ class WorkflowWiringTests(unittest.TestCase):
             self.assertIn('uv venv --python 3.11.13', commands)
             self.assertIn('tools/benchmark_ci.py run --family ' + family, commands)
             uploads = [step for step in job['steps'] if step.get('uses') == 'actions/upload-artifact@v4']
-            self.assertEqual(len(uploads), 1)
-            self.assertEqual(uploads[0]['if'], 'always()')
-            self.assertEqual(uploads[0]['with']['name'], f'everyday-{family}-${{{{ github.run_id }}}}-${{{{ github.run_attempt }}}}')
+            self.assertEqual(len(uploads), 2 if family == 'browser' else 1)
+            compact = next(step for step in uploads if step['with']['name'].startswith(f'everyday-{family}-'))
+            self.assertEqual(compact['if'], 'always()')
+            self.assertEqual(compact['with']['name'], f'everyday-{family}-${{{{ github.run_id }}}}-${{{{ github.run_attempt }}}}')
         aggregate = self.jobs['everyday-million']
         self.assertEqual(set(aggregate['needs']), {'scope', 'backend', 'browser', 'trace-macos'})
         self.assertIn('Actual million metadata query regression', aggregate['name'])

@@ -186,11 +186,39 @@ jobs:
           "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_prepared_geometry.py run --source-root "$geometry_baseline" --output "$RUNNER_TEMP/everyday-browser/geometry-baseline"
           "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_prepared_geometry.py run --source-root "$candidate" --output "$RUNNER_TEMP/everyday-browser/geometry-candidate"
           "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_prepared_geometry.py compare "$RUNNER_TEMP/everyday-browser/geometry-baseline/receipt.json" "$RUNNER_TEMP/everyday-browser/geometry-candidate/receipt.json" --output "$RUNNER_TEMP/everyday-browser/geometry-comparison.json"
+      - name: Retain compact Linux geometry proof without changing raw evidence
+        if: always()
+        run: |
+          root="$RUNNER_TEMP/everyday-browser"
+          for role in baseline candidate; do
+            if [ -f "$root/geometry-$role/receipt.json" ]; then
+              mkdir -p "$root/geometry-proof/$role"
+              cp "$root/geometry-$role/receipt.json" "$root/geometry-proof/$role/receipt.json"
+            fi
+          done
+          if [ -f "$root/geometry-comparison.json" ]; then
+            mkdir -p "$root/geometry-proof"
+            cp "$root/geometry-comparison.json" "$root/geometry-proof/comparison.json"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: geometry-linux-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/everyday-browser/geometry-baseline/
+            ${{ runner.temp }}/everyday-browser/geometry-candidate/
+            ${{ runner.temp }}/everyday-browser/geometry-comparison.json
+            !${{ runner.temp }}/everyday-browser/**/node_modules/**
+          if-no-files-found: warn
+          retention-days: 30
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: everyday-browser-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/everyday-browser/
+          path: |
+            ${{ runner.temp }}/everyday-browser/
+            !${{ runner.temp }}/everyday-browser/geometry-baseline/**
+            !${{ runner.temp }}/everyday-browser/geometry-candidate/**
           if-no-files-found: error
           retention-days: 30
 

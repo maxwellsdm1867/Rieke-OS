@@ -615,7 +615,9 @@ and retain the workflow's diagnostic-only aggregate name. The normal required
 aggregate fails when the macOS job fails, is cancelled or is skipped. Every job
 preserves logs and partial receipts on failure. Compact same-run/attempt trace
 receipts and the comparison are uploaded separately for the bounded publication
-checker; the full trace diagnostics remain in their own retained artifact.
+checker; the full trace diagnostics remain in their own retained artifact. Linux
+geometry follows the same split: byte-identical compact receipts stay with the
+browser family, and full geometry fixtures/build diagnostics upload separately.
 Publication recomputes this same comparison through the geometry runner
 (importable as `tools.benchmark_prepared_geometry`); both package and direct-script
 imports use the same reviewed `benchmark_workflow` policy owner.
