@@ -245,7 +245,7 @@ def _trace_units_match(units, expected):
 
 
 @contextlib.contextmanager
-def _response_window_reader(path, signature, row, stream, *, native_range=None):
+def _response_window_reader(path, signature, row, stream, *, native_range=None, foreground=False):
     """One source-checked H5 handle; all returned arrays own their samples."""
     import h5py
     import numpy as np
@@ -265,7 +265,8 @@ def _response_window_reader(path, signature, row, stream, *, native_range=None):
             if len(data) != stream['sample_count']:
                 raise ValueError('Trace sample count changed')
             from workspace_trace_native import read_native_values
-            prepared = read_native_values(data, signature, *native_range, stream['units'])
+            prepared = read_native_values(data, signature, *native_range, stream['units'],
+                **({'foreground': True} if foreground is True else {}))
 
         def read(start, count, *, array_values=False):
             if len(data) != stream['sample_count']:
@@ -1495,7 +1496,7 @@ class WorkspaceService:
             path, signature = self._verified_source(manifest)
             return read_response_window(path, signature, row, stream, start, count)
 
-    def trace_batch(self, epoch_uuid, stream_uuid, start=0, count=100000, chunks=1, *, array_windows=False, timing=None):
+    def trace_batch(self, epoch_uuid, stream_uuid, start=0, count=100000, chunks=1, *, array_windows=False, timing=None, foreground=False):
         """Read bounded exact windows under one caller-owned read scope.
 
         One immutable source plan covers every window. No partial batch escapes
@@ -1519,7 +1520,8 @@ class WorkspaceService:
                   and start < plan['stream']['sample_count'])
         reader = (_response_window_reader(plan['path'], tuple(plan['signature']),
                     plan['row'], plan['stream'], native_range=(start, min(
-                        plan['stream']['sample_count'], start + count * chunks)))
+                        plan['stream']['sample_count'], start + count * chunks)),
+                    **({'foreground': True} if foreground is True else {}))
                   if direct else contextlib.nullcontext(None))
         with reader as read:
             for _ in range(chunks):

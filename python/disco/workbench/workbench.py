@@ -1197,7 +1197,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         from workspace_trace_native import capture_native_timing, NATIVE_TIMING_METRICS
         with capture_native_timing(timing):
             batch = read_trace_batch(service, epoch, request.args['stream_uuid'], 0,
-                min(count, 100000), (count + 99999) // 100000, binary=True, timing=timing)
+                min(count, 100000), (count + 99999) // 100000, binary=True, timing=timing, foreground=True)
             if batch.get('total_samples') != count:
                 raise ValueError('Display geometry sample count changed')
             try:
@@ -1238,7 +1238,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         binary = wants_binary_trace()
         if 'chunks' in request.args:
             result = read_trace_batch(service, epoch, request.args['stream_uuid'], start, count,
-                int(request.args['chunks']), binary=binary, timing=timing)
+                int(request.args['chunks']), binary=binary, timing=timing, foreground=True)
         else:
             result = service.trace(epoch, request.args['stream_uuid'], start, count)
         mark_trace_timing(timing, 'read')

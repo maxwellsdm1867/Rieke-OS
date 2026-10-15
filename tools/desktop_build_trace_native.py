@@ -51,6 +51,7 @@ def build_trace_native(output: Path, root: Path = ROOT) -> dict:
         for symbol in ('disco_trace_extract_v1', 'disco_trace_m4_v1'):
             getattr(library, symbol)
         # Optional at runtime for old ABI 4 helpers, required in newly built bytes.
+        getattr(library, 'disco_trace_extract_foreground_v1')
         callback = library.disco_trace_chunk_collect_v1
         callback.argtypes = [ctypes.POINTER(ctypes.c_uint64), ctypes.c_uint,
                              ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p]
@@ -75,6 +76,7 @@ def build_trace_native(output: Path, root: Path = ROOT) -> dict:
         'abi': 4, 'library': LIBRARY,
         'chunk_metadata_feature': {'abi': 1, 'context_size': 80},
         'parallel_m4_feature': {'abi': 1},
+        'foreground_extract_feature': {'abi': 1, 'spawned_workers_only': True},
         'source': 'desktop/native/trace_inflate.c',
         'source_sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
         'sha256': hashlib.sha256(target.read_bytes()).hexdigest(),

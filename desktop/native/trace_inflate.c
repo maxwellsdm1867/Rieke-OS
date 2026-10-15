@@ -137,10 +137,22 @@ static void *fused_task(void *arg) {
     return NULL;
 }
 
-int disco_trace_extract_v1(const unsigned char *input, size_t input_size,
+/* Only explicitly admitted foreground extraction promotes spawned workers.
+ * The synchronous caller and every default/background entry retain their QoS. */
+#if defined(__APPLE__)
+#include <pthread/qos.h>
+#endif
+static void *user_initiated_fused_task(void *argument) {
+#if defined(__APPLE__)
+    (void)pthread_set_qos_class_self_np(QOS_CLASS_USER_INITIATED, 0);
+#endif
+    return fused_task(argument);
+}
+
+static int extract_values(const unsigned char *input, size_t input_size,
                            const uint64_t *offsets, const uint64_t *sizes, size_t count,
                            unsigned char *output, size_t output_size, size_t begin, size_t end,
-                           const unsigned char *units, int nullterm, unsigned workers) {
+                           const unsigned char *units, int nullterm, unsigned workers, int foreground) {
     if (!input || !offsets || !sizes || !output || !units || !count || count > MAX_CHUNKS ||
         !input_size || input_size > MAX_INPUT || begin >= end || end > count * 64 ||
         output_size != (end - begin) * 8 || workers < 1 || workers > 8 ||
@@ -158,7 +170,7 @@ int disco_trace_extract_v1(const unsigned char *input, size_t input_size,
             count * i / workers, count * (i + 1) / workers, begin, end, nullterm, 0};
         if (workers == 1) fused_task(&tasks[i]);
         else {
-            if (pthread_create(&threads[i], NULL, fused_task, &tasks[i])) { error = -3; break; }
+            if (pthread_create(&threads[i], NULL, foreground ? user_initiated_fused_task : fused_task, &tasks[i])) { error = -3; break; }
             ++created;
         }
     }
@@ -167,6 +179,20 @@ int disco_trace_extract_v1(const unsigned char *input, size_t input_size,
         if (tasks[i].error) error = tasks[i].error;
     }
     return error;
+}
+
+int disco_trace_extract_v1(const unsigned char *input, size_t input_size,
+                           const uint64_t *offsets, const uint64_t *sizes, size_t count,
+                           unsigned char *output, size_t output_size, size_t begin, size_t end,
+                           const unsigned char *units, int nullterm, unsigned workers) {
+    return extract_values(input, input_size, offsets, sizes, count, output, output_size, begin, end, units, nullterm, workers, 0);
+}
+
+int disco_trace_extract_foreground_v1(const unsigned char *input, size_t input_size,
+                           const uint64_t *offsets, const uint64_t *sizes, size_t count,
+                           unsigned char *output, size_t output_size, size_t begin, size_t end,
+                           const unsigned char *units, int nullterm, unsigned workers) {
+    return extract_values(input, input_size, offsets, sizes, count, output, output_size, begin, end, units, nullterm, workers, 1);
 }
 
 static size_t emit_bin(const double *raw, uint32_t *indices, double *values, size_t out,

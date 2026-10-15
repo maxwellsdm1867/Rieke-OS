@@ -42,6 +42,8 @@ class NativeTraceTests(unittest.TestCase):
             ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p,
             ctypes.c_int, ctypes.c_uint]
         cls.helper.disco_trace_extract_v1.restype = ctypes.c_int
+        cls.helper.disco_trace_extract_foreground_v1.argtypes = cls.helper.disco_trace_extract_v1.argtypes
+        cls.helper.disco_trace_extract_foreground_v1.restype = ctypes.c_int
         cls.helper.disco_trace_m4_v1.argtypes = [ctypes.c_void_p, ctypes.c_size_t,
             ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
             ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
@@ -347,7 +349,8 @@ class NativeTraceTests(unittest.TestCase):
             'static int test_create(pthread_t*t,const pthread_attr_t*a,void*(*f)(void*),void*p)'
             '{if(++attempts==2)return EAGAIN;return pthread_create(t,a,f,p);}\n'
             'static int test_join(pthread_t t,void**p){int r=pthread_join(t,p);if(!r)joined++;return r;}\n'
-            'int test_joined(void){return joined;}\n')
+            'int test_joined(void){return joined;}\n'
+            'void test_reset(void){attempts=0;joined=0;}\n')
         library = Path(self.folder.name) / 'failing-create.so'
         sdk = ['-isysroot', subprocess.check_output(['xcrun','--sdk','macosx','--show-sdk-path'],text=True).strip()] if sys.platform == 'darwin' else []
         subprocess.run([compiler,*sdk,'-O2','-dynamiclib' if sys.platform == 'darwin' else '-shared',
@@ -355,21 +358,24 @@ class NativeTraceTests(unittest.TestCase):
         helper = ctypes.CDLL(str(library))
         helper.disco_trace_extract_v1.argtypes = self.helper.disco_trace_extract_v1.argtypes
         helper.disco_trace_extract_v1.restype = ctypes.c_int
-        original_inflate = helper.disco_trace_extract_v1
-        statuses = []
-        def observed(*args):
-            status = original_inflate(*args)
-            statuses.append(status)
-            return status
-        helper.disco_trace_extract_v1 = observed
+        helper.disco_trace_extract_foreground_v1.argtypes = self.helper.disco_trace_extract_v1.argtypes
+        helper.disco_trace_extract_foreground_v1.restype = ctypes.c_int
         self.create()
-        with patch.object(native, '_load_helper', return_value=helper):
-            with self.assertRaisesRegex(ValueError, 'failed exact decompression'):
-                self.read_values()
-        self.assertEqual(statuses, [-3])
-        self.assertEqual(helper.test_joined(), 1)
-        self.assertTrue(native._NATIVE_SLOT.acquire(blocking=False))
-        native._NATIVE_SLOT.release()
+        for enabled, name in ((False, 'disco_trace_extract_v1'), (True, 'disco_trace_extract_foreground_v1')):
+            helper.test_reset()
+            original_inflate = getattr(helper, name)
+            statuses = []
+            def observed(*args):
+                status = original_inflate(*args)
+                statuses.append(status)
+                return status
+            with patch.object(helper,name,side_effect=observed), patch.object(native, '_load_helper', return_value=helper):
+                with self.assertRaisesRegex(ValueError, 'failed exact decompression'):
+                    self.read_values(foreground=enabled)
+            self.assertEqual(statuses, [-3])
+            self.assertEqual(helper.test_joined(), 1)
+            self.assertTrue(native._NATIVE_SLOT.acquire(blocking=False))
+            native._NATIVE_SLOT.release()
 
     def test_decoder_reset_failure_releases_all_workers_and_native_slot(self):
         import json
@@ -528,11 +534,67 @@ class NativeTraceTests(unittest.TestCase):
         self.assertEqual(call(), -1)
 
 
-    def read_values(self, begin=0, end=None, units='pA'):
+    def read_values(self, begin=0, end=None, units='pA', *, foreground=False):
         with h5py.File(self.path, 'r') as h5:
             data = h5['data']
             return native.read_native_values(data, self.signature(), begin,
-                len(data) if end is None else end, units)
+                len(data) if end is None else end, units, foreground=foreground)
+
+    def test_foreground_optional_entry_preserves_values_and_old_helper_fallback(self):
+        values = self.create()
+        default = self.helper.disco_trace_extract_v1
+        foreground = self.helper.disco_trace_extract_foreground_v1
+        for enabled in (False, True):
+            with patch.object(self.helper, 'disco_trace_extract_v1', wraps=default) as ordinary:
+                with patch.object(self.helper, 'disco_trace_extract_foreground_v1', wraps=foreground) as admitted:
+                    result = self.read_values(foreground=enabled)
+                    self.assertEqual(result.tobytes(), values['quantity'].tobytes())
+                    self.assertEqual(ordinary.call_count, int(not enabled))
+                    self.assertEqual(admitted.call_count, int(enabled))
+        class LegacyHelper: pass
+        legacy = LegacyHelper()
+        legacy.disco_trace_extract_v1 = default
+        with patch.object(native, '_load_helper', return_value=legacy):
+            self.assertEqual(self.read_values(foreground=True).tobytes(), values['quantity'].tobytes())
+        with patch.object(native, '_load_helper', return_value=None):
+            self.assertIsNone(self.read_values(foreground=True))
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'Apple worker QoS contract')
+    def test_foreground_promotes_only_spawned_workers_and_qos_failure_is_nonfatal(self):
+        import json
+        compiler = shutil.which('cc') or shutil.which('clang')
+        source = Path(__file__).resolve().parents[2] / 'desktop/native/trace_inflate.c'
+        wrapper = Path(self.folder.name) / 'qos-workers.c'
+        wrapper.write_text(
+            '#include <pthread.h>\n#include <pthread/qos.h>\n#include <stdatomic.h>\n#include <errno.h>\n'
+            'static atomic_int promoted=0,caller_promoted=0; static pthread_t caller;\n'
+            'static int test_qos(qos_class_t q,int relative){'
+            'if(q!=QOS_CLASS_USER_INITIATED||relative!=0)return EINVAL;'
+            'atomic_fetch_add(&promoted,1);'
+            'if(pthread_equal(caller,pthread_self()))atomic_fetch_add(&caller_promoted,1);'
+            'return EPERM;}\n'
+            '#define pthread_set_qos_class_self_np test_qos\n'
+            '#include ' + json.dumps(str(source)) + '\n'
+            '#undef pthread_set_qos_class_self_np\n'
+            'void test_reset(void){caller=pthread_self();promoted=0;caller_promoted=0;}\n'
+            'int test_promoted(void){return promoted;}\n'
+            'int test_caller_promoted(void){return caller_promoted;}\n')
+        library = Path(self.folder.name) / 'qos-workers.so'
+        sdk = subprocess.check_output(['xcrun','--sdk','macosx','--show-sdk-path'], text=True).strip()
+        subprocess.run([compiler,'-isysroot',sdk,'-O2','-dynamiclib','-fPIC',str(wrapper),
+                        '-o',str(library),'-lz','-pthread'],check=True,capture_output=True)
+        helper = ctypes.CDLL(str(library))
+        helper.disco_trace_extract_v1.argtypes = self.helper.disco_trace_extract_v1.argtypes
+        helper.disco_trace_extract_v1.restype = ctypes.c_int
+        helper.disco_trace_extract_foreground_v1.argtypes = self.helper.disco_trace_extract_v1.argtypes
+        helper.disco_trace_extract_foreground_v1.restype = ctypes.c_int
+        values = self.create()
+        for enabled, workers, expected in ((False,4,0),(True,1,0),(True,4,4)):
+            helper.test_reset()
+            with patch.object(native,'_load_helper',return_value=helper), patch.object(native,'_NATIVE_WORKERS',workers):
+                self.assertEqual(self.read_values(foreground=enabled).tobytes(), values['quantity'].tobytes())
+            self.assertEqual(helper.test_promoted(), expected)
+            self.assertEqual(helper.test_caller_promoted(), 0)
 
     def test_fused_values_preserve_bits_partial_chunks_and_only_requested_validation(self):
         values = self.create()

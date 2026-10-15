@@ -151,6 +151,17 @@ NULLPAD or NULLTERM unit strings only. For NULLTERM, the helper zeros bytes afte
 the first NUL exactly as H5 converts to NumPy NULLPAD strings; full-width strings
 and quantity bits remain unchanged. UTF-8/padded/custom H5 types retain generic H5.
 
+Prepared foreground display and exact batch routes pass an explicit, per-call
+`foreground=True` hint only after view admission. Canonical service/native readers
+default to false; global, background, custom and ordinary direct callers retain
+their previous scheduling. An additive optional ABI-4
+`disco_trace_extract_foreground_v1` entry uses the same exact decoder but requests
+macOS user-initiated QoS only inside spawned extraction threads. The calling
+thread, single-worker synchronous path, HDF5 enumeration and M4 reduction are
+unchanged. Failed QoS requests are ignored without changing sample/error semantics;
+missing optional symbols fall back to the original extraction entry. No process
+priority, shared mutable scheduling flag or scientific authority is introduced.
+
 HDF5 resolves sealed paths and chunk metadata on the caller thread. The private
 `workspace_trace_chunk_iteration.py` bridge optionally collects the fresh chunk
 map into fixed arrays through a native callback. Its sole production caller is

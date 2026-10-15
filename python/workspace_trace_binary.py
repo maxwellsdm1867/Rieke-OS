@@ -101,11 +101,12 @@ def wants_binary_trace():
                for media, quality in request.accept_mimetypes)
 
 
-def read_trace_batch(service, epoch, stream, start, count, chunks, *, binary, timing=None):
+def read_trace_batch(service, epoch, stream, start, count, chunks, *, binary, timing=None, foreground=False):
     """Pass the internal array option only to the unchanged canonical method."""
     from workspace_service import _CANONICAL_TRACE_BATCH
     if getattr(service.trace_batch, '__func__', None) is _CANONICAL_TRACE_BATCH:
-        return service.trace_batch(epoch, stream, start, count, chunks, array_windows=binary, timing=timing)
+        return service.trace_batch(epoch, stream, start, count, chunks, array_windows=binary, timing=timing,
+            **({'foreground': True} if foreground is True else {}))
     if type(chunks) is not int or not 1 <= chunks <= 5:
         raise ValueError('Trace batch requires 1–5 chunks')
     return service.trace_batch(epoch, stream, start, count, chunks)

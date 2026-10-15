@@ -185,4 +185,30 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
                            'docs/architecture/trace-worker-execution.md',
                            'python/tests/test_trace_native.py',
                            'python/tests/test_workspace_projection_contract.py',
-                           'python/tests/test_workspace_service.py')})}
+                           'python/tests/test_workspace_service.py')},
+             {'id': 'foreground-trace-qos-projection-compatibility-2026-10-15',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 'a15fe9699c8fdd5134ddc4e8a6640e0de630af784d0c116cb601da4899eb181c',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to clean 5c78fd689c0c9c725272a7a7bdde359fe8b93e0e, workspace_service only '
+                           'adds foreground=False keyword defaults to _response_window_reader and '
+                           'WorkspaceService.trace_batch plus one conditional foreground=True forwarding '
+                           'expression in each. Removing exactly those four AST edits yields an identical '
+                           'whole-file AST; no method bodies are excluded. All other ordered projection owners '
+                           'and resolver are byte-identical. Optional foreground scheduling changes no metadata '
+                           'projection, codec, membership, source validation or cache authority.',
+              'evidence': ('git:5c78fd689c0c9c725272a7a7bdde359fe8b93e0e',
+                           'docs/dev/foreground-trace-qos-projection-compatibility-2026-10-15.md',
+                           'docs/architecture/trace-worker-execution.md',
+                           'python/tests/test_workspace_projection_contract.py',
+                           'python/tests/test_workspace_refresh_cache.py',
+                           'python/tests/test_trace_native.py',
+                           'python/tests/test_trace_views.py')})}

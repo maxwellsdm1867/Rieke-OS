@@ -273,6 +273,14 @@ def _load_helper():
             ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p,
             ctypes.c_int, ctypes.c_uint]
         library.disco_trace_extract_v1.restype = ctypes.c_int
+        # Optional additive feature; older ABI4 helpers retain exact decoding.
+        try:
+            foreground_extract = library.disco_trace_extract_foreground_v1
+        except AttributeError:
+            pass
+        else:
+            foreground_extract.argtypes = library.disco_trace_extract_v1.argtypes
+            foreground_extract.restype = ctypes.c_int
         library.disco_trace_m4_v1.argtypes = [ctypes.c_void_p, ctypes.c_size_t,
             ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
             ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
@@ -317,7 +325,7 @@ def read_native_samples(data, signature, begin, end):
     return _read_native(data, signature, begin, end)
 
 
-def read_native_values(data, signature, begin, end, expected_units):
+def read_native_values(data, signature, begin, end, expected_units, *, foreground=False):
     """Return detached, unit-checked finite f64 values; no truncation of units."""
     try:
         encoded_units = expected_units.encode('utf-8')
@@ -325,10 +333,10 @@ def read_native_values(data, signature, begin, end, expected_units):
         return None
     if len(encoded_units) > 10:
         return None
-    return _read_native(data, signature, begin, end, encoded_units.ljust(10, b'\x00'))
+    return _read_native(data, signature, begin, end, encoded_units.ljust(10, b'\x00'), foreground=foreground)
 
 
-def _read_native(data, signature, begin, end, expected_units=None):
+def _read_native(data, signature, begin, end, expected_units=None, *, foreground=False):
     diagnostic = _current_native_timing()
     if diagnostic is not None: diagnostic.mark('admission')
     try:
@@ -359,7 +367,7 @@ def _read_native(data, signature, begin, end, expected_units=None):
         if helper is None or not _NATIVE_SLOT.acquire(blocking=False):
             return None
         try:
-            return _read_admitted(data, signature, begin, end, helper, dtype, normalize_units, expected_units)
+            return _read_admitted(data, signature, begin, end, helper, dtype, normalize_units, expected_units, foreground=foreground)
         finally:
             _NATIVE_SLOT.release()
     finally:
@@ -467,7 +475,7 @@ def _array_chunk_spans(physical, lengths, file_size, unusual=None, selected=None
     return None if used > MAX_INPUT_BYTES else spans
 
 
-def _read_admitted(data, signature, begin, end, helper, dtype, normalize_units, expected_units=None):
+def _read_admitted(data, signature, begin, end, helper, dtype, normalize_units, expected_units=None, *, foreground=False):
     import numpy as np
     diagnostic = _current_native_timing()
     if diagnostic is not None: diagnostic.mark('enumeration')
@@ -529,7 +537,10 @@ def _read_admitted(data, signature, begin, end, helper, dtype, normalize_units, 
         else:
             output = np.empty(end - begin, dtype='<f8')
             if diagnostic is not None: diagnostic.mark('extract')
-            status = helper.disco_trace_extract_v1(compressed, len(compressed), offsets.ctypes.data,
+            extract = helper.disco_trace_extract_v1
+            if foreground is True:
+                extract = getattr(helper, 'disco_trace_extract_foreground_v1', extract)
+            status = extract(compressed, len(compressed), offsets.ctypes.data,
                 sizes.ctypes.data, len(selected), output.ctypes.data, output.nbytes,
                 begin - first * 64, end - first * 64, expected_units, int(normalize_units), workers)
             if diagnostic is not None: diagnostic.mark('read_finish')

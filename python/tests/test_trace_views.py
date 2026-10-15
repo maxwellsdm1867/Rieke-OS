@@ -227,6 +227,50 @@ class TraceViewTests(unittest.TestCase):
                 query_string=dict(stream_uuid=self.stream, selection_token='mutation-authority'))
         self.assertGreaterEqual(invalid.status_code, 400)
 
+    def test_foreground_option_keeps_custom_batch_adapter_signature(self):
+        from workspace_trace_binary import read_trace_batch
+        calls = []
+        def custom(epoch, stream, start, count, chunks):
+            calls.append((epoch, stream, start, count, chunks))
+            return {'custom':True}
+        adapter = types.SimpleNamespace(trace_batch=custom)
+        self.assertEqual(read_trace_batch(adapter,self.epoch,self.stream,0,100,2,
+            binary=True,foreground=True), {'custom':True})
+        self.assertEqual(len(calls),1)
+
+    def test_only_admitted_prepared_reads_pass_foreground_to_native_extraction(self):
+        from workspace_trace_geometry import CONTENT_TYPE, ALGORITHM
+        from workspace_trace_binary import BINARY_CONTENT_TYPE
+        import workspace_trace_native as native
+        app = Flask(__name__)
+        app.extensions['curation_store'] = None
+        app.register_error_handler(ValueError, lambda error: ({'error':str(error)},400))
+        register_workbench_routes(app,self.service,None,None,lambda:None,lambda:None,
+                                  threading.Lock(),lambda:None)
+        views = app.extensions['trace_views']; views.policy = lambda:True
+        public = views.prepare(self.context)
+        root = f"/api/trace-views/{public['token']}/epochs/{self.epoch}"
+        with patch.object(native,'read_native_values',return_value=None) as read:
+            self.service.trace_batch(self.epoch,self.stream,0,100,2,array_windows=True)
+            self.assertNotIn('foreground',read.call_args.kwargs)
+            with app.test_client() as client, patch('disco.decisions.author_preferences.selected_author',return_value={'profile_uuid':'owner'}):
+                for path, query, media in [
+                    ('/display',dict(stream_uuid=self.stream,count=200,physical_width=7.5,algorithm=ALGORITHM),CONTENT_TYPE),
+                    ('/trace',dict(stream_uuid=self.stream,count=100,chunks=2),BINARY_CONTENT_TYPE)]:
+                    read.reset_mock()
+                    result = client.get(root+path,query_string=query,headers={'Accept':media})
+                    self.assertEqual(result.status_code,200,result.get_json())
+                    self.assertEqual(read.call_args.kwargs,{'foreground':True})
+                    read.reset_mock()
+                    blocked = client.get(root+path,query_string=query,headers={'Accept':media,'X-Disco-Trace-Priority':'background'})
+                    self.assertEqual(blocked.status_code,400)
+                    read.assert_not_called()
+            with app.test_client() as client, patch('disco.decisions.author_preferences.selected_author',return_value={'profile_uuid':'other'}):
+                read.reset_mock()
+                denied = client.get(root+'/trace',query_string=dict(stream_uuid=self.stream,count=100,chunks=2),headers={'Accept':BINARY_CONTENT_TYPE})
+                self.assertEqual(denied.status_code,409)
+                read.assert_not_called()
+
     def test_display_geometry_is_separate_exact_and_independent_of_current_locks(self):
         from workspace_trace_geometry import CONTENT_TYPE, ALGORITHM
         from test_trace_geometry import decode, reference_indices
