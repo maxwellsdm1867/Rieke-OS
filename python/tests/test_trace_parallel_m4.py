@@ -50,7 +50,7 @@ static int fixture_join(pthread_t t,void **result) {
             subprocess.run([compiler, '-O3', '-std=c11', '-Wall', '-Wextra', '-Werror',
                 '-fno-fast-math', '-ffp-contract=off', '-fPIC',
                 '-dynamiclib' if sys.platform == 'darwin' else '-shared',
-                str(path), '-o', str(library), '-lz', '-lm', '-pthread'], check=True, capture_output=True)
+                str(path), '-o', str(library), '-lz', '-lm', '-pthread'], check=True)
             helper = ctypes.CDLL(str(library))
             helper.disco_trace_m4_v1.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double,
                 ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]

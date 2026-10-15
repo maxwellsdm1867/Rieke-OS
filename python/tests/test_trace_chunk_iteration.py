@@ -30,7 +30,7 @@ class TraceChunkIterationTests(unittest.TestCase):
                         '-fno-fast-math', '-ffp-contract=off', '-fPIC',
                         '-dynamiclib' if sys.platform == 'darwin' else '-shared',
                         str(source), '-o', str(library), '-lz', '-lm', '-pthread'],
-                       check=True, capture_output=True)
+                       check=True)
         cls.helper = ctypes.CDLL(str(library))
         cls.helper.disco_trace_chunk_collect_v1.argtypes = [ctypes.POINTER(ctypes.c_uint64),
             ctypes.c_uint, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p]
