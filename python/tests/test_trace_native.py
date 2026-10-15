@@ -83,6 +83,55 @@ class NativeTraceTests(unittest.TestCase):
             d = h5['data']
             return native.read_native_samples(d, self.signature(), begin, len(d) if end is None else end)
 
+    def test_opt_in_native_timing_preserves_exact_values_and_geometry(self):
+        values = self.create(self.values(4097))
+        before_callbacks = list(native.gc.callbacks)
+        with patch.object(native.time, 'perf_counter_ns', side_effect=AssertionError('ordinary clock')):
+            with patch.object(native.time, 'thread_time_ns', side_effect=AssertionError('ordinary CPU clock')):
+                with patch.object(native.time, 'process_time_ns', side_effect=AssertionError('ordinary process clock')):
+                    with native.capture_native_timing(None):
+                        plain = self.read()
+                        geometry = native.reduce_native_display(np.arange(4097, dtype='<f8'), 100.)
+        self.assertEqual(native.gc.callbacks, before_callbacks)
+        timing = {}
+        with native.capture_native_timing(timing):
+            timed = self.read()
+            timed_geometry = native.reduce_native_display(np.arange(4097, dtype='<f8'), 100.)
+        self.assertEqual(plain.tobytes(), timed.tobytes())
+        for left, right in zip(geometry[:2], timed_geometry[:2]):
+            self.assertEqual(left.tobytes(), right.tobytes())
+        self.assertEqual(geometry[2:], timed_geometry[2:])
+        self.assertEqual(native.gc.callbacks, before_callbacks)
+        self.assertIsNone(native._NATIVE_TIMING.get())
+        for stage in ('enumeration', 'map', 'spans', 'buffers', 'pread', 'extract', 'reduce', 'scope'):
+            for clock in ('wall', 'thread_cpu', 'process_cpu'):
+                self.assertGreaterEqual(timing['native_' + stage + '_' + clock], 0)
+        self.assertEqual(timing['_native_counts']['chunks'], 65)
+        self.assertGreater(timing['_native_counts']['read_bytes'], 0)
+        self.assertLessEqual(set(timing) - {'_native_counts'}, set(native.NATIVE_TIMING_METRICS))
+
+    def test_timing_cleanup_preserves_failure_and_missing_helper_fallback(self):
+        self.create()
+        before_callbacks = list(native.gc.callbacks)
+        timing = {}
+        with patch.object(native.os, 'pread', return_value=b''):
+            with self.assertRaisesRegex(ValueError, 'Truncated'):
+                with native.capture_native_timing(timing):
+                    self.read()
+        self.assertEqual(native.gc.callbacks, before_callbacks)
+        self.assertIsNone(native._NATIVE_TIMING.get())
+        self.assertIn('native_pread_wall', timing)
+        self.assertIn('native_scope_wall', timing)
+        fallback = {}
+        with patch.object(native, '_load_helper', return_value=None):
+            with native.capture_native_timing(fallback):
+                self.assertIsNone(self.read())
+        self.assertEqual(fallback['_native_counts']['read_bytes'], 0)
+        self.assertNotIn('native_extract_wall', fallback)
+        self.assertIn('native_scope_wall', fallback)
+        # A diagnostic failure released the same native slot for the next read.
+        self.assertEqual(self.read().tobytes(), self.values().tobytes())
+
     def test_native_exact_full_tail_unaligned_and_four_byte_signature(self):
         values = self.create()
         for begin, end in ((0, len(values)), (13, 1000), (1024, 1025), (0, 64)):

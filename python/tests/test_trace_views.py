@@ -254,7 +254,16 @@ class TraceViewTests(unittest.TestCase):
         self.assertEqual(indices.tolist(), reference_indices(raw, 7.5))
         self.assertEqual(values.tobytes(), raw[indices].tobytes())
         self.assertEqual(header['read_context'], public)
+        self.assertNotIn('Server-Timing', result[0].headers)
         with app.test_client() as client, patch('disco.decisions.author_preferences.selected_author', return_value={'profile_uuid': 'owner'}):
+            timed = client.get(path, query_string=query,
+                headers={'Accept': CONTENT_TYPE, 'X-Disco-Trace-Timing': '1'})
+            self.assertEqual(timed.status_code, 200)
+            self.assertEqual(timed.data, result[0].data, 'Diagnostics must preserve every wire byte')
+            self.assertIn('trace_native_scope_wall;dur=', timed.headers['Server-Timing'])
+            self.assertIn('trace_native_scope_thread_cpu;dur=', timed.headers['Server-Timing'])
+            self.assertIn('trace_native_scope_process_cpu;dur=', timed.headers['Server-Timing'])
+            self.assertLess(len(timed.headers['Server-Timing']), 8192)
             for options in ({}, {'Accept': 'application/json'}, {'Accept': CONTENT_TYPE, 'X-Disco-Trace-Priority': 'background'}):
                 self.assertEqual(client.get(path, query_string=query, headers=options).status_code, 400)
             self.assertEqual(client.get(path, query_string=dict(query, count=199), headers={'Accept':CONTENT_TYPE}).status_code, 400)

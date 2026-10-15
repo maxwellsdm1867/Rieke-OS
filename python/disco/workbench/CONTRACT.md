@@ -399,3 +399,13 @@ fall back; this is not an O(1) authority claim. Workbench tests exercise the act
 native metadata reader with explicit generation doubles and verify equivalent
 revisions, one fallback invocation, custom/unbound behavior and late-change
 refusal. Actual MySQL timing and transaction qualification remain separate.
+
+### Prepared display diagnostic boundary
+
+The prepared display route may open `workspace_trace_native.capture_native_timing`
+only for the existing opt-in trace timing dictionary. This is an observability
+seam, not read admission or authority: the same batch, source checks, geometry
+and wire bytes remain required. Only the native module's fixed numeric metric
+allowlist is emitted. See the [native diagnostic contract](../../../docs/architecture/trace-worker-execution.md#opt-in-native-read-diagnostics)
+for cleanup, thread/GC attribution and timing limits. The timed/untimed route
+example in `python/tests/test_trace_views.py` compares the complete wire bytes.

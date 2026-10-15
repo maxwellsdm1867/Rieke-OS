@@ -1194,16 +1194,18 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         owner = display_actor()
         witness = trace_views.capture(token, epoch, owner)
         mark_trace_timing(timing, 'open')
-        batch = read_trace_batch(service, epoch, request.args['stream_uuid'], 0,
-            min(count, 100000), (count + 99999) // 100000, binary=True, timing=timing)
-        if batch.get('total_samples') != count:
-            raise ValueError('Display geometry sample count changed')
-        try:
-            geometry = prepare_display_geometry(batch, width)
-        except GeometryUnavailable as error:
-            # Only this explicit non-reduction case permits the client to use
-            # its ordinary exact prepared read. Identity failures never do.
-            return jsonify(error=str(error), code='trace_geometry_unavailable'), 409
+        from workspace_trace_native import capture_native_timing, NATIVE_TIMING_METRICS
+        with capture_native_timing(timing):
+            batch = read_trace_batch(service, epoch, request.args['stream_uuid'], 0,
+                min(count, 100000), (count + 99999) // 100000, binary=True, timing=timing)
+            if batch.get('total_samples') != count:
+                raise ValueError('Display geometry sample count changed')
+            try:
+                geometry = prepare_display_geometry(batch, width)
+            except GeometryUnavailable as error:
+                # Only this explicit non-reduction case permits the client to use
+                # its ordinary exact prepared read. Identity failures never do.
+                return jsonify(error=str(error), code='trace_geometry_unavailable'), 409
         mark_trace_timing(timing, 'read')
         geometry = trace_views.finish(token, epoch, owner, witness, geometry)
         mark_trace_timing(timing, 'close')
@@ -1212,7 +1214,9 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         if timing is not None:
             response.headers['Server-Timing'] = ', '.join(
                 f'trace_{stage};dur={timing[stage]:.3f}' for stage in
-                ('open', 'capture', 'samples', 'validate', 'read', 'close', 'encode') if stage in timing)
+                ('open', 'capture', 'samples', 'validate', 'read', 'close', 'encode',
+                 *NATIVE_TIMING_METRICS)
+                if stage in timing)
         response.vary.add('Accept')
         return response
 

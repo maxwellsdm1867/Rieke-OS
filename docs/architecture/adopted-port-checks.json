@@ -2987,6 +2987,7 @@
             "workspace_state_generation",
             "workspace_trace_binary",
             "workspace_trace_geometry",
+            "workspace_trace_native",
             "workspace_trace_views"
           ]
         },
@@ -3097,15 +3098,19 @@
           "file": "python/workspace_trace_native.py",
           "allow": [
             "__future__",
+            "contextlib",
+            "contextvars",
             "ctypes",
             "functools",
+            "gc",
             "h5py",
             "math",
             "numpy",
             "os",
             "pathlib",
             "subprocess",
-            "threading"
+            "threading",
+            "time"
           ]
         }
       ],
@@ -3119,7 +3124,8 @@
           "python/tests/test_workspace_protocol_summary.py",
           "python/tests/test_trace_binary.py",
           "python/tests/test_trace_native.py",
-          "python/tests/test_trace_native_initialization.py"
+          "python/tests/test_trace_native_initialization.py",
+          "python/tests/test_trace_native_timing.py"
         ],
         "javascript": [
           "workspace-app/src/apiCommandPolicy.test.js",

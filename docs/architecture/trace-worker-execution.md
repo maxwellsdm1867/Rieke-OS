@@ -184,6 +184,23 @@ unsupported layouts, malformed bytes, bounds, source changes and missing-helper
 fallback. Those checks do not establish installed-app latency or release readiness.
 
 
+### Opt-in native read diagnostics
+
+The existing `X-Disco-Trace-Timing: 1` display request may capture fixed native
+phase durations: admission/helper, chunk enumeration/map/spans, buffers/pread,
+extraction, completion and reduction. A request-local context adds only bounded
+numeric `Server-Timing` entries; representation bytes and scientific admission
+remain identical. Ordinary requests read no diagnostic clocks and register no
+GC callback. A diagnostic scope always removes its own callback on exit and
+preserves other callbacks and GC policy.
+
+Wall, request-thread CPU and process CPU are separate measurements. Native
+worker CPU is absent from thread CPU; process CPU can include unrelated threads.
+GC durations cover collections initiated in the current request thread/context
+only and overlap their containing phase. Other-thread pauses are not attributed.
+Differences between these clocks alone do not prove scheduling or GC causality.
+Diagnostics may perturb execution and are not ordinary latency qualification.
+
 ## Prepared display views
 
 A prepared trace view is a server-owned, display-only snapshot of exact pending
