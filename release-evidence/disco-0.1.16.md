@@ -4,6 +4,7 @@ Disco 0.1.16 improves large-trace inspection and protects the improvement with r
 - Foreground trace work receives appropriate worker scheduling, reducing intermittent stalls during epoch changes.
 - Trace loading and prepared-view handling avoid redundant requests and stale empty displays.
 - Successfully opening a project closes the completed setup dialog in its originating view, including when returning to a retained project.
+- Saving tags preserves Workbench rows, highlights and navigation while scientific read authority refreshes. Hidden selected views defer renewal until reopened.
 - macOS and Linux regression checks verify exact geometry and cursor values, foreground execution, and draw/frame latency. Publication requires the matching successful trace proof.
 
 Use **App Updates → Check for updates → Download update**, then **Restart to update** when ready. This release uses the existing unsigned Apple silicon testing channel. It is not Developer ID signed or notarized, and does not claim production or universal macOS-version qualification.
