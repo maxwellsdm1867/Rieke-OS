@@ -6,7 +6,7 @@ const http = require('node:http');
 const {chromium}=require('playwright');
 const {spawn} = require('node:child_process');
 const {createHash, randomUUID} = require('node:crypto');
-const {createFixture, launch, gracefulQuit, ownedControl, run} = require('./qualification-helpers.cjs');
+const {createFixture, launch, gracefulQuit, ownedControl, run, projectDraftPath} = require('./qualification-helpers.cjs');
 const {showProjectSidebar,createRendererWatcher,waitForRenderer,rendererId,rendererSnapshot,nativeWindowCount,captureRendererFailure}=require('./renderer-target.cjs');
 const {verifyResources} = require('../updater-validation.cjs');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -267,11 +267,13 @@ async function main() {
     assert.match(await page.title(), /Electron lifecycle fixture/);
     const project = await page.evaluate(() => fetch('/api/projects').then(response => response.json()));
     receipt.test_project_uuid = project.current_project_uuid; assert.ok(project.current_project_uuid);
+    const current=project.projects.filter(item=>item.current);assert.equal(current.length,1);assert.equal(current[0].uuid,receipt.test_project_uuid);
+    receipt.test_project_draft_path=await projectDraftPath(fixture,current[0]);
     await page.screenshot({path: path.join(output, 'project.png')});
   });
   await check('workspace actual app icon loads at upper right without overlap at normal and narrow native widths',
     () => verifyHeaderIcon('.header-app-icon', '.app-header', 'workspace-icon'));
-  await check('rapid warm project navigation persists the current view before document replacement', async () => {
+  await check('retained warm navigation preserves the current view and ordinary active autosave', async () => {
     const secondName = projectName + ' second';
     await page.getByRole('button', {name: 'Add project', exact: true}).click();
     await page.getByRole('dialog', {name: 'Project setup', exact: true}).getByRole('button', {name: /^Create a new project/}).click();
@@ -280,8 +282,10 @@ async function main() {
     await page.getByRole('button', {name: 'Create & open', exact: true}).click();
     await bindProject(secondName);
     await page.waitForFunction(expected => document.title.startsWith(expected), secondName, {timeout: 90000});
-    receipt.second_project_uuid = (await page.evaluate(() => fetch('/api/projects').then(response => response.json()))).current_project_uuid;
-    assert.ok(receipt.second_project_uuid);
+    const registry=await page.evaluate(() => fetch('/api/projects').then(response => response.json()));
+    receipt.second_project_uuid=registry.current_project_uuid;assert.ok(receipt.second_project_uuid);
+    const current=registry.projects.filter(item=>item.current);assert.equal(current.length,1);assert.equal(current[0].uuid,receipt.second_project_uuid);
+    receipt.second_project_draft_path=await projectDraftPath(fixture,current[0]);
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: projectName, exact: true}).click();
     await bindProject(projectName);
     await page.waitForFunction(expected => document.title.startsWith(expected) && !document.title.includes(' second'), projectName, {timeout: 30000});
@@ -290,18 +294,24 @@ async function main() {
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: secondName, exact: true}).click();
     await bindProject(secondName);
     await page.waitForFunction(expected => document.title.startsWith(expected), secondName, {timeout: 30000});
-    // Retained switches keep the renderer alive; its normal idle autosave runs every three seconds.
-    const savedDeadline=Date.now()+10000;let saved;
-    do{saved=JSON.parse(await fs.readFile(path.join(fixture.userData,'drafts',receipt.test_project_uuid+'.json')));if(saved.value.route.page==='activity')break;await delay(100);}while(Date.now()<savedDeadline);
-    assert.equal(saved.value.route.page, 'activity');
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: projectName, exact: true}).click();
     await bindProject(projectName);
     await page.waitForFunction(expected => document.title.startsWith(expected) && !document.title.includes(' second'), projectName, {timeout: 30000});
     await page.waitForFunction(() => [...document.querySelectorAll('.nav-item.active')].some(item => item.textContent.includes('Logs')));
+    // Retained switches preserve the live view without a persistence barrier.
+    // Observe the normal three-second autosave only after its owner is active.
+    const savedDeadline=Date.now()+10000;let saved;
+    do{
+      try{saved=JSON.parse(await fs.readFile(receipt.test_project_draft_path));}
+      catch(error){if(error.code!=='ENOENT')throw error;}
+      if(saved?.value?.route?.page==='activity')break;
+      await delay(100);
+    }while(Date.now()<savedDeadline);
+    assert.equal(saved?.value?.route?.page,'activity','Active retained view must ordinarily autosave its exact Logs route within 10 seconds');
     return {warm_document_handoff: true, route_persisted: 'activity', elapsed_ms: Date.now() - navigationStart};
   });
   await check('missing saved view opens normally without corrupt-draft recovery', async () => {
-    const missing = path.join(fixture.userData, 'drafts', receipt.second_project_uuid + '.json');
+    const missing = receipt.second_project_draft_path;
     const secondName = projectName + ' second';
     await page.getByRole('navigation', {name: 'Research projects'}).getByRole('button', {name: secondName, exact: true}).click();
     await bindProject(secondName);
@@ -424,7 +434,7 @@ async function main() {
   await check('durable real renderer draft survives orderly close and cold restart', async () => {
     await page.getByRole('button', {name: 'Project files', exact: true}).click();
     await gracefulQuit(application, page); application = null; page = null;
-    const saved = JSON.parse(await fs.readFile(path.join(fixture.userData, 'drafts', receipt.test_project_uuid + '.json')));
+    const saved = JSON.parse(await fs.readFile(receipt.test_project_draft_path));
     assert.equal(saved.format, 'rieke-renderer-draft'); assert.equal(saved.value.route.page, 'files');
     await start(null); // The persisted startup preference restores this project directly.
     await chooseTestProfile();
@@ -433,7 +443,7 @@ async function main() {
   });
   await check('project draft identity mismatch requires visible preserved recovery', async () => {
     await gracefulQuit(application, page); application = null; page = null;
-    const filename = path.join(fixture.userData, 'drafts', receipt.test_project_uuid + '.json');
+    const filename = receipt.test_project_draft_path;
     const saved = JSON.parse(await fs.readFile(filename, 'utf8'));
     const corrupted = JSON.stringify({...saved, projectId: 'launcher'}); await fs.writeFile(filename, corrupted);
     await start(null); // The persisted startup preference restores this project directly.
@@ -477,7 +487,7 @@ async function main() {
     }
     await page.screenshot({path:path.join(output,'renderer-recovery.png')});
     await quitAndVerifyOwnedExit();
-    const saved=JSON.parse(await fs.readFile(path.join(fixture.userData,'drafts',receipt.test_project_uuid+'.json'),'utf8'));
+    const saved=JSON.parse(await fs.readFile(receipt.test_project_draft_path,'utf8'));
     assert.equal(saved.projectId,receipt.test_project_uuid);
     assert.equal(saved.value.route.page,'files');
     await assert.rejects(fs.stat(path.join(fixture.userData,'desktop-service.json')),{code:'ENOENT'});
