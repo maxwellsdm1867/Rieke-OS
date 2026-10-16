@@ -590,7 +590,17 @@ oracle must succeed on two later distinct animation frames, and a pending or
 incorrect observation resets its streak. Readiness keeps its existing timeout.
 
 Receipts bind the dispatch protocol, frame timestamp, wait and observation clock
-to each sample and reject missing, old or inconsistent evidence. This controls the
+to each sample and reject missing, old or inconsistent evidence. Elapsed time and
+ordering use only the recorded `performance.now()` samples. The RAF callback
+argument identifies its rendering frame; it is not ordered against a separately
+sampled `performance.now()` value. Run 38853576552 exposed a 0.1 ms difference
+in the opposite order, and its failed receipt remains preserved. The correction
+removes that unsupported cross-API ordering predicate without adding a tolerance,
+changing elapsed values or changing the dispatch protocol. Finite nonnegative
+frame identity and the page observer's two later distinct actual frames remain
+required. See the [HTML rendering timestamp algorithm](https://html.spec.whatwg.org/multipage/webappapis.html#update-the-rendering)
+and [High Resolution Time coarsening rules](https://www.w3.org/TR/hr-time-3/#sec-coarsen-time).
+This controls the
 synthetic input dispatch to an actual browser frame callback. Callback delivery can
 lag its frame timestamp, so this does not guarantee a full frame budget or eliminate
 scheduling variance. The fixed traced diagnostic did not demonstrate reduced

@@ -264,8 +264,11 @@ def validate_click_protocol(row):
         number(observer.get(key), 'click observer ' + key)
     if not (observer['dispatch_requested_at'] <= observer['armed_at'] <= observer['intent_at'] < observer['first_raf_at'] <= observer['ready_at']):
         raise ValueError('Invalid click observer order')
-    if (observer['dispatch_frame_timestamp'] > observer['intent_at'] or
-            abs(observer['dispatch_wait_ms'] - (observer['intent_at'] - observer['dispatch_requested_at'])) > 1e-6 or
+    # RAF supplies the rendering timestamp; intent is a separate performance.now()
+    # sample. Their exposed precision can differ, so do not order these APIs.
+    # Elapsed proofs use performance.now() only; RAF identity remains finite above
+    # and distinct actual frames are enforced by the unchanged page observer.
+    if (abs(observer['dispatch_wait_ms'] - (observer['intent_at'] - observer['dispatch_requested_at'])) > 1e-6 or
             observer.get('required_correct_raf_callbacks') != 2 or type(observer.get('raf_callbacks')) is not int or observer['raf_callbacks'] < 2):
         raise ValueError('Invalid click dispatch evidence')
     total = number(row.get('total_ms'), 'click total')

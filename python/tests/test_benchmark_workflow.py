@@ -190,6 +190,42 @@ class WorkflowContractTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 bench.validate_browser(result, {'cases': [{'id': 'inspect', 'trace': False}]}, 1_000_000, 2)
 
+    def test_click_protocol_accepts_retained_raf_timestamp_precision_case(self):
+        # Run 38853576552, pinned ordinary-0-workbench.prepare-fresh. Keep the
+        # actual serialized values; do not shift timestamps to make them ordered.
+        row = {'total_ms': 3956.7999999999884, 'observer': {
+            'dispatch_protocol': bench.CLICK_PROTOCOL,
+            'dispatch_requested_at': 17347.899999999965,
+            'dispatch_frame_timestamp': 17348.3,
+            'dispatch_wait_ms': 0.30000000004656613,
+            'armed_at': 17348.20000000001, 'intent_at': 17348.20000000001,
+            'first_raf_at': 17365.29999999999, 'ready_at': 21305,
+            'raf_callbacks': 237, 'required_correct_raf_callbacks': 2}}
+        bench.validate_click_protocol(row)
+        for field, value in (('dispatch_frame_timestamp', float('nan')),
+                             ('dispatch_frame_timestamp', float('inf')),
+                             ('dispatch_frame_timestamp', -1),
+                             ('dispatch_requested_at', 17349),
+                             ('armed_at', 17349), ('first_raf_at', 17348),
+                             ('ready_at', 17348), ('dispatch_wait_ms', 0)):
+            changed = copy.deepcopy(row); changed['observer'][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                bench.validate_click_protocol(changed)
+        changed = copy.deepcopy(row); changed['total_ms'] -= .1
+        with self.assertRaisesRegex(ValueError, 'total differs'):
+            bench.validate_click_protocol(changed)
+        changed = copy.deepcopy(row); changed['trace'] = {'complete_ms': row['total_ms'] - .1}
+        with self.assertRaisesRegex(ValueError, 'Trace complete differs'):
+            bench.validate_click_protocol(changed)
+
+    def test_click_clock_correction_preserves_request_ownership_refusal(self):
+        result = self.browser_result()
+        result['actions'][0]['samples'][0]['requests'] = [{
+            'action_id': 'another-action', 'request_id': 'foreign', 'status': 200,
+            'start_ms': 1, 'headers_ms': 2, 'end_ms': 3}]
+        with self.assertRaises(ValueError):
+            bench.validate_browser(result, {'cases': [{'id': 'inspect', 'trace': False}]}, 1_000_000, 2)
+
     def test_browser_rejects_missing_actions_failed_oracles_wrong_scale_and_cleanup(self):
         cfg = {'cases': [{'id': 'inspect', 'trace': False}]}
         bench.validate_browser(self.browser_result(), cfg, 1_000_000, 2)
