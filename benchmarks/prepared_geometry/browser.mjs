@@ -12,7 +12,12 @@ const require=createRequire(path.join(root,'desktop/package.json')),{chromium}=r
 let server,browser,context;const results=[];const receipt={status:'running',diagnostic_only:true,native_mysql:false,metadata_epochs:meta.epochs,cohort_epochs:meta.protocol_epochs,trace_samples:1000000,source:root,conditions:meta.diagnostic};
 try{
  const {buildOwnedProduction}=await import('./build.mjs');receipt.production_build=await buildOwnedProduction(root,meta,output);
- browser=process.env.DISCO_DIAGNOSTIC_BROWSER_ENDPOINT?await chromium.connect(process.env.DISCO_DIAGNOSTIC_BROWSER_ENDPOINT):await chromium.launch({headless:browserMode!=='chromium-headed',...(browserMode==='shell'?{}:{channel:'chromium'}),args:['--no-first-run','--no-default-browser-check']});receipt.environment={browser_mode:browserMode,paired_protocol:process.env.DISCO_DIAGNOSTIC_COORDINATION?'BCCBBC-single-browser-fresh-contexts':null,playwright:require('playwright/package.json').version,node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},dpr:1,runtime:'production-react-direct-werkzeug',http_server:meta.http_server,vite_proxy:false,timing_mode:timingEnabled?'diagnostic':'ordinary'};
+ let sharedEndpoint=process.env.DISCO_DIAGNOSTIC_BROWSER_ENDPOINT;
+ if(process.env.DISCO_DIAGNOSTIC_ENDPOINT_FILE){
+  await fs.writeFile(path.join(process.env.DISCO_DIAGNOSTIC_COORDINATION,process.env.DISCO_DIAGNOSTIC_ARM+'-built'),'built');
+  const until=Date.now()+300000;for(;;){try{sharedEndpoint=await fs.readFile(process.env.DISCO_DIAGNOSTIC_ENDPOINT_FILE,'utf8');break;}catch{}if(Date.now()>until)throw Error('Endpoint handoff timeout');await new Promise(r=>setTimeout(r,20));}
+ }
+ browser=sharedEndpoint?await chromium.connect(sharedEndpoint):await chromium.launch({headless:browserMode!=='chromium-headed',...(browserMode==='shell'?{}:{channel:'chromium'}),args:['--no-first-run','--no-default-browser-check']});receipt.environment={browser_mode:browserMode,paired_protocol:process.env.DISCO_DIAGNOSTIC_COORDINATION?'BCCBBC-independent-browsers-fresh-contexts':null,playwright:require('playwright/package.json').version,node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},dpr:1,runtime:'production-react-direct-werkzeug',http_server:meta.http_server,vite_proxy:false,timing_mode:timingEnabled?'diagnostic':'ordinary'};
  const coordination=process.env.DISCO_DIAGNOSTIC_COORDINATION,arm=process.env.DISCO_DIAGNOSTIC_ARM;
  if(coordination)await fs.writeFile(path.join(coordination,arm+'-ready'),'ready');
  for(let sample=0;sample<samples;sample++){

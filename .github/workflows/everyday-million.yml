@@ -40,7 +40,7 @@ jobs:
             done
           done
           git rev-parse HEAD > "$RUNNER_TEMP/frame-diagnostic/harness-commit.txt"
-      - name: Paired six-context diagnostic with unchanged oracles
+      - name: Independent-browser paired six-context diagnostic with unchanged oracles
         env:
           PREPARED_GEOMETRY_TIMING: '1'
           PYTHONDONTWRITEBYTECODE: '1'
