@@ -31,10 +31,18 @@ async function ownedProcesses(){
 }
 async function quitAndVerify(){
  const before=await ownedProcesses();assert.ok(before.length,'Owned packaged processes must exist before shutdown');
+ receipt.quit_diagnostics ||= [];
+ const diagnostic={started_at:new Date().toISOString(),owned_processes_before:before};
+ receipt.quit_diagnostics.push(diagnostic);
+ diagnostic.renderers_before=await captureRendererFailure(application,'smoke-before-quit');
+ await write();
  await bounded(gracefulQuit(application,page),'Orderly quit',45000);application=null;page=null;
  const deadline=Math.min(workDeadline,Date.now()+10000);let left;
  do{left=await ownedProcesses();if(!left.length)break;await delay(200);}while(Date.now()<deadline);
  assert.equal(left.length,0,'Root, project, native database and Electron processes must all exit');
+ diagnostic.exited_at=new Date().toISOString();
+ diagnostic.registry_after=await fs.readFile(path.join(fixture.userData,'desktop-service.json'),'utf8').then(JSON.parse,error=>{if(error.code==='ENOENT')return null;throw error;});
+ await write();
  await assert.rejects(fs.stat(path.join(fixture.userData,'desktop-service.json')),{code:'ENOENT'});
  return{orderly_exit:true,owned_processes_before:before.length,owned_processes_after:0,root_registry_removed:true};
 }
