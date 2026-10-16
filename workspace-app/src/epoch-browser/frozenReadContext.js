@@ -1,4 +1,5 @@
 import {predicateIdentity} from '../typed-query/predicateIdentity.js';
+import {annotationFilterNeedsRefresh} from '../annotations/annotationReceipts.js';
 // Frozen candidate reads never fall back to a current protocol/global endpoint.
 export function frozenReadQuery(context,query=''){
  const params=new URLSearchParams(query);
@@ -28,5 +29,17 @@ export function frozenPresentationScope(context,protocolId,query=''){
  const params=new URLSearchParams(query);
  const cohort=typeof context?.cohort_key==='string'&&context.cohort_key?context.cohort_key:null;
  if(cohort)params.delete('candidate_scope_revision');
- return JSON.stringify([context?.root||`/protocols/${protocolId}`,protocolId,params.toString(),cohort]);
+ const selectedView=cohort&&typeof context?.selection_view_key==='string'&&context.selection_view_key?context.selection_view_key:null;
+ if(selectedView)params.delete('selection_token');
+ return JSON.stringify([context?.root||`/protocols/${protocolId}`,protocolId,params.toString(),cohort,...(selectedView?[selectedView]:[])]);
+}
+
+// A stable cohort can retain navigation through tag/draft authority refreshes.
+// Annotation-dependent membership or grouping still needs fresh navigation.
+// This key is never sent to a read or command endpoint as authority.
+export function frozenTreePresentationScope({projectId,protocolId,readContext,filters={},splits='',predicate,expectedRevision}){
+ if(!readContext?.cohort_key||predicate||annotationFilterNeedsRefresh(filters)||typeof splits!=='string'
+   ||splits.split(',').some(field=>/^(annotations\/|curation\/|tag$|tags$)/.test(field)))return null;
+ return JSON.stringify([projectId??null,readContext.actor??null,
+   frozenPresentationScope(readContext,protocolId,new URLSearchParams(filters).toString()),splits,expectedRevision??null]);
 }

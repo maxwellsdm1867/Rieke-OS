@@ -13,6 +13,57 @@ from disco.workbench.workbench import WorkbenchConflict
 from disco.operation_timing import elapsed
 
 
+_CONTENT_FIELDS = ('protocol_uuid', 'main_revision_uuid', 'main_recipe_sha256', 'binding_version',
+    'origins', 'pending_sha256', 'source_scope_revision', 'annotation_scope_revision',
+    'current_fingerprints_sha256')
+_AUTHORITY_FIELDS = frozenset((*_CONTENT_FIELDS, 'query_revision', 'shared_annotations_revision'))
+
+
+def content_identity(authority):
+    """Recipe reuse only; live read/command authority still uses the full snapshot."""
+    if set(authority) != _AUTHORITY_FIELDS:
+        raise WorkbenchConflict('Cumulative content identity requires complete recognized authority')
+    return checksum(dict(version=1, **{key: authority[key] for key in _CONTENT_FIELDS}))
+
+
+def reusable_candidate(manager, protocol, actor, snapshot, suggestion_uuid):
+    """Find an exact sealed cohort, including candidates prepared by older builds.
+
+    Prefer this actor's current draft so an annotation refresh keeps the mounted
+    root. Creation provenance stays immutable; the new receipt carries today's
+    full authority. Neither matching counts nor matching UUIDs alone suffice.
+    """
+    table = manager.suggestions.Table
+    rows = [row for row in (table & dict(project_uuid=manager.project, protocol_uuid=protocol)).to_dicts()
+            if row['summary'].get('kind') == 'workbench_pending_union']
+    rows.sort(key=lambda row: (row['summary']['created_at'], row['suggestion_uuid']), reverse=True)
+    current = next((row for row in rows if (manager.tables[0] & manager.key(protocol,
+        row['summary']['candidate_revision_uuid'], actor)).to_dicts()), None)
+    rows.sort(key=lambda row: (row is not current, row['suggestion_uuid'] != suggestion_uuid))
+    expected = {**snapshot['main_members'], **snapshot['pending']}
+    for row in rows:
+        summary = row['summary']
+        record = manager.history.get(summary['candidate_revision_uuid'])
+        recipe = record['recipe']
+        provenance = recipe.get('pending_union_provenance', {})
+        authority = {key: value for key, value in provenance.items() if key != 'snapshot_sha256'}
+        matches = (set(authority) == _AUTHORITY_FIELDS
+            and provenance.get('snapshot_sha256') == checksum(authority)
+            and content_identity(authority) == snapshot['content_sha256'])
+        if not matches:
+            if row['suggestion_uuid'] == suggestion_uuid:
+                raise WorkbenchConflict('Prepared content identity collision')
+            continue
+        members = {item['uuid']: item['metadata_hash'] for item in recipe['epochs']}
+        if (members != expected or len(members) != len(recipe['epochs'])
+                or recipe.get('parent_revision_uuid') != snapshot['main']['revision_uuid']
+                or summary.get('baseline_revision_uuid') != snapshot['main']['revision_uuid']
+                or summary.get('baseline_binding_version') != snapshot['authority']['binding_version']):
+            raise WorkbenchConflict('Prepared content does not match its sealed cohort')
+        return summary, record
+    return None
+
+
 def snapshot_authority(manager, protocol, actor, *, query_revision_guard=None):
     binding = manager.history.protocol_binding(protocol)
     if not binding:
@@ -47,7 +98,7 @@ def snapshot_authority(manager, protocol, actor, *, query_revision_guard=None):
         source_scope_revision=scope['revision'], annotation_scope_revision=(annotation or {}).get('revision'),
         shared_annotations_revision=shared.snapshot()['revision'] if shared else None,
         current_fingerprints_sha256=checksum({key: manager.service._fingerprints.get(key) for key in pending.keys() | main_members.keys()}))
-    return dict(authority=authority, sha256=checksum(authority), main=main, pending=pending,
+    return dict(authority=authority, sha256=checksum(authority), content_sha256=content_identity(authority), main=main, pending=pending,
         main_members=main_members, scope=scope, annotation=annotation)
 
 
@@ -111,9 +162,8 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
                 originals = manager.original_records(protocol)
                 if not originals:
                     raise ValueError('No immutable incoming proposal history is available')
-                suggestion_uuid = str(uuid.uuid5(uuid.UUID(manager.project), 'workbench-pending:' + snapshot['sha256']))
+                suggestion_uuid = str(uuid.uuid5(uuid.UUID(manager.project), 'workbench-pending-content-v1:' + snapshot['content_sha256']))
                 table = manager.suggestions.Table
-                records = (table & dict(project_uuid=manager.project, suggestion_uuid=suggestion_uuid)).to_dicts()
                 old_header, old_decisions, carried_from = draft_carry(manager, protocol, owner, snapshot['pending'])
                 transaction_authority = manager.transaction_authority(protocol)
                 with manager.service.dj.conn().transaction:
@@ -127,12 +177,10 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
                         # The transaction must exit before this response can be
                         # published. Replay still receives no fresh-v1 header.
                         return jsonify(dict(existing, bootstrap=fresh['bootstrap']))
-                    if records:
-                        summary = records[0]['summary']
-                        record = manager.history.get(summary['candidate_revision_uuid'])
+                    reused = reusable_candidate(manager, protocol, owner, snapshot, suggestion_uuid)
+                    if reused:
+                        summary, record = reused
                         recipe = record['recipe']
-                        if recipe.get('pending_union_provenance', {}).get('snapshot_sha256') != snapshot['sha256']:
-                            raise WorkbenchConflict('Prepared snapshot identity collision')
                     else:
                         union = {**snapshot['main_members'], **snapshot['pending']}
                         main = snapshot['main']
@@ -185,10 +233,10 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
                         candidate_scope_revision=context['candidate_scope_revision'], context=context,
                         queue_revision=value['expected_queue_revision'], prepare_operation_uuid=operation,
                         operation_uuid=operation, protocol_uuid=protocol, actor=owner,
-                        snapshot_sha256=snapshot['sha256'], origin_count=len(snapshot['authority']['origins']), reused=bool(records),
+                        snapshot_sha256=snapshot['sha256'], origin_count=len(snapshot['authority']['origins']), reused=bool(reused),
                         draft_initialization=dict(initialized=initialized, carried_from=carried_from if initialized else [],
                             carried_decision_count=carried_count),
-                        counts=context['counts'], storage=dict(revision_count_delta=0 if records else 1,
+                        counts=context['counts'], storage=dict(revision_count_delta=0 if reused else 1,
                             recipe_json_bytes=len(json.dumps(recipe, sort_keys=True, separators=(',', ':')).encode())))
                     manager.tables[2].insert1(dict(project_uuid=manager.project, operation_uuid=operation,
                         protocol_uuid=protocol, candidate_revision_uuid=revision, actor=owner, request_sha256=request_hash, receipt=result))
@@ -198,6 +246,6 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
                 # must never acquire this response-local freshness signal.
                 response = jsonify(dict(result, bootstrap=bootstrap) if bootstrap is not None else result)
                 response.headers['X-Disco-Workbench-Context'] = 'fresh-v1'
-                return response, 200 if records else 201
+            return response, 200 if reused else 201
 
     manager.cumulative_pending_browse = True

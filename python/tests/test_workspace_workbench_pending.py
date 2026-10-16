@@ -13,6 +13,124 @@ class CumulativePendingTests(unittest.TestCase):
     setUp = WorkbenchTests.setUp
     get_context = WorkbenchTests.get_context
 
+    def test_saved_epoch_and_cell_tags_refresh_in_place_without_new_recipe_or_lost_selection(self):
+        shared = WorkbenchTests.coverage_annotations(self)
+        profile = shared.create_profile('Fixture author', 'actor-one')['profile_uuid']
+        prepared, _ = self.prepare()
+        prepared = self.patch_draft(prepared, [dict(epoch_uuid=self.added, selected=True, reviewed=True)])
+        original = copy.deepcopy(self.manager.history.get(prepared['candidate_revision_uuid']))
+        selection = prepared['context']['draft']
+        for kind, target in [('epoch', self.added), ('cell', self.case.service.rows[self.added]['cell_uuid'])]:
+            shared.update(kind, [target], profile, {'tags_add': ['keep-' + kind]}, {target: 0}, 'actor-one')
+            fresh, _ = self.prepare()
+            self.assertEqual(fresh['candidate_revision_uuid'], prepared['candidate_revision_uuid'])
+            self.assertEqual(fresh['context']['draft'], selection)
+            page = self.case.client.get('/api' + fresh['root'] + '/epochs',
+                query_string={'candidate_scope_revision': fresh['candidate_scope_revision']})
+            self.assertEqual(page.status_code, 200, page.get_json())
+            rows = page.get_json()['epochs']
+            self.assertEqual([row['epoch_uuid'] for row in rows], [self.added])
+            self.assertIn('keep-' + kind, [tag['tag'] for tag in rows[0]['annotations']['effective_tags']])
+            self.assertEqual(self.manager.history.get(fresh['candidate_revision_uuid']), original)
+
+    def test_reuse_refuses_incomplete_provenance_and_wrong_membership(self):
+        from disco.workbench.workbench_pending import snapshot_authority, reusable_candidate
+        from disco.workbench.workbench import WorkbenchConflict
+        prepared, _ = self.prepare()
+        snapshot = snapshot_authority(self.manager, self.protocol, 'actor-one')
+        row = next(row for row in self.case.suggestion_rows.rows if row['summary']['candidate_revision_uuid'] == prepared['candidate_revision_uuid'])
+        record = self.manager.history.get(prepared['candidate_revision_uuid'])
+        for problem in ['missing provenance', 'wrong membership', 'wrong baseline']:
+            broken = copy.deepcopy(record)
+            if problem == 'missing provenance':
+                del broken['recipe']['pending_union_provenance']['current_fingerprints_sha256']
+            elif problem == 'wrong membership':
+                broken['recipe']['epochs'] = []
+            else:
+                broken['recipe']['parent_revision_uuid'] = str(uuid.uuid4())
+            with patch.object(self.manager.history, 'get', return_value=broken), self.assertRaises(WorkbenchConflict, msg=problem):
+                reusable_candidate(self.manager, self.protocol, 'actor-one', snapshot, row['suggestion_uuid'])
+
+    def test_current_actor_candidate_is_checked_before_historical_recipes(self):
+        from disco.workbench.workbench_pending import snapshot_authority, reusable_candidate
+        prepared, _ = self.prepare()
+        snapshot = snapshot_authority(self.manager, self.protocol, 'actor-one')
+        row = next(row for row in self.case.suggestion_rows.rows if row['summary']['candidate_revision_uuid'] == prepared['candidate_revision_uuid'])
+        for index in range(200):
+            old = copy.deepcopy(row)
+            old['suggestion_uuid'] = str(uuid.uuid4())
+            old['summary'].update(created_at='2000-01-01T00:00:00Z', candidate_revision_uuid=str(uuid.uuid4()))
+            self.case.suggestion_rows.insert1(old)
+        with patch.object(self.manager.history, 'get', wraps=self.manager.history.get) as reads:
+            reused = reusable_candidate(self.manager, self.protocol, 'actor-one', snapshot, row['suggestion_uuid'])
+            self.assertEqual(reused[0]['candidate_revision_uuid'], prepared['candidate_revision_uuid'])
+            self.assertEqual(reads.call_count, 1, 'current draft lookup must not deserialize historical recipes')
+
+    def test_shared_tag_refresh_reuses_exact_candidate_and_keeps_live_authority_fresh(self):
+        shared = WorkbenchTests.coverage_annotations(self)
+        annotation_revision = ['before-tag']
+        with patch.object(shared, 'snapshot', side_effect=lambda: dict(revision=annotation_revision[0], records=[])):
+            prepared, original_request = self.prepare()
+            prepared = self.patch_draft(prepared, [dict(epoch_uuid=self.added, selected=True, reviewed=True)])
+            before = self.get_context('/api' + prepared['root'])
+            old_queue = self.queue()['queue_revision']
+            recipe = copy.deepcopy(self.manager.history.get(prepared['candidate_revision_uuid']))
+            revision_count = len(self.case.explorer_revisions.rows)
+            annotation_revision[0] = 'after-tag'
+            self.assertNotEqual(self.queue()['queue_revision'], old_queue)
+            fresh, _ = self.prepare()
+            self.assertEqual(fresh['candidate_revision_uuid'], prepared['candidate_revision_uuid'])
+            self.assertEqual(fresh['root'], prepared['root'])
+            self.assertTrue(fresh['reused'])
+            self.assertFalse(fresh['draft_initialization']['initialized'])
+            self.assertEqual(fresh['storage']['revision_count_delta'], 0)
+            self.assertEqual(len(self.case.explorer_revisions.rows), revision_count)
+            self.assertEqual(self.manager.history.get(fresh['candidate_revision_uuid']), recipe)
+            self.assertEqual(fresh['context']['draft'], before['draft'])
+            self.assertNotEqual(fresh['candidate_scope_revision'], before['candidate_scope_revision'])
+            root = '/api' + fresh['root']
+            stale = self.case.client.get(root + '/epochs', query_string={'candidate_scope_revision': before['candidate_scope_revision']})
+            self.assertEqual(stale.status_code, 409, stale.get_json())
+            stale_write = self.case.client.patch(root + '/draft', json=dict(expected_version=before['draft']['draft_version'],
+                expected_candidate_scope_revision=before['candidate_scope_revision'], decisions=[]), headers=self.case.headers)
+            self.assertEqual(stale_write.status_code, 409, stale_write.get_json())
+            page = self.case.client.get(root + '/epochs', query_string={'candidate_scope_revision': fresh['candidate_scope_revision']})
+            self.assertEqual(page.status_code, 200, page.get_json())
+            self.assertEqual([row['epoch_uuid'] for row in page.get_json()['epochs']], [self.added])
+            # A new prepare does not turn an old operation replay into a new receipt.
+            replay, _ = self.prepare(original_request)
+            self.assertNotEqual(replay['candidate_scope_revision'], fresh['candidate_scope_revision'])
+
+    def test_tag_refresh_reuses_legacy_candidate_without_rewriting_creation_provenance(self):
+        shared = WorkbenchTests.coverage_annotations(self)
+        annotation_revision = ['before-tag']
+        with patch.object(shared, 'snapshot', side_effect=lambda: dict(revision=annotation_revision[0], records=[])):
+            prepared, _ = self.prepare()
+            recipe = copy.deepcopy(self.manager.history.get(prepared['candidate_revision_uuid']))
+            legacy_id = str(uuid.uuid5(uuid.UUID(self.manager.project), 'workbench-pending:' + prepared['snapshot_sha256']))
+            for row in self.case.suggestion_rows.rows:
+                if row['summary']['candidate_revision_uuid'] == prepared['candidate_revision_uuid']:
+                    row['suggestion_uuid'] = legacy_id
+                    row['summary']['suggestion_uuid'] = legacy_id
+            annotation_revision[0] = 'after-tag'
+            fresh, _ = self.prepare()
+            self.assertTrue(fresh['reused'])
+            self.assertEqual(fresh['candidate_revision_uuid'], prepared['candidate_revision_uuid'])
+            self.assertEqual(self.manager.history.get(fresh['candidate_revision_uuid']), recipe)
+            self.assertNotEqual(fresh['snapshot_sha256'], prepared['snapshot_sha256'])
+
+    def test_content_identity_changes_for_every_structural_witness_but_not_live_tag_or_query_revision(self):
+        from disco.workbench.workbench_pending import snapshot_authority, content_identity
+        authority = snapshot_authority(self.manager, self.protocol, 'actor-one')['authority']
+        identity = content_identity(authority)
+        for field in ('protocol_uuid', 'main_revision_uuid', 'main_recipe_sha256', 'binding_version', 'origins',
+                'pending_sha256', 'source_scope_revision', 'annotation_scope_revision', 'current_fingerprints_sha256'):
+            changed = {**authority, field: ['different', authority[field]]}
+            self.assertNotEqual(content_identity(changed), identity, field)
+            with self.assertRaisesRegex(Exception, 'complete recognized authority'):
+                content_identity({key: value for key, value in authority.items() if key != field})
+        self.assertEqual(content_identity({**authority, 'query_revision': 'new-query', 'shared_annotations_revision': 'new-tags'}), identity)
+
     def native_transaction_receipts(self):
         from workspace_state_generation import GenerationToken
         from disco.workbench.recipes import checksum

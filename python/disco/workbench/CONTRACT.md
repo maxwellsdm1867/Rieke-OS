@@ -90,6 +90,21 @@ partly commit; refresh after a later failure. Durable operation UUID replay and
 uncertain request recovery keep their existing exact body/root/receipt semantics.
 No client-intent cohort key or remembered view acquires backend authority.
 
+Cumulative recipe reuse has a separate versioned content identity. It includes
+main recipe/binding, original proposal and baseline identities, predicate annotation
+witnesses, exact pending/current fingerprints and source scope. General shared-tag
+and query revisions remain in the full opening/closing authority snapshot, queue,
+context and operation receipt; they alone do not require a different immutable
+candidate. A tag-only prepare can therefore refresh authority at the same root.
+`reusable_candidate` prefers the actor's current draft, then the deterministic
+content identity and equivalent legacy candidates. It verifies sealed provenance,
+complete required fields, exact main-plus-pending membership and baseline/parent
+binding. Missing evidence cannot establish reuse. Creation provenance is never
+rewritten; a new prepare receipt describes current authority. Durable replay still
+returns its original body and does not acquire a fresh-context header.
+The pending suite covers real epoch/cell tag saves, legacy reuse, stale reads and
+writes, corrupt/incomplete reuse evidence and the current-draft history fast path.
+
 A successful preparation response that computed and closed its context during
 that request includes `X-Disco-Workbench-Context: fresh-v1` only after its SQL
 transaction exits successfully. This covers both a new cumulative recipe and

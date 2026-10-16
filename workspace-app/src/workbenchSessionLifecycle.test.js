@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import React,{act} from 'react';
 import {createRoot} from 'react-dom/client';
 import {fileURLToPath} from 'node:url';
@@ -11,19 +12,21 @@ const epochs=[1,2].map(index=>({epoch_uuid:`epoch-${index}`,cell_uuid:'cell-one'
 const context=()=>({candidate_revision_uuid:candidateId,candidate_scope_revision:'scope-one',candidate_recipe_sha256:'recipe-one',expected_binding_version:1,protocol:{definition:{protocol_uuid:protocolId},query_revision:'scope-one',expected_binding_version:1,cells},draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:2,pending_cells:1}});
 const prepared={contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare-one',candidate_revision_uuid:candidateId,root:candidateRoot,candidate_scope_revision:'scope-one',queue_revision:'queue-one',context:context()};
 const queue={data:{queue_revision:'queue-one',pending_epoch_count:2,pending_cell_count:1,total_candidate_count:1,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}},loading:false};
-async function harness({withBootstrap=false}={}){
+async function harness({withBootstrap=false,withTree=false,withManifest=false}={}){
  const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'}),calls=[],errors=[];
  const key=`__workbenchSession${Math.random().toString(36).slice(2)}`,fixture={renders:0,viewer:null,prepared,contexts:new Map([[candidateId,context()]])};globalThis[key]=fixture;
  const liveContext={...context(),generation:{metadata:'fixture'},protocol:{...context().protocol,definition:{protocol_uuid:protocolId,project_uuid:'project-one'}}};
+ if(withManifest){const selectedContext={...context(),selection_manifests:true,list_selection:true};fixture.contexts.set(candidateId,selectedContext);fixture.prepared={...prepared,context:selectedContext};}
  if(withBootstrap){fixture.contexts.set(candidateId,liveContext);fixture.prepared={...prepared,actor:'actor-one',context:liveContext};}
  const bootstrap=current=>({contract_version:1,kind:'workbench_initial_page',root:candidateRoot,project_uuid:'project-one',protocol_uuid:protocolId,candidate_revision_uuid:candidateId,actor:'actor-one',context:current,
    request:{filters:{},offset:0,limit:60,include_cells:true},page:{epochs,cells,total:2,offset:0,limit:60,generation:current.generation,candidate_scope_revision:current.candidate_scope_revision,query_revision:current.candidate_scope_revision,expected_binding_version:1}});
- const globals={window:dom.window,document:dom.window.document,navigator:dom.window.navigator,localStorage:dom.window.localStorage,IS_REACT_ACT_ENVIRONMENT:true,fetch:async(input,options={})=>{
-  const url=new URL(input,'http://localhost'),path=url.pathname.replace(/^\/api/,'');calls.push({path,method:options.method||'GET'});let value;
+ const globals={window:dom.window,document:dom.window.document,navigator:dom.window.navigator,localStorage:dom.window.localStorage,MutationObserver:dom.window.MutationObserver,requestAnimationFrame:callback=>setTimeout(callback,0),cancelAnimationFrame:clearTimeout,IS_REACT_ACT_ENVIRONMENT:true,fetch:async(input,options={})=>{
+  const url=new URL(input,'http://localhost'),path=url.pathname.replace(/^\/api/,'');calls.push({path,query:url.searchParams.toString(),method:options.method||'GET'});let value;
   if(path==='/annotation-profiles')value={selected_profile_uuid:'actor-one',profiles:[{profile_uuid:'actor-one',display_name:'Actor'}]};
   else if(path.endsWith('/workbench/prepare')){value=fixture.prepare?await fixture.prepare():fixture.prepared;if(url.searchParams.get('include_initial_page')==='true')value={...value,bootstrap:bootstrap(fixture.contexts.get(candidateId))};}
   else if(path.endsWith('/context')){value=fixture.contexts.get(path.split('/').at(-2));if(url.searchParams.get('include_initial_page')==='true')value={...value,bootstrap:bootstrap(value)};}
-  else if(path.endsWith('/epochs')){const current=fixture.contexts.get(path.split('/').at(-2));value={epochs,cells,total:2,offset:0,limit:60,query_revision:current.candidate_scope_revision,expected_binding_version:1};}
+  else if(path.endsWith('/selection-manifest')){const body=JSON.parse(options.body);value=fixture.manifest?await fixture.manifest(body):{selection_token:body.upload_uuid,count:body.epoch_uuids.length,total:body.total,complete:true,candidate_scope_revision:body.candidate_scope_revision,query_revision:body.candidate_scope_revision,expected_binding_version:1,selection_sha256:createHash('sha256').update(JSON.stringify(body.epoch_uuids)).digest('hex')};}
+  else if(path.endsWith('/epochs')){const current=fixture.contexts.get(path.split('/').at(-2));value=fixture.page?await fixture.page(url,current):{epochs,cells,total:2,offset:0,limit:60,candidate_scope_revision:current.candidate_scope_revision,query_revision:current.candidate_scope_revision,expected_binding_version:1};}
   else if(path.includes('/epochs/'))value=epochs.find(epoch=>epoch.epoch_uuid===path.split('/').at(-1));
   else if(path==='/metadata/fields')value={fields:[]};
   else throw Error(`Unexpected request ${path}`);
@@ -38,7 +41,7 @@ async function harness({withBootstrap=false}={}){
    if(importer?.endsWith('/Inspector.jsx')&&source.endsWith('.jsx')&&!['./EpochBrowserChrome.jsx','../../tree-ancestors/treeBranchReads.jsx','../../components/NavigationLoading.jsx','../../components/Common.jsx','../../incoming-workbench/ui/IncomingSelectionTools.jsx'].includes(source))return `\0session-${source}`;
    if(importer?.endsWith('/FrozenIncomingReview.jsx')&&source==='../../typed-query/ui/ProtocolViewFilter.jsx')return '\0session-null';
   },load(id){
-   if(id==='\0session-./EpochViewer.jsx')return `import React from 'react';const f=globalThis[${JSON.stringify(key)}];export default function Viewer(props){f.viewer=props;f.renders++;return React.createElement('div',{'data-real-inspector':true},'Actual Inspector session',props.before);}`;
+   if(id==='\0session-./EpochViewer.jsx')return `import React from 'react';${withTree?"import Tree from '/src/epoch-browser/ui/EpochTreePane.jsx';":''}const f=globalThis[${JSON.stringify(key)}];export default function Viewer(props){f.viewer=props;f.renders++;return React.createElement('div',{'data-real-inspector':true},'Actual Inspector session',props.before${withTree?',React.createElement(Tree,props.treePane)':''});}`;
    if(id==='\0session-../../traces/ui/TraceViewer.jsx')return 'function Trace(){return null;}Trace.supportsFrozenReadContext=true;export default Trace;';
    if(id.startsWith('\0session-'))return 'export default function(){return null;}';
   }
@@ -138,6 +141,67 @@ test('a freshly prepared scope keeps tree mode and focus without carrying select
   assert.ok(h.calls.some(call=>call.path.endsWith('/candidates/replacement/context')),'fresh context is still required');
   assert.deepEqual(h.calls.filter(call=>call.method!=='GET').map(call=>call.path),[base+'/prepare']);
   assert.deepEqual(h.errors,[]);
+ }finally{await h.close();}
+});
+
+test('tag-only preparation preserves expanded rows, selection, highlights, focus and scroll while authority refreshes',async()=>{
+ const h=await harness({withTree:true});try{
+  await h.render();await h.settle();
+  const toggle=async selector=>act(()=>{const detail=h.container.querySelector(selector);assert.ok(detail,selector);detail.open=true;detail.dispatchEvent(new window.Event('toggle'));});
+  await toggle('.cell-tree-date');await toggle('.cell-tree-cell');await h.settle();
+  assert.equal(h.container.querySelectorAll('.cell-tree-epoch').length,2);
+  await act(()=>h.fixture.viewer.treePane.listProps.onFocus('epoch-2',epochs[1]));await h.settle();
+  await act(()=>h.fixture.viewer.treePane.listProps.setTargets(['epoch-1','epoch-2']));
+  await act(()=>h.fixture.viewer.treePane.listProps.setHighlightedEpochs(['epoch-1']));
+  const pane=h.container.querySelector('.tree-scroll');
+  Object.defineProperties(pane,{scrollHeight:{value:1000,configurable:true},clientHeight:{value:100,configurable:true}});
+  await act(()=>{pane.scrollTop=240;pane.dispatchEvent(new window.Event('scroll'));});await h.settle();
+  const oldBrowser=h.container.querySelector('[data-real-inspector]'),before=h.saved.drafts[candidateId].viewer.listNavigation;
+  assert.equal(before.scrollTop,240);assert.equal(before.cells.length,1);
+  let finish;h.fixture.prepare=()=>new Promise(resolve=>{finish=resolve;});
+  const freshContext={...context(),candidate_scope_revision:'tag-scope',protocol:{...context().protocol,query_revision:'tag-scope'}};
+  h.fixture.contexts.set(candidateId,freshContext);
+  h.fixture.prepared={...prepared,queue_revision:'tag-queue',candidate_scope_revision:'tag-scope',context:freshContext};
+  await h.render({revision:1,queue:{...queue,data:{...queue.data,queue_revision:'tag-queue'}}});await h.settle();
+  assert.equal(h.container.querySelectorAll('.cell-tree-epoch').length,2,'held refresh keeps old rows visible');
+  assert.equal(h.container.querySelector('.incoming-draft-tools .primary').disabled,true);
+  assert.equal(h.container.querySelector('.cell-tree-cell').open,true);
+  await act(()=>finish(h.fixture.prepared));await h.settle();
+  assert.equal(h.container.querySelector('[data-real-inspector]'),oldBrowser,'same candidate keeps its mounted browser');
+  assert.equal(h.container.querySelector('.cell-tree-date').open,true);assert.equal(h.container.querySelector('.cell-tree-cell').open,true);
+  assert.equal(h.container.querySelectorAll('.cell-tree-epoch').length,2);
+  assert.deepEqual(h.saved.drafts[candidateId].selected,['epoch-1','epoch-2']);
+  assert.deepEqual(h.fixture.viewer.treePane.listProps.highlightedEpochs,['epoch-1']);
+  assert.equal(h.saved.drafts[candidateId].viewer.focused,'epoch-2');assert.equal(pane.scrollTop,240);
+  assert.equal(h.container.querySelector('.incoming-draft-tools .primary').disabled,false);
+  assert.equal(h.fixture.viewer.treePane.listProps.source.readContext.candidate_scope_revision,'tag-scope');
+  assert.deepEqual(h.calls.filter(call=>call.method!=='GET').map(call=>call.path),[base+'/prepare',base+'/prepare']);
+  assert.deepEqual(h.errors,[]);
+ }finally{await h.close();}
+});
+
+test('Workbench selected-view renewal failure shows recovery in the browser without widening the chosen view',async()=>{
+ const h=await harness({withManifest:true});try{
+  await h.render();await h.settle();
+  await act(()=>h.fixture.viewer.treePane.listProps.setTargets(['epoch-1']));await h.settle();
+  const viewButton=()=>h.container.querySelector('.incoming-draft-tools button[aria-pressed]');
+  await act(()=>viewButton().click());await h.settle();
+  assert.equal(viewButton().textContent.trim(),'Return to all');
+  const selectedContext=h.fixture.viewer.treePane.listProps.source.readContext;
+  assert.ok(selectedContext.selection_token);
+  h.fixture.manifest=async()=>{throw Error('manifest fixture unavailable');};
+  await h.render({revision:1});await h.settle();
+  assert.equal(viewButton().textContent.trim(),'Return to all');assert.equal(viewButton().disabled,false);
+  assert.equal(h.fixture.viewer.treePane.listProps.source.readContext.selection_token,selectedContext.selection_token);
+  const retry=[...h.container.querySelectorAll('button')].find(button=>button.textContent==='Retry selected view');
+  assert.ok(retry);assert.equal(retry.closest('dialog'),null,'normal Workbench must expose retry without opening an unrelated dialog');
+  assert.match(retry.parentElement.textContent,/manifest fixture unavailable/);
+  assert.equal(h.container.querySelector('.incoming-draft-tools .primary').disabled,true);
+  h.fixture.manifest=null;await act(()=>retry.click());await h.settle();
+  assert.equal(viewButton().textContent.trim(),'Return to all');
+  assert.notEqual(h.fixture.viewer.treePane.listProps.source.readContext.selection_token,selectedContext.selection_token);
+  assert.equal(h.container.querySelector('.incoming-draft-tools .primary').disabled,false);
+  assert.deepEqual(h.saved.drafts[candidateId].selected,['epoch-1']);
  }finally{await h.close();}
 });
 

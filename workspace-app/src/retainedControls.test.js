@@ -74,3 +74,23 @@ test('hidden search local undo remains unavailable while an unrelated desktop wr
   await render('search');await act(async()=>{undone=await mutationUndo.undo(()=>assert.fail('expected local undo'));});assert.equal(undone,true);assert.deepEqual(snapshot.excludedEpochs,[]);finish();await write;
  }finally{finish?.();await act(()=>tree?.unmount());mutationUndo.project(null);await server.close();globalThis.fetch=previousFetch;globalThis.window=previousWindow;dom.window.close();}
 });
+
+test('Search holds the current result owner after annotations change until explicit refresh',async()=>{
+ const previousFetch=globalThis.fetch,previousWindow=globalThis.window,calls=[];let tree,serverRevision='tree-before';
+ const dom=new JSDOM('');globalThis.window=dom.window;
+ globalThis.fetch=async path=>{calls.push(path);return new Response(JSON.stringify(path.includes('/explore/revisions/candidate-a?')?{revision_uuid:'candidate-a',recipe:{predicate:{all:[]},name:'Candidate',splits:'date,cell'}}:path.includes('/explore/preview')?{matched_count:3,tree_revision:serverRevision,catalog:{fields:[]},tree:{count:3},last_run:{cell_count:1}}:path.includes('/fields')?{fields:[],tree_fields:[]}:{}),{status:200});};
+ const server=await createServer({...serverOptions,plugins:[{name:'search-annotation-hold',enforce:'pre',resolveId(id,importer){if(importer?.endsWith('/metadata-explorer/ui/MetadataExplorer.jsx')&&id.endsWith('/MatchingEpochs.jsx'))return '\0held-search-results';},load(id){if(id==='\0held-search-results')return "export default 'held-search-results';";}}]});
+ const {default:Explorer}=await server.ssrLoadModule('/src/metadata-explorer/ui/MetadataExplorer.jsx');
+ const render=revision=>act(async()=>{const element=React.createElement(Explorer,{projectId:'p',initialRevisionId:'candidate-a',revision});tree?tree.update(element):tree=TestRenderer.create(element);});
+ try{
+  await render(0);const matching=()=>tree.root.findByType('held-search-results'),before=matching();
+  const previewCalls=()=>calls.filter(path=>path.includes('/explore/preview')).length,count=previewCalls();
+  serverRevision='tree-after';await act(()=>matching().props.onAnnotationsChanged());await render(1);
+  assert.equal(matching(),before,'same result component retains its local navigation');
+  assert.equal(matching().props.preview.tree_revision,'tree-before');assert.equal(previewCalls(),count,'tag notification does not rerun membership');
+  assert.equal(matching().props.exportDisabled,true);assert.equal(matching().props.designDisabled,true);
+  await act(()=>matching().props.onRefresh());
+  assert.equal(matching().props.preview.tree_revision,'tree-after');assert.notEqual(matching(),before,'explicit refresh admits a new query result');
+  assert.ok(previewCalls()>count);assert.equal(matching().props.exportDisabled,false);
+ }finally{await act(()=>tree?.unmount());await server.close();globalThis.fetch=previousFetch;globalThis.window=previousWindow;dom.window.close();}
+});

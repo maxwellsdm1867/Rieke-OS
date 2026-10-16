@@ -363,12 +363,12 @@
       ]
     },
     "src/api.js": {
-      "fingerprint": "3ecf64f6b9d8e54acbb62b9007e773bdb456da7c093af96c74c5709d19dbe4ca",
+      "fingerprint": "18b59d117a1ecb430b3ff84e9e9ec608189ebd43614f5d5d31c5517e4e3d5dc2",
       "sites": [
         {
           "owner": "useResource",
           "kind": "useEffect",
-          "fingerprint": "e699aea2265b379d969dbf72cfb6da61d3dca1d9c68338d6985f667a3037f951"
+          "fingerprint": "80674d074ba48bdc4285eb084f50880cf65b04ae52986aa8cc4ea1a372727b1f"
         },
         {
           "owner": "useEpochPrefetch",
@@ -377,13 +377,14 @@
         }
       ],
       "lifetime": "reconnecting-read-owner",
-      "reason": "Binary dispatch retains request ownership. Hidden read demand cancels while commands continue; offers retire and reload waits for activation.",
+      "reason": "Binary dispatch retains request ownership. Hidden read demand cancels while commands continue; offers retire and reload waits for activation. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md.",
       "tests": [
         "src/epochResourceLifecycle.test.js",
         "src/pagedTreeLifecycle.test.js",
         "src/traces/retainedReadLifecycle.test.js",
         "src/retainedWorkspaceViews.test.js",
-        "src/traces/traceBinary.test.js"
+        "src/traces/traceBinary.test.js",
+        "src/candidateContinuity.test.js"
       ]
     },
     "src/app-updates/appUpdates.js": {
@@ -759,13 +760,14 @@
       ]
     },
     "src/epoch-browser/frozenReadContext.js": {
-      "fingerprint": "6ba355cf351bd135b5f7390a19eecc12439e7d051d3e1d9fbc679047f33423f7",
+      "fingerprint": "75d519a67d20df515b6b8587d5e1b46b103cb71ba29a8f4a0918f7289e7d693e",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/candidateContinuity.test.js"
       ]
     },
     "src/epoch-browser/inspectionCellTree.js": {
@@ -957,13 +959,8 @@
       ]
     },
     "src/epoch-browser/ui/Inspector.jsx": {
-      "fingerprint": "9c3e631bb3e2a407597761e7fbf181cee4f42fb05a7e2c70bdb2999e2ddb29a8",
+      "fingerprint": "a217fb3e8e0015f5dfcc0849bf06104051176c7a997e2734acd3dfa331610f00",
       "sites": [
-        {
-          "owner": "InspectorContent",
-          "kind": "useLayoutEffect",
-          "fingerprint": "deebdaeefe50f3709d666e10549087a60e5de807ce1c5e2f96dfa7d35f27f461"
-        },
         {
           "owner": "InspectorContent",
           "kind": "useLayoutEffect",
@@ -1067,7 +1064,7 @@
         {
           "owner": "InspectorContent",
           "kind": "useEffect",
-          "fingerprint": "52688528ad21f7d9457ebfa4b9e1d811e442e7ddc0995cb6e3ea14332cd151a8"
+          "fingerprint": "5b01767f05b513303ede6f3d50e7be8882793e1c6e2fc4a4e314c9ce03adc4c8"
         },
         {
           "owner": "InspectorContent",
@@ -1091,14 +1088,16 @@
         }
       ],
       "lifetime": "focused-display-and-fresh-curation",
-      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority.",
+      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
         "src/incomingReviewDecision.test.js",
         "src/inspectorNavigationLifecycle.test.js",
         "src/navigationSurfaces.test.js",
-        "src/protocolBrowseEntry.test.js"
+        "src/protocolBrowseEntry.test.js",
+        "src/workbenchSessionLifecycle.test.js",
+        "src/candidateContinuity.test.js"
       ]
     },
     "src/epoch-browser/ui/InspectorActions.jsx": {
@@ -1616,12 +1615,12 @@
       ]
     },
     "src/incoming-workbench/ui/FrozenIncomingReview.jsx": {
-      "fingerprint": "bef238e7f8bebe0c090043e624faf3bd5a66aab7d96432e6f09eaf2f7bba10cb",
+      "fingerprint": "4c962ecf27919554d98900b43ea1ff8009fb755353fb12b189e2be4de1965103",
       "sites": [
         {
           "owner": "FrozenIncomingReview",
           "kind": "useLayoutEffect",
-          "fingerprint": "47dccf04a5f422a3876d6cfd14693bf4db0658b08e5de876c61c98e5d872ea7b"
+          "fingerprint": "66282a9376151581e9aecfebb51497812454c6921aa5f74727d523ee9142a5b3"
         },
         {
           "owner": "FrozenIncomingReview",
@@ -1650,7 +1649,7 @@
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Prepared display capability passes from the frozen candidate without changing draft, selection, merge or publication ownership.",
+      "reason": "Prepared display capability passes from the frozen candidate without changing draft, selection, merge or publication ownership. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md.",
       "tests": [
         "src/importMergeWorkflow.test.js",
         "src/incomingWorkbenchRendering.test.js",
@@ -1814,6 +1813,27 @@
       "tests": [
         "src/importMergeAppRoute.test.js",
         "src/importMergeWorkflow.test.js"
+      ]
+    },
+    "src/incoming-workbench/useSelectedEpochView.js": {
+      "reason": "Selected-view intent is separate from fresh manifest authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Final independent review: active retained visibility gates manifest acquisition and captured callbacks; hidden pending-write Activity test proves abort, late rejection and exact renewal on reveal.",
+      "lifetime": "Mounted same-owner presentation; abort and current-owner gates fence each exact manifest upload.",
+      "tests": [
+        "src/incoming-workbench/useSelectedEpochView.test.js",
+        "src/workbenchSessionLifecycle.test.js"
+      ],
+      "fingerprint": "6544eaa946dec1177819136b6b45047adc60efe571078e5fb1cb6b6cdad09f3b",
+      "sites": [
+        {
+          "owner": "useSelectedEpochView",
+          "kind": "useLayoutEffect",
+          "fingerprint": "62c1327832d9bbb5496dfa594f7fb8e5c04176fed6a47f5e193aff9862263ec8"
+        },
+        {
+          "owner": "useSelectedEpochView",
+          "kind": "useEffect",
+          "fingerprint": "5ead7120ccda304d12e3633475bffb12d3b8c9bc962d0807b14e617ba1d4c5a5"
+        }
       ]
     },
     "src/incoming-workbench/useSourceMerge.js": {
@@ -3098,6 +3118,24 @@
         "src/traces/traceBinary.test.js"
       ]
     },
+    "src/traces/traceBinary.js": {
+      "fingerprint": "43aff35cd5a3c0f4cf7a6fbce7ae908ca06a702cbb160b663ff429759e715ed1",
+      "sites": [],
+      "lifetime": "pure-binary-admission",
+      "reason": "Pure framing validates shape, count, identity, finite data and byte boundaries; no effects or background work.",
+      "tests": [
+        "src/traces/traceBinary.test.js"
+      ]
+    },
+    "src/traces/traceDisplayGeometry.js": {
+      "fingerprint": "1d5996bac0cb13f088fbeedd11ec393e300bd607b5739175d2419a6b63687b9e",
+      "sites": [],
+      "lifetime": "explicit-geometry-admission",
+      "reason": "Distinct DTM1 validates indices, complete statistics, viewport width and exact prepared context. Only typed unsupported geometry permits raw fallback.",
+      "tests": [
+        "src/traces/traceDisplayGeometry.test.js"
+      ]
+    },
     "src/traces/traceReadContext.js": {
       "fingerprint": "a278f7ce02d50c04b9124c79173c19dda9ad87a8bbd371b487b145f42bbebfb3",
       "sites": [],
@@ -3107,6 +3145,16 @@
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
         "src/traceReadContext.test.js"
+      ]
+    },
+    "src/traces/traceStatistics.js": {
+      "fingerprint": "8d0b972cf16fbe520bbf93a81a972fd094b8f8d397ae80e6419a09b0c8eea6ab",
+      "sites": [],
+      "lifetime": "pure-owned-statistics",
+      "reason": "Statistics derive from complete owned arrays; geometry statistics stay distinct. No effects, timers or external writes.",
+      "tests": [
+        "src/traces/traceBinary.test.js",
+        "src/traces/traceGeometry.test.js"
       ]
     },
     "src/traces/traceViewPreference.jsx": {
@@ -3189,11 +3237,59 @@
         "src/traces/traceGeometryLifecycle.test.js"
       ]
     },
+    "src/traces/useExactTraceCursor.js": {
+      "fingerprint": "4ac5da44b847e710b492a5197b22ac904f813e233667c70dbd1c4c01a12ce7d2",
+      "sites": [
+        {
+          "owner": "useExactTraceCursor",
+          "kind": "useLayoutEffect",
+          "fingerprint": "f184ad13e362d51a4a27cf71585529c8b683d103782ebd81d6cea4b1b91521e5"
+        }
+      ],
+      "lifetime": "one-demand-tile-lifetime",
+      "reason": "One tile/latest intent belongs to current source/owner. Hide and supersession cancel timers/requests; pending values never interpolate.",
+      "tests": [
+        "src/traces/retainedReadLifecycle.test.js",
+        "src/traces/exactTraceCursor.test.js"
+      ]
+    },
+    "src/traces/usePreparedTraceGeometry.js": {
+      "fingerprint": "09231aaed9ed50f70226988e61cc31c46b7ca325a91a47c90ad17dc2b0b9d0cb",
+      "sites": [
+        {
+          "owner": "usePreparedTraceGeometry",
+          "kind": "useLayoutEffect",
+          "fingerprint": "98712ca5b8929922ba1f6da0acfe8eba2fd5799081ff605a1905908c5e1766bf"
+        }
+      ],
+      "lifetime": "commit-owned-measured-geometry-read",
+      "reason": "Only committed active owners measure the real canvas and synchronously dispatch before publishing width. Canonical context/source/epoch/stream, port/function, nonce and activity define lifetime; cleanup and width replacement abort the signal. Current live signals fence late completions and completed A-B-A resurrection. Zero-width and hidden retained views wait; DPR and CSS observers retire with ownership.",
+      "tests": [
+        "src/traces/preparedTraceGeometryCommit.test.js",
+        "src/traces/traceGeometryLifecycle.test.js"
+      ]
+    },
+    "src/traces/usePreparedTraceRead.js": {
+      "fingerprint": "53ee6b396dbcf658863f360d5c6a2b636aa41ec1b9162b7ffcb8cd065501451d",
+      "sites": [
+        {
+          "owner": "usePreparedTraceRead",
+          "kind": "useLayoutEffect",
+          "fingerprint": "26a254d0d1324394847443359cbe21b88bfcccdab19021673489cd29df7980a7"
+        }
+      ],
+      "lifetime": "commit-owned-display-read",
+      "reason": "Layout reads retain exact ownership and AbortSignal retirement on hide, replacement and Activity replay; completed stale results cannot resurrect.",
+      "tests": [
+        "src/traces/retainedReadLifecycle.test.js",
+        "src/traces/preparedTraceRead.test.js"
+      ]
+    },
     "src/tree-ancestors/columnTreeReads.js": {
-      "fingerprint": "ecbf801be08719b786385fdf4150e398cbb664d87e66c39a5c5ed897ebf09749",
+      "fingerprint": "74ef1986aa6abc7e762e66cf9c9b591671322455972d9759346c92adb12600f8",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Independently reviewed explicit target and continuation-root revision checks before adoption or attestation; Workbench continuity cannot override a caller revision.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"
@@ -3282,7 +3378,7 @@
       ]
     },
     "src/tree-browser/ui/ColumnTree.jsx": {
-      "fingerprint": "07ed14deda299c91f1e3bbac8b45dc16af9bca1801f10928da6ce8b1f4b4846d",
+      "fingerprint": "e25fa2c285e42960391b950591bd700d1aa9d727aba9a38a0fead2bcf50e5b91",
       "sites": [
         {
           "owner": "ColumnTree",
@@ -3297,7 +3393,7 @@
         {
           "owner": "ColumnTree",
           "kind": "useEffect",
-          "fingerprint": "a889c69071cdaaeb3ab73bfa7141e3e17761620c5e1b85c2200ce6a97eda39a8"
+          "fingerprint": "93c99425b90bc4e7cf742d143d0663ea415e77b2bfcc78233ba9fd338c4eba2e"
         },
         {
           "owner": "ColumnTree",
@@ -3326,7 +3422,7 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md.",
       "tests": [
         "src/inspectionTreeLifecycle.test.js",
         "src/hierarchyRetention.test.js",
@@ -3336,7 +3432,7 @@
       ]
     },
     "src/tree-browser/ui/HierarchyTree.jsx": {
-      "fingerprint": "6dcfa7546eefadab7127d1db46d3862d168bd8bbadcb7dd2e1e122c82788f375",
+      "fingerprint": "6071fa95f38be6e380487d5f0ac82664c673f9fbc66d5a3abc57f272186e0fbe",
       "sites": [
         {
           "owner": "HierarchyTree",
@@ -3346,7 +3442,7 @@
         {
           "owner": "HierarchyTree",
           "kind": "useEffect",
-          "fingerprint": "e4868116eeb425de64f10f35ea7eb9cf9ed7cbe443b3324875a3db3a134e3d71"
+          "fingerprint": "612d3219ae0d04b6d05dcc078c6d808afa4f45c21326bb5ac34d8dae0a573828"
         },
         {
           "owner": "HierarchyTree",
@@ -3370,7 +3466,7 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md.",
       "tests": [
         "src/inspectionTreeLifecycle.test.js",
         "src/hierarchyRetention.test.js",
@@ -3773,82 +3869,6 @@
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"
-      ]
-    },
-    "src/traces/traceBinary.js": {
-      "fingerprint": "43aff35cd5a3c0f4cf7a6fbce7ae908ca06a702cbb160b663ff429759e715ed1",
-      "sites": [],
-      "lifetime": "pure-binary-admission",
-      "reason": "Pure framing validates shape, count, identity, finite data and byte boundaries; no effects or background work.",
-      "tests": [
-        "src/traces/traceBinary.test.js"
-      ]
-    },
-    "src/traces/traceDisplayGeometry.js": {
-      "fingerprint": "1d5996bac0cb13f088fbeedd11ec393e300bd607b5739175d2419a6b63687b9e",
-      "sites": [],
-      "lifetime": "explicit-geometry-admission",
-      "reason": "Distinct DTM1 validates indices, complete statistics, viewport width and exact prepared context. Only typed unsupported geometry permits raw fallback.",
-      "tests": [
-        "src/traces/traceDisplayGeometry.test.js"
-      ]
-    },
-    "src/traces/traceStatistics.js": {
-      "fingerprint": "8d0b972cf16fbe520bbf93a81a972fd094b8f8d397ae80e6419a09b0c8eea6ab",
-      "sites": [],
-      "lifetime": "pure-owned-statistics",
-      "reason": "Statistics derive from complete owned arrays; geometry statistics stay distinct. No effects, timers or external writes.",
-      "tests": [
-        "src/traces/traceBinary.test.js",
-        "src/traces/traceGeometry.test.js"
-      ]
-    },
-    "src/traces/useExactTraceCursor.js": {
-      "fingerprint": "4ac5da44b847e710b492a5197b22ac904f813e233667c70dbd1c4c01a12ce7d2",
-      "sites": [
-        {
-          "owner": "useExactTraceCursor",
-          "kind": "useLayoutEffect",
-          "fingerprint": "f184ad13e362d51a4a27cf71585529c8b683d103782ebd81d6cea4b1b91521e5"
-        }
-      ],
-      "lifetime": "one-demand-tile-lifetime",
-      "reason": "One tile/latest intent belongs to current source/owner. Hide and supersession cancel timers/requests; pending values never interpolate.",
-      "tests": [
-        "src/traces/retainedReadLifecycle.test.js",
-        "src/traces/exactTraceCursor.test.js"
-      ]
-    },
-    "src/traces/usePreparedTraceRead.js": {
-      "fingerprint": "53ee6b396dbcf658863f360d5c6a2b636aa41ec1b9162b7ffcb8cd065501451d",
-      "sites": [
-        {
-          "owner": "usePreparedTraceRead",
-          "kind": "useLayoutEffect",
-          "fingerprint": "26a254d0d1324394847443359cbe21b88bfcccdab19021673489cd29df7980a7"
-        }
-      ],
-      "lifetime": "commit-owned-display-read",
-      "reason": "Layout reads retain exact ownership and AbortSignal retirement on hide, replacement and Activity replay; completed stale results cannot resurrect.",
-      "tests": [
-        "src/traces/retainedReadLifecycle.test.js",
-        "src/traces/preparedTraceRead.test.js"
-      ]
-    },
-    "src/traces/usePreparedTraceGeometry.js": {
-      "fingerprint": "09231aaed9ed50f70226988e61cc31c46b7ca325a91a47c90ad17dc2b0b9d0cb",
-      "sites": [
-        {
-          "owner": "usePreparedTraceGeometry",
-          "kind": "useLayoutEffect",
-          "fingerprint": "98712ca5b8929922ba1f6da0acfe8eba2fd5799081ff605a1905908c5e1766bf"
-        }
-      ],
-      "lifetime": "commit-owned-measured-geometry-read",
-      "reason": "Only committed active owners measure the real canvas and synchronously dispatch before publishing width. Canonical context/source/epoch/stream, port/function, nonce and activity define lifetime; cleanup and width replacement abort the signal. Current live signals fence late completions and completed A-B-A resurrection. Zero-width and hidden retained views wait; DPR and CSS observers retire with ownership.",
-      "tests": [
-        "src/traces/preparedTraceGeometryCommit.test.js",
-        "src/traces/traceGeometryLifecycle.test.js"
       ]
     }
   }

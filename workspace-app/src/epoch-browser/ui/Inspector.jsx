@@ -1,7 +1,7 @@
 import {selectPreparedTraceContext} from '../../traces/traceReadContext.js';
 import {useSemanticReset} from '../../useSemanticReset.js';
 import {RetainedPortal,useRetainedViewProtection} from '../../retainedWorkspaceViews.js';
-import {createWorkbenchSelection} from '../../incoming-workbench/workbenchAuthority.js';
+import {useSelectedEpochView} from '../../incoming-workbench/useSelectedEpochView.js';
 import {EpochHighlightTools} from './EpochBrowserChrome.jsx';
 import {mergeEpochSelection} from '../../epochSelection.js';
 import {incomingTreeSelectionScope} from '../../incoming-workbench/incomingSelection.js';
@@ -23,7 +23,6 @@ import EpochConnections from './EpochConnections.jsx';
 import './InspectorPolish.css';
 import EpochTags from '../../annotations/ui/EpochTags.jsx';
 import IncomingEpochReview from '../../incoming-workbench/ui/IncomingEpochReview.jsx';
-import {selectedViewFilters} from '../../incoming-workbench/selectedIncomingWorkflow.js';
 import IncomingSelectionTools from '../../incoming-workbench/ui/IncomingSelectionTools.jsx';
 import IncomingTagSummary from '../../incoming-workbench/ui/IncomingTagSummary.jsx';
 import {incomingTagSummary} from '../../incoming-workbench/incomingTagSummary.js';
@@ -31,7 +30,7 @@ import AnnotationTags from '../../annotations/ui/AnnotationTags.jsx';
 import TagExchangeControls from '../../annotations/ui/TagExchangeControls.jsx';
 import './Inspector.css';
 
-import {frozenReadPath,frozenReadQuery,frozenPresentationScope} from '../frozenReadContext.js';
+import {frozenReadPath,frozenReadQuery,frozenPresentationScope,frozenTreePresentationScope} from '../frozenReadContext.js';
 export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=Trace.supportsFrozenReadContext===true;
 
 import {inspectionSearches} from '../inspectionScope.js';
@@ -44,19 +43,17 @@ import Trace from '../../traces/ui/TraceViewer.jsx';
 import {inspectorPaneSizes, epochShortcutDirection, resourceForPath} from '../inspectorInteraction.js';
 export {Trace};
 
-function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters:baseFilters,revision,structureRevision=revision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,onReviewDetails,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null,readContext:incomingReadContext=null,onSelectionChange,onReviewDecision,draftSelection=null,draftSelectionTarget=null,readPaused=false,browseRequest=0,initialPageRead=null,traceReadContext:contextTraceReadContext=undefined}) {
+function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters:baseFilters,revision,structureRevision=revision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,onReviewDetails,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null,readContext:incomingReadContext=null,onSelectionChange,onReviewDecision,draftSelection=null,draftSelectionTarget=null,readPaused:ownerReadPaused=false,browseRequest=0,initialPageRead=null,traceReadContext:contextTraceReadContext=undefined}) {
   const api=useWorkspaceRequest(defaultApi),requestScope=useWorkspaceRequestScope(),pageSize=requestScope?.pageSize??60;
   const inheritedTreeReadOwner=useTreeBranchReads(),treeReadOwner=requestScope?null:inheritedTreeReadOwner;
   const id=protocol.definition.protocol_uuid,annotationOrigin=useId();
-  const [savedSelectedView,setSelectedView]=useState(null),[viewLoading,setViewLoading]=useState(null);
-  const viewKey=JSON.stringify([projectId,id,incomingReadContext,baseFilters,draftSelection?.selected,readPaused]);
-  const viewOwner=useMemo(()=>({key:viewKey}),[viewKey]),activeViewOwner=useRef(null),viewRequest=useRef(null);
-  useLayoutEffect(()=>{activeViewOwner.current=viewOwner;return()=>{activeViewOwner.current=null;viewRequest.current?.abort();};},[viewOwner]);
-  const selectedView=savedSelectedView?.owner===viewOwner?savedSelectedView:null;
-  const viewWorking=viewLoading===viewOwner;
-  const readContext=selectedView?.token?{...incomingReadContext,selection_token:selectedView.token}:incomingReadContext;
-  const filters=selectedView?.filters||baseFilters;
-  const selectionScope=JSON.stringify([readContext?.cohort_key||readContext?.root,id,baseFilters,cellScope]);
+  const selectedViewState=useSelectedEpochView({projectId,protocolId:id,context:incomingReadContext,filters:baseFilters,
+    selected:draftSelection?.selected,paused:ownerReadPaused,disabled:!!draftSelection?.disabled,request:api});
+  const selectedView=selectedViewState.selected,viewWorking=selectedViewState.pending;
+  const readPaused=ownerReadPaused||viewWorking;
+  const readContext=selectedViewState.context,filters=selectedViewState.filters;
+  const setSelectedView=selectedViewState.clear;
+  const selectionScope=JSON.stringify([readContext?.cohort_key||readContext?.root,readContext?.actor,id,baseFilters,cellScope]);
   const requestedCellFocus=filters?.cell_uuid&&filters.cell_uuid!==cellScope?null:(cellScope || null);
   const [focusCell,setFocusCell]=useState(initialNavigation&&Object.hasOwn(initialNavigation,'focusCell')?initialNavigation.focusCell:requestedCellFocus);
   const [offset,setOffset]=useState(initialNavigation?.offset || 0), [focused,setFocused]=useState(()=>restoredEpochFocus(initialNavigation,initialEpochUuid)), [localTargets,setTargets]=useState([]);
@@ -107,7 +104,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const annotationState=useAnnotationReceipts({revision,structureRevision,change:annotationChange,origin:annotationOrigin,scope:JSON.stringify([readRoot,id,protocolSearch,focusCell]),filters});
   const pageRevision=annotationState.authorityRevision;
   const treeIntentScope=incomingTreeSelectionScope({projectId,protocolId:id,readContext,filters,splits,revision:pageRevision});
-  const highlightScope=JSON.stringify([projectId,treeIntentScope,designMode,treeMode]);
+  const highlightScope=JSON.stringify([projectId,frozenTreePresentationScope({projectId,protocolId:id,readContext,filters,splits})||treeIntentScope,readContext?.actor,splits,designMode,treeMode]);
   const [highlightState,setHighlightState]=useState({scope:null,ids:[]});
   const highlightedEpochs=highlightState.scope===highlightScope?highlightState.ids:[];
   const highlightOwner=useMemo(()=>({scope:highlightScope}),[highlightScope]);
@@ -271,17 +268,10 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   useEffect(()=>{if(previousScope.current.key===scopeIdentity)return;const requested=previousScope.current.id!==id||previousScope.current.initialEpochUuid!==initialEpochUuid;previousScope.current={key:scopeIdentity,id,initialEpochUuid};setCellTagRequest(null);navigationIntent.current=null;anchorSteps.current=0;setFocusCell(requestedCellFocus);setOffset(0);setFocused(requested?initialEpochUuid:null);if(!readContext)selectTargets([]);setPendingNavigation(null);setDesignNavigation(null);},[scopeIdentity,id,requestedCellFocus,protocolSearch,initialEpochUuid]);
   const previousSelectionScope=useRef(selectionScope);
   useEffect(()=>{if(previousSelectionScope.current===selectionScope)return;previousSelectionScope.current=selectionScope;if(readContext){selectTargets([]);setSelectedView(null);}},[selectionScope]);
-  async function toggleSelectedView(){
-    if(selectedView){setSelectedView(null);return;}
-    if(viewWorking||readPaused||draftSelection?.disabled)return;
-    const owner=viewOwner,controller=new AbortController();viewRequest.current=controller;setViewLoading(owner);
-    try{
-      if(incomingReadContext?.selection_manifests){
-        const manifest=await createWorkbenchSelection({root:incomingReadContext.root,context:{...incomingReadContext,draft:{draft_version:0}},ids:targets,signal:controller.signal},api);
-        if(activeViewOwner.current===owner&&!controller.signal.aborted)setSelectedView({owner,token:manifest.selection_token});
-      }else if(activeViewOwner.current===owner)setSelectedView({owner,filters:selectedViewFilters(baseFilters,targets)});
-    }catch(error){if(activeViewOwner.current===owner&&!controller.signal.aborted)setError(error.message);}
-    finally{if(activeViewOwner.current===owner)setViewLoading(null);}
+  function toggleSelectedView(){
+    if(selectedView){selectedViewState.clear();return;}
+    if(busy||!cellsReady)return;
+    selectedViewState.toggle();
   }
   useEffect(()=>{onSessionChange?.({focused,focusCell,offset,treeOpen,treeMode,designMode,designPath,designNavigation,listNavigation,annotationDrafts,curationTagDraft:tag});},[focused,focusCell,offset,treeOpen,treeMode,designMode,designPath,designNavigation,listNavigation,annotationDrafts,tag,onSessionChange]);
 
@@ -326,7 +316,15 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   useEffect(()=>{navigationIntent.current=null;anchorSteps.current=0;},[id,search,revision]);
   useEffect(()=>{
     if(!pendingNavigation)return;
-    if(rows.error){if(preserveCandidateView&&pendingNavigation.anchorUuid===focused&&attemptedFocusLocator.current===focusLocatorKey)setFocused(null);navigationIntent.current=null;anchorSteps.current=0;setError(rows.error);setPendingNavigation(null);return;}
+    if(rows.error){
+      const locatingFocus=preserveCandidateView&&pendingNavigation.anchorUuid===focused&&attemptedFocusLocator.current===focusLocatorKey;
+      if(locatingFocus&&rows.errorStatus===404)setFocused(null);
+      navigationIntent.current=null;anchorSteps.current=0;setError(rows.error);
+      // A transient read failure is not evidence that the focused UUID left
+      // the cohort. Keep its locator for the visible explicit retry control.
+      if(!locatingFocus||rows.errorStatus===404)setPendingNavigation(null);
+      return;
+    }
     if(rows.loading||!rows.data)return;
     const page=rows.data;
     let target=navigationIntent.current;
@@ -463,6 +461,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
       {focusCell&&<button className="inspection-focus-chip" disabled={designBlocked||busy} onClick={clearCellFocus} title="Clear cell focus and navigate all matching cells">{datedCellLabel(viewCells?.find(cell=>cell.cell_uuid===focusCell)||focusedEpoch||{},true)} <X size={12}/></button>}
     </>} before={<>
     {readContext&&treeSelectionFeedback&&<p className="incoming-tree-feedback" role="alert">{treeSelectionFeedback}</p>}
+      {selectedViewState.error&&<p role="alert">Selected view could not be refreshed: {selectedViewState.error} <button disabled={ownerReadPaused||!!draftSelection?.disabled} onClick={selectedViewState.retry}>Retry selected view</button></p>}
     {readContext&&draftSelection&&draftSelectionTarget&&<RetainedPortal target={draftSelectionTarget}><IncomingSelectionTools {...draftSelection} source={{kind:'protocol',protocolId:id,readContext,query:protocolSearch,queryRevision:listQueryRevision}} cells={viewCells} freshCells={freshCells} filtered={Object.keys(filters||{}).length>0} targets={targets} cell={cellTagRequest} epoch={focusedEpoch} focusUuid={focused} onSelect={selectOverviewTargets} viewSelected={!!selectedView} onViewSelected={toggleSelectedView} disabled={draftSelection.disabled||busy||viewWorking||!cellsReady}>{highlightTools}</IncomingSelectionTools></RetainedPortal>}
     <SourceEligibilityNotice eligibility={protocol.source_eligibility} onStores={onStores}/>
     {!designMode&&<>
@@ -474,6 +473,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
         <button disabled={designBlocked||busy} onClick={()=>maskInput.current?.click()}><Upload size={14}/> Import JSON mask</button>
       </section>
       {error&&<p className="tag-exchange-error" role="alert">{error}</p>}
+
       {maskMessage&&<p className="tag-import-success" role="status"><Check size={15}/>{maskMessage}</p>}
     </SelectionMaskDialog>}
     </>}{!designMode&&maskMessage&&<div className="mask-result" role="status"><Check size={15}/><span>{maskMessage}</span><button className="icon-button" onClick={()=>setMaskMessage('')} aria-label="Dismiss mask result"><X size={14}/></button></div>}

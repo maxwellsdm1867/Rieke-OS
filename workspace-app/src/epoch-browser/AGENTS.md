@@ -49,6 +49,13 @@ Keep UUIDs, source-specific query revisions, predicate values, frozen candidate 
 
 Tree selection and tree-ancestor cache owners remain separate; trace samples and shared epoch cache lifetime remain with traces/shared resources. Metadata display does not attest provenance or terminal scientific membership.
 
+Workbench focus-location failures retain the focused UUID on transient errors so
+an explicit retry can recover the same recording. A fresh successful page proving
+absence or an authoritative 404 still clears it. The shared resource hook exposes
+optional errorStatus with the same keyed error receipt; it grants no freshness.
+Frozen presentation keys never replace candidate-scope, selected-manifest or tree
+revision checks. `candidateContinuity.test.js` covers failure, retry and absence.
+
 ## Factoring decision
 
 These files share a presentation responsibility and change locality. Pure helpers

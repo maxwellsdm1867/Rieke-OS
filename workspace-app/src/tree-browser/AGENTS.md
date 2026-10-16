@@ -81,8 +81,8 @@ bounded range readers and freshness fences. The top selection toolbar has one
 counted highlight action: Select Highlighted unions this set; when every highlighted
 UUID is selected, Deselect Highlighted subtracts it, with the existing 1,000 limit.
 The action is disabled for an empty set or while selection authority is unavailable.
-Candidate/query/revision/split or presentation changes mask old highlights before
-paint; highlights are not persisted and never imply merge/export consent.
+Changed cohort, filter, split or presentation masks old highlights before
+paint; authority-only refresh of a proven annotation-independent Workbench view retains UUID highlights; highlights are not persisted and never imply merge/export consent.
 Left browsing suppresses branch actions; Edit Tree keeps group controls. Individual
 epoch switches retain actual selection and show Select/Deselect action labels.
 
@@ -91,6 +91,17 @@ loading, with switches disabled until fresh pages arrive. Scope/owner/revision
 changes and errors still invalidate that appearance. Loading must never visually
 turn a committed selected branch off. Held-read tests in
 `treeTagCoverageWorkflow.test.js` cover both column and hierarchy views.
+
+For a proven identical frozen Workbench cohort with annotation-independent filters
+and splits, authority refresh retains column paths, hierarchy expansions and
+scroll as presentation hints. The first fresh read supplies the revision for the
+remaining pages; old navigation revisions never authorize new reads. Explicit
+expectedRevision constraints remain mandatory. Retained rows are inert until all
+required fresh pages validate. Changed project, actor, cohort, filters or splits
+do not inherit this continuity. `hierarchyRetention.test.js` and
+`candidateContinuity.test.js` cover both presentations and the identity boundaries.
+UUID highlights follow the same semantic boundary; pending branch commands and
+their revision-bound color markers still retire with command authority.
 
 While a branch-selection read is pending, unrelated branch switches remain enabled
 and clicks enter the incoming owner's bounded ordered queue. This does not relax

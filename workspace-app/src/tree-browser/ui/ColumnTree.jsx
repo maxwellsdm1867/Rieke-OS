@@ -21,6 +21,7 @@ import {TreeGroupTagButton,useTreeGroupTags} from '../../annotations/ui/TreeGrou
 import AnnotationIndicator from '../../annotations/ui/AnnotationIndicator.jsx';
 import {incomingRowAnnotation} from '../../annotations/annotationTags.js';
 import {treeCellUuid} from '../../annotations/useTreeCellSelection.js';
+import {frozenTreePresentationScope} from '../../epoch-browser/frozenReadContext.js';
 
 // Preserve the column interaction while loading at most one 60-row page per level.
 export default function ColumnTree(props){
@@ -32,7 +33,8 @@ export default function ColumnTree(props){
   const actionProps={...props,actionsDisabled:props.actionsDisabled||ownerBlocked||state.loading||!!state.error};
   const groupTags=useTreeGroupTags(actionProps);
   const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision,ownerIdentity,active,activation:props.presentationActivation});
-  const presentationScope=canonicalReadIdentity({protocolId:protocolId??null,readContext:readContext??null,predicate:predicate??null,filters,splits,revision,expectedRevision:expectedRevision??null,annotationRevision:groupTags.revision,ownerIdentity});
+  const frozenPresentation=frozenTreePresentationScope(props);
+  const presentationScope=frozenPresentation||canonicalReadIdentity({protocolId:protocolId??null,readContext:readContext??null,predicate:predicate??null,filters,splits,revision,expectedRevision:expectedRevision??null,annotationRevision:groupTags.revision,ownerIdentity});
   const groupSelection=useIncomingTreeSelection(actionProps,state.loadedScope===scopeKey&&!state.loading&&!state.error&&!ownerBlocked?state.columns[0]:null);
   // Presentation offsets never authorize reads or actions. Reuse only after the
   // fresh response confirms the same pages, revisions, scope and focus.
@@ -90,7 +92,7 @@ export default function ColumnTree(props){
       const columns=await loadColumnTreePages({scope,path,offset,anchor,revisionOverride:revisionOverride||(!reset?prior.at(-1)?.revision:null),columnPositions,freshContinuation,retainedPages:reset?[]:prior,readOwner,load:api,signal:request.signal,isCurrent:()=>token===serial.current});
       const page=columns.at(-1);
       if(request.signal.aborted||token!==serial.current)return;
-      const preserve=restorePresentation?.scope===presentationScope&&restorePresentation.selected===latestSelected.current&&restorePresentation.columns.length===columns.length&&columns.every((column,depth)=>{const old=restorePresentation.columns[depth];return old.revision===column.revision&&old.offset===column.offset&&JSON.stringify(old.path)===JSON.stringify(column.path);});
+      const preserve=restorePresentation?.scope===presentationScope&&restorePresentation.selected===latestSelected.current&&restorePresentation.columns.length===columns.length&&columns.every((column,depth)=>{const old=restorePresentation.columns[depth];return (frozenPresentation||old.revision===column.revision)&&old.offset===column.offset&&JSON.stringify(old.path)===JSON.stringify(column.path);});
       const returnPositions=preserve?(scrollIntent.current!==startedScrollIntent?restorePresentation.columns.map((_,depth)=>({scrollTop:panes.current.get(depth)?.scrollTop||0})):restorePresentation.columns):null;
       const returnLeft=preserve?(scrollIntent.current!==startedScrollIntent?strip.current?.scrollLeft:restorePresentation.scrollLeft):null;
       current.current=columns;restored.current=true;
@@ -115,7 +117,16 @@ export default function ColumnTree(props){
     // branch clicks below never trigger this selection effect again.
     if((initialScope.current===scopeKey||props.presentationActivation!==undefined)&&latestSelected.current)navigation.anchor=latestSelected.current;
     const previous=presentation.current;
-    if(previous?.scope===presentationScope&&previous.selected===latestSelected.current)navigation.restorePresentation=previous;
+    if(previous?.scope===presentationScope&&previous.selected===latestSelected.current){
+      navigation.restorePresentation=previous;
+      if(frozenPresentation&&previous.columns.length){
+        const last=previous.columns.at(-1);
+        // Re-read the same path under fresh authority. Saved revisions are not
+        // reusable receipts; the first response pins the remaining batch.
+        Object.assign(navigation,{reset:true,anchor:null,revisionOverride:null,path:last.path,offset:last.offset,
+          columnPositions:previous.columns,scrollTop:last.scrollTop,scrollLeft:previous.scrollLeft});
+      }
+    }
     load(navigation);
     return()=>controller.current?.abort();
   },[load]);
