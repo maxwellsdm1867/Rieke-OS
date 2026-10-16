@@ -55,6 +55,18 @@ async function authorProfile(){
  }
  await showProjectSidebar(page);
 }
+async function readyProject(projectUuid){
+ // The navigation shell can appear while POST /project/activate is still an
+ // accepted write. Ordinary clean-quit qualification starts after that work;
+ // the separate startup/quit fault suites cover bounded interrupted cleanup.
+ await bounded(page.locator('.infographic-overview:not([inert]):not([aria-busy="true"]):visible')
+  .getByRole('region',{name:'Project infographic',exact:true}).waitFor({state:'visible',timeout:Math.min(60000,remaining())}),'Fresh project overview',60000);
+ const registry=await page.evaluate(()=>fetch('/api/projects').then(response=>{if(!response.ok)throw Error('Project registry read failed');return response.json();}));
+ assert.equal(registry.current_project_uuid,projectUuid);
+ assert.equal(registry.project_data?.status,'ready','Scientific project initialization must finish before normal clean quit');
+ await authorProfile();
+ return{fresh_overview_visible:true,project_data_status:registry.project_data.status};
+}
 async function start(restoredProjectName=null){
  ({application,page}=await bounded(launch(fixture),'Packaged launch'));
  page.setDefaultTimeout(20000);watchRenderer(page);
@@ -112,7 +124,7 @@ async function main(){
   const project=await page.evaluate(()=>fetch('/api/projects').then(response=>response.json()));projectUuid=project.current_project_uuid;assert.ok(projectUuid);
   assert.ok((await fs.stat(projectPath)).isDirectory());const health=await bounded(ownedControl(fixture,'health'),'Project readiness');firstSession=health.session_id;
   assert.ok(health.services.some(service=>service.project_uuid===projectUuid&&service.project_path===projectPath&&service.bound===true));receipt.project_uuid=projectUuid;
-  return{project_uuid:projectUuid,native_project_service_ready:true,folder_selection_scoped_to_fixture:true};
+  return{project_uuid:projectUuid,native_project_service_ready:true,folder_selection_scoped_to_fixture:true,...await readyProject(projectUuid)};
  });
  await check('first orderly quit exits root and project services',quitAndVerify);
  await check('cold restart reopens the persisted project',async()=>{
@@ -121,7 +133,7 @@ async function main(){
   const health=await bounded((async()=>{
    while(true){const current=await ownedControl(fixture,'health');if(current.services.some(service=>service.project_uuid===projectUuid&&service.project_path===projectPath&&service.bound===true))return current;remaining();await delay(100);}
   })(),'Restored project readiness',60000);assert.notEqual(health.session_id,firstSession);assert.ok(health.services.some(service=>service.project_uuid===projectUuid&&service.project_path===projectPath&&service.bound===true));
-  return{same_project_uuid:true,new_owned_session:true,persisted_native_project_reopened:true,automatic_restore:true};
+  return{same_project_uuid:true,new_owned_session:true,persisted_native_project_reopened:true,automatic_restore:true,...await readyProject(projectUuid)};
  });
  await check('final orderly quit preserves original manifest and ASAR bytes',async()=>{
   const shutdown=await quitAndVerify(),after=await bundleReceipts();assert.equal(after.manifest_sha256,initial.manifest_sha256);assert.equal(after.asar_sha256,initial.asar_sha256);assert.equal(receipt.failures.length,0,'Renderer errors occurred');
