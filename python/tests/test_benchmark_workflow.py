@@ -350,8 +350,8 @@ class WorkflowReceiptTests(unittest.TestCase):
                             'module_timing': False, 'module_timings': [],
                             'spans': ([dict(module='disco.metadata.reader', inclusive_ms=10,
                                            self_ms=5, calls=1)] if sample['phase'] == 'profile' else [])})
-        browser_env = {'browser': 'fixture', 'node': 'fixture', 'viewport': {'width': 1, 'height': 1}}
-        raw = dict(format=bench.BROWSER_FORMAT, status='passed', epochs=1_000_000, profile=True, module_timing=False,
+        browser_env = {'browser': 'fixture', 'node': 'fixture', 'viewport': {'width': 1, 'height': 1}, 'runtime':'vite-react-development'}
+        raw = dict(format=bench.BROWSER_FORMAT, status='passed', runtime='development', diagnostic_only=True, production_build=None, epochs=1_000_000, profile=True, module_timing=False,
                    actions=[action], gaps=[], failures=[],
                    cleanup={'browser_closed': True, 'vite_closed': True}, environment=browser_env)
         self.save(directory / 'browser/browser.json', raw)
@@ -359,7 +359,7 @@ class WorkflowReceiptTests(unittest.TestCase):
         self.save(directory / 'server/server.json', {'epochs': 1_000_000, 'protocol_epochs': 1_000_000})
         cleanup = dict(server_closed=True, fixture_closed=True, instrumentation_restored=True)
         self.save(directory / 'server/cleanup.json', cleanup)
-        value = dict(format=bench.FORMAT, status='passed', smoke=False, profile=True, module_timing=False, config=self.cfg,
+        value = dict(format=bench.FORMAT, status='diagnostic', runtime='development', production_build=None, smoke=False, profile=True, module_timing=False, config=self.cfg,
                      epochs=1_000_000, protocol_epochs=1_000_000, samples=2, fixture={'epochs': 1_000_000, 'protocol_epochs': 1_000_000}, harness_start=self.manifest, harness_end=self.manifest,
                      source_start=copy.deepcopy(self.source), source_end=copy.deepcopy(self.source),
                      environment=copy.deepcopy(self.env), browser_environment=browser_env,
@@ -373,16 +373,109 @@ class WorkflowReceiptTests(unittest.TestCase):
     def seal(self, path, value):
         value['evidence_sha256'] = {str(p.relative_to(path.parent)): bench.query_bench.sha(p.read_bytes())
                                     for folder in ('browser', 'server')
-                                    for p in (path.parent / folder).iterdir() if p.is_file()}
-        keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','module_timing','fixture')
+                                    for p in (path.parent / folder).rglob('*') if p.is_file()}
+        keys = bench.PROVENANCE_KEYS
         provenance = path.parent/'provenance.json'
         self.save(provenance, {key: value[key] for key in keys})
         value['provenance_sha256'] = bench.query_bench.sha(provenance.read_bytes())
         self.save(path, value)
 
+    def production_receipt(self, name='production', bundle='compiled source'):
+        path, value = self.receipt(name)
+        directory = path.parent/'browser'
+        rawpath = directory/'browser.json'
+        raw = json.loads(rawpath.read_text())
+        raw.update(runtime='production', diagnostic_only=False, profile=False, frontend_port=12345)
+        raw['environment']['runtime'] = bench.PRODUCTION_RUNTIME
+        for action in raw['actions']:
+            action['samples'] = [s for s in action['samples'] if s['phase'] == 'ordinary']
+        requestpath = path.parent/'server/requests.jsonl'
+        rows = [json.loads(line) for line in requestpath.read_text().splitlines()]
+        rows = [r for r in rows if r['phase'] == 'ordinary']
+        requestpath.write_text('\n'.join(json.dumps(r) for r in rows)+'\n')
+        (directory/'production-dist/assets').mkdir(parents=True)
+        (directory/'production-entry').mkdir()
+        (directory/'production-dist/index.html').write_text('<script src="/__workflow-production/assets/app.js"></script>')
+        (directory/'production-dist/assets/app.js').write_text(bundle)
+        (directory/'production-entry/fixture.jsx').write_text('exact fixture')
+        build = {'runtime':bench.PRODUCTION_RUNTIME, 'asset_base':'/__workflow-production/', 'react_version':'fixture',
+                 'fixture_sha256':bench.query_bench.sha(b'exact fixture'),
+                 'files':{str(p.relative_to(directory/'production-dist')):bench.query_bench.sha(p.read_bytes())
+                          for p in (directory/'production-dist').rglob('*') if p.is_file()}}
+        raw['production_build'] = build
+        raw['production_attestations'] = [dict(phase='ordinary',sample=i,stage=stage,
+            context={'production':True,'mode':'production','developmentOwnerCounter':False,'react':'fixture','fixture_sha256':build['fixture_sha256']},
+            scripts=['http://127.0.0.1:12345/__workflow-production/assets/app.js'],resources=[])
+            for i in range(2) for stage in ('loaded','completed')]
+        self.save(directory/'production-build.json',build)
+        self.save(rawpath,raw)
+        value.update(status='passed',runtime='production',profile=False,production_build=build,browser_environment=raw['environment'],
+                     metrics=bench.metrics(raw,{r['request_id']:r for r in rows},self.cfg))
+        self.seal(path,value)
+        return path,value
+
+    def test_development_diagnostics_cannot_qualify_or_compare(self):
+        baseline,_ = self.receipt('dev-a')
+        candidate,_ = self.receipt('dev-b')
+        bench.load_receipt(baseline, diagnostic=True)
+        with self.assertRaisesRegex(ValueError,'diagnostic-only'):
+            bench.load_receipt(baseline)
+        with self.assertRaisesRegex(ValueError,'diagnostic-only'):
+            bench.compare(baseline,candidate,self.root/'blocked.json')
+
+    def test_production_bundle_hashes_are_source_provenance_not_environment(self):
+        baseline,_ = self.production_receipt('production-a','compiled A')
+        candidate,_ = self.production_receipt('production-b','compiled B')
+        self.assertNotEqual(bench.load_receipt(baseline)['production_build'],bench.load_receipt(candidate)['production_build'])
+        self.assertEqual(bench.compare(baseline,candidate,self.root/'production-comparison.json')['status'],'passed')
+
+    def test_production_attestation_refuses_development_wrong_assets_and_missing_samples(self):
+        for index,change in enumerate((lambda r:r['production_attestations'][0]['context'].update(developmentOwnerCounter=True),
+                lambda r:r['production_attestations'][0]['scripts'].append('http://127.0.0.1:12345/@vite/client'),
+                lambda r:r['production_attestations'].pop(),
+                lambda r:r['production_attestations'][0]['context'].update(fixture_sha256='a'*64))):
+            path,value = self.production_receipt('invalid-prod-'+str(index))
+            rawpath=path.parent/'browser/browser.json';raw=json.loads(rawpath.read_text());change(raw);self.save(rawpath,raw);self.seal(path,value)
+            with self.assertRaises(ValueError):bench.load_receipt(path)
+
+    def test_production_asset_tamper_refused_even_if_outer_receipt_resealed(self):
+        path,value=self.production_receipt()
+        (path.parent/'browser/production-dist/assets/app.js').write_text('changed')
+        self.seal(path,value)
+        with self.assertRaisesRegex(ValueError,'asset changed'):bench.load_receipt(path)
+
+    def test_cli_rejects_default_production_profile_before_creating_output(self):
+        import subprocess
+        import sys
+        output=self.root/'invalid-cli-output'
+        result=subprocess.run([sys.executable,'-B',str(bench.ROOT/'tools/benchmark_workflow.py'),'run','--output',str(output),'--profile'],capture_output=True,text=True)
+        self.assertEqual(result.returncode,1)
+        self.assertIn('requires explicit --runtime development',result.stderr)
+        self.assertFalse(output.exists())
+
+    def test_cli_forwards_explicit_development_profile_and_default_production(self):
+        import contextlib
+        import io
+        import sys
+        for extra,runtime,profile in (([], 'production', False),(['--runtime','development','--profile'],'development',True)):
+            output=self.root/('cli-'+runtime)
+            with patch.object(sys,'argv',['benchmark_workflow.py','run','--output',str(output),*extra]), patch.object(bench,'run',return_value=output/'receipt.json') as run, patch('fcntl.flock'), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(bench.main(),0)
+            self.assertEqual(run.call_args.kwargs['runtime'],runtime)
+            self.assertEqual(run.call_args.kwargs['profile'],profile)
+
+    def test_profile_requires_explicit_development_before_any_allocation(self):
+        output=self.root/'must-not-exist'
+        with self.assertRaisesRegex(ValueError,'requires explicit --runtime development'):
+            bench.run(self.root,output,profile=True)
+        self.assertFalse(output.exists())
+        bench.validate_runtime('development',True)
+        bench.validate_runtime('production',False)
+        with self.assertRaisesRegex(ValueError,'Runtime must'):bench.validate_runtime('other',False)
+
     def test_valid_receipt_recomputes_headline_without_profile_total(self):
         path, _ = self.receipt()
-        value = bench.load_receipt(path)
+        value = bench.load_receipt(path, diagnostic=True)
         metric = value['metrics']['inspect/cold']
         self.assertEqual(metric['total_ms'], 100)
         self.assertEqual(metric['profile_total_ms'], 1000)
@@ -394,27 +487,27 @@ class WorkflowReceiptTests(unittest.TestCase):
         value['profile'] = False
         self.seal(path, value)
         with self.assertRaises(ValueError):
-            bench.load_receipt(path)
+            bench.load_receipt(path, diagnostic=True)
 
     def test_raw_tampering_without_resealing_refused(self):
         path, _ = self.receipt()
         (path.parent / 'server/requests.jsonl').write_text('{}\n')
         with self.assertRaises(ValueError):
-            bench.load_receipt(path)
+            bench.load_receipt(path, diagnostic=True)
 
     def test_missing_backend_correlation_refused_even_when_hash_matches(self):
         path, value = self.receipt()
         (path.parent / 'server/requests.jsonl').write_text('')
         self.seal(path, value)
         with self.assertRaises(ValueError):
-            bench.load_receipt(path)
+            bench.load_receipt(path, diagnostic=True)
 
     def test_profile_total_cannot_replace_ordinary_headline(self):
         path, value = self.receipt()
         value['metrics']['inspect/cold']['total_ms'] = 1000
         self.save(path, value)
         with self.assertRaises(ValueError):
-            bench.load_receipt(path)
+            bench.load_receipt(path, diagnostic=True)
 
     def test_source_harness_hardware_and_cleanup_faults_refused(self):
         changes = [lambda v: v['source_end'].update(commit='c'*40),
@@ -427,30 +520,30 @@ class WorkflowReceiptTests(unittest.TestCase):
         for index, change in enumerate(changes):
             path, value = self.receipt(str(index)); change(value); self.save(path, value)
             with self.subTest(index=index), self.assertRaises(ValueError):
-                bench.load_receipt(path)
+                bench.load_receipt(path, diagnostic=True)
 
     def test_raw_cleanup_must_agree_with_summary(self):
         path, value = self.receipt()
         self.save(path.parent/'server/cleanup.json', {'server_closed': False})
         self.seal(path, value)
         with self.assertRaises(ValueError):
-            bench.load_receipt(path)
+            bench.load_receipt(path, diagnostic=True)
 
     def test_raw_fixture_scale_must_agree_with_browser_and_summary(self):
         path, value = self.receipt()
         self.save(path.parent/'server/server.json', {'epochs': 1000})
         self.seal(path, value)
         with self.assertRaises(ValueError):
-            bench.load_receipt(path)
+            bench.load_receipt(path, diagnostic=True)
 
     def test_compare_refuses_different_protocol_scope_with_same_project_scale(self):
-        baseline, _ = self.receipt('baseline')
-        candidate, value = self.receipt('candidate')
+        baseline, _ = self.production_receipt('baseline')
+        candidate, value = self.production_receipt('candidate')
         value['protocol_epochs'] = 20_000
         value['fixture']['protocol_epochs'] = 20_000
         self.save(candidate.parent/'server/server.json', value['fixture'])
         self.seal(candidate, value)
-        bench.load_receipt(candidate)
+        bench.load_receipt(candidate, diagnostic=True)
         with self.assertRaisesRegex(ValueError, 'protocol_epochs'):
             bench.compare(baseline, candidate, self.root/'comparison.json')
 
@@ -473,7 +566,7 @@ class WorkflowReceiptTests(unittest.TestCase):
 
     def test_builtin_module_calls_exclude_profile_and_do_not_change_gate(self):
         path, value = self.module_fixture()
-        measured = bench.load_receipt(path)['metrics']['inspect/cold']
+        measured = bench.load_receipt(path, diagnostic=True)['metrics']['inspect/cold']
         self.assertEqual(measured['module_timings'], {'metadata.page': {'median_call_ms': 4, 'calls': 2}})
         baseline = {'inspect': measured}
         candidate = copy.deepcopy(baseline)
@@ -490,7 +583,7 @@ class WorkflowReceiptTests(unittest.TestCase):
         raw = json.loads(rawpath.read_text()); raw['module_timing'] = False
         self.save(rawpath, raw); self.seal(path, value)
         with self.assertRaises(ValueError):
-            bench.load_receipt(path)
+            bench.load_receipt(path, diagnostic=True)
         with self.assertRaises(ValueError):
             bench.metrics(raw, bench.load_requests(path.parent/'server/requests.jsonl'), self.cfg)
 
@@ -516,7 +609,7 @@ class WorkflowReceiptTests(unittest.TestCase):
             rows[0].update(changes)
             raw.write_text('\n'.join(json.dumps(row) for row in rows)+'\n'); self.seal(path, value)
             with self.subTest(changes=changes), self.assertRaises(ValueError):
-                bench.load_receipt(path)
+                bench.load_receipt(path, diagnostic=True)
 
 
 if __name__ == '__main__':

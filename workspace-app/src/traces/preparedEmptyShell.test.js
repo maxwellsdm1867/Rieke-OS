@@ -9,7 +9,7 @@ import {traceSampleStatistics} from './traceStatistics.js';
 const uid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const context={kind:'prepared_display',token:uid(1),project_uuid:uid(2),publication_revision:uid(3),view_kind:'workbench_pending',protocol_uuid:uid(4),candidate_revision_uuid:uid(5),membership_sha256:'a'.repeat(64)};
 const epoch={epoch_uuid:uid(6),source_sha256:'b'.repeat(64),cell_label:'Cell',streams:[{kind:'responses',uuid:uid(7),sample_count:10000,sample_rate:10000,units:'pA'}]};
-async function harness({sample=false,generic=false,detailOnly=false}={}){
+async function harness({sample=false,generic=false,detailOnly=false,trailingOnly=false}={}){
  const names=['window','document','getComputedStyle','ResizeObserver','requestAnimationFrame','cancelAnimationFrame'],previous=Object.fromEntries(names.map(name=>[name,globalThis[name]]));
  globalThis.window={devicePixelRatio:1,addEventListener(){},removeEventListener(){},matchMedia(){return {addEventListener(){},removeEventListener(){}};}};
  globalThis.document={activeElement:null};globalThis.getComputedStyle=()=>({getPropertyValue:name=>name==='--plot-trace'?'trace':name});
@@ -17,7 +17,7 @@ async function harness({sample=false,generic=false,detailOnly=false}={}){
  const requests=[],bases=[],overlays=[],captures=[],releases=[],strokes=[],clears=[];let renderer,currentEpoch=null,currentContext=context,width=603;
  const values=Float64Array.from({length:10000},(_,i)=>Math.sin(i/13));
  const port={identity:'empty-shell',request:(path,{signal})=>new Promise((resolve,reject)=>requests.push({path,signal,resolve,reject,epoch:currentEpoch,context:currentContext}))};
- const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,plugins:detailOnly?[{name:'viewer-detail-boundary',enforce:'pre',resolveId(id){if(id.endsWith('/EpochBrowserLayout.jsx'))return '\0viewer-detail-only';if(id.endsWith('/RetainedTreePresentation.jsx'))return '\0viewer-tree-stub';},load(id){if(id==='\0viewer-tree-stub')return 'export default function Tree(){return null;}';if(id==='\0viewer-detail-only')return `import React from 'react';export default function Layout(props){return React.createElement('section',null,props.detail);}`;}}]:[],server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
+ const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,plugins:detailOnly||trailingOnly?[{name:'viewer-detail-boundary',enforce:'pre',resolveId(id){if(id.endsWith('/EpochBrowserLayout.jsx'))return '\0viewer-detail-only';if(id.endsWith('/RetainedTreePresentation.jsx'))return '\0viewer-tree-stub';},load(id){if(id==='\0viewer-tree-stub')return trailingOnly?'export default function Tree(props){return props.active?props.tree.trailingPane:null;}':'export default function Tree(){return null;}';if(id==='\0viewer-detail-only')return `import React from 'react';export default function Layout(props){return React.createElement('section',null,props.detail);}`;}}]:[],server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
  const {default:GenericTrace}=await server.ssrLoadModule('/src/traces/ui/TraceViewer.jsx');
  const {default:Viewer}=await server.ssrLoadModule('/src/epoch-browser/ui/EpochViewer.jsx'),{WorkspaceRequestProvider}=await server.ssrLoadModule('/src/workspaceRequest.js');
  function nodeMock(node){
@@ -127,5 +127,24 @@ test('Edit Tree display heading survives tag authority renewal with a retained p
   await h.render(shown,context,{...view,designMode:false});
   const fresh=h.root.findByProps({'aria-label':'current mutation'});
   assert.equal(hasInertAncestor(fresh),false);assert.notEqual(fresh.props.disabled,true);
+ }finally{await h.close();}
+});
+
+
+test('shared Viewer keeps the frozen raw-preview section inert through authority refresh without new trace demand',async()=>{
+ const h=await harness({trailingOnly:true});try{
+  const readContext={root:`/protocols/${uid(4)}/workbench/candidates/${uid(5)}`,cohort_key:'same-cohort',actor:'author',candidate_scope_revision:'scope-1'};
+  const tree={projectId:uid(2),protocolId:uid(4),readContext,selected:epoch.epoch_uuid,actionsDisabled:false,splits:'date,cell'};
+  await h.render(epoch,context,{designMode:true,columnTree:tree,readContext});
+  const pane=h.root.findByProps({className:'tree-trace-pane'}),reads=h.requests.length;
+  assert.equal(pane.type,'section');
+  await h.render(null,context,{designMode:true,columnTree:{...tree,actionsDisabled:true},readContext,traceEpoch:epoch,resource:{data:null,loading:true}});
+  assert.equal(h.root.findByProps({className:'tree-trace-pane'}),pane);
+  assert.equal(pane.props.inert,true);assert.equal(pane.props['aria-hidden'],true);
+  assert.equal(h.requests.length,reads,'Retaining geometry must not remount the trace or demand another recording');
+  await h.render(epoch,context,{designMode:true,columnTree:tree,readContext});
+  assert.equal(h.root.findByProps({className:'tree-trace-pane'}),pane);assert.notEqual(pane.props.inert,true);assert.equal(h.requests.length,reads);
+  await h.render(epoch,undefined,{designMode:true,columnTree:{...tree,readContext:null,actionsDisabled:true},readContext:null,traceReadContext:undefined});
+  assert.equal(h.root.findAllByProps({className:'tree-trace-pane'}).length,0,'Live blocked preview retains its previous hide behavior');
  }finally{await h.close();}
 });

@@ -9,12 +9,12 @@ import {createServer} from './test-support/isolatedVite.js';
 const branchKeys=['a'.repeat(64),'b'.repeat(64)];
 const revisions=['c'.repeat(64),'d'.repeat(64)];
 
-async function fixture({frozen=false,columns=false,wrapped=false,epochCount=1}={}){
+async function fixture({frozen=false,columns=false,wrapped=false,epochCount=1,observeCommits=false}={}){
   const dom=new JSDOM('<main></main>',{url:'http://fixture/'});
   const previous=Object.fromEntries(['window','document','localStorage','fetch','requestAnimationFrame','cancelAnimationFrame'].map(key=>[key,globalThis[key]]));
   Object.assign(globalThis,{window:dom.window,document:dom.window.document,localStorage:dom.window.localStorage,
     requestAnimationFrame:callback=>setTimeout(callback,0),cancelAnimationFrame:clearTimeout});
-  const state={version:0,holdRoot:false,requests:[],held:[],snapshots:[],metadata:[],holdLeaf:false};
+  const state={version:0,holdRoot:false,requests:[],held:[],snapshots:[],metadata:[],holdLeaf:false,commits:[]};
   function page(body,version){
     const branches=branchKeys.map((key,index)=>({key,path:[key],label:`Branch ${index+1}`,value:`Branch ${index+1}`,count:epochCount}));
     return {...(frozen?{candidate_scope_revision:`scope-${version}`,query_revision:`scope-${version}`,expected_binding_version:1,generation:{metadata:'fixture'}}:{}),revision:revisions[version],kind:body.path.length?'epochs':'branches',path:body.path,depth:body.path.length,
@@ -35,13 +35,15 @@ async function fixture({frozen=false,columns=false,wrapped=false,epochCount=1}={
     server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
   const {default:HierarchyTree}=await server.ssrLoadModule(columns?'/src/tree-browser/ui/ColumnTree.jsx':'/src/tree-browser/ui/HierarchyTree.jsx');
   const {default:RetainedTreePresentation}=wrapped?await server.ssrLoadModule('/src/tree-browser/ui/RetainedTreePresentation.jsx'):{default:null};
+  function CommitProbe(){React.useLayoutEffect(()=>{state.commits.push({pane:!!document.querySelector('.tree-trace-pane')});});return null;}
   const root=createRoot(document.querySelector('main'));
   const render=(mode='visible',revision=0,extra={})=>act(async()=>{
     const tree={protocolId:'p',splits:'date',revision,browseOnly:true,
       ...(frozen?{projectId:'project',readContext:{root:'/protocols/p/workbench/candidates/c',cohort_key:'cohort',actor:'author',candidate_scope_revision:`scope-${state.version}`,expected_binding_version:1}}:{}),...extra,
       onNavigationChange:value=>state.snapshots.push(value),onMetadata:value=>state.metadata.push(value)};
-    root.render(React.createElement(React.Activity,{mode:wrapped?'visible':mode},wrapped?
-      React.createElement(RetainedTreePresentation,{active:mode==='visible',tree}):React.createElement(HierarchyTree,tree)));
+    const child=wrapped?React.createElement(RetainedTreePresentation,{active:mode==='visible',tree}):React.createElement(HierarchyTree,tree);
+    root.render(React.createElement(React.Activity,{mode:wrapped?'visible':mode},observeCommits?
+      React.createElement(React.Fragment,null,child,React.createElement(CommitProbe)):child));
   });
   const expand=index=>act(async()=>document.querySelectorAll(columns?'.tp-branch':'.ht-root > .ht-branch > button')[index].click());
   const scroll=()=>document.querySelector(columns?'.tp-columns':'.ht-scroll');
@@ -249,5 +251,52 @@ test('frozen wrapper still unmounts hidden content instead of gaining live reten
  const h=await fixture({frozen:true,columns:true,wrapped:true});try{
   await h.render();await h.expand(1);const node=document.querySelector('.column-tree');await h.render('hidden');assert.equal(document.querySelector('.column-tree'),null);
   await h.render();assert.notEqual(document.querySelector('.column-tree'),node);
+ }finally{await h.close();}
+});
+
+test('frozen column trailing geometry keeps its exact section during pause and renewal but hides unrelated paths',async()=>{
+ const h=await fixture({frozen:true,columns:true,wrapped:true,epochCount:60});
+ const pane=React.createElement('section',{className:'tree-trace-pane'},React.createElement('header',null,React.createElement('button',null,'Close preview')),React.createElement('div',{className:'tree-trace-body'},'Readonly trace'));
+ const props={selected:'epoch-b',trailingPaneKey:'epoch-b',trailingPane:pane};
+ try{
+  await h.render();await h.expand(1);await h.render('visible',0,props);await h.position(0,135);
+  const before=document.querySelector('.tree-trace-pane'),parent=before.parentElement;
+  assert.ok(before);assert.equal(before.tagName,'SECTION');assert.equal(parent,h.scroll());
+  const assertSame=()=>{assert.equal(document.querySelector('.tree-trace-pane'),before);assert.equal(before.parentElement,parent);assert.equal(before.getAttribute('inert'),'');assert.equal(before.getAttribute('aria-hidden'),'true');assert.equal(h.scroll().scrollLeft,135);};
+  await h.render('visible',1,{...props,readPaused:true,actionsDisabled:true});assertSame();
+  h.state.version=1;h.state.holdRoot=true;h.state.holdLeaf=true;await h.render('visible',1,props);assertSame();
+  h.state.holdRoot=false;await h.release();assertSame();h.state.holdLeaf=false;await h.release();
+  assert.equal(document.querySelector('.tree-trace-pane'),before);assert.equal(before.hasAttribute('inert'),false);assert.equal(h.scroll().scrollLeft,135);
+  h.state.mismatchLeaf=true;await h.render('visible',2,props);assertSame();assert.ok(document.querySelector('[role="alert"]'));
+  h.state.mismatchLeaf=false;
+  const retry=[...document.querySelectorAll('button')].find(node=>node.textContent.includes('Reload tree overview'));assert.ok(retry);
+  await act(()=>retry.click());assert.equal(document.querySelector('.tree-trace-pane'),before);assert.equal(before.hasAttribute('inert'),false);assert.equal(h.scroll().scrollLeft,135);
+  h.state.holdLeaf=true;await h.expand(0);assert.equal(document.querySelector('.tree-trace-pane'),null,'Sibling intent must remove an unrelated recording immediately');
+  h.state.holdLeaf=false;await h.release();assert.equal(document.querySelector('.tree-trace-pane'),null);
+ }finally{await h.close();}
+});
+
+
+for(const boundary of ['actor','cohort','selected view','focus'])test(`blocked frozen trailing pane never borrows a changed ${boundary}`,async()=>{
+ const h=await fixture({frozen:true,columns:true,wrapped:true});try{
+  const context={root:'/protocols/p/workbench/candidates/c',cohort_key:'cohort',actor:'author',candidate_scope_revision:'scope-0',expected_binding_version:1,selection_token:'token-one',selection_view_key:'view-one'};
+  const pane=React.createElement('section',{className:'tree-trace-pane'},React.createElement('button',null,'Trace control'));
+  const props={readContext:context,selected:'epoch-b',trailingPaneKey:'epoch-b',trailingPane:pane};
+  await h.render('visible',0,{readContext:context});await h.expand(1);await h.render('visible',0,props);await h.position(0,135);assert.ok(document.querySelector('.tree-trace-pane'));
+  const changed=boundary==='focus'?{selected:'other',trailingPaneKey:'other'}:{readContext:{...context,...(boundary==='actor'?{actor:'other'}:boundary==='cohort'?{cohort_key:'other'}:{selection_view_key:'view-two',selection_token:'token-two'})}};
+  await h.render('visible',1,{...props,...changed,readPaused:true,actionsDisabled:true});assert.equal(document.querySelector('.tree-trace-pane'),null);
+ }finally{await h.close();}
+});
+
+
+test('direct frozen column commit hides prior-scope trace before passive renewal begins',async()=>{
+ const h=await fixture({frozen:true,columns:true,observeCommits:true});try{
+  const context={root:'/protocols/p/workbench/candidates/c',cohort_key:'cohort',actor:'author',candidate_scope_revision:'scope-0',expected_binding_version:1};
+  const props={readContext:context,selected:'epoch-b',trailingPaneKey:'epoch-b',trailingPane:React.createElement('section',{className:'tree-trace-pane'},'Trace')};
+  await h.render();await h.expand(1);await h.render('visible',0,props);await h.position(0,135);assert.ok(document.querySelector('.tree-trace-pane'));
+  const before=h.state.commits.length;h.state.holdRoot=true;
+  await h.render('visible',0,{...props,readContext:{...context,actor:'other'}});
+  assert.equal(h.state.commits[before].pane,false,'The first layout commit must not expose old frozen content while awaiting passive effects');
+  await h.release();
  }finally{await h.close();}
 });

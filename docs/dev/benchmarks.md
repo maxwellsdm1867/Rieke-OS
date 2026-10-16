@@ -99,8 +99,10 @@ permitted-read runs on the corrected commit are required for qualification.
 The required workflow compares the same fixed fixture and fifteen real user-action
 variants across implementations, using ordinary elapsed time and exact correctness
 checks. Three ordinary samples produce each action median; action totals and the
-trace-readiness endpoints determine performance review. `--profile` is an optional
-diagnostic for investigating a result. Module timing never gates the ordinary
+trace-readiness endpoints determine performance review. The default runtime compiles
+the exact owned shell with production React and retains the existing Vite API
+proxy. `--runtime development --profile` is an optional diagnostic for investigating
+a result; development receipts cannot qualify the production gate. Module timing never gates the ordinary
 comparison or blocks optimization. The existing 34-case query suite remains
 supporting evidence, not a substitute for action timing.
 
@@ -138,7 +140,8 @@ checks, cold/warm state, request count, fixture/source identity and raw evidence
 Compare only matching fixtures, protocol sizes, runtimes and harnesses with each
 source identified. A loading indicator or stale result cannot finish an action.
 
-Use `--profile` only when stage/module evidence would help explain a result. Its
+Use `--runtime development --profile` only when stage/module evidence would help
+explain a result. Its
 separate instrumented pass can report backend cProfile and React costs; these are
 diagnostics, not required comparison fields or additional performance gates. Keep
 profile overhead separate from ordinary action samples. Backend work is nested
@@ -150,8 +153,8 @@ supply missing qualification.
 ### Run the end-to-end core workflow
 
 `tools/benchmark_workflow.py` runs an owned Flask fixture, actual product React
-components in an owned browser, and a request ledger. Optional `--profile` adds
-module diagnostics. It writes
+components in an owned browser, and a request ledger. Explicit
+`--runtime development --profile` adds diagnostic module profiling. It writes
 `receipt.json`, `workflow.html`, `workflow.md`, and raw browser/server evidence.
 The current core measures fifteen variants: main open/return, Edit Tree open,
 cell expansion, next epoch page, split removal, incoming select/deselect,
@@ -183,8 +186,31 @@ its actual version is recorded and must match the comparison run.
   --output benchmarks/results/workflow-comparison-unique.json
 ```
 
-Add `--profile` to `run` for a separate diagnostic pass when investigating a
-result; ordinary runs and comparisons do not require it.
+Use `--runtime development --profile` for a separate diagnostic run when
+investigating a result. Production React does not provide ordinary Profiler
+callbacks, so `--profile` with the default production runtime fails before setup.
+Development runs retain their actual React profiling data but are marked
+`diagnostic` and refused by the qualification loader and comparison command.
+`--module-timing` remains available in production: its custom request header and
+backend spans are independent of React Profiler.
+
+The production build writes the unchanged `fixtureSource(meta)` shell, with a
+separate attestation module, into an owned output directory. It does not mount the
+full App or substitute `src/main.jsx`. The same Vite HTTP server and API proxy
+serve only allowlisted compiled assets; development transforms/client scripts are
+not exposed. Build-only source/dependency symlinks are removed on success and
+failure. Each sample attests production React, exact fixture hash and loaded local
+assets before and after its actions. Bundle/fixture hashes are source-specific
+provenance, outside the equality-compared browser environment.
+
+This is a prospective runtime change motivated by observed development-only
+owner-stack quota resets and associated CPU work. Historical development failures
+remain attributed to their original harness; they are not relabeled or waived.
+Fresh complete pinned, previous and candidate runs under this production harness
+are required. All fifteen variants, three ordinary samples, scientific oracles,
+request capture and the 25 percent/5 ms comparison policy remain unchanged.
+Production mode does not remove frame scheduling variance or qualify native
+package performance.
 
 For simple built-in operation timings, add `--module-timing` instead. This enables
 module-local tic/toc during ordinary samples, without an extra phase or cProfile.

@@ -881,10 +881,10 @@
       ]
     },
     "src/epoch-browser/ui/EpochViewer.jsx": {
-      "fingerprint": "64fe782ff0b72f0883528ff0db2439364925352e52e047dd4336c19b23125455",
+      "fingerprint": "c1de869b25935385353e31bb5807046a422ddd212a28cfb57319a79de1a53c18",
       "sites": [],
       "lifetime": "display-projection",
-      "reason": "Separately admitted trace row/context reaches the shared viewer without granting curation from display state. The prepared-only empty shell retains inert, hidden presentation with no sample demand; current focus supplies the exact epoch/context, curation remains independently scoped, and SelectionOverview precedence is preserved. The Edit Tree display heading uses its admitted display row during null live-authority renewal; stale mutation controls remain absent or inert until fresh authority returns.",
+      "reason": "Separately admitted trace row/context reaches the shared viewer without granting curation from display state. The prepared-only empty shell retains inert, hidden presentation with no sample demand; current focus supplies the exact epoch/context, curation remains independently scoped, and SelectionOverview precedence is preserved. The Edit Tree display heading uses its admitted display row during null live-authority renewal; stale mutation controls remain absent or inert until fresh authority returns. Independently reviewed frozen preview continuity keeps the existing section inert during authority renewal only with a proven frozen cohort and matching selected display UUIDs; it adds no trace demand and leaves live blocked previews hidden.",
       "tests": [
         "src/epoch-browser/inspectionMetadata.test.js",
         "src/presentationSessionsApp.test.js",
@@ -3381,7 +3381,7 @@
       ]
     },
     "src/tree-browser/ui/ColumnTree.jsx": {
-      "fingerprint": "4f08c428da1c4feaed907104f943aac81e34ec20093cbb7cbaeef279fa006365",
+      "fingerprint": "a74a1921fc2755b8d9ae37a63aa3609a404d0f2ea98f33c94ffd6ce78f049b39",
       "sites": [
         {
           "owner": "ColumnTree",
@@ -3425,7 +3425,7 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads. Explicit owner read pause blocks gestures and retires pending root or target reads while retaining inert presentation; fresh resume revalidates all authority.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads. Explicit owner read pause blocks gestures and retires pending root or target reads while retaining inert presentation; fresh resume revalidates all authority. Independently reviewed trailing preview retention requires the same committed frozen presentation scope, selected UUID, pane key and terminal-page membership; the existing flex section remains inert through refresh and retry. Changed actor/cohort/selected view/focus and unrelated branch intent cannot borrow it; frozen freshness also checks the loaded scope before passive renewal.",
       "tests": [
         "src/inspectionTreeLifecycle.test.js",
         "src/hierarchyRetention.test.js",

@@ -1,3 +1,4 @@
+import {productionRuntime,runtimeOption,buildWorkflowProduction,productionMiddleware,attestProductionPage} from './production-runtime.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {createRequire} from 'node:module';
@@ -5,7 +6,7 @@ import {pathToFileURL} from 'node:url';
 import {fixtureSource,installObserver,installTraceControlReader,installBinaryTraceOracle} from './fixture-app.mjs';
 import {attachLedger} from '../navigation-probe.mjs';
 
-export function options(argv){const value={samples:3,profile:false,module_timing:false};for(let i=0;i<argv.length;i+=2){if(!argv[i].startsWith('--')||argv[i+1]===undefined)throw Error('Expected --key value');value[argv[i].slice(2).replaceAll('-','_')]=argv[i+1];}for(const key of ['source_root','server_json','output'])if(!value[key])throw Error(`Missing --${key.replaceAll('_','-')}`);value.samples=Number(value.samples);if(!Number.isInteger(value.samples)||value.samples<1)throw Error('samples must be positive');value.profile=profileEnabled(value.profile);value.module_timing=moduleTimingEnabled(value.module_timing);return value;}
+export function options(argv){const value={samples:3,profile:false,module_timing:false,runtime:'production'};for(let i=0;i<argv.length;i+=2){if(!argv[i].startsWith('--')||argv[i+1]===undefined)throw Error('Expected --key value');value[argv[i].slice(2).replaceAll('-','_')]=argv[i+1];}for(const key of ['source_root','server_json','output'])if(!value[key])throw Error(`Missing --${key.replaceAll('_','-')}`);value.samples=Number(value.samples);if(!Number.isInteger(value.samples)||value.samples<1)throw Error('samples must be positive');value.profile=profileEnabled(value.profile);value.module_timing=moduleTimingEnabled(value.module_timing);value.runtime=runtimeOption(value.runtime,value.profile);return value;}
 
 
 /** Profiling is an explicit diagnostic pass, never implicit benchmark work. */
@@ -222,9 +223,11 @@ export async function resetPreparation(meta,{timeoutMs=900000}={}){
 export async function run(config){
   const phases=phasePlan(config);
   const root=path.resolve(config.source_root), workspace=path.join(root,'workspace-app'), output=path.resolve(config.output);
+  const runtime=runtimeOption(config.runtime,profileEnabled(config.profile));
   await fs.mkdir(output,{recursive:true});const meta=JSON.parse(await fs.readFile(config.server_json,'utf8'));
   if(!Number.isInteger(meta.port)||meta.port<1||meta.port>65535)throw Error('Invalid owned backend port');
-  const receipt={module_timing:moduleTimingEnabled(config.module_timing),profile:profileEnabled(config.profile),setup_receipts:[],format:'disco-workflow-browser-v1',status:'incomplete',epochs:meta.epochs,actions:inventory.map(([id,variant])=>({id,variant,samples:[]})),failures:[],gaps:[],limitations:limits.slice(0,3),unmeasured_variants:[limits[3]],cleanup:{},observation:'page-prearmed click handler capture to correct DOM on two distinct RAF callbacks; driver retrieval excluded; no compositor claim'};
+  const receipt={runtime,diagnostic_only:runtime==='development',module_timing:moduleTimingEnabled(config.module_timing),profile:profileEnabled(config.profile),setup_receipts:[],format:'disco-workflow-browser-v1',status:'incomplete',epochs:meta.epochs,actions:inventory.map(([id,variant])=>({id,variant,samples:[]})),failures:[],gaps:[],limitations:limits.slice(0,3),unmeasured_variants:[limits[3]],cleanup:{},observation:'page-prearmed click handler capture to correct DOM on two distinct RAF callbacks; driver retrieval excluded; no compositor claim'};
+  receipt.limitations[2]=runtime==='production'?'Production React owned shell via Vite API proxy; not installed desktop performance.':'Development Vite/React diagnostic only; cannot qualify the production workflow gate.';
   let server,browser,context;
   const require=createRequire(path.join(workspace,'package.json'));
   let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=createRequire(path.join(root,'desktop/package.json'))('playwright'));}
@@ -232,14 +235,18 @@ export async function run(config){
     const {createServer}=await import(pathToFileURL(path.join(workspace,'src/test-support/isolatedVite.js')));
     const {default:react}=await import(pathToFileURL(path.join(workspace,'node_modules/@vitejs/plugin-react/dist/index.js')));
     const entry=path.join(workspace,'__workflow_owned__.jsx');
-    server=await createServer({root:workspace,configFile:false,logLevel:'error',plugins:[react(),{name:'owned-workflow-fixture',resolveId(id){if(id==='/__workflow_owned__.jsx')return entry;},load(id){if(id===entry)return fixtureSource(meta);},configureServer(s){s.middlewares.use((req,res,next)=>{if(req.url!=='/__workflow__')return next();res.setHeader('Content-Type','text/html');res.end('<div id="root"></div><script type="module" src="/__workflow_owned__.jsx"></script>');});}}],server:{host:'127.0.0.1',port:0,hmr:false,proxy:{'/api':{target:`http://127.0.0.1:${meta.port}`,changeOrigin:true,configure(proxy){proxy.on('proxyReq',req=>req.removeHeader('origin'));}}}}});
+    const production=runtime==='production'?await buildWorkflowProduction(root,meta,output):null;
+    receipt.production_build=production;receipt.production_attestations=[];
+    const serveProduction=production?await productionMiddleware(output,production):null;
+    server=await createServer({root:workspace,configFile:false,logLevel:'error',...(production?{optimizeDeps:{noDiscovery:true,include:[]}}:{}),plugins:[react(),{name:'owned-workflow-fixture',resolveId(id){if(id==='/__workflow_owned__.jsx')return entry;},load(id){if(id===entry)return fixtureSource(meta);},configureServer(s){s.middlewares.use(serveProduction||((req,res,next)=>{if(req.url!=='/__workflow__')return next();res.setHeader('Content-Type','text/html');res.end('<div id="root"></div><script type="module" src="/__workflow_owned__.jsx"></script>');}));}}],server:{host:'127.0.0.1',port:0,hmr:false,proxy:{'/api':{target:`http://127.0.0.1:${meta.port}`,changeOrigin:true,configure(proxy){proxy.on('proxyReq',req=>req.removeHeader('origin'));}}}}});
     await server.listen();receipt.frontend_port=server.httpServer.address().port;
     browser=await chromium.launch({headless:true,...((config.browser_executable||process.env.WORKFLOW_BROWSER_EXECUTABLE)?{executablePath:config.browser_executable||process.env.WORKFLOW_BROWSER_EXECUTABLE}:{}),args:['--no-first-run','--no-default-browser-check']});
-    receipt.environment={node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},device_scale_factor:1,headless:true,runtime:'vite-react-development'};
+    receipt.environment={node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},device_scale_factor:1,headless:true,runtime:production?productionRuntime:'vite-react-development'};
     for(const {phase,samples:phaseSamples} of phases)for(let sample=0;sample<phaseSamples;sample++){
       context=await browser.newContext({viewport:{width:1500,height:1100}});const page=await context.newPage();await page.addInitScript(installTraceControlReader,{streams:meta.trace_streams});await page.addInitScript(installBinaryTraceOracle);await page.addInitScript(installObserver,{phase,module_timing:receipt.module_timing});const ledger=attachLedger(page,'workflow');
       page.on('pageerror',e=>receipt.failures.push({phase,sample,error:e.message}));
       await page.goto(`http://127.0.0.1:${receipt.frontend_port}/__workflow__`);
+      if(production)receipt.production_attestations.push({phase,sample,stage:'loaded',...await attestProductionPage(page,production,`http://127.0.0.1:${receipt.frontend_port}`)});
       await page.evaluate(`window.__workflowReadiness = (${readiness.toString()})`);
       await page.getByRole('button',{name:'Benchmark Main',exact:true}).waitFor();
       const button=name=>page.getByRole('button',{name,exact:true});
@@ -304,6 +311,7 @@ export async function run(config){
         const traceRoot='/protocols/'+meta.protocol+'/workbench/candidates/'+replay.correctness.prepared.candidate_revision_uuid;
         await measure('trace.inspect','frozen-workbench-300k',incomingRow,{selector:'.tv-base',trace:meta.incoming_trace_expected,traceRoot,traceRevision:replay.correctness.prepared.candidate_scope_revision});
         await measure('trace.inspect','frozen-workbench-1m',page.getByRole('button',{name:`Inspect ${meta.date_label} · ${meta.incoming_cell_label} epoch 2`,exact:true}),{selector:'.tv-base',trace:meta.million_trace_expected,traceRoot,traceRevision:replay.correctness.prepared.candidate_scope_revision});
+      if(production)receipt.production_attestations.push({phase,sample,stage:'completed',...await attestProductionPage(page,production,`http://127.0.0.1:${receipt.frontend_port}`)});
       }catch(error){receipt.failures.push({phase,sample,error:String(error)});}finally{ledger.detach();await fs.writeFile(path.join(output,`browser-requests-${phase}-${sample}.json`),JSON.stringify(await page.evaluate(()=>window.__workflow.requests.map(({result,binary,...row})=>row)),null,2));await fs.writeFile(path.join(output,`ledger-${phase}-${sample}.json`),JSON.stringify(ledger.entries,null,2));await context.close();context=null;}
     }
     for(const action of receipt.actions)if(action.samples.filter(s=>s.phase==='ordinary').length!==config.samples)receipt.gaps.push(`Missing ordinary samples: ${action.id}/${action.variant}`);

@@ -274,7 +274,8 @@ test('browser CLI defaults to ordinary-only and supports explicit profile boolea
   assert.deepEqual(phasePlan(defaults),[{phase:'ordinary',samples:3}]);
   const disabled=options([...required,'--profile','false','--samples','2']);
   assert.deepEqual(phasePlan(disabled),[{phase:'ordinary',samples:2}]);
-  const enabled=options([...required,'--profile','true','--samples','2']);
+  assert.throws(()=>options([...required,'--profile','true']),/requires explicit --runtime development/);
+  const enabled=options([...required,'--runtime','development','--profile','true','--samples','2']);
   assert.equal(enabled.profile,true);
   assert.deepEqual(phasePlan(enabled),[{phase:'ordinary',samples:2},{phase:'profile',samples:1}]);
   assert.throws(()=>options([...required,'--profile','yes']),/true or false/);

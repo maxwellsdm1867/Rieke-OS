@@ -15,6 +15,7 @@ import statistics
 import subprocess
 import sys
 import time
+from urllib.parse import urlparse
 
 if __package__:
     from . import benchmark_everyday as query_bench
@@ -24,6 +25,66 @@ else:
 ROOT = Path(__file__).resolve().parents[1]
 FORMAT = 'disco-workflow-v1'
 BROWSER_FORMAT = 'disco-workflow-browser-v1'
+PRODUCTION_RUNTIME = 'vite-proxy-react-production-v1'
+PROVENANCE_KEYS = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','module_timing','fixture','runtime','production_build')
+
+
+def validate_runtime(runtime, profile):
+    if runtime not in ('production', 'development'):
+        raise ValueError('Runtime must be production or development')
+    if profile and runtime != 'development':
+        raise ValueError('--profile requires explicit --runtime development; production React does not collect Profiler callbacks')
+
+
+def validate_production(raw, directory, samples):
+    """Source-specific bundle provenance is verified, never compared across arms."""
+    build = raw.get('production_build')
+    if (raw.get('runtime') != 'production' or raw.get('diagnostic_only') is not False
+            or raw.get('environment', {}).get('runtime') != PRODUCTION_RUNTIME
+            or raw.get('profile') is not False or not isinstance(build, dict)
+            or build.get('runtime') != PRODUCTION_RUNTIME or build.get('asset_base') != '/__workflow-production/'
+            or not isinstance(build.get('react_version'), str) or not build['react_version']):
+        raise ValueError('Missing production runtime attestation')
+    def digest(value):
+        return isinstance(value, str) and len(value) == 64 and all(c in '0123456789abcdef' for c in value)
+    if not digest(build.get('fixture_sha256')):
+        raise ValueError('Missing exact fixture build identity')
+    files = build.get('files')
+    if not isinstance(files, dict) or not files or 'index.html' not in files:
+        raise ValueError('Missing production build assets')
+    if json.loads((directory/'production-build.json').read_text()) != build:
+        raise ValueError('Production build record differs')
+    for name, expected in files.items():
+        relative = Path(name)
+        file = directory/'production-dist'/relative
+        if (not name or '\\' in name or relative.is_absolute() or any(p in ('', '.', '..') for p in name.split('/'))
+                or not digest(expected) or file.is_symlink() or not file.resolve().is_relative_to((directory/'production-dist').resolve())
+                or query_bench.sha(file.read_bytes()) != expected):
+            raise ValueError('Production build asset changed or unsafe')
+    fixture = directory/'production-entry/fixture.jsx'
+    if fixture.is_symlink() or query_bench.sha(fixture.read_bytes()) != build['fixture_sha256']:
+        raise ValueError('Production fixture bytes changed')
+    attestations = raw.get('production_attestations')
+    if not isinstance(attestations, list) or len(attestations) != samples*2:
+        raise ValueError('Missing production sample attestations')
+    seen = set()
+    for row in attestations:
+        identity = (row.get('phase'), row.get('sample'), row.get('stage'))
+        if identity in seen or identity not in {('ordinary', i, stage) for i in range(samples) for stage in ('loaded', 'completed')}:
+            raise ValueError('Wrong production attestation ownership')
+        seen.add(identity)
+        c = row.get('context', {})
+        if (c.get('production') is not True or c.get('mode') != 'production' or c.get('developmentOwnerCounter') is not False
+                or c.get('react') != build['react_version'] or c.get('fixture_sha256') != build['fixture_sha256']):
+            raise ValueError('Development or wrong production module loaded')
+        scripts, resources = row.get('scripts'), row.get('resources')
+        if not isinstance(scripts, list) or not scripts or not isinstance(resources, list):
+            raise ValueError('Missing loaded production asset evidence')
+        for url in scripts+resources:
+            parsed = urlparse(url)
+            if (parsed.scheme != 'http' or parsed.netloc != f"127.0.0.1:{raw.get('frontend_port')}"
+                    or not parsed.path.startswith(build['asset_base']) or parsed.path[len(build['asset_base']):] not in files):
+                raise ValueError('Unattested loaded workflow asset')
 
 
 def dependency_identity(path):
@@ -458,7 +519,8 @@ def stop_owned(child, identities):
     return not remaining
 
 
-def run(source_root, output, *, smoke=False, browser_executable=None, protocol_epochs=None, profile=False, module_timing=False):
+def run(source_root, output, *, smoke=False, browser_executable=None, protocol_epochs=None, profile=False, module_timing=False, runtime='production'):
+    validate_runtime(runtime, profile)
     cfg = config()
     source_root,output = source_root.resolve(),output.resolve()
     output.mkdir(parents=True,exist_ok=False)
@@ -466,7 +528,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
     protocol_epochs = epochs if protocol_epochs is None else protocol_epochs
     if type(protocol_epochs) is not int or not 200 <= protocol_epochs <= epochs:
         raise ValueError('Protocol epochs must be 200..project epochs')
-    receipt = {'format':FORMAT,'status':'running','source_root':str(source_root),
+    receipt = {'format':FORMAT,'status':'running','runtime':runtime,'production_build':None,'source_root':str(source_root),
                'source_start':query_bench.source(source_root),'harness_start':harness(),
                'environment':query_bench.environment(),'config':cfg,'epochs':epochs,
                'samples':samples,'protocol_epochs':protocol_epochs,'profile':profile,'module_timing':module_timing,'smoke':smoke,'cleanup':{},'metrics':{},'limitations':[]}
@@ -493,7 +555,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
         receipt['fixture'] = metadata
         command = ['node',str(ROOT/'benchmarks/workflow/browser.mjs'),'--source-root',str(source_root),
                    '--server-json',str(meta_path),'--output',str(output/'browser'),'--samples',str(samples),
-                   '--profile',str(profile).lower(),'--module-timing',str(module_timing).lower()]
+                   '--profile',str(profile).lower(),'--module-timing',str(module_timing).lower(),'--runtime',runtime]
         if smoke:
             # Small-fixture compatibility checks must expose stale UI contracts
             # before the million-row lane, not consume its ten-minute action waits.
@@ -513,6 +575,11 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
                 break
             time.sleep(.25)
         browser_result = json.loads((output/'browser/browser.json').read_text())
+        if browser_result.get('runtime') != runtime:
+            raise ValueError('Browser runtime differs from request')
+        if runtime == 'production':
+            validate_production(browser_result, output/'browser', samples)
+        receipt['production_build'] = browser_result.get('production_build')
         if browser_result.get('profile') is not profile:
             raise ValueError('Browser profiling mode differs from request')
         if browser_result.get('module_timing') is not module_timing:
@@ -535,7 +602,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
         receipt['harness_end'] = harness()
         if receipt['source_start'] != receipt['source_end'] or receipt['harness_start'] != receipt['harness_end']:
             raise ValueError('Source/harness changed during workflow measurement')
-        receipt['status'] = 'diagnostic' if smoke else 'passed'
+        receipt['status'] = 'diagnostic' if smoke or runtime == 'development' else 'passed'
     except BaseException as error:
         receipt['status'] = 'failed'
         receipt['error'] = repr(error)
@@ -553,7 +620,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
                 or receipt['cleanup']['backend'].get('heap_closed', True) is not True):
             receipt['status'] = 'failed'
             receipt['cleanup_error'] = 'Owned cleanup incomplete or unverified'
-        provenance_keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','module_timing','fixture')
+        provenance_keys = PROVENANCE_KEYS
         provenance = {key:receipt[key] for key in provenance_keys if key in receipt}
         query_bench.write(output/'provenance.json',provenance)
         receipt['provenance_sha256'] = query_bench.sha((output/'provenance.json').read_bytes())
@@ -561,7 +628,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
         for folder in (output/'server',output/'browser'):
             if folder.exists():
                 for path in folder.rglob('*'):
-                    if path.is_file() and path.suffix in {'.json','.jsonl','.log','.txt','.h5'}:
+                    if path.is_file() and (path.suffix in {'.json','.jsonl','.log','.txt','.h5','.jsx','.js','.css','.html'} or 'production-dist' in path.parts):
                         files[str(path.relative_to(output))] = query_bench.sha(path.read_bytes())
         receipt['evidence_sha256'] = files
         query_bench.write(output/'receipt.json',receipt)
@@ -572,9 +639,14 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
 
 
 
-def load_receipt(path):
+def load_receipt(path, *, diagnostic=False):
     receipt = json.loads(path.read_text())
-    if receipt.get('format') != FORMAT or receipt.get('status') != 'passed' or receipt.get('smoke') is not False:
+    runtime = receipt.get('runtime')
+    validate_runtime(runtime, receipt.get('profile'))
+    allowed_status = 'diagnostic' if diagnostic and runtime == 'development' else 'passed'
+    if not diagnostic and runtime != 'production':
+        raise ValueError('Development workflow is diagnostic-only; production runtime required for qualification')
+    if receipt.get('format') != FORMAT or receipt.get('status') != allowed_status or receipt.get('smoke') is not False:
         raise ValueError('Missing/failed/diagnostic workflow receipt')
     if receipt.get('config') != config() or receipt.get('harness_start') != harness():
         raise ValueError('Different workflow suite; rerun both sources with this harness')
@@ -596,7 +668,7 @@ def load_receipt(path):
         if query_bench.sha(file.read_bytes()) != digest:
             raise ValueError('Workflow evidence changed')
     provenance = path.parent/'provenance.json'
-    keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','module_timing','fixture')
+    keys = PROVENANCE_KEYS
     if (query_bench.sha(provenance.read_bytes()) != receipt.get('provenance_sha256')
             or json.loads(provenance.read_text()) != {key:receipt[key] for key in keys}):
         raise ValueError('Provenance evidence changed')
@@ -613,6 +685,12 @@ def load_receipt(path):
     if receipt['environment'].get('cpu_model','').strip().lower() in {'unknown','unavailable','none','missing','n/a'}:
         raise ValueError('Unknown CPU hardware cannot qualify')
     raw = json.loads((path.parent/'browser/browser.json').read_text())
+    if raw.get('runtime') != runtime or raw.get('diagnostic_only') is not (runtime == 'development'):
+        raise ValueError('Browser runtime differs from receipt')
+    if raw.get('production_build') != receipt.get('production_build'):
+        raise ValueError('Production build provenance differs')
+    if runtime == 'production':
+        validate_production(raw, path.parent/'browser', receipt['samples'])
     if type(receipt.get('profile')) is not bool or raw.get('profile') is not receipt['profile']:
         raise ValueError('Browser profiling mode differs from receipt')
     if type(receipt.get('module_timing')) is not bool or raw.get('module_timing') is not receipt['module_timing']:
@@ -657,6 +735,7 @@ def main():
     command.add_argument('--smoke',action='store_true')
     command.add_argument('--protocol-epochs',type=int)
     command.add_argument('--browser-executable',type=Path)
+    command.add_argument('--runtime',choices=('production','development'),default='production',help='Production qualifies; explicit development is diagnostic-only')
     command.add_argument('--profile',action='store_true',help='Collect optional module diagnostics after ordinary samples; excluded from regression gate')
     command.add_argument('--module-timing',action='store_true',help='Collect built-in module elapsed timers during ordinary requests')
     comparison = commands.add_parser('compare')
@@ -669,11 +748,12 @@ def main():
             if dependency_identity(args.baseline) != dependency_identity(args.candidate):
                 raise ValueError('Incomparable locked browser dependencies')
         elif args.command == 'run':
+            validate_runtime(args.runtime, args.profile)
             import fcntl
             import tempfile
             with (Path(tempfile.gettempdir())/'disco-everyday-million.lock').open('a') as lock:
                 fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-                print(run(args.source_root,args.output,smoke=args.smoke,browser_executable=args.browser_executable,protocol_epochs=args.protocol_epochs,profile=args.profile,module_timing=args.module_timing))
+                print(run(args.source_root,args.output,smoke=args.smoke,browser_executable=args.browser_executable,protocol_epochs=args.protocol_epochs,profile=args.profile,module_timing=args.module_timing,runtime=args.runtime))
         elif args.command == 'compare':
             result = compare(args.baseline,args.candidate,args.output)
             print(json.dumps({'status':result['status'],'review_required':result['review_required']}))

@@ -4,7 +4,7 @@ import {epochIncluded} from '../../incoming-workbench/incomingReviewDecision.js'
 import EpochInclusionToggle from '../../epoch-browser/ui/EpochInclusionToggle.jsx';
 import {useDelayedLoading} from '../../components/NavigationLoading.jsx';
 import {revealWithin} from '../../epoch-browser/epochListScroll.js';
-import {useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
+import {cloneElement,isValidElement,useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {ArrowLeft,ArrowRight,ChevronRight,Home,Activity,GitBranch} from 'lucide-react';
 import {api,number} from '../../api.js';
 import {useTreeBranchReads} from '../../tree-ancestors/treeBranchReads.jsx';
@@ -170,6 +170,16 @@ export default function ColumnTree(props){
   const requestedPath=props.design&&state.loadedScope===scopeKey?state.requestedPath:null;
   const columns=requestedPath?state.columns.filter(page=>pathContains(page.path,requestedPath)):state.columns;
   const last=columns.at(-1),root=columns[0],path=requestedPath||last?.path||[];
+  const selectedPaneProof=!readContext?.selection_token||typeof readContext.selection_view_key==='string'&&!!readContext.selection_view_key.trim();
+  const frozenPane=active&&selectedPaneProof&&!!frozenPresentation&&presentation.current?.scope===presentationScope
+    &&presentation.current.selected===selected&&props.trailingPaneKey===selected&&isValidElement(props.trailingPane);
+  const paneFresh=!state.loading&&!state.error&&!ownerBlocked&&(!readContext||state.loadedScope===scopeKey);
+  const paneVisible=last?.kind==='epochs'&&last.epochs.some(item=>item.epoch_uuid===selected)&&(paneFresh||frozenPane);
+  // Keep the same flex section only for this proven recording/path. Inertness
+  // covers the preview header too; no fresh read or mutation authority is gained.
+  const trailingPane=paneVisible&&props.trailingPane;
+  const retainedPane=trailingPane&&frozenPane&&(!paneFresh||props.actionsDisabled||state.loadedScope!==scopeKey)
+    ?cloneElement(trailingPane,{inert:true,'aria-hidden':true}):trailingPane;
   const pathAncestors=()=>path.map((key,depth)=>columns[depth]?.branches?.find(branch=>branch.key===key)).filter(Boolean);
   const ancestors=requestedPath?pathAncestors():last?.ancestors||pathAncestors();
   return <section className={`tree-preview column-tree${props.design?' is-edit-tree':''}`} aria-label="Tree column overview" aria-busy={state.loading||active&&!state.error&&ownerBlocked}>
@@ -195,7 +205,7 @@ export default function ColumnTree(props){
           <footer className="tp-pagination"><button disabled={!canNavigatePage(page)||!(navigationIntent.current&&JSON.stringify(navigationIntent.current.path)===JSON.stringify(page.path)?navigationIntent.current.offset:page.offset)} aria-label={`Previous page in column ${depth+1}`} onClick={()=>{if(canNavigatePage(page)){const offset=navigationIntent.current&&JSON.stringify(navigationIntent.current.path)===JSON.stringify(page.path)?navigationIntent.current.offset:page.offset;load({path:page.path,offset:Math.max(0,offset-60)});}}}><ArrowLeft size={13}/></button><span>{page.total?page.offset+1:0}–{page.offset+entries.length} / {number(page.total)}</span><button disabled={!canNavigatePage(page)||(navigationIntent.current&&JSON.stringify(navigationIntent.current.path)===JSON.stringify(page.path)?navigationIntent.current.offset+60>=page.total:!page.has_more)} aria-label={`Next page in column ${depth+1}`} onClick={()=>{if(canNavigatePage(page)){const offset=navigationIntent.current&&JSON.stringify(navigationIntent.current.path)===JSON.stringify(page.path)?navigationIntent.current.offset:page.offset;if(offset+60<page.total)load({path:page.path,offset:offset+60});}}}><ArrowRight size={13}/></button></footer>
         </section>;
       })}
-      {last?.kind==='epochs'&&!state.loading&&!state.error&&!ownerBlocked&&last.epochs.some(item=>item.epoch_uuid===selected)&&props.trailingPane}
+      {retainedPane}
       {requestedPath&&state.loading&&columns.length>0&&<div className="tp-column tp-pending-column" role="status">Loading group…</div>}
       {state.loading&&!state.columns.length?<div className="tp-prompt" role="status">{showLoading?'Loading tree…':''}</div>:last?.kind!=='epochs'&&!state.error&&!state.loading&&<div className="tp-prompt"><GitBranch size={24}/><strong>Choose a group</strong><p>Its next split opens alongside this column.</p></div>}
     </div>
