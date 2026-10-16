@@ -4382,18 +4382,6 @@
           }
         ],
         "reason": "Source-bound isolated projects public examples retain guarded import delegation in a standalone child. Discovery invokes the same file with -I so its forbidden scientific/native imports and recording stand-in cannot affect neighboring tests. Original temporary retention/admission examples and reviewed call AST are unchanged; not runtime or scientific qualification."
-      },
-      {
-        "file": "python/tests/test_desktop_testing_promote_workflow.py",
-        "file_sha256": "016522bd0355f75dcc9c4aeffb344b0a6640ae14bf68fb17fc7e27337047d4c6",
-        "sites": [
-          {
-            "selector": "call:exec:1",
-            "ast_sha256": "54de4a25daa3de8a8889df47fb79d66b389213fc32e175f09e6d5467228aa400",
-            "kind": "ast-call"
-          }
-        ],
-        "reason": "Existing e95186c publication workflow test executes the extracted repository workflow Python with owned temporary bytes and patched subprocess and publisher ports. Exact file and exec AST independently reviewed; no production loader authorization."
       }
     ],
     "modules": [
