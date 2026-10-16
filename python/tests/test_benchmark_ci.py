@@ -288,9 +288,8 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertIn('test_trace_views.py', native['run'])
         self.assertIn('test "$(uname -s)" = Darwin', commands)
         self.assertIn('command -v cc', commands)
-        self.assertLess(commands.index('run --source-root "$RUNNER_TEMP/trace-baseline"'),
-                        commands.index('run --source-root "$RUNNER_TEMP/trace-candidate"'))
-        self.assertIn('benchmark_prepared_geometry.py compare', commands)
+        self.assertIn('pair --baseline-source "$RUNNER_TEMP/trace-baseline" --source-root "$RUNNER_TEMP/trace-candidate"', commands)
+        self.assertNotIn('benchmark_prepared_geometry.py run ', commands)
         self.assertFalse(any(step.get('continue-on-error', False) for step in job['steps']))
         upload = next(step for step in job['steps'] if step.get('uses') == 'actions/upload-artifact@v4')
         self.assertEqual(upload['if'], 'always()')
@@ -303,6 +302,8 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertEqual(len(proof['with']['path'].splitlines()), 3)
         self.assertNotIn('node_modules', proof['with']['path'])
         self.assertIn('comparison.json', proof['with']['path'])
+        raw = next(step for step in job['steps'] if step.get('with', {}).get('name', '').startswith('trace-macos-${'))
+        self.assertLess(job['steps'].index(proof), job['steps'].index(raw))
 
     def test_ci_dependency_symlinks_are_ignored_without_hiding_source_edits(self):
         bind = next(step['run'] for step in self.jobs['trace-macos']['steps']
@@ -344,15 +345,16 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertEqual(full['with']['if-no-files-found'], 'warn')  # Geometry may not have started.
         self.assertEqual(compact['with']['if-no-files-found'], 'error')
         for role in ('baseline', 'candidate'):
-            self.assertIn(f'/geometry-{role}/', full['with']['path'])
-            self.assertIn(f'!${{{{ runner.temp }}}}/everyday-browser/geometry-{role}/**', compact['with']['path'])
-        self.assertIn('geometry-comparison.json', full['with']['path'])
+            self.assertIn(f'/geometry-pair/{role}/', full['with']['path'])
+            self.assertIn(f'!${{{{ runner.temp }}}}/everyday-browser/geometry-pair/{role}/**', compact['with']['path'])
+        self.assertIn('geometry-pair/comparison.json', full['with']['path'])
         self.assertIn('!${{ runner.temp }}/everyday-browser/**/node_modules/**', full['with']['path'])
+        self.assertLess(steps.index(compact), steps.index(full))
         self.assertNotIn('geometry-proof', compact['with']['path'])  # Included by the root, never excluded.
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder) / 'everyday-browser'; root.mkdir()
             raw = b'{ "status": "failed", "partial": true }\n'
-            baseline = root / 'geometry-baseline'; baseline.mkdir()
+            baseline = root / 'geometry-pair/baseline'; baseline.mkdir(parents=True)
             (baseline / 'receipt.json').write_bytes(raw)
             (baseline / 'raw-diagnostic.bin').write_bytes(b'preserve raw evidence')
             run = lambda: subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', copy_step['run']],
@@ -360,13 +362,13 @@ class WorkflowWiringTests(unittest.TestCase):
             run()  # Partial failure: no candidate or comparison yet.
             self.assertEqual((root / 'geometry-proof/baseline/receipt.json').read_bytes(), raw)
             self.assertFalse((root / 'geometry-proof/candidate').exists())
-            candidate = root / 'geometry-candidate'; candidate.mkdir()
+            candidate = root / 'geometry-pair/candidate'; candidate.mkdir()
             (candidate / 'receipt.json').write_bytes(raw + b' ')
-            (root / 'geometry-comparison.json').write_bytes(b'{"status":"failed"}\n')
+            (root / 'geometry-pair/comparison.json').write_bytes(b'{"status":"failed"}\n')
             run()
             self.assertEqual((root / 'geometry-proof/candidate/receipt.json').read_bytes(), raw + b' ')
             self.assertEqual((root / 'geometry-proof/comparison.json').read_bytes(),
-                             (root / 'geometry-comparison.json').read_bytes())
+                             (root / 'geometry-pair/comparison.json').read_bytes())
             self.assertEqual((baseline / 'receipt.json').read_bytes(), raw)
             self.assertEqual((baseline / 'raw-diagnostic.bin').read_bytes(), b'preserve raw evidence')
 

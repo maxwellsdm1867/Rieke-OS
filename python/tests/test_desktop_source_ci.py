@@ -52,7 +52,18 @@ class SourceCITests(unittest.TestCase):
         self.trace_baseline = copy.deepcopy(self.trace_candidate)
         for key in ('source_start', 'source_end'):
             self.trace_baseline[key]['commit'] = '4de896f2e0b4ea966b5a428c3d2314f93fba935f'
-        from benchmark_prepared_geometry import compare
+        from benchmark_prepared_geometry import compare, source_binding, PAIRED_ORDER, PAIRED_PROTOCOL
+        pair = dict(id='1' * 32, protocol=PAIRED_PROTOCOL, browser_version='pinned', browser_instances={'baseline': 100, 'candidate': 101},
+                    sources={role: source_binding(value['source_start']) for role, value in
+                             (('baseline', self.trace_baseline), ('candidate', self.trace_candidate))},
+                    order=PAIRED_ORDER, completed=[dict(item, execution_index=i) for i, item in enumerate(PAIRED_ORDER)])
+        for role, value in (('baseline', self.trace_baseline), ('candidate', self.trace_candidate)):
+            value.update(pair=copy.deepcopy(pair), pair_role=role)
+            value['environment']['browser'] = dict(browser='pinned', sampling_protocol=PAIRED_PROTOCOL, timing_mode='ordinary', browser_launch=dict(distribution='playwright-chromium-headless-shell', playwright_version='1.61.1', executable_override=False))
+            for index, row in enumerate(value['samples']):
+                row.update(pair_id=pair['id'], protocol=PAIRED_PROTOCOL, source_role=role,
+                           sample_index=index, browser_instance=pair['browser_instances'][role], execution_index=PAIRED_ORDER.index(dict(role=role, sample=index)),
+                           sample_class='first_trace_after_setup_warm_OS' if index == 0 else 'subsequent_trace_fresh_renderer_warm_OS')
         self.trace_comparison = compare(self.trace_baseline, self.trace_candidate)
         self.jobs = {1: [dict(name=name, conclusion='success') for name in
             ['Adopted architecture contract discovery', 'frontend', 'python',
@@ -148,6 +159,12 @@ class SourceCITests(unittest.TestCase):
         self.trace_candidate = original
         self.trace_baseline['source_start']['commit'] = 'f' * 40
         with self.assertRaisesRegex(ValueError, 'pinned baseline'): self.check()
+
+    def test_matching_diagnostic_trace_pair_cannot_publish(self):
+        for receipt in (self.trace_baseline, self.trace_candidate):
+            receipt['environment']['browser']['timing_mode'] = 'diagnostic'
+        with self.assertRaisesRegex(ValueError, 'Diagnostic geometry timing'):
+            self.check()
 
     def test_trace_comparison_is_recomputed_not_trusted(self):
         original = copy.deepcopy(self.trace_comparison)

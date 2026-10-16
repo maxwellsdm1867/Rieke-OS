@@ -580,8 +580,8 @@ no cloned response is read and no product decoder supplies the oracle.
 
 ## Canonical prepared geometry lane
 
-`tools/benchmark_prepared_geometry.py run --source-root CHECKOUT --output NEW_DIR`
-uses the current committed harness against the explicit application checkout. It
+`tools/benchmark_prepared_geometry.py pair --baseline-source BASELINE --source-root CANDIDATE --output NEW_DIR`
+uses the current committed harness against two explicit application checkouts. It
 adds one separate three-sample prepared Workbench trace case; the fifteen existing
 workflow variants and their baselines remain unchanged. The fixture has 1,000
 synthetic metadata rows, a 200-epoch protocol and a real one-million-sample gzip64
@@ -593,7 +593,34 @@ The host smoke builds the same native C source with strict floating-point flags
 and requires ABI 4 and actual native admission. Linux's host helper is not a
 macOS release artifact; desktop deployment checks remain unchanged. The HTTP
 server is threaded Werkzeug, not packaged Waitress. Setup warms owned files and
-prepares metadata outside the trace clock. Each sample starts a fresh renderer.
+prepares metadata outside the trace clock. Both isolated source servers and both
+production builds finish before two independent pinned Playwright Chromium headless-shell
+browsers start, one per source. Six fresh browser contexts then run in the fixed order B0, C0, C1,
+B1, B2, C2. Each source retains exactly three samples, including its first trace;
+no warmup, outlier removal, retry, alternate browser or tolerance change is allowed.
+Each context uses only its source's origin, production bundle, fixture and server;
+its existing cumulative native admission counters remain source-local.
+
+This controls build/browser startup and source ordering as measurement confounds while
+preserving each source's independent first-trace browser graphics state.
+Hosted diagnostics showed long idle RAF gaps in both unchanged baseline and
+candidate, with compositor ticks continuing; full Chromium and headed alternatives
+did not establish a fix. An earlier shared-browser diagnostic retained every sample but could give the
+first source a unique graphics initialization cost; that protocol was rejected.
+Interleaving independent browsers does not establish that hosted frame scheduling
+is deterministic or replace an earlier failed gate. The paired protocol requires
+fresh ordinary evidence; the earlier serial receipts remain historical evidence.
+
+The pair receipt binds a fresh pair ID, both source commit/tree/file digests, the
+identical browser version and distinct source-owned browser instances, exact completed order and each source's sample ordinal and
+execution index. Missing, duplicated, reordered, mixed-pair or changed-source
+samples fail comparison. Builds unlink their owned `src`/`node_modules` symlinks
+before source-end attestation and upload, without changing the linked sources.
+Timeout/cancellation preserves partial receipts and closes both owned servers and
+the browser, including its separate POSIX process group. Compact proof uploads
+precede larger raw artifacts. The standalone `run` command remains diagnostic;
+its unpaired receipts cannot qualify the canonical comparison.
+
 Ordinary runs, including the three-sample CI lane, send no trace timing header.
 For a separate diagnostic run, `PREPARED_GEOMETRY_TIMING=1` enables
 `X-Disco-Trace-Timing: 1` and records the existing display responses' `Server-Timing`
@@ -618,9 +645,11 @@ against the source and the rendered readout. No whole raw waveform request is
 allowed during initial display. Missing prerequisites, fallback geometry,
 incomplete samples and cleanup failures are failures.
 
-`compare BASELINE/receipt.json CANDIDATE/receipt.json --output comparison.json`
-requires clean unchanged sources, identical harness, dependencies, fixture and
-environment. Locked dependencies use the existing workflow identity: only the
+`pair` writes `baseline/receipt.json`, `candidate/receipt.json` and
+`comparison.json` under its output. `compare BASELINE/receipt.json CANDIDATE/receipt.json --output comparison.json`
+recomputes the same paired comparison. It requires clean unchanged sources, the
+same complete paired protocol, ordinary timing, identical harness, dependencies, fixture and
+environment. Two matching diagnostic timing modes still cannot qualify. Locked dependencies use the existing workflow identity: only the
 root application version is omitted so a version bump can be compared with its
 predecessor; transitive versions, integrity fields and Python requirements remain
 exact. Raw lockfile hashes are also retained in each receipt. It applies the existing workflow policy (greater of 25% or 5 ms)
@@ -632,7 +661,7 @@ are distinct from the installed application's native measurements.
 
 Both Linux and the required `macOS foreground trace regression` job compare the
 verified fix `4de896f2e0b4ea966b5a428c3d2314f93fba935f` with the resolved candidate,
-serially on each host using the same current harness. This deliberately tightens
+in the fixed paired order on each host using the same current harness. This deliberately tightens
 the trace baseline from the older, slower a25b437 implementation; it does not
 change the pinned million-query or fifteen legacy workflow baselines. The v2
 fixture additionally requires explicit foreground admission and counts actual
@@ -660,5 +689,8 @@ The deterministic worker/admission checks protect the specific scheduling fix;
 the exact geometry, cursor and request-count oracles protect against the earlier
 sequential raw-request regression. This lane uses SQL doubles and host-compiled
 helpers, not native MySQL, packaged Waitress or compositor instrumentation, and
-does not grant release qualification. Local `PREPARED_GEOMETRY_BROWSER` may select
-an explicit browser executable; CI uses its pinned Playwright Chromium installation.
+does not grant release qualification. Local standalone diagnostics may select
+an explicit executable with `PREPARED_GEOMETRY_BROWSER`; paired qualification
+rejects an executable override and requires the lock-pinned Playwright Chromium
+headless-shell distribution. The two browser identities must be distinct and
+share that pinned launch configuration and version.

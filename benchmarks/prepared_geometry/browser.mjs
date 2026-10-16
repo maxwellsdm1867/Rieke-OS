@@ -1,16 +1,43 @@
 import {geometryReadiness,geometrySnapshot} from './observer.mjs';
-import fs from 'node:fs/promises';import path from 'node:path';import {createRequire} from 'node:module';import {pathToFileURL} from 'node:url';
-const [root,serverJson,output,samplesText='3']=process.argv.slice(2),samples=Number(samplesText);if(!root||!serverJson||!output||!Number.isInteger(samples)||samples<1)throw Error('source server-json output samples required');await fs.mkdir(output,{recursive:false});
-const timingEnabled=process.env.PREPARED_GEOMETRY_TIMING==='1';
-const meta=JSON.parse(await fs.readFile(serverJson,'utf8')),workspace=path.join(root,'workspace-app');
-const {fixtureSource,installObserver,installTraceControlReader,installBinaryTraceOracle}=await import(pathToFileURL(path.resolve(import.meta.dirname,'../workflow/fixture-app.mjs')));
-const {readiness,snapshotAction,resetPreparation,assertFinalizedRequests,armAction,observationFinished}=await import(pathToFileURL(path.resolve(import.meta.dirname,'../workflow/browser.mjs')));
-const require=createRequire(path.join(root,'desktop/package.json')),{chromium}=require('playwright');
-let server,browser,context;const results=[];const receipt={status:'running',diagnostic_only:true,native_mysql:false,metadata_epochs:meta.epochs,cohort_epochs:meta.protocol_epochs,trace_samples:1000000,source:root,conditions:meta.diagnostic};
-try{
- const {buildOwnedProduction}=await import('./build.mjs');receipt.production_build=await buildOwnedProduction(root,meta,output);
- browser=await chromium.launch({headless:true,...(process.env.PREPARED_GEOMETRY_BROWSER?{executablePath:process.env.PREPARED_GEOMETRY_BROWSER}:{}),args:['--no-first-run','--no-default-browser-check']});receipt.environment={node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},dpr:1,runtime:'production-react-direct-werkzeug',http_server:meta.http_server,vite_proxy:false,timing_mode:timingEnabled?'diagnostic':'ordinary'};
- for(let sample=0;sample<samples;sample++){
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+import {pathToFileURL,fileURLToPath} from 'node:url';
+import {buildOwnedProduction} from './build.mjs';
+import {installObserver,installTraceControlReader,installBinaryTraceOracle} from '../workflow/fixture-app.mjs';
+import {readiness,snapshotAction,resetPreparation,armAction,observationFinished} from '../workflow/browser.mjs';
+
+export const standaloneProtocol='serial-source-three-fresh-contexts-v1';
+export async function launchBrowser(root,{processFile}={}){
+ const {chromium}=createRequire(path.join(root,'desktop/package.json'))('playwright');
+ const owner=await chromium.launchServer({headless:true,...(process.env.PREPARED_GEOMETRY_BROWSER?{executablePath:process.env.PREPARED_GEOMETRY_BROWSER}:{}),args:['--no-first-run','--no-default-browser-check']});
+ try{
+  // Playwright owns Chromium in a separate POSIX process group. Retain that
+  // explicit identity so the Python owner can clean up even if Node crashes.
+  if(processFile){const child=owner.process();await fs.writeFile(processFile+'.tmp',JSON.stringify({pid:child.pid,args:child.spawnargs}));await fs.rename(processFile+'.tmp',processFile);}
+  const browser=await chromium.connect(owner.wsEndpoint()),disconnect=browser.close.bind(browser);
+  browser.geometryOwner={pid:owner.process().pid,distribution:'playwright-chromium-headless-shell',playwright_version:createRequire(path.join(root,'desktop/package.json'))('playwright/package.json').version,executable_override:!!process.env.PREPARED_GEOMETRY_BROWSER};
+  browser.close=async()=>{try{await disconnect();}finally{await owner.close();}};
+  return browser;
+ }catch(error){await owner.close();throw error;}
+}
+
+export async function createSourceSession({root,serverJson,output}){
+ await fs.mkdir(output,{recursive:false});
+ const meta=JSON.parse(await fs.readFile(serverJson,'utf8'));
+ const timingEnabled=process.env.PREPARED_GEOMETRY_TIMING==='1';
+ const results=[];
+ const receipt={status:'running',diagnostic_only:true,native_mysql:false,metadata_epochs:meta.epochs,cohort_epochs:meta.protocol_epochs,trace_samples:1000000,source:root,conditions:meta.diagnostic,samples:results};
+ let context,prepared=false,finished=false;
+ return {
+  receipt,
+  async prepare(){
+   if(prepared)throw Error('Source was already built');
+   receipt.production_build=await buildOwnedProduction(root,meta,output);prepared=true;
+  },
+  async sample(browser,sample,observation={}){
+   if(!prepared||finished||context||sample!==results.length||sample<0||sample>=3)throw Error('Invalid source sample lifecycle');
+   receipt.environment={node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},dpr:1,runtime:'production-react-direct-werkzeug',http_server:meta.http_server,vite_proxy:false,timing_mode:timingEnabled?'diagnostic':'ordinary',sampling_protocol:observation.protocol??standaloneProtocol,browser_launch:{distribution:browser.geometryOwner.distribution,playwright_version:browser.geometryOwner.playwright_version,executable_override:browser.geometryOwner.executable_override}};
   context=await browser.newContext({viewport:{width:1500,height:1100},...(timingEnabled?{extraHTTPHeaders:{'X-Disco-Trace-Timing':'1'}}:{})});const page=await context.newPage();
   const displayTimings=new Map();
   if(timingEnabled)page.on('response',response=>{
@@ -92,8 +119,32 @@ try{
   row.authority=await (await fetch(`http://127.0.0.1:${meta.port}/__diagnostic__/status`)).json();
   if(!row.authority.native_contract||!row.authority.prepared_display_canonical||!row.authority.source_verifier_canonical||row.authority.helper_abi!==4||row.authority.native_counts.admitted!==sample+1||row.authority.native_counts.fallback!==0||row.authority.reduce_counts.admitted!==sample+1||row.authority.reduce_counts.fallback!==0)throw Error('Canonical prepared-display ownership did not remain valid');
   const requests=row.requests.filter(r=>r.url.includes('/display?'));row.breakdown={click_to_first_trace_request_ms:requests[0].start_ms,http_window_ms:requests.at(-1).end_ms-requests[0].start_ms,last_body_to_stroke_ms:row.trace.first_visible_ms-requests.at(-1).end_ms,stroke_to_first_raf_ms:row.trace.first_raf_ms-row.trace.first_visible_ms,first_to_second_raf_ms:row.trace.complete_ms-row.trace.first_raf_ms,stroke_to_second_frame_ms:row.trace.complete_ms-row.trace.first_visible_ms};
-  row.sample_index=sample;row.sample_class=sample===0?'first_trace_after_setup_warm_OS':'subsequent_trace_fresh_renderer_warm_OS';results.push(row);await fs.appendFile(path.join(output,'samples.jsonl'),JSON.stringify(row)+'\n');console.log(JSON.stringify({sample,complete_ms:row.trace.complete_ms,post_stroke_ms:row.trace.first_visible_ms,requests:requests.length,exact:true,authority:row.authority}));await context.close();context=null;
- }
- receipt.status='passed';receipt.samples=results;receipt.note='Real production components/trace routes; SQL explicitly doubled; source SHA verifier and sealed index canonical. No compositor/nativeMySQL/cold-storage claim.';
-}catch(error){receipt.status='failed';receipt.error=String(error);if(context){const page=context.pages()[0];if(page){await fs.writeFile(path.join(output,'failure-body.txt'),await page.locator('body').innerText());await fs.writeFile(path.join(output,'failure-requests.json'),JSON.stringify(await page.evaluate(()=>window.__workflow.requests.map(({result,binary,...r})=>r)),null,2));}}process.exitCode=1;}
-finally{await context?.close();await browser?.close();await server?.close();await fs.writeFile(path.join(output,'receipt.json'),JSON.stringify(receipt,null,2));}
+  row.sample_index=sample;row.sample_class=sample===0?'first_trace_after_setup_warm_OS':'subsequent_trace_fresh_renderer_warm_OS';Object.assign(row,observation);results.push(row);await fs.appendFile(path.join(output,'samples.jsonl'),JSON.stringify(row)+'\n');console.log(JSON.stringify({sample,complete_ms:row.trace.complete_ms,post_stroke_ms:row.trace.first_visible_ms,requests:requests.length,exact:true,authority:row.authority}));await context.close();context=null;
+   return row;
+  },
+  async finish(error=null){
+   if(finished)throw Error('Source session already finished');
+   finished=true;
+   if(error&&context){
+    try{const page=context.pages()[0];if(page){await fs.writeFile(path.join(output,'failure-body.txt'),await page.locator('body').innerText());await fs.writeFile(path.join(output,'failure-requests.json'),JSON.stringify(await page.evaluate(()=>window.__workflow.requests.map(({result,binary,...r})=>r)),null,2));}}catch(diagnosticError){receipt.failure_capture_error=String(diagnosticError);}
+   }
+   try{await context?.close();}catch(closeError){error??=closeError;}context=null;
+   if(results.length!==3)error??=Error('Exactly three completed source samples required');
+   receipt.status=error?'failed':'passed';if(error)receipt.error=String(error);
+   receipt.note='Real production components/trace routes; SQL explicitly doubled; source SHA verifier and sealed index canonical. No compositor/nativeMySQL/cold-storage claim.';
+   await fs.writeFile(path.join(output,'receipt.json'),JSON.stringify(receipt,null,2));
+   return receipt;
+  },
+ };
+}
+
+async function main(){
+ const [root,serverJson,output,samplesText='3']=process.argv.slice(2);
+ if(!root||!serverJson||!output||samplesText!=='3')throw Error('source server-json output and exactly three samples required');
+ const session=await createSourceSession({root,serverJson,output});let browser,error;
+ try{await session.prepare();browser=await launchBrowser(root,{processFile:path.join(output,'browser-process.json')});for(let sample=0;sample<3;sample++)await session.sample(browser,sample);}
+ catch(caught){error=caught;}
+ finally{try{await browser?.close();}catch(caught){error??=caught;}await session.finish(error);}
+ if(error)throw error;
+}
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))main().catch(error=>{console.error(error);process.exitCode=1;});

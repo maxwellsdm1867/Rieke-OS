@@ -3421,12 +3421,15 @@
             "os",
             "pathlib",
             "platform",
+            "psutil",
             "re",
             "shutil",
+            "signal",
             "statistics",
             "subprocess",
             "sys",
             "time",
+            "uuid",
             "benchmark_workflow",
             "tools.benchmark_workflow"
           ]
