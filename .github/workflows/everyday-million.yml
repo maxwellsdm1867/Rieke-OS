@@ -10,7 +10,7 @@ permissions:
 jobs:
   diagnostic:
     runs-on: macos-15
-    timeout-minutes: 25
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,7 +40,7 @@ jobs:
             done
           done
           git rev-parse HEAD > "$RUNNER_TEMP/frame-diagnostic/harness-commit.txt"
-      - name: Fixed four-run ABBA diagnostic with unchanged correctness oracles
+      - name: Fixed twelve-run browser-mode crossover diagnostic with unchanged correctness oracles
         env:
           PREPARED_GEOMETRY_TIMING: '1'
           PYTHONDONTWRITEBYTECODE: '1'
@@ -48,13 +48,15 @@ jobs:
           python3 - <<'PY'
           import json,os,pathlib,subprocess,time
           temp=pathlib.Path(os.environ['RUNNER_TEMP']);out=temp/'frame-diagnostic'
-          plan={'diagnostic_only':True,'order':['baseline','candidate','candidate','baseline'],'runs':4,'samples_each':3,'baseline':'4de896f2e0b4ea966b5a428c3d2314f93fba935f','candidate':'f8488b95157be906e5bad63272a1d5a131805c47','instrumentation':'Symmetric CDP CPU/tasks/layout/GC/RAF and existing Server-Timing. No release comparison or qualification; retain all attempts, never retry within this block.'}
+          plan={'diagnostic_only':True,'order':['baseline','candidate','candidate','baseline'],'runs':12,'browser_modes':['shell','chromium-headless','chromium-headed'],'samples_each':3,'baseline':'4de896f2e0b4ea966b5a428c3d2314f93fba935f','candidate':'f8488b95157be906e5bad63272a1d5a131805c47','instrumentation':'Symmetric CDP CPU/tasks/layout/GC/RAF and existing Server-Timing. No release comparison or qualification; retain all attempts, never retry within this block.'}
           (out/'plan.json').write_text(json.dumps(plan,indent=2));rows=[]
-          for i,arm in enumerate(plan['order'],1):
-              command=[str(temp/'trace-python/bin/python'),'-B','tools/benchmark_prepared_geometry.py','run','--source-root',str(temp/('trace-'+arm)),'--output',str(out/f'run-{i}-{arm}')]
-              row={'run':i,'arm':arm,'command':command,'started':time.time()}
+          schedule=[(mode,arm) for arm in plan['order'] for mode in plan['browser_modes']]
+          plan['schedule']=schedule;(out/'plan.json').write_text(json.dumps(plan,indent=2))
+          for i,(mode,arm) in enumerate(schedule,1):
+              command=[str(temp/'trace-python/bin/python'),'-B','tools/benchmark_prepared_geometry.py','run','--source-root',str(temp/('trace-'+arm)),'--output',str(out/f'run-{i}-{mode}-{arm}')]
+              row={'run':i,'arm':arm,'browser_mode':mode,'command':command,'started':time.time()}
               with (out/f'run-{i}.log').open('w') as log:
-                  result=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT)
+                  result=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,env={**os.environ,'DISCO_DIAGNOSTIC_BROWSER_MODE':mode})
               row.update(exit=result.returncode,finished=time.time());rows.append(row)
               (out/'run-status.json').write_text(json.dumps(rows,indent=2));print(row,flush=True)
           if any(row['exit'] for row in rows):raise SystemExit('Diagnostic execution failed; retain partial evidence')

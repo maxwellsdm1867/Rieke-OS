@@ -2,6 +2,9 @@ import {geometryReadiness,geometrySnapshot} from './observer.mjs';
 import fs from 'node:fs/promises';import path from 'node:path';import {createRequire} from 'node:module';import {pathToFileURL} from 'node:url';
 const [root,serverJson,output,samplesText='3']=process.argv.slice(2),samples=Number(samplesText);if(!root||!serverJson||!output||!Number.isInteger(samples)||samples<1)throw Error('source server-json output samples required');await fs.mkdir(output,{recursive:false});
 const timingEnabled=process.env.PREPARED_GEOMETRY_TIMING==='1';
+const browserMode=process.env.DISCO_DIAGNOSTIC_BROWSER_MODE??'shell';
+if(!['shell','chromium-headless','chromium-headed'].includes(browserMode))throw Error('Unknown diagnostic browser mode');
+if(process.env.PREPARED_GEOMETRY_BROWSER)throw Error('Diagnostic experiment requires the lock-pinned browser');
 const meta=JSON.parse(await fs.readFile(serverJson,'utf8')),workspace=path.join(root,'workspace-app');
 const {fixtureSource,installObserver,installTraceControlReader,installBinaryTraceOracle}=await import(pathToFileURL(path.resolve(import.meta.dirname,'../workflow/fixture-app.mjs')));
 const {readiness,snapshotAction,resetPreparation,assertFinalizedRequests,armAction,observationFinished}=await import(pathToFileURL(path.resolve(import.meta.dirname,'../workflow/browser.mjs')));
@@ -9,7 +12,7 @@ const require=createRequire(path.join(root,'desktop/package.json')),{chromium}=r
 let server,browser,context;const results=[];const receipt={status:'running',diagnostic_only:true,native_mysql:false,metadata_epochs:meta.epochs,cohort_epochs:meta.protocol_epochs,trace_samples:1000000,source:root,conditions:meta.diagnostic};
 try{
  const {buildOwnedProduction}=await import('./build.mjs');receipt.production_build=await buildOwnedProduction(root,meta,output);
- browser=await chromium.launch({headless:true,...(process.env.PREPARED_GEOMETRY_BROWSER?{executablePath:process.env.PREPARED_GEOMETRY_BROWSER}:{}),args:['--no-first-run','--no-default-browser-check']});receipt.environment={node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},dpr:1,runtime:'production-react-direct-werkzeug',http_server:meta.http_server,vite_proxy:false,timing_mode:timingEnabled?'diagnostic':'ordinary'};
+ browser=await chromium.launch({headless:browserMode!=='chromium-headed',...(browserMode==='shell'?{}:{channel:'chromium'}),args:['--no-first-run','--no-default-browser-check']});receipt.environment={browser_mode:browserMode,playwright:require('playwright/package.json').version,node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},dpr:1,runtime:'production-react-direct-werkzeug',http_server:meta.http_server,vite_proxy:false,timing_mode:timingEnabled?'diagnostic':'ordinary'};
  for(let sample=0;sample<samples;sample++){
   context=await browser.newContext({viewport:{width:1500,height:1100},...(timingEnabled?{extraHTTPHeaders:{'X-Disco-Trace-Timing':'1'}}:{})});const page=await context.newPage();
   const displayTimings=new Map();
