@@ -12,7 +12,7 @@ const epochs=[1,2].map(index=>({epoch_uuid:`epoch-${index}`,cell_uuid:'cell-one'
 const context=()=>({candidate_revision_uuid:candidateId,candidate_scope_revision:'scope-one',candidate_recipe_sha256:'recipe-one',expected_binding_version:1,protocol:{definition:{protocol_uuid:protocolId},query_revision:'scope-one',expected_binding_version:1,cells},draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:2,pending_cells:1}});
 const prepared={contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare-one',candidate_revision_uuid:candidateId,root:candidateRoot,candidate_scope_revision:'scope-one',queue_revision:'queue-one',context:context()};
 const queue={data:{queue_revision:'queue-one',pending_epoch_count:2,pending_cell_count:1,total_candidate_count:1,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}},loading:false};
-async function harness({withBootstrap=false,withTree=false,withManifest=false}={}){
+async function harness({withBootstrap=false,withTree=false,withManifest=false,withMetadata=false}={}){
  const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'}),calls=[],errors=[];
  const key=`__workbenchSession${Math.random().toString(36).slice(2)}`,fixture={renders:0,viewer:null,prepared,contexts:new Map([[candidateId,context()]])};globalThis[key]=fixture;
  const liveContext={...context(),generation:{metadata:'fixture'},protocol:{...context().protocol,definition:{protocol_uuid:protocolId,project_uuid:'project-one'}}};
@@ -28,7 +28,7 @@ async function harness({withBootstrap=false,withTree=false,withManifest=false}={
   else if(path.endsWith('/selection-manifest')){const body=JSON.parse(options.body);value=fixture.manifest?await fixture.manifest(body):{selection_token:body.upload_uuid,count:body.epoch_uuids.length,total:body.total,complete:true,candidate_scope_revision:body.candidate_scope_revision,query_revision:body.candidate_scope_revision,expected_binding_version:1,selection_sha256:createHash('sha256').update(JSON.stringify(body.epoch_uuids)).digest('hex')};}
   else if(path.endsWith('/epochs')){const current=fixture.contexts.get(path.split('/').at(-2));value=fixture.page?await fixture.page(url,current):{epochs,cells,total:2,offset:0,limit:60,candidate_scope_revision:current.candidate_scope_revision,query_revision:current.candidate_scope_revision,expected_binding_version:1};}
   else if(path.includes('/epochs/'))value=epochs.find(epoch=>epoch.epoch_uuid===path.split('/').at(-1));
-  else if(path==='/metadata/fields')value={fields:[]};
+  else if(path==='/metadata/fields')value=fixture.catalog?await fixture.catalog():{fields:[{id:'epoch.duration',label:'Duration',category:'Epoch',type:'number'}]};
   else throw Error(`Unexpected request ${path}`);
   return {ok:true,status:200,json:async()=>value};
  }};
@@ -41,7 +41,7 @@ async function harness({withBootstrap=false,withTree=false,withManifest=false}={
    if(importer?.endsWith('/Inspector.jsx')&&source.endsWith('.jsx')&&!['./EpochBrowserChrome.jsx','../../tree-ancestors/treeBranchReads.jsx','../../components/NavigationLoading.jsx','../../components/Common.jsx','../../incoming-workbench/ui/IncomingSelectionTools.jsx'].includes(source))return `\0session-${source}`;
    if(importer?.endsWith('/FrozenIncomingReview.jsx')&&source==='../../typed-query/ui/ProtocolViewFilter.jsx')return '\0session-null';
   },load(id){
-   if(id==='\0session-./EpochViewer.jsx')return `import React from 'react';${withTree?"import Tree from '/src/epoch-browser/ui/EpochTreePane.jsx';":''}const f=globalThis[${JSON.stringify(key)}];export default function Viewer(props){f.viewer=props;f.renders++;return React.createElement('div',{'data-real-inspector':true},'Actual Inspector session',props.before${withTree?',React.createElement(Tree,props.treePane)':''});}`;
+   if(id==='\0session-./EpochViewer.jsx')return `import React from 'react';${withTree?"import Tree from '/src/epoch-browser/ui/EpochTreePane.jsx';":''}${withMetadata?"import MetadataPanel from '/src/epoch-browser/ui/MetadataPanel.jsx';":''}const f=globalThis[${JSON.stringify(key)}];export default function Viewer(props){f.viewer=props;f.renders++;return React.createElement('div',{'data-real-inspector':true},'Actual Inspector session',props.before${withTree?',React.createElement(Tree,props.treePane)':''}${withMetadata?',React.createElement(MetadataPanel,{...props.metadata,epoch:props.metadata.loadingPolicy.row})':''});}`;
    if(id==='\0session-../../traces/ui/TraceViewer.jsx')return 'function Trace(){return null;}Trace.supportsFrozenReadContext=true;export default Trace;';
    if(id.startsWith('\0session-'))return 'export default function(){return null;}';
   }
@@ -234,6 +234,54 @@ test('actual Inspector consumes fresh bootstrap once without duplicate page admi
   assert.equal(h.calls.filter(call=>call.path.endsWith('/epochs')).length,0);
   await act(async()=>h.fixture.viewer.treePane.listProps.onFocus('epoch-2',epochs[1]));await h.settle();
   assert.ok(h.saved.drafts[candidateId].viewer.focused);
+  assert.deepEqual(h.errors,[]);
+ }finally{await h.close();}
+});
+
+
+test('actual frozen Workbench preserves catalog presentation across annotation and draft renewal but retires structural changes',async()=>{
+ const h=await harness({withMetadata:true});try{
+  localStorage.setItem('workspace.inspector.metadata','true');
+  await h.render({metadataPresentationRevision:0});await h.settle();
+  await act(()=>h.fixture.viewer.treePane.listProps.onFocus('epoch-1',epochs[0]));await h.settle();
+  const group=h.container.querySelector('.metadata-field-group');assert.ok(group);
+  await act(()=>{group.open=true;group.dispatchEvent(new window.Event('toggle'));});
+  const scroll=h.container.querySelector('.metadata-panel-scroll');scroll.scrollTop=180;
+  const key=h.fixture.viewer.metadata.presentation.key;
+  const pending=[];h.fixture.catalog=()=>new Promise(resolve=>pending.push(resolve));
+  const renewed={...context(),draft:{...context().draft,draft_version:2}};
+  h.fixture.contexts.set(candidateId,renewed);
+  await h.render({revision:1,metadataPresentationRevision:0});await h.settle();
+  assert.ok(pending.length,'authority revision still renews the catalog read');
+  assert.equal(h.fixture.viewer.metadata.presentation.key,key);
+  assert.equal(h.container.querySelector('.metadata-field-group'),group);
+  assert.equal(group.open,true);assert.equal(scroll.scrollTop,180);
+  assert.ok(h.container.querySelector('.metadata-field-catalog').hasAttribute('inert'));
+  await h.render({revision:2,metadataPresentationRevision:1});await h.settle();
+  assert.notEqual(h.fixture.viewer.metadata.presentation.key,key);
+  assert.equal(h.container.querySelector('.metadata-field-group'),null,'structural change cannot borrow old catalog');
+  await act(()=>{for(const resolve of pending)resolve({fields:[]});});await h.settle();
+  assert.equal(h.container.querySelector('.metadata-field-group'),null);
+  assert.deepEqual(h.errors,[]);
+ }finally{await h.close();}
+});
+
+
+for(const boundary of ['recipe','binding','actor','focus'])test(`frozen Workbench retires catalog on ${boundary} change during held catalog renewal`,async()=>{
+ const h=await harness({withMetadata:true});try{
+  localStorage.setItem('workspace.inspector.metadata','true');
+  await h.render({metadataPresentationRevision:0});await h.settle();
+  await act(()=>h.fixture.viewer.treePane.listProps.onFocus('epoch-1',epochs[0]));await h.settle();
+  assert.ok(h.container.querySelector('.metadata-field-group'));
+  const key=h.fixture.viewer.metadata.presentation.key,pending=[];
+  h.fixture.catalog=()=>new Promise(resolve=>pending.push(resolve));
+  const changed={...context(),...(boundary==='recipe'?{candidate_recipe_sha256:'other-recipe'}:boundary==='binding'?{expected_binding_version:2}:boundary==='actor'?{actor:'other-actor'}:{})};
+  h.fixture.contexts.set(candidateId,changed);
+  await h.render({revision:1,metadataPresentationRevision:0});await h.settle();
+  if(boundary==='focus'){await act(()=>h.fixture.viewer.treePane.listProps.onFocus('epoch-2',epochs[1]));await h.settle();}
+  assert.notEqual(h.fixture.viewer.metadata.presentation?.key,key);
+  assert.equal(h.container.querySelector('.metadata-field-group'),null,'new identity cannot display the previous catalog during renewal');
+  await act(()=>{for(const resolve of pending)resolve({fields:[]});});await h.settle();
   assert.deepEqual(h.errors,[]);
  }finally{await h.close();}
 });

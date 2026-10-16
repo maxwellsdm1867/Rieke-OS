@@ -64,6 +64,11 @@ are inert display only. Current errors and retry controls remain outside that
 display and outside the scrolling content flow. Changed identity, Live/value
 mode or a fresh empty catalog retires the snapshot. See
 `metadataPresentation.test.js`; native pixel and scroll checks remain separate.
+Protocol forwards its structural clock as `metadataPresentationRevision` through
+both incoming review routes. This clock affects only sidebar presentation identity;
+frozen `revision` and draft versions still renew catalog/page reads and authority.
+Standalone Inspector defaults remain unchanged. `workbenchSessionLifecycle.test.js`
+checks the real cumulative/frozen/Inspector/sidebar chain across these clocks.
 
 Initial selected-view intent cannot use its parent page's prepared trace offer
 while the selection manifest is pending. An existing selected view may retain

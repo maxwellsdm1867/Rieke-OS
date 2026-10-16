@@ -4,7 +4,7 @@
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
     "src/App.jsx": {
-      "fingerprint": "b31e9101149e6841307143ddd12fbab3277d4977f3eaa368f62517959ba07566",
+      "fingerprint": "69d595d8ff5b4361831ee85d83bd8d2694d7cd2d824cddcca9e6e6a6f7f5985a",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -48,14 +48,17 @@
         }
       ],
       "lifetime": "mixed-project-and-retained-composition",
-      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes. Independent review on 2026-10-15 confirmed project setup closes only after successful project activation; pending, refused and migration paths retain context. Callback return values changed; lifecycle hooks, dependencies and scientific owners are unchanged. Six actual App composition regression cases cover both setup callbacks.",
+      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes. Independent review on 2026-10-15 confirmed project setup closes only after successful project activation; pending, refused and migration paths retain context. Callback return values changed; lifecycle hooks, dependencies and scientific owners are unchanged. Six actual App composition regression cases cover both setup callbacks. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
         "src/retainedWorkspaceViews.test.js",
         "src/protocol-overview/overviewDemand.test.js",
         "src/importMergeAppRoute.test.js",
-        "src/authoredDrafts.test.js"
+        "src/authoredDrafts.test.js",
+        "src/workbenchSessionLifecycle.test.js",
+        "src/workbenchRouteRendering.test.js",
+        "src/incomingWorkbenchRendering.test.js"
       ]
     },
     "src/annotations/annotationProfile.js": {
@@ -959,7 +962,7 @@
       ]
     },
     "src/epoch-browser/ui/Inspector.jsx": {
-      "fingerprint": "a091d8c836c5173a2b7fc262654ca68a019d2767d1bb7b0170543c430ab4525d",
+      "fingerprint": "82f423e3e7fa7d422bf586b51b12db43c46e7ad6a78dbfcde3eb2378e2c93028",
       "sites": [
         {
           "owner": "InspectorContent",
@@ -1088,7 +1091,7 @@
         }
       ],
       "lifetime": "focused-display-and-fresh-curation",
-      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal. Independently reviewed initial selected-manifest acquisition withholds only the parent page offer; same-selected renewal keeps its own inert trace and strict capability validation is unchanged. Frozen sidebar presentation keys include owner, cohort, focus, cell selection and structure revision, excluding Live metadata and annotation-dependent or unproven selected scopes.",
+      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal. Independently reviewed initial selected-manifest acquisition withholds only the parent page offer; same-selected renewal keeps its own inert trace and strict capability validation is unchanged. Frozen sidebar presentation keys include owner, cohort, focus, cell selection and structure revision, excluding Live metadata and annotation-dependent or unproven selected scopes. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
@@ -1100,7 +1103,9 @@
         "src/candidateContinuity.test.js",
         "src/hierarchyRetention.test.js",
         "src/epoch-browser/selectedTraceAdmission.test.js",
-        "src/epoch-browser/metadataPresentation.test.js"
+        "src/epoch-browser/metadataPresentation.test.js",
+        "src/workbenchRouteRendering.test.js",
+        "src/incomingWorkbenchRendering.test.js"
       ]
     },
     "src/epoch-browser/ui/InspectorActions.jsx": {
@@ -1625,7 +1630,7 @@
       ]
     },
     "src/incoming-workbench/ui/FrozenIncomingReview.jsx": {
-      "fingerprint": "4c962ecf27919554d98900b43ea1ff8009fb755353fb12b189e2be4de1965103",
+      "fingerprint": "14b77c2837d77697742cb9b9c3eae90bdce2c8abcd09199dbae502c22137be14",
       "sites": [
         {
           "owner": "FrozenIncomingReview",
@@ -1659,14 +1664,15 @@
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Prepared display capability passes from the frozen candidate without changing draft, selection, merge or publication ownership. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md.",
+      "reason": "Prepared display capability passes from the frozen candidate without changing draft, selection, merge or publication ownership. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement.",
       "tests": [
         "src/importMergeWorkflow.test.js",
         "src/incomingWorkbenchRendering.test.js",
         "src/incomingWorkbenchStrictMode.test.js",
         "src/traceReadContext.test.js",
         "src/workbenchSessionLifecycle.test.js",
-        "src/workbenchSummaryReads.test.js"
+        "src/workbenchSummaryReads.test.js",
+        "src/workbenchRouteRendering.test.js"
       ]
     },
     "src/incoming-workbench/ui/IncomingCellTypes.jsx": {
@@ -1787,7 +1793,7 @@
       ]
     },
     "src/incoming-workbench/ui/IncomingWorkbench.jsx": {
-      "fingerprint": "6f1801792da78c892e3c1d144f6337e9cf3fccef21f1fc4fb698b432525e78f7",
+      "fingerprint": "83fb82cbe57a421f40f8d16ed00456290e5454c371af61aa474c428865b2d083",
       "sites": [
         {
           "owner": "IncomingWorkbench",
@@ -1796,12 +1802,14 @@
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination.",
+      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement.",
       "tests": [
         "src/workbenchSessionLifecycle.test.js",
         "src/incomingWorkbenchStrictMode.test.js",
         "src/workbenchSummaryReads.test.js",
-        "src/importMergeWorkflow.test.js"
+        "src/importMergeWorkflow.test.js",
+        "src/workbenchRouteRendering.test.js",
+        "src/incomingWorkbenchRendering.test.js"
       ]
     },
     "src/incoming-workbench/useIncomingMergeIntent.js": {

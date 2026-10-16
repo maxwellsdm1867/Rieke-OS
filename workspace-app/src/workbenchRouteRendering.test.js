@@ -7,11 +7,12 @@ for(const entry of ['tab','restored session','reused Workbench route'])test(`Pro
  const h=await createWorkflowHarness();
  h.fixture.respond=(url,options,fallback)=>url.pathname.endsWith('/protocols/protocol-A/workbench')?{contract_version:1,queue_revision:'queue-1',pending_epoch_count:0,pending_cell_count:0,candidates:[],capabilities:{cumulative_pending_browse:true,frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}}:fallback();
  try{
-  await h.mount(h.Protocol,{id:'protocol-A',projectId:'project',revision:0,...(entry==='reused Workbench route'?{initialWorkbench:{}}:{session:{tab:entry==='tab'?'inspect':'workbench'}})});
+  await h.mount(h.Protocol,{id:'protocol-A',projectId:'project',revision:7,structureRevision:3,...(entry==='reused Workbench route'?{initialWorkbench:{}}:{session:{tab:entry==='tab'?'inspect':'workbench'}})});
   await h.waitFor(()=>h.root.findAllByProps({'aria-label':'Workbench'}).length>0);
   if(entry==='tab')await h.act(()=>h.root.findByProps({'aria-label':'Workbench'}).props.onClick());
   await h.waitFor(()=>h.fixture.requests.some(r=>r.path==='/protocols/protocol-A/workbench?limit=20'));
   await h.settle();
+  assert.equal(h.root.find(node=>node.type?.name==='IncomingWorkbench').props.metadataPresentationRevision,3);
   assert.equal(h.root.findByProps({className:'incoming-workbench'}).findAllByType('h1').length,0,'the existing Workbench tab supplies the title');
   assert.equal(h.root.findByProps({'aria-label':'Workbench'}).props['aria-selected'],true);
   assert.equal(h.root.findByProps({'aria-label':'Protocol workspace views'}).findAllByProps({className:'protocol-view-filter'}).length,0,'Main filter is replaced by the incoming header slot');

@@ -667,3 +667,23 @@ test('a rejected explicit retry cannot erase an earlier uncertain acceptance ide
   assert.equal(saved.operation,'original');assert.equal(saved.unconfirmed,true);assert.deepEqual(saved.preview,preview);assert.match(label(renderer.root),/may have committed/);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
+
+
+for(const cumulative of [false,true])test(`incoming ${cumulative?'cumulative':'direct'} route forwards structural presentation independently of read revisions`,async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch;let renderer;
+ const item={candidate_revision_uuid:'candidate',protocol_uuid:'history',status:'pending'};
+ const context={candidate_revision_uuid:'candidate',candidate_scope_revision:'scope',candidate_recipe_sha256:'recipe',expected_binding_version:1,draft:{draft_version:4,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:2,pending_cells:1},protocol:{definition:{protocol_uuid:'history'}}};
+ const authority={contract_version:1,queue_revision:'queue',pending_epoch_count:2,pending_cell_count:1,candidates:[item],capabilities:{cumulative_pending_browse:cumulative,frozen_browse:true,drafts:true}};
+ globalThis.fetch=async path=>({ok:true,status:200,json:async()=>String(path).includes('/prepare')?{contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare',candidate_scope_revision:'scope',candidate_revision_uuid:'candidate',root:'/protocols/history/workbench/candidates/candidate',queue_revision:'queue',context}:context});
+ try{
+  const {default:Workbench}=await server.ssrLoadModule('/src/incoming-workbench/ui/IncomingWorkbench.jsx');
+  const props={protocolId:'history',projectId:'project',authority,revision:7,metadataPresentationRevision:3,...(!cumulative?{initialCandidateId:'candidate'}:{})};
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Workbench,props));});
+  const inspector=()=>renderer.root.find(node=>node.type?.name==='Inspector');
+  assert.equal(inspector().props.metadataPresentationRevision,3);
+  const previous=inspector().props.revision;
+  await act(async()=>renderer.update(React.createElement(Workbench,{...props,revision:8})));
+  assert.equal(inspector().props.metadataPresentationRevision,3);
+  assert.notEqual(inspector().props.revision,previous);
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
