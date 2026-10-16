@@ -47,6 +47,7 @@ class SourceCITests(unittest.TestCase):
                 'cursor': {'all_tile_bytes_exact': True},
                 'authority': {'foreground_extraction': {'requested': index + 1,
                     'entry_calls': index + 1, 'default_entry_calls': 0}},
+                'total_ms': 30, 'observer': {'dispatch_protocol': 'raf-aligned-click-v1', 'dispatch_requested_at': 0, 'dispatch_frame_timestamp': 16, 'dispatch_wait_ms': 16, 'armed_at': 16, 'intent_at': 16, 'first_raf_at': 32, 'ready_at': 46, 'required_correct_raf_callbacks': 2, 'raf_callbacks': 2},
                 'trace': {'first_visible_ms': 20, 'first_raf_ms': 25, 'complete_ms': 30}}
                 for index in range(3)])
         self.trace_baseline = copy.deepcopy(self.trace_candidate)
@@ -59,7 +60,7 @@ class SourceCITests(unittest.TestCase):
                     order=PAIRED_ORDER, completed=[dict(item, execution_index=i) for i, item in enumerate(PAIRED_ORDER)])
         for role, value in (('baseline', self.trace_baseline), ('candidate', self.trace_candidate)):
             value.update(pair=copy.deepcopy(pair), pair_role=role)
-            value['environment']['browser'] = dict(browser='pinned', sampling_protocol=PAIRED_PROTOCOL, timing_mode='ordinary', browser_launch=dict(distribution='playwright-chromium-headless-shell', playwright_version='1.61.1', executable_override=False))
+            value['environment']['browser'] = dict(click_dispatch_protocol='raf-aligned-click-v1', browser='pinned', sampling_protocol=PAIRED_PROTOCOL, timing_mode='ordinary', browser_launch=dict(distribution='playwright-chromium-headless-shell', playwright_version='1.61.1', executable_override=False))
             for index, row in enumerate(value['samples']):
                 row.update(pair_id=pair['id'], protocol=PAIRED_PROTOCOL, source_role=role,
                            sample_index=index, browser_instance=pair['browser_instances'][role], execution_index=PAIRED_ORDER.index(dict(role=role, sample=index)),
@@ -173,6 +174,8 @@ class SourceCITests(unittest.TestCase):
             self.trace_comparison = value
             with self.assertRaisesRegex(ValueError, 'foreground trace comparison'): self.check()
         self.trace_comparison = original
+        self.trace_candidate['samples'][2]['total_ms'] = 130
+        self.trace_candidate['samples'][2]['observer']['ready_at'] = 146
         self.trace_candidate['samples'][2]['trace'] = {
             'first_visible_ms': 120, 'first_raf_ms': 125, 'complete_ms': 130}
         with self.assertRaisesRegex(ValueError, 'foreground trace comparison'): self.check()

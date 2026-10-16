@@ -578,6 +578,28 @@ explicit observer overhead, and neither endpoint claims compositor presentation.
 Binary bodies are independently decoded from the actual consumer's ArrayBuffer;
 no cloned response is read and no product decoder supplies the oracle.
 
+### Synthetic click phase
+
+Both browser lanes use `raf-aligned-click-v1` for every measured synthetic click.
+The page reserves the action, waits for a real animation-frame callback, rechecks
+target connection, enabled state and action ownership, and stamps intent immediately
+before `element.click()`. All synchronous handler work remains in elapsed time.
+Scheduling wait is separately recorded; dispatch has a bounded 15-second timeout.
+The dispatch frame cannot earn readiness credit. The existing exact readiness
+oracle must succeed on two later distinct animation frames, and a pending or
+incorrect observation resets its streak. Readiness keeps its existing timeout.
+
+Receipts bind the dispatch protocol, frame timestamp, wait and observation clock
+to each sample and reject missing, old or inconsistent evidence. This controls the
+synthetic input dispatch to an actual browser frame callback. Callback delivery can
+lag its frame timestamp, so this does not guarantee a full frame budget or eliminate
+scheduling variance. The fixed traced diagnostic did not demonstrate reduced
+variation. It does not characterize arbitrary real-user input phases or promise
+compositor presentation. Sample counts,
+cold cases, exact membership/trace/cursor checks, median and maximum gates and
+thresholds remain unchanged. Earlier failed receipts remain failed and attributed
+to their original harness. A new matched ordinary run is required for qualification.
+
 ## Canonical prepared geometry lane
 
 `tools/benchmark_prepared_geometry.py pair --baseline-source BASELINE --source-root CANDIDATE --output NEW_DIR`

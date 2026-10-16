@@ -50,7 +50,7 @@ class WorkflowContractTests(unittest.TestCase):
         rows = []
         for index, phase in enumerate(('ordinary', 'ordinary', 'profile')):
             row = dict(action_id=f'inspect-{index}', phase=phase, total_ms=100.0,
-                       correctness={'passed': True}, requests=[], frontend_spans=[])
+                       observer={'dispatch_protocol': 'raf-aligned-click-v1', 'dispatch_requested_at': 0, 'dispatch_frame_timestamp': 16, 'dispatch_wait_ms': 16, 'armed_at': 16, 'intent_at': 16, 'first_raf_at': 32, 'ready_at': 116, 'required_correct_raf_callbacks': 2, 'raf_callbacks': 2}, correctness={'passed': True}, requests=[], frontend_spans=[])
             if trace:
                 identity = dict(epoch_uuid='requested-epoch', stream_uuid='response',
                                 units='pA', start=0, end=100)
@@ -176,8 +176,19 @@ class WorkflowContractTests(unittest.TestCase):
 
     def browser_result(self):
         return dict(format='disco-workflow-browser-v1', status='passed', epochs=1_000_000, profile=True, module_timing=False,
-                    actions=[self.action()], failures=[], gaps=[],
+                    environment={'click_dispatch_protocol': bench.CLICK_PROTOCOL}, actions=[self.action()], failures=[], gaps=[],
                     cleanup={'browser_closed': True, 'vite_closed': True, 'server_closed': True})
+
+    def test_click_protocol_refuses_old_missing_and_inconsistent_evidence(self):
+        for change in (lambda r: r.pop('observer'), lambda r: r.update(observer=None),
+                       lambda r: r['observer'].update(dispatch_protocol='task-click'),
+                       lambda r: r['observer'].update(intent_at=float('nan')),
+                       lambda r: r['observer'].update(dispatch_wait_ms=0),
+                       lambda r: r['observer'].update(raf_callbacks=1),
+                       lambda r: r.update(total_ms=5)):
+            result = self.browser_result(); change(result['actions'][0]['samples'][0])
+            with self.assertRaises(ValueError):
+                bench.validate_browser(result, {'cases': [{'id': 'inspect', 'trace': False}]}, 1_000_000, 2)
 
     def test_browser_rejects_missing_actions_failed_oracles_wrong_scale_and_cleanup(self):
         cfg = {'cases': [{'id': 'inspect', 'trace': False}]}
@@ -345,12 +356,13 @@ class WorkflowReceiptTests(unittest.TestCase):
             sample['requests'] = [request]
             if sample['phase'] == 'profile':
                 sample['total_ms'] = 1000
+                sample['observer']['ready_at'] = 1016
             backend.append({**request, 'total_ms': 20, 'clock': 'server', 'phase': sample['phase'],
                             'path': '/api/epochs', 'h5_accesses': [], 'h5_access_count': 0,
                             'module_timing': False, 'module_timings': [],
                             'spans': ([dict(module='disco.metadata.reader', inclusive_ms=10,
                                            self_ms=5, calls=1)] if sample['phase'] == 'profile' else [])})
-        browser_env = {'browser': 'fixture', 'node': 'fixture', 'viewport': {'width': 1, 'height': 1}, 'runtime':'vite-react-development'}
+        browser_env = {'click_dispatch_protocol': bench.CLICK_PROTOCOL, 'browser': 'fixture', 'node': 'fixture', 'viewport': {'width': 1, 'height': 1}, 'runtime':'vite-react-development'}
         raw = dict(format=bench.BROWSER_FORMAT, status='passed', runtime='development', diagnostic_only=True, production_build=None, epochs=1_000_000, profile=True, module_timing=False,
                    actions=[action], gaps=[], failures=[],
                    cleanup={'browser_closed': True, 'vite_closed': True}, environment=browser_env)

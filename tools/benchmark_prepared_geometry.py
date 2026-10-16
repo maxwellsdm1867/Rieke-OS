@@ -89,10 +89,19 @@ def validate(receipt, *, clean=False):
         raise ValueError('Failed or changed-source geometry receipt')
     if clean and receipt['source_start']['dirty']:
         raise ValueError('Dirty geometry source cannot qualify comparison')
+    if __package__:
+        from tools.benchmark_workflow import CLICK_PROTOCOL, validate_click_protocol
+    else:
+        from benchmark_workflow import CLICK_PROTOCOL, validate_click_protocol
+    outer = receipt.get('environment')
+    browser = outer.get('browser') if isinstance(outer, dict) else None
+    if not isinstance(browser, dict) or browser.get('click_dispatch_protocol') != CLICK_PROTOCOL:
+        raise ValueError('Missing or incompatible geometry click protocol')
     samples = receipt.get('samples', [])
     if len(samples) != 3:
         raise ValueError('Exactly three ordinary samples required')
     for index, row in enumerate(samples):
+        validate_click_protocol(row)
         if not all(row.get('exact', {}).get(key) is True for key in ('all_emitted_point_bytes_match', 'all_source_indices_match', 'whole_statistics_exact', 'all_canvas_coordinates_exact', 'prepared_display_context_exact')) or not row.get('cursor', {}).get('all_tile_bytes_exact'):
             raise ValueError('Missing independent geometry/raw cursor correctness')
         for key in ('first_visible_ms', 'first_raf_ms', 'complete_ms'):

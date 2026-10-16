@@ -250,6 +250,31 @@ def validate_action(action, cfgcase, samples, profile=None):
             'ordinary_samples':len(ordinary),'profile_samples':len(profiled)}
 
 
+CLICK_PROTOCOL = 'raf-aligned-click-v1'
+
+
+def validate_click_protocol(row):
+    observer = row.get('observer', {})
+    if not isinstance(observer, dict):
+        raise ValueError('Missing click observer')
+    if observer.get('dispatch_protocol') != CLICK_PROTOCOL:
+        raise ValueError('Missing or incompatible click dispatch protocol')
+    keys = ('dispatch_requested_at', 'dispatch_frame_timestamp', 'dispatch_wait_ms', 'armed_at', 'intent_at', 'first_raf_at', 'ready_at')
+    for key in keys:
+        number(observer.get(key), 'click observer ' + key)
+    if not (observer['dispatch_requested_at'] <= observer['armed_at'] <= observer['intent_at'] < observer['first_raf_at'] <= observer['ready_at']):
+        raise ValueError('Invalid click observer order')
+    if (observer['dispatch_frame_timestamp'] > observer['intent_at'] or
+            abs(observer['dispatch_wait_ms'] - (observer['intent_at'] - observer['dispatch_requested_at'])) > 1e-6 or
+            observer.get('required_correct_raf_callbacks') != 2 or type(observer.get('raf_callbacks')) is not int or observer['raf_callbacks'] < 2):
+        raise ValueError('Invalid click dispatch evidence')
+    total = number(row.get('total_ms'), 'click total')
+    if abs(total - (observer['ready_at'] - observer['intent_at'])) > 1e-6:
+        raise ValueError('Click total differs from observer clock')
+    if 'trace' in row and abs(number(row['trace'].get('complete_ms'), 'trace complete') - total) > 1e-6:
+        raise ValueError('Trace complete differs from observer clock')
+
+
 def validate_browser(result, cfg, epochs=1_000_000, samples=3):
     if result.get('format') != BROWSER_FORMAT or result.get('status') != 'passed':
         raise ValueError('Failed/incomplete browser result')
@@ -262,6 +287,8 @@ def validate_browser(result, cfg, epochs=1_000_000, samples=3):
     cleanup = result.get('cleanup',{})
     if cleanup.get('browser_closed') is not True or cleanup.get('vite_closed') is not True:
         raise ValueError('Browser cleanup is incomplete or unknown')
+    if result.get('environment', {}).get('click_dispatch_protocol') != CLICK_PROTOCOL:
+        raise ValueError('Missing or incompatible browser click protocol')
     actions = result.get('actions')
     if not isinstance(actions,list):
         raise ValueError('Missing action results')
@@ -278,6 +305,8 @@ def validate_browser(result, cfg, epochs=1_000_000, samples=3):
         variants.add(key)
         found.add(identity)
         validate_action(action,required[identity],samples,profile=result['profile'])
+        for row in action['samples']:
+            validate_click_protocol(row)
     if found != set(required):
         raise ValueError('Missing required action')
     for identity,case in required.items():

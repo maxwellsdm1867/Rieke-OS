@@ -24,7 +24,7 @@ export function geometrySnapshot(action_id){
  if(!a?.geometryFrame)throw Error('Missing completed geometry action');
  const frame=a.geometryFrame;
  return {action_id,total_ms:frame.second_raf_ms,phase:a.phase,correctness:{passed:true},
-  observer:{clock:'browser',armed_at:a.observer_armed_at,intent_at:a.intent,first_raf_at:a.first_observer_raf_at,ready_at:a.ready,
+  observer:{clock:'browser',dispatch_protocol:a.dispatch_protocol,dispatch_requested_at:a.dispatch_requested_at,dispatch_frame_timestamp:a.dispatch_frame_timestamp,dispatch_wait_ms:a.dispatch_wait_ms,armed_at:a.observer_armed_at,intent_at:a.intent,first_raf_at:a.first_observer_raf_at,ready_at:a.ready,
    armed_before_intent_ms:a.intent-a.observer_armed_at,first_raf_ms:a.first_observer_raf_at-a.intent,
    driver_observed_at:a.driver_observed_at??null,driver_retrieval_lag_ms:a.driver_observed_at===undefined?null:a.driver_observed_at-a.ready,
    raf_callbacks:a.observer_raf_count,required_correct_raf_callbacks:2},

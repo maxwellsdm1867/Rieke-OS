@@ -524,7 +524,7 @@ function actionClock(t,selectors){
   globalThis.setTimeout=(fn,delay)=>{timers.set(++id,{fn,at:now+delay});return id;};
   globalThis.clearTimeout=id=>timers.delete(id);
   t.after(()=>{for(const k of keys){if(previous[k])Object.defineProperty(globalThis,k,previous[k]);else delete globalThis[k];}});
-  return {w,frames,timers,advance(ms){now+=ms;for(const [id,v] of [...timers])if(v.at<=now){timers.delete(id);v.fn();}},frame(){now+=16;const batch=[...frames.values()];frames.clear();for(const fn of batch)fn(now);}};
+  return {w,frames,timers,async arm(el,args){const pending=armAction(el,args);this.frame();await pending;},advance(ms){now+=ms;for(const [id,v] of [...timers])if(v.at<=now){timers.delete(id);v.fn();}},frame(){now+=16;const batch=[...frames.values()];frames.clear();for(const fn of batch)fn(now);}};
 }
 const armData=spec=>({action_id:'owned',phase:'ordinary',spec,timeoutMs:1000});
 
@@ -535,7 +535,7 @@ test('prearmed oracle completes on two distinct RAFs before a delayed driver ret
     assert.ok(w.active.observer_armed_at<=w.active.intent);
     selectors['.epochs']=[element('',{'data-epoch-uuid':'a'})];
   }};
-  await armAction(el,armData({selector:'.epochs',uuids:['a']}));
+  await clock.arm(el,armData({selector:'.epochs',uuids:['a']}));
   assert.equal(w.active.frames,0,'no synchronous readiness observation');
   clock.frame();assert.equal(w.active.frames,1);assert.equal(w.completed.owned,undefined);
   clock.frame();assert.equal(w.active,null);assert.equal(w.completed.owned.observer_raf_count,2);
@@ -549,7 +549,7 @@ test('prearmed oracle completes on two distinct RAFs before a delayed driver ret
 
 test('a correct one-frame flash cannot complete and a pending frame resets the streak',async t=>{
   const selectors={'.epochs':[element('',{'data-epoch-uuid':'a'})]},clock=actionClock(t,selectors);
-  await armAction({isConnected:true,click(){}},armData({selector:'.epochs',uuids:['a']}));
+  await clock.arm({isConnected:true,click(){}},armData({selector:'.epochs',uuids:['a']}));
   clock.frame();selectors['.epochs']=[];clock.frame();
   assert.equal(clock.w.completed.owned,undefined);assert.equal(clock.w.active.frames,0);
   selectors['.epochs']=[element('',{'data-epoch-uuid':'a'})];clock.frame();
@@ -560,7 +560,7 @@ test('a correct one-frame flash cannot complete and a pending frame resets the s
 test('prearmed checks preserve exact membership order and current-action response freshness',async t=>{
   const selectors={'.epochs':[element('',{'data-epoch-uuid':'b'}),element('',{'data-epoch-uuid':'a'})]},clock=actionClock(t,selectors);
   clock.w.requests.push({action_id:'old',url:'/api/query',result:{count:2}});
-  await armAction({isConnected:true,click(){}},armData({selector:'.epochs',uuids:['a','b'],requestPath:'/query',expectedCount:2}));
+  await clock.arm({isConnected:true,click(){}},armData({selector:'.epochs',uuids:['a','b'],requestPath:'/query',expectedCount:2}));
   clock.frame();clock.frame();assert.equal(clock.w.active.frames,0);
   selectors['.epochs'].reverse();clock.frame();assert.equal(clock.w.active.frames,0,'old response cannot satisfy current action');
   clock.w.requests.push({action_id:'owned',request_id:'fresh',url:'/api/query',status:200,start:100,end:148,result:{count:2}});
@@ -573,21 +573,63 @@ test('prearmed checks preserve exact membership order and current-action respons
 test('prearmed oracle failures propagate and cancel polling',async t=>{
   const clock=actionClock(t,{button:[element('Ready')]});
   clock.w.requests.push({action_id:'owned',url:'/api/query',status:500,error:'failed'});
-  await armAction({isConnected:true,click(){}},armData({selector:'button'}));clock.frame();
+  await clock.arm({isConnected:true,click(){}},armData({selector:'button'}));clock.frame();
   assert.throws(()=>observationFinished('owned'),/Action API request failed/);
   assert.equal(clock.frames.size,0);assert.equal(clock.timers.size,0);assert.equal(clock.w.completed.owned,undefined);
 });
 
 test('prearmed readiness has a page-owned timeout even without another driver call',async t=>{
   const clock=actionClock(t,{});
-  await armAction({isConnected:true,click(){}},armData({selector:'button'}));
+  await clock.arm({isConnected:true,click(){}},armData({selector:'button'}));
   clock.advance(1001);assert.throws(()=>observationFinished('owned'),/readiness timed out/);
   assert.equal(clock.frames.size,0);assert.equal(clock.timers.size,0);
 });
 
 test('prearmed readiness refuses changed action ownership',async t=>{
   const clock=actionClock(t,{button:[element('Ready')]});
-  await armAction({isConnected:true,click(){}},armData({selector:'button'}));
+  await clock.arm({isConnected:true,click(){}},armData({selector:'button'}));
   clock.w.active={action_id:'replacement',frames:0};clock.frame();
   assert.throws(()=>observationFinished('owned'),/ownership changed/);assert.equal(clock.w.active.action_id,'replacement');
+});
+
+test('RAF dispatch reserves ownership, excludes scheduling wait, and includes synchronous click work',async t=>{
+ const clock=actionClock(t,{button:[element('Ready')]}), args=armData({selector:'button'});let clicks=0;
+ const pending=armAction({isConnected:true,click(){clicks++;clock.advance(40);}},args);
+ assert.equal(clicks,0);assert.equal(clock.w.active,null);
+ await assert.rejects(armAction({isConnected:true,click(){}},args),/active or pending/);
+ clock.advance(20);clock.frame();await pending;
+ assert.equal(clicks,1);assert.equal(clock.w.active.dispatch_wait_ms,36);
+ clock.frame();clock.frame();const row=snapshotAction('owned');
+ assert.equal(row.total_ms,72);assert.equal(row.observer.dispatch_protocol,'raf-aligned-click-v1');
+});
+
+test('dispatch timestamp cannot earn readiness credit',async t=>{
+ const clock=actionClock(t,{button:[element('Ready')]});
+ await clock.arm({isConnected:true,click(){}},armData({selector:'button'}));
+ const callback=[...clock.frames.values()][0];clock.frames.clear();
+ callback(clock.w.active.dispatch_frame_timestamp);
+ assert.equal(clock.w.active.frames,0);assert.equal(clock.w.active.observer_raf_count,0);
+ clock.frame();assert.equal(clock.w.completed.owned,undefined);clock.frame();
+ assert.equal(clock.w.completed.owned.observer_raf_count,2);
+});
+
+test('disabled dispatch waits within a bounded reservation and rechecks detached targets',async t=>{
+ const clock=actionClock(t,{});let clicks=0;const el={isConnected:true,disabled:true,click(){clicks++;}};
+ const pending=armAction(el,armData({selector:'button'}));clock.frame();
+ assert.equal(clicks,0);assert.ok(clock.w.pending_action);
+ el.isConnected=false;clock.frame();await assert.rejects(pending,/detached/);
+ assert.equal(clock.frames.size,0);assert.equal(clock.timers.size,0);assert.equal(clock.w.pending_action,undefined);
+});
+
+test('stalled predispatch expires without clicking or leaving timers',async t=>{
+ const clock=actionClock(t,{});let clicks=0;
+ const pending=armAction({isConnected:true,click(){clicks++;}},armData({selector:'button'}));
+ clock.advance(15000);await assert.rejects(pending,/dispatch timed out/);
+ assert.equal(clicks,0);assert.equal(clock.frames.size,0);assert.equal(clock.timers.size,0);assert.equal(clock.w.pending_action,undefined);
+});
+
+test('predispatch ownership replacement fails without erasing the replacement',async t=>{
+ const clock=actionClock(t,{});const pending=armAction({isConnected:true,click(){assert.fail('must not click');}},armData({selector:'button'}));
+ const replacement={action_id:'replacement'};clock.w.pending_action=replacement;
+ clock.frame();await assert.rejects(pending,/ownership changed/);assert.equal(clock.w.pending_action,replacement);
 });

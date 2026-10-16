@@ -18,11 +18,11 @@ import benchmark_prepared_geometry as runner
 def receipt(role='candidate'):
     result = {'status': 'passed', 'source_start': {'commit': 'a' * 40, 'tree': 'b' * 40, 'dirty': '', 'files': {'app.py': 'd' * 64}},
         'source_end': {'commit': 'a' * 40, 'tree': 'b' * 40, 'dirty': '', 'files': {'app.py': 'd' * 64}},
-        'harness': {'test': 'fixture'}, 'environment': {'browser': {'browser': 'pinned', 'sampling_protocol': runner.PAIRED_PROTOCOL, 'timing_mode': 'ordinary', 'browser_launch': {'distribution': 'playwright-chromium-headless-shell', 'playwright_version': '1.61.1', 'executable_override': False}}}, 'fixture': 'fixed', 'payload_sha256': 'fixed', 'dependencies': {'lock': 'fixed'},
+        'harness': {'test': 'fixture'}, 'environment': {'browser': {'click_dispatch_protocol': 'raf-aligned-click-v1', 'browser': 'pinned', 'sampling_protocol': runner.PAIRED_PROTOCOL, 'timing_mode': 'ordinary', 'browser_launch': {'distribution': 'playwright-chromium-headless-shell', 'playwright_version': '1.61.1', 'executable_override': False}}}, 'fixture': 'fixed', 'payload_sha256': 'fixed', 'dependencies': {'lock': 'fixed'},
         'cleanup': {'server_closed': True, 'fixture_closed': True},
-        'samples': [{'exact': {key: True for key in ('all_emitted_point_bytes_match', 'all_source_indices_match', 'whole_statistics_exact', 'all_canvas_coordinates_exact', 'prepared_display_context_exact')}, 'cursor': {'all_tile_bytes_exact': True},
+        'samples': [{'observer': {'dispatch_protocol': 'raf-aligned-click-v1', 'dispatch_requested_at': 0, 'dispatch_frame_timestamp': 16, 'dispatch_wait_ms': 16, 'armed_at': 16, 'intent_at': 16, 'first_raf_at': 32, 'ready_at': 46, 'required_correct_raf_callbacks': 2, 'raf_callbacks': 2}, 'exact': {key: True for key in ('all_emitted_point_bytes_match', 'all_source_indices_match', 'whole_statistics_exact', 'all_canvas_coordinates_exact', 'prepared_display_context_exact')}, 'cursor': {'all_tile_bytes_exact': True},
                      'authority': {'foreground_extraction': {'requested': index + 1, 'entry_calls': index + 1, 'default_entry_calls': 0}},
-                     'trace': {'first_visible_ms': 20, 'first_raf_ms': 25, 'complete_ms': 30}} for index in range(3)]}
+                     'total_ms': 30, 'trace': {'first_visible_ms': 20, 'first_raf_ms': 25, 'complete_ms': 30}} for index in range(3)]}
     result['pair'] = {'id': '1' * 32, 'protocol': runner.PAIRED_PROTOCOL,
                       'sources': {role: runner.source_binding(result['source_start']) for role in ('baseline', 'candidate')},
                       'order': runner.PAIRED_ORDER, 'browser_version': 'pinned', 'browser_instances': {'baseline': 100, 'candidate': 101},
@@ -80,7 +80,10 @@ class PreparedGeometryTests(unittest.TestCase):
 
     def test_large_regression_fails_existing_relative_policy(self):
         value = receipt()
-        for row in value['samples']: row['trace'] = {'first_visible_ms': 40, 'first_raf_ms': 45, 'complete_ms': 60}
+        for row in value['samples']:
+            row['trace'] = {'first_visible_ms': 40, 'first_raf_ms': 45, 'complete_ms': 60}
+            row['total_ms'] = 60
+            row['observer']['ready_at'] = 76
         result = runner.compare(receipt('baseline'), value)
         self.assertEqual(result['status'], 'review_required')
         self.assertEqual(result['policy'], {'relative': .25, 'absolute_ms': 5.})
@@ -95,12 +98,16 @@ class PreparedGeometryTests(unittest.TestCase):
 
     def test_single_slow_sample_cannot_hide_behind_unchanged_medians(self):
         changed = receipt()
+        changed['samples'][2]['total_ms'] = 130
+        changed['samples'][2]['observer']['ready_at'] = 146
         changed['samples'][2]['trace'] = {'first_visible_ms': 120, 'first_raf_ms': 125, 'complete_ms': 130}
         self.assertEqual(runner.compare(receipt('baseline'), changed)['status'], 'review_required')
 
     def test_first_frame_regression_is_gated_even_when_other_endpoints_match(self):
         baseline = receipt('baseline')
-        for row in baseline['samples']: row['trace']['complete_ms'] = 100
+        for row in baseline['samples']:
+            row['trace']['complete_ms'] = row['total_ms'] = 100
+            row['observer']['ready_at'] = 116
         changed = role_receipt(copy.deepcopy(baseline), 'candidate')
         changed['samples'][1]['trace']['first_raf_ms'] = 60
         self.assertEqual(runner.compare(baseline, changed)['status'], 'review_required')

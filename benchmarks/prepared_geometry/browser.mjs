@@ -37,7 +37,7 @@ export async function createSourceSession({root,serverJson,output}){
   },
   async sample(browser,sample,observation={}){
    if(!prepared||finished||context||sample!==results.length||sample<0||sample>=3)throw Error('Invalid source sample lifecycle');
-   receipt.environment={node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},dpr:1,runtime:'production-react-direct-werkzeug',http_server:meta.http_server,vite_proxy:false,timing_mode:timingEnabled?'diagnostic':'ordinary',sampling_protocol:observation.protocol??standaloneProtocol,browser_launch:{distribution:browser.geometryOwner.distribution,playwright_version:browser.geometryOwner.playwright_version,executable_override:browser.geometryOwner.executable_override}};
+   receipt.environment={click_dispatch_protocol:'raf-aligned-click-v1',node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},dpr:1,runtime:'production-react-direct-werkzeug',http_server:meta.http_server,vite_proxy:false,timing_mode:timingEnabled?'diagnostic':'ordinary',sampling_protocol:observation.protocol??standaloneProtocol,browser_launch:{distribution:browser.geometryOwner.distribution,playwright_version:browser.geometryOwner.playwright_version,executable_override:browser.geometryOwner.executable_override}};
   context=await browser.newContext({viewport:{width:1500,height:1100},...(timingEnabled?{extraHTTPHeaders:{'X-Disco-Trace-Timing':'1'}}:{})});const page=await context.newPage();
   const displayTimings=new Map();
   if(timingEnabled)page.on('response',response=>{

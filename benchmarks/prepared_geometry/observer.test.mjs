@@ -19,9 +19,9 @@ function model(t){
  globalThis.setTimeout=(f,ms)=>{timers.set(++serial,{f,at:now+ms});return serial;};
  globalThis.clearTimeout=id=>timers.delete(id);
  t.after(()=>{for(const k of keys){if(old[k])Object.defineProperty(globalThis,k,old[k]);else delete globalThis[k];}});
- const ready=()=>{w.requests=[{action_id:'owned',url:'/api/trace-views/token/epochs/epoch/display?stream_uuid=stream',method:'GET',status:200,start:101,headers:107,end:108,binary:new ArrayBuffer(100)}];w.draws=[{action_id:'owned',stream_uuid:'stream',at:110}];};
+ const ready=()=>{w.requests=[{action_id:'owned',url:'/api/trace-views/token/epochs/epoch/display?stream_uuid=stream',method:'GET',status:200,start:w.active.intent+1,headers:w.active.intent+7,end:w.active.intent+8,binary:new ArrayBuffer(100)}];w.draws=[{action_id:'owned',stream_uuid:'stream',at:w.active.intent+10}];};
  const el={isConnected:true,disabled:false,click(){assert.equal(frames.size,1);assert.ok(w.active.observer_armed_at<=w.active.intent);ready();}};
- return {w,state,frames,timers,ready,el,async arm(){await armAction(el,{action_id:'owned',phase:'ordinary',spec:{trace:{stream_uuid:'stream'}},timeoutMs:1000});},frame(){now+=16;const batch=[...frames.values()];frames.clear();for(const f of batch)f(now);},advance(ms){now+=ms;for(const[id,v]of [...timers])if(v.at<=now){timers.delete(id);v.f();}}};
+ return {w,state,frames,timers,ready,el,async arm(){const pending=armAction(el,{action_id:'owned',phase:'ordinary',spec:{trace:{stream_uuid:'stream'}},timeoutMs:1000});this.frame();await pending;},frame(){now+=16;const batch=[...frames.values()];frames.clear();for(const f of batch)f(now);},advance(ms){now+=ms;for(const[id,v]of [...timers])if(v.at<=now){timers.delete(id);v.f();}}};
 }
 for(const delay of [0,80,160])test(`geometry closes on two actual RAFs with ${delay} ms delayed driver retrieval`,async t=>{
  const c=model(t);await c.arm();assert.equal(c.w.active.diagnosticFrames,undefined);assert.equal(c.w.completed.owned,undefined);
@@ -44,7 +44,7 @@ for(const defect of ['wrong action','duplicate response','status','body pending'
  if(defect==='missing binary')delete r.binary;
  if(defect==='wrong stream')c.state.stream.stream_uuid='other';
  if(defect==='pending control')c.state.stream.status='pending';
- if(defect==='pre-body draw')d.at=107;
+ if(defect==='pre-body draw')d.at=r.end-1;
  if(defect==='wrong draw action')d.action_id='old';
  if(defect==='wrong draw stream')d.stream_uuid='other';
  if(defect==='status overlay')c.state.status=true;

@@ -151,34 +151,51 @@ export function readiness(spec){
   return true;
 }
 
-/** Run the unchanged oracle only on distinct RAF callbacks, armed in the
- * action task before intent/click. Driver transport never starts this clock. */
+/** Dispatch a synthetic click at a real frame boundary, then observe only later
+ * frames. The clock starts immediately before el.click(), including its complete
+ * synchronous handler. Predispatch waiting is bounded and recorded separately. */
 export function armAction(el,{action_id,phase,spec,timeoutMs}){
   return new Promise((resolve,reject)=>{
-    const w=window.__workflow,until=performance.now()+15000;
-    function attempt(){
-      if(!el.isConnected)return reject(Error('Action target detached'));
-      if(el.disabled){if(performance.now()>until)return reject(Error('Action target stayed disabled'));return requestAnimationFrame(attempt);}
-      if(w.active)return reject(Error('Previous action still active'));
-      const a={action_id,phase,frames:0,observer_raf_count:0};
-      let frame,timer,closed=false;
-      const close=()=>{closed=true;cancelAnimationFrame(frame);clearTimeout(timer);};
-      const fail=error=>{close();(w.observation_errors??={})[action_id]=String(error);};
-      const poll=()=>{
-        if(closed)return;
-        if(w.active!==a)return fail(Error('Action ownership changed before readiness'));
-        a.first_observer_raf_at??=performance.now();a.observer_raf_count++;
-        try{if(window.__workflowReadiness(spec)){close();return;}}
-        catch(error){fail(error);return;}
-        frame=requestAnimationFrame(poll);
-      };
+    const w=window.__workflow,requestedAt=performance.now(),dispatchTimeoutMs=15000;
+    if(!Number.isFinite(timeoutMs)||timeoutMs<=0)return reject(Error('Invalid action timeout'));
+    if(w.active||w.pending_action)return reject(Error('Previous action still active or pending'));
+    const reservation={action_id};w.pending_action=reservation;
+    let launchFrame,frame,dispatchTimer,timer,closed=false,a;
+    const close=()=>{
+      closed=true;cancelAnimationFrame(launchFrame);cancelAnimationFrame(frame);
+      clearTimeout(dispatchTimer);clearTimeout(timer);
+      if(w.pending_action===reservation)delete w.pending_action;
+    };
+    const fail=error=>{close();(w.observation_errors??={})[action_id]=String(error);reject(error);};
+    const poll=timestamp=>{
+      if(closed)return;
+      if(w.active!==a)return fail(Error('Action ownership changed before readiness'));
+      if(performance.now()-a.intent>timeoutMs)return fail(Error('Action readiness timed out'));
+      // A dispatch frame can never count as a correct observation, even if a
+      // scheduler delivers another callback with that same frame timestamp.
+      if(timestamp<=a.dispatch_frame_timestamp||timestamp===a.last_observer_frame_timestamp){frame=requestAnimationFrame(poll);return;}
+      a.last_observer_frame_timestamp=timestamp;
+      a.first_observer_raf_at??=performance.now();a.observer_raf_count++;
+      try{if(window.__workflowReadiness(spec)){close();return;}}
+      catch(error){fail(error);return;}
       frame=requestAnimationFrame(poll);
+    };
+    const dispatch=timestamp=>{
+      if(closed)return;
+      if(w.pending_action!==reservation||w.active)return fail(Error('Action ownership changed before dispatch'));
+      if(!el.isConnected)return fail(Error('Action target detached'));
+      if(performance.now()-requestedAt>=dispatchTimeoutMs)return fail(Error('Action dispatch timed out'));
+      if(el.disabled){launchFrame=requestAnimationFrame(dispatch);return;}
+      a={action_id,phase,frames:0,observer_raf_count:0,dispatch_protocol:'raf-aligned-click-v1',dispatch_requested_at:requestedAt,dispatch_frame_timestamp:timestamp};
+      frame=requestAnimationFrame(poll);
+      a.observer_armed_at=performance.now();w.active=a;
+      clearTimeout(dispatchTimer);delete w.pending_action;
+      a.intent=performance.now();a.dispatch_wait_ms=a.intent-requestedAt;
       timer=setTimeout(()=>fail(Error('Action readiness timed out')),timeoutMs);
-      a.observer_armed_at=performance.now();
-      w.active=a;a.intent=performance.now();
-      try{el.click();resolve();}catch(error){fail(error);reject(error);}
-    }
-    attempt();
+      try{el.click();resolve();}catch(error){fail(error);}
+    };
+    dispatchTimer=setTimeout(()=>fail(Error('Action dispatch timed out')),dispatchTimeoutMs);
+    launchFrame=requestAnimationFrame(dispatch);
   });
 }
 
@@ -191,7 +208,7 @@ export function observationFinished(action_id){
   return true;
 }
 
-export function snapshotAction(action_id){const w=window.__workflow,a=w.completed?.[action_id];if(!a)throw Error('Missing completed action');const requests=a.captured_requests;return {action_id:a.action_id,total_ms:a.ready-a.intent,phase:a.phase,...(a.observer_armed_at!==undefined?{observer:{clock:'browser',armed_at:a.observer_armed_at,intent_at:a.intent,first_raf_at:a.first_observer_raf_at,first_correct_at:a.first_correct_observation_at,ready_at:a.ready,driver_observed_at:a.driver_observed_at??null,armed_before_intent_ms:a.intent-a.observer_armed_at,first_raf_ms:a.first_observer_raf_at-a.intent,first_correct_ms:a.first_correct_observation_at-a.intent,driver_retrieval_lag_ms:a.driver_observed_at===undefined?null:a.driver_observed_at-a.ready,raf_callbacks:a.observer_raf_count,required_correct_raf_callbacks:2}}:{}),correctness:{passed:true,...a.evidence},...(a.first_trace_at?{trace:{expected:a.trace_expected,first:{...a.evidence.trace,end:a.evidence.trace.start+a.evidence.trace.count},complete:{...a.evidence.trace,end:a.evidence.trace.start+a.evidence.trace.count},first_visible_ms:a.first_trace_at-a.intent,complete_ms:a.ready-a.intent,observation:'post-stroke timestamp plus second stable DOM/RAF observation captured before that observation correctness work; first-frame oracle work can delay second RAF; no compositor claim',correctness_validation_after_observation_ms:Math.max(0,a.correctness_validation_finished_at-a.ready)}}:{}),requests:requests.map(({start,headers,end,result,binary,decode_start,...r})=>({...r,start_ms:start-a.intent,headers_ms:headers===undefined?null:headers-a.intent,end_ms:end===undefined?null:end-a.intent})),frontend_spans:requests.filter(r=>r.start<a.ready).flatMap((r,i)=>{const parent={id:'request-'+i,module:'api-transport',name:'request-through-consumption',request_id:r.request_id,start_ms:r.start-a.intent,end_ms:Math.min(r.end??a.ready,a.ready)-a.intent,clipped_at_ready:r.end===undefined||r.end>a.ready,clock:'browser',inclusive:true,interpretation:'HTTP wait plus response consumption; backend work is nested, not exclusive CPU'};return [parent,...(r.decode_start!==undefined&&r.decode_start<a.ready?[{id:'body-'+i,parent_id:parent.id,module:'api-response-consumption',name:'response-json-consumption',request_id:r.request_id,start_ms:r.decode_start-a.intent,end_ms:parent.end_ms,clipped_at_ready:parent.clipped_at_ready,clock:'browser',inclusive:true,interpretation:'Includes body wait and JSON decode, not exclusive CPU'}]:[])];}),react_renders:a.captured_renders,cache_classification:requests.length?'requests-observed':'no-request-observed'};}
+export function snapshotAction(action_id){const w=window.__workflow,a=w.completed?.[action_id];if(!a)throw Error('Missing completed action');const requests=a.captured_requests;return {action_id:a.action_id,total_ms:a.ready-a.intent,phase:a.phase,...(a.observer_armed_at!==undefined?{observer:{clock:'browser',dispatch_protocol:a.dispatch_protocol,dispatch_requested_at:a.dispatch_requested_at,dispatch_frame_timestamp:a.dispatch_frame_timestamp,dispatch_wait_ms:a.dispatch_wait_ms,armed_at:a.observer_armed_at,intent_at:a.intent,first_raf_at:a.first_observer_raf_at,first_correct_at:a.first_correct_observation_at,ready_at:a.ready,driver_observed_at:a.driver_observed_at??null,armed_before_intent_ms:a.intent-a.observer_armed_at,first_raf_ms:a.first_observer_raf_at-a.intent,first_correct_ms:a.first_correct_observation_at-a.intent,driver_retrieval_lag_ms:a.driver_observed_at===undefined?null:a.driver_observed_at-a.ready,raf_callbacks:a.observer_raf_count,required_correct_raf_callbacks:2}}:{}),correctness:{passed:true,...a.evidence},...(a.first_trace_at?{trace:{expected:a.trace_expected,first:{...a.evidence.trace,end:a.evidence.trace.start+a.evidence.trace.count},complete:{...a.evidence.trace,end:a.evidence.trace.start+a.evidence.trace.count},first_visible_ms:a.first_trace_at-a.intent,complete_ms:a.ready-a.intent,observation:'post-stroke timestamp plus second stable DOM/RAF observation captured before that observation correctness work; first-frame oracle work can delay second RAF; no compositor claim',correctness_validation_after_observation_ms:Math.max(0,a.correctness_validation_finished_at-a.ready)}}:{}),requests:requests.map(({start,headers,end,result,binary,decode_start,...r})=>({...r,start_ms:start-a.intent,headers_ms:headers===undefined?null:headers-a.intent,end_ms:end===undefined?null:end-a.intent})),frontend_spans:requests.filter(r=>r.start<a.ready).flatMap((r,i)=>{const parent={id:'request-'+i,module:'api-transport',name:'request-through-consumption',request_id:r.request_id,start_ms:r.start-a.intent,end_ms:Math.min(r.end??a.ready,a.ready)-a.intent,clipped_at_ready:r.end===undefined||r.end>a.ready,clock:'browser',inclusive:true,interpretation:'HTTP wait plus response consumption; backend work is nested, not exclusive CPU'};return [parent,...(r.decode_start!==undefined&&r.decode_start<a.ready?[{id:'body-'+i,parent_id:parent.id,module:'api-response-consumption',name:'response-json-consumption',request_id:r.request_id,start_ms:r.decode_start-a.intent,end_ms:parent.end_ms,clipped_at_ready:parent.clipped_at_ready,clock:'browser',inclusive:true,interpretation:'Includes body wait and JSON decode, not exclusive CPU'}]:[])];}),react_renders:a.captured_renders,cache_classification:requests.length?'requests-observed':'no-request-observed'};}
 
 export function assertFinalizedRequests(sample){
   const seen=new Set();
@@ -241,7 +258,7 @@ export async function run(config){
     server=await createServer({root:workspace,configFile:false,logLevel:'error',...(production?{optimizeDeps:{noDiscovery:true,include:[]}}:{}),plugins:[react(),{name:'owned-workflow-fixture',resolveId(id){if(id==='/__workflow_owned__.jsx')return entry;},load(id){if(id===entry)return fixtureSource(meta);},configureServer(s){s.middlewares.use(serveProduction||((req,res,next)=>{if(req.url!=='/__workflow__')return next();res.setHeader('Content-Type','text/html');res.end('<div id="root"></div><script type="module" src="/__workflow_owned__.jsx"></script>');}));}}],server:{host:'127.0.0.1',port:0,hmr:false,proxy:{'/api':{target:`http://127.0.0.1:${meta.port}`,changeOrigin:true,configure(proxy){proxy.on('proxyReq',req=>req.removeHeader('origin'));}}}}});
     await server.listen();receipt.frontend_port=server.httpServer.address().port;
     browser=await chromium.launch({headless:true,...((config.browser_executable||process.env.WORKFLOW_BROWSER_EXECUTABLE)?{executablePath:config.browser_executable||process.env.WORKFLOW_BROWSER_EXECUTABLE}:{}),args:['--no-first-run','--no-default-browser-check']});
-    receipt.environment={node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},device_scale_factor:1,headless:true,runtime:production?productionRuntime:'vite-react-development'};
+    receipt.environment={click_dispatch_protocol:'raf-aligned-click-v1',node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},device_scale_factor:1,headless:true,runtime:production?productionRuntime:'vite-react-development'};
     for(const {phase,samples:phaseSamples} of phases)for(let sample=0;sample<phaseSamples;sample++){
       context=await browser.newContext({viewport:{width:1500,height:1100}});const page=await context.newPage();await page.addInitScript(installTraceControlReader,{streams:meta.trace_streams});await page.addInitScript(installBinaryTraceOracle);await page.addInitScript(installObserver,{phase,module_timing:receipt.module_timing});const ledger=attachLedger(page,'workflow');
       page.on('pageerror',e=>receipt.failures.push({phase,sample,error:e.message}));
