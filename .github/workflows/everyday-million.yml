@@ -1,359 +1,91 @@
-name: Everyday million query and workflow regression
-
+name: Diagnostic split click frame phase (not qualification)
 on:
-  push:
-    branches: [main, master]
-  pull_request:
   workflow_dispatch:
     inputs:
       baseline_sha:
-        description: 'Optional full SHA for the previous-iteration comparison; pinned regression baseline stays fixed'
+        description: Unused compatibility input; immutable sources pinned below
         required: false
-        type: string
-      candidate_sha:
-        description: 'Optional diagnostic application SHA; does not qualify the workflow revision for publication'
-        required: false
-        type: string
-
 permissions:
   contents: read
-
-# Only superseded automatic PR runs cancel. Push and explicit qualification runs
-# have distinct groups and retain their full evidence even when new work arrives.
-concurrency:
-  group: everyday-million-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
-  scope:
-    name: Select performance check scope
+  diagnostic:
     runs-on: ubuntu-latest
-    outputs:
-      documentation_only: ${{ steps.plan.outputs.documentation_only }}
-      harness: ${{ steps.sources.outputs.harness }}
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - id: plan
-        env:
-          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
-          EVENT_NAME: ${{ github.event_name }}
-        run: |
-          args=(--all)
-          if [ "$EVENT_NAME" != workflow_dispatch ] && [ -n "$BASE_REF" ] && [ "$BASE_REF" != 0000000000000000000000000000000000000000 ]; then args=(--base "$BASE_REF"); fi
-          python3 -B tools/architecture_guard.py check --language metadata
-          python3 -B tools/architecture_guard.py plan "${args[@]}" --github-output "$GITHUB_OUTPUT" --output "$RUNNER_TEMP/performance-scope.json"
-      - id: sources
-        if: steps.plan.outputs.documentation_only != 'true'
-        env:
-          PINNED_SHA: a16c915f9730384af3285949bb962d12707ccf01
-          PREVIOUS_SHA: ${{ inputs.baseline_sha || github.event.pull_request.base.sha || github.event.before }}
-          REQUESTED_CANDIDATE_SHA: ${{ inputs.candidate_sha }}
-          EVENT_NAME: ${{ github.event_name }}
-        run: |
-          python3 -B tools/benchmark_ci.py resolve --pinned "$PINNED_SHA" --previous "$PREVIOUS_SHA" \
-            --candidate "$REQUESTED_CANDIDATE_SHA" --event "$EVENT_NAME" \
-            --output "$RUNNER_TEMP/source-plan.json" --github-output "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: performance-check-scope
-          path: ${{ runner.temp }}/performance-scope.json
-          if-no-files-found: error
-      - uses: actions/upload-artifact@v4
-        if: steps.sources.outcome == 'success'
-        with:
-          name: performance-source-plan-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/source-plan.json
-          if-no-files-found: error
-
-  backend:
-    name: Backend million query regression
-    needs: scope
-    if: needs.scope.outputs.documentation_only != 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Initialize backend failure diagnostics
-        run: |
-          mkdir -p "$RUNNER_TEMP/everyday-backend"
-          printf 'Backend preparation started; missing receipts do not qualify.\n' > "$RUNNER_TEMP/everyday-backend/backend-start.txt"
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.scope.outputs.harness }}
-          fetch-depth: 0
-      - uses: actions/download-artifact@v4
-        with:
-          name: performance-source-plan-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/performance-plan
-      - uses: astral-sh/setup-uv@v6
-      - name: Install pinned benchmark runtime
-        run: |
-          uv venv --python 3.11.13 "$RUNNER_TEMP/everyday-python"
-          uv pip install --python "$RUNNER_TEMP/everyday-python/bin/python" -r benchmarks/requirements-py311.txt
-      - name: Validate backend and scheduling harnesses
-        run: |
-          mkdir -p "$RUNNER_TEMP/everyday-backend"
-          test -f python/tests/test_benchmark_everyday.py
-          test -f python/tests/test_benchmark_ci.py
-          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_everyday.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-backend/everyday-harness-tests.log"
-          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_ci.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-backend/scheduling-tests.log"
-      - name: Measure each distinct backend source serially on this runner
-        run: |
-          unset RIEKE_TEST_DOM_MODULE
-          "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_ci.py run --family backend \
-            --plan "$RUNNER_TEMP/performance-plan/source-plan.json" --output "$RUNNER_TEMP/everyday-backend" \
-            --worktrees "$RUNNER_TEMP/backend-sources"
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: everyday-backend-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/everyday-backend/
-          if-no-files-found: error
-          retention-days: 30
-
-  browser:
-    name: Browser million workflow regression
-    needs: scope
-    if: needs.scope.outputs.documentation_only != 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Initialize browser failure diagnostics
-        run: |
-          mkdir -p "$RUNNER_TEMP/everyday-browser"
-          printf 'Browser preparation started; missing receipts do not qualify.\n' > "$RUNNER_TEMP/everyday-browser/browser-start.txt"
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.scope.outputs.harness }}
-          fetch-depth: 0
-      - uses: actions/download-artifact@v4
-        with:
-          name: performance-source-plan-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/performance-plan
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22.12.0'
-          cache: npm
-          cache-dependency-path: workspace-app/package-lock.json
-      - name: Install committed frontend and browser dependencies
+      - uses: astral-sh/setup-uv@v6
+      - name: Install pinned runtime
         run: |
+          uv venv --python 3.11.13 "$RUNNER_TEMP/diagnostic-python"
+          uv pip install --python "$RUNNER_TEMP/diagnostic-python/bin/python" -r benchmarks/requirements-py311.txt
           npm ci --prefix workspace-app
           npm ci --prefix desktop --ignore-scripts
           desktop/node_modules/.bin/playwright install --with-deps chromium
-      - uses: astral-sh/setup-uv@v6
-      - name: Install pinned benchmark runtime
+      - name: Bind immutable product sources
         run: |
-          uv venv --python 3.11.13 "$RUNNER_TEMP/everyday-python"
-          uv pip install --python "$RUNNER_TEMP/everyday-python/bin/python" -r benchmarks/requirements-py311.txt
-      - name: Validate browser, core and timing harnesses
-        run: |
-          mkdir -p "$RUNNER_TEMP/everyday-browser"
-          test -f python/tests/test_benchmark.py
-          test -f python/tests/test_benchmark_workflow.py
-          test -f python/tests/test_benchmark_workflow_backend.py
-          test -f python/tests/test_operation_timing.py
-          test -f benchmarks/workflow/browser-readiness.test.mjs
-          node --test benchmarks/workflow/browser-readiness.test.mjs benchmarks/workflow/production-runtime.test.mjs benchmarks/workflow/production-build.test.mjs benchmarks/prepared_geometry/observer.test.mjs benchmarks/prepared_geometry/paired.test.mjs 2>&1 | tee "$RUNNER_TEMP/everyday-browser/workflow-readiness-tests.log"
-          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-browser/core-harness-tests.log"
-          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_workflow.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-browser/workflow-harness-tests.log"
-          PYTHONPATH=python "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_workflow_backend.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-browser/workflow-backend-tests.log"
-          PYTHONPATH=python "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_operation_timing.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-browser/module-timing-tests.log"
-      - name: Preflight, core, then each distinct browser source serially
-        run: |
-          unset RIEKE_TEST_DOM_MODULE
-          "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_ci.py run --family browser \
-            --plan "$RUNNER_TEMP/performance-plan/source-plan.json" --output "$RUNNER_TEMP/everyday-browser" \
-            --worktrees "$RUNNER_TEMP/browser-sources"
-      - name: Canonical prepared geometry correctness and matched latency
-        run: |
-          unset RIEKE_TEST_DOM_MODULE PREPARED_GEOMETRY_TIMING PREPARED_GEOMETRY_BROWSER
-          geometry_baseline="$RUNNER_TEMP/geometry-baseline"
-          git worktree add --detach "$geometry_baseline" 4de896f2e0b4ea966b5a428c3d2314f93fba935f
-          for package in workspace-app desktop; do
-            "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$geometry_baseline/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json"
-            ln -s "$GITHUB_WORKSPACE/$package/node_modules" "$geometry_baseline/$package/node_modules"
-          done
-          candidate=$(python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/performance-plan/source-plan.json")); r=p["canonical"]["candidate"]; print(os.environ["GITHUB_WORKSPACE"] if p["sources"][r]==p["harness"] else os.environ["RUNNER_TEMP"]+"/browser-sources/"+r)')
-          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_prepared_geometry.py -v
-          "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_prepared_geometry.py pair --baseline-source "$geometry_baseline" --source-root "$candidate" --output "$RUNNER_TEMP/everyday-browser/geometry-pair"
-      - name: Retain compact Linux geometry proof without changing raw evidence
-        if: always()
-        run: |
-          root="$RUNNER_TEMP/everyday-browser"
-          for role in baseline candidate; do
-            if [ -f "$root/geometry-pair/$role/receipt.json" ]; then
-              mkdir -p "$root/geometry-proof/$role"
-              cp "$root/geometry-pair/$role/receipt.json" "$root/geometry-proof/$role/receipt.json"
-            fi
-          done
-          if [ -f "$root/geometry-pair/comparison.json" ]; then
-            mkdir -p "$root/geometry-proof"
-            cp "$root/geometry-pair/comparison.json" "$root/geometry-proof/comparison.json"
-          fi
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: everyday-browser-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            ${{ runner.temp }}/everyday-browser/
-            !${{ runner.temp }}/everyday-browser/geometry-pair/baseline/**
-            !${{ runner.temp }}/everyday-browser/geometry-pair/candidate/**
-          if-no-files-found: error
-          retention-days: 30
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: geometry-linux-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            ${{ runner.temp }}/everyday-browser/geometry-pair/baseline/
-            ${{ runner.temp }}/everyday-browser/geometry-pair/candidate/
-            ${{ runner.temp }}/everyday-browser/geometry-pair/comparison.json
-            !${{ runner.temp }}/everyday-browser/**/node_modules/**
-          if-no-files-found: warn
-          retention-days: 30
-
-  trace-macos:
-    name: macOS foreground trace regression
-    needs: scope
-    if: needs.scope.outputs.documentation_only != 'true'
-    runs-on: macos-15
-    timeout-minutes: 30
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Initialize trace failure evidence
-        run: |
-          mkdir -p "$RUNNER_TEMP/trace-macos"
-          printf 'Missing or failed trace evidence cannot qualify.\n' > "$RUNNER_TEMP/trace-macos/start.txt"
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.scope.outputs.harness }}
-          fetch-depth: 0
-      - uses: actions/download-artifact@v4
-        with:
-          name: performance-source-plan-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/performance-plan
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22.12.0'
-          cache: npm
-          cache-dependency-path: workspace-app/package-lock.json
-      - uses: astral-sh/setup-uv@v6
-      - name: Install fixed trace runtime and browser
-        run: |
-          test "$(uname -s)" = Darwin
-          command -v cc
-          uv venv --python 3.11.13 "$RUNNER_TEMP/trace-python"
-          uv pip install --python "$RUNNER_TEMP/trace-python/bin/python" -r benchmarks/requirements-py311.txt
-          npm ci --prefix workspace-app
-          npm ci --prefix desktop --ignore-scripts
-          desktop/node_modules/.bin/playwright install chromium
-      - name: Bind exact baseline and candidate
-        run: |
-          candidate=$(python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/performance-plan/source-plan.json")); print(p["sources"][p["canonical"]["candidate"]])')
-          if ! git cat-file -e "$candidate^{commit}" 2>/dev/null; then
-            git fetch --no-tags origin "$candidate"
-          fi
-          git worktree add --detach "$RUNNER_TEMP/trace-baseline" 4de896f2e0b4ea966b5a428c3d2314f93fba935f
-          git worktree add --detach "$RUNNER_TEMP/trace-candidate" "$candidate"
-          # Directory-only ignore rules do not cover dependency symlinks.
-          # Exclude only these lockfile-verified, CI-owned links; retain the
-          # comparator's strict tracked/untracked source cleanliness check.
+          git worktree add --detach "$RUNNER_TEMP/source-pinned" a16c915f9730384af3285949bb962d12707ccf01
+          git worktree add --detach "$RUNNER_TEMP/source-candidate" d9bec2801460b73c01a3e6e879a73bf390cee21b
           printf '/workspace-app/node_modules\n/desktop/node_modules\n' >> "$(git rev-parse --git-path info/exclude)"
-          for source in trace-baseline trace-candidate; do
+          for source in pinned candidate; do
             for package in workspace-app desktop; do
-              "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$RUNNER_TEMP/$source/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json"
-              ln -s "$GITHUB_WORKSPACE/$package/node_modules" "$RUNNER_TEMP/$source/$package/node_modules"
+              "$RUNNER_TEMP/diagnostic-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$RUNNER_TEMP/source-$source/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json"
+              ln -s "$GITHUB_WORKSPACE/$package/node_modules" "$RUNNER_TEMP/source-$source/$package/node_modules"
             done
           done
-      - name: Require candidate foreground scheduling and admission behavior
-        working-directory: ${{ runner.temp }}/trace-candidate
+      - name: Fixed eight-run diagnostic with every sample preserved
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
         run: |
-          unset RIEKE_TEST_DOM_MODULE
-          PYTHONPATH=python "$RUNNER_TEMP/trace-python/bin/python" -B -m unittest discover -s python/tests -p test_trace_native.py -v 2>&1 | tee "$RUNNER_TEMP/trace-macos/native-tests.log"
-          PYTHONPATH=python "$RUNNER_TEMP/trace-python/bin/python" -B -m unittest discover -s python/tests -p test_trace_views.py -v 2>&1 | tee "$RUNNER_TEMP/trace-macos/admission-tests.log"
-      - name: Compare exact million-sample drawing in paired browser contexts
+          "$RUNNER_TEMP/diagnostic-python/bin/python" -B - <<'PY'
+          import json,os,pathlib,subprocess,time
+          temp=pathlib.Path(os.environ['RUNNER_TEMP']);out=temp/'split-diagnostic';out.mkdir();rows=[]
+          schedule=[('pinned','task'),('candidate','task'),('pinned','raf'),('candidate','raf'),('candidate','task'),('pinned','task'),('candidate','raf'),('pinned','raf')]
+          (out/'plan.json').write_text(json.dumps({'diagnostic_only':True,'sources':{'pinned':'a16c915f9730384af3285949bb962d12707ccf01','candidate':'d9bec2801460b73c01a3e6e879a73bf390cee21b'},'schedule':schedule,'epochs':1000000,'protocol_epochs':20000,'main_count':19900,'samples_each':3,'note':'Only remove-split launch phase differs. Original setup sequence and all measured correctness preserved; remaining inventory explicitly incomplete, so canonical run receipt must refuse qualification.'},indent=2))
+          for i,(role,mode) in enumerate(schedule,1):
+              run=out/f'run-{i}-{role}-{mode}';command=[str(temp/'diagnostic-python/bin/python'),'-B','tools/benchmark_workflow.py','run','--source-root',str(temp/('source-'+role)),'--output',str(run),'--protocol-epochs','20000']
+              with (out/f'run-{i}.log').open('w') as log: result=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,env={**os.environ,'DISCO_SPLIT_LAUNCH':mode})
+              row={'run':i,'role':role,'mode':mode,'canonical_exit':result.returncode,'diagnostic_completed':False};rows.append(row)
+              try:
+                  receipt=json.loads((run/'receipt.json').read_text());browser=json.loads((run/'browser/browser.json').read_text());meta=json.loads((run/'server/server.json').read_text())
+                  samples=[json.loads((run/f'browser/split-diagnostic-sample-{n}.json').read_text()) for n in range(3)]
+                  assert receipt['status']=='failed' and browser['status']=='incomplete' and not browser['failures']
+                  assert receipt['source_start']==receipt['source_end'] and not receipt['source_start']['status']
+                  assert meta['epochs']==1000000 and meta['protocol_epochs']==20000 and meta['main_count']==19900
+                  assert all(s['result']['correctness']['passed'] and len(s['result']['requests'])==1 for s in samples)
+                  assert receipt['cleanup']['browser_processes_closed'] and receipt['cleanup']['server_processes_closed']
+                  row.update(diagnostic_completed=True,totals=[s['result']['total_ms'] for s in samples],observer=[s['result']['observer'] for s in samples])
+              except Exception as error:row['error']=str(error)
+              (out/'run-status.json').write_text(json.dumps(rows,indent=2));print(json.dumps(row),flush=True)
+          if not all(row['diagnostic_completed'] for row in rows):raise SystemExit('Incomplete diagnostic execution; preserve all evidence')
+          PY
+      - name: Collect compact evidence
+        if: always()
         run: |
-          unset RIEKE_TEST_DOM_MODULE PREPARED_GEOMETRY_TIMING PREPARED_GEOMETRY_BROWSER
-          node --test benchmarks/workflow/browser-readiness.test.mjs benchmarks/prepared_geometry/observer.test.mjs benchmarks/prepared_geometry/paired.test.mjs 2>&1 | tee "$RUNNER_TEMP/trace-macos/observer-tests.log"
-          "$RUNNER_TEMP/trace-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_prepared_geometry.py -v
-          "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_prepared_geometry.py pair --baseline-source "$RUNNER_TEMP/trace-baseline" --source-root "$RUNNER_TEMP/trace-candidate" --output "$RUNNER_TEMP/trace-macos/pair"
-      - name: Preserve compact publication proof
-        uses: actions/upload-artifact@v4
+          python3 - <<'PY'
+          import os,pathlib,shutil
+          root=pathlib.Path(os.environ['RUNNER_TEMP']);source=root/'split-diagnostic';out=root/'split-compact';out.mkdir()
+          for file in source.rglob('*'):
+              if file.is_file() and (file.name in ['plan.json','run-status.json','receipt.json'] or file.name.startswith('split-diagnostic-sample-')):
+                  target=out/file.relative_to(source);target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(file,target)
+          PY
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: trace-macos-proof-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            ${{ runner.temp }}/trace-macos/pair/baseline/receipt.json
-            ${{ runner.temp }}/trace-macos/pair/candidate/receipt.json
-            ${{ runner.temp }}/trace-macos/pair/comparison.json
-          if-no-files-found: error
+          name: split-phase-compact-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/split-compact/
           retention-days: 30
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: trace-macos-${{ github.run_id }}-${{ github.run_attempt }}
+          name: split-phase-raw-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            ${{ runner.temp }}/trace-macos/
-            !${{ runner.temp }}/trace-macos/**/node_modules/**
-          if-no-files-found: error
-          retention-days: 30
-
-
-  everyday-million:
-    # Keep the required normal check name. Measuring an explicit other source is
-    # diagnostic and must not create a green qualification check on this HEAD.
-    name: ${{ inputs.candidate_sha != '' && 'Diagnostic million metadata query regression' || 'Actual million metadata query regression' }}
-    needs: [scope, backend, browser, trace-macos]
-    if: always() && needs.scope.outputs.documentation_only != 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.scope.outputs.harness }}
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: performance-source-plan-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/performance-plan
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: everyday-backend-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/everyday-results
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: everyday-browser-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/everyday-results
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: trace-macos-proof-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/everyday-results/trace-macos
-      - name: Require complete families and foreground trace comparisons
-        env:
-          BACKEND_RESULT: ${{ needs.backend.result }}
-          BROWSER_RESULT: ${{ needs.browser.result }}
-          TRACE_RESULT: ${{ needs.trace-macos.result }}
-        run: |
-          test "$TRACE_RESULT" = success
-          python3 -B tools/benchmark_ci.py aggregate --plan "$RUNNER_TEMP/performance-plan/source-plan.json" \
-            --output "$RUNNER_TEMP/everyday-results" --backend-result "$BACKEND_RESULT" --browser-result "$BROWSER_RESULT"
-      - name: Preserve combined evidence including failures
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: everyday-million-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/everyday-results/
-          if-no-files-found: error
+            ${{ runner.temp }}/split-diagnostic/
+            !${{ runner.temp }}/split-diagnostic/**/node_modules/**
+            !${{ runner.temp }}/split-diagnostic/**/production-entry/src/**
           retention-days: 30
