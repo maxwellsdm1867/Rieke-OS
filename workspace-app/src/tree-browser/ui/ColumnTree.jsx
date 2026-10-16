@@ -123,7 +123,7 @@ export default function ColumnTree(props){
         const last=previous.columns.at(-1);
         // Re-read the same path under fresh authority. Saved revisions are not
         // reusable receipts; the first response pins the remaining batch.
-        Object.assign(navigation,{reset:true,anchor:null,revisionOverride:null,path:last.path,offset:last.offset,
+        Object.assign(navigation,{reset:true,anchor:null,revisionOverride:null,freshContinuation:true,path:last.path,offset:last.offset,
           columnPositions:previous.columns,scrollTop:last.scrollTop,scrollLeft:previous.scrollLeft});
       }
     }

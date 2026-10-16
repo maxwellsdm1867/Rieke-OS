@@ -3286,13 +3286,15 @@
       ]
     },
     "src/tree-ancestors/columnTreeReads.js": {
-      "fingerprint": "74ef1986aa6abc7e762e66cf9c9b591671322455972d9759346c92adb12600f8",
+      "fingerprint": "aaa935b91c83746955fd2b5a736824e570c447ebfd19140dfe77adaa51dfa03a",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Independently reviewed explicit target and continuation-root revision checks before adoption or attestation; Workbench continuity cannot override a caller revision.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Independently reviewed explicit target and continuation-root revision checks before adoption or attestation; Workbench continuity cannot override a caller revision. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/hierarchyRetention.test.js",
+        "src/tree-ancestors/frozenColumnReads.test.js"
       ]
     },
     "src/tree-ancestors/treeBranchReadCache.js": {
@@ -3378,7 +3380,7 @@
       ]
     },
     "src/tree-browser/ui/ColumnTree.jsx": {
-      "fingerprint": "e25fa2c285e42960391b950591bd700d1aa9d727aba9a38a0fead2bcf50e5b91",
+      "fingerprint": "4066c1928830fa5a9820bb82245aba1219d400bdfa2ffbb5702c311ef6fb72bd",
       "sites": [
         {
           "owner": "ColumnTree",
@@ -3393,7 +3395,7 @@
         {
           "owner": "ColumnTree",
           "kind": "useEffect",
-          "fingerprint": "93c99425b90bc4e7cf742d143d0663ea415e77b2bfcc78233ba9fd338c4eba2e"
+          "fingerprint": "681da5d4e1df1ee6f2f9fcc21a3b6db6b8f5049ca47c629c9e54f2afc873bb79"
         },
         {
           "owner": "ColumnTree",
@@ -3422,13 +3424,14 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads.",
       "tests": [
         "src/inspectionTreeLifecycle.test.js",
         "src/hierarchyRetention.test.js",
         "src/treeTagCoverageWorkflow.test.js",
         "src/treeCombinedPresentation.test.js",
-        "src/treeCellIdentityIcons.test.js"
+        "src/treeCellIdentityIcons.test.js",
+        "src/tree-ancestors/frozenColumnReads.test.js"
       ]
     },
     "src/tree-browser/ui/HierarchyTree.jsx": {

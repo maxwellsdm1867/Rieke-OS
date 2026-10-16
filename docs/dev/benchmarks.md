@@ -576,7 +576,14 @@ request. The browser environment records `timing_mode` as `ordinary` or
 `diagnostic`; comparisons reject different modes along with other environment
 mismatches. Preserve diagnostic receipts separately from ordinary latency claims.
 The receipt records post-stroke, first RAF and second RAF observations, not
-compositor presentation. An independent scalar oracle verifies every selected
+compositor presentation. The page arms its observer before click intent and
+requires two distinct actual RAF callbacks with the existing geometry-ready
+condition. It closes request capture and timestamps completion in that second
+callback. Driver retrieval only reads the completed result; its lag is recorded
+separately under `observer`. Delayed retrieval cannot add time or observations.
+This changes the earlier driver-started polling contract, so historical receipts
+must be retained and compared only under their original harness; qualification
+requires fresh matched measurements. Frame scheduling delays can still occur. An independent scalar oracle verifies every selected
 source index and f64 point byte, whole-source statistics and actual Canvas path
 coordinates after observation. The matched lightweight observer records Canvas
 path coordinates in both runs.

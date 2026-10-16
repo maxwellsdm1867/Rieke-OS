@@ -43,8 +43,11 @@ does not. Cleanup retires cache and removes subscriptions. Null scope deliberate
 has active() true, available false and attest() null. Consumers must preserve their
 separate availability and publication fences.
 
-Column orchestration always fetches the target fresh; live continuation recovery
-fetches the root first. Only live tree-pages may attest for optional ancestor reuse.
+Column orchestration always fetches the target fresh; continuation recovery
+fetches the root first. Frozen renewal validates a fresh root in the current
+candidate/selection scope, then pins the retained path and offsets to its revision,
+binding and generation. This root grants no cache reuse or scientific action.
+Only live tree-pages may attest for optional ancestor reuse.
 Frozen contexts retain their endpoint. Parent pages preserve order and match the
 current revision/witness. Signal, current intent, owner and lease gate completion;
 supersession throws AbortError `Tree navigation superseded`. Selection, tag

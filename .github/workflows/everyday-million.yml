@@ -161,7 +161,7 @@ jobs:
           test -f python/tests/test_benchmark_workflow_backend.py
           test -f python/tests/test_operation_timing.py
           test -f benchmarks/workflow/browser-readiness.test.mjs
-          node --test benchmarks/workflow/browser-readiness.test.mjs 2>&1 | tee "$RUNNER_TEMP/everyday-browser/workflow-readiness-tests.log"
+          node --test benchmarks/workflow/browser-readiness.test.mjs benchmarks/prepared_geometry/observer.test.mjs 2>&1 | tee "$RUNNER_TEMP/everyday-browser/workflow-readiness-tests.log"
           "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-browser/core-harness-tests.log"
           "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_workflow.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-browser/workflow-harness-tests.log"
           PYTHONPATH=python "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_workflow_backend.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-browser/workflow-backend-tests.log"
@@ -286,6 +286,7 @@ jobs:
       - name: Compare exact million-sample drawing and tail timings serially
         run: |
           unset RIEKE_TEST_DOM_MODULE PREPARED_GEOMETRY_TIMING
+          node --test benchmarks/workflow/browser-readiness.test.mjs benchmarks/prepared_geometry/observer.test.mjs 2>&1 | tee "$RUNNER_TEMP/trace-macos/observer-tests.log"
           "$RUNNER_TEMP/trace-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_prepared_geometry.py -v
           "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_prepared_geometry.py run --source-root "$RUNNER_TEMP/trace-baseline" --output "$RUNNER_TEMP/trace-macos/baseline"
           "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_prepared_geometry.py run --source-root "$RUNNER_TEMP/trace-candidate" --output "$RUNNER_TEMP/trace-macos/candidate"

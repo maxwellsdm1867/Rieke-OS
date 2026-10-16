@@ -9,11 +9,21 @@ export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,re
  let liveCapability=!scope.readContext&&retainedPages.some(page=>page.tree_column_pages===true);
  const endpoint=scope.readContext?`${scope.readContext.root}/tree/page`:'/tree-pages';
  const current=()=>!signal?.aborted&&isCurrent()&&(!readOwner||readOwner.active());
- if(freshContinuation&&!scope.readContext&&!anchor&&(path.length||offset)){
+ let continuationRoot=null;
+ if(freshContinuation&&!anchor&&(path.length||offset)){
   const rootBody=treePageRequest(scope,{path:[],offset:0,reset:true});
   const root=await load(endpoint,{method:'POST',body:rootBody,signal});
   if(!current())throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
   if(rootBody.revision&&root.revision!==rootBody.revision)throw Error('Tree revision changed; refresh the current tree');
+  if(scope.readContext){
+   if(!Array.isArray(root.path)||root.path.length||root.offset!==0||!/^[a-f0-9]{64}$/.test(root.revision||'')
+    ||root.candidate_scope_revision!==scope.readContext.candidate_scope_revision||root.query_revision!==root.candidate_scope_revision
+    ||!Number.isSafeInteger(root.expected_binding_version)||root.expected_binding_version<0
+    ||scope.readContext.expected_binding_version!==undefined&&root.expected_binding_version!==scope.readContext.expected_binding_version
+    ||!root.generation||typeof root.generation!=='object'||Array.isArray(root.generation))
+    throw Error('Tree continuation root changed or is incomplete; refresh the current tree');
+   continuationRoot=root;
+  }
   revisionOverride=root.revision;liveCapability=root.tree_column_pages===true;
  }
  const body=treePageRequest(scope,{path,offset,anchor,currentRevision:revisionOverride,reset:!revisionOverride});
@@ -28,6 +38,10 @@ export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,re
  const page=await load(endpoint,{method:'POST',body,signal});
  if(!current())throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
  if(body.revision&&page.revision!==body.revision)throw Error('Tree revision changed; refresh the current tree');
+ if(continuationRoot&&(page.candidate_scope_revision!==continuationRoot.candidate_scope_revision
+  ||page.query_revision!==continuationRoot.query_revision||page.expected_binding_version!==continuationRoot.expected_binding_version
+  ||canonical(page.generation)!==canonical(continuationRoot.generation)))
+  throw Error('Tree continuation authority changed; refresh the current tree');
  const {include_ancestors,ancestor_offsets,...ordinaryBody}=body;
  const lease=!scope.readContext&&endpoint==='/tree-pages'?readOwner?.attest(ordinaryBody,page):null;
  const targets=columnAncestorPages(page,{anchor:!!anchor,columnPositions});

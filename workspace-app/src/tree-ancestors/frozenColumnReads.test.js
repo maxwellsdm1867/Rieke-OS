@@ -6,6 +6,32 @@ const scope={protocolId:'p',readContext:{root:'/candidates/c',candidate_scope_re
 const fence={revision,generation:{metadata:'m',source:'s'},candidate_scope_revision:token,query_revision:token,expected_binding_version:1};
 const parent={...fence,generation:{...fence.generation},kind:'branches',path:[],offset:60};
 const target={...fence,kind:'epochs',path:[key],offset:0,ancestors:[{parent_offset:60}],ancestor_pages:[parent]};
+const freshRoot={...fence,kind:'branches',path:[],offset:0};
+test('frozen continuation renewal pins the retained path to a fresh scoped root without borrowing old authority',async()=>{
+ const calls=[];
+ const pages=await loadColumnTreePages({scope,path:[key],freshContinuation:true,revisionOverride:'c'.repeat(64),load:async(endpoint,{body})=>{
+  calls.push({endpoint,body});
+  if(!body.path.length){assert.equal(body.revision,undefined);return structuredClone(freshRoot);}
+  assert.equal(body.revision,revision);return structuredClone(target);
+ }});
+ assert.equal(calls.length,2);assert.ok(calls.every(call=>call.endpoint==='/candidates/c/tree/page'));
+ assert.ok(calls.every(call=>call.body.candidate_scope_revision===token));
+ assert.deepEqual(calls[1].body.path,[key]);assert.equal(pages.at(-1).revision,revision);
+});
+for(const [name,change] of Object.entries({revision:p=>delete p.revision,scope:p=>p.candidate_scope_revision='old',query:p=>p.query_revision='old',binding:p=>p.expected_binding_version=-1,generation:p=>p.generation=null,path:p=>p.path=[key],offset:p=>p.offset=60}))test(`frozen renewal refuses invalid ${name} root before requesting retained descendants`,async()=>{
+ let calls=0;const root=structuredClone(freshRoot);change(root);
+ await assert.rejects(loadColumnTreePages({scope,path:[key],freshContinuation:true,load:async()=>{calls++;return root;}}),/continuation root/);
+ assert.equal(calls,1);
+});
+for(const [name,change] of Object.entries({scope:p=>p.candidate_scope_revision='old',query:p=>p.query_revision='old',binding:p=>p.expected_binding_version=2,generation:p=>p.generation.metadata='changed'}))test(`frozen renewal refuses target ${name} drift from its fresh root`,async()=>{
+ const changed=structuredClone(target);change(changed);
+ await assert.rejects(loadColumnTreePages({scope,path:[key],freshContinuation:true,load:async(endpoint,{body})=>body.path.length?changed:structuredClone(freshRoot)}),/continuation authority/);
+});
+test('superseded frozen root cannot issue a retained continuation request',async()=>{
+ let release,calls=0,current=true;
+ const pending=loadColumnTreePages({scope,path:[key],freshContinuation:true,isCurrent:()=>current,load:()=>{calls++;return new Promise(resolve=>release=resolve);}});
+ current=false;release(freshRoot);await assert.rejects(pending,{name:'AbortError'});assert.equal(calls,1);
+});
 test('advertised frozen column read obtains fresh target and parents in one bounded request',async()=>{
  const calls=[];const load=async(path,options)=>{calls.push({path,...options});return structuredClone(target);};
  const pages=await loadColumnTreePages({scope,path:[key],revisionOverride:revision,load});

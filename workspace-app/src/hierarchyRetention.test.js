@@ -27,6 +27,7 @@ async function fixture({frozen=false,columns=false}={}){
     const body=JSON.parse(options.body),response=page(body,state.version);
     if(state.mismatchLeaf&&body.path.length)response.revision=revisions[0];
     state.requests.push({body,signal:options.signal});
+    if(frozen&&(body.path.length||body.offset)&&!body.anchor_uuid&&!body.revision)return new Response(JSON.stringify({error:'A tree revision is required for continuation pages'}),{status:400});
     if(state.holdRoot&&!body.path.length||state.holdLeaf&&body.path.length)await new Promise(resolve=>state.held.push({resolve,response}));
     return new Response(JSON.stringify(response),{status:200});
   };
@@ -136,7 +137,9 @@ test('Workbench columns retain path and scroll across annotation revisions using
   const before=h.state.requests.length;
   h.state.version=1;h.state.holdLeaf=true;await h.render('visible',1);
   const first=h.state.requests[before];
-  assert.deepEqual(first.body.path,[branchKeys[1]]);assert.equal(first.body.revision,undefined);
+  assert.deepEqual(first.body.path,[]);assert.equal(first.body.revision,undefined,'renewal first obtains an unborrowed root revision');
+  assert.deepEqual(h.state.requests[before+1].body.path,[branchKeys[1]]);
+  assert.equal(h.state.requests[before+1].body.revision,revisions[1],'retained continuation uses the fresh root revision');
   assert.equal(document.querySelectorAll('[data-epoch-uuid]').length,1);
   assert.ok([...document.querySelectorAll('[data-epoch-uuid]')].every(row=>row.disabled));
   await h.release();
