@@ -42,6 +42,31 @@ test('hidden Activity and disabled actions abort pending selections and block re
   }finally{await h.close();}
 });
 
+for(const kind of ['cell','range'])test(`explicit read pause retires standalone ${kind} selection without an authority prop`,async()=>{
+  const h=await createPagedTreeHarness(),pending=deferred(),published=[],requests=[];
+  let work;
+  try{
+    h.network.api=(_path,options)=>{requests.push(options);return pending.promise;};
+    const props={...scopeA,actionsDisabled:false,onSelectCell:(...args)=>published.push(args),onSelectEpoch:uuid=>published.push(uuid),setSelectedEpochs:ids=>published.push(ids)};
+    await h.render(props);({work}=await startSelection(h,kind));published.length=0;
+    const retained=h.tree;
+    await h.render({...props,readPaused:true});
+    const abortedByPause=requests[0].signal.aborted;
+    const attempts=[];
+    await h.act(()=>{attempts.push(retained.onSelectBranch({value:'cell-A',path:[]},{field:'cell'},'old-revision'));});
+    await h.act(()=>{attempts.push(h.tree.onSelectBranch({value:'cell-A',path:[]},{field:'cell'},'old-revision'));});
+    await h.act(()=>h.tree.onSelectEpoch('epoch-A-0',pageAt(0).epochs[0],{metaKey:true},pageAt(0),0));
+    await h.act(async()=>{pending.resolve(pageAt(0));await Promise.all([work,...attempts]);});
+    assert.equal(abortedByPause,true,'Pause must abort the already submitted selection');
+    assert.equal(requests.length,1,'Neither retained nor current handlers may read during pause');
+    assert.deepEqual(published,[],'Paused completion and gestures cannot focus or select');
+    assert.deepEqual(h.errors,[]);
+    h.network.api=async()=>pageAt(0);await h.render({...props,readPaused:false});
+    const resumed=await startSelection(h,'cell');await h.act(()=>resumed.work);
+    assert.equal(published.length,1,'Fresh selection works after the owner resumes reads');
+  }finally{pending.resolve(pageAt(0));await work;await h.close();}
+});
+
 test('fetched range focuses immediately, then publishes ordered selection after completion',async()=>{
   const h=await createPagedTreeHarness(),pending=deferred(),events=[];
   h.network.api=()=>pending.promise;

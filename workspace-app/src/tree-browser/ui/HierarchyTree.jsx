@@ -19,8 +19,8 @@ import {frozenTreePresentationScope} from '../../epoch-browser/frozenReadContext
 const blank=()=>({pages:[],expanded:[],loading:true,error:null,loadingPath:[],notice:''});
 export default function HierarchyTree(props){
   const {protocolId,readContext,predicate,filters={},splits='',revision=0,expectedRevision,initialNavigation,selected}=props;
-  const groupTags=useTreeGroupTags(props);
-  const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision});
+  const groupTags=useTreeGroupTags({...props,actionsDisabled:props.actionsDisabled||!!props.readPaused});
+  const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision,readPaused:!!props.readPaused});
   const frozenPresentation=frozenTreePresentationScope(props),presentationScope=frozenPresentation||scopeKey;
   const callbacks=useRef(props);callbacks.current=props;
   const [state,setState]=useState(blank),current=useRef(state),controller=useRef(null),serial=useRef(0),scroll=useRef(null),container=useRef(null);
@@ -45,7 +45,7 @@ export default function HierarchyTree(props){
     };
   },[scopeKey]);
   const load=useCallback(async({path=[],offset=0,reset=false,anchor=null,restore=null,keepPresentation=false}={})=>{
-    if(committedScope.current!==scopeKey)return;
+    if(props.readPaused||committedScope.current!==scopeKey)return;
     controller.current?.abort();const request=new AbortController();controller.current=request;const token=++serial.current;
     const startedScrollIntent=scrollIntent.current;
     restoreTop.current=reset&&!restore?0:null;restoreLeft.current=reset&&!restore?0:null;
@@ -86,6 +86,7 @@ export default function HierarchyTree(props){
     }catch(error){if(!request.signal.aborted&&token===serial.current){commit(old=>({...old,loading:false,error:error.message,loadingPath:null}));callbacks.current.onStatus?.({loading:false,error:error.message});}}
   },[scopeKey,commit]);
   useEffect(()=>{
+    if(props.readPaused){commit(old=>({...old,loading:true}));return;}
     const retained=retainedNavigation.current?.presentationScope===presentationScope?retainedNavigation.current.snapshot:null;
     const restore=hierarchyRestore(retained,splits)||(!initialized.current&&firstScope.current===scopeKey?hierarchyRestore(saved.current,splits):null);
     if(restore&&frozenPresentation&&retainedNavigation.current?.scope!==scopeKey)restore.revision=null;
@@ -107,7 +108,7 @@ export default function HierarchyTree(props){
   },[state.pages,state.expanded,state.loading,state.error]);
   useEffect(()=>{if(!state.loading&&focusScroll.current){const node=container.current?.querySelector(`[data-epoch-uuid="${focusScroll.current}"]`);if(node){revealWithin(scroll.current,node);focusScroll.current=null;}}},[selected,state.pages,state.loading]);
   function toggle(branch){
-    if(current.current.error)return false;
+    if(props.readPaused||committedScope.current!==scopeKey||current.current.error)return false;
     const key=hierarchyKey(branch.path),opened=current.current.expanded.some(path=>hierarchyKey(path)===key);
     if(opened){
       revealSelected.current=null;focusScroll.current=null;
@@ -133,7 +134,7 @@ export default function HierarchyTree(props){
     if(event.key==='ArrowRight'){event.preventDefault();event.stopPropagation();if(!opened)toggle(branch);else event.currentTarget.closest('li')?.querySelector('ul button')?.focus({preventScroll:true});}
     if(event.key==='ArrowLeft'){event.preventDefault();event.stopPropagation();if(opened)toggle(branch);else event.currentTarget.closest('ul')?.closest('li')?.querySelector(':scope > button')?.focus({preventScroll:true});}
   }
-  const root=state.pages.find(page=>!page.path.length),blocked=!!state.error||state.loadedScope!==scopeKey;
+  const root=state.pages.find(page=>!page.path.length),blocked=!!props.readPaused||!!state.error||state.loadedScope!==scopeKey;
   function renderPage(page,isRoot=false){
     const entries=page.kind==='epochs'?page.epochs:page.branches,field=page.levels?.[page.depth];
     const label=page.kind==='epochs'?'Epochs':readableField(field?.label,field?.field);

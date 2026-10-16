@@ -9,18 +9,18 @@ import {createServer} from './test-support/isolatedVite.js';
 const branchKeys=['a'.repeat(64),'b'.repeat(64)];
 const revisions=['c'.repeat(64),'d'.repeat(64)];
 
-async function fixture({frozen=false,columns=false}={}){
+async function fixture({frozen=false,columns=false,wrapped=false,epochCount=1}={}){
   const dom=new JSDOM('<main></main>',{url:'http://fixture/'});
   const previous=Object.fromEntries(['window','document','localStorage','fetch','requestAnimationFrame','cancelAnimationFrame'].map(key=>[key,globalThis[key]]));
   Object.assign(globalThis,{window:dom.window,document:dom.window.document,localStorage:dom.window.localStorage,
     requestAnimationFrame:callback=>setTimeout(callback,0),cancelAnimationFrame:clearTimeout});
   const state={version:0,holdRoot:false,requests:[],held:[],snapshots:[],metadata:[],holdLeaf:false};
   function page(body,version){
-    const branches=branchKeys.map((key,index)=>({key,path:[key],label:`Branch ${index+1}`,value:`Branch ${index+1}`,count:1}));
+    const branches=branchKeys.map((key,index)=>({key,path:[key],label:`Branch ${index+1}`,value:`Branch ${index+1}`,count:epochCount}));
     return {...(frozen?{candidate_scope_revision:`scope-${version}`,query_revision:`scope-${version}`,expected_binding_version:1,generation:{metadata:'fixture'}}:{}),revision:revisions[version],kind:body.path.length?'epochs':'branches',path:body.path,depth:body.path.length,
-      offset:body.offset||0,limit:60,total:body.path.length?1:2,total_epochs:2,split_order:['date'],levels:[{field:'date',label:'Date'}],
+      offset:body.offset||0,limit:60,total:body.path.length?epochCount:2,total_epochs:2*epochCount,split_order:['date'],levels:[{field:'date',label:'Date'}],
       ancestors:body.path.length?[{...branches.find(branch=>branch.key===body.path[0]),parent_offset:0}]:[],has_more:false,
-      branches:body.path.length?[]:branches,epochs:body.path.length?[{epoch_uuid:`epoch-${body.path[0][0]}`,cell_uuid:'cell',epoch_number:1}]:[]};
+      branches:body.path.length?[]:branches,epochs:body.path.length?Array.from({length:epochCount},(_,i)=>({epoch_uuid:`epoch-${body.path[0][0]}${i?'-'+i:''}`,cell_uuid:'cell',epoch_number:i+1})):[]};
   }
   globalThis.fetch=async(url,options)=>{
     assert.equal(url,frozen?'/api/protocols/p/workbench/candidates/c/tree/page':'/api/tree-pages');
@@ -34,11 +34,15 @@ async function fixture({frozen=false,columns=false}={}){
   const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,
     server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
   const {default:HierarchyTree}=await server.ssrLoadModule(columns?'/src/tree-browser/ui/ColumnTree.jsx':'/src/tree-browser/ui/HierarchyTree.jsx');
+  const {default:RetainedTreePresentation}=wrapped?await server.ssrLoadModule('/src/tree-browser/ui/RetainedTreePresentation.jsx'):{default:null};
   const root=createRoot(document.querySelector('main'));
-  const render=(mode='visible',revision=0,extra={})=>act(async()=>root.render(React.createElement(React.Activity,{mode},
-    React.createElement(HierarchyTree,{protocolId:'p',splits:'date',revision,browseOnly:true,
+  const render=(mode='visible',revision=0,extra={})=>act(async()=>{
+    const tree={protocolId:'p',splits:'date',revision,browseOnly:true,
       ...(frozen?{projectId:'project',readContext:{root:'/protocols/p/workbench/candidates/c',cohort_key:'cohort',actor:'author',candidate_scope_revision:`scope-${state.version}`,expected_binding_version:1}}:{}),...extra,
-      onNavigationChange:value=>state.snapshots.push(value),onMetadata:value=>state.metadata.push(value)}))));
+      onNavigationChange:value=>state.snapshots.push(value),onMetadata:value=>state.metadata.push(value)};
+    root.render(React.createElement(React.Activity,{mode:wrapped?'visible':mode},wrapped?
+      React.createElement(RetainedTreePresentation,{active:mode==='visible',tree}):React.createElement(HierarchyTree,tree)));
+  });
   const expand=index=>act(async()=>document.querySelectorAll(columns?'.tp-branch':'.ht-root > .ht-branch > button')[index].click());
   const scroll=()=>document.querySelector(columns?'.tp-columns':'.ht-scroll');
   async function position(top,left){await act(async()=>{scroll().scrollTop=top;scroll().scrollLeft=left;scroll().dispatchEvent(new dom.window.Event('scroll'));await new Promise(resolve=>setTimeout(resolve,5));});}
@@ -169,5 +173,81 @@ for(const columns of [false,true])test(`Workbench ${columns?'column':'hierarchy'
   h.state.version=1;await h.render('visible',1,{expectedRevision:revisions[0]});
   assert.equal(h.state.requests[before].body.revision,revisions[0]);
   assert.ok(document.querySelector('[role="alert"]'));assert.equal(h.state.metadata.length,published);
+ }finally{await h.close();}
+});
+
+for(const columns of [false,true])test(`paused Workbench ${columns?'columns':'hierarchy'} retain nodes without reading retired context`,async()=>{
+ const h=await fixture({frozen:true,columns});try{
+  await h.render();await h.expand(1);const nodes=[...document.querySelectorAll('[data-epoch-uuid]')],before=h.state.requests.length;
+  await h.render('visible',1,{readPaused:true});
+  assert.equal(h.state.requests.length,before,'paused old context cannot issue a read');
+  h.state.version=1;await h.render('visible',1,{readPaused:true});
+  assert.equal(h.state.requests.length,before,'new context remains paused until its owner admits reads');
+  assert.deepEqual([...document.querySelectorAll('[data-epoch-uuid]')],nodes);
+  assert.ok(nodes.every(node=>node.disabled));
+  h.state.holdRoot=true;await h.render('visible',1,{readPaused:false});
+  assert.equal(h.state.requests.length,before+1);assert.deepEqual(h.state.requests.at(-1).body.path,[]);
+  assert.equal(h.state.requests.at(-1).body.revision,undefined);
+  await h.render('visible',1,{readPaused:true});assert.equal(h.state.requests.at(-1).signal.aborted,true);
+  await h.release();assert.equal(h.state.requests.length,before+1,'retired root cannot launch descendants');
+  h.state.holdRoot=false;h.state.holdLeaf=true;await h.render('visible',1,{readPaused:false});
+  const afterRoot=h.state.requests.length;assert.equal(h.state.requests.at(-1).body.revision,revisions[1]);
+  await h.render('visible',1,{readPaused:true});assert.equal(h.state.requests.at(-1).signal.aborted,true);
+  await h.release();assert.equal(h.state.requests.length,afterRoot,'retired leaf cannot continue or publish');
+  assert.deepEqual([...document.querySelectorAll('[data-epoch-uuid]')],nodes);
+  h.state.holdLeaf=false;await h.render('visible',1,{readPaused:false});
+  assert.deepEqual([...document.querySelectorAll('[data-epoch-uuid]')],nodes);
+  assert.ok(nodes.every(node=>!node.disabled));assert.equal(h.state.metadata.at(-1).revision,revisions[1]);
+ }finally{await h.close();}
+});
+
+test('actual frozen retention wrapper keeps sixty column nodes and scroll while fresh authority gates actions',async()=>{
+ const h=await fixture({frozen:true,columns:true,wrapped:true,epochCount:60});let focused=0,selectedWrites=0;
+ const props={selectedEpochs:['epoch-b','epoch-b-1'],highlightedEpochs:['epoch-b','epoch-b-1'],setSelectedEpochs:()=>selectedWrites++,onSelectEpoch:()=>focused++};
+ try{
+  await h.render('visible',0,props);await h.expand(1);await h.position(0,135);
+  const nodes=[...document.querySelectorAll('[data-epoch-uuid]')],panes=[...document.querySelectorAll('.tp-column-content')];assert.equal(nodes.length,60);
+  await act(()=>{panes[0].scrollTop=80;panes[1].scrollTop=190;panes[1].dispatchEvent(new window.Event('scroll'));});
+  h.state.version=1;h.state.holdRoot=true;h.state.holdLeaf=true;await h.render('visible',1,props);
+  assert.deepEqual([...document.querySelectorAll('[data-epoch-uuid]')],nodes,'Wrapper must retain the actual sixty epoch nodes during root renewal');
+  assert.ok(nodes.every(node=>node.disabled));const selection=nodes[0].parentElement.querySelector('.incoming-selection-switch');assert.equal(selection.disabled,true);
+  await act(()=>{nodes[0].click();selection.click();});assert.equal(focused,0);assert.equal(selectedWrites,0);
+  h.state.holdRoot=false;await h.release();
+  assert.deepEqual([...document.querySelectorAll('[data-epoch-uuid]')],nodes);assert.ok(nodes.every(node=>node.disabled));
+  assert.equal(h.state.requests.at(-1).body.revision,revisions[1]);h.state.holdLeaf=false;await h.release();
+  assert.deepEqual([...document.querySelectorAll('[data-epoch-uuid]')],nodes,'Fresh same-cohort authority must not remount epoch rows');
+  assert.ok(nodes.every(node=>!node.disabled));assert.equal(h.scroll().scrollLeft,135);
+  assert.deepEqual([...document.querySelectorAll('.tp-column-content')].map(pane=>pane.scrollTop),[80,190]);
+  assert.deepEqual(nodes.slice(0,3).map(node=>node.getAttribute('aria-pressed')),['true','true','false']);
+  assert.deepEqual(nodes.slice(0,3).map(node=>node.getAttribute('aria-current')),['true','true',null]);
+  assert.equal(selection.disabled,false);await act(()=>{nodes[0].click();selection.click();});assert.equal(focused,1);assert.equal(selectedWrites,1);
+ }finally{await h.close();}
+});
+
+for(const boundary of ['project','actor','cohort','selected view'])test(`frozen retention wrapper evicts changed ${boundary}`,async()=>{
+ const h=await fixture({frozen:true,columns:true,wrapped:true});try{
+  const context={root:'/protocols/p/workbench/candidates/c',cohort_key:'cohort',actor:'author',candidate_scope_revision:'scope-0',expected_binding_version:1,selection_token:'old-token',selection_view_key:'selected-one'};
+  await h.render('visible',0,{readContext:context});await h.expand(1);const node=document.querySelector('.column-tree');
+  const extra=boundary==='project'?{projectId:'other-project'}:{readContext:{...context,...(boundary==='actor'?{actor:'other'}:boundary==='cohort'?{cohort_key:'other'}:{selection_view_key:'selected-two',selection_token:'new-token'})}};
+  await h.render('visible',0,{readContext:context,...extra});assert.notEqual(document.querySelector('.column-tree'),node);assert.equal(document.querySelectorAll('[data-epoch-uuid]').length,0);
+ }finally{await h.close();}
+});
+
+test('frozen wrapper retains a stable selected view through token renewal but not a token without semantic proof',async()=>{
+ const h=await fixture({frozen:true,columns:true,wrapped:true});try{
+  const context={root:'/protocols/p/workbench/candidates/c',cohort_key:'cohort',actor:'author',candidate_scope_revision:'scope-0',expected_binding_version:1,selection_token:'old-token',selection_view_key:'selected-one'};
+  await h.render('visible',0,{readContext:context});await h.expand(1);const node=document.querySelector('.column-tree');
+  h.state.version=1;await h.render('visible',1,{readContext:{...context,candidate_scope_revision:'scope-1',selection_token:'new-token'}});
+  assert.equal(document.querySelector('.column-tree'),node);assert.equal(document.querySelectorAll('[data-epoch-uuid]').length,1);
+  const unproven={...context,candidate_scope_revision:'scope-1',selection_token:'token-one'};delete unproven.selection_view_key;
+  await h.render('visible',1,{readContext:unproven});await h.expand(1);const exact=document.querySelector('.column-tree');
+  await h.render('visible',1,{readContext:{...unproven,selection_token:'token-two'}});assert.notEqual(document.querySelector('.column-tree'),exact);
+ }finally{await h.close();}
+});
+
+test('frozen wrapper still unmounts hidden content instead of gaining live retention eligibility',async()=>{
+ const h=await fixture({frozen:true,columns:true,wrapped:true});try{
+  await h.render();await h.expand(1);const node=document.querySelector('.column-tree');await h.render('hidden');assert.equal(document.querySelector('.column-tree'),null);
+  await h.render();assert.notEqual(document.querySelector('.column-tree'),node);
  }finally{await h.close();}
 });

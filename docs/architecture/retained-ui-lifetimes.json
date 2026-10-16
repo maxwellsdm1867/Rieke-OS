@@ -959,7 +959,7 @@
       ]
     },
     "src/epoch-browser/ui/Inspector.jsx": {
-      "fingerprint": "a217fb3e8e0015f5dfcc0849bf06104051176c7a997e2734acd3dfa331610f00",
+      "fingerprint": "e77f60a44d68f4870df609050343855688d95f399551f976f2697f2dd310194f",
       "sites": [
         {
           "owner": "InspectorContent",
@@ -1088,7 +1088,7 @@
         }
       ],
       "lifetime": "focused-display-and-fresh-curation",
-      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md.",
+      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
@@ -1097,7 +1097,8 @@
         "src/navigationSurfaces.test.js",
         "src/protocolBrowseEntry.test.js",
         "src/workbenchSessionLifecycle.test.js",
-        "src/candidateContinuity.test.js"
+        "src/candidateContinuity.test.js",
+        "src/hierarchyRetention.test.js"
       ]
     },
     "src/epoch-browser/ui/InspectorActions.jsx": {
@@ -3380,7 +3381,7 @@
       ]
     },
     "src/tree-browser/ui/ColumnTree.jsx": {
-      "fingerprint": "4066c1928830fa5a9820bb82245aba1219d400bdfa2ffbb5702c311ef6fb72bd",
+      "fingerprint": "4f08c428da1c4feaed907104f943aac81e34ec20093cbb7cbaeef279fa006365",
       "sites": [
         {
           "owner": "ColumnTree",
@@ -3395,7 +3396,7 @@
         {
           "owner": "ColumnTree",
           "kind": "useEffect",
-          "fingerprint": "681da5d4e1df1ee6f2f9fcc21a3b6db6b8f5049ca47c629c9e54f2afc873bb79"
+          "fingerprint": "b5482a2ac75361da4ad60752d8212e058f1a298f299339c3b9f5f597aa3e6b71"
         },
         {
           "owner": "ColumnTree",
@@ -3424,7 +3425,7 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads. Explicit owner read pause blocks gestures and retires pending root or target reads while retaining inert presentation; fresh resume revalidates all authority.",
       "tests": [
         "src/inspectionTreeLifecycle.test.js",
         "src/hierarchyRetention.test.js",
@@ -3435,7 +3436,7 @@
       ]
     },
     "src/tree-browser/ui/HierarchyTree.jsx": {
-      "fingerprint": "6071fa95f38be6e380487d5f0ac82664c673f9fbc66d5a3abc57f272186e0fbe",
+      "fingerprint": "a5d38fc2e5264b30da2bb15892d3018d4e65a71a73238a7d46831e120b0d600d",
       "sites": [
         {
           "owner": "HierarchyTree",
@@ -3445,7 +3446,7 @@
         {
           "owner": "HierarchyTree",
           "kind": "useEffect",
-          "fingerprint": "612d3219ae0d04b6d05dcc078c6d808afa4f45c21326bb5ac34d8dae0a573828"
+          "fingerprint": "96ae55d70a5c9bd94fd69a5a0cf0e93c738efc856a450d33abc7365eeb807738"
         },
         {
           "owner": "HierarchyTree",
@@ -3469,7 +3470,7 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Explicit owner read pause retains inert pages, aborts root and descendant reads, and refuses late publication until fresh resume.",
       "tests": [
         "src/inspectionTreeLifecycle.test.js",
         "src/hierarchyRetention.test.js",
@@ -3479,7 +3480,7 @@
       ]
     },
     "src/tree-browser/ui/PagedTree.jsx": {
-      "fingerprint": "b7c85748bca9480e5f76fdf861fe84ec93ff706a767b3d2d5dfd465ad51c9b87",
+      "fingerprint": "3f526dae0fc0d63f0facdac11afad35f1263cb501d913bc17952c842902036b1",
       "sites": [
         {
           "owner": "PagedTree",
@@ -3488,7 +3489,7 @@
         }
       ],
       "lifetime": "scoped-selection-authority",
-      "reason": "Selection summaries, manifests and ordered selection queue use committed scope/generation with abort and stale-publication refusal. Visibility may retire a read witness; retained selection presentation never substitutes for fresh command authority.",
+      "reason": "Selection summaries, manifests and ordered selection queue use committed scope/generation with abort and stale-publication refusal. Visibility may retire a read witness; retained selection presentation never substitutes for fresh command authority. Explicit owner read pause retires selection scope and blocks pending or new focus/range publication, including standalone callers without selectionAuthority.",
       "tests": [
         "src/incomingSelectionSummaryRendering.test.js",
         "src/incomingTreeSelectionQueue.test.js",
@@ -3496,13 +3497,15 @@
       ]
     },
     "src/tree-browser/ui/RetainedTreePresentation.jsx": {
-      "fingerprint": "d8b35a9e1c5391cbb5fc204a10df08e1cb6e9794e6acf79f58e1cf9fbbf5b9e3",
+      "fingerprint": "214aa3c6b720e8cbe82cc91dfb68199fc96aa41d6dae8c336ea0a7d206f88742",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Active annotation-independent frozen presentation uses proven project/actor/cohort/filter/split/selection-view identity through authority renewal; raw selection tokens without semantic proof retain exact-context eviction. Hidden frozen views remain unmounted. The outer workspace owner evicts on physical project-path changes. Fresh tree receipts still gate every action.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/hierarchyRetention.test.js",
+        "src/retainedWorkspaceViews.test.js"
       ]
     },
     "src/tree-browser/ui/TreeBranchIcon.jsx": {

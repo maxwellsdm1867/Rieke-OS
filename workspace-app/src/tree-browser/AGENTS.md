@@ -102,6 +102,14 @@ do not inherit this continuity. `hierarchyRetention.test.js` and
 `candidateContinuity.test.js` cover both presentations and the identity boundaries.
 UUID highlights follow the same semantic boundary; pending branch commands and
 their revision-bound color markers still retire with command authority.
+The actual RetainedTreePresentation wrapper uses that same proven frozen semantic
+identity while active, so authority-only refresh does not remount PagedTree before
+its children can restore navigation. Selected-token renewal additionally requires
+a nonempty selection_view_key; otherwise exact context changes still evict.
+Hidden frozen views remain excluded from live-only hidden retention. App
+RetainedWorkspaceViews separately evicts on physical project path changes.
+The mounted wrapper cases in hierarchyRetention.test.js keep exact DOM nodes
+while fresh root/descendant receipts gate actions.
 
 While a branch-selection read is pending, unrelated branch switches remain enabled
 and clicks enter the incoming owner's bounded ordered queue. This does not relax
@@ -132,3 +140,11 @@ Recorded identity glyphs use `ui/TreeBranchIcon.jsx` only for exact `cell` and
 `cell type` levels, including Edit Tree. Joint and other levels keep their existing
 appearance. Cell branches carry optional recorded `cell_type`; labels never
 classify cells. Missing types use the neutral unknown glyph.
+
+The explicit `readPaused` prop retires tree and selection reads while the owner
+renews frozen authority. It synchronously blocks gestures, aborts pending root,
+descendant and selection work, and retains the visible rows inert. It is separate
+from `actionsDisabled`, which may depend on completing those reads. Resume uses
+fresh scoped receipts; a paused late completion cannot publish or start another
+request. `hierarchyRetention.test.js` and `pagedTreeLifecycle.test.js` cover this
+contract, including callers without a selection-authority prop.

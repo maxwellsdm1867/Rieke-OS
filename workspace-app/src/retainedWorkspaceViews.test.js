@@ -82,3 +82,26 @@ test('guard-only unsaved text survives clean-route eviction pressure',async()=>{
  const render=async key=>act(()=>{const element=React.createElement(RetainedWorkspaceViews,{route:route(key),projectId:'p',projectPath:'/p',presentation:owner,limit:2,render:destination=>destination.key==='draft'?React.createElement(Editor):null});tree?tree.update(element):tree=TestRenderer.create(element);});
  try{await render('draft');await act(()=>setText('unfinished annotation'));for(let i=0;i<10;i++)await render(`clean-${i}`);await render('draft');assert.equal(instances,1);assert.equal(tree.root.findByType('input').props.value,'unfinished annotation');}finally{await act(()=>tree.unmount());}
 });
+
+test('a copied project with the same UUID and a new physical path discards every retained destination',async()=>{
+ const owner=sessionOwner(),updates={},instances=[],cleaned=[];let tree;
+ function Page({destination}){
+  const [instance]=useState(()=>{const value=instances.length+1;instances.push(value);return value;});
+  const [text,setText]=useState('');updates[destination.key]=setText;
+  useEffect(()=>()=>cleaned.push(instance),[instance]);
+  return React.createElement('input',{'data-instance':instance,value:text});
+ }
+ const render=async(projectPath,key)=>act(()=>{
+  const element=React.createElement(RetainedWorkspaceViews,{route:route(key),projectId:'same-uuid',projectPath,presentation:owner,render:destination=>React.createElement(Page,{destination})});
+  tree?tree.update(element):tree=TestRenderer.create(element);
+ });
+ const active=()=>tree.root.findAllByType('div').find(node=>node.props['data-workspace-active']==='true').findByType('input');
+ try{
+  await render('/owned/original','a');await act(()=>updates.a('original-a'));const first=active().props['data-instance'];
+  await render('/owned/original','b');await act(()=>updates.b('original-b'));const second=active().props['data-instance'];
+  await render('/owned/copied','a');assert.equal(active().props.value,'');assert.notEqual(active().props['data-instance'],first);
+  assert.ok(cleaned.includes(first));assert.ok(cleaned.includes(second));
+  assert.equal(tree.root.findAllByProps({'data-workspace-view':'b'}).length,0,'Hidden destinations from the prior physical project are discarded too');
+  await render('/owned/copied','b');assert.equal(active().props.value,'');assert.notEqual(active().props['data-instance'],second);
+ }finally{await act(()=>tree?.unmount());}
+});

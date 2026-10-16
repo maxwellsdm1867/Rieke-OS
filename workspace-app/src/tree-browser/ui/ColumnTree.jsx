@@ -29,10 +29,10 @@ export default function ColumnTree(props){
   const active=props.active!==false;
   const readOwner=useTreeBranchReads(),ownerIdentity=readOwner?.identity||'';
   const [state,setState]=useState({columns:[],loading:true,error:null,ownerIdentity:null});
-  const ownerBlocked=!active||state.activation!==props.presentationActivation||state.ownerIdentity!==ownerIdentity||!!readOwner&&!readOwner.active();
+  const ownerBlocked=!active||!!props.readPaused||state.activation!==props.presentationActivation||state.ownerIdentity!==ownerIdentity||!!readOwner&&!readOwner.active();
   const actionProps={...props,actionsDisabled:props.actionsDisabled||ownerBlocked||state.loading||!!state.error};
   const groupTags=useTreeGroupTags(actionProps);
-  const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision,ownerIdentity,active,activation:props.presentationActivation});
+  const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision,ownerIdentity,active,readPaused:!!props.readPaused,activation:props.presentationActivation});
   const frozenPresentation=frozenTreePresentationScope(props);
   const presentationScope=frozenPresentation||canonicalReadIdentity({protocolId:protocolId??null,readContext:readContext??null,predicate:predicate??null,filters,splits,revision,expectedRevision:expectedRevision??null,annotationRevision:groupTags.revision,ownerIdentity});
   const groupSelection=useIncomingTreeSelection(actionProps,state.loadedScope===scopeKey&&!state.loading&&!state.error&&!ownerBlocked?state.columns[0]:null);
@@ -77,7 +77,7 @@ export default function ColumnTree(props){
     return()=>element.removeEventListener('wheel',wheel);
   },[]);
   const load=useCallback(async({path=[],offset=0,reset=false,revisionOverride=null,columnPositions=[],scrollTop=0,scrollLeft=null,anchor=null,freshContinuation=false,restorePresentation=null}={})=>{
-    if(!active||!visible.current||liveNavigation.current!==navigationIdentity||readOwner&&!readOwner.active())return;
+    if(!active||props.readPaused||!visible.current||liveNavigation.current!==navigationIdentity||readOwner&&!readOwner.active())return;
     const observer=callbacks.current; // Completion belongs to the initiating scope.
     retryIntent.current={scopeKey,options:{path:[...path],offset,anchor,columnPositions:columnPositions.map(position=>({...position})),scrollTop,scrollLeft}};
     controller.current?.abort();const request=new AbortController();controller.current=request;const token=++serial.current;pending.current=true;navigationIntent.current={token,path:[...path],offset};
@@ -110,7 +110,7 @@ export default function ColumnTree(props){
   }
   useLayoutEffect(()=>{liveNavigation.current=navigationIdentity;navigationIntent.current=null;visible.current=active;controller.current?.abort();serial.current++;return()=>{liveNavigation.current=null;navigationIntent.current=null;retryIntent.current=null;visible.current=false;permitted.current=false;controller.current?.abort();serial.current++;};},[navigationIdentity]);
   useEffect(()=>{
-    if(!active){pending.current=true;setState(old=>({...old,loading:true}));return;}
+    if(!active||props.readPaused){pending.current=true;setState(old=>({...old,loading:true}));return;}
     const start=!restored.current&&initialScope.current===scopeKey?treeNavigationStart(saved.current,splits):null;
     const navigation=start?{...start,columnPositions:saved.current?.columnPositions||[],scrollLeft:saved.current?.scrollLeft??null}:{reset:true};
     // Mount/presentation changes follow the externally focused epoch. Ordinary
