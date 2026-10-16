@@ -13,6 +13,14 @@ try{
  for(let sample=0;sample<samples;sample++){
   context=await browser.newContext({viewport:{width:1500,height:1100},...(timingEnabled?{extraHTTPHeaders:{'X-Disco-Trace-Timing':'1'}}:{})});const page=await context.newPage();
   const displayTimings=new Map();
+  const cdp=await context.newCDPSession(page);
+  await cdp.send('Performance.enable');await cdp.send('Profiler.enable');await cdp.send('Profiler.setSamplingInterval',{interval:1000});
+  await page.addInitScript(()=>{
+   window.__diag={rafs:[],longtasks:[]};
+   const raf=window.requestAnimationFrame;
+   window.requestAnimationFrame=function(cb){return raf.call(this,ts=>{const at=performance.now(),a=window.__workflow?.active; if(a)window.__diag.rafs.push({action_id:a.action_id,at,timestamp:ts,dispatch_lag_ms:at-ts});return cb(ts);});};
+   new PerformanceObserver(list=>{for(const e of list.getEntries())window.__diag.longtasks.push({start:e.startTime,duration:e.duration,name:e.name});}).observe({type:'longtask',buffered:true});
+  });
   if(timingEnabled)page.on('response',response=>{
    const url=new URL(response.url()),action=response.request().headers()['x-benchmark-action'];
    if(url.origin!==`http://127.0.0.1:${meta.port}`||!url.pathname.endsWith('/display')||!action)return;
@@ -47,8 +55,18 @@ try{
   const display=await page.evaluate(()=>{const offered=window.__workflow.requests.flatMap(r=>[r.result?.trace_read_context,r.result?.context?.trace_read_context,r.result?.bootstrap?.page?.trace_read_context]).filter(v=>v?.kind==='prepared_display');if(!offered.length)throw Error('Prepared response did not advertise prepared_display');return offered.at(-1);});
   if(display.candidate_revision_uuid!==preparation.correctness.prepared.candidate_revision_uuid||display.project_uuid!==meta.project||display.protocol_uuid!==meta.protocol)throw Error('Prepared display membership owner mismatch');
   const traceRoot='/trace-views/'+display.token;
+  const diagCpuStart=process.cpuUsage(),diagWallStart=performance.now();
+  const diagMetricsStart=await cdp.send('Performance.getMetrics');
+  await cdp.send('Tracing.start',{transferMode:'ReturnAsStream',traceConfig:{recordMode:'recordContinuously',enableSampling:true,enableSystrace:false,includedCategories:['toplevel','devtools.timeline','v8','blink.user_timing','disabled-by-default-devtools.timeline','disabled-by-default-devtools.timeline.frame','disabled-by-default-v8.cpu_profiler']}});
+  await cdp.send('Profiler.start');
   const epochNumber=2; // UI labels the ordinal within this incoming cell, not recorded epoch_number.
   const id=`ordinary-${sample}-million`,row=await clickAndObserve(page.getByRole('button',{name:`Inspect ${meta.date_label} · ${meta.incoming_cell_label} epoch ${epochNumber}`,exact:true}),{selector:'.tv-base',trace:meta.million_trace_expected},id);
+  const diagProfile=await cdp.send('Profiler.stop');
+  const traceDone=new Promise(resolve=>cdp.once('Tracing.tracingComplete',resolve));await cdp.send('Tracing.end');
+  const traceResult=await traceDone;let traceText='';for(;;){const chunk=await cdp.send('IO.read',{handle:traceResult.stream});traceText+=chunk.data;if(chunk.eof)break;}await cdp.send('IO.close',{handle:traceResult.stream});
+  await fs.writeFile(path.join(output,`sample-${sample}-trace.json`),traceText);
+  await fs.writeFile(path.join(output,`sample-${sample}-profile.json`),JSON.stringify(diagProfile));
+  row.diagnostic={only:true,node_cpu_us:process.cpuUsage(diagCpuStart),driver_wall_ms:performance.now()-diagWallStart,metrics_start:diagMetricsStart,metrics_end:await cdp.send('Performance.getMetrics'),page:await page.evaluate(()=>({timeOrigin:performance.timeOrigin,...window.__diag,marks:performance.getEntriesByType('mark').map(e=>({name:e.name,start:e.startTime}))}))};
   if(timingEnabled)for(const request of row.requests){
    const key=JSON.stringify([row.action_id,request.url]);
    if(new URL(request.url,`http://127.0.0.1:${meta.port}`).pathname.endsWith('/display')){

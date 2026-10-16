@@ -107,5 +107,5 @@ export function installObserver(config={}) {
   };
   function absolute(){return performance.now();}
   const stroke=CanvasRenderingContext2D.prototype.stroke;
-  CanvasRenderingContext2D.prototype.stroke=function(...args){const tracked=this.canvas.classList.contains('tv-base')&&this.strokeStyle===getComputedStyle(this.canvas).getPropertyValue('--plot-trace').trim();const result=stroke.apply(this,args);if(tracked){const control=window.__workflowReadStream(this.canvas.closest('.trace-viewer'));state.draws.push({at:absolute(),action_id:state.active?.action_id,stream_uuid:control.stream_uuid,control});}return result;};
+  CanvasRenderingContext2D.prototype.stroke=function(...args){const tracked=this.canvas.classList.contains('tv-base')&&this.strokeStyle===getComputedStyle(this.canvas).getPropertyValue('--plot-trace').trim();const result=stroke.apply(this,args);if(tracked){const control=window.__workflowReadStream(this.canvas.closest('.trace-viewer'));state.draws.push({at:absolute(),action_id:state.active?.action_id,stream_uuid:control.stream_uuid,control});if(state.active)performance.mark('diag-stroke-'+state.active.action_id);}return result;};
 }

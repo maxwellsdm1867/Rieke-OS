@@ -175,7 +175,7 @@ export function armAction(el,{action_id,phase,spec,timeoutMs}){
       frame=requestAnimationFrame(poll);
       timer=setTimeout(()=>fail(Error('Action readiness timed out')),timeoutMs);
       a.observer_armed_at=performance.now();
-      w.active=a;a.intent=performance.now();
+      w.active=a;a.intent=performance.now();performance.mark('diag-intent-'+a.action_id,{startTime:a.intent});
       try{el.click();resolve();}catch(error){fail(error);reject(error);}
     }
     attempt();

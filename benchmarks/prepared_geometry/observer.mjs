@@ -9,9 +9,9 @@ export function geometryReadiness({trace:expected}){
  const draw=w.draws.find(d=>d.action_id===a.action_id&&d.at>=end&&d.stream_uuid===expected.stream_uuid);
  if(!draw||control.status!=='ready'||control.stream_uuid!==expected.stream_uuid||document.querySelector('.tv-status')||!document.querySelector('.tv-base')?.getBoundingClientRect().width)return pending();
  a.diagnosticFrames=(a.diagnosticFrames||0)+1;
- if(a.diagnosticFrames===1)a.diagnosticFirstRaf=performance.now()-a.intent;
+ if(a.diagnosticFrames===1){a.diagnosticFirstRaf=performance.now()-a.intent;performance.mark('diag-first-correct-'+a.action_id,{startTime:a.intent+a.diagnosticFirstRaf});}
  if(a.diagnosticFrames<2)return false;
- a.ready=performance.now();
+ a.ready=performance.now();performance.mark('diag-second-correct-'+a.action_id,{startTime:a.ready});
  a.geometryFrame={post_stroke_ms:draw.at-a.intent,first_raf_ms:a.diagnosticFirstRaf,second_raf_ms:a.ready-a.intent};
  a.captured_requests=w.requests.filter(r=>r.action_id===a.action_id);
  a.captured_renders=[];a.evidence={};
