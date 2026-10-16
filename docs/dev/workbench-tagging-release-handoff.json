@@ -1,0 +1,636 @@
+{
+  "format": "disco-workbench-tagging-next-release-handoff",
+  "version": 1,
+  "branch": "codex/workbench-tagging-continuity",
+  "release_target": "release after 0.1.15; no version bump in this branch",
+  "base_commit": "e95186c7c2cf05de5ff69998e3fad2c119bb532c",
+  "tested_source_commit": "d65d028dbb2f2ec2572c7901c5c92ae8c5c87160",
+  "application_commits": [
+    "952d4f53a3cb800264672780290521f797ccb01a",
+    "d65d028dbb2f2ec2572c7901c5c92ae8c5c87160"
+  ],
+  "integration": "Integrate both application commits together. A later merge or package needs its own exact-source checks; this handoff does not transfer receipts to different source.",
+  "changes": [
+    "Preserve identical frozen Workbench candidates across shared tag changes.",
+    "Keep selected intent, highlights, focus and validated tree navigation while renewing read authority.",
+    "Abort and defer selected manifest renewal while hidden, including pending-write retained Activity."
+  ],
+  "independent_review": {
+    "standards": {
+      "findings": 1,
+      "resolved": 1,
+      "unresolved": 0,
+      "detail": "Hidden selected-manifest acquisition now requires retained visibility; source fix reviewed and real-wrapper regression passes."
+    },
+    "spec": {
+      "findings": 0,
+      "unresolved": 0,
+      "detail": "Candidate content remains distinct from fresh scientific authority; no remaining source blocker."
+    }
+  },
+  "audit_closure": {
+    "inspect": "Existing same-scope tag branch-retention regression passes; fresh live page reads are not proof of branch collapse.",
+    "search": "Mounted regression confirms annotation hold retains result component and preview, gates export/design, and admits a new live result only on explicit refresh."
+  },
+  "checks": {
+    "frontend": {
+      "passed": 1293,
+      "failed": 0
+    },
+    "mapped_python": {
+      "passed": 981,
+      "failed": 0
+    },
+    "mapped_desktop": {
+      "passed": 182,
+      "failed": 0
+    },
+    "build": "passed",
+    "architecture": "passed",
+    "core": {
+      "core_execution": "passed",
+      "release_qualified": false,
+      "performance_budget": "uncalibrated",
+      "source_commit": "d65d028dbb2f2ec2572c7901c5c92ae8c5c87160"
+    },
+    "million_comparisons": {
+      "pinned": {
+        "status": "passed",
+        "review_required": [],
+        "baseline_commit": "a16c915f9730384af3285949bb962d12707ccf01",
+        "candidate_commit": "d65d028dbb2f2ec2572c7901c5c92ae8c5c87160",
+        "epoch_count": 1000000,
+        "metrics": [
+          {
+            "case": "tree.first_root",
+            "baseline": 2989.7088750003604,
+            "candidate": 3140.774790997966,
+            "threshold": 3737.1360937504505,
+            "review_required": false
+          },
+          {
+            "case": "tree.repeated_root",
+            "baseline": 983.9149170002202,
+            "candidate": 1025.9606250037905,
+            "threshold": 1229.8936462502752,
+            "review_required": false
+          },
+          {
+            "case": "tree.next_cells",
+            "baseline": 1069.220208999468,
+            "candidate": 1002.8374999965308,
+            "threshold": 1336.525261249335,
+            "review_required": false
+          },
+          {
+            "case": "tree.deep_cells",
+            "baseline": 979.0172909997636,
+            "candidate": 1007.0252080040518,
+            "threshold": 1223.7716137497046,
+            "review_required": false
+          },
+          {
+            "case": "tree.open_cell",
+            "baseline": 979.5033749978757,
+            "candidate": 1034.205166011816,
+            "threshold": 1224.3792187473446,
+            "review_required": false
+          },
+          {
+            "case": "tree.scroll_cell",
+            "baseline": 982.7887090068543,
+            "candidate": 1002.0213329989929,
+            "threshold": 1228.485886258568,
+            "review_required": false
+          },
+          {
+            "case": "tree.anchor",
+            "baseline": 1082.8090830036672,
+            "candidate": 1096.4174999971874,
+            "threshold": 1353.511353754584,
+            "review_required": false
+          },
+          {
+            "case": "tree.anchor_columns",
+            "baseline": 1985.4416669986676,
+            "candidate": 2000.2977080002893,
+            "threshold": 2481.8020837483346,
+            "review_required": false
+          },
+          {
+            "case": "tree.return_root",
+            "baseline": 983.1633750000037,
+            "candidate": 1066.1514999956125,
+            "threshold": 1228.9542187500047,
+            "review_required": false
+          },
+          {
+            "case": "tree.change_splits",
+            "baseline": 981.973999994807,
+            "candidate": 990.2651669981424,
+            "threshold": 1227.4674999935087,
+            "review_required": false
+          },
+          {
+            "case": "tree.return_splits",
+            "baseline": 983.8677919906331,
+            "candidate": 990.6226250022883,
+            "threshold": 1229.8347399882914,
+            "review_required": false
+          },
+          {
+            "case": "tree.select_cell",
+            "baseline": 2324.090875001275,
+            "candidate": 2299.664958001813,
+            "threshold": 2905.1135937515937,
+            "review_required": false
+          },
+          {
+            "case": "tree.peak_rss_bytes",
+            "baseline": 1867251712,
+            "candidate": 1920286720,
+            "threshold": 2240702054.4,
+            "review_required": false
+          },
+          {
+            "case": "tree.setup_ms",
+            "baseline": 2162.9161250020843,
+            "candidate": 2038.3140000049025,
+            "threshold": 2703.6451562526054,
+            "review_required": false
+          },
+          {
+            "case": "typed.first",
+            "baseline": 0.25104200176429003,
+            "candidate": 0.2396669879090041,
+            "threshold": 5.25104200176429,
+            "review_required": false
+          },
+          {
+            "case": "typed.deep",
+            "baseline": 0.2350410068174824,
+            "candidate": 0.30154199339449406,
+            "threshold": 5.235041006817482,
+            "review_required": false
+          },
+          {
+            "case": "typed.source",
+            "baseline": 675.8795420028036,
+            "candidate": 679.2592919955496,
+            "threshold": 844.8494275035046,
+            "review_required": false
+          },
+          {
+            "case": "typed.membership",
+            "baseline": 2317.0487500028685,
+            "candidate": 2299.203792004846,
+            "threshold": 2896.3109375035856,
+            "review_required": false
+          },
+          {
+            "case": "typed.protocol_first",
+            "baseline": 3019.409333996009,
+            "candidate": 3046.0881249891827,
+            "threshold": 3774.2616674950114,
+            "review_required": false
+          },
+          {
+            "case": "typed.protocol_deep",
+            "baseline": 2991.269624995766,
+            "candidate": 3008.4606250020443,
+            "threshold": 3739.0870312447078,
+            "review_required": false
+          },
+          {
+            "case": "typed.cell",
+            "baseline": 0.4021250060759485,
+            "candidate": 0.36787499266210943,
+            "threshold": 5.4021250060759485,
+            "review_required": false
+          },
+          {
+            "case": "typed.cell_scroll",
+            "baseline": 0.32554099743720144,
+            "candidate": 0.309124996419996,
+            "threshold": 5.325540997437201,
+            "review_required": false
+          },
+          {
+            "case": "typed.block",
+            "baseline": 0.1458340120734647,
+            "candidate": 0.14104199362918735,
+            "threshold": 5.145834012073465,
+            "review_required": false
+          },
+          {
+            "case": "typed.contains_first",
+            "baseline": 4905.015625001397,
+            "candidate": 4878.035959001863,
+            "threshold": 6131.269531251746,
+            "review_required": false
+          },
+          {
+            "case": "typed.contains_deep",
+            "baseline": 4855.918959001428,
+            "candidate": 4843.9923750120215,
+            "threshold": 6069.898698751786,
+            "review_required": false
+          },
+          {
+            "case": "typed.category",
+            "baseline": 121.49029099964537,
+            "candidate": 119.84574999951292,
+            "threshold": 151.8628637495567,
+            "review_required": false
+          },
+          {
+            "case": "typed.empty",
+            "baseline": 0.11095800437033176,
+            "candidate": 0.15187500684987754,
+            "threshold": 5.110958004370332,
+            "review_required": false
+          },
+          {
+            "case": "typed.one",
+            "baseline": 0.10112499876413494,
+            "candidate": 0.10649999603629112,
+            "threshold": 5.101124998764135,
+            "review_required": false
+          },
+          {
+            "case": "typed.detail",
+            "baseline": 0.034374999813735485,
+            "candidate": 0.04604199784807861,
+            "threshold": 5.0343749998137355,
+            "review_required": false
+          },
+          {
+            "case": "typed.count_all",
+            "baseline": 16.845040998305194,
+            "candidate": 17.39741700293962,
+            "threshold": 21.845040998305194,
+            "review_required": false
+          },
+          {
+            "case": "typed.count_source",
+            "baseline": 584.2858749965671,
+            "candidate": 584.3639999948209,
+            "threshold": 730.3573437457089,
+            "review_required": false
+          },
+          {
+            "case": "typed.count_cell",
+            "baseline": 0.12850000348407775,
+            "candidate": 0.12720900122076273,
+            "threshold": 5.128500003484078,
+            "review_required": false
+          },
+          {
+            "case": "typed.cells_first",
+            "baseline": 0.6188330007717013,
+            "candidate": 0.6059580045985058,
+            "threshold": 5.618833000771701,
+            "review_required": false
+          },
+          {
+            "case": "typed.cells_next",
+            "baseline": 0.6138329918030649,
+            "candidate": 0.6241250084713101,
+            "threshold": 5.613832991803065,
+            "review_required": false
+          },
+          {
+            "case": "typed.cells_deep",
+            "baseline": 0.5889159947400913,
+            "candidate": 0.6000830035191029,
+            "threshold": 5.588915994740091,
+            "review_required": false
+          },
+          {
+            "case": "typed.filter_preview",
+            "baseline": 655.4458340106066,
+            "candidate": 655.1397909934167,
+            "threshold": 819.3072925132583,
+            "review_required": false
+          },
+          {
+            "case": "typed.peak_rss_bytes",
+            "baseline": 3067478016,
+            "candidate": 3070115840,
+            "threshold": 3680973619.2,
+            "review_required": false
+          },
+          {
+            "case": "typed.setup_ms",
+            "baseline": 38210.78304099501,
+            "candidate": 37436.719750010525,
+            "threshold": 47763.478801243764,
+            "review_required": false
+          }
+        ]
+      },
+      "previous": {
+        "status": "passed",
+        "review_required": [],
+        "baseline_commit": "952d4f53a3cb800264672780290521f797ccb01a",
+        "candidate_commit": "d65d028dbb2f2ec2572c7901c5c92ae8c5c87160",
+        "epoch_count": 1000000,
+        "metrics": [
+          {
+            "case": "tree.first_root",
+            "baseline": 2973.253542004386,
+            "candidate": 2946.9027500017546,
+            "threshold": 3716.5669275054825,
+            "review_required": false
+          },
+          {
+            "case": "tree.repeated_root",
+            "baseline": 1002.4301250086864,
+            "candidate": 978.6071249982342,
+            "threshold": 1253.037656260858,
+            "review_required": false
+          },
+          {
+            "case": "tree.next_cells",
+            "baseline": 996.1317089910153,
+            "candidate": 977.846124995267,
+            "threshold": 1245.1646362387692,
+            "review_required": false
+          },
+          {
+            "case": "tree.deep_cells",
+            "baseline": 997.6523329969496,
+            "candidate": 978.8418329990236,
+            "threshold": 1247.065416246187,
+            "review_required": false
+          },
+          {
+            "case": "tree.open_cell",
+            "baseline": 997.8233330039075,
+            "candidate": 977.9644160007592,
+            "threshold": 1247.2791662548843,
+            "review_required": false
+          },
+          {
+            "case": "tree.scroll_cell",
+            "baseline": 999.1659999941476,
+            "candidate": 977.6195419981377,
+            "threshold": 1248.9574999926845,
+            "review_required": false
+          },
+          {
+            "case": "tree.anchor",
+            "baseline": 1100.620750003145,
+            "candidate": 1082.3397500062129,
+            "threshold": 1375.7759375039313,
+            "review_required": false
+          },
+          {
+            "case": "tree.anchor_columns",
+            "baseline": 2012.4565000005532,
+            "candidate": 1973.7044999928912,
+            "threshold": 2515.5706250006915,
+            "review_required": false
+          },
+          {
+            "case": "tree.return_root",
+            "baseline": 1076.25354200718,
+            "candidate": 975.9383749915287,
+            "threshold": 1345.316927508975,
+            "review_required": false
+          },
+          {
+            "case": "tree.change_splits",
+            "baseline": 999.3515000096522,
+            "candidate": 1003.1355829996755,
+            "threshold": 1249.1893750120653,
+            "review_required": false
+          },
+          {
+            "case": "tree.return_splits",
+            "baseline": 1000.4634999932023,
+            "candidate": 981.1897909967229,
+            "threshold": 1250.5793749915028,
+            "review_required": false
+          },
+          {
+            "case": "tree.select_cell",
+            "baseline": 2298.6821250087814,
+            "candidate": 2293.538792000618,
+            "threshold": 2873.352656260977,
+            "review_required": false
+          },
+          {
+            "case": "tree.peak_rss_bytes",
+            "baseline": 1892909056,
+            "candidate": 1899118592,
+            "threshold": 2271490867.2,
+            "review_required": false
+          },
+          {
+            "case": "tree.setup_ms",
+            "baseline": 2017.0281249884283,
+            "candidate": 2031.3121660001343,
+            "threshold": 2521.2851562355354,
+            "review_required": false
+          },
+          {
+            "case": "typed.first",
+            "baseline": 0.2830840094247833,
+            "candidate": 0.25229099264834076,
+            "threshold": 5.283084009424783,
+            "review_required": false
+          },
+          {
+            "case": "typed.deep",
+            "baseline": 0.25391599046997726,
+            "candidate": 0.27529100771062076,
+            "threshold": 5.253915990469977,
+            "review_required": false
+          },
+          {
+            "case": "typed.source",
+            "baseline": 675.8891249919543,
+            "candidate": 685.2332499984186,
+            "threshold": 844.8614062399429,
+            "review_required": false
+          },
+          {
+            "case": "typed.membership",
+            "baseline": 2269.300416999613,
+            "candidate": 2297.414000000572,
+            "threshold": 2836.625521249516,
+            "review_required": false
+          },
+          {
+            "case": "typed.protocol_first",
+            "baseline": 3047.668416998931,
+            "candidate": 3079.5292080001673,
+            "threshold": 3809.585521248664,
+            "review_required": false
+          },
+          {
+            "case": "typed.protocol_deep",
+            "baseline": 2998.641250000219,
+            "candidate": 3013.5857919958653,
+            "threshold": 3748.3015625002736,
+            "review_required": false
+          },
+          {
+            "case": "typed.cell",
+            "baseline": 0.3794169897446409,
+            "candidate": 0.4003750073025003,
+            "threshold": 5.379416989744641,
+            "review_required": false
+          },
+          {
+            "case": "typed.cell_scroll",
+            "baseline": 0.19091699505224824,
+            "candidate": 0.21437500254251063,
+            "threshold": 5.190916995052248,
+            "review_required": false
+          },
+          {
+            "case": "typed.block",
+            "baseline": 0.2531249920139089,
+            "candidate": 0.2195839915657416,
+            "threshold": 5.253124992013909,
+            "review_required": false
+          },
+          {
+            "case": "typed.contains_first",
+            "baseline": 4852.89408400422,
+            "candidate": 4882.332624998526,
+            "threshold": 6066.1176050052745,
+            "review_required": false
+          },
+          {
+            "case": "typed.contains_deep",
+            "baseline": 4812.684374992386,
+            "candidate": 4840.622750009061,
+            "threshold": 6015.855468740483,
+            "review_required": false
+          },
+          {
+            "case": "typed.category",
+            "baseline": 118.10695900931023,
+            "candidate": 118.91179200029,
+            "threshold": 147.6336987616378,
+            "review_required": false
+          },
+          {
+            "case": "typed.empty",
+            "baseline": 0.13012500130571425,
+            "candidate": 0.1221249985974282,
+            "threshold": 5.130125001305714,
+            "review_required": false
+          },
+          {
+            "case": "typed.one",
+            "baseline": 0.1008749968605116,
+            "candidate": 0.10150000161956996,
+            "threshold": 5.100874996860512,
+            "review_required": false
+          },
+          {
+            "case": "typed.detail",
+            "baseline": 0.025999994250014424,
+            "candidate": 0.035707998904399574,
+            "threshold": 5.025999994250014,
+            "review_required": false
+          },
+          {
+            "case": "typed.count_all",
+            "baseline": 17.501790993264876,
+            "candidate": 17.683875004877336,
+            "threshold": 22.501790993264876,
+            "review_required": false
+          },
+          {
+            "case": "typed.count_source",
+            "baseline": 579.818250000244,
+            "candidate": 582.7081659954274,
+            "threshold": 724.772812500305,
+            "review_required": false
+          },
+          {
+            "case": "typed.count_cell",
+            "baseline": 0.1253340014955029,
+            "candidate": 0.11987499601673335,
+            "threshold": 5.125334001495503,
+            "review_required": false
+          },
+          {
+            "case": "typed.cells_first",
+            "baseline": 0.5872079927939922,
+            "candidate": 0.5867080035386607,
+            "threshold": 5.587207992793992,
+            "review_required": false
+          },
+          {
+            "case": "typed.cells_next",
+            "baseline": 0.6952920084586367,
+            "candidate": 0.6811250059399754,
+            "threshold": 5.695292008458637,
+            "review_required": false
+          },
+          {
+            "case": "typed.cells_deep",
+            "baseline": 0.614624994341284,
+            "candidate": 0.6244590040296316,
+            "threshold": 5.614624994341284,
+            "review_required": false
+          },
+          {
+            "case": "typed.filter_preview",
+            "baseline": 649.519667000277,
+            "candidate": 651.8920420057839,
+            "threshold": 811.8995837503462,
+            "review_required": false
+          },
+          {
+            "case": "typed.peak_rss_bytes",
+            "baseline": 3069411328,
+            "candidate": 3069050880,
+            "threshold": 3683293593.6,
+            "review_required": false
+          },
+          {
+            "case": "typed.setup_ms",
+            "baseline": 37489.17762500059,
+            "candidate": 37671.62462499982,
+            "threshold": 46861.47203125074,
+            "review_required": false
+          }
+        ]
+      }
+    }
+  },
+  "evidence_root": "/Users/maxwellsdm/Documents/Codex/disco-workbench-tagging-evidence-2026-10-15",
+  "evidence_sha256": {
+    "followup/frontend.log": "8821544b83259c518a52d52b0a5e31b45aa94fa03cf7075d48e3928b70ba31bf",
+    "followup/python.json": "ddbc43062d25ed3d61cf1405f136d1f5b11d25e8bd78af4b56dc11b1c09f5537",
+    "followup/desktop.json": "93e473b8571183274174aef16274e5b31f2265dad898d358947af557441f49e2",
+    "followup/build.log": "1f1162ba85776b03382e775816c2d5c42290387e32c6c846f53b5bd59a6c6174",
+    "followup/architecture.json": "55ba21e62405708b1ad7bcc2a47a62b9d7a6cfc8b08d9a384b0b1bb540f32f37",
+    "followup/core/benchmark.json": "c58143f004deb0eab1cc34a02d7eaa61c446e284f6b62e71e7692c0673cb8bb7",
+    "followup/core-gate.json": "474014536b32b570fd34d09b9e4e5a1890e60ed1e0b1499290b072472600c95a",
+    "followup/pinned/comparison.json": "9d007bc2bff3a28367708dacbb3f7ef97f8183e7b6ff0217779e5bf1f96685a9",
+    "followup/previous/comparison.json": "ea321e192212ec3c8e1799dd275ac23fbde38fc4d483cf88d912b99e2965771d",
+    "hidden-renewal-red.log": "1cf554f1f955c9c58d9443dba4648495d0cbdb78afc224397c049b58dfb737fb",
+    "hidden-renewal-green.log": "2be48338fb2e8a41c947d65df216c9c9abe623ea3528d79c214ca00292a46d66",
+    "search-followup.log": "46e1c37789c7f1895ec17c455b4ff668d428a0c41550a0b196ff2ad6b8459186"
+  },
+  "packaged_release_gate": {
+    "status": "pending next package assembly",
+    "fixture": "Owned disposable project; preserve user scientific projects.",
+    "checks": [
+      "Verify package runtime source, archive identity, supported runtime and usual release gates.",
+      "Save epoch and cell tags in Workbench list, column and hierarchy views; confirm rows, focus, scroll, highlights and exact selection remain.",
+      "Repeat in View selected; hold/fail renewal to verify old rows stay inert, retry is visible, and membership never widens.",
+      "Hide Workbench while a write is pending; confirm no hidden manifest renewal, then reveal and verify exact selected IDs renew.",
+      "Confirm stale actions refuse and confirmed membership changes still invalidate incompatible presentation."
+    ],
+    "qualification": "Source and disposable-fixture tests passed; no native package tag-save or release qualification claimed."
+  }
+}
