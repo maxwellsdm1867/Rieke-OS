@@ -87,10 +87,41 @@ async function main(){
   return{app_version:version,root_ready:true,isolated_home_and_profile:true,branding:brand};
  });
  await check('explicit update Check returns an honest valid result',async()=>{
+  // Observe the actual updater requests without issuing a probe, reading their
+  // bodies, changing headers/timeouts, or replacing their responses.
+  await application.evaluate(() => {
+   const https=process.getBuiltinModule('node:https'),original=https.get,observations=[];
+   if(globalThis.__smokeUpdateTransport)throw Error('Update transport observer already installed');
+   const observer=function(...args){
+    const request=Reflect.apply(original,this,args),options=args[1];
+    if(options?.headers?.['User-Agent']!=='Rieke-OS-desktop-testing-updater')return request;
+    if(observations.length>=30)return request;
+    const began=Date.now(),row={kind:options.headers.Accept==='application/vnd.github+json'?'release-api':'release-asset'};
+    observations.push(row);
+    const errorRecord=error=>({name:String(error.name||'Error').slice(0,60),
+     code:/^[A-Z0-9_]+$/.test(error.code||'')?error.code:null,
+     updater_timeout:error.message==='Testing update network timeout.'});
+    request.once('response',response=>{
+     row.response_ms=Date.now()-began;row.status_code=response.statusCode;row.headers={};
+     for(const name of ['x-ratelimit-limit','x-ratelimit-remaining','x-ratelimit-reset','x-ratelimit-resource','retry-after','x-github-request-id']){
+      const value=response.headers[name];
+      if(typeof value==='string'&&/^[A-Za-z0-9:._ -]{1,160}$/.test(value))row.headers[name]=value;
+     }
+     response.once('error',error=>{row.response_error=errorRecord(error);});
+     response.once('end',()=>{row.response_ended=true;row.elapsed_ms=Date.now()-began;});
+    });
+    request.once('timeout',()=>{row.request_timeout=true;});
+    request.once('error',error=>{row.request_error=errorRecord(error);row.elapsed_ms=Date.now()-began;});
+    return request;
+   };
+   globalThis.__smokeUpdateTransport={original,observer,observations};https.get=observer;
+  });
+  let status;
+  try{
   await page.getByRole('button',{name:/^App Updates(?: —|$)/}).first().click();const dialog=page.getByRole('dialog',{name:'App Updates',exact:true}),button=dialog.getByRole('button',{name:'Check for updates',exact:true});
   await bounded(button.click({timeout:Math.min(45000,remaining())}),'Explicit update Check');
   // Poll asynchronous IPC explicitly and assert the same completed snapshot.
-  const status=await bounded((async()=>{
+  status=await bounded((async()=>{
    for(;;){
     remaining();
     const snapshot=await page.evaluate(async()=>({status:await window.riekeDesktop.status(),
@@ -102,6 +133,15 @@ async function main(){
     await delay(100);
    }
   })(),'Update Check response');
+  }finally{
+   receipt.update_transport=await application.evaluate(()=>{
+    const https=process.getBuiltinModule('node:https'),state=globalThis.__smokeUpdateTransport;
+    if(!state||https.get!==state.observer)throw Error('Update transport observer ownership changed');
+    https.get=state.original;delete globalThis.__smokeUpdateTransport;
+    return {actual_requests:true,additional_requests:0,response_bodies_read:false,observations:state.observations};
+   });
+   await write();
+  }
   receipt.update_status=status;await write();
   assert.ok(['Current','Available','Deferred','Ready','Downloading','Validating'].includes(status.state),'Unexpected update result: '+JSON.stringify(status));assert.equal(status.installed,manifest.application_version);
   assert.ok(status.available===null||typeof status.available==='string');assert.equal(typeof status.message,'string');
@@ -109,7 +149,7 @@ async function main(){
   receipt.update_connectivity_verified=connected;
   if(!connected)receipt.warnings.push('Update status was handled, but release-feed connectivity/availability was not verified.');
   if(process.env.RIEKE_SMOKE_REQUIRE_UPDATE_CONNECTIVITY==='1')assert.equal(connected,true,'This run requires a successful release-feed check');
-  await dialog.getByRole('button',{name:'Close updates',exact:true}).click();
+  await page.getByRole('dialog',{name:'App Updates',exact:true}).getByRole('button',{name:'Close updates',exact:true}).click();
   return{state:status.state,available:status.available,checked_at:status.checked_at||null,check_error:status.check_error||null,message:status.message,connectivity_verified:connected,download_or_install_not_requested:true};
  });
  const leaf='smoke-'+randomUUID().slice(0,8),projectName='Packaged smoke '+leaf,projectPath=path.join(fixture.projects,leaf);let projectUuid,firstSession;
