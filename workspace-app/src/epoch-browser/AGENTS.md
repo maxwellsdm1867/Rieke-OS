@@ -56,6 +56,21 @@ optional errorStatus with the same keyed error receipt; it grants no freshness.
 Frozen presentation keys never replace candidate-scope, selected-manifest or tree
 revision checks. `candidateContinuity.test.js` covers failure, retry and absence.
 
+With Live metadata off, `MetadataPanel` may preserve the measured tag footprint
+and displayed field catalog for the same explicitly identified frozen cohort,
+focus, selected view and structural revision. Unavailable tag controls unmount;
+the reserved space contains no old command or reader. Retained catalog fields
+are inert display only. Current errors and retry controls remain outside that
+display and outside the scrolling content flow. Changed identity, Live/value
+mode or a fresh empty catalog retires the snapshot. See
+`metadataPresentation.test.js`; native pixel and scroll checks remain separate.
+
+Initial selected-view intent cannot use its parent page's prepared trace offer
+while the selection manifest is pending. An existing selected view may retain
+its own inert display during renewal. The strict capability validator remains
+unchanged; `selectedTraceAdmission.test.js` exercises the real shared trace viewer
+through held acquisition, renewal and membership-change reentry.
+
 ## Factoring decision
 
 These files share a presentation responsibility and change locality. Pure helpers

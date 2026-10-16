@@ -205,7 +205,11 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     row:rows.data?.epochs?.find(row=>row.epoch_uuid===focused),scope:JSON.stringify([projectId,navigationReadKey,readContext]),revision:annotationState.epochRevision,cache:!readContext,paused:readPaused,readContext,reloadRow:loadedRows.reload});
   const epoch=inspection.resource;
   const focusedEpoch=useMemo(()=>(!readContext&&!filters?.metadata_predicate||pageReady&&rows.data?.epochs?.some(row=>row.epoch_uuid===focused))&&epoch.data?.epoch_uuid===focused?annotationState.apply(epoch.data):null,[readContext,filters?.metadata_predicate,pageReady,rows.data,epoch.data,focused,annotationState.apply]);
-  const preparedTraceReadContext=selectPreparedTraceContext({page:rows.data,context:contextTraceReadContext,
+  // Initial selected intent still holds its parent page until the manifest
+  // arrives. That page cannot offer a selected capability. Renewals retain an
+  // existing selected token/page for inert display and keep strict validation.
+  const preparedDisplayPage=viewWorking&&selectedView&&!readContext?.selection_token?null:rows.data;
+  const preparedTraceReadContext=selectPreparedTraceContext({page:preparedDisplayPage,context:contextTraceReadContext,
     selected:!!selectedView||!!readContext?.selection_token,projectUuid:projectId,protocolUuid:id,
     candidateUuid:readContext?.root?.split('/').at(-1)});
   // Captured display rows belong to the capability, independent of annotation
@@ -447,6 +451,12 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     if(onChange)onChange({kind:'annotations',protocolId:id,...(safe?{origin:annotationOrigin,confirmed}:{})});
     else{epoch.reload();loadedRows.reload();}
   };
+  const sidebarFrozenScope=frozenTreePresentationScope({projectId,protocolId:id,readContext,filters,splits:''});
+  const sidebarSelectedProof=!readContext?.selection_token||typeof readContext.selection_view_key==='string'&&!!readContext.selection_view_key.trim();
+  const sidebarPresentation=sidebarFrozenScope&&sidebarSelectedProof&&focused&&!inspection.live?{
+    key:JSON.stringify([sidebarFrozenScope,focused,focusCell,cellScope,cellTagRequest?.cell_uuid??null,structureRevision]),
+    blocked:readPaused||!pageReady||!focusedEpoch||epoch.loading||!!epoch.error,
+  }:null;
   const tagEntry=focusedEpoch&&<AnnotationTags composer={{values:annotationDrafts,onChange:rememberAnnotationDraft}} reconcileReceipt={!!onChange} epoch={focusedEpoch} revision={revision} disabled={designBlocked||busy||((readContext||filters?.metadata_predicate)&&!pageReady)||epoch.loading||!!pendingNavigation} onChange={annotationChanged} onFilter={onTagFilter} focusRequest={tagFocus} targetScope={cellTagRequest?'cell':!readContext&&targets.length?'selected':'epoch'} epochFocusRequest={epochTagFocus} onNavigateEpoch={navigateAndTag} selectedEpochs={readContext?[]:targets} tools={!cellTagRequest&&!targets.length&&<TagExchangeControls epoch={focusedEpoch} disabled={designBlocked||busy} onChanged={annotationChanged}/>}>{!readContext&&<EpochTags value={tag} onValue={setTag} onAdd={value=>curate({tags_add:[value]})} onRemove={value=>curate({tags_remove:[value]},'focused')} selectedTags={focusedEpoch.curation?.tags||[]} busy={designBlocked||busy||!pageReady} scope={`dataset · ${actionScope}`} revision={revision}/> }</AnnotationTags>;
   const highlightedSelected=new Set(targets);
   const highlightTools=(locked=false)=>readContext&&<EpochHighlightTools count={highlightedEpochs.length} allSelected={highlightedEpochs.length>0&&highlightedEpochs.every(uuid=>highlightedSelected.has(uuid))} disabled={locked||busy||readPaused||!!draftSelection?.disabled||!cellsReady} onSelect={()=>applyHighlighted(true)} onDeselect={()=>applyHighlighted(false)}/>;
@@ -496,7 +506,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
           <button disabled={designBlocked||busy} onClick={()=>curate({review_state:!targets.length&&focusedEpoch.curation?.review_state==='approved'?'unreviewed':'approved'})}><Eye size={14}/>
             {targets.length?`Mark ${actionScope} reviewed`:focusedEpoch.curation?.review_state==='approved'?'Clear focused epoch review marker':'Mark focused epoch reviewed'}
           </button>
-        </details></>)} metadata={{loadingPolicy:inspection.metadata,selectionCell:cellTagRequest,selectedEpochs:readContext?[]:targets,onClearSelection:()=>selectTargets([]),catalog:metadataCatalog,onClose:()=>toggleMetadata(false),connections:inspection.metadata.values.data&&<EpochConnections epoch={inspection.metadata.values.data} protocolName={humanize(protocol.definition?.name)}/>}}/>;
+        </details></>)} metadata={{presentation:sidebarPresentation,loadingPolicy:inspection.metadata,selectionCell:cellTagRequest,selectedEpochs:readContext?[]:targets,onClearSelection:()=>selectTargets([]),catalog:metadataCatalog,onClose:()=>toggleMetadata(false),connections:inspection.metadata.values.data&&<EpochConnections epoch={inspection.metadata.values.data} protocolName={humanize(protocol.definition?.name)}/>}}/>;
 }
 
 export default function Inspector(props){return <NavigationLoadingProvider><InspectorContent {...props}/></NavigationLoadingProvider>;}

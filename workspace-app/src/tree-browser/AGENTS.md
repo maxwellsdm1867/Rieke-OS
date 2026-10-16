@@ -29,6 +29,13 @@ Paging changes presentation only: pinned rows never replace page members and gro
 
 KEEP tree-selection, tree-ancestors, protocol-tree-layout and shared request/cache owners separate: selection ordering, freshness witnesses and cache admission must not migrate into view state. Terminal epoch membership remains the reader authority.
 
+Frozen initial navigation restores destinations, never saved revision authority.
+An anchor obtains its current target and ancestor receipts; a path-only return
+obtains a fresh root before continuing. Explicit `expectedRevision` still fences
+the read, including when a saved presentation belongs to another selected view.
+`frozenColumnMount.test.js` checks held reads, selected anchors, path continuation,
+revision refusal and the unchanged live-navigation contract.
+
 ## Factoring decision
 
 These files share a presentation responsibility and change locality. Pure helpers

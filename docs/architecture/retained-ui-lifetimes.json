@@ -959,7 +959,7 @@
       ]
     },
     "src/epoch-browser/ui/Inspector.jsx": {
-      "fingerprint": "e77f60a44d68f4870df609050343855688d95f399551f976f2697f2dd310194f",
+      "fingerprint": "a091d8c836c5173a2b7fc262654ca68a019d2767d1bb7b0170543c430ab4525d",
       "sites": [
         {
           "owner": "InspectorContent",
@@ -1088,7 +1088,7 @@
         }
       ],
       "lifetime": "focused-display-and-fresh-curation",
-      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal.",
+      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal. Independently reviewed initial selected-manifest acquisition withholds only the parent page offer; same-selected renewal keeps its own inert trace and strict capability validation is unchanged. Frozen sidebar presentation keys include owner, cohort, focus, cell selection and structure revision, excluding Live metadata and annotation-dependent or unproven selected scopes.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
@@ -1098,7 +1098,9 @@
         "src/protocolBrowseEntry.test.js",
         "src/workbenchSessionLifecycle.test.js",
         "src/candidateContinuity.test.js",
-        "src/hierarchyRetention.test.js"
+        "src/hierarchyRetention.test.js",
+        "src/epoch-browser/selectedTraceAdmission.test.js",
+        "src/epoch-browser/metadataPresentation.test.js"
       ]
     },
     "src/epoch-browser/ui/InspectorActions.jsx": {
@@ -1148,13 +1150,20 @@
       ]
     },
     "src/epoch-browser/ui/MetadataPanel.jsx": {
-      "fingerprint": "ca112d20f0d3f4eb86e693a927cdff5587261c1589b36b18597a8a439531d966",
-      "sites": [],
+      "fingerprint": "ff1884248ff3457881a7f1ddaeb4c2f048ad8b245374b9838f25e5384cd31c54",
+      "sites": [
+        {
+          "owner": "MetadataPanel",
+          "kind": "useLayoutEffect",
+          "fingerprint": "74793bcdeffe04a14ecd22b0cc82513f85802235d78989200bcb4358e3f62334"
+        }
+      ],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Independently reviewed same-frozen-sidebar display boundary measures the current direct tag section and disconnects its ResizeObserver on lifetime changes. Unavailable tag components unmount; an empty measured slot preserves geometry. Only field catalog JSON is retained for inert display, never read or mutation authority; changed scope/focus/structure or Live/value mode retires it synchronously. Current error/retry controls remain outside inert content and scrolling flow, and fresh empty catalogs replace old display.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/epoch-browser/metadataPresentation.test.js"
       ]
     },
     "src/epoch-browser/ui/MetadataTable.jsx": {
@@ -3381,7 +3390,7 @@
       ]
     },
     "src/tree-browser/ui/ColumnTree.jsx": {
-      "fingerprint": "a74a1921fc2755b8d9ae37a63aa3609a404d0f2ea98f33c94ffd6ce78f049b39",
+      "fingerprint": "6577db04b72bb9198926dadab221a6fe217a70e04fbd67db84d3d1dc26da1f87",
       "sites": [
         {
           "owner": "ColumnTree",
@@ -3396,7 +3405,7 @@
         {
           "owner": "ColumnTree",
           "kind": "useEffect",
-          "fingerprint": "b5482a2ac75361da4ad60752d8212e058f1a298f299339c3b9f5f597aa3e6b71"
+          "fingerprint": "6a34f40159431454b77b6771fffd90e8422050c8495da6e8b58a26d3d53bf693"
         },
         {
           "owner": "ColumnTree",
@@ -3425,14 +3434,15 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads. Explicit owner read pause blocks gestures and retires pending root or target reads while retaining inert presentation; fresh resume revalidates all authority. Independently reviewed trailing preview retention requires the same committed frozen presentation scope, selected UUID, pane key and terminal-page membership; the existing flex section remains inert through refresh and retry. Changed actor/cohort/selected view/focus and unrelated branch intent cannot borrow it; frozen freshness also checks the loaded scope before passive renewal.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads. Explicit owner read pause blocks gestures and retires pending root or target reads while retaining inert presentation; fresh resume revalidates all authority. Independently reviewed trailing preview retention requires the same committed frozen presentation scope, selected UUID, pane key and terminal-page membership; the existing flex section remains inert through refresh and retry. Changed actor/cohort/selected view/focus and unrelated branch intent cannot borrow it; frozen freshness also checks the loaded scope before passive renewal. Independently reviewed frozen initial navigation treats saved revisions as history even when presentation scopes differ: fresh anchor or root establishes continuation authority, while explicit expectedRevision and live-navigation behavior remain unchanged.",
       "tests": [
         "src/inspectionTreeLifecycle.test.js",
         "src/hierarchyRetention.test.js",
         "src/treeTagCoverageWorkflow.test.js",
         "src/treeCombinedPresentation.test.js",
         "src/treeCellIdentityIcons.test.js",
-        "src/tree-ancestors/frozenColumnReads.test.js"
+        "src/tree-ancestors/frozenColumnReads.test.js",
+        "src/tree-browser/frozenColumnMount.test.js"
       ]
     },
     "src/tree-browser/ui/HierarchyTree.jsx": {

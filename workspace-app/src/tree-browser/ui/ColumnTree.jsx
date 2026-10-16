@@ -113,6 +113,10 @@ export default function ColumnTree(props){
     if(!active||props.readPaused){pending.current=true;setState(old=>({...old,loading:true}));return;}
     const start=!restored.current&&initialScope.current===scopeKey?treeNavigationStart(saved.current,splits):null;
     const navigation=start?{...start,columnPositions:saved.current?.columnPositions||[],scrollLeft:saved.current?.scrollLeft??null}:{reset:true};
+    // Saved frozen navigation is a destination hint, even when its presentation
+    // identity differs. Current context/expectedRevision still fence the read;
+    // the fresh anchor or root supplies any subsequent continuation revision.
+    if(readContext&&start)Object.assign(navigation,{reset:true,revisionOverride:null,freshContinuation:true});
     // Mount/presentation changes follow the externally focused epoch. Ordinary
     // branch clicks below never trigger this selection effect again.
     if((initialScope.current===scopeKey||props.presentationActivation!==undefined)&&latestSelected.current)navigation.anchor=latestSelected.current;
