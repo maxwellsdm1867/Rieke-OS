@@ -68,7 +68,7 @@ export default function EpochViewer({className='epoch-inspector-mode',ariaLabel=
     heading={shownEpoch&&<EpochDetailHeading epoch={shownEpoch} disabled={detailDisabled||!epoch||resource.loading} onQC={onQC}/>}
     navigation={navigation&&<EpochNavigation {...navigation}/>}
     curation={<StableContent {...resource} scope={curationScope} data={epoch}>{curation}</StableContent>}/>:<StableContent {...displayResource} data={shownEpoch}>{!readContext&&!designMode&&targets.length?<SelectionOverview count={targets.length}/>:shownEpoch?<>
-    {designMode?<div className="tree-preview-identity"><strong>{datedCellLabel(epoch)}</strong><span>Epoch {epoch.epoch_number??'—'} · {epoch.start_time?.split(/[T ]/)[1]?.slice(0,8)||'Time not recorded'}</span></div>:<EpochDetailHeading epoch={shownEpoch} disabled={detailDisabled||!epoch||resource.loading} onQC={onQC}/>}
+    {designMode?<div className="tree-preview-identity"><strong>{datedCellLabel(shownEpoch)}</strong><span>Epoch {shownEpoch.epoch_number??'—'} · {shownEpoch.start_time?.split(/[T ]/)[1]?.slice(0,8)||'Time not recorded'}</span></div>:<EpochDetailHeading epoch={shownEpoch} disabled={detailDisabled||!epoch||resource.loading} onQC={onQC}/>}
     {navigation&&!designMode&&<EpochNavigation {...navigation}/>}
     <Trace viewPreference={tracePreference} onViewPreference={setTracePreference} epoch={traceReadContext===null?null:shownEpoch} revision={traceRevision} readContext={traceReadContext===undefined?readContext:traceReadContext}/>
     {independentTrace?<StableContent {...resource} scope={curationScope} data={epoch}>{curation}</StableContent>:curation}

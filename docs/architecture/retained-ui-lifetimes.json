@@ -881,10 +881,10 @@
       ]
     },
     "src/epoch-browser/ui/EpochViewer.jsx": {
-      "fingerprint": "77fa9b91c579cb7b9bc81f3b0a1a68328d948cf1f1bf52810bcff0eee0cfcc6c",
+      "fingerprint": "64fe782ff0b72f0883528ff0db2439364925352e52e047dd4336c19b23125455",
       "sites": [],
       "lifetime": "display-projection",
-      "reason": "Separately admitted trace row/context reaches the shared viewer without granting curation from display state. The prepared-only empty shell retains inert, hidden presentation with no sample demand; current focus supplies the exact epoch/context, curation remains independently scoped, and SelectionOverview precedence is preserved.",
+      "reason": "Separately admitted trace row/context reaches the shared viewer without granting curation from display state. The prepared-only empty shell retains inert, hidden presentation with no sample demand; current focus supplies the exact epoch/context, curation remains independently scoped, and SelectionOverview precedence is preserved. The Edit Tree display heading uses its admitted display row during null live-authority renewal; stale mutation controls remain absent or inert until fresh authority returns.",
       "tests": [
         "src/epoch-browser/inspectionMetadata.test.js",
         "src/presentationSessionsApp.test.js",
