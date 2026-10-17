@@ -78,3 +78,51 @@ export function compactWorkbenchSelections(checkpoint,{selectionBytes=512*1024}=
   }
   return result;
 }
+
+// A saved draft still owns an operation to recover or an offer to complete:
+// an unconfirmed/pending acceptance, an export in progress, or an accepted
+// receipt whose additions were not yet exported.
+export function workbenchDraftNeedsRecovery(draft){
+  if(!draft||typeof draft!=='object')return false;
+  const exportState=draft.exportState;
+  return !!(draft.unconfirmed||draft.acceptPending||exportState?.pending
+    ||exportState&&!exportState.exported&&(exportState.prepared||exportState.acceptOperation)
+    ||draft.receipt&&!exportState?.exported);
+}
+// Each cumulative preparation adds a scope and draft for its candidate. A
+// replacement candidate never inherits their selection, so only the current
+// candidate and candidates that still need recovery remain reachable.
+export function pruneCumulativeSession(cumulative){
+  if(!cumulative||typeof cumulative!=='object'||Array.isArray(cumulative))return cumulative;
+  const drafts=cumulative.drafts&&typeof cumulative.drafts==='object'?cumulative.drafts:{},current=cumulative.prepared?.candidate_revision_uuid;
+  const keep=key=>key===current||workbenchDraftNeedsRecovery(drafts[key]);
+  const pick=values=>values&&typeof values==='object'&&!Array.isArray(values)?Object.fromEntries(Object.entries(values).filter(([key])=>keep(key))):values;
+  return {...cumulative,drafts:pick(cumulative.drafts),scopes:pick(cumulative.scopes)};
+}
+function sessionNeedsRecovery(value){
+  const workbench=value?.workbench;
+  if(!workbench||typeof workbench!=='object')return false;
+  return [workbench.drafts,workbench.cumulative?.drafts].some(drafts=>drafts&&typeof drafts==='object'
+    &&Object.values(drafts).some(workbenchDraftNeedsRecovery));
+}
+const checkpointBytes=value=>new TextEncoder().encode(JSON.stringify(value)).length;
+// The desktop draft store refuses checkpoints over 2 MiB, and merge submission
+// requires a saved checkpoint. Keep it bounded: prune unreachable cumulative
+// candidates, compact selections, then forget the oldest back/forward view
+// snapshots. The current route, each protocol's latest view and every session
+// that still owns recovery state are never dropped.
+export function compactWorkspaceCheckpoint(checkpoint,{historyBytes=1536*1024,selectionBytes}={}){
+  const prune=value=>value?.workbench?.cumulative?{...value,workbench:{...value.workbench,cumulative:pruneCumulativeSession(value.workbench.cumulative)}}:value;
+  const pruned={...checkpoint};
+  for(const field of ['sessions','protocolSessions'])if(Array.isArray(checkpoint[field]))pruned[field]=checkpoint[field].map(([key,value])=>[key,prune(value)]);
+  const result=compactWorkbenchSelections(pruned,selectionBytes===undefined?{}:{selectionBytes});
+  if(!Array.isArray(result.sessions)||checkpointBytes(result)<=historyBytes)return result;
+  const current=result.route?.key,sessions=[];
+  // Each dropped entry also removes its separating comma.
+  let total=checkpointBytes(result),omitted=0;
+  for(const entry of result.sessions){
+    if(total>historyBytes&&entry[0]!==current&&!sessionNeedsRecovery(entry[1])){total-=checkpointBytes(entry)+1;omitted++;}
+    else sessions.push(entry);
+  }
+  return omitted?{...result,sessions,history_sessions_omitted:(result.history_sessions_omitted||0)+omitted}:result;
+}

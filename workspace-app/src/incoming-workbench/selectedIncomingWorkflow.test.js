@@ -26,3 +26,35 @@ test('disk checkpoint omits oversized Workbench selections but preserves live UU
  assert.ok(JSON.stringify({...result,unrelated:null}).length<2*1024*1024);
  assert.equal(compactWorkbenchSelections({sessions:[['s',{workbench:{drafts:{c:{selected:['one']}}}}]]}).sessions[0][1].workbench.drafts.c.selected[0],'one');
 });
+
+test('checkpoint prunes unreachable cumulative candidates but keeps current and recovery candidates',async()=>{
+ const {pruneCumulativeSession,workbenchDraftNeedsRecovery}=await import('./selectedIncomingWorkflow.js');
+ const scope=id=>({candidate_revision_uuid:id,context:{protocol:{padding:'x'.repeat(3000)}}});
+ const drafts={current:{selected:['a']},stale:{selected:['b']},pending:{acceptPending:true,operation:'op-1'},unconfirmed:{unconfirmed:true,operation:'op-2'},
+  receipt:{receipt:{event_uuid:'e'}},exported:{receipt:{event_uuid:'f'},exportState:{exported:true}},exporting:{exportState:{pending:true}}};
+ const scopes=Object.fromEntries(Object.keys(drafts).map(key=>[key,scope(key)]));
+ const pruned=pruneCumulativeSession({prepared:scope('current'),drafts,scopes,other:'kept'});
+ assert.deepEqual(Object.keys(pruned.drafts).sort(),['current','exporting','pending','receipt','unconfirmed']);
+ assert.deepEqual(Object.keys(pruned.scopes).sort(),['current','exporting','pending','receipt','unconfirmed']);
+ assert.equal(pruned.drafts.pending,drafts.pending);assert.equal(pruned.other,'kept');
+ assert.equal(workbenchDraftNeedsRecovery(drafts.stale),false);assert.equal(workbenchDraftNeedsRecovery(drafts.exported),false);
+ assert.equal(pruneCumulativeSession(null),null);
+});
+
+test('oversized checkpoints drop oldest history views but never current, latest or recovery sessions',async()=>{
+ const {compactWorkspaceCheckpoint}=await import('./selectedIncomingWorkflow.js');
+ const view=(n,extra={})=>({tab:'workbench',padding:'v'.repeat(20000),n,...extra});
+ const recovery=view('recovery',{workbench:{drafts:{c:{unconfirmed:true,operation:'op'}}}});
+ const sessions=[['old-recovery',recovery],...Array.from({length:120},(_,i)=>[`h${i}`,view(i)]),['current',view('current')]];
+ const checkpoint={route:{key:'current',page:'protocol',protocol:'p'},sessions,protocolSessions:[['p',view('latest')]],sourceMerge:{operation:'kept'}};
+ const result=compactWorkspaceCheckpoint(checkpoint,{historyBytes:400*1024});
+ const keys=result.sessions.map(([key])=>key);
+ assert.ok(new TextEncoder().encode(JSON.stringify(result)).length<=400*1024);
+ assert.ok(keys.includes('current')&&keys.includes('old-recovery'));
+ assert.equal(keys.at(-1),'current');assert.ok(keys.includes('h119'));assert.ok(!keys.includes('h0'),'oldest history goes first');
+ assert.equal(result.history_sessions_omitted,120-keys.filter(key=>key.startsWith('h')).length);
+ assert.deepEqual(result.protocolSessions,checkpoint.protocolSessions);assert.equal(result.sourceMerge,checkpoint.sourceMerge);
+ assert.equal(checkpoint.sessions.length,122,'live history is not mutated');
+ const small={route:{key:'a'},sessions:[['a',view('a')]],protocolSessions:[]};
+ assert.deepEqual(compactWorkspaceCheckpoint(small),small);
+});
