@@ -4,7 +4,8 @@ import EpochViewer from './EpochViewer.jsx';
 import {NavigationLoadingProvider} from '../../components/NavigationLoading.jsx';
 import {advanceEpochIntent,epochIntentAt,epochAtIntent} from '../epochNavigationIntent.js';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {applyAnnotationReceipts,mergeAnnotationReceipts} from '../../annotations/annotationReceipts.js';
+import {tagStore} from '../../annotations/tagStore.js';
+import {useDeferredTagVersion} from '../../annotations/useTagStore.js';
 import {GitBranch,ListFilter} from 'lucide-react';
 import {useEpochPrefetch,humanize} from '../../api.js';
 import {useEpochInspection} from '../useEpochInspection.js';
@@ -32,7 +33,8 @@ function MatchingEpochsContent({projectId=null,designMode=false,builder=null,col
   const [treeOpen,setTreeOpen]=useState(saved?.treeOpen??true),[treeMode,setTreeMode]=useState(saved?.treeMode??false);
   const [metadataOpen,setMetadataOpen]=useState(()=>{try{const value=localStorage.getItem('workspace.inspector.metadata');return value===null?window.innerWidth>=1350:value==='true';}catch{return true;}});
   const [cellTagRequest,setCellTagRequest]=useState(null);
-  const [tagFocus,setTagFocus]=useState(0),[epochTagFocus,setEpochTagFocus]=useState(0),[annotationRevision,setAnnotationRevision]=useState(0),[annotationNotice,setAnnotationNotice]=useState(''),[receipts,setReceipts]=useState(()=>new Map());
+  const [tagFocus,setTagFocus]=useState(0),[epochTagFocus,setEpochTagFocus]=useState(0),[annotationRevision,setAnnotationRevision]=useState(0),[annotationNotice,setAnnotationNotice]=useState('');
+  const tagVersion=useDeferredTagVersion();
   const [width,setWidth]=useState(1200),[sizes,setSizes]=useState({});
   const layout=useRef(null),callbacks=useRef({onSession});callbacks.current={onSession};
   const pane=inspectorPaneSizes(width,sizes,treeOpen,!designMode&&metadataOpen);
@@ -51,7 +53,7 @@ function MatchingEpochsContent({projectId=null,designMode=false,builder=null,col
   const inPage=currentPage&&page.data.epochs.some(row=>row.epoch_uuid===focused);
   const detailRevision=`${preview.tree_revision}:${annotationRevision}`;
   const inspection=useEpochInspection({focused,path:inPage?`/epochs/${focused}`:null,row:inPage?page.data.epochs.find(row=>row.epoch_uuid===focused):null,scope:JSON.stringify([source,filterRevision]),revision:detailRevision,reloadRow:page.reload});
-  const epoch=inspection.resource,detail=useMemo(()=>inPage&&epoch.data?.epoch_uuid===focused?applyAnnotationReceipts(epoch.data,receipts):null,[inPage,epoch.data,focused,receipts]);
+  const epoch=inspection.resource,detail=useMemo(()=>inPage&&epoch.data?.epoch_uuid===focused?tagStore.apply(epoch.data):null,[inPage,epoch.data,focused,tagVersion]);
   const index=page.data?.epochs.findIndex(row=>row.epoch_uuid===focused)??-1;
   useEpochPrefetch(inPage&&!epoch.loading&&index>=0?epochPrefetchPaths(page.data.epochs,index,wholeTracePrefetchPath,{progressive:true}):[],detailRevision,180,{traces:true,traceOnly:true,progressive:true,concurrency:2});
   function selectEpoch(uuid){setCellTagRequest(null);toggleMetadata(true);navigationIntent.current=null;setFocused(uuid);if(!page.data?.epochs.some(row=>row.epoch_uuid===uuid))setRequest({anchorUuid:uuid});}
@@ -64,7 +66,7 @@ function MatchingEpochsContent({projectId=null,designMode=false,builder=null,col
   }
   function toggleMetadata(value){setMetadataOpen(value);try{localStorage.setItem('workspace.inspector.metadata',String(value));}catch{}}
   function openTags(){if(!focused&&targets.length)selectEpoch(targets[0]);toggleMetadata(true);setTagFocus(value=>value+1);}
-  function annotationsChanged(result,confirmed){if(confirmed)setReceipts(previous=>mergeAnnotationReceipts(previous,confirmed));else{epoch.reload();setAnnotationRevision(value=>value+1);}setAnnotationNotice(onAnnotationsChanged?'':'Tags saved. Refresh predicate results to re-evaluate tag conditions.');onAnnotationsChanged?.(result,confirmed);}
+  function annotationsChanged(result,confirmed){if(!confirmed){epoch.reload();setAnnotationRevision(value=>value+1);}setAnnotationNotice(onAnnotationsChanged?'':'Tags saved. Refresh predicate results to re-evaluate tag conditions.');onAnnotationsChanged?.(result,confirmed);}
   const tagEntry=detail&&<AnnotationTags reconcileReceipt refreshWithEpoch composer={{values:annotationDrafts,onChange:rememberAnnotationDraft}} epoch={detail} revision={detailRevision} disabled={!currentPage||epoch.loading} selectedEpochs={targets} focusRequest={tagFocus} targetScope={cellTagRequest?'cell':targets.length?'selected':'epoch'} epochFocusRequest={epochTagFocus} onNavigateEpoch={direction=>{move(direction);setEpochTagFocus(value=>value+1);}} onChange={annotationsChanged} onFilter={onTagFilter} tools={!cellTagRequest&&!targets.length&&<TagExchangeControls epoch={detail} onChanged={annotationsChanged} disabled={!currentPage||epoch.loading}/>}/>;
   const detailLoading=!!focused&&!page.error&&!epoch.error&&!detail;
   return <EpochViewer tracePreference={tracePreference} onTracePreference={setTracePreference} designMode={designMode} builder={builder} columnTree={designMode?{...columnTree,onAnnotationsChanged:annotationsChanged,actionsDisabled:filterDisabled,inclusionForEpoch,onToggleInclusion,cells,selectedEpochs:targets,setSelectedEpochs:setTargets,selected:focused,onSelectEpoch:selectEpoch}:null} viewFilters={viewFilters} onViewFilters={onViewFilters} filterRevision={filterRevision} filterDisabled={filterDisabled} className={designMode?'tree-design matching-epochs':'epoch-inspector-mode matching-epochs'} ariaLabel="Matching epoch inspection" onKeyDown={event=>{if(designMode||!focused)return;const direction=epochShortcutDirection(event);if(direction){event.preventDefault();event.stopPropagation();event.currentTarget.focus({preventScroll:true});move(direction);}}}

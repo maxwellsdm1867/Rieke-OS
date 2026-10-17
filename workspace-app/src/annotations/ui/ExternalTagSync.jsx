@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {api,time} from "../../api.js";
 import {epochResourceCache} from "../../resourceCache.js";
+import {tagStore} from "../tagStore.js";
 import {startExternalTagMonitor} from '../externalTagMonitor.js';
 import {Tags,AlertCircle,CheckCircle2,RefreshCw} from 'lucide-react';
 
@@ -11,7 +12,7 @@ export default function ExternalTagSync({enabled,onChange}){
   useEffect(()=>{
     if(!enabled)return;
     const control=startExternalTagMonitor({scan:()=>api('/annotations/scan',{method:'POST',body:{}}),
-      onChange:()=>{epochResourceCache.invalidate();changed.current?.();},
+      onChange:()=>{epochResourceCache.invalidate();tagStore.invalidate();changed.current?.();},
       onStatus:result=>{setStatus(result);setError('');},onError:setError,
       visible:()=>document.visibilityState!=='hidden'});
     monitor.current=control;

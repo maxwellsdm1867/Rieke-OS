@@ -101,7 +101,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const presentationScope=frozenPresentationScope(readContext,id,protocolSearch);
   const preserveCandidateView=typeof readContext?.cohort_key==='string'&&!!readContext.cohort_key;
   function selectTargets(value){const next=typeof value==='function'?value(targets):value;if(!incomingReadContext?.selection_manifests&&next.length>1000){setError('Select at most 1000 epochs.');return;}setTargets(next);onSelectionChange?.([...next]);if(selectedView)setSelectedView(null);}
-  const annotationState=useAnnotationReceipts({revision,structureRevision,change:annotationChange,origin:annotationOrigin,stableAuthority:protocol?.query_revision_contract==='protocol-state-v4',scope:JSON.stringify([readRoot,id,protocolSearch,focusCell]),filters});
+  const annotationState=useAnnotationReceipts({revision,stableAuthority:protocol?.query_revision_contract==='protocol-state-v4',filters});
   const pageRevision=annotationState.authorityRevision;
   const treeIntentScope=incomingTreeSelectionScope({projectId,protocolId:id,readContext,filters,splits,revision:pageRevision});
   const highlightScope=JSON.stringify([projectId,frozenTreePresentationScope({projectId,protocolId:id,readContext,filters,splits})||treeIntentScope,readContext?.actor,splits,designMode,treeMode]);

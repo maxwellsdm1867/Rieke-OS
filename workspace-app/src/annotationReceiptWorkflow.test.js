@@ -73,7 +73,7 @@ test('twenty successive direct tags use confirmed per-profile revisions without 
   }finally{await h.close();}
 });
 
-test('receipt eviction reloads the focused target before the next direct edit',async()=>{
+test('many bulk receipts keep the focused target exact for the next direct edit without a reread',async()=>{
   const h=await createWorkflowHarness({total:100});
   try{
     await h.mount();await ready(h);await save(h,'focused first');
@@ -86,7 +86,8 @@ test('receipt eviction reloads the focused target before the next direct edit',a
     assert.equal(h.viewer.epoch.epoch_uuid,'epoch-0');
     assert.equal(h.viewer.epoch.annotations.revisions.epoch.author,1);
     assert.deepEqual(h.viewer.epoch.annotations.epoch_tags.map(chip=>chip.tag),['focused first']);
-    assert.ok(h.fixture.requests.slice(before).some(row=>row.path==='/epochs/epoch-0?protocol_uuid=protocol-A'),'Eviction must refresh the old focused metadata base');
+    // The tag store retains confirmed targets (pending intent is never evicted), so no metadata reread is needed.
+    assert.equal(h.fixture.requests.slice(before).filter(row=>row.path.startsWith('/epochs/epoch-0')).length,0);
     await h.act(()=>h.viewer.treePane.listProps.setTargets([]));await ready(h);
     await save(h,'focused second');
     const mutation=h.fixture.requests.filter(row=>row.path==='/annotations').at(-1);
@@ -144,5 +145,26 @@ for(const v4 of [true,false])test(`${v4?'protocol-state-v4':'protocol-state-v3'}
     assert.ok(h.viewer.epoch.annotations.epoch_tags.some(chip=>chip.tag==='quick'));
     await filterRules(h,'any',[{scope:'epoch',value:'quick'}]);
     assert.equal(h.viewer.navigation.total,1,'The new tag filters immediately');
+  }finally{await h.close();}
+});
+
+test('a tag is shown pending before its write returns, confirms in place, and rolls back on conflict',async()=>{
+  const h=await createWorkflowHarness({total:20});h.fixture.v4=true;
+  let hold=null;h.fixture.delay=record=>record.path==='/annotations'&&hold?hold:0;
+  const chips=()=>h.root.findAll(node=>typeof node.props?.className==='string'&&node.props.className.startsWith('annotation-chip epoch')).map(node=>({tag:node.findByType('strong').children.join(''),pending:node.props.className.includes(' pending')}));
+  try{
+    await h.mount();await ready(h);await h.waitFor(()=>!h.viewer.treePane.listProps.disabled&&!!h.viewer.epoch);
+    hold=400;
+    await h.act(()=>input(h).props.onChange({target:{value:'fast'}}));
+    await h.act(()=>input(h).parent.props.onSubmit({preventDefault(){}}));
+    assert.deepEqual(chips(),[{tag:'fast',pending:true}],'Visible in the same commit as the submit, before the write returns');
+    assert.equal(input(h).props.value,'','Input clears at once for the next tag');
+    await h.waitFor(()=>chips().length===1&&!chips()[0].pending);
+    hold=0;h.fixture.annotationVersions.set('epoch:epoch-0',99); // force a revision conflict
+    await h.act(()=>input(h).props.onChange({target:{value:'conflicted'}}));
+    await h.act(()=>input(h).parent.props.onSubmit({preventDefault(){}}));
+    await h.waitFor(()=>!chips().some(chip=>chip.tag==='conflicted'));
+    assert.deepEqual(chips(),[{tag:'fast',pending:false}]);
+    assert.match(h.root.findByProps({className:'annotation-error'}).children.flat().join(''),/conflict/i);
   }finally{await h.close();}
 });

@@ -1,35 +1,28 @@
-import {useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
-import {annotationFilterNeedsRefresh,mergeAnnotationReceipts,applyAnnotationReceipts} from './annotationReceipts.js';
+import {useCallback,useEffect,useState} from 'react';
+import {annotationFilterNeedsRefresh} from './annotationReceipts.js';
+import {tagStore} from './tagStore.js';
+import {useDeferredTagVersion,useTagGeneration} from './useTagStore.js';
 
 export const ANNOTATION_AUTHORITY_IDLE_MS=75;
-export function useAnnotationReceipts({revision,structureRevision,change,origin,scope,filters,stableAuthority=false}){
-  const committed=useRef({revision,structureRevision,epochRevision:revision,authorityRevision:revision,scope,store:new Map()});
-  const [flushed,setFlushed]=useState(revision);
-  const owned=change?.revision===revision&&change.origin===origin&&change.confirmed?.version===1;
-  const snapshot=useMemo(()=>{
-    const before=committed.current;
-    if(before.revision===revision&&before.structureRevision===structureRevision)return before;
-    if(owned&&before.structureRevision===structureRevision){
-      const store=mergeAnnotationReceipts(before.store,change.confirmed);
-      // An evicted receipt may be the only fresh copy of the focused target.
-      // Reload its metadata before permitting another edit on that old base.
-      const evicted=[...before.store.keys()].some(key=>!store.has(key));
-      return {...before,revision,epochRevision:evicted?revision:before.epochRevision,store};
-    }
-    return {revision,structureRevision,epochRevision:revision,authorityRevision:revision,scope,store:new Map()};
-  },[revision,structureRevision,owned,change,scope]);
-  // When page authority omits shared tags (protocol-state-v4), a confirmed own
-  // epoch-tag receipt changes no page or tree token: keep current reads and
-  // apply the receipt in place. Cell tags (shown in the cell list), tag-
-  // dependent filters and other changes still renew.
-  const kept=owned&&stableAuthority&&change.confirmed.targets.every(target=>target.target_kind==='epoch')&&
-    !annotationFilterNeedsRefresh(filters)&&committed.current.scope===scope;
-  const immediate=!kept&&(!owned||annotationFilterNeedsRefresh(filters)||committed.current.scope!==scope||flushed===revision);
-  const prior=committed.current.revision===revision?committed.current.authorityRevision:snapshot.authorityRevision;
-  const authorityRevision=immediate?revision:prior,dirty=!kept&&authorityRevision!==revision;
-  useLayoutEffect(()=>{committed.current={...snapshot,authorityRevision,scope};},[snapshot,authorityRevision,scope]);
-  useEffect(()=>{if(dirty){const timer=setTimeout(()=>setFlushed(revision),ANNOTATION_AUTHORITY_IDLE_MS);return()=>clearTimeout(timer);}},[dirty,revision]);
-  const flushAuthority=useCallback(()=>setFlushed(revision),[revision]);
-  const apply=useCallback(epoch=>applyAnnotationReceipts(epoch,snapshot.store),[snapshot.store]);
-  return {epochRevision:snapshot.epochRevision,authorityRevision,dirty,kept,flushAuthority,apply};
+
+// Page authority for epoch-browser views, separated from tag display.
+// Tags arrive on the tag channel and are overlaid in place (apply). Page/tree
+// authority renews from confirmed tags only when the result depends on them:
+// tag filters, or legacy pages whose revision still covers shared tags
+// (protocol-state-v4 tokens do not). A burst renews once, after it is idle;
+// pending (unconfirmed) tags never renew authority.
+export function useAnnotationReceipts({revision,filters,stableAuthority=false}){
+  const tagVersion=useDeferredTagVersion(),tagGeneration=useTagGeneration();
+  const tagDependent=annotationFilterNeedsRefresh(filters)||!stableAuthority;
+  const [settled,setSettled]=useState(tagGeneration);
+  const dirty=tagDependent&&settled!==tagGeneration;
+  useEffect(()=>{
+    if(settled===tagGeneration)return;
+    if(!tagDependent){setSettled(tagGeneration);return;}
+    const timer=setTimeout(()=>setSettled(tagGeneration),ANNOTATION_AUTHORITY_IDLE_MS);return()=>clearTimeout(timer);
+  },[tagGeneration,settled,tagDependent]);
+  const flushAuthority=useCallback(()=>setSettled(tagStore.getConfirmedGeneration()),[]);
+  const authorityRevision=tagDependent?JSON.stringify([revision,settled]):revision;
+  const apply=useCallback(epoch=>tagStore.apply(epoch),[tagVersion]);
+  return {epochRevision:revision,authorityRevision,dirty,kept:false,flushAuthority,apply};
 }

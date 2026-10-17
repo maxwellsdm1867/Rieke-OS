@@ -10,7 +10,8 @@ import MetadataPanel from "../../epoch-browser/ui/MetadataPanel.jsx";
 import AnnotationTags from "../../annotations/ui/AnnotationTags.jsx";
 import TagExchangeControls from "../../annotations/ui/TagExchangeControls.jsx";
 import {datedCellLabel} from "../../recording-import/recordingIdentity.js";
-import {applyAnnotationReceipts,mergeAnnotationReceipts} from "../../annotations/annotationReceipts.js";
+import {tagStore} from "../../annotations/tagStore.js";
+import {useDeferredTagVersion} from "../../annotations/useTagStore.js";
 import './CellQC.css';
 
 const numeric=value=>typeof value==='number'&&Number.isFinite(value);
@@ -95,11 +96,11 @@ function ConditionSummary({cellUuid,family,epoch,revision,onSelect}){
 }
 
 export default function CellQC({cellUuid,revision,structureRevision=revision,annotationRevision=revision,onBack,initialEpochUuid,session,onSession,onAnnotationsChanged,onTagFilter}){
-  const [refresh,setRefresh]=useState(0),[tagRefresh,setTagRefresh]=useState(0),[tagFocus,setTagFocus]=useState(0),[temperatureOpen,setTemperatureOpen]=useState(false),[receipts,setReceipts]=useState(()=>new Map());
-  // A confirmed tag receipt is shown in place: one write, no reread. Other
-  // annotation changes (imports, cell scope, unverified saves) renew the epoch.
+  const [refresh,setRefresh]=useState(0),[tagRefresh,setTagRefresh]=useState(0),[tagFocus,setTagFocus]=useState(0),[temperatureOpen,setTemperatureOpen]=useState(false);
+  // Confirmed tags live in the tag store and are shown in place: one write, no
+  // reread. Other annotation changes (imports, unverified saves) renew the epoch.
+  const tagVersion=useDeferredTagVersion();
   function annotationsChanged(result,confirmed){
-    if(confirmed)setReceipts(previous=>mergeAnnotationReceipts(previous,confirmed));
     if(onAnnotationsChanged)onAnnotationsChanged(result,confirmed);else if(!confirmed)setTagRefresh(value=>value+1);
   }
   // Samples, QC summaries and recorded metadata do not depend on tags. Only the
@@ -124,7 +125,7 @@ export default function CellQC({cellUuid,revision,structureRevision=revision,ann
   const sourceEpoch=epoch.data?.cell_uuid===cellUuid&&epoch.data?.epoch_uuid===epochId?epoch.data:null;
   // Tag receipts change only annotation display; the trace keeps the source
   // epoch object so a tag save never repaints recorded samples.
-  const rawEpoch=useMemo(()=>sourceEpoch&&applyAnnotationReceipts(sourceEpoch,receipts),[sourceEpoch,receipts]);
+  const rawEpoch=useMemo(()=>sourceEpoch&&tagStore.apply(sourceEpoch),[sourceEpoch,tagVersion]);
   useEffect(()=>{if(!family&&initialEpochUuid&&rawEpoch){const match=available.find(item=>item.protocol_names?.includes(rawEpoch.protocol_name));if(match)setFamily(match.id);}},[family,initialEpochUuid,rawEpoch,data]);
   const measured=response.data?.epoch_uuid===epochId&&response.data?.cell_uuid===cellUuid?response.data:null;
   const stats=measured?.statistics;
