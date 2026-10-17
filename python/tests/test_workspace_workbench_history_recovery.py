@@ -41,12 +41,15 @@ class HistoricalProposalRecoveryTests(unittest.TestCase):
         self.assertEqual(fresh['pending'], {self.added: 'b' * 64})
         # The old original was frozen against a replaced main: it is superseded,
         # not a conflict, and cumulative review uses only the fresh proposal.
-        statuses = {item['candidate_revision_uuid']: item['status'] for item in self.queue()['candidates']}
-        self.assertEqual(statuses[self.revision], 'superseded')
-        self.assertNotEqual(statuses[fresh_revision], 'conflict')
+        # The reconciled main was defined after that recording was imported, so
+        # its omitted epoch counts as reviewed, not new: nothing is pending, and
+        # no proposal reads as a conflict.
+        queue = self.queue()
+        self.assertEqual(queue['pending_epoch_count'], 0)
+        self.assertNotIn('conflict', {item['status'] for item in queue['candidates']})
         cumulative, _ = self.prepare()
-        self.assertEqual(cumulative['origin_count'], 1)
-        self.assertEqual(cumulative['context']['counts']['pending_epochs'], 1)
+        self.assertEqual(cumulative['origin_count'], 0)
+        self.assertEqual(cumulative['context']['counts']['pending_epochs'], 0)
         # Existing per-proposal routes provide explicit, fenced recovery; no
         # historical rewrite, replacement acceptance or implicit union needed.
         root = self.case.base + '/workbench/candidates/' + fresh_revision

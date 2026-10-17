@@ -41,7 +41,7 @@ def register_mutation_recovery(app, scheduler, *, desktop_mode):
         # independent recovery mirror (coalesced, flushed before close) instead
         # of capturing the whole app state synchronously on every step.
         queued = {'workbench_prepare', 'workbench_patch', 'workbench_selected_review', 'workbench_finish',
-                  'workbench_accept', 'workbench_undo', 'workbench_selection_manifest'}
+                  'workbench_accept', 'workbench_undo', 'workbench_selection_manifest', 'workbench_merge_all'}
         if request.endpoint in queued and 200 <= response.status_code < 300:
             scheduler.request()
             return response

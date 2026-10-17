@@ -9,7 +9,6 @@ from __future__ import annotations
 import base64
 import contextlib
 import contextvars
-import collections
 import copy
 import datetime as dt
 import json
@@ -174,6 +173,7 @@ class ProtocolWorkbench:
         self._tables = tables
         self.selection_manifests = {}
         self._read_projections = _FrozenReadProjections()
+        self._pool_cache = {}
 
     @property
     def tables(self):
@@ -245,6 +245,29 @@ class ProtocolWorkbench:
                 if (self.tables[0] & key).to_dicts():
                     return self.draft(key)
         return None
+
+    def review_decisions(self, protocol, actor):
+        """The actor's latest review decisions: the combined review draft, or
+        before one exists, their individual proposal drafts (left out wins)."""
+        cumulative = self.cumulative_draft(protocol, actor)
+        if cumulative:
+            return cumulative
+        merged, deferred = {}, False
+        for row in self.original_records(protocol):
+            key = self.key(protocol, row['summary']['candidate_revision_uuid'], actor)
+            if not (self.tables[0] & key).to_dicts():
+                continue
+            header, decisions = self.draft(key)
+            deferred |= bool(header['deferred'])
+            for identity, decision in decisions.items():
+                earlier = merged.get(identity)
+                if earlier and earlier['metadata_hash'] == decision['metadata_hash']:
+                    excluded = bool(earlier['excluded'] or decision['excluded'])
+                    decision = dict(decision, excluded=excluded,
+                        selected=False if excluded else bool(earlier['selected'] and decision['selected']),
+                        reviewed=bool(earlier['reviewed'] and decision['reviewed']))
+                merged[identity] = decision
+        return dict(deferred=deferred), merged
 
     def _additive_lineage(self, main, baseline, protocol, version, baseline_version):
         """A superset alone is insufficient: prove every actual parent transition."""
@@ -448,6 +471,60 @@ class ProtocolWorkbench:
                 and not context['valid_base']
                 and context['expected_binding_version'] > summary['baseline_binding_version'])
 
+    def seen_sources(self, main):
+        """Recordings main was defined against: those present when its query was
+        last saved, its pinned set created or its baseline frozen. Merges do not
+        change it, so an unmerged rest of a new recording stays new."""
+        seen = 0
+        while main.get('membership_kind') == 'additive_union' and seen < 10000:
+            main = self._recipe(main['additive_publication']['previous_revision_uuid'])
+            seen += 1
+        return frozenset(main.get('source_revisions', ()))
+
+    def pending_pool(self, protocol):
+        """New data for main: epochs from recordings main has not seen that its
+        saved query matches and a merge accepts.
+
+        Epochs from recordings main already saw were reviewed when main was
+        defined, so leaving them out of main is never re-offered. Imports,
+        query or pinned updates, merges, undo and metadata refreshes change the
+        inputs, and only then is the pool recomputed.
+        """
+        from disco.navigation.tag_predicates import TagPredicates, referenced_fields
+        from workspace_protocol_identity import protocol_ids, protocol_key
+        binding = self.history.protocol_binding_header(protocol)
+        if not binding:
+            return dict(pool={}, main=None, binding=None, reason=None, annotation=None, scope=None, key=None)
+        scope = self.service.source_scope()
+        main = self._recipe(binding['revision_uuid'])
+        fields = referenced_fields(main['predicate'])
+        annotation = TagPredicates(self.service).snapshot(fields)[1] if fields else None
+        fingerprints = self.service._fingerprints
+        key = checksum(dict(binding=[binding['revision_uuid'], binding['version']], scope=scope['revision'],
+            annotation=(annotation or {}).get('revision'), fingerprints=fingerprints,
+            definition=self.service.protocols[protocol]['definition'].get('query')))
+        cached = self._pool_cache.get(protocol)
+        if cached and cached['key'] == key:
+            return cached
+        members = _members(main)
+        active = set(scope['active_source_revisions'])
+        reason, pool = None, {}
+        if any(fingerprints.get(identity) != value for identity, value in members.items()):
+            reason = 'Main contains epochs whose recorded metadata changed; save the query again to update main.'
+        elif any(self.service.rows[identity]['source_sha256'] not in active for identity in members):
+            reason = 'Main contains epochs from a recording that is excluded from queries; include it again in Data stores.'
+        else:
+            allowed = protocol_ids(self.service, protocol)
+            seen = self.seen_sources(main)
+            for identity in self.service.match_predicate(main['predicate'])[1]:
+                row = self.service.rows[identity]
+                if (identity not in members and row['source_sha256'] in active and row['source_sha256'] not in seen
+                        and protocol_key(row.get('protocol_name')) in allowed):
+                    pool[identity] = fingerprints[identity]
+        value = dict(pool=pool, main=main, binding=binding, reason=reason, annotation=annotation, scope=scope, key=key)
+        self._pool_cache[protocol] = value
+        return value
+
     @staticmethod
     @contextlib.contextmanager
     def revision_memo():
@@ -478,11 +555,11 @@ class ProtocolWorkbench:
             return set()
         # A merge refuses epochs recorded under a protocol ID the entry does not
         # list (pinned entries list every ID they span), so they are not pending.
-        from workspace_protocol_identity import protocol_ids
+        from workspace_protocol_identity import protocol_ids, protocol_key
         allowed = protocol_ids(self.service, context['protocol_uuid'])
         return {key for key in context['pending']
                 if key not in context['ineligible'] and key not in context['unavailable']
-                and self.service.rows.get(key, {}).get('protocol_name') in allowed}
+                and protocol_key(self.service.rows.get(key, {}).get('protocol_name')) in allowed}
 
     @staticmethod
     def check_scope(context, expected):
@@ -922,78 +999,45 @@ class ProtocolWorkbench:
             return scoped
 
     def queue(self, protocol, actor, limit=20, cursor=None):
-        with elapsed("disco.workbench.workbench", "queue"), self.revision_memo():
+        with elapsed("disco.workbench.workbench", "queue"):
             if type(limit) is not int or not 1 <= limit <= 100:
                 raise ValueError('Queue page limit must be 1–100')
             protocol = str(uuid.UUID(protocol))
             if protocol not in self.service.protocols:
                 raise KeyError('Unknown protocol')
+            state = self.pending_pool(protocol)
+            pool = state['pool']
+            header, decisions = self.review_decisions(protocol, actor)
+            left_out = sorted(identity for identity, saved in decisions.items()
+                              if saved.get('excluded') and pool.get(identity) == saved['metadata_hash'])
+            pending = set(pool) - set(left_out)
             records = self.original_records(protocol)
             records.sort(key=lambda row: (row['summary']['created_at'], row['suggestion_uuid']), reverse=True)
-            items, pending, eligible_union, cell_ids, witnesses = [], set(), set(), {}, []
-            cumulative = self.cumulative_draft(protocol, actor)
-            historical_conflict = False
-            if cumulative:
-                review_header, cumulative_decisions = cumulative
-            else:
-                from disco.workbench.workbench_pending import draft_carry
-                try:
-                    review_header, cumulative_decisions, _ = draft_carry(self, protocol, actor, self.service._fingerprints)
-                except WorkbenchConflict:
-                    review_header, cumulative_decisions = {}, None
-                    historical_conflict = True
-            raw_pending = {}
-            main_reason = None
-            main_members = {}
-            def excluded(context, key):
-                if cumulative_decisions is None:
-                    return self.decision(context, key)['excluded']
-                decision = cumulative_decisions.get(key, {})
-                return decision.get('metadata_hash') == context['incoming'][key] and bool(decision.get('excluded'))
+            accepted = {row['candidate_revision_uuid'] for row in (self.tables[2] & dict(
+                project_uuid=self.project, protocol_uuid=protocol)).proj('candidate_revision_uuid').to_dicts()}
+            items = []
             for row in records:
-                revision = row['summary']['candidate_revision_uuid']
-                context = self.context(protocol, revision, actor)
-                superseded = self.superseded(context)
-                main_members = context['previous']
-                # A superseded diff no longer describes main; it contributes no
-                # pending epochs, and fully merged ones simply read as covered.
-                pending_now = {} if superseded else context['pending']
-                raw_pending.update(pending_now)
-                accepted_receipts = (self.tables[2] & dict(project_uuid=self.project, protocol_uuid=protocol,
-                    candidate_revision_uuid=revision)).to_dicts()
-                eligible = {key for key in self.mergeable(context) if not excluded(context, key)}
-                main_reason = main_reason or self.main_blocked(context)
-                blocked = not superseded and (not context['valid_base'] or context['annotation_changed'] or bool(main_reason))
-                status = (('superseded' if context['pending'] else 'covered') if superseded else
-                          'conflict' if blocked else 'source_blocked' if context['ineligible'] else
-                          'accepted' if not context['pending'] and accepted_receipts else
-                          'covered' if not context['pending'] else 'deferred' if context['deferred'] else
-                          'pending' if context['main_revision_uuid'] == context['baseline_revision_uuid'] else 'pending_rebased')
-                # Only mergeable epochs are pending; anything a merge would refuse
-                # is not offered at all.
-                unmerged = eligible
-                pending |= unmerged
-                for key in unmerged:
-                    saved_cell = row['summary'].get('incoming_cell_uuids', {}).get(key)
-                    if saved_cell:
-                        cell_ids[key] = saved_cell
-                    elif key not in context['unavailable']:
-                        cell_ids[key] = self.service.rows[key]['cell_uuid']
-                if not blocked:
-                    eligible_union |= eligible
-                items.append(dict(**{key: value for key, value in row['summary'].items() if key != 'incoming_cell_uuids'},
-                    status=status, pending_epoch_count=len(unmerged), eligible_pending_epoch_count=len(eligible),
-                    candidate_scope_revision=context['candidate_scope_revision'], draft_version=context['draft_version']))
-                witnesses.append(context['candidate_scope_revision'])
-            # Initializing a draft must not create a queue-refresh/prepare feedback
-            # loop. Its initial version is neutral; actual subsequent CAS mutations
-            # and effective decisions remain queue fences. Recipe IDs are separate.
-            review_witness = dict(version_delta=max(review_header.get('version', 1) - 1, 0) if cumulative else 0,
-                deferred=bool(review_header.get('deferred')), historical_conflict=historical_conflict,
-                decisions={key: {field: saved[field] for field in ('metadata_hash', 'selected', 'reviewed', 'excluded')}
-                    for key, saved in (cumulative_decisions or {}).items() if raw_pending.get(key) == saved['metadata_hash']})
-            revision = checksum(dict(project_uuid=self.project, protocol_uuid=protocol, actor=actor,
-                                     witnesses=witnesses, items=items, cumulative_review=review_witness))
+                summary = row['summary']
+                mine = set(summary.get('incoming_cell_uuids', {})) & pending
+                status = ('pending' if mine else 'accepted' if summary['candidate_revision_uuid'] in accepted else 'covered')
+                items.append(dict(**{key: value for key, value in summary.items() if key != 'incoming_cell_uuids'},
+                    status=status, pending_epoch_count=len(mine), eligible_pending_epoch_count=len(mine)))
+            rows = self.service.rows
+            cells = {rows[identity]['cell_uuid'] for identity in pending}
+            main_cells = {rows[identity]['cell_uuid'] for identity in _members(state['main'])} if state['main'] else set()
+            filenames = {source['source_sha256']: source.get('filename') for source in self.service.sources}
+            by_source = {}
+            for identity in pending:
+                sha = rows[identity]['source_sha256']
+                by_source[sha] = by_source.get(sha, 0) + 1
+            recordings = sorted((dict(source_sha256=sha, filename=filenames.get(sha) or sha, epoch_count=count)
+                                 for sha, count in by_source.items()), key=lambda item: item['filename'])
+            revision = checksum(dict(project_uuid=self.project, protocol_uuid=protocol, actor=actor, pool=state['key'],
+                pending=checksum(pool), left_out=left_out, deferred=bool(header.get('deferred')),
+                # Review edits advance the draft version. Initializing a draft starts
+                # at the carried version, so preparation never changes its own fence.
+                draft_version=max(header.get('version', 1) - 1, 0),
+                items=[(item['candidate_revision_uuid'], item['status']) for item in items]))
             offset = 0
             if cursor:
                 try:
@@ -1010,24 +1054,15 @@ class ProtocolWorkbench:
             end = offset + limit
             next_cursor = base64.urlsafe_b64encode(json.dumps(dict(revision=revision, offset=end)).encode()).decode() if end < len(items) else None
             return dict(contract_version=1, candidates=items[offset:end], pending_epoch_count=len(pending),
-                pending_cell_count=len(set(cell_ids.values())) if pending <= cell_ids.keys() else None,
-                pending_cell_count_available=pending <= cell_ids.keys(), eligible_pending_epoch_count=len(eligible_union),
-                eligible_pending_cell_count=len({self.service.rows[key]['cell_uuid'] for key in eligible_union}),
-                # Cells that main does not contain yet; a pending cell may already
-                # be in main with earlier epochs.
-                pending_new_cell_count=len({self.service.rows[key]['cell_uuid'] for key in eligible_union}
-                    - {self.service.rows[key]['cell_uuid'] for key in main_members if key in self.service.rows}),
-                # The recordings the mergeable epochs actually come from, which can
-                # differ from the proposal that first listed them.
-                pending_recordings=[dict(source_sha256=sha, filename=next((source.get('filename') for source in self.service.sources
-                    if source['source_sha256'] == sha), sha), epoch_count=count) for sha, count in sorted(collections.Counter(
-                    self.service.rows[key]['source_sha256'] for key in eligible_union if key in self.service.rows).items(),
-                    key=lambda item: next((source.get('filename') or '' for source in self.service.sources if source['source_sha256'] == item[0]), item[0]))],
-                main_blocked_reason=main_reason, queue_revision=revision, next_cursor=next_cursor, total_candidate_count=len(items),
+                pending_cell_count=len(cells), pending_cell_count_available=True,
+                eligible_pending_epoch_count=len(pending), eligible_pending_cell_count=len(cells),
+                pending_new_cell_count=len(cells - main_cells), pending_recordings=recordings,
+                left_out_epoch_count=len(left_out), main_blocked_reason=state['reason'],
+                queue_revision=revision, next_cursor=next_cursor, total_candidate_count=len(items),
                 capabilities=dict(frozen_browse=True, drafts=True, additive_accept=True,
                     incoming_export=getattr(self, 'incoming_export', False),
-                    cumulative_pending_browse=getattr(self, 'cumulative_pending_browse', False), initial_page=True))
-
+                    cumulative_pending_browse=getattr(self, 'cumulative_pending_browse', False), initial_page=True,
+                    merge_all=True))
 
 def public_receipt(receipt):
     result = copy.deepcopy({key: value for key, value in receipt.items()

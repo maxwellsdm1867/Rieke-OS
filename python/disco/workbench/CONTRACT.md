@@ -83,27 +83,23 @@ members and their curation. Opening, highlighting, deferring, hashing or exporti
 never grants scientific approval. Actor identity and expected authority fences stay
 explicit at each mutation.
 
-Cumulative preparation uses current queue/main/source/query authority and preserves
-old decisions only for the same fingerprints. Changed draft/scope/binding/query/
-preview or conflicting lineage rejects. Multi-request renderer draft batches may
-partly commit; refresh after a later failure. Durable operation UUID replay and
-uncertain request recovery keep their existing exact body/root/receipt semantics.
-No client-intent cohort key or remembered view acquires backend authority.
+The pending pool is new data for main: epochs from recordings main has not
+seen that main's saved query matches, from active sources, under a protocol
+name the entry accepts (`pending_pool`). "Seen" recordings are those present
+when main was last defined (query save, pinned creation or baseline freeze);
+additive merges do not change it. A main-level blocker offers nothing. The pool
+is cached and recomputed only when main's binding, sources, fingerprints, the
+entry definition or tags its query uses change. Re-running a search predicate
+is the separate, explicit full-diff path.
 
-Cumulative recipe reuse has a separate versioned content identity. It includes
-main recipe/binding, original proposal and baseline identities, predicate annotation
-witnesses, exact pending/current fingerprints and source scope. General shared-tag
-and query revisions remain in the full opening/closing authority snapshot, queue,
-context and operation receipt; they alone do not require a different immutable
-candidate. A tag-only prepare can therefore refresh authority at the same root.
-`reusable_candidate` prefers the actor's current draft, then the deterministic
-content identity and equivalent legacy candidates. It verifies sealed provenance,
-complete required fields, exact main-plus-pending membership and baseline/parent
-binding. Missing evidence cannot establish reuse. Creation provenance is never
-rewritten; a new prepare receipt describes current authority. Durable replay still
-returns its original body and does not acquire a fresh-context header.
-The pending suite covers real epoch/cell tag saves, legacy reuse, stale reads and
-writes, corrupt/incomplete reuse evidence and the current-draft history fast path.
+The combined review is one immutable candidate per main revision and pool
+(`prepare_pool_candidate`): main plus the whole pool, parented on main, with no
+origin proposals to re-prove. Left-out decisions carry forward for unchanged
+fingerprints; new epochs never inherit an earlier 'all' consent. A derived
+prepare operation replays its receipt unless the queue is unchanged but its
+context went stale. `merge-all` adds every pending, not left-out epoch in one
+locked request fenced by the queue revision the scientist saw, and replays its
+receipt for the same operation UUID.
 
 A successful preparation response that computed and closed its context during
 that request includes `X-Disco-Workbench-Context: fresh-v1` only after its SQL

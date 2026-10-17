@@ -20,17 +20,24 @@ def selection_protocols(service, identities):
             'protocols': [{'protocol_id': name, 'epoch_count': count} for name, count in sorted(counts.items())]}
 
 
+def protocol_key(protocol_id):
+    """Recorded Protocol IDs match by protocol name across labs: the
+    .chris. and .arthur. variants of VariableHistoryNoiseCurInject agree."""
+    return protocol_id.rsplit('.', 1)[-1] if isinstance(protocol_id, str) else None
+
+
 def protocol_ids(service, protocol_uuid):
-    """The recorded Protocol IDs an entry accepts; a pinned entry may list several."""
+    """The protocol names an entry accepts; a pinned entry may list several."""
     expected = validate_protocol_definition(service.protocols[protocol_uuid]['definition'])
-    return frozenset(expected if isinstance(expected, list) else [expected])
+    return frozenset(protocol_key(value) for value in (expected if isinstance(expected, list) else [expected]))
 
 
 def protocol_compatibility(service, protocol_uuid, identities):
     expected = validate_protocol_definition(service.protocols[protocol_uuid]['definition'])
     expected_ids = expected if isinstance(expected, list) else [expected]
     summary = selection_protocols(service, identities)
-    incompatible = sum(row['epoch_count'] for row in summary['protocols'] if row['protocol_id'] not in expected_ids)
+    accepted = {protocol_key(value) for value in expected_ids}
+    incompatible = sum(row['epoch_count'] for row in summary['protocols'] if protocol_key(row['protocol_id']) not in accepted)
     return {**summary, 'expected_protocol_id': ' + '.join(expected_ids), 'expected_protocol_ids': expected_ids,
             'compatible': summary['epoch_count'] > 0 and incompatible == 0,
             'incompatible_epoch_count': incompatible}

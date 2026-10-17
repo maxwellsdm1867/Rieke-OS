@@ -143,10 +143,10 @@ class ProtocolBindingTests(api_tests.WorkspaceAPITests):
 
 
     def test_exact_acquisition_identity_blocks_wrong_and_mixed_destinations(self):
-        self.service.rows[self.service.ids[1]]['protocol_name'] = 'other.example'
+        self.service.rows[self.service.ids[1]]['protocol_name'] = 'lab.OtherProtocol'
         self.service._predicate_catalog_cache = None
         self.service._tree_catalog_cache = {}
-        for predicate in ({'all': []}, {'all': [{'field':'protocol','operator':'eq','value':'other.example'}]}):
+        for predicate in ({'all': []}, {'all': [{'field':'protocol','operator':'eq','value':'lab.OtherProtocol'}]}):
             candidate = self.save_candidate(predicate)
             comparison = self.comparison(candidate)
             self.assertFalse(comparison['compatibility']['compatible'])
@@ -165,7 +165,7 @@ class ProtocolBindingTests(api_tests.WorkspaceAPITests):
         self.assertEqual(self.apply_candidate(candidate, comparison).status_code, 200)
 
     def test_protocol_export_rechecks_identity_even_for_legacy_bad_binding(self):
-        self.service.rows[self.service.ids[1]]['protocol_name'] = 'other.example'
+        self.service.rows[self.service.ids[1]]['protocol_name'] = 'lab.OtherProtocol'
         candidate = self.save_candidate({'all': []})
         self.explorer_history.bind(candidate['revision_uuid'],self.service.protocol_id,0,'fixture',{},2)
         response = self.client.post(self.base + '/exports',json={
@@ -221,12 +221,17 @@ class ProtocolBindingTests(api_tests.WorkspaceAPITests):
         package=self.client.get(exported.get_json()['download_url']).get_json()
         self.assertEqual([row['epoch_uuid'] for row in package['epochs']],self.service.ids[:1])
 
+    def test_same_protocol_name_from_another_lab_is_compatible(self):
+        from workspace_protocol_identity import protocol_compatibility
+        self.service.rows[self.service.ids[1]]['protocol_name'] = 'edu.otherlab.protocols.example'
+        self.assertTrue(protocol_compatibility(self.service, self.service.protocol_id, self.service.ids)['compatible'])
+
     def test_mixed_pin_preserves_exact_membership_and_exports_both_protocols(self):
         from workspace_protocol_identity import protocol_compatibility
-        self.service.rows[self.service.ids[1]]['protocol_name'] = 'other.example'
+        self.service.rows[self.service.ids[1]]['protocol_name'] = 'lab.OtherProtocol'
         original = copy.deepcopy(self.service.rows)
         candidate = self.save_candidate({'all': []})
-        body = {'name': 'Combined', 'protocol_ids': ['other.example', 'example'],
+        body = {'name': 'Combined', 'protocol_ids': ['lab.OtherProtocol', 'example'],
                 'expected_recipe_sha256': candidate['recipe']['content_sha256']}
         endpoint = '/api/explore/revisions/' + candidate['revision_uuid'] + '/create-protocol'
         response = self.client.post(endpoint, json=body, headers=self.headers)
@@ -234,7 +239,7 @@ class ProtocolBindingTests(api_tests.WorkspaceAPITests):
         identity = response.get_json()['protocol_uuid']; base = '/api/protocols/' + identity
         definition = json.loads(self.service.protocol_file(identity).read_text())
         self.assertEqual(definition['query']['all'][0], {'field': 'EpochBlock.protocol_name',
-            'operator': 'in', 'value': ['example', 'other.example']})
+            'operator': 'in', 'value': ['example', 'lab.OtherProtocol']})
         self.assertTrue(protocol_compatibility(self.service, identity, self.service.ids)['compatible'])
         self.assertFalse(protocol_compatibility(self.service, self.service.protocol_id, self.service.ids)['compatible'])
         current = self.client.get(base).get_json()
@@ -248,7 +253,7 @@ class ProtocolBindingTests(api_tests.WorkspaceAPITests):
         retry = self.client.post(endpoint, json=body, headers=self.headers)
         self.assertEqual(retry.status_code, 200, retry.get_json())
         self.assertEqual(retry.get_json()['protocol_uuid'], identity)
-        for ids in [['example'], ['example', 'other.example', 'unrelated'], [], ['example', 'example'], 'example']:
+        for ids in [['example'], ['example', 'lab.OtherProtocol', 'unrelated'], [], ['example', 'example'], 'example']:
             rejected = self.client.post(endpoint, json={**body, 'protocol_ids': ids}, headers=self.headers)
             self.assertEqual(rejected.status_code, 400, rejected.get_json())
 
@@ -285,10 +290,10 @@ class ProtocolBindingTests(api_tests.WorkspaceAPITests):
         self.assertEqual(self.service.protocols[identity]['definition']['name'], created['name'])
 
     def test_creation_rejects_mixed_empty_mismatched_identity_and_stale_preview(self):
-        self.service.rows[self.service.ids[1]]['protocol_name']='other.example'
+        self.service.rows[self.service.ids[1]]['protocol_name']='lab.OtherProtocol'
         for predicate,override in [({'all': []},{}),
                 ({'all':[{'field':'protocol','operator':'eq','value':'absent'}]},{}),
-                ({'all':[{'field':'protocol','operator':'eq','value':'example'}]},{'protocol_id':'other.example'}),
+                ({'all':[{'field':'protocol','operator':'eq','value':'example'}]},{'protocol_id':'lab.OtherProtocol'}),
                 ({'all':[{'field':'protocol','operator':'eq','value':'example'}]},{'expected_recipe_sha256':'0'*64})]:
             candidate=self.save_candidate(predicate)
             response=self.create_protocol(candidate,**override)

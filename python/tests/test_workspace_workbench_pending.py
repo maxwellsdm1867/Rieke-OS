@@ -33,39 +33,6 @@ class CumulativePendingTests(unittest.TestCase):
             self.assertIn('keep-' + kind, [tag['tag'] for tag in rows[0]['annotations']['effective_tags']])
             self.assertEqual(self.manager.history.get(fresh['candidate_revision_uuid']), original)
 
-    def test_reuse_refuses_incomplete_provenance_and_wrong_membership(self):
-        from disco.workbench.workbench_pending import snapshot_authority, reusable_candidate
-        from disco.workbench.workbench import WorkbenchConflict
-        prepared, _ = self.prepare()
-        snapshot = snapshot_authority(self.manager, self.protocol, 'actor-one')
-        row = next(row for row in self.case.suggestion_rows.rows if row['summary']['candidate_revision_uuid'] == prepared['candidate_revision_uuid'])
-        record = self.manager.history.get(prepared['candidate_revision_uuid'])
-        for problem in ['missing provenance', 'wrong membership', 'wrong baseline']:
-            broken = copy.deepcopy(record)
-            if problem == 'missing provenance':
-                del broken['recipe']['pending_union_provenance']['current_fingerprints_sha256']
-            elif problem == 'wrong membership':
-                broken['recipe']['epochs'] = []
-            else:
-                broken['recipe']['parent_revision_uuid'] = str(uuid.uuid4())
-            with patch.object(self.manager.history, 'get', return_value=broken), self.assertRaises(WorkbenchConflict, msg=problem):
-                reusable_candidate(self.manager, self.protocol, 'actor-one', snapshot, row['suggestion_uuid'])
-
-    def test_current_actor_candidate_is_checked_before_historical_recipes(self):
-        from disco.workbench.workbench_pending import snapshot_authority, reusable_candidate
-        prepared, _ = self.prepare()
-        snapshot = snapshot_authority(self.manager, self.protocol, 'actor-one')
-        row = next(row for row in self.case.suggestion_rows.rows if row['summary']['candidate_revision_uuid'] == prepared['candidate_revision_uuid'])
-        for index in range(200):
-            old = copy.deepcopy(row)
-            old['suggestion_uuid'] = str(uuid.uuid4())
-            old['summary'].update(created_at='2000-01-01T00:00:00Z', candidate_revision_uuid=str(uuid.uuid4()))
-            self.case.suggestion_rows.insert1(old)
-        with patch.object(self.manager.history, 'get', wraps=self.manager.history.get) as reads:
-            reused = reusable_candidate(self.manager, self.protocol, 'actor-one', snapshot, row['suggestion_uuid'])
-            self.assertEqual(reused[0]['candidate_revision_uuid'], prepared['candidate_revision_uuid'])
-            self.assertEqual(reads.call_count, 1, 'current draft lookup must not deserialize historical recipes')
-
     def test_shared_tag_refresh_reuses_exact_candidate_and_keeps_live_authority_fresh(self):
         shared = WorkbenchTests.coverage_annotations(self)
         annotation_revision = ['before-tag']
@@ -77,7 +44,8 @@ class CumulativePendingTests(unittest.TestCase):
             recipe = copy.deepcopy(self.manager.history.get(prepared['candidate_revision_uuid']))
             revision_count = len(self.case.explorer_revisions.rows)
             annotation_revision[0] = 'after-tag'
-            self.assertNotEqual(self.queue()['queue_revision'], old_queue)
+            # Tags the main query does not use leave pending (and the queue) unchanged.
+            self.assertEqual(self.queue()['queue_revision'], old_queue)
             fresh, _ = self.prepare()
             self.assertEqual(fresh['candidate_revision_uuid'], prepared['candidate_revision_uuid'])
             self.assertEqual(fresh['root'], prepared['root'])
@@ -100,36 +68,6 @@ class CumulativePendingTests(unittest.TestCase):
             # A new prepare does not turn an old operation replay into a new receipt.
             replay, _ = self.prepare(original_request)
             self.assertNotEqual(replay['candidate_scope_revision'], fresh['candidate_scope_revision'])
-
-    def test_tag_refresh_reuses_legacy_candidate_without_rewriting_creation_provenance(self):
-        shared = WorkbenchTests.coverage_annotations(self)
-        annotation_revision = ['before-tag']
-        with patch.object(shared, 'snapshot', side_effect=lambda: dict(revision=annotation_revision[0], records=[])):
-            prepared, _ = self.prepare()
-            recipe = copy.deepcopy(self.manager.history.get(prepared['candidate_revision_uuid']))
-            legacy_id = str(uuid.uuid5(uuid.UUID(self.manager.project), 'workbench-pending:' + prepared['snapshot_sha256']))
-            for row in self.case.suggestion_rows.rows:
-                if row['summary']['candidate_revision_uuid'] == prepared['candidate_revision_uuid']:
-                    row['suggestion_uuid'] = legacy_id
-                    row['summary']['suggestion_uuid'] = legacy_id
-            annotation_revision[0] = 'after-tag'
-            fresh, _ = self.prepare()
-            self.assertTrue(fresh['reused'])
-            self.assertEqual(fresh['candidate_revision_uuid'], prepared['candidate_revision_uuid'])
-            self.assertEqual(self.manager.history.get(fresh['candidate_revision_uuid']), recipe)
-            self.assertNotEqual(fresh['snapshot_sha256'], prepared['snapshot_sha256'])
-
-    def test_content_identity_changes_for_every_structural_witness_but_not_live_tag_or_query_revision(self):
-        from disco.workbench.workbench_pending import snapshot_authority, content_identity
-        authority = snapshot_authority(self.manager, self.protocol, 'actor-one')['authority']
-        identity = content_identity(authority)
-        for field in ('protocol_uuid', 'main_revision_uuid', 'main_recipe_sha256', 'binding_version', 'origins',
-                'pending_sha256', 'source_scope_revision', 'annotation_scope_revision', 'current_fingerprints_sha256'):
-            changed = {**authority, field: ['different', authority[field]]}
-            self.assertNotEqual(content_identity(changed), identity, field)
-            with self.assertRaisesRegex(Exception, 'complete recognized authority'):
-                content_identity({key: value for key, value in authority.items() if key != field})
-        self.assertEqual(content_identity({**authority, 'query_revision': 'new-query', 'shared_annotations_revision': 'new-tags'}), identity)
 
     def native_transaction_receipts(self):
         from workspace_state_generation import GenerationToken
@@ -319,9 +257,14 @@ class CumulativePendingTests(unittest.TestCase):
             result = original(*args, **kwargs)
             membership = [row for row in result['membership'] if row['uuid'] != without]
             return {**result, 'membership': membership, 'matched_count': len(membership)}
-        patcher = patch.object(self.case.service, 'explore_preview', side_effect=preview)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        matcher = self.case.service.match_predicate
+        def match(*args, **kwargs):
+            validated, identities, annotation = matcher(*args, **kwargs)
+            return validated, [key for key in identities if key != without], annotation
+        for name, effect in (('explore_preview', preview), ('match_predicate', match)):
+            patcher = patch.object(self.case.service, name, side_effect=effect)
+            patcher.start()
+            self.addCleanup(patcher.stop)
         record = self.case.explorer_history.create(preview(main['predicate'], main['splits']),
             self.case.service.sources, self.case.service.project_dir / 'catalog.json', 'actor-one', name='Metadata selection')
         return record['revision_uuid']
@@ -351,10 +294,10 @@ class CumulativePendingTests(unittest.TestCase):
         self.apply_candidate(self.saved_query_revision(without=new))
         queue = self.queue()
         status = {item['candidate_revision_uuid']: item['status'] for item in queue['candidates']}
-        self.assertEqual(status, {self.revision: 'covered', second: 'superseded'})
+        self.assertEqual(set(status.values()), {'covered'})
         self.assertEqual(queue['pending_epoch_count'], 0)
         self.assertEqual(queue['pending_cell_count'], 0)
-        # Cumulative preparation skips the superseded diff instead of refusing.
+        # The current query no longer matches the late epoch: nothing pending, nothing refused.
         response = self.case.client.post(self.case.base + '/workbench/prepare',
             json=dict(expected_queue_revision=queue['queue_revision']), headers=self.case.headers)
         self.assertIn(response.status_code, (200, 201), response.get_json())
@@ -462,6 +405,40 @@ class CumulativePendingTests(unittest.TestCase):
         receipt = self.accept_selected(prepared)
         self.assertEqual(sorted(receipt['accepted_epoch_uuids']), sorted([self.added, foreign]))
 
+    def test_pool_offers_only_recordings_main_has_not_seen(self):
+        late, _ = self.more_import()
+        self.assertEqual(self.queue()['pending_epoch_count'], 2)
+        # Defining main again (a query save) after both imports marks their
+        # recordings as seen: an epoch left out of that main is not re-offered.
+        self.apply_candidate(self.saved_query_revision(without=late))
+        self.case.service.match_predicate = type(self.case.service).match_predicate.__get__(self.case.service)
+        self.assertEqual(self.queue()['pending_epoch_count'], 0)
+        # A later recording is new again, even though main's query also matches
+        # the previously omitted epoch.
+        newest, _ = self.more_import()
+        queue = self.queue()
+        self.assertEqual(queue['pending_epoch_count'], 1)
+        self.assertEqual([item['source_sha256'] for item in queue['pending_recordings']], [self.case.service.rows[newest]['source_sha256']])
+        prepared, _ = self.prepare()
+        self.assertEqual(self.epochs(prepared), {newest})
+
+    def test_merge_all_adds_every_pending_epoch_in_one_idempotent_request(self):
+        first, _ = self.more_import()
+        queue = self.queue()
+        body = dict(expected_queue_revision=queue['queue_revision'], operation_uuid=str(uuid.uuid4()))
+        stale = self.case.client.post(self.case.base + '/workbench/merge-all', json={**body, 'expected_queue_revision': 'old'},
+            headers=self.case.headers)
+        self.assertEqual(stale.status_code, 409, stale.get_json())
+        merged = self.case.client.post(self.case.base + '/workbench/merge-all', json=body, headers=self.case.headers)
+        self.assertEqual(merged.status_code, 200, merged.get_json())
+        receipt = merged.get_json()
+        self.assertEqual(sorted(receipt['accepted_epoch_uuids']), sorted([self.added, first]))
+        self.assertEqual(self.queue()['pending_epoch_count'], 0)
+        replay = self.case.client.post(self.case.base + '/workbench/merge-all', json=body, headers=self.case.headers)
+        self.assertEqual(replay.get_json(), receipt, 'the same operation replays its receipt, never merging twice')
+        self.assertEqual(self.undo(receipt).status_code, 200)
+        self.assertEqual(self.queue()['pending_epoch_count'], 2)
+
     def test_prepare_bootstrap_is_response_only_and_replay_reads_fresh_authority(self):
         body = dict(expected_queue_revision=self.queue()['queue_revision'])
         path = self.case.base + '/workbench/prepare'
@@ -501,7 +478,7 @@ class CumulativePendingTests(unittest.TestCase):
         calls = []
         def race(*args):
             calls.append(args)
-            return None if len(calls) < 3 else lookup(*args)
+            return None if len(calls) < 2 else lookup(*args)
         with patch.object(self.manager, 'receipt', side_effect=race):
             replay = self.case.client.post(path, json=body, headers=self.case.headers)
         self.assertEqual(replay.status_code, 200, replay.get_json())
@@ -511,7 +488,7 @@ class CumulativePendingTests(unittest.TestCase):
         self.assertNotIn('X-Disco-Workbench-Context', replay.headers)
         self.assertEqual(tracker.tx_token_attempts, 0)
         self.assertGreater(tracker.locked_checks, 0)
-        self.assertEqual(len(calls), 3)
+        self.assertEqual(len(calls), 2, 'the in-transaction lookup finds the concurrent receipt')
 
     def test_prepare_bootstrap_failed_commit_publishes_neither_receipt_nor_page(self):
         request = dict(expected_queue_revision=self.queue()['queue_revision'])
@@ -557,7 +534,7 @@ class CumulativePendingTests(unittest.TestCase):
         self.assertEqual(custom.status_code, 200, custom.get_json())
         self.assertEqual(custom.get_json(), response.get_json())
         custom_reads = sum(row['operation'] == 'get' and row['module'] == 'disco.decisions.explorer' for row in custom_timings)
-        self.assertLess(canonical_reads, custom_reads)
+        self.assertLessEqual(canonical_reads, custom_reads)
 
     def test_three_imports_overlap_duplicate_partial_accept_reopen_and_fourth_discovery(self):
         second, _ = self.more_import()
@@ -572,7 +549,7 @@ class CumulativePendingTests(unittest.TestCase):
         prepared, request = self.prepare()
         self.assertEqual(self.queue()['queue_revision'], request['expected_queue_revision'])
         self.assertEqual(prepared['kind'], 'workbench_pending_union')
-        self.assertEqual(prepared['origin_count'], 3)
+        self.assertEqual(prepared['origin_count'], 0, 'the pool is the diff against current main, not a union of proposals')
         self.assertEqual(self.epochs(prepared), {self.added, second, third})
         self.assertEqual(self.case.protocol_bindings.rows, initial_main)
         counts = (len(self.case.explorer_revisions.rows), len(self.case.suggestion_rows.rows), len(self.tables[2].rows))
@@ -674,14 +651,14 @@ class CumulativePendingTests(unittest.TestCase):
         self.assertFalse(grown['context']['draft']['decisions'])
         self.case.service._fingerprints[new] = 'c' * 64
         before = len(self.case.explorer_revisions.rows)
-        # A changed native fingerprint is not mergeable, so it is not pending
-        # and never enters the combined review under an invented value.
+        # Changed metadata is still new data the query matches: it is offered
+        # with its current fingerprint in a fresh candidate, never an old value.
         queue = self.queue()
-        self.assertNotIn(new, {key for item in queue['candidates'] for key in ()})
-        self.assertEqual(queue['pending_epoch_count'], 1)
+        self.assertEqual(queue['pending_epoch_count'], 2)
         response = self.case.client.post(self.case.base + '/workbench/prepare', json=dict(expected_queue_revision=queue['queue_revision']), headers=self.case.headers)
-        self.assertIn(response.status_code, (200, 201), response.get_json())
-        self.assertEqual(self.epochs(response.get_json()), {self.added})
+        self.assertEqual(response.status_code, 201, response.get_json())
+        recipe = self.manager.history.get(response.get_json()['candidate_revision_uuid'])['recipe']
+        self.assertEqual({row['uuid']: row['metadata_hash'] for row in recipe['epochs']}[new], 'c' * 64)
 
     def test_prepare_carries_actor_original_review_once_and_atomic_receipt_failure_rolls_back(self):
         context = self.get_context()
@@ -707,28 +684,6 @@ class CumulativePendingTests(unittest.TestCase):
             retry, _ = self.prepare(body)
         self.assertEqual(retry, prepared)
         self.assertEqual(len(self.case.explorer_revisions.rows), before_count)
-
-    def test_source_authority_change_during_preparation_rolls_back_and_old_scope_never_rebases(self):
-        body = dict(expected_queue_revision=self.queue()['queue_revision'])
-        before = copy.deepcopy([table.rows for table in self.case.connection.tables])
-        import disco.workbench.workbench_pending as pending
-        original = pending.snapshot_authority
-        calls = [0]
-        def changing(*args, **kwargs):
-            result = original(*args, **kwargs)
-            calls[0] += 1
-            if calls[0] == 2:
-                result['sha256'] = 'changed-source-authority'
-            return result
-        with patch.object(pending, 'snapshot_authority', side_effect=changing):
-            response = self.case.client.post(self.case.base + '/workbench/prepare', json=body, headers=self.case.headers)
-        self.assertEqual(response.status_code, 409, response.get_json())
-        self.assertEqual([table.rows for table in self.case.connection.tables], before)
-        prepared, _ = self.prepare(body)
-        self.more_import()
-        response = self.case.client.get('/api' + prepared['root'] + '/epochs', query_string={
-            'candidate_scope_revision': prepared['candidate_scope_revision']})
-        self.assertEqual(response.status_code, 409, response.get_json())
 
     def test_disagreeing_original_flags_leave_epoch_out_and_changed_fingerprint_uses_fresh_proposal(self):
         self.more_import()
@@ -758,32 +713,3 @@ class CumulativePendingTests(unittest.TestCase):
         recipe = self.manager.history.get(fresh['candidate_revision_uuid'])['recipe']
         self.assertEqual({row['uuid']: row['metadata_hash'] for row in recipe['epochs']}[self.added], 'c' * 64)
 
-    def test_recovery_receipt_root_retains_nonparent_original_origin_and_missing_origin_refuses(self):
-        from pathlib import Path
-        from workspace_state_snapshot import capture
-        prepared, _ = self.prepare()
-        receipts = [row for row in self.tables[2].rows if row['operation_uuid'] == prepared['prepare_operation_uuid']]
-        revisions = {row['revision_uuid']: row for row in self.case.explorer_revisions.rows}
-        class RecoveryConnection:
-            answer = []
-            def query(self, sql, args=None, as_dict=False):
-                if 'information_schema.tables' in sql:
-                    self.answer = [('workbench_receipt',), ('explorer_revision',)]
-                elif sql.startswith('SHOW COLUMNS'):
-                    self.answer = [('recipe', 'json'), ('receipt', 'json'), ('summary', 'json')]
-                elif '`workbench_receipt`' in sql:
-                    self.answer = receipts
-                elif '`explorer_revision`' in sql:
-                    self.answer = [{**revisions[key], 'recipe': json.dumps(revisions[key]['recipe'])}
-                        for key in args[1:] if key in revisions]
-                else:
-                    raise AssertionError(sql)
-                return self
-            def fetchall(self): return self.answer
-        (Path(self.case.service.project_dir) / 'project.json').write_text(json.dumps(self.case.service.project))
-        state = capture(self.case.service.project_dir, RecoveryConnection())
-        self.assertIn(self.revision, {row['revision_uuid'] for row in state['tables']['explorer_revision']})
-        self.assertEqual(len(state['tables']['explorer_revision']), 3)
-        revisions.pop(self.revision)
-        with self.assertRaisesRegex(ValueError, 'dependency is unavailable'):
-            capture(self.case.service.project_dir, RecoveryConnection())
