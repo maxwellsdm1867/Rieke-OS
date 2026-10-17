@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import contextlib
 import contextvars
+import collections
 import copy
 import datetime as dt
 import json
@@ -989,6 +990,12 @@ class ProtocolWorkbench:
                 # be in main with earlier epochs.
                 pending_new_cell_count=len({self.service.rows[key]['cell_uuid'] for key in eligible_union}
                     - {self.service.rows[key]['cell_uuid'] for key in main_members if key in self.service.rows}),
+                # The recordings the mergeable epochs actually come from, which can
+                # differ from the proposal that first listed them.
+                pending_recordings=[dict(source_sha256=sha, filename=next((source.get('filename') for source in self.service.sources
+                    if source['source_sha256'] == sha), sha), epoch_count=count) for sha, count in sorted(collections.Counter(
+                    self.service.rows[key]['source_sha256'] for key in eligible_union if key in self.service.rows).items(),
+                    key=lambda item: next((source.get('filename') or '' for source in self.service.sources if source['source_sha256'] == item[0]), item[0]))],
                 main_blocked_reason=main_reason, queue_revision=revision, next_cursor=next_cursor, total_candidate_count=len(items),
                 capabilities=dict(frozen_browse=True, drafts=True, additive_accept=True,
                     incoming_export=getattr(self, 'incoming_export', False),

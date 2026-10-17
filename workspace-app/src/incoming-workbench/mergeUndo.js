@@ -12,6 +12,10 @@ export function mergeUndoTarget(receipt,{projectId,protocolName}={}){
     operationUuid:receipt.operation_uuid,bindingVersion:receipt.binding.version};
 }
 
+// Operations undone in this session; earlier-merge offers for them are stale.
+const undoneOperations=new Set();
+export const mergeWasUndone=operationUuid=>undoneOperations.has(operationUuid);
+
 export function createMergeUndo({request,onState=()=>{},refresh=()=>{}}){
   let state=null,token=0;const listeners=new Set();
   const publish=next=>{state=next;onState(state);for(const listener of listeners)listener(state);};
@@ -33,6 +37,7 @@ export function createMergeUndo({request,onState=()=>{},refresh=()=>{}}){
       try{
         const value=await request(`/protocols/${encodeURIComponent(current.protocolId)}/workbench/undo`,{method:'POST',body:{operation_uuid:current.operationUuid,expected_binding_version:current.bindingVersion}});
         if(!text(value?.binding?.revision_uuid)||!Number.isSafeInteger(value.binding.version)||!text(value.restored_revision_uuid))throw Object.assign(Error('The undo reply was incomplete. Check Activity & logs before trying again.'),{uncertain:true});
+        undoneOperations.add(current.operationUuid);
         refresh(current.protocolId);
         if(mine===token)publish({...current,phase:'undone',message:'Merge undone',canUndo:false,removed:count(value.removed_epoch_count)?value.removed_epoch_count:null});
         return true;

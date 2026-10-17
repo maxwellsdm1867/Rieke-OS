@@ -132,6 +132,8 @@ test('pending card model sums the cumulative queue across recordings and lists o
   const exact=pendingProtocolSuggestion(pendingQueue({pending_new_cell_count:3}),mainSummary,'protocol-A');
   assert.deepEqual(exact.diff_summary,{current:{cells:2,epochs:36},proposed:{cells:5,epochs:791},delta:{cells:3,epochs:755}},'a pending cell already in main is not counted twice');
   assert.equal(exact.pending_cell_count,4);
+  const sourced=pendingProtocolSuggestion(pendingQueue({pending_recordings:[{source_sha256:'s1',filename:'2026-09-24_F.h5',epoch_count:443},{source_sha256:'s2',filename:'2026-10-06_F.h5',epoch_count:312},{source_sha256:'s3',filename:'empty.h5',epoch_count:0}]}),mainSummary,'protocol-A');
+  assert.deepEqual(sourced.recordings,['2026-09-24_F.h5','2026-10-06_F.h5'],'the pending epochs\' own recordings, not the proposals that listed them');
   assert.deepEqual(card.diff_counts,{added:755,removed:0,changed:0});
   assert.deepEqual(card.recordings,['2026-10-12_F.h5','2026-10-13_A.h5'],'nothing-mergeable and union rows contribute no recording');
   assert.equal(card.status,'pending');assert.equal(card.protocol_uuid,'protocol-A');

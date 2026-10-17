@@ -115,7 +115,10 @@ export function pendingProtocolSuggestion(queue,main,protocolId){
   const add=(base,delta)=>base!==null&&delta!==null?base+delta:null;
   // Proposed cells add only cells main lacks; a pending cell may already be in main.
   const newCells=Number.isSafeInteger(queue.pending_new_cell_count)&&queue.pending_new_cell_count>=0?queue.pending_new_cell_count:pending.cells;
-  const recordings=[...new Set((Array.isArray(queue.candidates)?queue.candidates:[])
+  // Prefer the recordings the mergeable epochs come from; older services only
+  // name the proposals that listed them.
+  const sources=Array.isArray(queue.pending_recordings)?queue.pending_recordings.filter(item=>safeCount(item?.epoch_count)>0&&typeof item?.filename==='string'&&item.filename):null;
+  const recordings=sources?[...new Set(sources.map(item=>item.filename))]:[...new Set((Array.isArray(queue.candidates)?queue.candidates:[])
     .filter(item=>item?.kind!=='workbench_pending_union'&&item?.source_sha256!==''&&safeCount(item?.eligible_pending_epoch_count)>0)
     .map(item=>item.source_filename).filter(name=>typeof name==='string'&&!!name))];
   return {

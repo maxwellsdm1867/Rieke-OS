@@ -76,7 +76,7 @@ test('expanded match visual has one comparison and right-side actions; Inspect o
 });
 test('StrictMode double click prepares once and selected merge accepts once with exact preview fences',async()=>{
  const h=await harness();try{
-  await h.click('Open cumulative merge preview',true);assert.equal(h.calls.filter(c=>c.endpoint===base+'/prepare').length,1);assert.equal(h.previews,0,'opening never previews all');await h.selectAndMerge(true);assert.equal(h.previews,1);assert.equal(h.accepts,1);assert.match(h.container.textContent,/Acceptance saved/);
+  await h.click('Open cumulative merge preview',true);assert.equal(h.calls.filter(c=>c.endpoint===base+'/prepare').length,1);assert.equal(h.previews,0,'opening never previews all');await h.selectAndMerge(true);assert.equal(h.previews,1);assert.equal(h.accepts,1);assert.doesNotMatch(h.container.textContent,/not submitted|was rejected|may have committed/,'the combined review moves on to what remains');
   assert.equal(h.navigation.route.workbench.merge_intent,undefined);assert.equal(window.history.state.riekeWorkspace.route.workbench.merge_intent,undefined);
   assert.equal(h.accepts,1);assert.equal(h.receiptBodies.length,1);
   const body=JSON.parse(h.receiptBodies[0]);assert.deepEqual({...body,operation_uuid:'operation'},{expected_candidate_scope_revision:'scope-2',expected_draft_version:2,mode:'selected',preview_sha256:'exact-additions',expected_binding_version:7,expected_query_revision:'main-seven',operation_uuid:'operation'});

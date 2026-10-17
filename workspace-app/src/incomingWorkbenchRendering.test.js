@@ -30,7 +30,7 @@ test('one explicit selected merge saves exact review, preserves exclusions and a
   assert.deepEqual(calls[0].body.decisions,[{epoch_uuid:'old',selected:false},{epoch_uuid:'a',selected:true,reviewed:true},{epoch_uuid:'b',selected:true,reviewed:true}]);
   assert.deepEqual(context.draft.decisions[0],{epoch_uuid:'old',selected:false,reviewed:true,excluded:true});
   assert.equal(calls.length,3);assert.deepEqual(calls[2].body,{expected_candidate_scope_revision:'scope',expected_draft_version:2,mode:'selected',preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',operation_uuid:calls[2].body.operation_uuid});
-  assert.match(label(renderer.root),/Acceptance saved/);assert.equal(renderer.root.findAllByProps({'aria-label':'Review selected epochs'}).length,0);
+  assert.match(label(renderer.root),/Merged (\d+ epochs )?into Main/);assert.equal(renderer.root.findAllByProps({'aria-label':'Review selected epochs'}).length,0);
   await act(async()=>renderer.unmount());
  }finally{globalThis.fetch=oldFetch;await server.close();}
 });
@@ -318,9 +318,9 @@ test('queue changes preserve in-flight acceptance and older confirmed receipt ke
   await act(async()=>{release();await accepting;});assert.equal(saved.drafts['old-union'].unconfirmed,true);assert.equal(prepares,0);
   await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Recover acceptance receipt').props.onClick());
   assert.equal(prepares,1);assert.equal(saved.prepared.candidate_revision_uuid,'new-union');
-  const exportButton=renderer.root.findAllByType('button').find(node=>label(node)==='Export accepted additions');assert.ok(exportButton,'old accepted subset remains exportable');
+  const exportButton=renderer.root.findAllByType('button').find(node=>label(node)==='Export those additions');assert.ok(exportButton,'old accepted subset remains exportable');
   await act(async()=>exportButton.props.onClick());
-  assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('accepted-old')));assert.equal(attempts,1,'receipt lookup and opening export do not accept again');
+  assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('Earlier merge')));assert.equal(attempts,1,'receipt lookup and opening export do not accept again');
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
@@ -576,7 +576,7 @@ for(const canceled of [false,true,'revision'])test(`source hold intent ${cancele
   const props={projectId:'project',protocolId:'p',item:{candidate_revision_uuid:'c'},capabilities:{drafts:true,frozen_browse:true,additive_accept:true},mergeRequest:request,onMergeRequestHandled:message=>handled.push(message)};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,props));});
   if(canceled){await act(async()=>renderer.update(React.createElement(Review,{...props,...(canceled==='revision'?{revision:1}:{mergeRequest:null})})));await act(async()=>release());assert.equal(writes.length,0);assert.equal(renderer.root.find(node=>node.type?.name==='Inspector').props.draftSelection.disabled,false);if(canceled==='revision')assert.match(handled.at(-1),/workspace changed/);}
-  else{assert.deepEqual(writes.map(call=>call.path.split('/').at(-1)),['draft','preview','accept']);assert.match(label(renderer.root),/Acceptance saved/);}
+  else{assert.deepEqual(writes.map(call=>call.path.split('/').at(-1)),['draft','preview','accept']);assert.match(label(renderer.root),/Merged (\d+ epochs )?into Main/);}
  }finally{if(renderer)await act(()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
@@ -602,7 +602,7 @@ test('one explicit Merge handles 1691 selected epochs and a truncated saved draf
   const inspector=()=>renderer.root.find(node=>node.type?.name==='Inspector');
   await act(async()=>inspector().props.onSelectionChange(ids));assert.equal(calls.length,0);
   await act(async()=>inspector().props.draftSelection.onMerge(ids));
-  assert.deepEqual(uploaded,ids);assert.deepEqual(calls.map(call=>call.path.split('/').at(-1)),['selection-manifest','selection-manifest','selected-review','preview','accept']);assert.match(label(renderer.root),/Acceptance saved/);
+  assert.deepEqual(uploaded,ids);assert.deepEqual(calls.map(call=>call.path.split('/').at(-1)),['selection-manifest','selection-manifest','selected-review','preview','accept']);assert.match(label(renderer.root),/Merged (\d+ epochs )?into Main/);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
@@ -634,7 +634,7 @@ for(const failure of ['view','accepted-write'])test(`Workbench acceptance waits 
   await act(async()=>inspector().props.draftSelection.onMerge(['a']));
   if(failure==='view'){
    assert.deepEqual(calls.map(path=>path.split('/').at(-1)),['preview','accept']);
-   assert.match(label(renderer.root),/Acceptance saved/);assert.match(label(renderer.root),/view could not be saved; the merge was still submitted/);
+   assert.match(label(renderer.root),/Merged (\d+ epochs )?into Main/);assert.match(label(renderer.root),/view could not be saved; the merge was still submitted/);
    assert.doesNotMatch(label(renderer.root),/Merge was not submitted/);
   }else{
    assert.deepEqual(calls.map(path=>path.split('/').at(-1)),['preview'],'accept must not be sent');

@@ -1585,10 +1585,10 @@
       ]
     },
     "src/incoming-workbench/mergeUndo.js": {
-      "fingerprint": "a37c23857a091851de4559cc75ddd235a68a7c18e7dc70bd9c409528383c14fd",
+      "fingerprint": "a31f56f31eb7a299d940c9511ece276690c9733330de9ba93438265eba37249f",
       "sites": [],
       "lifetime": "project-command-owner",
-      "reason": "2026-10-16: plain Undo-merge controller held by an App ref above route mounts. One toast at a time; a token fences late undo replies so an older undo cannot overwrite a newer merge notice. Undo is one explicit request bound to the receipt operation and binding version; 409 refuses without refresh, other failures refresh and never retry.",
+      "reason": "2026-10-16: plain Undo-merge controller held by an App ref above route mounts. One toast at a time; a token fences late undo replies so an older undo cannot overwrite a newer merge notice. Undo is one explicit request bound to the receipt operation and binding version; 409 refuses without refresh, other failures refresh and never retry. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed.",
       "tests": [
         "src/incoming-workbench/mergeUndo.test.js"
       ]
@@ -1616,7 +1616,7 @@
       ]
     },
     "src/incoming-workbench/ui/CumulativeIncomingReview.jsx": {
-      "fingerprint": "9d9b32e7e16ab7762a1cf395b8a7e983173677575fc81fb0631a13d8427c46e1",
+      "fingerprint": "c01d414313c9684e327959bed885c0bcd85bf900449dd36951db956eaec59386",
       "sites": [
         {
           "owner": "CumulativeIncomingReview",
@@ -1635,7 +1635,7 @@
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination. 2026-10-16 review: the preparation effect now reads mergeable pending counts via pendingQueueCounts (eligible fields) instead of queue.data.pending_epoch_count; the dependency is the same primitive count, so preparation timing, owner/generation fences and the idempotent prepare rejoin are unchanged. requirePreparedWorkbench moved to workbenchAuthority.js.",
+      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination. 2026-10-16 review: the preparation effect now reads mergeable pending counts via pendingQueueCounts (eligible fields) instead of queue.data.pending_epoch_count; the dependency is the same primitive count, so preparation timing, owner/generation fences and the idempotent prepare rejoin are unchanged. requirePreparedWorkbench moved to workbenchAuthority.js. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed.",
       "tests": [
         "src/workbenchSessionLifecycle.test.js",
         "src/incomingWorkbenchStrictMode.test.js",
@@ -1645,7 +1645,7 @@
       ]
     },
     "src/incoming-workbench/ui/FrozenIncomingReview.jsx": {
-      "fingerprint": "39792421359799a34eb8bb94a89fd2575a3175897125aaf0eef7f116720dd111",
+      "fingerprint": "872b2b292a534fac210271d1092b78eac5d28983ffc983797aed5e0ed1e52828",
       "sites": [
         {
           "owner": "FrozenIncomingReview",
@@ -1679,7 +1679,7 @@
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Prepared display capability passes from the frozen candidate without changing draft, selection, merge or publication ownership. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. 2026-10-16: acceptance awaits flushBeforeSubmission (views-only failure is a quiet note, accepted-write failure still refuses); Finish review is an explicit confirmed write under activeOwner/inFlight guards like save(); onMerged reports verified receipts. Effect sites unchanged.",
+      "reason": "Prepared display capability passes from the frozen candidate without changing draft, selection, merge or publication ownership. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. 2026-10-16: acceptance awaits flushBeforeSubmission (views-only failure is a quiet note, accepted-write failure still refuses); Finish review is an explicit confirmed write under activeOwner/inFlight guards like save(); onMerged reports verified receipts. Effect sites unchanged. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed.",
       "tests": [
         "src/importMergeWorkflow.test.js",
         "src/incomingWorkbenchRendering.test.js",
@@ -2477,10 +2477,10 @@
       ]
     },
     "src/protocol-overview/protocolSuggestions.js": {
-      "fingerprint": "cbca7508a376e029d62f0c7d59c096c0f20b1f589e41df65dff0dfe17c9017ed",
+      "fingerprint": "30dba2b2994759d9b599cd20e4881841656d24fa4d05819ca17e9627ca92315a",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds pure source-merge request and verified-receipt card retirement helpers; no lifetime. 2026-10-16: adds pendingProtocolSuggestion/mergeAllRequest/mainProtocolCounts (pure). Exact new-cell review (2026-10-16): the pending card adds only cells main lacks (pending_new_cell_count), falling back to pending cells on older services; data mapping only, no effect sites changed.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds pure source-merge request and verified-receipt card retirement helpers; no lifetime. 2026-10-16: adds pendingProtocolSuggestion/mergeAllRequest/mainProtocolCounts (pure). Exact new-cell review (2026-10-16): the pending card adds only cells main lacks (pending_new_cell_count), falling back to pending cells on older services; data mapping only, no effect sites changed. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
