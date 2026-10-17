@@ -1,7 +1,7 @@
-"""Current-path public examples; stdlib only, no worker or database starts."""
+"""Current-path public examples; stdlib only, no database starts."""
 import threading
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import disco.backup.backup_scheduler as backup
 import workspace_state_snapshot as snapshot
@@ -9,11 +9,10 @@ import workspace_state_snapshot as snapshot
 
 class RecoveryPublicTests(unittest.TestCase):
     def scheduler(self, capture):
-        with patch.object(backup.threading, 'Thread'):
-            return backup.BackupScheduler(capture, threading.RLock())
+        return backup.BackupScheduler(capture, threading.RLock())
 
     def test_failed_close_retains_pending_and_can_retry(self):
-        scheduler = self.scheduler(Mock(side_effect=[OSError('full'), None]))
+        scheduler = self.scheduler(Mock(side_effect=[OSError('full'), OSError('full'), None]))
         scheduler.request()
         with self.assertRaisesRegex(OSError, 'full'):
             scheduler.close()
@@ -27,7 +26,8 @@ class RecoveryPublicTests(unittest.TestCase):
         scheduler = self.scheduler(capture)
         capture.side_effect = scheduler.request
         scheduler.request()
-        status = scheduler.flush()
+        status = scheduler.status()
+        self.assertEqual(capture.call_count, 1)  # Nested request does not recurse.
         self.assertEqual((status['requested_sequence'], status['completed_sequence']), (2, 1))
         self.assertTrue(status['pending'])
 
