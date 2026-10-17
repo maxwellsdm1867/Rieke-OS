@@ -1,12 +1,16 @@
 import {useRef} from 'react';
+import {pendingQueueCounts} from '../incoming-workbench/workbenchAuthority.js';
 // Reuse the project summary already loaded by App. Proposal history and modal
 // visibility are not evidence that the cumulative pending queue is resolved.
 export default function useImportReviewStatus(resource,projectId){
   const confirmed=useRef({projectId,count:null});
   if(confirmed.current.projectId!==projectId)confirmed.current={projectId,count:null};
   const rows=resource.data?.workbench_counts;
-  const complete=!!projectId&&!resource.loading&&!resource.error&&Array.isArray(rows)&&rows.every(row=>typeof row.protocol_uuid==='string'&&Number.isSafeInteger(row.pending_epoch_count)&&row.pending_epoch_count>=0);
-  if(complete)confirmed.current={projectId,count:new Set(rows.filter(row=>row.pending_epoch_count>0).map(row=>row.protocol_uuid)).size};
+  // Count exactly what import review shows a card for: mergeable (eligible)
+  // pending epochs, with a blocked Main showing no card.
+  const blocked=row=>typeof row.main_blocked_reason==='string'&&!!row.main_blocked_reason;
+  const complete=!!projectId&&!resource.loading&&!resource.error&&Array.isArray(rows)&&rows.every(row=>typeof row?.protocol_uuid==='string'&&(blocked(row)||pendingQueueCounts(row).epochs!==null));
+  if(complete)confirmed.current={projectId,count:new Set(rows.filter(row=>!blocked(row)&&pendingQueueCounts(row).epochs>0).map(row=>row.protocol_uuid)).size};
   return {pendingProtocols:confirmed.current.count,phase:complete?'ready':resource.loading?'loading':'unavailable'};
 }
 export function importReviewStatusLabel(status){

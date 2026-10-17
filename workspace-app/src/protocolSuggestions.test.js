@@ -152,3 +152,30 @@ test('pending card model is hidden at zero or unknown mergeable counts and uses 
   assert.equal(mergeAllRequest(pendingProtocolSuggestion(pendingQueue({capabilities:{cumulative_pending_browse:false,additive_accept:true}}),mainSummary,'protocol-A')),null);
   assert.deepEqual(pendingProtocolSuggestion(pendingQueue({main_blocked_reason:'Main contains epochs whose recorded metadata changed; save the query again to update main.',eligible_pending_epoch_count:0}),mainSummary,'protocol-A'),{blocked:'Main contains epochs whose recorded metadata changed; save the query again to update main.',queue_revision:'q1'});
 });
+
+// Review imported data uses /workbench/summary rows: each row plus the summary's
+// contract version is the protocol queue, and the same model function builds
+// the card the Overview shows for that queue.
+test('import review builds one Overview card per protocol with pending data from summary rows, pinned first',async()=>{
+  const {importReviewCards,summaryProtocolQueue,pendingProtocolSuggestion,mergeAllRequest}=await import('./protocol-overview/protocolSuggestions.js');
+  const row=(protocol_uuid,epochs,extra={})=>({protocol_uuid,pending_epoch_count:epochs,pending_cell_count:epochs?2:0,eligible_pending_epoch_count:epochs,eligible_pending_cell_count:epochs?2:0,pending_new_cell_count:epochs?1:0,
+    pending_recordings:epochs?[{source_sha256:`s-${protocol_uuid}`,filename:`${protocol_uuid}.h5`,epoch_count:epochs}]:[],left_out_epoch_count:0,main_blocked_reason:null,queue_revision:`q-${protocol_uuid}`,
+    capabilities:{cumulative_pending_browse:true,additive_accept:true,merge_all:true},...extra});
+  const summary={contract_version:1,workbench_counts:[row('a',10),row('b',0),row('c',7),row('d',5),row('e',3,{main_blocked_reason:'Main is blocked.'}),row('f',4,{eligible_pending_epoch_count:0,eligible_pending_cell_count:0})]};
+  const protocols=['a','b','c','d','e','f','missing'].map((id,index)=>({protocol_uuid:id,name:id,counts:{cells:index+1,epochs:(index+1)*10}}));
+  const preferences={d:{section:'pinned',rank:0},c:{section:'pinned',rank:1},b:{section:'pinned',rank:2}};
+  const model=importReviewCards({summary,protocols,preferences});
+  assert.deepEqual(model.pinned.map(item=>item.protocol.protocol_uuid),['d','c'],'pinned in sidebar rank; a pinned protocol with nothing pending has no card');
+  assert.deepEqual(model.other.map(item=>item.protocol.protocol_uuid),['a'],'zero mergeable, blocked and unlisted protocols have no card');
+  assert.equal(model.ready,3);assert.equal(model.pinnedReady,2);
+  const shown=model.pinned[0];
+  const workbenchQueue={...summary.workbench_counts[3],contract_version:1,candidates:[]};
+  assert.deepEqual(shown.card,pendingProtocolSuggestion(workbenchQueue,protocols[3],'d'),'identical to the Overview card for the same queue');
+  assert.deepEqual(shown.queue,summaryProtocolQueue(summary,'d'));assert.equal(shown.main,protocols[3]);
+  assert.deepEqual(shown.card.diff_summary,{current:{cells:4,epochs:40},proposed:{cells:5,epochs:45},delta:{cells:1,epochs:5}},'Main counts come from the overview protocol row');
+  assert.deepEqual(shown.card.recordings,['d.h5']);
+  assert.deepEqual(mergeAllRequest(shown.card),{kind:'merge_all',queue_revision:'q-d',origin:'protocol-overview'});
+  assert.deepEqual(importReviewCards({summary:{...summary,contract_version:2},protocols,preferences}).ready,0,'another contract shows no cards');
+  assert.equal(importReviewCards({summary:null,protocols}).ready,0);
+  assert.equal(summaryProtocolQueue(summary,'missing'),null);
+});

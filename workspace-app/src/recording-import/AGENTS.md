@@ -74,9 +74,12 @@ use owned synthetic values and do not authorize deferred/native fixtures.
 `ui/InspectImportButton.jsx` renders separate inspection and merge controls.
 Inspect in Workbench is the primary ordinary button for the displayed frozen
 candidate. Only the separate Hold to merge button accepts a one-second pointer,
-Space or Enter hold and issues a single ephemeral source-specific merge request.
+Space or Enter hold and issues a single ephemeral merge request (Hold to merge
+all on the per-protocol pending cards in Review imported data).
 Early release performs no action; leave/cancel/blur/Escape, changed identity or
 disabled state, and unmount retire the timer. The trailing click has no action.
-The hold hint stays beneath its merge button. These controls are on the post-import
-recording card; choosing H5 files and the existing upload queue remain separate.
+The hold hint stays beneath its merge button. Review imported data shows one
+Overview pending card per protocol (from `/workbench/summary`, see
+`importReviewCards`); the badge counts those same mergeable protocols. Choosing
+H5 files and the existing upload queue remain separate.
 `inspectImportButton.test.js` checks the threshold and cancellation lifetime.

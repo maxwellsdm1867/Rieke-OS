@@ -4,7 +4,7 @@
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
     "src/App.jsx": {
-      "fingerprint": "f108825953906b268f0d9eef4d311c9aafca4fbd8f6fe3ff0b9f0055d9771554",
+      "fingerprint": "72ec7b011e5405ff4896bbeb6f0595bd251916da65968226fc5e42e4c10492ac",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -48,7 +48,7 @@
         }
       ],
       "lifetime": "mixed-project-and-retained-composition",
-      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes. Independent review on 2026-10-15 confirmed project setup closes only after successful project activation; pending, refused and migration paths retain context. Callback return values changed; lifecycle hooks, dependencies and scientific owners are unchanged. Six actual App composition regression cases cover both setup callbacks. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Overview source-merge review (2026-10-16): the Overview card hold reuses the App source-merge owner; App adds presentation-only state that hides the exact project/protocol/candidate/recording card after a verified receipt until the existing structure refresh returns, plus a captured origin so a hold on the still-current same-protocol Overview does not push a duplicate route. No effect sites, dependencies, consent or recovery owners changed. Checkpoint size review (2026-10-16): disk checkpoints now prune unreachable cumulative candidates (keeping the current candidate and any draft that needs recovery or still offers export) and drop the oldest back/forward view snapshots only above 1.5 MiB, never the current route, protocol latest views or recovery sessions. Live sessions are not mutated; no effect sites, dependencies, consent or recovery owners changed. 2026-10-16 (pending card): Overview renders ProtocolSuggestion in queue mode (pendingProtocol) instead of the latest per-recording suggestion; merge_all routes to the same sourceMerge owner (startAll) with the same owner token, origin fence and recovery. persist uses flushBeforeSubmission (views-only failure is a quiet notice). A ref-held mergeUndo controller (no new effect sites) receives verified receipts from sourceMerged and Workbench onMerged; MergeUndoToast is mounted once in main-shell, filtered by current project. Effect sites unchanged.",
+      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes. Independent review on 2026-10-15 confirmed project setup closes only after successful project activation; pending, refused and migration paths retain context. Callback return values changed; lifecycle hooks, dependencies and scientific owners are unchanged. Six actual App composition regression cases cover both setup callbacks. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Overview source-merge review (2026-10-16): the Overview card hold reuses the App source-merge owner; App adds presentation-only state that hides the exact project/protocol/candidate/recording card after a verified receipt until the existing structure refresh returns, plus a captured origin so a hold on the still-current same-protocol Overview does not push a duplicate route. No effect sites, dependencies, consent or recovery owners changed. Checkpoint size review (2026-10-16): disk checkpoints now prune unreachable cumulative candidates (keeping the current candidate and any draft that needs recovery or still offers export) and drop the oldest back/forward view snapshots only above 1.5 MiB, never the current route, protocol latest views or recovery sessions. Live sessions are not mutated; no effect sites, dependencies, consent or recovery owners changed. 2026-10-16 (pending card): Overview renders ProtocolSuggestion in queue mode (pendingProtocol) instead of the latest per-recording suggestion; merge_all routes to the same sourceMerge owner (startAll) with the same owner token, origin fence and recovery. persist uses flushBeforeSubmission (views-only failure is a quiet notice). A ref-held mergeUndo controller (no new effect sites) receives verified receipts from sourceMerged and Workbench onMerged; MergeUndoToast is mounted once in main-shell, filtered by current project. Effect sites unchanged. 2026-10-16 import review sync: both ImportSuggestions callers receive the existing workbenchSummary resource instead of suggestions/approved history; the dialog hold reaches the same mergeIncoming merge_all -> sourceMerge.startAll owner and announceMerge toast. Effect sites unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -2477,10 +2477,10 @@
       ]
     },
     "src/protocol-overview/protocolSuggestions.js": {
-      "fingerprint": "30dba2b2994759d9b599cd20e4881841656d24fa4d05819ca17e9627ca92315a",
+      "fingerprint": "bd218471be39adec4289a091f05df52f22516c478bbd567595e881e03ccfc4a9",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds pure source-merge request and verified-receipt card retirement helpers; no lifetime. 2026-10-16: adds pendingProtocolSuggestion/mergeAllRequest/mainProtocolCounts (pure). Exact new-cell review (2026-10-16): the pending card adds only cells main lacks (pending_new_cell_count), falling back to pending cells on older services; data mapping only, no effect sites changed. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds pure source-merge request and verified-receipt card retirement helpers; no lifetime. 2026-10-16: adds pendingProtocolSuggestion/mergeAllRequest/mainProtocolCounts (pure). Exact new-cell review (2026-10-16): the pending card adds only cells main lacks (pending_new_cell_count), falling back to pending cells on older services; data mapping only, no effect sites changed. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed. 2026-10-16 import review sync: adds pure summaryProtocolQueue/importReviewCards (summary row plus contract_version as the queue, same pendingProtocolSuggestion card, pinned first) and lets mainProtocolCounts use counts.cells when no cell list exists; no lifetime.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -2616,12 +2616,12 @@
       ]
     },
     "src/protocol-overview/ui/ProtocolSuggestion.jsx": {
-      "fingerprint": "e20b23a86dea635641c3a718bb71555798dbf93dede51f2cb3897a604372a402",
+      "fingerprint": "763545b9c742dab5282610b93f92634b19ee81cf6204c58532df57a956ac6dd4",
       "sites": [
         {
           "owner": "ImportSuggestions",
           "kind": "useEffect",
-          "fingerprint": "fe72958c11112dc6dc0f0581d27552b02b4892f7e656f83f08587fcfee04a0c5"
+          "fingerprint": "26a799ba9cc59193edd682d9d92e4c832c6e88e29db19274e5954005390c8188"
         },
         {
           "owner": "ImportSuggestions",
@@ -2631,16 +2631,17 @@
         {
           "owner": "ImportSuggestions",
           "kind": "useEffect",
-          "fingerprint": "327a2a731ce2e4cfb89c465f01a9819a43c39d270eceea31c1c424b4b4e0d027"
+          "fingerprint": "2c4f7ff0b0138f07d3ba5de1e4dc7b87618cbb4462d14189ed942c9fbb94ab82"
         }
       ],
       "lifetime": "semantic-auto-open-intent + project-review-state",
-      "reason": "autoOpenJobUuid is an explicit open intent, consumed once per semantic transition; user dismissal survives reconnect. Review pending state/managed message and modal presentation retain existing behavior. 2026-10-16: the Overview card renders the shared hold control with the same source-scoped request instead of a click-to-navigate merge; existing ImportSuggestions effects are unchanged. 2026-10-16 review: queue mode (pendingProtocol) reads the protocol queue through useWorkbenchQueue (its own abort/generation fences; provided=null in import view, so no read there). A verified merge_all receipt retires the card only for the queue revision it showed, then reloads; uncertain outcomes keep it. No new effect sites; ImportSuggestions effects unchanged.",
+      "reason": "autoOpenJobUuid is an explicit open intent, consumed once per semantic transition; user dismissal survives reconnect. Review pending state/managed message and modal presentation retain existing behavior. 2026-10-16: the Overview card renders the shared hold control with the same source-scoped request instead of a click-to-navigate merge; existing ImportSuggestions effects are unchanged. 2026-10-16 review: queue mode (pendingProtocol) reads the protocol queue through useWorkbenchQueue (its own abort/generation fences; provided=null in import view, so no read there). A verified merge_all receipt retires the card only for the queue revision it showed, then reloads; uncertain outcomes keep it. No new effect sites; ImportSuggestions effects unchanged. 2026-10-16 import review sync review: ImportSuggestions renders one queue-mode card per protocol from summary rows (provided queue, so useWorkbenchQueue issues no read); the auto-close effect now keys on those cards and summary loading (closes only after a refreshed summary is empty, never on the merge itself), and the showModal effect re-runs on card count instead of suggestions length; same sites and cleanup.",
       "tests": [
         "src/useSemanticReset.test.js",
         "src/semanticPresentationControls.test.js",
         "src/protocolSuggestionHold.test.js",
-        "src/importMergeWorkflow.test.js"
+        "src/importMergeWorkflow.test.js",
+        "src/importReviewDialog.test.js"
       ]
     },
     "src/protocol-overview/ui/SelectionOverview.jsx": {
@@ -2747,16 +2748,6 @@
     },
     "src/recording-import/importProgress.js": {
       "fingerprint": "2a01381f6ea78a47128c943e39732cc0772cf1b9477a67838914f0dee585fc23",
-      "sites": [],
-      "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
-      "tests": [
-        "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
-      ]
-    },
-    "src/recording-import/importReadiness.js": {
-      "fingerprint": "cf2cec575e1e9d16415864f2bb64c050ea08bc84912304650f7b33ba4cd1f548",
       "sites": [],
       "lifetime": "transitive-dependency",
       "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
@@ -2909,10 +2900,10 @@
       ]
     },
     "src/recording-import/useImportReviewStatus.js": {
-      "fingerprint": "70325ce32c660e0e12b7bedfbd008d84661d94d5c12c494c817ffa9551928e36",
+      "fingerprint": "2a15d83977573cddc438c979fdd566509381bc67bc1abeb559f1a28e7f48ce20",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16 import review sync: the badge counts protocols with eligible (mergeable) pending epochs and no main_blocked_reason via pendingQueueCounts, matching the dialog cards; no lifetime.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"

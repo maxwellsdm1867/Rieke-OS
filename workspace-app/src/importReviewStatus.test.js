@@ -47,3 +47,14 @@ test('App passes its existing Workbench summary to the ImportPage launcher witho
   assert.equal(h.fixture.requests.filter(r=>r.path==='/workbench/summary').length,1);
  }finally{await h.close();}
 });
+test('pending badge counts the same mergeable protocols the import review shows cards for',async()=>{
+ let status,view;function Probe({source}){status=useImportReviewStatus(source,'p');return null;}
+ const source={loading:false,error:null,data:{contract_version:1,workbench_counts:[
+  {protocol_uuid:'a',pending_epoch_count:9,eligible_pending_epoch_count:9},
+  {protocol_uuid:'b',pending_epoch_count:4,eligible_pending_epoch_count:0},
+  {protocol_uuid:'c',pending_epoch_count:3,eligible_pending_epoch_count:3,main_blocked_reason:'Main is blocked.'}]}};
+ try{
+  await act(()=>{view=TestRenderer.create(React.createElement(Probe,{source}));});
+  assert.deepEqual(status,{pendingProtocols:1,phase:'ready'},'non-mergeable and blocked pending show no card and no badge count');
+ }finally{await act(()=>view.unmount());}
+});
