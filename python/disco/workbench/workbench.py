@@ -471,6 +471,14 @@ class ProtocolWorkbench:
                 and not context['valid_base']
                 and context['expected_binding_version'] > summary['baseline_binding_version'])
 
+    def review_generation(self, protocol):
+        tracker = getattr(self.service, '_explore_state_generation', None)
+        token = tracker.token(protocol) if tracker is not None else None
+        if token is not None:
+            return repr(token)
+        shared = getattr(self.service, 'shared_annotations', None)
+        return shared.snapshot()['revision'] if shared is not None else None
+
     def seen_sources(self, main):
         """Recordings main was defined against: those present when its query was
         last saved, its pinned set created or its baseline frozen. Merges do not
@@ -500,13 +508,18 @@ class ProtocolWorkbench:
         fields = referenced_fields(main['predicate'])
         annotation = TagPredicates(self.service).snapshot(fields)[1] if fields else None
         fingerprints = self.service._fingerprints
+        # A refresh replaces the fingerprint map, so its identity and size key
+        # the cache without hashing every epoch; a hit still re-checks the
+        # fingerprints the pool and main depend on.
         key = checksum(dict(binding=[binding['revision_uuid'], binding['version']], scope=scope['revision'],
-            annotation=(annotation or {}).get('revision'), fingerprints=fingerprints,
+            annotation=(annotation or {}).get('revision'), fingerprints=[id(fingerprints), len(fingerprints)],
             definition=self.service.protocols[protocol]['definition'].get('query')))
-        cached = self._pool_cache.get(protocol)
-        if cached and cached['key'] == key:
-            return cached
         members = _members(main)
+        cached = self._pool_cache.get(protocol)
+        if (cached and cached['key'] == key
+                and all(fingerprints.get(identity) == value for identity, value in cached['pool'].items())
+                and all(fingerprints.get(identity) == value for identity, value in members.items())):
+            return cached
         active = set(scope['active_source_revisions'])
         reason, pool = None, {}
         if any(fingerprints.get(identity) != value for identity, value in members.items()):
@@ -1033,6 +1046,9 @@ class ProtocolWorkbench:
             recordings = sorted((dict(source_sha256=sha, filename=filenames.get(sha) or sha, epoch_count=count)
                                  for sha, count in by_source.items()), key=lambda item: item['filename'])
             revision = checksum(dict(project_uuid=self.project, protocol_uuid=protocol, actor=actor, pool=state['key'],
+                # Tag and curation edits advance these cheap generations, so a
+                # prepared context is never replayed after they change.
+                generation=self.review_generation(protocol),
                 pending=checksum(pool), left_out=left_out, deferred=bool(header.get('deferred')),
                 # Review edits advance the draft version. Initializing a draft starts
                 # at the carried version, so preparation never changes its own fence.

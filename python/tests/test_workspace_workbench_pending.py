@@ -44,8 +44,8 @@ class CumulativePendingTests(unittest.TestCase):
             recipe = copy.deepcopy(self.manager.history.get(prepared['candidate_revision_uuid']))
             revision_count = len(self.case.explorer_revisions.rows)
             annotation_revision[0] = 'after-tag'
-            # Tags the main query does not use leave pending (and the queue) unchanged.
-            self.assertEqual(self.queue()['queue_revision'], old_queue)
+            # A tag edit advances the review generation, so a new prepare runs.
+            self.assertNotEqual(self.queue()['queue_revision'], old_queue)
             fresh, _ = self.prepare()
             self.assertEqual(fresh['candidate_revision_uuid'], prepared['candidate_revision_uuid'])
             self.assertEqual(fresh['root'], prepared['root'])

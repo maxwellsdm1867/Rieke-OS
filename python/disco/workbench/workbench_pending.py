@@ -105,15 +105,6 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
                 operation = (str(uuid.UUID(value['operation_uuid'])) if 'operation_uuid' in value
                              else str(uuid.uuid5(uuid.UUID(manager.project), request_hash)))
                 existing = manager.receipt(operation, owner, request_hash)
-                if (existing and 'operation_uuid' not in value
-                        and manager.queue(protocol, owner, 1)['queue_revision'] == value['expected_queue_revision']):
-                    # The queue is unchanged, but tag or curation edits may have made
-                    # the replayed body stale; prepare that as a new operation.
-                    current = manager.context(protocol, existing['candidate_revision_uuid'], owner)
-                    if current['candidate_scope_revision'] != existing['candidate_scope_revision']:
-                        operation = str(uuid.uuid5(uuid.UUID(manager.project),
-                                                   request_hash + ':' + current['candidate_scope_revision']))
-                        existing = manager.receipt(operation, owner, request_hash)
                 if existing:
                     if not include_page:
                         return jsonify(existing)
