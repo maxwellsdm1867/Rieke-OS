@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {createWorkflowHarness} from './test-support/workflowHarness.js';
 const visible=node=>{for(let current=node;current;current=current.parent)if(current.props?.hidden||current.props?.inert||current.props?.style?.display==='none')return false;return true;};
 const suggestion={protocol_uuid:'protocol-A',protocol_name:'Test',candidate_revision_uuid:'original',status:'pending',diff_counts:{added:2,removed:0,changed:0}};
-for(const entry of ['Main match card','import page'])test(`actual App ${entry} wires a user request to the cumulative preview handoff`,async()=>{
+// The Overview card no longer issues this intent (it holds a source merge); the
+// App capability stays covered from both mounted callers.
+for(const entry of ['Main match card','import page'])test(`actual App ${entry} wires an explicit cumulative intent to the preview handoff`,async()=>{
  const h=await createWorkflowHarness();
  h.fixture.route=entry==='Main match card'?{page:'protocol',protocol:'protocol-A',key:'main'}:{page:'import',key:'import'};
  h.fixture.respond=(url,options,fallback)=>url.pathname==='/api/protocol-suggestions'?{suggestions:[suggestion]}:url.pathname==='/api/workbench/summary'?{workbench_counts:[]}:url.pathname.endsWith('/protocols/protocol-A/workbench')?{contract_version:1,queue_revision:'empty',pending_epoch_count:0,pending_cell_count:0,candidates:[],capabilities:{cumulative_pending_browse:true,frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}}:fallback();
@@ -37,4 +39,73 @@ test('held import source merges without entering Workbench and opens Overview on
   assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).filter(visible).length,0);
   assert.ok(h.fixture.requests.every(r=>!r.path.endsWith('/draft')),'direct merge does not mutate a review draft');
  }finally{release?.();await h.close();}
+});
+
+// The Overview "New data matches your saved query" card sends exactly what its
+// hold control emits (see protocolSuggestionHold.test.js) through the actual App.
+const sourceCard={...suggestion,suggestion_uuid:'suggestion',source_sha256:'source',source_filename:'2026-10-12_F.h5'};
+const overviewHold={kind:'merge_source',candidate_revision_uuid:'original',source_sha256:'source',origin:'protocol-overview'};
+async function overviewMergeHarness({lost=false}={}){
+ const h=await createWorkflowHarness(),state={accepts:0,summaryReads:0,receipt:null,heldRefresh:null,releaseRefresh:null,navigations:0};
+ let navigate;Object.defineProperty(h.fixture,'navigate',{configurable:true,get:()=>navigate,set:value=>{navigate=(...args)=>{state.navigations++;return value(...args);};}});
+ h.fixture.route={page:'protocol',protocol:'protocol-A',key:'main'};
+ h.fixture.respond=async(url,options,fallback)=>{
+  const path=url.pathname.replace(/^\/api/,'');
+  if(path==='/protocol-suggestions'){
+   if(state.receipt&&!state.heldRefresh)state.heldRefresh=new Promise(resolve=>{state.releaseRefresh=resolve;});
+   if(state.receipt){await state.heldRefresh;return {suggestions:[{...sourceCard,status:'superseded'}]};}
+   return {suggestions:[sourceCard]};
+  }
+  if(path==='/workbench/summary'){state.summaryReads++;return {workbench_counts:[]};}
+  if(path==='/annotation-profiles')return {selected_profile_uuid:'author',profiles:[{profile_uuid:'author',display_name:'Scientist'}]};
+  if(path.endsWith('/protocols/protocol-A/workbench'))return {contract_version:1,queue_revision:'empty',pending_epoch_count:0,pending_cell_count:0,candidates:[],capabilities:{cumulative_pending_browse:true,frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}};
+  if(path.endsWith('/workbench/candidates/original/context'))return {candidate_revision_uuid:'original',actor:'author',source_additive_accept:true,candidate_scope_revision:'scope',draft:{draft_version:0},protocol:{definition:{protocol_uuid:'protocol-A'}}};
+  if(path.endsWith('/workbench/candidates/original/preview'))return {mode:'source',source_sha256:'source',candidate_scope_revision:'scope',expected_draft_version:0,preview_sha256:'preview',expected_binding_version:1,expected_query_revision:'query',selected_epoch_count:16,accepted_epoch_count:16,already_present_epoch_count:0,retained_epoch_count:36,next_epoch_count:52,accepted_cell_count:2};
+  if(path.endsWith('/workbench/candidates/original/accept')){
+   const body=JSON.parse(options.body);if(!state.receipt){state.accepts++;state.receipt={...body,candidate_scope_revision:'scope',protocol_uuid:'protocol-A',candidate_revision_uuid:'original',actor:'author',binding:{version:2,revision_uuid:'main-two'},event_uuid:'event'};}
+   if(lost){lost=false;return {failure:503,error:'Reply lost after commit'};}
+   return state.receipt;
+  }
+  if(path.startsWith('/protocols/protocol-A/workbench/receipts/'))return state.receipt&&path.endsWith(state.receipt.operation_uuid)?state.receipt:{failure:404,error:'No receipt'};
+  return fallback();
+ };
+ await h.mount();
+ const cards=()=>h.root.findAll(node=>node.type==='workflow-child'&&node.props.suggestion?.candidate_revision_uuid==='original'&&typeof node.props.onMerge==='function');
+ await h.waitFor(()=>cards().length>0);
+ return {h,state,cards};
+}
+
+test('Overview match card hold merges its recording in place and retires the card before the suggestion refresh',async()=>{
+ const {h,state,cards}=await overviewMergeHarness();
+ try{
+  const summaryBefore=state.summaryReads;let result;
+  await h.act(async()=>{result=await cards()[0].props.onMerge('protocol-A',overviewHold);});
+  assert.equal(result,true);assert.equal(state.accepts,1);
+  const writes=h.fixture.requests.filter(r=>r.method!=='GET').map(r=>r.path.split('/').at(-1));
+  assert.deepEqual(writes,['preview','accept'],'direct source merge: no prepare, draft or apply');
+  assert.equal(JSON.parse(JSON.stringify(h.fixture.requests.find(r=>r.path.endsWith('/accept')).body)).mode,'source');
+  assert.equal(state.navigations,0,'merging from this Overview neither opens Workbench nor pushes a duplicate route');
+  assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).filter(visible).length,0);
+  await h.waitFor(()=>!!state.heldRefresh);
+  assert.equal(cards().length,0,'the verified receipt retires the card while the suggestion refresh is still pending');
+  assert.ok(state.summaryReads>summaryBefore,'Workbench pending counts are re-read after the merge');
+  await h.act(async()=>{state.releaseRefresh();});await h.settle(30);
+  assert.equal(cards().length,0,'the authoritative refresh (superseded) keeps it retired');
+  assert.equal(h.root.findAllByProps({'aria-label':'Overview'}).find(visible).props['aria-selected'],true);
+ }finally{state.releaseRefresh?.();await h.close();}
+});
+
+test('Overview card lost merge reply keeps the card and recovery identity; consent is single-use until the receipt is recovered',async()=>{
+ const {h,state,cards}=await overviewMergeHarness({lost:true});
+ try{
+  await h.act(async()=>{await assert.rejects(cards()[0].props.onMerge('protocol-A',overviewHold),/may have completed/);});
+  assert.equal(state.accepts,1);assert.equal(cards().length,1,'an uncertain outcome never retires the card');
+  await h.act(async()=>{await assert.rejects(cards()[0].props.onMerge('protocol-A',overviewHold),/recover/i);});
+  assert.equal(h.fixture.requests.filter(r=>r.path.endsWith('/accept')).length,1,'a second hold submits nothing while recovery is pending');
+  const recovery=h.root.findAll(node=>node.type==='workflow-child'&&node.props.mergeLabel==='Hold to retry merge');
+  assert.equal(recovery.length,1);assert.equal(recovery[0].props.identity,state.receipt.operation_uuid,'recovery keeps the original operation UUID');
+  await h.act(async()=>{await recovery[0].props.onInspect();});await h.waitFor(()=>!!state.heldRefresh);
+  assert.equal(h.fixture.requests.filter(r=>r.path.endsWith('/accept')).length,1,'receipt recovery is a GET, not a resubmission');
+  assert.equal(cards().length,0,'the recovered receipt retires the card');assert.equal(state.navigations,0);
+ }finally{state.releaseRefresh?.();await h.close();}
 });

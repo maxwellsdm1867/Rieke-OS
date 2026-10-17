@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {pendingProtocolSuggestions,suggestionBadge,importCompletionKey,sameSuggestionComparison} from "./protocol-overview/protocolSuggestions.js";
+import {pendingProtocolSuggestions,suggestionBadge,importCompletionKey,sameSuggestionComparison,sourceMergeRequest,mergedSourceKey,rememberMergedSource,withoutMergedSources} from "./protocol-overview/protocolSuggestions.js";
 import {datedCellLabel} from './recording-import/recordingIdentity.js';
 
 test('only persisted pending candidates produce update badges',()=>{
@@ -90,4 +90,27 @@ test('approval refuses invalid comparison and ambiguous apply receipt',async()=>
   await assert.rejects(()=>approveProtocolSuggestion(candidate,{},async()=>({expected_binding_version:1})),/valid dataset version/);
   const shown={expected_binding_version:1,expected_query_revision:'q'};
   await assert.rejects(()=>approveProtocolSuggestion(candidate,shown,async path=>path.endsWith('compare-to-protocol')?shown:{binding:{revision_uuid:'other',version:2}}),/complete receipt/);
+});
+test('card hold requests exactly one pending recording in its frozen candidate',()=>{
+  const card={protocol_uuid:'p',candidate_revision_uuid:'c',source_sha256:'s',status:'pending',diff_counts:{added:3}};
+  assert.deepEqual(sourceMergeRequest(card),{kind:'merge_source',candidate_revision_uuid:'c',source_sha256:'s'});
+  for(const change of [{status:'stale'},{status:'applied'},{status:'superseded'},{diff_counts:{added:0}},{diff_counts:{added:null}},{source_sha256:''},{source_sha256:undefined},{candidate_revision_uuid:null}])
+    assert.equal(sourceMergeRequest({...card,...change}),null,JSON.stringify(change));
+  assert.equal(sourceMergeRequest(null),null);
+});
+test('only a verified source receipt retires its exact card while suggestions refresh',()=>{
+  const receipt={mode:'source',protocol_uuid:'p',candidate_revision_uuid:'c',source_sha256:'s',event_uuid:'event'};
+  const key=mergedSourceKey('project',receipt);assert.ok(key);
+  for(const change of [{mode:'selected'},{event_uuid:''},{source_sha256:undefined},{protocol_uuid:null}])assert.equal(mergedSourceKey('project',{...receipt,...change}),null);
+  assert.equal(mergedSourceKey('project',null),null);assert.equal(mergedSourceKey(null,receipt),null);
+  const rows=[{protocol_uuid:'p',candidate_revision_uuid:'c',source_sha256:'s',status:'pending'},{protocol_uuid:'p',candidate_revision_uuid:'c',source_sha256:'other',status:'pending'},
+    {protocol_uuid:'q',candidate_revision_uuid:'c',source_sha256:'s',status:'pending'},{protocol_uuid:'p',candidate_revision_uuid:'next',source_sha256:'s',status:'pending'}];
+  const data={suggestions:rows,approved_history:[{protocol_uuid:'p',candidate_revision_uuid:'c',source_sha256:'s',status:'applied'}]};
+  assert.equal(withoutMergedSources(data,'project',[]),data);
+  const shown=withoutMergedSources(data,'project',[key]);
+  assert.deepEqual(shown.suggestions,rows.slice(1),'other recordings, protocols and candidates stay pending');assert.equal(shown.approved_history,data.approved_history);
+  assert.equal(withoutMergedSources(data,'other-project',[key]),data,'another project is unaffected');
+  assert.equal(withoutMergedSources(null,'project',[key]),null);
+  assert.deepEqual(rememberMergedSource(['a'],null),['a']);assert.deepEqual(rememberMergedSource(['a'],'a'),['a']);
+  assert.deepEqual(rememberMergedSource(['a','b'],'c',2),['b','c']);
 });

@@ -1,6 +1,7 @@
 import {useSemanticReset} from '../../useSemanticReset.js';
 import {useEffect,useRef,useState} from 'react';
-import {ArrowRight,Check,GitMerge,LoaderCircle,Sparkles,Pin,Database,FileCheck2,X,CheckCircle2} from 'lucide-react';
+import {sourceMergeRequest} from '../protocolSuggestions.js';
+import {ArrowRight,Check,LoaderCircle,Sparkles,Pin,Database,FileCheck2,X,CheckCircle2} from 'lucide-react';
 import {humanize,time,number} from "../../api.js";
 import ProtocolDiff from './ProtocolDiff.jsx';
 import InspectImportButton from '../../recording-import/ui/InspectImportButton.jsx';
@@ -15,6 +16,10 @@ export default function ProtocolSuggestion({suggestion,onMerge,onProtocol,import
   if(!suggestion)return null;
   const applied=suggestion.status==='applied',stale=suggestion.status==='stale';
   const hasAdditions=Number.isSafeInteger(suggestion.diff_counts?.added)&&suggestion.diff_counts.added>0;
+  const sourceRequest=sourceMergeRequest(suggestion),identity=`${suggestion.candidate_revision_uuid}:${suggestion.source_sha256}`;
+  // Overview and import review share one hold control and one source-scoped
+  // merge request; a plain click never merges or opens a cumulative preview.
+  const holdMerge=onMerge&&sourceRequest?()=>merge(importView?sourceRequest:{...sourceRequest,origin:'protocol-overview'}):undefined;
   async function merge(options){
     if(launching.current||disabled||applied||stale||!hasAdditions||!onMerge)return;
     launching.current=true;setMerging(true);setError('');
@@ -25,9 +30,8 @@ export default function ProtocolSuggestion({suggestion,onMerge,onProtocol,import
   return <section className={`protocol-new-data ${importView?'import-ready-protocol':''} ${applied?'is-added':''}`} aria-label={importView?humanize(suggestion.protocol_name):'New data matching saved protocol query'}>
     <div className="protocol-new-data-heading"><Sparkles size={19}/><div><h2>{importView?humanize(suggestion.protocol_name):applied?'Applied dataset update':stale?'Saved proposal needs a refresh':'New data matches your saved query'}</h2><p>{suggestion.source_filename||'Imported recording'} · {time(suggestion.created_at)}</p></div></div>
     <div className="protocol-match-summary"><ProtocolDiff comparison={suggestion}/><div className="protocol-match-actions">
-      {!importView&&!applied&&<button className="primary" disabled={disabled||stale||!hasAdditions||!onMerge} onClick={merge} title="Preview eligible additions across the incoming queue, preserving main recordings and your draft exclusions"><GitMerge size={15}/> Merge matched data</button>}
-      {importView?<InspectImportButton key={`${suggestion.candidate_revision_uuid}:${suggestion.source_sha256}`} identity={`${suggestion.candidate_revision_uuid}:${suggestion.source_sha256}`} disabled={disabled||merging||!onProtocol} onInspect={()=>onProtocol?.(suggestion.protocol_uuid,{candidate_revision_uuid:suggestion.candidate_revision_uuid})} onMerge={!applied&&!stale&&hasAdditions&&onMerge&&suggestion.source_sha256?()=>merge({kind:'merge_source',candidate_revision_uuid:suggestion.candidate_revision_uuid,source_sha256:suggestion.source_sha256}):undefined}/>:<button disabled={disabled||!onProtocol} onClick={()=>onProtocol?.(suggestion.protocol_uuid)}>Inspect in Workbench <ArrowRight size={14}/></button>}
-      {!importView&&!applied&&<small>{stale?'Refresh the saved proposal in Workbench.':'Merge opens a fresh preview of eligible additions for confirmation.'}</small>}
+      {importView?<InspectImportButton key={identity} identity={identity} disabled={disabled||merging||!onProtocol} onInspect={()=>onProtocol?.(suggestion.protocol_uuid,{candidate_revision_uuid:suggestion.candidate_revision_uuid})} onMerge={holdMerge}/>:!applied?<InspectImportButton key={identity} identity={identity} disabled={disabled||merging||!onProtocol} onInspect={()=>onProtocol?.(suggestion.protocol_uuid)} onMerge={holdMerge}/>:<button disabled={disabled||!onProtocol} onClick={()=>onProtocol?.(suggestion.protocol_uuid)}>Inspect in Workbench <ArrowRight size={14}/></button>}
+      {!importView&&!applied&&<small>{stale?'Refresh the saved proposal in Workbench.':holdMerge?`Hold to merge eligible additions from ${suggestion.source_filename||'this recording'} into Main. Main recordings and draft exclusions are kept; additions from other pending recordings stay in Workbench.`:'Inspect in Workbench to review and merge these additions.'}</small>}
     </div></div>
     {merging&&<p role="status">Merging eligible additions into Main…</p>}
     {error&&<p className="error" role="alert">{error}</p>}

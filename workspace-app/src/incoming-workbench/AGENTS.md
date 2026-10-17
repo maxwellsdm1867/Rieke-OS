@@ -250,8 +250,20 @@ tokens retire pre-submission work across A→B→A navigation and unmount. Verif
 same-project completion refreshes data even after navigation; only a still-current
 owner opens Overview. Lost/invalid replies retain recovery identity.
 
+The protocol Overview "New data matches your saved query" card uses the same
+`InspectImportButton` hold and `merge_source` request (`sourceMergeRequest` in
+`protocol-overview/protocolSuggestions.js`): its exact candidate and trigger
+recording SHA, never the cumulative proposal. A plain click never merges or opens
+a cumulative preview; additions from other pending recordings stay in Workbench.
+A hold from that protocol's own still-current Overview stays there instead of
+pushing a duplicate route. Completion passes the verified receipt to App, which
+hides only the matching project/protocol/candidate/recording card until the
+structure refresh returns the authoritative (superseded) list; uncertain outcomes
+never hide a card. The cumulative `merge_intent` handoff remains an App capability.
+
 Run `sourceMerge.test.js`, `useSourceMerge.test.js`, `importMergeAppRoute.test.js`,
-renderer-draft tests and the backend Workbench authority suite for these contracts.
+`protocolSuggestionHold.test.js`, `protocolSuggestions.test.js`, renderer-draft
+tests and the backend Workbench authority suite for these contracts.
 
 ## Large exact Workbench selections
 

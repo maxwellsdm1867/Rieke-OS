@@ -4,7 +4,7 @@
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
     "src/App.jsx": {
-      "fingerprint": "69d595d8ff5b4361831ee85d83bd8d2694d7cd2d824cddcca9e6e6a6f7f5985a",
+      "fingerprint": "dddbdac05c63cd88561af5d9aeff709bb7c18eb45d490206cc4916325be6c96c",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -48,7 +48,7 @@
         }
       ],
       "lifetime": "mixed-project-and-retained-composition",
-      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes. Independent review on 2026-10-15 confirmed project setup closes only after successful project activation; pending, refused and migration paths retain context. Callback return values changed; lifecycle hooks, dependencies and scientific owners are unchanged. Six actual App composition regression cases cover both setup callbacks. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement.",
+      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes. Independent review on 2026-10-15 confirmed project setup closes only after successful project activation; pending, refused and migration paths retain context. Callback return values changed; lifecycle hooks, dependencies and scientific owners are unchanged. Six actual App composition regression cases cover both setup callbacks. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Overview source-merge review (2026-10-16): the Overview card hold reuses the App source-merge owner; App adds presentation-only state that hides the exact project/protocol/candidate/recording card after a verified receipt until the existing structure refresh returns, plus a captured origin so a hold on the still-current same-protocol Overview does not push a duplicate route. No effect sites, dependencies, consent or recovery owners changed.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -1855,7 +1855,7 @@
       ]
     },
     "src/incoming-workbench/useSourceMerge.js": {
-      "fingerprint": "9990ba9f024abc4a4b8ae1cddbc25190b9a4029e11692477e1578f963e667260",
+      "fingerprint": "d57c4bf3536622d621f365d5953b0f6df3f1b6092b80ddb48d590656406d453f",
       "sites": [
         {
           "owner": "useSourceMerge",
@@ -1864,10 +1864,11 @@
         }
       ],
       "lifetime": "project-command-owner",
-      "reason": "App retains import/source merge orchestration outside Activity. Each request carries project/protocol/route intent and refuses stale completion navigation; pending or uncertain writes remain protected through flush/recovery.",
+      "reason": "App retains import/source merge orchestration outside Activity. Each request carries project/protocol/route intent and refuses stale completion navigation; pending or uncertain writes remain protected through flush/recovery. 2026-10-16: completion also passes the verified receipt to onAccepted; owner tokens, navigation fences and recovery are unchanged.",
       "tests": [
         "src/importMergeAppRoute.test.js",
-        "src/importMergeWorkflow.test.js"
+        "src/importMergeWorkflow.test.js",
+        "src/incoming-workbench/useSourceMerge.test.js"
       ]
     },
     "src/incoming-workbench/useWorkbenchQueue.js": {
@@ -2444,13 +2445,15 @@
       ]
     },
     "src/protocol-overview/protocolSuggestions.js": {
-      "fingerprint": "d105a64575166afc12acaa1641e7c3958b0bee840444e7e8b710ce0476fe9c1d",
+      "fingerprint": "b1dc89a45ae86b8aab1b20a9140332916c7aa92c9fb3b90b2b0861f35e298926",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds pure source-merge request and verified-receipt card retirement helpers; no lifetime.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/protocolSuggestions.test.js",
+        "src/importMergeAppRoute.test.js"
       ]
     },
     "src/protocol-overview/ui/NewPinnedProtocol.jsx": {
@@ -2581,7 +2584,7 @@
       ]
     },
     "src/protocol-overview/ui/ProtocolSuggestion.jsx": {
-      "fingerprint": "8c63441fd0dc73a4caa6da42d2b9df22bf2c119943dea986fa1203d13ee8e709",
+      "fingerprint": "c4da9ef533b07d4bb270a68f9cbf70c9a085b68c22977ea2943a9c5ca405728a",
       "sites": [
         {
           "owner": "ImportSuggestions",
@@ -2600,10 +2603,12 @@
         }
       ],
       "lifetime": "semantic-auto-open-intent + project-review-state",
-      "reason": "autoOpenJobUuid is an explicit open intent, consumed once per semantic transition; user dismissal survives reconnect. Review pending state/managed message and modal presentation retain existing behavior.",
+      "reason": "autoOpenJobUuid is an explicit open intent, consumed once per semantic transition; user dismissal survives reconnect. Review pending state/managed message and modal presentation retain existing behavior. 2026-10-16: the Overview card renders the shared hold control with the same source-scoped request instead of a click-to-navigate merge; existing ImportSuggestions effects are unchanged.",
       "tests": [
         "src/useSemanticReset.test.js",
-        "src/semanticPresentationControls.test.js"
+        "src/semanticPresentationControls.test.js",
+        "src/protocolSuggestionHold.test.js",
+        "src/importMergeWorkflow.test.js"
       ]
     },
     "src/protocol-overview/ui/SelectionOverview.jsx": {

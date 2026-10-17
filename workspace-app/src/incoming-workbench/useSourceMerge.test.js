@@ -19,6 +19,7 @@ for(const scenario of ['retired-preview','moved-after-submit','unmounted-after-s
   if(scenario==='unmounted-after-submit'){await act(()=>view.unmount());view=null;}
   else{await render('B');if(scenario==='retired-preview')await render('A');}
   if(scenario==='retired-preview'){await act(async()=>{release();await assert.rejects(pending,/workspace changed/);});assert.equal(submits,0);assert.deepEqual(calls,[]);}
-  else{await act(async()=>{release();await pending;});assert.equal(submits,1);assert.deepEqual(calls,scenario==='moved-after-submit'?[['p',{navigate:false}]]:[]);}
+  else{await act(async()=>{release();await pending;});assert.equal(submits,1);assert.deepEqual(calls.map(call=>call.slice(0,2)),scenario==='moved-after-submit'?[['p',{navigate:false}]]:[]);
+   for(const [,,receipt] of calls)assert.deepEqual([receipt.mode,receipt.source_sha256,receipt.candidate_revision_uuid,receipt.event_uuid],['source','s','c','event'],'completion carries its verified receipt');}
  }finally{release?.();if(view)await act(()=>view.unmount());}
 });
