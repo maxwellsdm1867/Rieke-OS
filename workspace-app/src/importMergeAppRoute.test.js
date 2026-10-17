@@ -61,8 +61,8 @@ async function overviewMergeHarness({lost=false}={}){
   if(path==='/protocols/protocol-A/workbench/prepare')return {contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare-op',candidate_revision_uuid:'union',root:unionRoot,candidate_scope_revision:'scope',queue_revision:'q1',actor:'author',context:unionContext(3,'selected')};
   if(path===`${unionRoot}/draft`)return unionContext(4,'all');
   if(path===`${unionRoot}/preview`)return {mode:'all',candidate_scope_revision:'scope',expected_draft_version:4,preview_sha256:'preview',expected_binding_version:1,expected_query_revision:'query',selected_epoch_count:755,accepted_epoch_count:755,already_present_epoch_count:0,retained_epoch_count:36,next_epoch_count:791,accepted_cell_count:4};
-  if(path===`${unionRoot}/accept`){
-   const body=JSON.parse(options.body);if(!state.receipt){state.accepts++;state.receipt={...body,candidate_scope_revision:'scope',protocol_uuid:'protocol-A',candidate_revision_uuid:'union',actor:'author',binding:{version:2,revision_uuid:'main-two'},event_uuid:'event'};}
+  if(path==='/protocols/protocol-A/workbench/merge-all'){
+   const body=JSON.parse(options.body);if(!state.receipt){state.accepts++;state.receipt={operation_uuid:body.operation_uuid,mode:'all',accepted_epoch_count:755,candidate_scope_revision:'scope',protocol_uuid:'protocol-A',candidate_revision_uuid:'union',actor:'author',binding:{version:2,revision_uuid:'main-two'},event_uuid:'event'};}
    if(lost){lost=false;return {failure:503,error:'Reply lost after commit'};}
    return state.receipt;
   }
@@ -75,7 +75,7 @@ async function overviewMergeHarness({lost=false}={}){
  return {h,state,cards};
 }
 
-test('Overview card hold merges all pending mergeable epochs in place: prepare, draft all, preview all, accept',async()=>{
+test('Overview card hold merges all pending mergeable epochs in place with one request',async()=>{
  const {h,state,cards}=await overviewMergeHarness();
  try{
   const tile=()=>h.root.findAll(node=>!!node.props&&typeof node.type==='function'&&Object.hasOwn(node.props,'pendingReviewCells')).map(node=>node.props.pendingReviewCells);
@@ -83,12 +83,9 @@ test('Overview card hold merges all pending mergeable epochs in place: prepare, 
   await h.act(async()=>{result=await cards()[0].props.onMerge('protocol-A',overviewHold);});
   assert.equal(result,true);assert.equal(state.accepts,1);
   const writes=h.fixture.requests.filter(r=>r.method!=='GET');
-  assert.deepEqual(writes.map(r=>r.path),['/protocols/protocol-A/workbench/prepare',`${unionRoot}/draft`,`${unionRoot}/preview`,`${unionRoot}/accept`]);
-  assert.deepEqual(writes[0].body,{expected_queue_revision:'q1'});
-  assert.deepEqual(writes[1].body,{expected_version:3,expected_candidate_scope_revision:'scope',decisions:[],selection_mode:'all'});
-  assert.deepEqual(writes[2].body,{expected_candidate_scope_revision:'scope',expected_draft_version:4,mode:'all'});
-  const accept=writes[3].body;assert.match(accept.operation_uuid,/^[0-9a-f-]{36}$/);
-  assert.deepEqual({...accept,operation_uuid:'op'},{expected_candidate_scope_revision:'scope',expected_draft_version:4,mode:'all',preview_sha256:'preview',expected_binding_version:1,expected_query_revision:'query',operation_uuid:'op'});
+  assert.deepEqual(writes.map(r=>r.path),['/protocols/protocol-A/workbench/merge-all']);
+  const merge=writes[0].body;assert.match(merge.operation_uuid,/^[0-9a-f-]{36}$/);
+  assert.deepEqual({...merge,operation_uuid:'op'},{expected_queue_revision:'q1',operation_uuid:'op'});
   assert.equal(state.navigations,0,'merging from this Overview neither opens Workbench nor pushes a route');
   assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).filter(visible).length,0);
   await h.waitFor(()=>state.summaryReads>summaryBefore);
@@ -103,11 +100,11 @@ test('Overview card lost merge-all reply keeps recovery identity; consent is sin
   await h.act(async()=>{await assert.rejects(cards()[0].props.onMerge('protocol-A',overviewHold),/may have completed/);});
   assert.equal(state.accepts,1);
   await h.act(async()=>{await assert.rejects(cards()[0].props.onMerge('protocol-A',overviewHold),/recover/i);});
-  assert.equal(h.fixture.requests.filter(r=>r.path.endsWith('/accept')).length,1,'a second hold submits nothing while recovery is pending');
+  assert.equal(h.fixture.requests.filter(r=>r.path.endsWith('/merge-all')).length,1,'a second hold submits nothing while recovery is pending');
   const recovery=h.root.findAll(node=>node.type==='workflow-child'&&node.props.mergeLabel==='Hold to retry merge');
   assert.equal(recovery.length,1);assert.equal(recovery[0].props.identity,state.receipt.operation_uuid,'recovery keeps the original operation UUID');
   await h.act(async()=>{await recovery[0].props.onInspect();});await h.settle(15);
-  assert.equal(h.fixture.requests.filter(r=>r.path.endsWith('/accept')).length,1,'receipt recovery is a GET, not a resubmission');
+  assert.equal(h.fixture.requests.filter(r=>r.path.endsWith('/merge-all')).length,1,'receipt recovery is a GET, not a resubmission');
   assert.equal(h.root.findAll(node=>node.type==='workflow-child'&&node.props.mergeLabel==='Hold to retry merge').length,0);assert.equal(state.navigations,0);
  }finally{await h.close();}
 });

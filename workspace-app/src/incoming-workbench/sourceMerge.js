@@ -7,8 +7,25 @@ export function createSourceMerge({projectId,request,persist=async()=>{},owner=(
  let state={phase:'idle',operation:null,message:'',notice:''},running=false,alive=true;
  const publish=next=>{state=next;if(alive)onState(state);};
  const root=op=>workbenchCandidateRoot(op.protocolId,op.candidateId);
- const valid=op=>op?.projectId===projectId&&['protocolId','candidateId','actor'].every(k=>typeof op[k]==='string'&&!!op[k])&&(op.body?.mode==='source'?typeof op.sourceSha256==='string'&&!!op.sourceSha256&&op.body.source_sha256===op.sourceSha256:op.body?.mode==='all'&&op.sourceSha256===undefined&&op.body.source_sha256===undefined)&&['operation_uuid','preview_sha256','expected_candidate_scope_revision','expected_query_revision'].every(k=>typeof op.body[k]==='string'&&!!op.body[k])&&Number.isSafeInteger(op.body.expected_draft_version)&&Number.isSafeInteger(op.body.expected_binding_version);
+ const validAll=op=>op?.projectId===projectId&&op.mergeAll===true&&typeof op.protocolId==='string'&&!!op.protocolId&&op.body?.mode==='merge_all'&&['operation_uuid','expected_queue_revision'].every(k=>typeof op.body[k]==='string'&&!!op.body[k]);
+ const valid=op=>validAll(op)||op?.projectId===projectId&&['protocolId','candidateId','actor'].every(k=>typeof op[k]==='string'&&!!op[k])&&(op.body?.mode==='source'?typeof op.sourceSha256==='string'&&!!op.sourceSha256&&op.body.source_sha256===op.sourceSha256:op.body?.mode==='all'&&op.sourceSha256===undefined&&op.body.source_sha256===undefined)&&['operation_uuid','preview_sha256','expected_candidate_scope_revision','expected_query_revision'].every(k=>typeof op.body[k]==='string'&&!!op.body[k])&&Number.isSafeInteger(op.body.expected_draft_version)&&Number.isSafeInteger(op.body.expected_binding_version);
+ // Merge all is one idempotent request; its receipt names the candidate.
+ async function submitAll(op,recovering=false,receiptOnly=false){
+  publish({phase:'accepting',operation:op,message:recovering?'Recovering merge receipt…':'Merging into Main…',notice:state.notice||''});
+  try{
+   const receipt=receiptOnly?await request(`/protocols/${encodeURIComponent(op.protocolId)}/workbench/receipts/${encodeURIComponent(op.body.operation_uuid)}`)
+     :await request(`${workbenchRoot(op.protocolId)}/merge-all`,{method:'POST',body:{expected_queue_revision:op.body.expected_queue_revision,operation_uuid:op.body.operation_uuid}});
+   if(receipt.operation_uuid!==op.body.operation_uuid||receipt.protocol_uuid!==op.protocolId||receipt.mode!=='all'||!receipt.binding?.revision_uuid||!Number.isSafeInteger(receipt.binding.version)||!receipt.event_uuid)throw Error('The merge receipt is incomplete.');
+   publish({phase:'idle',operation:null,message:'',notice:state.notice||''});
+   return {protocolId:op.protocolId,receipt};
+  }catch(error){
+   const uncertain=recovering||acceptanceFailureKind(error)!=='rejected';
+   publish({phase:uncertain?'unconfirmed':'error',operation:uncertain?op:null,message:uncertain?'Merge may have completed. Recover this same receipt before trying another merge.':`Merge was not accepted. ${error.message}`});
+   throw Error(state.message);
+  }
+ }
  async function submit(op,recovering=false,receiptOnly=false){
+  if(op.mergeAll)return submitAll(op,recovering,receiptOnly);
   publish({phase:'accepting',operation:op,message:recovering?'Recovering merge receipt…':'Merging into Main…',notice:state.notice||''});
   try{
    const receipt=receiptOnly?await request(`/protocols/${encodeURIComponent(op.protocolId)}/workbench/receipts/${encodeURIComponent(op.body.operation_uuid)}`):await request(`${root(op)}/accept`,{method:'POST',body:op.body});
@@ -57,24 +74,19 @@ export function createSourceMerge({projectId,request,persist=async()=>{},owner=(
   async startAll(protocolId,{queue_revision:queueRevision}={}){
    if(running||state.operation)throw Error('Finish or recover the current merge first.');
    if(!projectId||[protocolId,queueRevision].some(v=>typeof v!=='string'||!v))throw Error('The protocol and its current pending queue must be identified before merging.');
-   running=true;const captured=owner(),op={projectId,protocolId};
+   running=true;const captured=owner();
    const current=()=>{if(!alive||owner()!==captured)throw Error('The workspace changed before submission. Hold to merge again from the current Overview.');};
-   publish({phase:'preparing',operation:null,message:'Checking all pending additions…',notice:''});
+   // The queue revision the scientist saw is the consent; the server merges
+   // exactly that pending set or refuses if it changed.
+   const op={projectId,protocolId,mergeAll:true,body:{mode:'merge_all',expected_queue_revision:queueRevision,operation_uuid:crypto.randomUUID()}};
    try{
-    const prepared=requirePreparedWorkbench(protocolId,await request(`${workbenchRoot(protocolId)}/prepare`,{method:'POST',body:{expected_queue_revision:queueRevision}}),queueRevision);current();
-    op.candidateId=prepared.candidate_revision_uuid;op.actor=prepared.actor||prepared.context.actor;
-    if(typeof op.actor!=='string'||!op.actor)throw Error('The merge author could not be identified. Refresh before merging.');
-    const preview=await previewWorkbench(root(op),prepared.context,'all',async(path,options)=>{const value=await request(path,options);current();return value;});current();
-    workbenchPreviewCounts(preview);
-    if(preview.accepted_epoch_count<=0)throw Error('No mergeable additions remain. Main is unchanged.');
-    op.body={expected_candidate_scope_revision:preview.expected_candidate_scope_revision,expected_draft_version:preview.expected_draft_version,mode:'all',preview_sha256:preview.preview_sha256,expected_binding_version:preview.expected_binding_version,expected_query_revision:preview.expected_query_revision,operation_uuid:crypto.randomUUID()};
     publish({phase:'preparing',operation:op,message:'Saving merge recovery identity…',notice:''});
     await saveRecovery(op,current);
     return await submit(op);
    }catch(error){if(!state.operation)publish({phase:'error',operation:null,message:error.message,notice:''});throw error;}
    finally{running=false;}
   },
-  async recover({retry=false}={}){if(running||!valid(state.operation))throw Error('No recoverable merge is available.');running=true;const op=state.operation,captured=owner();try{const profiles=await request('/annotation-profiles');if((profiles.selected_profile_uuid||profiles.default_profile_uuid)!==op.actor){const name=profiles.profiles?.find(p=>p.profile_uuid===op.actor)?.display_name||op.actor;const message=`Choose tag author ${name} before recovering this merge receipt.`;publish({...state,phase:'unconfirmed',message});throw Error(message);}if(!alive||owner()!==captured)throw Error('The workspace changed before recovery submission. Recover again from the current view.');return await submit(op,true,!retry);}finally{running=false;}},
+  async recover({retry=false}={}){if(running||!valid(state.operation))throw Error('No recoverable merge is available.');running=true;const op=state.operation,captured=owner();try{const profiles=op.mergeAll?null:await request('/annotation-profiles');if(!op.mergeAll&&(profiles.selected_profile_uuid||profiles.default_profile_uuid)!==op.actor){const name=profiles.profiles?.find(p=>p.profile_uuid===op.actor)?.display_name||op.actor;const message=`Choose tag author ${name} before recovering this merge receipt.`;publish({...state,phase:'unconfirmed',message});throw Error(message);}if(!alive||owner()!==captured)throw Error('The workspace changed before recovery submission. Recover again from the current view.');return await submit(op,true,!retry);}finally{running=false;}},
   open(){alive=true;},
   close(){alive=false;},
  };

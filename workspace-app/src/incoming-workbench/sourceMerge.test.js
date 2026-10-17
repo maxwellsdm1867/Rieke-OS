@@ -44,41 +44,45 @@ test('receipt lookup accepts the backend default author when no selected author 
 });
 
 function mergeAllHarness({persist}={}){
- const posts=[],context=(version,mode)=>({candidate_revision_uuid:'union',candidate_scope_revision:'scope',actor:'actor',protocol:{definition:{protocol_uuid:'protocol'}},draft:{draft_version:version,selection_mode:mode}});
- const root='/protocols/protocol/workbench/candidates/union';
+ const posts=[];
  const request=async(path,options={})=>{
   posts.push({path,method:options.method||'GET',body:structuredClone(options.body)});
-  if(path==='/protocols/protocol/workbench/prepare')return {contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prep',candidate_revision_uuid:'union',root,candidate_scope_revision:'scope',queue_revision:'q1',actor:'actor',context:context(5,'selected')};
-  if(path===`${root}/draft`)return context(6,'all');
-  if(path===`${root}/preview`)return {mode:'all',candidate_scope_revision:'scope',expected_draft_version:6,preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',selected_epoch_count:755,accepted_epoch_count:755,already_present_epoch_count:0,retained_epoch_count:36,next_epoch_count:791,accepted_cell_count:4};
-  if(path===`${root}/accept`)return {...options.body,candidate_scope_revision:'scope',protocol_uuid:'protocol',candidate_revision_uuid:'union',actor:'actor',binding:{revision_uuid:'main',version:3},event_uuid:'event'};
+  if(path==='/protocols/protocol/workbench/merge-all')return {mode:'all',operation_uuid:options.body.operation_uuid,protocol_uuid:'protocol',candidate_revision_uuid:'union',actor:'actor',accepted_epoch_count:755,binding:{revision_uuid:'main',version:3},event_uuid:'event'};
+  if(path.startsWith('/protocols/protocol/workbench/receipts/'))return {mode:'all',operation_uuid:decodeURIComponent(path.split('/').at(-1)),protocol_uuid:'protocol',binding:{revision_uuid:'main',version:3},event_uuid:'event'};
   throw Error(`unexpected ${path}`);
  };
  const controller=createSourceMerge({projectId:'project',request,persist});
- return {controller,posts,root};
+ return {controller,posts};
 }
-test('merge all runs prepare, draft all, preview all and accept in order with exact fences',async()=>{
+test('merge all is one request fenced by the queue revision the scientist saw',async()=>{
  let saved=null;const h=mergeAllHarness({persist:async()=>{saved=structuredClone(h.controller.snapshot());return {viewSaved:true,notice:''};}});
  const result=await h.controller.startAll('protocol',{queue_revision:'q1'});
- assert.deepEqual(h.posts.map(p=>[p.method,p.path]),[['POST','/protocols/protocol/workbench/prepare'],['PATCH',`${h.root}/draft`],['POST',`${h.root}/preview`],['POST',`${h.root}/accept`]]);
- assert.deepEqual(h.posts[0].body,{expected_queue_revision:'q1'});
- assert.deepEqual(h.posts[1].body,{expected_version:5,expected_candidate_scope_revision:'scope',decisions:[],selection_mode:'all'});
- assert.deepEqual(h.posts[2].body,{expected_candidate_scope_revision:'scope',expected_draft_version:6,mode:'all'});
- const accept=h.posts[3].body;
- assert.deepEqual({...accept,operation_uuid:'op'},{expected_candidate_scope_revision:'scope',expected_draft_version:6,mode:'all',preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',operation_uuid:'op'});
- assert.deepEqual(saved.body,accept,'the exact replay body was saved before submission');assert.equal(saved.candidateId,'union');assert.equal(saved.actor,'actor');
+ assert.deepEqual(h.posts.map(p=>[p.method,p.path]),[['POST','/protocols/protocol/workbench/merge-all']]);
+ const body=h.posts[0].body;
+ assert.deepEqual({...body,operation_uuid:'op'},{expected_queue_revision:'q1',operation_uuid:'op'});
+ assert.equal(saved.body.operation_uuid,body.operation_uuid,'the replayable operation was saved before submission');
+ assert.equal(saved.body.expected_queue_revision,'q1');
  assert.equal(result.receipt.mode,'all');assert.equal(result.receipt.event_uuid,'event');assert.equal(h.controller.snapshot(),null);
 });
 test('merge all: a view that could not be saved does not block submission and leaves a quiet notice',async()=>{
  const h=mergeAllHarness({persist:async()=>({viewSaved:false,notice:'The latest view could not be saved; the merge was still submitted.'})});
  await h.controller.startAll('protocol',{queue_revision:'q1'});
- assert.equal(h.posts.filter(p=>p.path.endsWith('/accept')).length,1);
+ assert.equal(h.posts.filter(p=>p.path.endsWith('/merge-all')).length,1);
  assert.equal(h.controller.state.phase,'idle');assert.match(h.controller.state.notice,/could not be saved/);
 });
 test('merge all: an unconfirmed accepted write still refuses submission',async()=>{
  const h=mergeAllHarness({persist:async()=>{throw Error('Some accepted changes were not confirmed.');}});
  await assert.rejects(h.controller.startAll('protocol',{queue_revision:'q1'}),/not confirmed/);
- assert.equal(h.posts.filter(p=>p.path.endsWith('/accept')).length,0);assert.equal(h.controller.snapshot(),null);
+ assert.equal(h.posts.filter(p=>p.path.endsWith('/merge-all')).length,0);assert.equal(h.controller.snapshot(),null);
+});
+test('a saved merge-all operation restores and recovers its receipt by operation',async()=>{
+ const h=mergeAllHarness({persist:async()=>({viewSaved:true})});
+ const op={projectId:'project',protocolId:'protocol',mergeAll:true,body:{mode:'merge_all',expected_queue_revision:'q1',operation_uuid:'op-1'}};
+ h.controller.restore(op);assert.equal(h.controller.state.phase,'unconfirmed');
+ const result=await h.controller.recover();
+ assert.deepEqual(h.posts.map(p=>[p.method,p.path]),[['GET','/protocols/protocol/workbench/receipts/op-1']]);
+ assert.equal(result.receipt.operation_uuid,'op-1');assert.equal(h.controller.snapshot(),null);
+ assert.throws(()=>mergeAllHarness().controller.restore({...op,body:{...op.body,expected_queue_revision:''}}),/invalid/);
 });
 test('merge all restores and validates its saved recovery identity',async()=>{
  const h=mergeAllHarness({persist:async()=>({viewSaved:true})});

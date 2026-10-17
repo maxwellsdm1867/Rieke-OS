@@ -1605,10 +1605,10 @@
       ]
     },
     "src/incoming-workbench/sourceMerge.js": {
-      "fingerprint": "0bc0457ff00f1df06d1c3144dd57c2eb93c2f03636a8ba013bdfdb96e35ba12a",
+      "fingerprint": "e74a6198c87297a62f39909b4d1f1facb5332321a512b66f3dd4fc645e426a6a",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds startAll (prepare -> draft all -> preview all -> accept) under the same owner token/current() checks and recovery identity; restore/validation accept mode all. Persist failure from accepted writes still refuses; view-only failure sets a notice.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds startAll (prepare -> draft all -> preview all -> accept) under the same owner token/current() checks and recovery identity; restore/validation accept mode all. Persist failure from accepted writes still refuses; view-only failure sets a notice. Single-request merge-all review (2026-10-16): Overview Hold to merge all submits one idempotent merge-all request fenced by the queue revision, saved before submission and recovered by receipt lookup or same-operation replay; no effect sites, dependencies or owners changed.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
