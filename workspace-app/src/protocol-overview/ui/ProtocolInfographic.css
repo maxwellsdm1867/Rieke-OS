@@ -15,9 +15,10 @@
 .pi-context-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);align-items:stretch}
 .pi-dates{padding:20px 22px;min-width:0}
 .pi-dates h3{font-size:12px;margin:0 0 12px;color:var(--ink-secondary)}
-.pi-date-list>div{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:baseline;gap:14px;font-size:12px;margin:9px 0}
+.pi-date-list{display:grid;grid-template-columns:minmax(0,1fr) max-content max-content;column-gap:14px}
+.pi-date-list>div{display:grid;grid-column:1/-1;grid-template-columns:subgrid;align-items:baseline;font-size:12px;margin:9px 0}
 .pi-date-list>div>span{overflow-wrap:anywhere}
-.pi-date-list strong{font-size:12px;font-weight:550;font-variant-numeric:tabular-nums}
+.pi-date-list strong{font-size:12px;font-weight:550;font-variant-numeric:tabular-nums;text-align:right}
 .pi-date-list small{font-variant-numeric:tabular-nums;text-align:right}
 .pi-dates>p{font-size:11px;color:var(--ink-muted)}
 .pi-source-size{display:flex;align-items:baseline;gap:7px 12px;flex-wrap:wrap;border-top:1px solid var(--border-subtle);padding-top:13px;margin-top:17px;font-size:11px;color:var(--ink-muted)}
@@ -47,7 +48,8 @@
 @container (max-width:470px){
   .protocol-infographic>header{padding:12px 16px}
   .pi-metrics>div>strong{font-size:21px}
-  .pi-date-list>div{gap:8px;font-size:11px}
+  .pi-date-list{column-gap:8px}
+  .pi-date-list>div{font-size:11px}
 }
 
 .pi-cell-coverage{padding:10px 22px;font-size:12px;color:var(--ink-secondary);background:var(--surface-subtle);line-height:1.6}
