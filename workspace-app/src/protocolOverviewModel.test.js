@@ -42,3 +42,11 @@ test('headline counts recorded types separately from unclassified cells',async()
  assert.equal(summary.types.find(row=>row.type==='Unclassified').count,1);
  assert.equal(protocolCellSummary([]).cellTypes,0);
 });
+
+test('overview count labels inflect singular nouns and keep unavailable counts explicit',async()=>{
+ const {countNoun,groupTotal,recordingDateLabel}=await import("./protocol-overview/protocolOverviewModel.js");
+ assert.equal(countNoun(1,'cell'),'1 cell');assert.equal(countNoun(0,'cell'),'0 cells');assert.equal(countNoun(1180,'epoch'),`${(1180).toLocaleString()} epochs`);
+ assert.equal(countNoun(null,'cell'),'Unavailable cells');assert.equal(countNoun(-1,'epoch'),'Unavailable epochs');assert.equal(countNoun(1.5,'cell'),'Unavailable cells');
+ assert.equal(groupTotal([{exported:3},{exported:0}],'exported'),3);assert.equal(groupTotal([{exported:3},{exported:null}],'exported'),null);assert.equal(groupTotal([],'exported'),0);
+ assert.equal(recordingDateLabel('Not recorded'),'Not recorded');assert.equal(recordingDateLabel('not-a-date'),'not-a-date');assert.match(recordingDateLabel('2026-07-02'),/2026/);
+});
