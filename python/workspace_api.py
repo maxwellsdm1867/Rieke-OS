@@ -2143,8 +2143,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             save_app_state(project_dir, service.dj.conn(), service=service)
             if service._loaded:
                 prepare_annotations(reuse=True)
+        # The mirror captures the whole app state under the database lock, so it
+        # waits for a pause in activity instead of landing between quick clicks;
+        # close still flushes it.
         scheduler=BackupScheduler(lambda:save_app_state(project_dir,service.dj.conn(),service=service),
-            db_lock,logger=app.logger)
+            db_lock,delay=3.0,max_delay=15.0,logger=app.logger)
         app.extensions['backup_scheduler']=scheduler
         if shared_annotations is not None:shared_annotations.on_commit=scheduler.request
 

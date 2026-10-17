@@ -1384,7 +1384,8 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             if existing:
                 return jsonify(public_receipt(existing))
         with guarded(protocol, revision) as owner:
-            service.refresh()
+            # Acceptance verifies the sources and fingerprints it publishes
+            # (verify_sources); a whole-catalog refresh here only repeated work.
             return jsonify(public_receipt(manager.accept(protocol, revision, owner, value)))
 
     @app.get(candidate + '/epochs')
