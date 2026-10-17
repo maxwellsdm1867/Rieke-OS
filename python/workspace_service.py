@@ -371,7 +371,8 @@ class WorkspaceService:
         # unchanged after the build; any unverifiable input recomputes all.
         source = data.get('source_scope')
         witness = catalog_generation(source['revision']) if catalog_generation and isinstance(source, dict) else None
-        definitions = [field['id'] for field in TagPredicates(self).definitions()]
+        # Tag-time fields are filter-only; catalog_fields omits them.
+        definitions = [field['id'] for field in TagPredicates(self).definitions() if field.get('value_shape') != 'tag_time']
         memo = getattr(self, '_annotation_catalog_memo', None)
         if witness is not None and witness[1].keys() != set(definitions):
             witness = None

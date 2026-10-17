@@ -153,7 +153,7 @@ class PredicateFieldMemoTests(MemoFixture):
             entry['definition']={**entry['definition'],'name':'Renamed protocol'}
             renamed=self.fields()
         self.assertEqual(len(calls),4)
-        self.assertTrue(all(len(only)==len(TagPredicates(self.service).definitions()) for only in calls))
+        self.assertTrue(all(len(only)==len([field for field in TagPredicates(self.service).definitions() if field.get('value_shape')!='tag_time']) for only in calls))
         self.assertEqual(excluded['source_scope']['excluded_source_revisions'],['a'*64])
         self.assertIn('Tags · Renamed protocol',[field['label'] for field in renamed['fields']])
         self.assertEqual(renamed,self.reference())

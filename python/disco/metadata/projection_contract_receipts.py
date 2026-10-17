@@ -238,7 +238,7 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
               'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
                                  'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
                                  '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
-                                 'b72dc0cfd0f5418187fa7d411995fd58e330467f75fc9fd466678d41d65a40f6',
+                                 'cd48922db39a9089d177ed680af2ea04ab079655eea8925a493cb6db4784f570',
                                  '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
               'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
@@ -251,7 +251,7 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
                            'evaluate tag-time leaves against hydrated chip times. Projection keys, codecs, membership, '
                            'source validation and cache authority are unchanged; all other ordered owners and the '
                            'resolver are byte-identical. '
-                           'Merged with the catalog memo: '
+                           'Merged with the catalog memo (whose memo keys omit filter-only tag-time fields): '
                            'Relative to clean 9c462df, workspace_service only changes the body of '
                            'WorkspaceService._with_annotation_fields: annotation catalog fields are memoized per '
                            'field under an app-supplied native generation witness and recomputed otherwise. '
