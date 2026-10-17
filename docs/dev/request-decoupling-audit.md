@@ -169,3 +169,48 @@ annotation receipts into their own channel would remove it.
 Not yet addressed (see B-items): search keystroke (~347 ms), `/explore/predicate-fields`
 (~350 ms), project overview (~650–700 ms), epoch detail inside a protocol (~71 ms, the
 double `native_context` rebuild), per-request generation-token attestation.
+
+## Slow read memos (2026-10-17)
+
+Harness: `tools/benchmark_slow_reads.py` (production Flask routes, WorkspaceService,
+ProtocolStateReader, CurationStore, SharedAnnotations, real sealed DiskMetadataIndex;
+SQL tables are the in-memory test doubles; StateGenerationAuthority is the production
+class with schema attestation and scope reads replaced by counted constants). 7
+protocols partition the project; ~2% protocol tags, 200 epoch + 3 cell shared tags.
+Medians of 7 warm requests; same harness against clean `9c462df` and this change,
+run back to back on a shared, heavily loaded machine (load average 20-30), so treat
+small differences as noise. Not native MySQL, not a release gate.
+
+| Endpoint (hit) | 5k before → after | 50k before → after |
+| --- | --- | --- |
+| `GET /api/search?q=con` | 531 → 0.7 ms | 3,415 → 6.0 ms (min 0.85) |
+| `GET /api/explore/predicate-fields` | 525 → 1.0 ms | 3,946 → 1.1 ms |
+| `GET /api/overview` | 300 → 1.1 ms | 14,382 → 5.6 ms (min 4.4) |
+| `GET /api/epochs/<id>?protocol_uuid=` | 6.4 → 5.4 ms | 54 → 56 ms (min 53 → 31) |
+| `GET /api/protocols/<id>?projection=browse` | 8.4 → 3.6 ms | 60 → 92 ms (min 59 → 40) |
+| Schema attestations per request (overview) | 74 → 2 | 102 → 2 |
+
+1. **Annotation catalog fields** (`/predicate-fields`, search) are memoized per field.
+   Key: publication, source-scope revision, index/typed generations, row/fingerprint/
+   cell identities, protocol names, and the one scope generation each field depends on
+   (shared fields: shared generation; `curation/<p>/tags`: that protocol's curation
+   generation). Stored only when the witness is unchanged after the build; replaced or
+   patched readers and unavailable authority always recompute. A tag write recomputes
+   only the advanced scope.
+2. **Protocol context fast path**: `native_context` compares a marshal-v2 witness
+   (type-exact, reference-independent) of every live proof input instead of rebuilding
+   `_metadata` (deep-copied query result) and comparing recursively. Still O(protocol
+   members), now at C speed; in-place changes, including numeric type changes, take the
+   exact path. Non-marshallable inputs disable the witness.
+3. **Read routes attest the native schema once per response** (`read_contract()` around
+   search, predicate fields, overview, epoch detail, protocol summary); scope
+   generations stay live and a closing change discards the response.
+4. **Overview** is memoized per generation (every protocol's curation token and binding
+   header, shared token, export signature, publication/identities, project/source/cell
+   descriptors); events and exports are always read live with an opening/closing
+   witness. The presentation cache file is rewritten only when its projection changes.
+
+Not done: lighter per-connection attestation (each request still attests twice); the
+protocol reads remain linear in protocol size (witness), so the 50k fixture (7k-member
+protocols) does not meet the 10-12 ms targets; UUID-prefix search still copies every
+protocol's query result.

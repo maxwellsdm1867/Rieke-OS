@@ -364,7 +364,33 @@ class WorkspaceService:
         if not getattr(self, 'annotation_provider', None) and not getattr(self, 'shared_annotations', None):
             return data
         from disco.navigation.tag_predicates import TagPredicates
-        fields = TagPredicates(self).catalog_fields([row['epoch_uuid'] for row in self._tree_rows(None)])
+        catalog_generation = getattr(self, '_annotation_catalog_generation', None)
+        # Memoized per field and verified generation: a hit costs O(protocols)
+        # token reads, independent of epoch count, and a write recomputes only
+        # the scope it advanced. Entries are stored only when the witness is
+        # unchanged after the build; any unverifiable input recomputes all.
+        source = data.get('source_scope')
+        witness = catalog_generation(source['revision']) if catalog_generation and isinstance(source, dict) else None
+        definitions = [field['id'] for field in TagPredicates(self).definitions()]
+        memo = getattr(self, '_annotation_catalog_memo', None)
+        if witness is not None and witness[1].keys() != set(definitions):
+            witness = None
+        if witness is None or memo is None or memo[0] != witness[0]:
+            memo = None
+        cached = {key: entry[1] for key, entry in memo[1].items() if witness[1].get(key) == entry[0]} if memo else {}
+        missing = [key for key in definitions if key not in cached]
+        built = {}
+        if missing:
+            ids = [row['epoch_uuid'] for row in self._tree_rows(None)]
+            built = {field['id']: field for field in TagPredicates(self).catalog_fields(ids, only=set(missing))}
+            if built.keys() != set(missing):
+                raise ValueError('Annotation catalog fields changed while loading')
+        if witness is not None:
+            after = catalog_generation(self.source_scope()['revision']) if built else witness
+            if after == witness:
+                self._annotation_catalog_memo = (witness[0], {key: (witness[1][key], cached[key] if key in cached
+                    else copy.deepcopy(built[key])) for key in definitions})
+        fields = [copy.deepcopy(cached[key]) if key in cached else built[key] for key in definitions]
         return {**data, 'fields': [*data['fields'], *fields]}
 
     def _match_metadata_predicate(self, predicate, ids):
