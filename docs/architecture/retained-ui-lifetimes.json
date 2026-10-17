@@ -188,7 +188,7 @@
       ]
     },
     "src/annotations/ui/AnnotationTags.jsx": {
-      "fingerprint": "52fd82c413892f3c41a02fd9c3c957d9a9fed258f9cd9307052aeb0599290ffe",
+      "fingerprint": "9ab8bf7728522f8952ce7a29a8431d1c4ab861511c3a9b611250bf73f6845c61",
       "sites": [
         {
           "owner": "AnnotationTags",
@@ -227,7 +227,7 @@
         }
       ],
       "lifetime": "semantic-presentation + reconnecting-annotation-authority",
-      "reason": "Epoch identity resets composer-local presentation; query identity resets suggestion keyboard choice. Existing request generation/scope effects still retire and reconnect mutation authority. Deferred focus requests retain their existing handled-intent refs; authored-value bindings now owned by persistence agent. Tag channel review (2026-10-17): single-target tags begin in tagStore synchronously (pending chip in the click frame), write serially per target/author with the last confirmed revision, confirm in place or roll back and restore the draft; bulk receipts are ingested. Editor subscribes urgently to the store. Effect sites unchanged.",
+      "reason": "Epoch identity resets composer-local presentation; query identity resets suggestion keyboard choice. Existing request generation/scope effects still retire and reconnect mutation authority. Deferred focus requests retain their existing handled-intent refs; authored-value bindings now owned by persistence agent. Tag channel review (2026-10-17): single-target tags begin in tagStore synchronously (pending chip in the click frame), write serially per target/author with the last confirmed revision, confirm in place or roll back and restore the draft; bulk receipts are ingested. Editor subscribes urgently to the store. Effect sites unchanged. The composer draft clears inside startTransition so a large draft owner never delays the chip commit; failures restore the draft. Effect sites unchanged.",
       "tests": [
         "src/retainedControls.test.js",
         "src/annotationReceiptWorkflow.test.js",
@@ -368,10 +368,21 @@
       ]
     },
     "src/annotations/useTagStore.js": {
-      "fingerprint": "3287c6b7f1c96f30a2e5344264b0f8e339ab5d41797ccac6af1ba6ec31020d6a",
-      "sites": [],
+      "fingerprint": "0e2126c089e7b50318ba34f7006d0d0a04d80ad32f4635a6b07532337d17bd69",
+      "sites": [
+        {
+          "owner": "useDeferredTagVersion",
+          "kind": "useEffect",
+          "fingerprint": "c547c1f283f5752f03bc53c73135c08e2e444dc4c6ddd01926e8c9d4378a9009"
+        },
+        {
+          "owner": "useTagGeneration",
+          "kind": "useEffect",
+          "fingerprint": "423d9ac24f88969ef5f20be837b9943c589b41e88c50a569f365f2d3b76ad681"
+        }
+      ],
       "lifetime": "module-store-subscription",
-      "reason": "useSyncExternalStore subscriptions to tagStore (urgent for the editor, deferred for large views, confirmed generation for dependents); no effects. Tag channel review (2026-10-17).",
+      "reason": "useSyncExternalStore subscriptions to tagStore (urgent for the editor, deferred for large views, confirmed generation for dependents); no effects. Tag channel review (2026-10-17). Large views and the confirmed generation subscribe in an effect whose listener updates state inside startTransition (cleanup unsubscribes), so tags never re-render them in the click frame; the editor keeps useSyncExternalStore.",
       "tests": [
         "src/annotations/tagStore.test.js",
         "src/annotationReceiptWorkflow.test.js"

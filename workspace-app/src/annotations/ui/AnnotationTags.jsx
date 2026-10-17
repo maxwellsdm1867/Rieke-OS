@@ -2,7 +2,7 @@ import {useAuthoredDraft} from '../../presentation/useAuthoredDraft.js';
 import {useSemanticReset} from '../../useSemanticReset.js';
 import {useWorkspaceRequest,useWorkspaceRequestScope} from '../../workspaceRequest.js';
 import {useUnmountGuard} from "../../useUnmountGuard.js";
-import {useEffect,useId,useLayoutEffect,useMemo,useRef,useState} from 'react';
+import {startTransition,useEffect,useId,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {MessageCircle,Plus,X,Search,ChevronDown,UserRound,CornerDownRight} from 'lucide-react';
 import {api as defaultApi,useResource,number} from "../../api.js";
 import {useAnnotationProfile} from '../annotationProfile.js';
@@ -77,7 +77,9 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
     if(!uuid||!profileUuid||typeof tag!=='string'||!tag.trim())return false;
     const known=loadedAnnotations?.revisions?.[targetKind]?.[profileUuid]??0;
     const ticket=tagStore.begin({kind:targetKind,uuid,profile:profileUuid,authorName:profileName||'You',tag:remove?tag:tag.trim(),remove});
-    if(!remove){composerDirty.current=false;setValue('');setQuery('');setActive(-1);setOpen(false);}
+    // The chip commits now (only this editor subscribes urgently). The draft may
+    // live in a large parent (composer), so clear it as a transition after paint.
+    if(!remove){composerDirty.current=false;startTransition(()=>setValue(''));setQuery('');setActive(-1);setOpen(false);}
     setError('');setMessage('');restoreInput.current=true;
     const release=await tagStore.turn(targetKind,uuid,profileUuid,ticket);
     try{
