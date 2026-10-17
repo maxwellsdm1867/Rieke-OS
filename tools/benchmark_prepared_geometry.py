@@ -11,7 +11,10 @@ import json
 import os
 from pathlib import Path
 import platform
-import psutil
+try:
+    import psutil
+except ImportError:  # Publication only compares receipts; sampling requires psutil.
+    psutil = None
 import re
 import shutil
 import signal
