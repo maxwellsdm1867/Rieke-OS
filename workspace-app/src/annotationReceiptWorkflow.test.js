@@ -128,3 +128,21 @@ test('confirmed cell receipts invalidate bounded metadata caches without discard
   assert.equal(cache.get('/epochs/e?protocol_uuid=p',0),undefined);
   assert.deepEqual(cache.get('/epochs/e/trace?stream_uuid=s',0),{values:[1,2]});
 });
+
+for(const v4 of [true,false])test(`${v4?'protocol-state-v4':'protocol-state-v3'}: a confirmed tag shows at once${v4?', rereads no page or tree, and filters immediately':' and still renews page authority'}`,async()=>{
+  const h=await createWorkflowHarness({total:40});h.fixture.v4=v4;h.fixture.savedTagFilters=true;
+  try{
+    await h.mount();await ready(h);await h.waitFor(()=>!h.viewer.treePane.listProps.disabled&&!!h.viewer.epoch);
+    const before=h.fixture.requests.length;
+    await save(h,'quick');
+    assert.ok(h.viewer.epoch.annotations.epoch_tags.some(chip=>chip.tag==='quick'),'Receipt is displayed without a read');
+    await new Promise(resolve=>setTimeout(resolve,300)); // past the annotation authority idle window
+    await h.waitFor(()=>!h.viewer.treePane.listProps.disabled&&!!h.viewer.epoch);
+    const reads=h.fixture.requests.slice(before).filter(row=>row.path.startsWith('/protocols/protocol-A/epochs')||row.path.startsWith('/tree-pages')||row.path.startsWith('/epochs/'));
+    if(v4)assert.deepEqual(reads.map(row=>row.path),[],'No page, tree or epoch reread after an own tag');
+    else assert.ok(reads.some(row=>row.path.startsWith('/protocols/protocol-A/epochs')),'v3 tokens include shared tags, so pages renew');
+    assert.ok(h.viewer.epoch.annotations.epoch_tags.some(chip=>chip.tag==='quick'));
+    await filterRules(h,'any',[{scope:'epoch',value:'quick'}]);
+    assert.equal(h.viewer.navigation.total,1,'The new tag filters immediately');
+  }finally{await h.close();}
+});

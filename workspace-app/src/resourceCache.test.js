@@ -121,3 +121,11 @@ test('candidate token changes request exact metadata again without global prewar
  assert.deepEqual(calls,['/protocols/p/workbench/candidates/r/epochs/one?candidate_scope_revision=first','/protocols/p/workbench/candidates/r/epochs/one?candidate_scope_revision=second']);
  assert.equal(cache.stats().entries,0);
 });
+
+test('whole-epoch prefetch warms only streams that fit the initial window',async()=>{
+  const {wholeTracePrefetchPath,initialEpochTracePath}=await import('./resourceCache.js');
+  const epoch=count=>({epoch_uuid:'e',streams:[{kind:'responses',uuid:'s',sample_count:count}]});
+  assert.equal(wholeTracePrefetchPath(epoch(20000)),initialEpochTracePath(epoch(20000)));
+  assert.equal(wholeTracePrefetchPath(epoch(300000)),null,'Whole mode reads longer streams in one batch, never this window');
+  assert.equal(wholeTracePrefetchPath({epoch_uuid:'e',streams:[]}),null);
+});

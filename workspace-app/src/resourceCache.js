@@ -71,6 +71,12 @@ export function initialEpochTracePath(epoch){
   const {count}=clampWindow(0,MAX_TRACE_SAMPLES,stream.sample_count);
   return `/epochs/${epoch.epoch_uuid}/trace?stream_uuid=${stream.uuid}&start=0&count=${count}`;
 }
+// The viewer reuses the initial window only when it is the whole stream: longer
+// whole-epoch streams use one batch read, and Sample reads its own window.
+export function wholeTracePrefetchPath(epoch){
+  const stream=epoch?.streams?.find(stream=>stream.kind==='responses'&&Number.isSafeInteger(stream.sample_count)&&stream.sample_count>0);
+  return stream&&stream.sample_count<=MAX_TRACE_SAMPLES?initialEpochTracePath(epoch):null;
+}
 // Only a complete global snapshot can publish synchronously.
 // Adjacent metadata prefetch alone must still fetch its initial trace.
 export function peekEpochWithTrace(path,revision=0,cache=epochResourceCache){

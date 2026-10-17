@@ -2,7 +2,7 @@ import {useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'rea
 import {annotationFilterNeedsRefresh,mergeAnnotationReceipts,applyAnnotationReceipts} from './annotationReceipts.js';
 
 export const ANNOTATION_AUTHORITY_IDLE_MS=75;
-export function useAnnotationReceipts({revision,structureRevision,change,origin,scope,filters}){
+export function useAnnotationReceipts({revision,structureRevision,change,origin,scope,filters,stableAuthority=false}){
   const committed=useRef({revision,structureRevision,epochRevision:revision,authorityRevision:revision,scope,store:new Map()});
   const [flushed,setFlushed]=useState(revision);
   const owned=change?.revision===revision&&change.origin===origin&&change.confirmed?.version===1;
@@ -18,12 +18,18 @@ export function useAnnotationReceipts({revision,structureRevision,change,origin,
     }
     return {revision,structureRevision,epochRevision:revision,authorityRevision:revision,scope,store:new Map()};
   },[revision,structureRevision,owned,change,scope]);
-  const immediate=!owned||annotationFilterNeedsRefresh(filters)||committed.current.scope!==scope||flushed===revision;
+  // When page authority omits shared tags (protocol-state-v4), a confirmed own
+  // epoch-tag receipt changes no page or tree token: keep current reads and
+  // apply the receipt in place. Cell tags (shown in the cell list), tag-
+  // dependent filters and other changes still renew.
+  const kept=owned&&stableAuthority&&change.confirmed.targets.every(target=>target.target_kind==='epoch')&&
+    !annotationFilterNeedsRefresh(filters)&&committed.current.scope===scope;
+  const immediate=!kept&&(!owned||annotationFilterNeedsRefresh(filters)||committed.current.scope!==scope||flushed===revision);
   const prior=committed.current.revision===revision?committed.current.authorityRevision:snapshot.authorityRevision;
-  const authorityRevision=immediate?revision:prior,dirty=authorityRevision!==revision;
+  const authorityRevision=immediate?revision:prior,dirty=!kept&&authorityRevision!==revision;
   useLayoutEffect(()=>{committed.current={...snapshot,authorityRevision,scope};},[snapshot,authorityRevision,scope]);
   useEffect(()=>{if(dirty){const timer=setTimeout(()=>setFlushed(revision),ANNOTATION_AUTHORITY_IDLE_MS);return()=>clearTimeout(timer);}},[dirty,revision]);
   const flushAuthority=useCallback(()=>setFlushed(revision),[revision]);
   const apply=useCallback(epoch=>applyAnnotationReceipts(epoch,snapshot.store),[snapshot.store]);
-  return {epochRevision:snapshot.epochRevision,authorityRevision,dirty,flushAuthority,apply};
+  return {epochRevision:snapshot.epochRevision,authorityRevision,dirty,kept,flushAuthority,apply};
 }

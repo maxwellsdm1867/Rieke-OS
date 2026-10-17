@@ -16,7 +16,7 @@ import {SourceEligibilityNotice} from '../../components/Common.jsx';
 import {useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {GitBranch, Check, X, Eye, Upload, Download, FileJson} from 'lucide-react';
 import {api as defaultApi, useResource, useEpochResource, useEpochPrefetch, number, humanize, resolveCurationTargets} from '../../api.js';
-import {epochPrefetchPaths,initialEpochTracePath} from '../../resourceCache.js';
+import {epochPrefetchPaths,wholeTracePrefetchPath} from '../../resourceCache.js';
 import {useEpochInspection} from '../useEpochInspection.js';
 import {Badge} from '../../components/Common.jsx';
 import EpochConnections from './EpochConnections.jsx';
@@ -101,7 +101,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const presentationScope=frozenPresentationScope(readContext,id,protocolSearch);
   const preserveCandidateView=typeof readContext?.cohort_key==='string'&&!!readContext.cohort_key;
   function selectTargets(value){const next=typeof value==='function'?value(targets):value;if(!incomingReadContext?.selection_manifests&&next.length>1000){setError('Select at most 1000 epochs.');return;}setTargets(next);onSelectionChange?.([...next]);if(selectedView)setSelectedView(null);}
-  const annotationState=useAnnotationReceipts({revision,structureRevision,change:annotationChange,origin:annotationOrigin,scope:JSON.stringify([readRoot,id,protocolSearch,focusCell]),filters});
+  const annotationState=useAnnotationReceipts({revision,structureRevision,change:annotationChange,origin:annotationOrigin,stableAuthority:protocol?.query_revision_contract==='protocol-state-v4',scope:JSON.stringify([readRoot,id,protocolSearch,focusCell]),filters});
   const pageRevision=annotationState.authorityRevision;
   const treeIntentScope=incomingTreeSelectionScope({projectId,protocolId:id,readContext,filters,splits,revision:pageRevision});
   const highlightScope=JSON.stringify([projectId,frozenTreePresentationScope({projectId,protocolId:id,readContext,filters,splits})||treeIntentScope,readContext?.actor,splits,designMode,treeMode]);
@@ -123,7 +123,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
 
   useLayoutEffect(()=>{setTreeSelectionIntent(old=>old&&old.scope!==treeIntentScope?null:old);},[treeIntentScope]);
   const cellScopeKey=JSON.stringify([projectId,treeReadOwner?.identity,readRoot,id,protocolSearch]),confirmedCells=useRef(null);
-  const navigationReadKey=JSON.stringify([cellScopeKey,focusCell,pageRevision,revision,structureRevision,protocol.query_revision,protocol.expected_binding_version]);
+  const navigationReadKey=JSON.stringify([cellScopeKey,focusCell,pageRevision,annotationState.kept?pageRevision:revision,structureRevision,protocol.query_revision,protocol.expected_binding_version]);
   // The all-cell list is identical for every offset/anchor page of one exact
   // scope and revision. Request it with the first page only; later page turns
   // reuse the confirmed list (same navigationReadKey) without a full-cell payload.
@@ -232,7 +232,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     else if(capturedDisplay.current?.key!==displayKey||capturedDisplay.current?.owner!==requestScope)capturedDisplay.current=null;
   },[displayKey,displayRow,requestScope]);
   const neighborIndex=rows.data?.epochs?.findIndex(row=>row.epoch_uuid===focused)??-1;
-  useEpochPrefetch(!readContext&&!annotationState.dirty&&!epoch.loading&&!rows.loading&&neighborIndex>=0?epochPrefetchPaths(rows.data.epochs,neighborIndex,initialEpochTracePath,{progressive:true,activeCellOnly:true}):[],annotationState.epochRevision,180,{traces:true,traceOnly:true,progressive:true,concurrency:2});
+  useEpochPrefetch(!readContext&&!annotationState.dirty&&!epoch.loading&&!rows.loading&&neighborIndex>=0?epochPrefetchPaths(rows.data.epochs,neighborIndex,wholeTracePrefetchPath,{progressive:true,activeCellOnly:true}):[],annotationState.epochRevision,180,{traces:true,traceOnly:true,progressive:true,concurrency:2});
   const metadataCatalog=useResource(metadataOpen&&!designMode?'/metadata/fields':null,structureRevision);
   const scopeIdentity=JSON.stringify([readRoot,id,requestedCellFocus,presentationScope,initialEpochUuid]);
   const attemptedFocusLocator=useRef(null);

@@ -29,7 +29,7 @@ import './MetadataExplorer.css';
 
 const initialSearch=()=>({...newGroup(),children:[{...newCondition(),field:'protocol',operator:'contains'}]});
 function draftOf(predicate){const node=predicateToDraft(predicate);return node.kind==='group'?node:{...newGroup(),children:[node]};}
-export default function MetadataExplorer({incomingReview=null,onDefer,onNext,undoScopeId=null,initialEditorOpen=false,openRequest=0,projectId,revision=0,protocols=[],onInspect,initialPredicate=null,initialRevisionId=null,initialProtocolId=null,initialExportIntent=null,onChange,onProtocolApplied,onNewSearch,onExit,onQC,session=null,onSession}) {
+export default function MetadataExplorer({incomingReview=null,onDefer,onNext,undoScopeId=null,initialEditorOpen=false,openRequest=0,projectId,revision=0,annotationRevision=revision,protocols=[],onInspect,initialPredicate=null,initialRevisionId=null,initialProtocolId=null,initialExportIntent=null,onChange,onProtocolApplied,onNewSearch,onExit,onQC,session=null,onSession}) {
   const saved=useRef(session).current;
   const [tracePreference,setTracePreference]=useState(()=>normalizeTraceViewPreference(saved?.tracePreference??saved?.matchingNavigation?.tracePreference));
   const [draft,setDraft]=useState(()=>saved?.draft || (initialPredicate?draftOf(initialPredicate):initialSearch()));
@@ -45,7 +45,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
   const presets=shortcutPreferences.value;
   const [presetError,setPresetError]=useState('');
   const [presetOffset,setPresetOffset]=useState(0),[activePreset,setActivePreset]=useState(saved?.activePreset||null),[presetDialog,setPresetDialog]=useState(null),[importedPreset,setImportedPreset]=useState(null);
-  const projectPresets=useResource(`/search-presets?limit=50&offset=${presetOffset}`,revision);
+  const projectPresets=useResource(`/search-presets?limit=50&offset=${presetOffset}`,annotationRevision);
   async function storePreset(entry){setPresetError('');await shortcutPreferences.update(previous=>rememberSearch(previous,entry)).catch(error=>setPresetError(`The search ran, but its shortcut could not be saved to the project: ${error.message}`));}
   const [resultsFromDraft,setResultsFromDraft]=useState(saved?.resultsFromDraft??true),[matchingNavigation,setMatchingNavigation]=useState(saved?.matchingNavigation||null),[destination,setDestination]=useState(initialExportIntent?'export':null);
   const [departedInitial,setDepartedInitial]=useState(false);
@@ -75,7 +75,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
   const catalogOpen=useRef({editorOpen,openRequest});
   useEffect(()=>{const changed=catalogOpen.current.editorOpen!==editorOpen||catalogOpen.current.openRequest!==openRequest;catalogOpen.current={editorOpen,openRequest};if(editorOpen&&changed)catalog.reload();},[editorOpen,openRequest]);
   const history=useResource(`/explore/revisions?offset=${historyOffset}&limit=20`,historyVersion);
-  const epoch=useResource(focused?`/epochs/${focused}`:null,`${revision}:${generation}`);
+  const epoch=useResource(focused?`/epochs/${focused}`:null,`${annotationRevision}:${generation}`);
   const compiled=useMemo(()=>{
     try{return {predicate:compilePredicate(draft,catalog.data?.fields || null),error:null};}
     catch(error){return {predicate:null,error:error.message};}
@@ -220,8 +220,10 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
   function changeViewFilters(next){setViewFilters(next);setMatchingNavigation(null);setTreeNavigation(null);setPagedInfo(null);setDestination(null);setExportCandidate(null);}
 
   useEffect(()=>{if(step==='results'&&resultsFromDraft&&!currentDraftPreview&&!draftPreview.loading&&draftPreview.key!==draftKey&&compiled.predicate)previewDraft();},[step,resultsFromDraft,draftKey,currentDraftPreview,draftPreview.loading,draftPreview.key]);
-  function annotationsChanged(){
-    setAnnotationHold(current=>current||{revision:viewRevision});setDestination(null);onChange?.();
+  function annotationsChanged(result,confirmed){
+    // An annotation change, not a structural one: other views apply the receipt.
+    setAnnotationHold(current=>current||{revision:viewRevision});setDestination(null);
+    onChange?.({kind:'annotations',...(confirmed?{origin:'search',confirmed}:{})});
   }
   function refreshResults(){
     if(resultsFromDraft){if(hasViewFilter)setGeneration(value=>value+1);previewDraft();}else{setAnnotationHold(null);setGeneration(value=>value+1);}

@@ -22,6 +22,8 @@ from disco.decisions.explorer import ExplorerHistory
 from workspace_service import WorkspaceService
 from disco.decisions.annotations import SharedAnnotations
 
+PROTOCOL_STATE_CONTRACT='protocol-state-v4'
+
 STATE_CACHE_BYTES = 64 * 1024 * 1024
 STATE_CACHE_SCOPES = 8
 _STORE_METHODS={name:getattr(CurationStore,name) for name in ('read','_rows','_state','summary_decisions')}
@@ -90,6 +92,12 @@ def _retained_bytes(value, limit):
         elif isinstance(current,(list,tuple,set,frozenset)):
             pending.append(iter(current))
     return total
+
+
+def same_protocol_state(after, context):
+    """Read fence: v4 revisions omit shared tags, so also compare the full token."""
+    return (after is not None and after['query_revision']==context['query_revision']
+            and after.get('generation')==context.get('generation'))
 
 
 class _NativeProtocolRead:
@@ -305,7 +313,7 @@ class ProtocolStateReader:
             # This is deliberately outside read_scope: a real SQL attestation
             # validates all membership, current rows and visible provenance.
             after=self.native_context(protocol)
-            if after is None or after['query_revision']!=context['query_revision']:
+            if not same_protocol_state(after,context):
                 raise RevisionConflict({'query_revision':'changed while reading protocol response'})
         except BaseException:
             # Nested index operations may have loaded rows while an external
@@ -373,8 +381,13 @@ class ProtocolStateReader:
                 self.native_cache.pop(next(iter(self.native_cache)))
         if any(key not in cached['allowed'] for key in ids):
             raise ValueError('Curation includes epochs outside this protocol query')
-        revision='protocol-state-v3:'+checksum({'metadata':cached['digest'],'generation':asdict(token)})
-        return {'query_revision':revision,'query_revision_contract':'protocol-state-v3','generation':token,
+        # v4 covers protocol metadata and curation generations only. Shared tags
+        # carry their own per-target author revisions, so a tag write does not
+        # retire every page's curation authority. Reads still fence shared
+        # annotations separately (accepts_shared) and keep the full token.
+        scoped={key:value for key,value in asdict(token).items() if key not in ('shared_epoch','shared_generation')}
+        revision=PROTOCOL_STATE_CONTRACT+':'+checksum({'metadata':cached['digest'],'generation':scoped})
+        return {'query_revision':revision,'query_revision_contract':PROTOCOL_STATE_CONTRACT,'generation':token,
             'binding_version':cached['binding_version'],'source_revisions':cached['source_revisions'],
             'metadata_digest':cached['digest'],
             'fingerprints':{key:metadata['fingerprints'][key] for key in ids}}
@@ -405,9 +418,9 @@ class ProtocolStateReader:
         if context is None:return self.full_state(protocol_uuid)
         result,current,_=self.full_state(protocol_uuid)
         after=self.native_context(protocol_uuid)
-        if after is None or after['query_revision']!=context['query_revision']:
+        if not same_protocol_state(after,context):
             raise RevisionConflict({'query_revision':'changed during read'})
-        result['query_revision_contract']='protocol-state-v3'
+        result['query_revision_contract']=PROTOCOL_STATE_CONTRACT
         return result,current,context['query_revision']
 
     def read_selected(self, protocol_uuid, epoch_ids):
@@ -427,7 +440,7 @@ class ProtocolStateReader:
             selected={key:self.store._state(saved.get(key),context['fingerprints'][key]) for key in ids}
             tracker=self.store.state_generation
             after=self.native_context(protocol,ids)
-            if after is None or after['query_revision']!=context['query_revision']:
+            if not same_protocol_state(after,context):
                 raise RevisionConflict({'query_revision':'changed during selected read'})
             return selected,context['query_revision'],context['binding_version']
         if protocol in self.rejected:

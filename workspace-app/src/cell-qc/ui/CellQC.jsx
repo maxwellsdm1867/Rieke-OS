@@ -1,6 +1,6 @@
 import {cellTypeQCLabel} from '../cellTypes.js';
 import CellTypeIcon from '../../components/CellTypeIcon.jsx';
-import {useEffect,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {Activity,ArrowLeft,ArrowUpRight,Check,Copy,Info,Layers,RefreshCw,Thermometer,Tag} from 'lucide-react';
 import {api,humanize,number,useResource} from "../../api.js";
 import {Badge,Empty,Status} from "../../components/Common.jsx";
@@ -10,6 +10,7 @@ import MetadataPanel from "../../epoch-browser/ui/MetadataPanel.jsx";
 import AnnotationTags from "../../annotations/ui/AnnotationTags.jsx";
 import TagExchangeControls from "../../annotations/ui/TagExchangeControls.jsx";
 import {datedCellLabel} from "../../recording-import/recordingIdentity.js";
+import {applyAnnotationReceipts,mergeAnnotationReceipts} from "../../annotations/annotationReceipts.js";
 import './CellQC.css';
 
 const numeric=value=>typeof value==='number'&&Number.isFinite(value);
@@ -93,12 +94,17 @@ function ConditionSummary({cellUuid,family,epoch,revision,onSelect}){
   </>}</Status>}</section>;
 }
 
-export default function CellQC({cellUuid,revision,structureRevision=revision,onBack,initialEpochUuid,session,onSession,onAnnotationsChanged,onTagFilter}){
-  const [refresh,setRefresh]=useState(0),[tagRefresh,setTagRefresh]=useState(0),[tagFocus,setTagFocus]=useState(0),[temperatureOpen,setTemperatureOpen]=useState(false);
-  function annotationsChanged(){if(onAnnotationsChanged)onAnnotationsChanged();else setTagRefresh(value=>value+1);}
+export default function CellQC({cellUuid,revision,structureRevision=revision,annotationRevision=revision,onBack,initialEpochUuid,session,onSession,onAnnotationsChanged,onTagFilter}){
+  const [refresh,setRefresh]=useState(0),[tagRefresh,setTagRefresh]=useState(0),[tagFocus,setTagFocus]=useState(0),[temperatureOpen,setTemperatureOpen]=useState(false),[receipts,setReceipts]=useState(()=>new Map());
+  // A confirmed tag receipt is shown in place: one write, no reread. Other
+  // annotation changes (imports, cell scope, unverified saves) renew the epoch.
+  function annotationsChanged(result,confirmed){
+    if(confirmed)setReceipts(previous=>mergeAnnotationReceipts(previous,confirmed));
+    if(onAnnotationsChanged)onAnnotationsChanged(result,confirmed);else if(!confirmed)setTagRefresh(value=>value+1);
+  }
   // Samples, QC summaries and recorded metadata do not depend on tags. Only the
   // epoch detail (which carries annotations) and tag controls follow tag edits.
-  const qcRevision=`${structureRevision}:${refresh}`,liveRevision=`${revision}:${refresh}:${tagRefresh}`;
+  const qcRevision=`${structureRevision}:${refresh}`,liveRevision=`${annotationRevision}:${refresh}:${tagRefresh}`;
   const result=useResource(`/cells/${cellUuid}/qc`,qcRevision);
   const data=result.data;
   const [family,setFamily]=useState(session?.family||''),[offset,setOffset]=useState(session?.offset||0),[selected,setSelected]=useState(session&&Object.hasOwn(session,'selected')?session.selected:(initialEpochUuid??null)),[copied,setCopied]=useState(false),[copyError,setCopyError]=useState(''),[showMetadata,setShowMetadata]=useState(session?.showMetadata||false);
@@ -115,7 +121,7 @@ export default function CellQC({cellUuid,revision,structureRevision=revision,onB
   const temperature=data?.temperature;
   const range=temperature?.range;
   const cellLabel=datedCellLabel(data?.cell||{},true);
-  const rawEpoch=epoch.data?.cell_uuid===cellUuid&&epoch.data?.epoch_uuid===epochId?epoch.data:null;
+  const rawEpoch=useMemo(()=>epoch.data?.cell_uuid===cellUuid&&epoch.data?.epoch_uuid===epochId?applyAnnotationReceipts(epoch.data,receipts):null,[epoch.data,cellUuid,epochId,receipts]);
   useEffect(()=>{if(!family&&initialEpochUuid&&rawEpoch){const match=available.find(item=>item.protocol_names?.includes(rawEpoch.protocol_name));if(match)setFamily(match.id);}},[family,initialEpochUuid,rawEpoch,data]);
   const measured=response.data?.epoch_uuid===epochId&&response.data?.cell_uuid===cellUuid?response.data:null;
   const stats=measured?.statistics;
@@ -132,7 +138,7 @@ export default function CellQC({cellUuid,revision,structureRevision=revision,onB
       {!available.length?<Empty title="No characterization recordings">Source recordings remain available from the main catalog.</Empty>:<div className={`qc-recording-workbench ${showMetadata?'with-metadata':''}`}><aside className="qc-trials" aria-label="Characterization trials"><header><strong>{data.families.find(item=>item.id===active)?.label}</strong><small>{rows.data?number(rows.data.total):'…'} trials</small></header><div className="qc-trial-list"><Status {...rows} retry={rows.reload}>{epochs.map(row=><button key={row.epoch_uuid} aria-pressed={epochId===row.epoch_uuid} onClick={()=>setSelected(row.epoch_uuid)}><span>{row.start_time?.slice(11)||row.date} · Epoch {row.epoch_number}</span><strong>{conditionLabel(row)}</strong><small>{row.group_label || 'Group not labeled'}</small></button>)}</Status></div><footer><button disabled={!offset} onClick={()=>{setSelected(null);setOffset(Math.max(0,offset-40));}}>Previous</button><span>{offset+1}–{offset+epochs.length}</span><button disabled={!rows.data?.has_more} onClick={()=>{setSelected(null);setOffset(offset+40);}}>Next</button></footer></aside>
       <StableContent className="qc-recording-frame" scope={`${cellUuid}:${qcRevision}`} data={rawEpoch&&measured} loading={rows.loading||epoch.loading||response.loading} error={rows.error||epoch.error||response.error} label="Loading selected trial" retry={()=>{rows.reload();epoch.reload();response.reload();}}><div className="qc-recording"><header><div><h3>Recorded response</h3><p>{rawEpoch?conditionLabel(rawEpoch):'Select a trial'}</p></div><button onClick={()=>{setShowMetadata(true);setTagFocus(value=>value+1);}}><Tag size={14}/> Tags</button><button aria-expanded={showMetadata} onClick={()=>setShowMetadata(!showMetadata)}>{showMetadata?'Hide':'Show'} metadata</button></header><Status {...epoch} retry={epoch.reload}>{rawEpoch&&<><Trace epoch={rawEpoch} revision={qcRevision}/><div className="qc-trace-identity"><code title="Trial UUID">{rawEpoch.epoch_uuid}</code><button onClick={()=>setShowMetadata(true)}><ArrowUpRight size={14}/> Epoch details</button></div></>}</Status>
       <Status {...response} retry={response.reload}>{stats&&<><p className="qc-muted">Summary stream: {summaryStream?.device || measured?.trace?.stream_uuid} · {stats.units || 'unit unrecorded'}</p><div className="qc-response-stats"><div><span>Pre-stimulus mean</span><strong>{display(stats.pre?.mean)} <small>{stats.units}</small></strong></div><div><span>Stimulus-window mean</span><strong>{display(stats.stim?.mean)} <small>{stats.units}</small></strong></div><div><span>Change in mean</span><strong>{display(stats.delta_mean)} <small>{stats.units}</small></strong></div></div>{stats.status==='unavailable'&&<p className="qc-muted">{stats.reason}</p>}</>}</Status><p className="qc-method-note"><Info size={15}/> Recorded response summaries retain the raw signal. They are not firing rate, sensitivity, receptive-field fits, or resting voltage.</p><details className="qc-method"><summary>Response timing & measurement method</summary><pre>{JSON.stringify({timing:measured?.timing,method:measured?.method,statistics:stats},null,2)}</pre></details><ConditionSummary key={`${cellUuid}:${active}`} cellUuid={cellUuid} family={active} epoch={rawEpoch} revision={qcRevision} onSelect={setSelected}/></div></StableContent>
-      {showMetadata&&<MetadataPanel tags={rawEpoch&&<AnnotationTags epoch={rawEpoch} revision={liveRevision} disabled={epoch.loading} focusRequest={tagFocus} onChange={annotationsChanged} onFilter={onTagFilter} tools={<TagExchangeControls epoch={rawEpoch} disabled={epoch.loading} onChanged={annotationsChanged}/>}/>} epoch={rawEpoch} catalog={catalog} onClose={()=>setShowMetadata(false)}/>}</div>}
+      {showMetadata&&<MetadataPanel tags={rawEpoch&&<AnnotationTags reconcileReceipt refreshWithEpoch epoch={rawEpoch} revision={liveRevision} disabled={epoch.loading} focusRequest={tagFocus} onChange={annotationsChanged} onFilter={onTagFilter} tools={<TagExchangeControls epoch={rawEpoch} disabled={epoch.loading} onChanged={annotationsChanged}/>}/>} epoch={rawEpoch} catalog={catalog} onClose={()=>setShowMetadata(false)}/>}</div>}
       </section><BaselinePanel key={cellUuid} cellUuid={cellUuid} definition={data.resting_voltage} onPrepared={()=>setRefresh(value=>value+1)}/>
       <details className="qc-analysis-status"><summary>Analysis availability & reconstruction</summary><div>{(data.analysis_capabilities||[]).map(item=><article key={item.id}><strong>{humanize(item.label||item.id).replace(/_/g,' ')}</strong><Badge>{humanize(item.status).replace(/_/g,' ')}</Badge><p>{item.reason}</p></article>)}</div><details><summary>Cell provenance</summary><pre>{JSON.stringify(data.characteristics,null,2)}</pre></details></details>
     </>}</Status>

@@ -61,8 +61,8 @@ class ProtocolStateTests(unittest.TestCase):
         with patch.object(self.reader,'full_state',side_effect=AssertionError('Native pages do not hydrate all curation')):
             first=self.page();second=self.page()
         self.assertEqual(first,second)
-        self.assertTrue(first['query_revision'].startswith('protocol-state-v3:'))
-        self.assertEqual(first['query_revision_contract'],'protocol-state-v3')
+        self.assertTrue(first['query_revision'].startswith('protocol-state-v4:'))
+        self.assertEqual(first['query_revision_contract'],'protocol-state-v4')
         self.assertEqual(first['query_revision'],self.reader.materialized_state(self.protocol)[2])
         self.case.curation.rows[0]['tags']=['same-version change']
         with patch.object(self.reader,'full_state',side_effect=AssertionError('Generation change still reads selected rows only')):
@@ -70,7 +70,7 @@ class ProtocolStateTests(unittest.TestCase):
         self.assertNotEqual(first['query_revision'],changed['query_revision'])
         tracker.disabled=True
         fallback=self.page()
-        self.assertFalse(fallback['query_revision'].startswith('protocol-state-v3:'))
+        self.assertFalse(fallback['query_revision'].startswith('protocol-state-v4:'))
         self.assertEqual(first['expected_binding_version'],0)
         self.assertEqual(fallback['expected_binding_version'],0)
 
@@ -87,7 +87,7 @@ class ProtocolStateTests(unittest.TestCase):
         def guard(protocol):
             self.assertFalse(tracker.in_transaction)
             context=self.reader.native_context(protocol)
-            self.assertTrue(context['query_revision'].startswith('protocol-state-v3:'))
+            self.assertTrue(context['query_revision'].startswith('protocol-state-v4:'))
             captured.append(context)
             return lambda:self.reader.assert_context_locked(protocol,context)
         with patch.object(type(self.case.connection),'transaction',property(lambda _:native_transaction())):
@@ -381,6 +381,46 @@ class ProtocolStateTests(unittest.TestCase):
         rejected=self.client.post(self.case.base+'/curation',json=body,headers=self.case.headers)
         self.assertEqual(rejected.status_code,409)
 
+    def test_native_v4_shared_tag_write_keeps_curation_authority_but_pages_show_it(self):
+        self.native_generation()
+        before=self.page()
+        self.fixture.edit('epoch',self.ids[0],['shared change'])
+        after=self.page()
+        # Shared tags carry their own author revisions; they no longer retire
+        # every page's curation authority, while the page shows the new tag.
+        self.assertEqual(before['query_revision'],after['query_revision'])
+        row=next(item for item in after['epochs'] if item['epoch_uuid']==self.ids[0])
+        self.assertEqual([chip['tag'] for chip in row['annotations']['epoch_tags']],['shared change'])
+        first=before['epochs'][0]['epoch_uuid']
+        body={'epoch_uuids':[first],'changes':{'included':False},'expected_revisions':{first:0},
+            'query_revision':before['query_revision'],'expected_binding_version':0}
+        response=self.client.post(self.case.base+'/curation',json=body,headers=self.case.headers)
+        self.assertEqual(response.status_code,200,response.get_json())
+        self.assertNotEqual(self.page()['query_revision'],before['query_revision'],'Curation still renews authority')
+
+    def test_native_v4_tag_filtered_export_requires_previewed_tag_witness(self):
+        self.native_generation()
+        # Source re-verification belongs to other tests; this fixture has no project file.
+        refresh=patch.object(self.service,'refresh',return_value=None);refresh.start();self.addCleanup(refresh.stop)
+        self.fixture.edit('epoch',self.ids[0],['chosen'])
+        protocol=self.client.get(self.case.base,query_string={'tag':'chosen'}).get_json()
+        witness=protocol['annotation_generation']
+        self.assertTrue(witness)
+        self.fixture.edit('epoch',self.ids[0],['chosen','later'],revision=1)
+        stale=self.client.post(self.case.base+'/exports',headers=self.case.headers,json={
+            'query_revision':protocol['query_revision'],'filters':{'tag':'chosen'},'annotation_generation':witness})
+        self.assertEqual(stale.status_code,409,stale.get_json())
+        fresh=self.client.get(self.case.base,query_string={'tag':'chosen'}).get_json()
+        self.assertEqual(fresh['query_revision'],protocol['query_revision'],'Tag edits keep curation authority')
+        self.assertNotEqual(fresh['annotation_generation'],witness)
+        exported=self.client.post(self.case.base+'/exports',headers=self.case.headers,json={
+            'query_revision':fresh['query_revision'],'filters':{'tag':'chosen'},'annotation_generation':fresh['annotation_generation']})
+        self.assertEqual(exported.status_code,201,exported.get_json())
+        # Without tag-dependent filters the tag witness is not required; tags
+        # embedded in the export are read at publication under the shared lock.
+        unfiltered=self.client.post(self.case.base+'/exports',headers=self.case.headers,json={'query_revision':fresh['query_revision']})
+        self.assertEqual(unfiltered.status_code,201,unfiltered.get_json())
+
     def test_native_protocol_summary_matches_legacy_without_full_saved_tag_reads(self):
         tracker=self.native_generation()
         self.save_curation(ids=self.ids[:1],tags_add=['one','two'],included=False,review_state='approved')
@@ -399,9 +439,9 @@ class ProtocolStateTests(unittest.TestCase):
                 response=self.client.get(self.case.base+query)
             self.assertEqual(response.status_code,200,response.get_json())
             actual=response.get_json()
-            self.assertTrue(actual['query_revision'].startswith('protocol-state-v3:'))
+            self.assertTrue(actual['query_revision'].startswith('protocol-state-v4:'))
             for body in (actual,expected):
-                body.pop('query_revision',None);body.pop('expected_query_revision',None);body.pop('query_revision_contract',None)
+                body.pop('query_revision',None);body.pop('expected_query_revision',None);body.pop('query_revision_contract',None);body.pop('annotation_generation',None)
             self.assertEqual(actual,expected)
             self.assertTrue(self.case.curation.read_log)
             self.assertTrue(all(row['projected'] is not None and 'tags' not in row['projected']
@@ -437,7 +477,7 @@ class ProtocolStateTests(unittest.TestCase):
         with patch.object(self.reader.shared,'snapshot',side_effect=custom):
             self.assertIsNone(self.reader.native_context(self.protocol,self.ids))
             result=self.reader.read_selected(self.protocol,self.ids)
-            self.assertFalse(result[1].startswith('protocol-state-v3:'))
+            self.assertFalse(result[1].startswith('protocol-state-v4:'))
 
     def test_native_v3_binding_guard_preserves_revision_inside_transaction(self):
         tracker=self.native_generation()
@@ -458,7 +498,7 @@ class ProtocolStateTests(unittest.TestCase):
                 json={'protocol_uuid':self.protocol},headers=self.case.headers)
             self.assertEqual(comparison.status_code,200,comparison.get_json())
             current=comparison.get_json()
-            self.assertTrue(current['expected_query_revision'].startswith('protocol-state-v3:'))
+            self.assertTrue(current['expected_query_revision'].startswith('protocol-state-v4:'))
             applied=self.client.post('/api/explore/revisions/'+identity+'/apply-to-protocol',json={
                 'protocol_uuid':self.protocol,'expected_binding_version':current['expected_binding_version'],
                 'expected_query_revision':current['expected_query_revision']},headers=self.case.headers)

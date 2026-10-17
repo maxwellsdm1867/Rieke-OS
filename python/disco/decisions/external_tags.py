@@ -95,6 +95,35 @@ class ExternalTags:
         self.service, self.exports, self.annotations = service, exports, annotations
         self.root = Path(service.project_dir).resolve() / 'exports'
         self.offsets = {}
+        # Completed export revisions are immutable; folder states are reused only
+        # while the incoming and receipt listings are unchanged and were clean.
+        self._records, self._folders = {}, {}
+
+    @staticmethod
+    def _listing(folder):
+        try:
+            result = []
+            for name in ('annotations', 'annotations/incoming', 'annotations/receipts'):
+                directory = folder / name
+                if not directory.is_dir():
+                    result.append((name, None)); continue
+                with os.scandir(directory) as entries:
+                    files = sorted((entry.name, entry.stat(follow_symlinks=False).st_size,
+                                    entry.stat(follow_symlinks=False).st_mtime_ns,
+                                    entry.stat(follow_symlinks=False).st_ino) for entry in entries)
+                stat = directory.stat()
+                result.append((name, stat.st_ino, stat.st_mtime_ns, tuple(files)))
+            return tuple(result)
+        except OSError:
+            return None
+
+    def _record(self, export_id, summary):
+        key = json.dumps(summary, sort_keys=True, default=str)
+        cached = self._records.get(export_id)
+        if cached is None or cached[0] != key:
+            cached = (key, self.exports.get_dataset_revision(export_id))
+            self._records[export_id] = cached
+        return cached[1]
 
     def receipts(self):
         rows = (self.annotations.Event & dict(project_uuid=self.service.project['project_uuid'],
@@ -161,7 +190,13 @@ class ExternalTags:
                     incoming = folder / 'annotations/incoming'
                     if (folder / 'annotations').resolve() != folder / 'annotations':
                         raise ValueError('Annotation folder must not redirect outside the export')
-                    record = self.exports.get_dataset_revision(export_id)
+                    listing = self._listing(folder)
+                    previous = self._folders.get(export_id)
+                    if (listing is not None and previous is not None and previous[0] == listing
+                            and previous[1] == json.dumps(summary, sort_keys=True, default=str) and previous[2]['status'] == 'watching'
+                            and not previous[2]['errors'] and not previous[2]['pending']):
+                        statuses.append(json.loads(json.dumps(previous[2]))); continue
+                    record = self._record(export_id, summary)
                     if not incoming.exists() and summary.get('format') == 'wheeler-sqlite':
                         # Existing registered exports gain sidecars without rewriting the artifact.
                         members = [row['uuid'] for row in record['recipe']['epochs']]
@@ -199,11 +234,18 @@ class ExternalTags:
                         except (ValueError, KeyError, TypeError, OSError, RecursionError) as error:
                             state['errors'].append(dict(file=path.name, error=str(error)))
                     state['status'] = 'needs_attention' if state['errors'] else 'watching'
+                    # Listing after processing: receipts written above are part of the clean state.
+                    self._folders[export_id] = (self._listing(folder), json.dumps(summary, sort_keys=True, default=str), json.loads(json.dumps(state)))
                 except (ValueError, KeyError, TypeError, OSError) as error:
                     state['status'] = 'unavailable'; state['errors'].append(dict(error=str(error)))
+                    self._folders.pop(export_id, None)
                 statuses.append(state)
             ordered = sorted(receipts.values(), key=lambda item: (item['received_at'], item['message_uuid']))
-            return dict(revision=self.annotations.change_revision(), exports=statuses,
+            # Revision covers externally received messages only. App tag writes
+            # reach views through their own receipts, so they must not look external.
+            revision = hashlib.sha256(json.dumps(sorted([item['message_uuid'], str(item['event_uuid'])]
+                                                        for item in ordered if item['addition_count'] > 0)).encode()).hexdigest()
+            return dict(revision=revision, exports=statuses,
                         received_tag_count=sum(item['addition_count'] for item in ordered),
                         latest_import=next((item for item in reversed(ordered) if item['addition_count']>0),None),
                         receipts=ordered[-20:], receipt_count=len(ordered),

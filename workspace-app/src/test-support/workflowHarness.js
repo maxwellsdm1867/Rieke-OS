@@ -54,13 +54,13 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,li
     if(pathname==='/annotation-tags'||pathname==='/tags')return {tags:[]};
     if(pathname==='/protocols/protocol-A'||pathname==='/protocols/protocol-A/overview'){
       const selected=scope(url.searchParams);
-      return {definition:{protocol_uuid:'protocol-A',name:'Test'},query_revision:`query-${fixture.generation}`,expected_binding_version:2,cells:selected.cells,counts:{epochs:selected.ids.length,cells:selected.cells.length,included:selected.ids.length},filters:{},source_eligibility:{}};
+      return {definition:{protocol_uuid:'protocol-A',name:'Test'},query_revision:`query-${fixture.generation}`,...(fixture.v4?{query_revision_contract:'protocol-state-v4'}:{}),expected_binding_version:2,cells:selected.cells,counts:{epochs:selected.ids.length,cells:selected.cells.length,included:selected.ids.length},filters:{},source_eligibility:{}};
     }
     if(pathname==='/protocols/protocol-A/epochs'){
       const selected=scope(url.searchParams),limit=Number(url.searchParams.get('limit')||60),anchor=url.searchParams.get('anchor_uuid');
       let offset=Number(url.searchParams.get('offset')||0);
       if(anchor){const index=selected.ids.indexOf(Number(anchor.split('-').at(-1)));offset=index<0?0:Math.floor(index/60)*60;}
-      return {query_revision:`query-${fixture.generation}`,expected_binding_version:2,total:selected.ids.length,offset,limit,epochs:selected.ids.slice(offset,offset+limit).map(epoch),...(url.searchParams.get('include_cells')==='true'?{cells:selected.cells}:{})};
+      return {query_revision:`query-${fixture.generation}`,...(fixture.v4?{query_revision_contract:'protocol-state-v4'}:{}),expected_binding_version:2,total:selected.ids.length,offset,limit,epochs:selected.ids.slice(offset,offset+limit).map(epoch),...(url.searchParams.get('include_cells')==='true'?{cells:selected.cells}:{})};
     }
     if(pathname==='/protocols/protocol-A/tree-fields')return {fields:[]};
     if(/^\/epochs\/epoch-\d+$/.test(pathname))return epoch(Number(pathname.split('-').at(-1)));
@@ -72,7 +72,8 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,li
       if(body.target_uuids.some(identity=>body.expected_revisions[identity]!==((fixture.annotationVersions.get(`${body.target_kind}:${identity}`))||0)))return {failure:409,error:'Annotation revision conflict'};
       let changed=0;
       for(const identity of body.target_uuids){const before=storage.get(identity)||[],values=new Set(before);for(const tag of body.tags_add)values.add(tag);for(const tag of body.tags_remove)values.delete(tag);const after=[...values].sort();if(JSON.stringify([...before].sort())!==JSON.stringify(after)){storage.set(identity,after);const key=`${body.target_kind}:${identity}`;fixture.annotationVersions.set(key,(fixture.annotationVersions.get(key)||0)+1);changed++;}}
-      if(changed)fixture.generation++;
+      // protocol-state-v4 revisions omit shared tags; v3 retired every page.
+      if(changed&&!fixture.v4)fixture.generation++;
       return {changed,targets:Object.fromEntries(body.target_uuids.map(identity=>[identity,targetReceipt(body.target_kind,identity)]))};
     }
     if(pathname==='/protocols/protocol-A/curation/read')return {protocol_uuid:'protocol-A',query_revision:body.query_revision,expected_binding_version:body.expected_binding_version,epochs:body.epoch_uuids.map(identity=>({epoch_uuid:identity,cell_uuid:`cell-${Math.floor(Number(identity.split('-').at(-1))/500)}`,curation_revision:fixture.generation}))};

@@ -79,6 +79,24 @@ class ExternalTagTests(unittest.TestCase):
         self.assertEqual(second['revision'], first['revision'])
         self.assertEqual(sorted(r['addition_count'] for r in second['receipts']), [0,1])
 
+    def test_app_tag_writes_do_not_look_external_and_clean_folders_are_not_reread(self):
+        path = self.submit()
+        first = self.scan()
+        # An in-app write reaches views through its own receipt, not the scan.
+        self.case.store.update('epoch', [self.case.second], self.profile,
+            {'tags_add':['app tag']}, {self.case.second:0}, 'Arthur')
+        with patch.object(self.receiver, 'receive', side_effect=AssertionError('Unchanged folder was re-read')):
+            second = self.scan()
+        self.assertEqual(second['revision'], first['revision'])
+        self.assertEqual(second['exports'], first['exports'])
+        # A lost receipt file (crash after commit) is still repaired.
+        (self.folder / 'annotations/receipts' / path.name).unlink()
+        third = self.scan()
+        self.assertTrue((self.folder / 'annotations/receipts' / path.name).exists())
+        self.assertEqual(third['revision'], first['revision'])
+        self.submit(target=self.case.second, tag='second external')
+        self.assertNotEqual(self.scan()['revision'], first['revision'])
+
     def test_receipt_failure_rolls_back_additions_and_retry_succeeds(self):
         path = self.submit()
         original = self.case.store._event

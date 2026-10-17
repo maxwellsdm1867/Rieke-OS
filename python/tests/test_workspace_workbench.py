@@ -1362,7 +1362,7 @@ class WorkbenchTests(unittest.TestCase):
         self.assertIsNotNone(callback, 'API wires the native-only revision callback')
         with patch.object(self.manager, 'read_revision', None):
             expected = self.manager.context(self.protocol, self.revision, 'actor-one')
-        self.assertTrue(expected['expected_query_revision'].startswith('protocol-state-v3:'))
+        self.assertTrue(expected['expected_query_revision'].startswith('protocol-state-v4:'))
         with patch.object(reader, 'full_state', side_effect=AssertionError('Unused full curation must not load')):
             actual = self.manager.context(self.protocol, self.revision, 'actor-one')
             repeated = self.manager.context(self.protocol, self.revision, 'actor-one')
@@ -1380,7 +1380,7 @@ class WorkbenchTests(unittest.TestCase):
             result = self.manager.context(self.protocol, self.revision, 'actor-one')
         self.assertEqual(oracle.call_count, 1)
         self.assertEqual(native_read.call_count, 1, 'unsupported proof is attempted once before the unchanged oracle')
-        self.assertFalse(result['expected_query_revision'].startswith('protocol-state-v3:'))
+        self.assertFalse(result['expected_query_revision'].startswith('protocol-state-v4:'))
         tracker.disabled = False
         for method in ('protocol_binding', 'protocol_binding_header', 'get'):
             with self.subTest(method=method), \
