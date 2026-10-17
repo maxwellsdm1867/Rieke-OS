@@ -60,3 +60,16 @@
 @container project-overview (max-width:640px){
  .ov-date-list{grid-template-columns:7px minmax(0,1fr) max-content}
 }
+
+/* Flat hero with one number size, matching the protocol Overview. */
+.ov-metric-ribbon{background:var(--surface)}
+.ov-metric-ribbon>div>span{font-size:13px}
+.ov-metric-ribbon strong,.ov-metric-ribbon>div:first-child strong,.ov-metric-ribbon>div:last-child strong{font-size:36px;letter-spacing:-1px}
+.ov-metric-ribbon small{font-size:12px}
+/* Field text matches the protocol Overview card. */
+.ov-section-title h2{font-size:15px}
+.ov-section-title>span{font-size:12px}
+.ov-date-identity strong,.ov-date-count,.ov-inventory{font-size:13px}
+.ov-date-identity small{font-size:12px}
+.ov-types .cell-type-name{font-size:15px}
+.ov-types .cell-type-name>small,.ov-types .cell-type-summary>small,.ov-types .cell-type-summary>p{font-size:12px}
