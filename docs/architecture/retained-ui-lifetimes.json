@@ -508,7 +508,7 @@
       ]
     },
     "src/cell-qc/ui/CellQC.jsx": {
-      "fingerprint": "d0112c36b46ee702ab51b2cbbf8cbe0d9c74dc5a8047ddd2f2045e9f01cf0952",
+      "fingerprint": "4cd675266ca2e9b9df8b4a82592f98d8c94a0e1626cd294ced7507a628ab7d9a",
       "sites": [
         {
           "owner": "CellQC",
@@ -522,7 +522,7 @@
         }
       ],
       "lifetime": "session-publication-and-current-data",
-      "reason": "Publish route-owned presentation snapshots; current pages/focus and ResizeObserver refresh independently. Initial CellQC family selection is guarded by absence of a user-selected family. Authored annotation text is checkpointed separately. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Reviewed 0.1.13 QC tile: presentation-only title/icon placement and exact display aliases; request, session, annotation and retained effect ownership unchanged. Request-decoupling review (2026-10-17): QC overview, trial pages, response summaries, traces and the metadata catalog follow structureRevision plus explicit refresh; only the annotation-bearing epoch detail and tag controls follow live revision, so tag edits no longer reread samples. The epoch detail uses the shared cache without warming an unused 20k trace window. Effect sites unchanged. Tag decoupling review (2026-10-17): confirmed tag receipts are merged and applied to the displayed epoch; live reads follow annotationRevision so a confirmed save sends one POST and no reread. Effect sites unchanged.",
+      "reason": "Publish route-owned presentation snapshots; current pages/focus and ResizeObserver refresh independently. Initial CellQC family selection is guarded by absence of a user-selected family. Authored annotation text is checkpointed separately. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Reviewed 0.1.13 QC tile: presentation-only title/icon placement and exact display aliases; request, session, annotation and retained effect ownership unchanged. Request-decoupling review (2026-10-17): QC overview, trial pages, response summaries, traces and the metadata catalog follow structureRevision plus explicit refresh; only the annotation-bearing epoch detail and tag controls follow live revision, so tag edits no longer reread samples. The epoch detail uses the shared cache without warming an unused 20k trace window. Effect sites unchanged. Tag decoupling review (2026-10-17): confirmed tag receipts are merged and applied to the displayed epoch; live reads follow annotationRevision so a confirmed save sends one POST and no reread. Effect sites unchanged. Trace and metadata panel keep the source epoch object; only tag display uses the receipt-applied epoch. Effect sites unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/authoredDrafts.test.js",
