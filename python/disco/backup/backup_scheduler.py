@@ -1,93 +1,68 @@
-"""Coalesce recovery mirrors after committed SQL edits; flush before shutdown."""
+"""Update the recovery mirror synchronously after each committed SQL edit.
+
+The mirror is incremental (only rows changed since its watermark are written),
+so it runs at the commit point: no timer, delay, quiet period or worker thread.
+"""
 from __future__ import annotations
 
 import threading
-import time
 from datetime import datetime, timezone
 
 
 class BackupScheduler:
-    def __init__(self, capture, database_lock, *, delay=1.0, max_delay=5.0, retry_delay=5.0, logger=None):
-        self.capture=capture; self.database_lock=database_lock
-        self.delay=delay; self.max_delay=max_delay; self.retry_delay=retry_delay; self.logger=logger
-        self.condition=threading.Condition(); self.requested=0; self.completed=0
-        self.first_dirty=None; self.last_dirty=None; self.retry_at=0.0; self.last_activity=None
+    def __init__(self, capture, database_lock, *, logger=None):
+        self.capture=capture; self.database_lock=database_lock; self.logger=logger
+        self.state_lock=threading.Lock(); self.requested=0; self.completed=0
         self.running=False; self.stopped=False; self.last_error=None; self.last_success=None
-        self.worker=threading.Thread(target=self._work,name='workspace-state-backup',daemon=True)
-        self.worker.start()
 
     def request(self):
-        with self.condition:
-            self.requested+=1
-            now=time.monotonic()
-            if self.first_dirty is None:self.first_dirty=now
-            self.last_dirty=now
-            if self.stopped:self.last_error='Backup worker is stopped; flush before closing'
-            self.condition.notify_all()
+        """Back up a just-committed edit now, under the database lock.
 
-    def activity(self):
-        """Note foreground work. The capture runs in this process, so it waits
-        for a quiet period instead of competing with requests in flight."""
-        with self.condition:
-            self.last_activity=time.monotonic()
-
-    def _deadline(self):
-        quiet=max(self.last_dirty,self.last_activity or self.last_dirty)
-        return max(self.retry_at,min(quiet+self.delay,self.first_dirty+self.max_delay))
+        The edit is already committed, so a failure is recorded (status
+        ``degraded``, still pending) and logged rather than raised; the next
+        request or flush covers it. A request made during a capture on the same
+        thread stays pending instead of recursing.
+        """
+        with self.database_lock:
+            with self.state_lock:
+                self.requested+=1
+                if self.stopped:
+                    self.last_error='Backup is stopped; flush before closing'
+                    return
+                if self.running:return
+            try:self._capture_locked()
+            except Exception:
+                if self.logger:self.logger.exception('Committed edit recovery backup failed; the next save retries')
 
     def status(self):
-        with self.condition:
+        with self.state_lock:
             pending=self.requested>self.completed
             return {'status':'degraded' if self.last_error else 'running' if self.running else 'pending' if pending else 'current',
                 'pending':pending,'running':self.running,'last_success':self.last_success,
                 'last_error':self.last_error,'requested_sequence':self.requested,'completed_sequence':self.completed}
 
     def _capture_locked(self):
-        # Always acquire the database lock before the condition. The close path
-        # already holds the reentrant database lock when it calls flush().
-        with self.condition:
+        # Callers hold the reentrant database lock; the state lock only guards
+        # the counters, never the capture itself.
+        with self.state_lock:
             goal=self.requested; self.running=True
         try:
             self.capture()
         except Exception as error:
-            with self.condition:
-                self.last_error=str(error); self.retry_at=time.monotonic()+self.retry_delay
+            with self.state_lock:self.last_error=str(error)
             raise
         else:
-            with self.condition:
-                self.completed=goal; self.last_error=None; self.retry_at=0.0
+            with self.state_lock:
+                self.completed=max(self.completed,goal); self.last_error=None
                 self.last_success=datetime.now(timezone.utc).isoformat()
-                if self.completed==self.requested:self.first_dirty=self.last_dirty=None
         finally:
-            with self.condition:self.running=False; self.condition.notify_all()
+            with self.state_lock:self.running=False
 
     def flush(self):
-        """Force a complete current mirror, including writes outside this queue."""
+        """Force a complete current mirror, including writes outside this path."""
         with self.database_lock:self._capture_locked()
         return self.status()
 
     def close(self, *, flush=True):
         if flush:self.flush()
-        with self.condition:self.stopped=True; self.condition.notify_all()
-        # Do not join here: callers may hold database_lock while a worker waits
-        # for it. The worker checks stopped again before any database operation.
-
-    def _work(self):
-        while True:
-            with self.condition:
-                if self.stopped:return
-                if self.requested==self.completed:
-                    self.condition.wait(); continue
-                deadline=self._deadline()
-                remaining=deadline-time.monotonic()
-                if remaining>0:self.condition.wait(remaining); continue
-            with self.database_lock:
-                with self.condition:
-                    if self.stopped:return
-                    if self.requested==self.completed:continue
-                    # A newer edit may have arrived while waiting for SQL.
-                    deadline=self._deadline()
-                    if time.monotonic()<deadline:continue
-                try:self._capture_locked()
-                except Exception:
-                    if self.logger:self.logger.exception('Committed annotation recovery backup failed; retrying')
+        with self.state_lock:self.stopped=True

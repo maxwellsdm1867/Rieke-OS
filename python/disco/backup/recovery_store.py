@@ -256,6 +256,26 @@ def verified_table_content(root, tracker, tables=('shared_annotation', 'annotati
         return None
 
 
+def mirrored_keys(path, table, names, project_uuid):
+    """Complete primary keys currently mirrored for one table, in ``names`` order.
+
+    Reads only row keys (no payload decoding). The caller holds the save lock,
+    so the mirror cannot change between this read and its own write.
+    """
+    from workspace_state_snapshot import TABLES
+    with _connect(Path(path), readonly=True) as database:
+        blobs = database.execute('SELECT row_key FROM recovery_rows WHERE table_name=?',
+                                 (TABLES.index(table),)).fetchall()
+    result = []
+    for (blob,) in blobs:
+        values = _key_values(blob)
+        if len(values) != len([name for name in names if name != 'project_uuid']):
+            raise ValueError('Recovery row key differs from its key contract')
+        values = iter(values)
+        result.append(tuple(project_uuid if name == 'project_uuid' else next(values) for name in names))
+    return result
+
+
 def _row_key(row, names):
     if not names or any(name not in row or row[name] is None for name in names):
         raise ValueError('Recovery row has an invalid primary key')

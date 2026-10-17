@@ -2143,16 +2143,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             save_app_state(project_dir, service.dj.conn(), service=service)
             if service._loaded:
                 prepare_annotations(reuse=True)
-        # The mirror captures the whole app state in this process under the
-        # database lock, so it waits for 3 s without any request (at most 60 s
-        # after the first write) instead of competing with foreground work;
-        # close still flushes it.
+        # The mirror is incremental (only rows changed since its watermark), so
+        # each committed write updates it synchronously at its commit point;
+        # there is no timer or background capture competing with requests.
         scheduler=BackupScheduler(lambda:save_app_state(project_dir,service.dj.conn(),service=service),
-            db_lock,delay=3.0,max_delay=60.0,logger=app.logger)
-        @app.before_request
-        def backup_waits_for_quiet():
-            # Any request, including trace reads, postpones the coalesced mirror.
-            scheduler.activity()
+            db_lock,logger=app.logger)
         app.extensions['backup_scheduler']=scheduler
         if shared_annotations is not None:shared_annotations.on_commit=scheduler.request
 
