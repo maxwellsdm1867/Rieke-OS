@@ -73,7 +73,7 @@ def snapshot_authority(manager, protocol, actor, *, query_revision_guard=None):
     for row in sorted(manager.original_records(protocol), key=lambda row: row['summary']['candidate_revision_uuid']):
         context = manager.context(protocol, row['summary']['candidate_revision_uuid'], actor,
             query_revision_guard=query_revision_guard)
-        if not context['pending']:
+        if not context['pending'] or manager.superseded(context):
             continue
         if (not context['valid_base'] or context['annotation_changed'] or context['base_conflicts']
                 or context['main_conflicts'] or context['conflicts'] or context['unavailable'] & context['pending'].keys()):

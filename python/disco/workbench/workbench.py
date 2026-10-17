@@ -407,6 +407,20 @@ class ProtocolWorkbench:
                 source_scope=scope, already_present=set(incoming) & set(previous))
 
     @staticmethod
+    def superseded(context):
+        """An original proposal frozen against a main that a later save replaced.
+
+        Its diff describes the replaced main and query, so it is neither a
+        conflict nor publishable. A replacement main is the current query's full
+        result, so leftover additions no longer match it; later imports diff
+        against the replacement.
+        """
+        summary = context['summary']
+        return (summary.get('kind') != 'workbench_pending_union' and context['main'] is not None
+                and not context['valid_base']
+                and context['expected_binding_version'] > summary['baseline_binding_version'])
+
+    @staticmethod
     def check_scope(context, expected):
         if not isinstance(expected, str) or expected != context['candidate_scope_revision']:
             raise WorkbenchConflict('Candidate, main, sources, annotations or draft changed; reload the frozen context')
@@ -419,6 +433,9 @@ class ProtocolWorkbench:
             raise WorkbenchConflict('Source eligibility blocks publication; reconcile excluded sources explicitly')
         if context['annotation_changed']:
             raise WorkbenchConflict('Candidate predicate annotations changed; save and review a fresh proposal')
+        if ProtocolWorkbench.superseded(context):
+            raise WorkbenchConflict('A newer saved query replaced the main dataset this proposal was made from; '
+                                    'its remaining epochs do not match the current query')
         if not context['valid_base']:
             raise WorkbenchConflict('Candidate has an unrelated or replacement base; review a fresh proposal')
 
@@ -786,17 +803,22 @@ class ProtocolWorkbench:
             for row in records:
                 revision = row['summary']['candidate_revision_uuid']
                 context = self.context(protocol, revision, actor)
-                raw_pending.update(context['pending'])
+                superseded = self.superseded(context)
+                # A superseded diff no longer describes main; it contributes no
+                # pending epochs, and fully merged ones simply read as covered.
+                pending_now = {} if superseded else context['pending']
+                raw_pending.update(pending_now)
                 accepted_receipts = (self.tables[2] & dict(project_uuid=self.project, protocol_uuid=protocol,
                     candidate_revision_uuid=revision)).to_dicts()
-                eligible = set(context['pending']) - context['ineligible'] - context['unavailable'] - context['conflicts']
+                eligible = set(pending_now) - context['ineligible'] - context['unavailable'] - context['conflicts']
                 eligible = {key for key in eligible if not excluded(context, key)}
-                blocked = not context['valid_base'] or context['annotation_changed'] or bool(context['conflicts'] or context['unavailable'] or context['blocked_main'])
-                status = ('conflict' if blocked else 'source_blocked' if context['ineligible'] else
+                blocked = not superseded and (not context['valid_base'] or context['annotation_changed'] or bool(context['conflicts'] or context['unavailable'] or context['blocked_main']))
+                status = (('superseded' if context['pending'] else 'covered') if superseded else
+                          'conflict' if blocked else 'source_blocked' if context['ineligible'] else
                           'accepted' if not context['pending'] and accepted_receipts else
                           'covered' if not context['pending'] else 'deferred' if context['deferred'] else
                           'pending' if context['main_revision_uuid'] == context['baseline_revision_uuid'] else 'pending_rebased')
-                unmerged = {key for key in context['pending'] if not excluded(context, key)}
+                unmerged = {key for key in pending_now if not excluded(context, key)}
                 pending |= unmerged
                 for key in unmerged:
                     saved_cell = row['summary'].get('incoming_cell_uuids', {}).get(key)

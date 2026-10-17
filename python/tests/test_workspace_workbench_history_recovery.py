@@ -39,13 +39,14 @@ class HistoricalProposalRecoveryTests(unittest.TestCase):
         self.assertEqual(stale['pending'], fresh['pending'])
         self.assertTrue(fresh['valid_base'])
         self.assertEqual(fresh['pending'], {self.added: 'b' * 64})
-        # Preparation correctly refuses the old original. It creates no record.
-        before = copy.deepcopy([table.rows for table in self.case.connection.tables])
-        denied = self.case.client.post(self.case.base + '/workbench/prepare', json=dict(
-            expected_queue_revision=self.queue()['queue_revision']), headers=self.case.headers)
-        self.assertEqual(denied.status_code, 409)
-        self.assertIn('unmerged original proposal', denied.get_json()['error'])
-        self.assertEqual([table.rows for table in self.case.connection.tables], before)
+        # The old original was frozen against a replaced main: it is superseded,
+        # not a conflict, and cumulative review uses only the fresh proposal.
+        statuses = {item['candidate_revision_uuid']: item['status'] for item in self.queue()['candidates']}
+        self.assertEqual(statuses[self.revision], 'superseded')
+        self.assertNotEqual(statuses[fresh_revision], 'conflict')
+        cumulative, _ = self.prepare()
+        self.assertEqual(cumulative['origin_count'], 1)
+        self.assertEqual(cumulative['context']['counts']['pending_epochs'], 1)
         # Existing per-proposal routes provide explicit, fenced recovery; no
         # historical rewrite, replacement acceptance or implicit union needed.
         root = self.case.base + '/workbench/candidates/' + fresh_revision

@@ -299,6 +299,75 @@ class CumulativePendingTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.get_json())
         return response.get_json()
 
+    def apply_candidate(self, revision):
+        endpoint = '/api/explore/revisions/' + revision
+        body = {'protocol_uuid': self.protocol}
+        comparison = self.case.client.post(endpoint + '/compare-to-protocol', json=body, headers=self.case.headers)
+        self.assertEqual(comparison.status_code, 200, comparison.get_json())
+        response = self.case.client.post(endpoint + '/apply-to-protocol', json={**body,
+            'expected_binding_version': comparison.get_json()['expected_binding_version'],
+            'expected_query_revision': comparison.get_json()['expected_query_revision']}, headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        return response.get_json()
+
+    def saved_query_revision(self, without=None):
+        """A plain saved query revision, as Search predicate creates; optionally the
+        query no longer matches one epoch (e.g. a corrected protocol predicate)."""
+        main = self.case.explorer_history.protocol_binding(self.protocol)['recipe']
+        original = self.case.service.explore_preview
+        def preview(*args, **kwargs):
+            result = original(*args, **kwargs)
+            membership = [row for row in result['membership'] if row['uuid'] != without]
+            return {**result, 'membership': membership, 'matched_count': len(membership)}
+        patcher = patch.object(self.case.service, 'explore_preview', side_effect=preview)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        record = self.case.explorer_history.create(preview(main['predicate'], main['splits']),
+            self.case.service.sources, self.case.service.project_dir / 'catalog.json', 'actor-one', name='Metadata selection')
+        return record['revision_uuid']
+
+    def test_replaced_main_marks_merged_proposals_covered_not_conflict(self):
+        self.more_import()
+        before = self.queue()
+        self.assertEqual(before['pending_epoch_count'], 2)
+        self.apply_candidate(self.saved_query_revision())
+        queue = self.queue()
+        self.assertEqual([item['status'] for item in queue['candidates']], ['covered', 'covered'])
+        self.assertEqual(queue['pending_epoch_count'], 0)
+        # Later imports diff against the replacement main and merge normally.
+        late, _ = self.more_import()
+        queue = self.queue()
+        self.assertEqual(sorted(item['status'] for item in queue['candidates']), ['covered', 'covered', 'pending'])
+        prepared, _ = self.prepare()
+        self.assertEqual(self.epochs(prepared), {late})
+        prepared = self.patch_draft(prepared, [dict(epoch_uuid=late, selected=True, reviewed=True)])
+        self.accept_selected(prepared)
+        self.assertEqual(self.queue()['pending_epoch_count'], 0)
+
+    def test_replaced_main_supersedes_epochs_the_current_query_no_longer_matches(self):
+        new, _ = self.more_import()
+        second = next(row['summary']['candidate_revision_uuid'] for row in self.manager.original_records(self.protocol)
+                      if row['summary']['candidate_revision_uuid'] != self.revision)
+        self.apply_candidate(self.saved_query_revision(without=new))
+        queue = self.queue()
+        status = {item['candidate_revision_uuid']: item['status'] for item in queue['candidates']}
+        self.assertEqual(status, {self.revision: 'covered', second: 'superseded'})
+        self.assertEqual(queue['pending_epoch_count'], 0)
+        self.assertEqual(queue['pending_cell_count'], 0)
+        # Cumulative preparation skips the superseded diff instead of refusing.
+        response = self.case.client.post(self.case.base + '/workbench/prepare',
+            json=dict(expected_queue_revision=queue['queue_revision']), headers=self.case.headers)
+        self.assertIn(response.status_code, (200, 201), response.get_json())
+        self.assertEqual(response.get_json()['counts']['pending_epochs'], 0)
+        # The frozen superseded proposal still refuses publication and says why.
+        root = self.case.base + '/workbench/candidates/' + second
+        context = self.get_context(root)
+        self.assertTrue(context['publication_blocked'])
+        preview = self.case.client.post(root + '/preview', json=dict(expected_candidate_scope_revision=context['candidate_scope_revision'],
+            expected_draft_version=context['draft']['draft_version'], mode=context['draft']['selection_mode']), headers=self.case.headers)
+        self.assertEqual(preview.status_code, 409, preview.get_json())
+        self.assertIn('newer saved query', preview.get_json()['error'])
+
     def test_prepare_bootstrap_is_response_only_and_replay_reads_fresh_authority(self):
         body = dict(expected_queue_revision=self.queue()['queue_revision'])
         path = self.case.base + '/workbench/prepare'
