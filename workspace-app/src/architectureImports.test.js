@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
+import {guardPython} from './test-support/guardPython.js';
 
 test('dependency parser sees aliased imports, re-exports and nested literal loading in JSX',()=>{
   assert.deepEqual(dependencies('view.jsx',`
@@ -51,7 +52,7 @@ test('public guard rejects normalized forbidden edges, required-edge removal and
       tests:{python:[],javascript:['workspace-app/src/contract.test.js']}}]};
   const guard=fileURLToPath(new URL('../../tools/architecture_guard.py',import.meta.url));
   const check=()=>{
-    const run=spawnSync('python3',['-B',guard,'check','--root',root,'--language','javascript','--node',process.execPath],{encoding:'utf8'});
+    const run=spawnSync(guardPython(),['-B',guard,'check','--root',root,'--language','javascript','--node',process.execPath],{encoding:'utf8'});
     assert.ifError(run.error);return {exit:run.status,result:JSON.parse(run.stdout)};
   };
   try{
