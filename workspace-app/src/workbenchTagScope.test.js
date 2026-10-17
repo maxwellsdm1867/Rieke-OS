@@ -81,13 +81,13 @@ test('the Workbench clock skips every confirmed tag receipt but not curation, st
     await h.act(()=>api.changed({kind:'annotations',tagChannel:true}));
     assert.deepEqual([api.revision,api.structureRevision,api.reviewRevision],[0,0,0]);
     await h.act(()=>api.changed({kind:'annotations',confirmed:receipt('cell')}));
-    assert.deepEqual([api.revision,api.structureRevision,api.reviewRevision],[1,0,0],'cell receipts still renew live views, not frozen Workbench');
+    assert.deepEqual([api.revision,api.structureRevision,api.reviewRevision],[0,0,0],'cell receipts also travel on the tag channel');
     await h.act(()=>api.changed({kind:'annotations'}));
-    assert.deepEqual([api.revision,api.structureRevision,api.reviewRevision],[2,0,1],'receipt-less tag events keep the old full refresh');
+    assert.deepEqual([api.revision,api.structureRevision,api.reviewRevision],[1,0,1],'receipt-less tag events keep the old full refresh');
     await h.act(()=>api.changed({kind:'curation'}));
-    assert.deepEqual([api.revision,api.structureRevision,api.reviewRevision],[3,0,2]);
+    assert.deepEqual([api.revision,api.structureRevision,api.reviewRevision],[2,0,2]);
     await h.act(()=>api.changed());
-    assert.deepEqual([api.revision,api.structureRevision,api.reviewRevision],[4,1,3]);
+    assert.deepEqual([api.revision,api.structureRevision,api.reviewRevision],[3,1,3]);
   }finally{await h.close();}
 });
 
