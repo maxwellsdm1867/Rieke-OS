@@ -332,7 +332,8 @@ test('browse cell expansion preserves inspected epoch and existing rows, fetchin
   await h.act(()=>row(h,9).props.onClick({}));const node=row(h,9),before=h.fixture.requests.length;
   const cell=h.root.findAllByType('details').filter(n=>n.props.className==='cell-tree-cell')[1];
   const summary=cell.findByType('summary');
-  assert.equal(summary.props.onClick,undefined,'browsing disclosure must not inspect first epoch');
+  await h.act(()=>summary.props.onClick({target:{closest:()=>null}}));
+assert.equal(h.fixture.requests.length,before,'browsing another cell must not inspect its first epoch');assert.equal(h.viewer.epoch.epoch_uuid,'epoch-8');
   await h.act(()=>cell.props.onToggle({currentTarget:{open:true}}));
   await h.waitFor(()=>h.fixture.requests.slice(before).some(r=>r.path.includes('cell_uuid=cell-1')&&r.completed));
   assert.equal(h.viewer.epoch.epoch_uuid,'epoch-8');assert.equal(row(h,9),node);

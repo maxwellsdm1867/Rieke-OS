@@ -247,3 +247,31 @@ test('Activity reconnect restores user scroll after transient page shrink and fr
   pane.scrollHeight=660;childPending=false;await h.render(props);for(const observer of [...observers])observer.callback();await frame();await frame();assert.equal(pane.scrollTop,120);assert.equal(observers.size,0);
  }finally{await h.close();Object.assign(globalThis,prior);}
 });
+test('clicking a cell row targets that cell for tags in browse and edit trees; buttons and the selected cell do not',async()=>{
+ const h=await createInspectionHarness();
+ h.network.api=async()=>pageAt();
+ try{
+  for(const browseOnly of [true,false]){
+   const selected=[];
+   await h.render({...base,browseOnly,selectedCell:null,setTargets(){},onSelectCell:(cell,epoch)=>selected.push([cell.cell_uuid,epoch.epoch_uuid])});
+   await h.toggle(0,true);
+   const row=()=>h.summaries.find(summary=>summary['aria-label']?.includes('Cell3')&&summary.onClick);
+   await h.act(async()=>{await row().onClick({target:{closest:selector=>selector==='button,input'?{}:null}});});
+   assert.deepEqual(selected,[],'Tag and checkbox controls inside the row keep their own action');
+   await h.act(async()=>{await row().onClick({target:{closest:()=>null}});await new Promise(resolve=>setTimeout(resolve,0));});
+   assert.deepEqual(selected,[['cell-A','cell-A-0']],`browseOnly=${browseOnly}: the row selects the cell and its first epoch`);
+   await h.render({...base,browseOnly,selectedCell:'cell-A',setTargets(){},onSelectCell:(cell,epoch)=>selected.push([cell.cell_uuid,epoch.epoch_uuid])});
+   await h.act(async()=>{await row().onClick({target:{closest:()=>null}});});
+   assert.equal(selected.length,1,'Collapsing the already selected cell keeps the cell target');
+   await h.unmount();
+  }
+  // Browsing with an inspected epoch: its own cell becomes the tag target without a read; another cell only discloses.
+  let reads=0;h.network.api=async()=>{reads++;return pageAt();};
+  const targeted=[],selected=[];
+  await h.render({...base,browseOnly:true,focusedCell:'cell-A',selectedCell:null,setTargets(){},onTargetCell:cell=>targeted.push(cell.cell_uuid),onSelectCell:cell=>selected.push(cell.cell_uuid)});
+  await h.toggle(0,true);
+  const rows=h.summaries.filter(summary=>summary['aria-label']?.includes('Cell3')&&summary.onClick);
+  await h.act(async()=>{rows[0].onClick({target:{closest:()=>null}});rows[1].onClick({target:{closest:()=>null}});});
+  assert.deepEqual([targeted,selected,reads],[['cell-A'],[],0]);
+ }finally{await h.close();}
+});
