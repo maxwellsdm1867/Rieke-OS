@@ -32,9 +32,9 @@ export default function ColumnTree(props){
   const ownerBlocked=!active||!!props.readPaused||state.activation!==props.presentationActivation||state.ownerIdentity!==ownerIdentity||!!readOwner&&!readOwner.active();
   const actionProps={...props,actionsDisabled:props.actionsDisabled||ownerBlocked||state.loading||!!state.error};
   const groupTags=useTreeGroupTags(actionProps);
-  const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision,ownerIdentity,active,readPaused:!!props.readPaused,activation:props.presentationActivation});
+  const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:props.readContext?groupTags.revision:0,ownerIdentity,active,readPaused:!!props.readPaused,activation:props.presentationActivation});
   const frozenPresentation=frozenTreePresentationScope(props);
-  const presentationScope=frozenPresentation||canonicalReadIdentity({protocolId:protocolId??null,readContext:readContext??null,predicate:predicate??null,filters,splits,revision,expectedRevision:expectedRevision??null,annotationRevision:groupTags.revision,ownerIdentity});
+  const presentationScope=frozenPresentation||canonicalReadIdentity({protocolId:protocolId??null,readContext:readContext??null,predicate:predicate??null,filters,splits,revision,expectedRevision:expectedRevision??null,annotationRevision:props.readContext?groupTags.revision:0,ownerIdentity});
   const groupSelection=useIncomingTreeSelection(actionProps,state.loadedScope===scopeKey&&!state.loading&&!state.error&&!ownerBlocked?state.columns[0]:null);
   // Presentation offsets never authorize reads or actions. Reuse only after the
   // fresh response confirms the same pages, revisions, scope and focus.

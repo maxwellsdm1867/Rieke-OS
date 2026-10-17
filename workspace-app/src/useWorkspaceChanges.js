@@ -10,7 +10,7 @@ export function useWorkspaceChanges(){
   // Confirmed epoch-tag receipts travel on the tag channel (annotations/tagStore),
   // not this clock: the App does not re-render, and tag-dependent views renew
   // from the store's confirmed generation. Everything else still ticks here.
-  const changed=useCallback(event=>setState(previous=>confirmedEpochReceipt(event)?previous:({
+  const changed=useCallback(event=>setState(previous=>confirmedEpochReceipt(event)||event?.kind==='annotations'&&event.tagChannel===true?previous:({
     revision:previous.revision+1,
     structureRevision:['annotations','curation'].includes(event?.kind)?previous.structureRevision:previous.structureRevision+1,
   })),[]);

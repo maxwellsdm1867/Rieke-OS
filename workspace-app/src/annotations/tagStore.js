@@ -6,9 +6,9 @@ import {applyAnnotationReceipts} from './annotationReceipts.js';
 
 const keyOf=(kind,uuid)=>JSON.stringify([kind,uuid]);
 
-export function createTagStore({limit=256}={}){
-  const entries=new Map(),listeners=new Set(),turns=new Map();
-  let version=0,confirmedGeneration=0,ticketSequence=0;
+export function createTagStore({limit=2048}={}){
+  const entries=new Map(),listeners=new Set(),turns=new Map(),verified=new Map();
+  let version=0,confirmedGeneration=0,staleGeneration=0,ticketSequence=0;
   const memo=new WeakMap();
   function emit(){version++;for(const listener of [...listeners])listener();}
   function entry(kind,uuid,create=false){
@@ -42,6 +42,7 @@ export function createTagStore({limit=256}={}){
     subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},
     getVersion:()=>version,
     getConfirmedGeneration:()=>confirmedGeneration,
+    getStaleGeneration:()=>staleGeneration,
     read:(kind,uuid)=>entries.get(keyOf(kind,uuid)),
     /** Last confirmed author revision known for a target, or undefined. */
     confirmedRevision(kind,uuid,profile){return entries.get(keyOf(kind,uuid))?.confirmed?.revisions?.[profile];},
@@ -50,6 +51,12 @@ export function createTagStore({limit=256}={}){
       const value=entry(kind,uuid,true),ticket=++ticketSequence;
       value.pending.push({ticket,profile,authorName,tag,remove});value.error=null;touch(value);evict();emit();
       return ticket;
+    },
+    /** Show one add on many targets in a single update; returns one ticket. */
+    beginMany({kind,uuids,profile,authorName,tag}){
+      const ticket=++ticketSequence;
+      for(const uuid of uuids){const value=entry(kind,uuid,true);value.pending.push({ticket,profile,authorName,tag,remove:false});value.error=null;touch(value);}
+      evict();emit();return ticket;
     },
     /** Resolve when every earlier operation on this target/profile has settled. */
     turn(kind,uuid,profile,ticket){
@@ -85,11 +92,22 @@ export function createTagStore({limit=256}={}){
       let changed=false;for(const target of receipt?.targets||[])changed=confirmTarget(target)||changed;
       if(changed){confirmedGeneration++;evict();emit();}
     },
-    /** Facts changed elsewhere without a receipt: drop confirmed overlays. */
-    invalidate(){
-      for(const [key,value] of entries)if(!value.pending.length)entries.delete(key);else{value.confirmed=null;touch(value);}
-      confirmedGeneration++;emit();
+    /** Facts changed without per-target receipts (group saves, external sync).
+     *  Overlays stay (author revisions only move forward), but any epoch shown
+     *  afterwards is read fresh once (needsVerification) before it is trusted. */
+    changed(){confirmedGeneration++;staleGeneration++;emit();},
+    needsVerification(epochUuid){return staleGeneration>0&&(verified.get(epochUuid)??0)<staleGeneration;},
+    /** Fresh annotations for one epoch (and its cell) from the server. */
+    ingestAnnotations(epochUuid,cellUuid,annotations,generation=staleGeneration){
+      if(!annotations)return;
+      const targets=[['epoch',epochUuid,annotations.epoch_tags,annotations.revisions?.epoch],['cell',cellUuid,annotations.cell_tags,annotations.revisions?.cell]]
+        .filter(([,uuid,,revisions])=>uuid&&revisions).map(([kind,uuid,tags,revisions])=>({target_kind:kind,target_uuid:uuid,revisions,tags:tags||[]}));
+      for(const target of targets)confirmTarget(target);
+      verified.set(epochUuid,generation);if(verified.size>limit)verified.delete(verified.keys().next().value);
+      evict();emit();
     },
+    /** Facts changed elsewhere without a receipt: drop confirmed overlays. */
+    invalidate(){store.changed();},
     /** Overlay confirmed receipts, then pending operations, on an epoch row. */
     apply(row){
       if(!row?.annotations)return row;
@@ -119,7 +137,7 @@ export function createTagStore({limit=256}={}){
     },
     isPending(ticket){for(const value of entries.values())if(value.pending.some(op=>op.ticket===ticket))return true;return false;},
     error:(kind,uuid)=>entries.get(keyOf(kind,uuid))?.error||null,
-    reset(){entries.clear();turns.clear();confirmedGeneration++;emit();},
+    reset(){entries.clear();turns.clear();verified.clear();staleGeneration=0;confirmedGeneration++;emit();},
   };
   return store;
 }

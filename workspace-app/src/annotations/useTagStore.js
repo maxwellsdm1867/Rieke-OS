@@ -24,3 +24,12 @@ export function useTagGeneration(store=tagStore){
   },[store]);
   return generation;
 }
+// Facts changed without receipts (group saves, external sync): shown epochs re-read.
+export function useTagStaleGeneration(store=tagStore){
+  const [generation,setGeneration]=useState(store.getStaleGeneration);
+  useEffect(()=>{
+    const update=()=>startTransition(()=>setGeneration(store.getStaleGeneration()));
+    update();return store.subscribe(update);
+  },[store]);
+  return generation;
+}

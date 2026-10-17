@@ -11,7 +11,7 @@ import './AnnotationTags.css';
 import {confirmAnnotationReceipt,fastAnnotationReceipt} from '../annotationReceipts.js';
 import {epochResourceCache} from "../../resourceCache.js";
 import {tagStore} from '../tagStore.js';
-import {useTagVersion} from '../useTagStore.js';
+import {useTagStaleGeneration,useTagVersion} from '../useTagStore.js';
 
 export default function AnnotationTags({composer=null,draftIdentity=null,epoch,revision,disabled=false,onChange,onFilter,focusRequest=0,epochFocusRequest=0,onNavigateEpoch,tools,children,selectedEpochs=[],selectedCells=[],targetScope=null,refreshWithEpoch=false,readSeparately=false,reconcileReceipt=false,verifyTarget,groupMutation}){
   const api=useWorkspaceRequest(defaultApi),requestScope=useWorkspaceRequestScope();
@@ -35,8 +35,13 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
   const latestValue=useRef(value);latestValue.current=value;
   useUnmountGuard(!!value.trim(),'Save or clear the unfinished tag before unmounting.');
   const refreshPending=!!refreshAfter&&refreshAfter.identity===identity&&refreshAfter.annotations===epoch?.annotations;
+  // Group saves and external changes carry no per-target receipt: an epoch shown
+  // afterwards is read fresh once (this editor's annotations only, never the
+  // page, tree or trace) and fed to the tag store before it is trusted.
+  const staleGeneration=useTagStaleGeneration();
+  const needsFresh=!!identity&&!groupMutation&&(scope==='epoch'||scope==='cell')&&tagStore.needsVerification(identity);
   const needsCellCount=!requestScope&&scope==='cell'&&!Number.isFinite(epoch?.annotations?.cell_epoch_count);
-  const remoteNeeded=!bulkCells&&(readSeparately||!epoch?.annotations||needsCellCount||((!refreshWithEpoch||refreshAfter?.force)&&refreshPending));
+  const remoteNeeded=!bulkCells&&(readSeparately||needsFresh||!epoch?.annotations||needsCellCount||((!refreshWithEpoch||refreshAfter?.force)&&refreshPending));
   const awaitingEpoch=refreshWithEpoch&&!refreshAfter?.force&&refreshPending;
   const scopeIdentity=JSON.stringify([identity,epoch?.cell_uuid,scope,profileUuid,revision,selectedEpochs,selectedCells,groupMutation?.selectionUuid]);
   const committedScope=useRef(null),generation=useRef(0),mounted=useRef(false),mutation=useRef(null);
@@ -49,8 +54,10 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
   // The whole-cell count is a displayed summary, not annotation authority.
   // Supplied read owners keep their existing URL contract.
   const countQuery=!requestScope&&scope!=='cell'?'?include_cell_epoch_count=false':'';
-  const annotations=useResource(identity&&remoteNeeded?`/epochs/${identity}/annotations${countQuery}`:null,revision);
+  const annotations=useResource(identity&&remoteNeeded?`/epochs/${identity}/annotations${countQuery}`:null,needsFresh?`${revision}:${staleGeneration}`:revision);
   const loadedAnnotations=remoteNeeded?(annotations.data||epoch?.annotations):epoch?.annotations;
+  const freshRead=needsFresh&&annotations.data&&!annotations.loading&&annotations.path?.startsWith(`/epochs/${identity}/annotations`)?annotations.data:null;
+  useEffect(()=>{if(freshRead)tagStore.ingestAnnotations(identity,epoch?.cell_uuid,freshRead,staleGeneration);},[freshRead,identity,epoch?.cell_uuid,staleGeneration]);
   // The editor subscribes urgently: pending chips paint in the click's frame.
   const tagVersion=useTagVersion();
   const annotationData=useMemo(()=>loadedAnnotations&&identity?tagStore.apply({epoch_uuid:identity,cell_uuid:epoch?.cell_uuid,annotations:loadedAnnotations}).annotations:loadedAnnotations,[loadedAnnotations,identity,epoch?.cell_uuid,tagVersion]);
@@ -114,25 +121,34 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
         // Server receipt owns frozen identities/revisions. Durable submit has
         // no cancellation signal; dismissal only closes the presentation.
         const result=await groupMutation.save({tag,profileUuid});
+        tagStore.changed();
         if(isCurrent()){composerDirty.current=false;setValue('');setQuery('');setOpen(false);}
         if(groupMutation.canPublish?.()!==false)onChange?.(result,null);return true;
       }
-      let body;
+      let body,bulkTicket=null;
+      const restoreDraft=()=>{if(currentIdentity.current===identity&&(!latestValue.current.trim()||latestValue.current.trim()===tag.trim()))setValue(tag);};
       if(targetKind==='selected'||targetKind==='selected-cells'){
         const kind=targetKind==='selected-cells'?'cell':'epoch',ids=kind==='cell'?selectedCells:selectedEpochs;
-        const read=await api('/annotations/read',{method:'POST',signal:controller.signal,body:{target_kind:kind,target_uuids:[...new Set(ids)]}});
-        if(!isCurrent())return false;
-        body=bulkAnnotationChange({targetKind:kind,targetUuids:ids,profileUuid,tag,read});
+        // Shown on every selected target at once; the read below only supplies
+        // exact server revisions for the write and never delays the display.
+        if(reconcileReceipt){bulkTicket=tagStore.beginMany({kind,uuids:[...new Set(ids)],profile:profileUuid,authorName:profileName||'You',tag:tag.trim()});
+          composerDirty.current=false;startTransition(()=>setValue(''));setQuery('');setActive(-1);setOpen(false);}
+        try{
+          const read=await api('/annotations/read',{method:'POST',signal:controller.signal,body:{target_kind:kind,target_uuids:[...new Set(ids)]}});
+          if(!isCurrent()){if(bulkTicket){tagStore.fail(bulkTicket,new Error('Selection changed before saving.'));restoreDraft();}return false;}
+          body=bulkAnnotationChange({targetKind:kind,targetUuids:ids,profileUuid,tag,read});
+        }catch(error){if(bulkTicket){tagStore.fail(bulkTicket,error);restoreDraft();}throw error;}
       }else body=annotationChange({epoch,targetKind,profileUuid,annotations:annotationData,tag,remove});
       if(!isCurrent())return false;
       if(verifyTarget)await verifyTarget({signal:controller.signal});
       if(!isCurrent())return false;
       // A submitted durable mutation is never cancelled or automatically retried.
-      const result=await api('/annotations',{method:'POST',body});
+      let result;
+      try{result=await api('/annotations',{method:'POST',body});}catch(error){if(bulkTicket){tagStore.fail(bulkTicket,error);restoreDraft();}throw error;}
       let confirmed=null;
       if(reconcileReceipt){
-        try{confirmed=confirmAnnotationReceipt(result,body);}catch(error){onChange?.(result);throw error;}
-        tagStore.ingest(confirmed);
+        try{confirmed=confirmAnnotationReceipt(result,body);}catch(error){if(bulkTicket){tagStore.fail(bulkTicket,error);restoreDraft();}onChange?.(result);throw error;}
+        if(bulkTicket)tagStore.confirm(bulkTicket,confirmed);else tagStore.ingest(confirmed);
         if(!requestScope)epochResourceCache.invalidateAnnotations(confirmed);
       }else if(!result||!Object.hasOwn(result,'changed'))throw new Error('The server did not return an annotation receipt. Refresh tags before retrying.');
       if(isCurrent()){

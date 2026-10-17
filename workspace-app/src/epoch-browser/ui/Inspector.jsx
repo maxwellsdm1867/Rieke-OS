@@ -36,7 +36,6 @@ export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=Trace.supportsFrozenReadContex
 import {inspectionSearches} from '../inspectionScope.js';
 import {saveCurationSelection} from '../curationSelection.js';
 import {useAnnotationReceipts} from '../../annotations/useAnnotationReceipts.js';
-import {fastAnnotationReceipt} from '../../annotations/annotationReceipts.js';
 import {datedCellLabel} from '../../recording-import/recordingIdentity.js';
 import {restoredEpochFocus} from '../../workspace-navigation/workspaceNavigation.js';
 import Trace from '../../traces/ui/TraceViewer.jsx';
@@ -447,7 +446,10 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const epochListRef=useRef(null);
   const actionScope=targets.length?`${targets.length} selected`:'focused epoch';
   const annotationChanged=(result,confirmed)=>{
-    const safe=fastAnnotationReceipt(confirmed)&&committedTagNavigation.current?.identity===tagNavigationIdentity;
+    // Group saves (no per-target receipts) and confirmed receipts within the
+    // selection limit travel on the tag channel, not the app clock.
+    if(result?.format==='rieke-group-annotation-receipt'&&result.target_kind==='epoch'){if(onChange)onChange({kind:'annotations',protocolId:id,tagChannel:true});return;}
+    const safe=!!confirmed&&confirmed.targets.length<=1000&&committedTagNavigation.current?.identity===tagNavigationIdentity;
     if(onChange)onChange({kind:'annotations',protocolId:id,...(safe?{origin:annotationOrigin,confirmed}:{})});
     else{epoch.reload();loadedRows.reload();}
   };

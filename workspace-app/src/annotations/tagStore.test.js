@@ -58,3 +58,15 @@ test('apply is memoized per row and target versions',()=>{
   assert.equal(store.apply(value),store.apply(value));
   assert.equal(store.apply({...value,epoch_uuid:'other'}).annotations,value.annotations,'Untouched rows are returned as-is');
 });
+
+test('after a receipt-less change, shown epochs are verified once and fresh facts win over older overlays',()=>{
+  const store=createTagStore();
+  store.ingest(receipt(1,['single']));
+  assert.equal(store.needsVerification('e1'),false);
+  store.changed();
+  assert.equal(store.needsVerification('e1'),true,'Group save: epoch must be read fresh before trusted');
+  const stale=row([{profile_uuid:'me',author_name:'Me',tag:'single',revision:1}]);stale.annotations.revisions.epoch={me:1};
+  store.ingestAnnotations('e1','c1',{epoch_tags:[{profile_uuid:'me',author_name:'Me',tag:'single',revision:2},{profile_uuid:'me',author_name:'Me',tag:'from group',revision:2}],cell_tags:[],revisions:{epoch:{me:2},cell:{}}});
+  assert.equal(store.needsVerification('e1'),false);
+  assert.deepEqual(store.apply(stale).annotations.epoch_tags.map(chip=>chip.tag),['single','from group'],'Fresh facts overlay the stale cached row');
+});
