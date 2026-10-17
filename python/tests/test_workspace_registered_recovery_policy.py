@@ -57,9 +57,6 @@ DEFAULT_WRITES = (
     ('annotation_profile_select', '/api/annotation-profiles/selected', 'POST'),
     ('curate', '/api/protocols/<protocol_uuid>/curation', 'POST'),
     ('tag_import_apply', '/api/annotations/import/apply', 'POST'),
-    ('workbench_patch', '/api/protocols/<protocol>/workbench/candidates/<revision>/draft', 'PATCH'),
-    ('workbench_accept', '/api/protocols/<protocol>/workbench/candidates/<revision>/accept', 'POST'),
-    ('workbench_prepare', '/api/protocols/<protocol>/workbench/prepare', 'POST'),
     ('save_preferences', '/api/project-preferences', 'PUT'),
     ('export', '/api/protocols/<protocol_uuid>/exports', 'POST'),
     ('candidate_export', '/api/explore/revisions/<revision_uuid>/exports', 'POST'),
@@ -67,11 +64,25 @@ DEFAULT_WRITES = (
     ('workbench_accept_export', '/api/protocols/<protocol>/workbench/receipts/<operation>/exports', 'POST'),
 )
 
+# Workbench writes commit rows, receipts and audit in one SQL transaction and
+# queue the coalesced recovery mirror instead of a synchronous full capture.
+WORKBENCH_QUEUED = (
+    ('workbench_patch', '/api/protocols/<protocol>/workbench/candidates/<revision>/draft', 'PATCH'),
+    ('workbench_accept', '/api/protocols/<protocol>/workbench/candidates/<revision>/accept', 'POST'),
+    ('workbench_prepare', '/api/protocols/<protocol>/workbench/prepare', 'POST'),
+    ('workbench_finish', '/api/protocols/<protocol>/workbench/candidates/<revision>/finish', 'POST'),
+    ('workbench_undo', '/api/protocols/<protocol>/workbench/undo', 'POST'),
+)
+
 
 class Scheduler:
     def __init__(self):
         self.flushes = 0
+        self.requests = 0
         self.fail = False
+
+    def request(self):
+        self.requests += 1
 
     def status(self):
         return {'status': 'degraded' if self.fail else 'pending', 'requested_sequence': 7}
@@ -191,6 +202,18 @@ class RegisteredRecoveryPolicyTests(unittest.TestCase):
                 self.assertEqual(response.get_json(), {'changed': False, 'event_uuid': 'retained-event'})
                 self.assertEqual(self.scheduler.flushes, before + 1)
                 self.assertEqual(response.headers['X-Receipt'], 'retained')
+
+    def test_registered_workbench_writes_queue_the_recovery_mirror_without_flush(self):
+        for endpoint, rule, method in WORKBENCH_QUEUED:
+            with self.subTest(endpoint=endpoint):
+                path = self.registered(endpoint, rule, (method,))
+                self.respond(endpoint)
+                flushes, requests = self.scheduler.flushes, self.scheduler.requests
+                response = self.send(path, method=method, json={})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.get_json(), {'changed': False, 'event_uuid': 'retained-event'})
+                self.assertEqual(self.scheduler.flushes, flushes)
+                self.assertEqual(self.scheduler.requests, requests + 1)
 
     def test_mixed_method_and_alias_registration_preserves_method_specific_flush(self):
         for rule, methods in (

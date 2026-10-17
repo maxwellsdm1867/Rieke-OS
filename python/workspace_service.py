@@ -583,6 +583,7 @@ class WorkspaceService:
         pending_projections = []
         next_cache, final_checks, prepared = {}, [], []
         verified_signatures = dict(getattr(self, '_source_signatures', {}))
+        verified_metadata = {}
         # Establish the entire verified input generation before decoding any
         # source projection. A matching sealed index is already the projection.
         for source in source_records:
@@ -597,11 +598,17 @@ class WorkspaceService:
             if not metadata_path.is_relative_to(self.project_dir / 'imports'):
                 raise ValueError('Metadata reference escapes project imports')
             metadata_signature = self._input_signature(metadata_path)
-            metadata_sha = digest(metadata_path)
+            # Like recordings, an unchanged verified file (same inode, size,
+            # mtime and ctime) is not re-hashed on every refresh.
+            metadata_digests = getattr(self, '_metadata_digests', {})
+            metadata_sha = metadata_digests.get(metadata_signature)
+            if metadata_sha is None:
+                metadata_sha = digest(metadata_path)
+                if metadata_signature != self._input_signature(metadata_path):
+                    raise ValueError('Imported metadata changed during verification')
             if metadata_sha != manifest['metadata_sha256']:
                 raise ValueError('Imported metadata checksum changed; refusing the read model')
-            if metadata_signature != self._input_signature(metadata_path):
-                raise ValueError('Imported metadata changed during verification')
+            verified_metadata[metadata_signature] = metadata_sha
             source_path = Path(manifest['source_path']).resolve()
             source_signature = self._input_signature(source_path)
             key = (checksum(source), metadata_signature, metadata_sha, source_signature,
@@ -756,6 +763,7 @@ class WorkspaceService:
         self._fingerprints = fingerprints
         self._source_metadata_cache = next_cache
         self._source_signatures = verified_signatures
+        self._metadata_digests = verified_metadata
         if not preserve_indexes:
             self._predicate_catalog_cache = None
             self._registered_tree_cache = None

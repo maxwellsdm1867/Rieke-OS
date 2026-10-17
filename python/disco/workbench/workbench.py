@@ -126,6 +126,10 @@ def workbench_tables(dj):
 
 
 _recipe_reads = contextvars.ContextVar('workbench_recipe_reads', default=None)
+# A per-proposal loop (queue, cumulative snapshot) reads each protocol's
+# revision once instead of once per proposal. Opening/closing read checks and
+# publication guards stay outside the loop and read fresh; binding writes clear it.
+_revision_memo = contextvars.ContextVar('workbench_revision_memo', default=None)
 
 
 class _RecipeReads:
@@ -354,8 +358,15 @@ class ProtocolWorkbench:
                 # A bound main owns its saved membership below. A fresh native
                 # revision proof can avoid materializing unused curation rows;
                 # unsupported/custom/unbound readers keep the full-state oracle.
-                query_revision = (self.read_revision(protocol) if binding and reads.canonical
-                                  and self.read_revision is not None and self.state is self._read_revision_state else None)
+                memo = _revision_memo.get()
+                fresh = (binding and reads.canonical and self.read_revision is not None
+                         and self.state is self._read_revision_state)
+                if fresh and memo is not None and protocol in memo:
+                    query_revision = memo[protocol]
+                else:
+                    query_revision = self.read_revision(protocol) if fresh else None
+                    if fresh and memo is not None and query_revision is not None:
+                        memo[protocol] = query_revision
                 if query_revision is None:
                     result, _, query_revision = self.state(protocol)
                 else:
@@ -436,6 +447,15 @@ class ProtocolWorkbench:
         return (summary.get('kind') != 'workbench_pending_union' and context['main'] is not None
                 and not context['valid_base']
                 and context['expected_binding_version'] > summary['baseline_binding_version'])
+
+    @staticmethod
+    @contextlib.contextmanager
+    def revision_memo():
+        token = _revision_memo.set(_revision_memo.get() if _revision_memo.get() is not None else {})
+        try:
+            yield
+        finally:
+            _revision_memo.reset(token)
 
     @staticmethod
     def main_blocked(context):
@@ -754,6 +774,7 @@ class ProtocolWorkbench:
             if accepted:
                 record = self.history.create(frozen, self.service.sources, self.service.project_dir / 'catalog.json', actor,
                     name=main['name'], parent_revision_uuid=main['revision_uuid'], _in_transaction=True)
+                (_revision_memo.get() or {}).clear()
                 saved = self.history.bind(record['revision_uuid'], protocol, preview['expected_binding_version'], actor,
                     diff, len(context['previous']), expected_query_revision=preview['expected_query_revision'],
                     current_query_revision=guard, diff_summary=summarize_diff(self.service.rows, context['previous'], union),
@@ -813,6 +834,7 @@ class ProtocolWorkbench:
             again = self.receipt(undo_operation, actor, request_hash)
             if again:
                 return again
+            (_revision_memo.get() or {}).clear()
             saved = self.history.bind(previous_uuid, protocol, binding['version'], actor,
                 dict(added=[], removed=removed, changed=[]), len(_members(current)),
                 _in_transaction=True, _lock_held=True)
@@ -895,7 +917,7 @@ class ProtocolWorkbench:
             return scoped
 
     def queue(self, protocol, actor, limit=20, cursor=None):
-        with elapsed("disco.workbench.workbench", "queue"):
+        with elapsed("disco.workbench.workbench", "queue"), self.revision_memo():
             if type(limit) is not int or not 1 <= limit <= 100:
                 raise ValueError('Queue page limit must be 1–100')
             protocol = str(uuid.UUID(protocol))

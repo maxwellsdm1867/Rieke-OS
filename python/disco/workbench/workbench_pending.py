@@ -70,9 +70,16 @@ def snapshot_authority(manager, protocol, actor, *, query_revision_guard=None):
         raise WorkbenchConflict('Cumulative review requires an immutable main baseline')
     main = binding['recipe']
     pending, origins = {}, []
-    for row in sorted(manager.original_records(protocol), key=lambda row: row['summary']['candidate_revision_uuid']):
-        context = manager.context(protocol, row['summary']['candidate_revision_uuid'], actor,
+    if query_revision_guard is not None:
+        # Inside one locked transaction the guard's answer cannot change between
+        # proposals; attest it once instead of once per proposal.
+        attested = query_revision_guard()
+        query_revision_guard = lambda: attested
+    with manager.revision_memo():
+        contexts = [manager.context(protocol, row['summary']['candidate_revision_uuid'], actor,
             query_revision_guard=query_revision_guard)
+            for row in sorted(manager.original_records(protocol), key=lambda row: row['summary']['candidate_revision_uuid'])]
+    for context in contexts:
         # Only mergeable epochs enter the combined review; a proposal that
         # cannot publish contributes nothing instead of refusing preparation.
         mergeable = manager.mergeable(context)
