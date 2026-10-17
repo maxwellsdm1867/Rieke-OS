@@ -82,6 +82,8 @@ class ExternalTagTests(unittest.TestCase):
     def test_app_tag_writes_do_not_look_external_and_clean_folders_are_not_reread(self):
         path = self.submit()
         first = self.scan()
+        # Receipts written by the first pass change the listing once; then it is stable.
+        self.assertEqual(self.scan()['revision'], first['revision'])
         # An in-app write reaches views through its own receipt, not the scan.
         self.case.store.update('epoch', [self.case.second], self.profile,
             {'tags_add':['app tag']}, {self.case.second:0}, 'Arthur')
@@ -89,6 +91,8 @@ class ExternalTagTests(unittest.TestCase):
             second = self.scan()
         self.assertEqual(second['revision'], first['revision'])
         self.assertEqual(second['exports'], first['exports'])
+        with patch.object(self.case.store, 'lock', side_effect=AssertionError('Idle scan took the annotation lock')):
+            self.assertEqual(self.scan()['revision'], first['revision'])
         # A lost receipt file (crash after commit) is still repaired.
         (self.folder / 'annotations/receipts' / path.name).unlink()
         third = self.scan()
@@ -96,6 +100,21 @@ class ExternalTagTests(unittest.TestCase):
         self.assertEqual(third['revision'], first['revision'])
         self.submit(target=self.case.second, tag='second external')
         self.assertNotEqual(self.scan()['revision'], first['revision'])
+
+    def test_message_arriving_during_a_scan_is_not_hidden_by_the_clean_memo(self):
+        self.submit()
+        original = self.receiver.receive
+        arrived = []
+        def receive(message, record, receipts):
+            result = original(message, record, receipts)
+            if not arrived:
+                arrived.append(self.submit(target=self.case.second, tag='mid-scan'))
+            return result
+        with patch.object(self.receiver, 'receive', side_effect=receive):
+            self.scan()
+        for _ in range(2):
+            self.scan()
+        self.assertEqual([chip['tag'] for chip in self.case.epoch(self.case.second)['epoch_tags']], ['mid-scan'])
 
     def test_receipt_failure_rolls_back_additions_and_retry_succeeds(self):
         path = self.submit()

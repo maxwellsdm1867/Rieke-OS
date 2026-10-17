@@ -173,7 +173,35 @@ class ExternalTags:
         receipts[message_id] = receipt
         return receipt
 
+    def _fingerprint(self):
+        try:
+            with os.scandir(self.root) as entries:
+                folders = sorted((entry.name, entry.inode(), entry.stat(follow_symlinks=False).st_mtime_ns)
+                                 for entry in entries)
+        except OSError:
+            return None
+        listings = tuple(self._listing(self.root / name) for name, _, _ in folders)
+        return None if None in listings else (tuple(folders), listings)
+
+    def unchanged(self):
+        """Lock-free idle check: the last clean scan's result while no export
+        folder, message or receipt file changed. Receipts are only recorded by
+        scans, so they cannot change otherwise; anything else forces a scan."""
+        last = getattr(self, '_last', None)
+        if last is None or last[0] is None or last[0] != self._fingerprint():
+            return None
+        return {**json.loads(json.dumps(last[1])), 'checked_at': dt.datetime.now(dt.timezone.utc).isoformat()}
+
     def scan(self):
+        self._last = None
+        fingerprint = self._fingerprint()
+        result = self._scan()
+        clean = all(item['status'] in ('watching', 'not_enabled') and not item['errors'] and not item['pending']
+                    for item in result['exports'])
+        self._last = (fingerprint, result) if clean else None
+        return result
+
+    def _scan(self):
         statuses = []
         ready = getattr(self.service, '_ready', None)
         if ready: ready()
@@ -190,6 +218,8 @@ class ExternalTags:
                     incoming = folder / 'annotations/incoming'
                     if (folder / 'annotations').resolve() != folder / 'annotations':
                         raise ValueError('Annotation folder must not redirect outside the export')
+                    # Listed before processing: a message arriving mid-pass changes
+                    # the next listing, so it is never hidden behind a clean memo.
                     listing = self._listing(folder)
                     previous = self._folders.get(export_id)
                     if (listing is not None and previous is not None and previous[0] == listing
@@ -235,7 +265,7 @@ class ExternalTags:
                             state['errors'].append(dict(file=path.name, error=str(error)))
                     state['status'] = 'needs_attention' if state['errors'] else 'watching'
                     # Listing after processing: receipts written above are part of the clean state.
-                    self._folders[export_id] = (self._listing(folder), json.dumps(summary, sort_keys=True, default=str), json.loads(json.dumps(state)))
+                    self._folders[export_id] = (listing, json.dumps(summary, sort_keys=True, default=str), json.loads(json.dumps(state)))
                 except (ValueError, KeyError, TypeError, OSError) as error:
                     state['status'] = 'unavailable'; state['errors'].append(dict(error=str(error)))
                     self._folders.pop(export_id, None)
@@ -259,6 +289,9 @@ def register_external_tag_routes(app, service, exports, annotations, db_lock):
 
     @app.post('/api/annotations/scan')
     def scan_tags():
+        idle = receiver.unchanged()
+        if idle is not None:
+            return jsonify(idle)
         with db_lock:
             return jsonify(receiver.scan())
 
