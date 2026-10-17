@@ -110,7 +110,7 @@ class MutationRecoveryTests(unittest.TestCase):
             'curation_batch_read', 'tag_import_preview', 'preview_source_propagation',
             'resolve_search_preset', 'compare_protocol_revision', 'workbench_preview',
             'workbench_tree_page', 'workbench_candidate_summary', 'workbench_selection_summary', 'workbench_tree_selection', 'group_annotation_preview',
-            'group_annotation_preview_release')
+            'group_annotation_preview_release', 'scan_tags')
         for endpoint in endpoints:
             self.route(endpoint)
         for endpoint in endpoints:

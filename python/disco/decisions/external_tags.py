@@ -188,7 +188,9 @@ class ExternalTags:
         folder, message or receipt file changed. Receipts are only recorded by
         scans, so they cannot change otherwise; anything else forces a scan."""
         last = getattr(self, '_last', None)
-        if last is None or last[0] is None or last[0] != self._fingerprint():
+        self.full_reason = ('no clean scan' if last is None else 'unreadable folders' if last[0] is None
+                            else 'folders changed' if last[0] != self._fingerprint() else None)
+        if self.full_reason:
             return None
         return {**json.loads(json.dumps(last[1])), 'checked_at': dt.datetime.now(dt.timezone.utc).isoformat()}
 
@@ -291,9 +293,13 @@ def register_external_tag_routes(app, service, exports, annotations, db_lock):
     def scan_tags():
         idle = receiver.unchanged()
         if idle is not None:
-            return jsonify(idle)
+            response = jsonify(idle)
+            response.headers['X-Disco-Scan'] = 'idle'
+            return response
         with db_lock:
-            return jsonify(receiver.scan())
+            response = jsonify(receiver.scan())
+        response.headers['X-Disco-Scan'] = 'full; ' + str(receiver.full_reason)
+        return response
 
 
 def main():
