@@ -483,6 +483,16 @@
         "src/presentationSessionsApp.test.js"
       ]
     },
+    "src/byteSize.js": {
+      "fingerprint": "484a8a65d138fb79bce169747d6724c693192e14acc8622623b6501b579a1a26",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/byteSize.test.js",
+        "src/storageSizeAgreement.test.js"
+      ]
+    },
     "src/cell-qc/cellTypes.js": {
       "fingerprint": "15b47a802defcde40f4c9a1c47fb8c76ae4ab2f114c1d3f0af3523c15335ad15",
       "sites": [],
@@ -529,7 +539,7 @@
       ]
     },
     "src/cell-qc/ui/CellTypeAccordions.jsx": {
-      "fingerprint": "06b0a21ee86f1b6686514a45006ba7eb14c775ec004595337b4cd63d82a5cfcd",
+      "fingerprint": "ee8428be06e78d9dbfdeb2b2dd73e0e7699b93260836e93c12c07eb2918598db",
       "sites": [
         {
           "owner": "CellTypeGroup",
@@ -538,12 +548,13 @@
         }
       ],
       "lifetime": "semantic-reveal-intent",
-      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced.",
+      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
       "tests": [
         "src/useSemanticReset.test.js",
         "src/semanticPresentationControls.test.js",
         "src/overviewPresentation.test.js",
-        "src/cellTypeIconsRendering.test.js"
+        "src/cellTypeIconsRendering.test.js",
+        "src/storageSizeAgreement.test.js"
       ]
     },
     "src/cell-qc/ui/CellTypeSummary.jsx": {
@@ -564,6 +575,15 @@
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/components/CellsIcon.jsx": {
+      "fingerprint": "cce4d6e167d46fbd89e2b2ad711362f9b3777bad0b43266f6bf367a43b78fd6d",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/overviewPresentation.test.js"
       ]
     },
     "src/components/Common.jsx": {
@@ -2249,7 +2269,7 @@
       ]
     },
     "src/project-workspace/ui/DataStores.jsx": {
-      "fingerprint": "7a19328a014fdb56670aec5ed27869c13771e456fc1e9bcfccd8aa8f4525154c",
+      "fingerprint": "6016267de8da0544ae782c556bdf1dd5e5c90e68a17e12bce9522f1c53a417c4",
       "sites": [
         {
           "owner": "StoreTimeline",
@@ -2273,10 +2293,12 @@
         }
       ],
       "lifetime": "semantic-source-pagination + fresh-source-reads",
-      "reason": "StoreTimeline source SHA resets event offset; same-source Activity return retains offset and performs normal resource revalidation. Main saved tab/query paging already has a committed-filter guard; source actions remain explicit. Authored-reason binding now owned by persistence agent.",
+      "reason": "StoreTimeline source SHA resets event offset; same-source Activity return retains offset and performs normal resource revalidation. Main saved tab/query paging already has a committed-filter guard; source actions remain explicit. Authored-reason binding now owned by persistence agent. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
       "tests": [
         "src/useSemanticReset.test.js",
-        "src/semanticPresentationControls.test.js"
+        "src/semanticPresentationControls.test.js",
+        "src/overviewPresentation.test.js",
+        "src/storageSizeAgreement.test.js"
       ]
     },
     "src/project-workspace/ui/ProjectClosedNotice.jsx": {
@@ -2290,13 +2312,14 @@
       ]
     },
     "src/project-workspace/ui/ProjectFiles.jsx": {
-      "fingerprint": "e4a33354277b694041d445a09f614d93f99ba7efd1791aa197b8c63b77c3d3cc",
+      "fingerprint": "9e3830e9c7d938289b566368f04434b84a62ec3f42e9dc24266f023ef7349ff3",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/byteSize.test.js"
       ]
     },
     "src/project-workspace/ui/ProjectFolder.jsx": {
@@ -2467,13 +2490,15 @@
       ]
     },
     "src/protocol-overview/protocolOverviewModel.js": {
-      "fingerprint": "6886bcbdb6e2833519cbcc51b12f397481372e7fc4bc168e746c32dda2aa8873",
+      "fingerprint": "9bab79ddbfe1bfadab19df74875e0e486f6c5ca8eb1fd3e2f530104e3136bda9",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/overviewPresentation.test.js",
+        "src/storageSizeAgreement.test.js"
       ]
     },
     "src/protocol-overview/protocolSuggestions.js": {
@@ -2511,13 +2536,15 @@
       ]
     },
     "src/protocol-overview/ui/Overview.jsx": {
-      "fingerprint": "933d521771e3ef1e66fda6a5f946258d1cc90f63f01302daed3a77018843a562",
+      "fingerprint": "dae1d7e47a932d4b5d8bb078ca8466486f82b377d62a90d130345885ed74296c",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/overviewPresentation.test.js",
+        "src/storageSizeAgreement.test.js"
       ]
     },
     "src/protocol-overview/ui/ProtocolApplyPanel.jsx": {
@@ -2567,15 +2594,16 @@
       ]
     },
     "src/protocol-overview/ui/ProtocolInfographic.jsx": {
-      "fingerprint": "d8d67897bd4095e565ee7a087c39adce0bc3a8fc715cd4fbb54218f56de8a135",
+      "fingerprint": "1e4a2e416db5e26e5730b176e23f1b514418050b0ebe73076e762eeaf0a0e9ac",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced.",
+      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
         "src/overviewPresentation.test.js",
-        "src/cellTypeIconsRendering.test.js"
+        "src/cellTypeIconsRendering.test.js",
+        "src/storageSizeAgreement.test.js"
       ]
     },
     "src/protocol-overview/ui/ProtocolSelectionSummary.jsx": {
@@ -2747,13 +2775,14 @@
       ]
     },
     "src/recording-import/importProgress.js": {
-      "fingerprint": "2a01381f6ea78a47128c943e39732cc0772cf1b9477a67838914f0dee585fc23",
+      "fingerprint": "eb10cb2fe01c6db3bb780a73f0c71607564b8927ac19f535312d51583346b074",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/recording-import/importProgress.test.js"
       ]
     },
     "src/recording-import/recordingIdentity.js": {
