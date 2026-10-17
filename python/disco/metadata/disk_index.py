@@ -541,6 +541,25 @@ class _Details(Mapping):
                     self.cache[key]=datum;self.index._detail_cache_costs[key]=cost
                     self.index._detail_cache_bytes+=cost
             self.cache.move_to_end(key);return copy.deepcopy(self.cache[key])
+    def many(self,keys):
+        """Independent details for many epochs from one connection, in key order.
+
+        Bulk readers (one cell's QC) would otherwise open a connection per epoch
+        and churn the small shared LRU that tree and inspector reads rely on.
+        Entries already cached are copied; the rest are decoded without admission.
+        """
+        keys=list(keys);result={}
+        with self.lock:
+            for key in keys:
+                if key in self.cache: result[key]=copy.deepcopy(self.cache[key])
+        missing=[key for key in keys if key not in result]
+        if missing:
+            with self.index._connect(missing) as connection:
+                for key,row_json,blob in connection.execute('SELECT e.epoch_uuid,e.row_json,e.detail_blob FROM scope s JOIN epochs e USING(epoch_id) ORDER BY s.ordinal'):
+                    result[key]=self.index._metadata_decoder.decode(connection,json.loads(row_json),blob)
+        for key in keys:
+            if key not in result: raise KeyError(key)
+            yield key,result[key]
 
 class _ScopedDetails(Mapping):
     def __init__(self,details,rows):

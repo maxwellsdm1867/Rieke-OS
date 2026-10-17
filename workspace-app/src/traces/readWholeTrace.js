@@ -31,15 +31,16 @@ export async function readWholeTrace({request,epochUuid,stream,readContext,sourc
   for(let start=window.start;start<end;){
     signal?.throwIfAborted();
     const count=Math.min(chunkSize,end-start),chunks=batchEnabled?Math.min(10,Math.ceil((end-start)/chunkSize)):1;
-    const path=traceRequestPath(epochUuid,stream,{start,count},readContext)+(chunks>1?`&chunks=${chunks}`:'');
-    const response=await request(path,{signal,...(chunks>1?{headers:{Accept:TRACE_BINARY_TYPE}}:{})});
+    // Batches also carry single 20k–100k windows, so those use binary64 rather than JSON.
+    const path=traceRequestPath(epochUuid,stream,{start,count},readContext)+(batchEnabled?`&chunks=${chunks}`:'');
+    const response=await request(path,{signal,...(batchEnabled?{headers:{Accept:TRACE_BINARY_TYPE}}:{})});
     signal?.throwIfAborted();
     const batch=Object.hasOwn(response??{},'windows');
     if(batch){
-      if(chunks===1||!Array.isArray(response.windows)||response.windows.length!==chunks||
+      if(!batchEnabled||!Array.isArray(response.windows)||response.windows.length!==chunks||
         !matchesHeader(response)||response.start!==start||response.count!==Math.min(chunks*count,end-start)||
         (readContext&&!prepared&&response.candidate_scope_revision!==readContext.candidate_scope_revision))invalid();
-    }else if(chunks>1){
+    }else if(batchEnabled){
       // Older endpoints ignore the opt-in parameter. Admit their one ordinary
       // window and finish with ordinary requests; never treat it as a full batch.
       batchEnabled=false;

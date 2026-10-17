@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readWholeTrace} from './readWholeTrace.js';
+import {TRACE_BINARY_TYPE} from './traceBinary.js';
 const stream={uuid:'s',sample_count:67500,sample_rate:10000,units:'pA'};
 function fixture(change=()=>{}){
  const calls=[];
@@ -106,4 +107,16 @@ test('legacy ordinary response to batch opt-in finishes every sample with ordina
  const data=await readWholeTrace({...f,request});
  assert.equal(data.count,300000);assert.equal(data.values.at(-1),299999);assert.equal(calls.length,3);
  assert.ok(calls[0].includes('chunks=3'));assert(calls.slice(1).every(path=>!path.includes('chunks=')));
+});
+test('a single-window whole stream opts into a binary batch and accepts one window',async()=>{
+ const calls=[],total=67500;
+ const request=async(path,options)=>{
+  calls.push({path,accept:options.headers?.Accept});
+  const base={epoch_uuid:'e',stream_uuid:'s',total_samples:total,sample_rate:10000,units:'pA',source_sha256:'source',decimated:false};
+  const values=Float64Array.from({length:total},(_,i)=>i);
+  return {...base,start:0,count:total,windows:[{...base,start:0,count:total,values}]};
+ };
+ const data=await readWholeTrace({request,epochUuid:'e',stream,maxChunkSamples:100000});
+ assert.equal(calls.length,1);assert.ok(calls[0].path.includes('chunks=1'));assert.equal(calls[0].accept,TRACE_BINARY_TYPE);
+ assert.ok(data.values instanceof Float64Array);assert.equal(data.values.length,total);assert.equal(data.values.at(-1),total-1);
 });

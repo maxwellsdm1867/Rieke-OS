@@ -5715,7 +5715,7 @@
       {
         "file": "python/tests/test_workspace_epoch_page_performance.py",
         "file_sha256": "9d84a4eb9649d6acccd68d5e15c5ed3d44f1b79e221d3a0e5770f9b8e0caff9b",
-        "reason": "Warm-page test rejects recipe deepcopy; structural-only native-index fixture bypasses constructor to isolate method/fallback behavior. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md.",
+        "reason": "Warm-page test rejects recipe deepcopy; structural-only native-index fixture bypasses constructor to isolate method/fallback behavior. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Request-decoupling review (2026-10-17): the disk_index owner adds a bulk _Details.many read for Cell QC; reviewed targets and fixture behavior are unchanged.",
         "sites": [
           {
             "selector": "Call:55",
@@ -5757,7 +5757,7 @@
               {
                 "module": "disco.metadata.disk_index",
                 "file": "python/disco/metadata/disk_index.py",
-                "file_sha256": "f7caa7e88a578d2fe737779dc904295f21a6a23a18d3349a0fe8656980806380",
+                "file_sha256": "7c3926f7e6ec1fbab9e1f0059ad0b7b8804c81ede0882c2a28eaa858ba3e2567",
                 "contract_id": "backend-metadata"
               }
             ]

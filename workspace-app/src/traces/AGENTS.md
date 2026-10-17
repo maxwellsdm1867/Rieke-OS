@@ -140,7 +140,8 @@ descriptors and mismatched identities; native dual-channel/H5 checks are separat
 
 
 Canonical/frozen foreground batches optionally negotiate
-`application/vnd.disco.trace-f64le.v1`. `traceBinary.js` checks the DTF1/versioned
+`application/vnd.disco.trace-f64le.v1`. Whole-stream reads opt in even when the
+stream fits one 100k window (`chunks=1`), so common 20k–100k epochs avoid JSON. `traceBinary.js` checks the DTF1/versioned
 framing, bounded UTF-8 metadata, zero alignment padding, exact payload length,
 ordered contiguous windows and finite binary64 values. The normal whole-trace
 owner still validates every scientific identity and frozen authority field.

@@ -58,3 +58,20 @@ test('late QC family responses cannot overwrite latest intent and authority refr
   assert.equal(h.root.findAllByProps({className:'qc-trace-identity'}).length,0);
  }finally{pending?.resolve();await h.close();}
 });
+
+test('a tag-only change reloads the epoch detail but not samples, QC summaries or trial pages',async()=>{
+ const {h,Component}=await setup();
+ try{
+  await h.render(Component,{cellUuid:'cell-0',revision:0,structureRevision:0});
+  const start=h.fixture.requests.length;
+  await h.render(Component,{cellUuid:'cell-0',revision:1,structureRevision:0});
+  await h.waitFor(()=>h.fixture.requests.slice(start).some(r=>r.path.startsWith('/epochs/epoch-0')));
+  await h.waitFor(()=>h.root.findAllByProps({className:'qc-trace-identity'}).length>0);
+  const paths=h.fixture.requests.slice(start).map(r=>r.path.split('?')[0]);
+  assert.ok(paths.includes('/epochs/epoch-0'),'Epoch detail carries annotations and follows tag edits');
+  assert.deepEqual(paths.filter(path=>path.startsWith('/cells/')||path.includes('/trace')),[],paths.join(', '));
+  const before=h.fixture.requests.length;
+  await h.render(Component,{cellUuid:'cell-0',revision:2,structureRevision:1});
+  await h.waitFor(()=>h.fixture.requests.slice(before).some(r=>r.path.startsWith('/cells/cell-0/qc?')||r.path==='/cells/cell-0/qc'));
+ }finally{await h.close();}
+});

@@ -29,7 +29,8 @@ async function harness({epochCount=1}={}){
   else if(path==='/project-preferences'){if(options.method==='PUT'){const body=JSON.parse(options.body);preferences.state[body.field]=body.value;preferences.revisions[body.field]++;}value=preferences;}
   else if(path==='/explore/preview'||path==='/explore/run')value={tree_revision:`preview-${++previewSerial}`,matched_count:1,catalog:{fields:[]},last_run:{cell_count:1,ran_at:'2026-10-10T12:00:00Z'}};
   else throw Error(`Unexpected fixture read: ${path}`);
-  return {ok:true,status:200,json:async()=>value};
+  // A JSON endpoint labels its body; whole reads may negotiate binary and refuse unlabeled bodies.
+  return {ok:true,status:200,headers:new Headers({'Content-Type':'application/json'}),json:async()=>value};
  }};
  const old=new Map(Object.keys(globals).map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
  for(const[k,v]of Object.entries(globals))Object.defineProperty(globalThis,k,{configurable:true,writable:true,value:v});
