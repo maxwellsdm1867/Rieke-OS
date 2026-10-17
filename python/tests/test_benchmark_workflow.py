@@ -274,6 +274,14 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertEqual(result['review_required'], [])
         self.assertEqual(result['status'], 'passed')
 
+    def test_one_display_frame_is_within_resolution_but_two_are_not(self):
+        policy = {'relative': .25, 'absolute_ms': 5}
+        baseline = {'split': {'total_ms': 33.4, 'modules': {}}}
+        one_frame = bench.compare_metrics(baseline, {'split': {'total_ms': 50.1, 'modules': {}}}, policy)
+        self.assertEqual(one_frame['status'], 'passed')
+        two_frames = bench.compare_metrics(baseline, {'split': {'total_ms': 66.8, 'modules': {}}}, policy)
+        self.assertEqual(two_frames['review_required'], ['split/total_ms'])
+
     def test_trace_endpoint_regression_visible_when_total_improves(self):
         baseline = {'trace': {'total_ms': 100, 'modules': {},
                               'endpoints': {'first_visible_ms': 10, 'complete_ms': 100}}}

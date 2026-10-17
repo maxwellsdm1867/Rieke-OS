@@ -318,6 +318,12 @@ def validate_browser(result, cfg, epochs=1_000_000, samples=3):
                 raise ValueError(f'Missing required variant {identity}/{variant}')
 
 
+# Browser timings resolve to whole 60 Hz display frames (33.3, 50.0, ... ms), so
+# a difference of one frame is below what the page can measure. A regression
+# of two frames or more is still reported.
+DISPLAY_FRAME_MS = 1000/60
+
+
 def compare_metrics(baseline, candidate, policy):
     if set(baseline) != set(candidate):
         raise ValueError('Different action coverage')
@@ -331,7 +337,7 @@ def compare_metrics(baseline, candidate, policy):
                     for name,value in before.get('endpoints',{}).items()]
         for metric,old,new in metrics:
             number(old,'baseline metric');number(new,'candidate metric')
-            threshold = max(old*(1+policy['relative']),old+policy['absolute_ms'])
+            threshold = max(old*(1+policy['relative']),old+policy['absolute_ms'],old+DISPLAY_FRAME_MS+1)
             review = new > threshold
             rows.append({'case':case,'metric':metric,'baseline_ms':old,'candidate_ms':new,
                          'threshold_ms':threshold,'review_required':review})
