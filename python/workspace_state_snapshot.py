@@ -497,6 +497,10 @@ def _restore(project_dir, connection, snapshot):
                         'ON DUPLICATE KEY UPDATE '+','.join('`'+name+'`=VALUES(`'+name+'`)' for name in names), args=tuple(values))
                     verify_json_fields(connection.query, 'recording_workspace', table, row,
                                        sorted(json_columns[table]), primary_keys[table])
+            if 'shared_annotation_tag' in existing:
+                # Per-tag times are derived state outside the snapshot. Clear
+                # them so the next app start re-derives them for restored tags.
+                connection.query('DELETE FROM recording_workspace.`shared_annotation_tag` WHERE project_uuid=%s',args=(identity,))
             for path,data in files.items():
                 if data is None:path.unlink(missing_ok=True)
                 else:atomic_write(path,data)

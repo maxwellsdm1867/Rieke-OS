@@ -82,3 +82,10 @@ legacy page tokens) renew once from `getConfirmedGeneration()` after a 75 ms idl
 window, and summaries read that generation when they render. Bulk, undo and
 external changes enter through `ingest()`/`invalidate()`. Store tests:
 `tagStore.test.js`; mounted: `annotationReceiptWorkflow.test.js`.
+
+Confirmed chips may carry `added_at` (ISO UTC with `Z`) and `time_source`
+(`recorded`, `audit_event`, `approximate`); `confirmAnnotationReceipt` refuses
+malformed values and propagates them. Chips stay name-only; `annotationChipTitle`
+puts author and added time (or `saving…` for pending chips) in the tooltip.
+Tag-time view filters (`annotations/*/tag_times`) are composed in
+`typed-query/protocolViewFilter.js`; times are never invented client-side.

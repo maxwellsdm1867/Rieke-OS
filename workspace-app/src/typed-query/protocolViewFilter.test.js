@@ -35,3 +35,23 @@ test('protocol handoff includes every supported current condition without changi
  assert.deepEqual(result,{all:[{all:[base,{field:'cell',operator:'eq',value:'cell-one'},{field:'cell type',operator:'eq',value:'RGC'},{field:'group label',operator:'eq',value:'Drug'}]},{field:'annotations/effective/tags',operator:'ne',value:[]}]});
  assert.deepEqual(base,{field:'protocol',operator:'eq',value:'Noise'});
 });
+
+test('tag-time rules compile to a UTC window on the same tag and reopen in local time',async()=>{
+ const {localInputToUtc,utcToLocalInput}=await import('./protocolViewFilter.js');
+ const rules=[{scope:'effective',comparison:'is',value:' good ',after:'2026-10-01T08:00',before:'2026-10-03T17:30'},{scope:'epoch',comparison:'is_not',value:'bad',after:'2026-10-02T00:00'}];
+ const predicate=compileTagRules('all',rules);
+ const after=localInputToUtc('2026-10-01T08:00');
+ assert.match(after,/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+ assert.equal(Date.parse(after),new Date('2026-10-01T08:00').getTime());
+ assert.deepEqual(predicate.all[0],{field:'annotations/effective/tag_times',operator:'contains',value:{tag:'good',after,before:localInputToUtc('2026-10-03T17:30')}});
+ assert.deepEqual(predicate.all[1],{not:{field:'annotations/epoch/tag_times',operator:'contains',value:{tag:'bad',after:localInputToUtc('2026-10-02T00:00')}}});
+ assert.deepEqual(readTagRules({tag_predicate:JSON.stringify(predicate)}),{mode:'all',rules:[{...rules[0],value:'good'},rules[1]]});
+ assert.equal(utcToLocalInput(after),'2026-10-01T08:00');
+ assert.match(tagFilterLabel({tag_predicate:JSON.stringify(predicate)}),/effective is “good” added after 2026-10-01 08:00 and added before 2026-10-03 17:30/);
+ assert.throws(()=>compileTagRules('all',[{scope:'effective',comparison:'is',value:'x',after:'2026-10-03T00:00',before:'2026-10-01T00:00'}]),/earlier/);
+ assert.throws(()=>compileTagRules('all',[{scope:'effective',comparison:'is',value:'x',after:'2026-10-03'}]),/complete date/);
+ // Plain rules stay plain membership, unchanged for older saved filters.
+ assert.deepEqual(compileTagRules('all',[{scope:'cell',comparison:'is',value:'x',after:'',before:''}]),{all:[{field:'annotations/cell/tags',operator:'contains',value:'x'}]});
+ const base={field:'protocol',operator:'eq',value:'Noise'};
+ assert.deepEqual(predicateWithTagFilters(base,{tag_predicate:JSON.stringify(predicate)}),{all:[base,predicate]});
+});

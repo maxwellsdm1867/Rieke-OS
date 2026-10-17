@@ -6,7 +6,7 @@ import {startTransition,useEffect,useId,useLayoutEffect,useMemo,useRef,useState}
 import {MessageCircle,Plus,X,Search,ChevronDown,UserRound,CornerDownRight} from 'lucide-react';
 import {api as defaultApi,useResource,number} from "../../api.js";
 import {useAnnotationProfile} from '../annotationProfile.js';
-import {annotationTagColor,annotationChange,annotationGroups,canRemoveAnnotation,annotationPredicate,bulkAnnotationChange,navigateAfterTagSave} from '../annotationTags.js';
+import {annotationTagColor,annotationChipTitle,annotationChange,annotationGroups,canRemoveAnnotation,annotationPredicate,bulkAnnotationChange,navigateAfterTagSave} from '../annotationTags.js';
 import './AnnotationTags.css';
 import {confirmAnnotationReceipt,fastAnnotationReceipt} from '../annotationReceipts.js';
 import {epochResourceCache} from "../../resourceCache.js";
@@ -240,7 +240,7 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
     if(!value.trim()){input.current?.focus();setOpen(true);return;}
     mutate(value.trim());
   }
-  function chips(rows,kind){return rows.map(chip=><span className={`annotation-chip ${kind} tag-color-${annotationTagColor(chip.tag)}${chip.pending?' pending':''}`} aria-busy={chip.pending?'true':undefined} key={`${kind}:${chip.profile_uuid}:${chip.tag}`} title={`${chip.tag} · ${kind==='cell'?'inherited from cell':'epoch tag'} · ${chip.author_name||'author not recorded'}${chip.pending?' · saving…':''}`}>
+  function chips(rows,kind){return rows.map(chip=><span className={`annotation-chip ${kind} tag-color-${annotationTagColor(chip.tag)}${chip.pending?' pending':''}`} aria-busy={chip.pending?'true':undefined} key={`${kind}:${chip.profile_uuid}:${chip.tag}`} title={annotationChipTitle(chip,kind)}>
     {kind==='cell'?<CornerDownRight size={11}/>:<MessageCircle size={11}/>}<strong>{chip.tag}</strong>
     {onFilter&&<button type="button" disabled={disabled||busy} title={`Find ${kind}-tagged epochs: ${chip.tag}`} aria-label={`Filter by ${kind} tag ${chip.tag}`} onClick={()=>onFilter(annotationPredicate(kind,chip.tag))}><Search size={11}/></button>}
     {canRemoveAnnotation(chip,profileUuid)&&(kind==='epoch'||scope==='cell')&&<button type="button" disabled={locked} aria-label={`Remove my ${kind} tag ${chip.tag}${kind==='cell'?' from the entire cell':''}`} title={kind==='cell'?'Remove this cell tag from all its epochs':'Remove from this epoch only'} onClick={()=>mutate(chip.tag,kind,true)}><X size={11}/></button>}

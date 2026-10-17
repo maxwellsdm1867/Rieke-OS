@@ -193,6 +193,18 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         shared_annotations=SharedAnnotations(service)
     service.shared_annotations=shared_annotations
     app.extensions['shared_annotations']=shared_annotations
+    if shared_annotations is not None and hasattr(service.dj,'Schema') and hasattr(shared_annotations,'TagTime'):
+        # One-time per-tag time backfill from audit events, before generation
+        # bootstrap; later startups only probe for an existing time row.
+        # A failed backfill must not block opening the project: chips without a
+        # valid time row are reported as approximate and filters skip them.
+        from disco.decisions.tag_times import reconcile as reconcile_tag_times
+        with db_lock:
+            try:
+                app.extensions['tag_time_backfill']=reconcile_tag_times(shared_annotations)
+            except Exception as error:  # noqa: BLE001 - recorded, never silently passed
+                app.logger.exception('Per-tag time backfill failed')
+                app.extensions['tag_time_backfill']={'status':'failed','error':str(error)}
     # Declare the durable whole-group operation table before generation and
     # recovery bootstrap, outside any data transaction. Registration below
     # reuses this exact table rather than lazily introducing unwatched writes.

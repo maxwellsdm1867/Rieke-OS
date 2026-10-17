@@ -121,6 +121,21 @@ test('receipt validation rejects wrong target/profile revisions and preserves in
   assert.ok(bounded.size<=8);assert.ok([...bounded.values()].reduce((sum,value)=>sum+value.bytes,0)<=2000);
 });
 
+test('receipt validation accepts and propagates per-tag added times, refusing malformed ones',()=>{
+  const request={target_kind:'epoch',target_uuids:['e'],profile_uuid:'me',expected_revisions:{e:0}};
+  const chip={target_kind:'epoch',target_uuid:'e',profile_uuid:'me',author_name:'Me',revision:1,tag:'good',added_at:'2026-10-17T21:15:00Z',time_source:'recorded'};
+  const result={changed:1,targets:{e:{target_kind:'epoch',target_uuid:'e',revisions:{me:1},tags:[chip]}}};
+  const confirmed=confirmAnnotationReceipt(result,request);
+  assert.equal(confirmed.targets[0].tags[0].added_at,'2026-10-17T21:15:00Z');
+  assert.equal(confirmed.targets[0].tags[0].time_source,'recorded');
+  const legacy=structuredClone(result);delete legacy.targets.e.tags[0].added_at;delete legacy.targets.e.tags[0].time_source;
+  assert.equal(confirmAnnotationReceipt(legacy,request).targets[0].tags[0].added_at,undefined);
+  for(const [key,value] of [['added_at','2026-10-17 21:15'],['added_at','2026-10-17T21:15:00+02:00'],['added_at',17],['time_source','guessed']]){
+    const bad=structuredClone(result);bad.targets.e.tags[0][key]=value;
+    assert.throws(()=>confirmAnnotationReceipt(bad,request),/could not be verified/);
+  }
+});
+
 test('confirmed cell receipts invalidate bounded metadata caches without discarding immutable trace windows',()=>{
   const cache=createResourceCache();
   cache.put('/epochs/e?protocol_uuid=p',0,{epoch_uuid:'e'});

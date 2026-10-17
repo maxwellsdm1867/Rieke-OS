@@ -199,8 +199,10 @@ def validate_tag_filter_predicate(value):
     except (ValueError, RecursionError) as error:
         raise ValueError('Malformed tag predicate JSON') from error
     from disco.navigation.predicates import validate
-    return validate(predicate, {'fields': [{'id': key} for key in TAG_FILTER_FIELDS]},
-                    {'tag_schema': {key: ['example tag'] for key in TAG_FILTER_FIELDS}})
+    from disco.navigation.tag_time_filter import TIME_FIELDS, SAMPLE, check_time_nodes
+    fields = (*TAG_FILTER_FIELDS, *TIME_FIELDS)
+    return check_time_nodes(validate(predicate, {'fields': [{'id': key} for key in fields]},
+        {'tag_schema': {key: SAMPLE if key in TIME_FIELDS else ['example tag'] for key in fields}}))
 
 
 def bounded_window(start, count, total, maximum=100000):
@@ -905,8 +907,9 @@ class WorkspaceService:
             tags = TagPredicates(self).definitions()
             registered = [field for field in self._registered_tree_fields()[0]['fields']
                           if not field['id'].startswith('joint/')]
-            validated = validate_predicate(predicate, {'fields': registered + tags},
-                {field['id']: {field['id']: ['']} for field in tags})
+            from disco.navigation.tag_time_filter import samples, check_time_nodes
+            validated = check_time_nodes(validate_predicate(predicate, {'fields': registered + tags},
+                samples([field['id'] for field in tags], [''])))
             pending = [validated]
             while pending:
                 node = pending.pop()
@@ -937,6 +940,8 @@ class WorkspaceService:
                 annotations = shared.for_epochs(rows) if shared else {}
                 from disco.navigation.predicates import matches
                 predicate = validate_tag_filter_predicate(filters['tag_predicate']) if 'tag_predicate' in filters else None
+                from disco.navigation.tag_time_filter import has_time_fields, matches_with_chips
+                timed = predicate is not None and has_time_fields(predicate)
                 selected = []
                 for row in rows:
                     tags = {chip['tag'] for chip in annotations.get(row['epoch_uuid'], {}).get('effective_tags', [])}
@@ -944,7 +949,8 @@ class WorkspaceService:
                         annotation = annotations.get(row['epoch_uuid'], {})
                         current = {field: sorted({chip['tag'] for chip in annotation.get(scope, [])})
                                    for field, scope in zip(TAG_FILTER_FIELDS, ('cell_tags', 'epoch_tags', 'effective_tags'))}
-                        if predicate is None or matches(predicate, current):
+                        if predicate is None or (matches_with_chips(predicate, current, annotation)
+                                                 if timed else matches(predicate, current)):
                             selected.append(row)
                 rows = selected
         if 'metadata_predicate' in filters:

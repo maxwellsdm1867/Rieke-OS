@@ -74,13 +74,43 @@ def annotation_tables(dj):
     return AnnotationProfile,SharedAnnotation
 
 
+def annotation_tag_time_table(dj):
+    """Per-tag added time beside the unchanged ``tags`` JSON contract.
+
+    One row per current (target, author, tag). It is written in the same
+    transaction as every shared_annotation tag change; see disco.decisions.tag_times.
+    """
+    schema=dj.Schema('recording_workspace')
+    @schema
+    class SharedAnnotationTag(dj.Manual):
+        definition='''
+        project_uuid: varchar(36)
+        target_kind: enum('cell','epoch')
+        target_uuid: varchar(36)
+        profile_uuid: varchar(36)
+        tag_sha256: char(64)
+        ---
+        tag: varchar(255)
+        added_at: datetime
+        added_revision: int unsigned
+        time_source: enum('recorded','audit_event','approximate')
+        index(project_uuid, tag_sha256)
+        '''
+    return SharedAnnotationTag
+
+
 class SharedAnnotations:
     def __init__(self,service,tables=None):
         self.service=service;self.dj=service.dj;self.project_uuid=identity(service.project['project_uuid'])
         if tables is None:
             self.Profile,self.Annotation=annotation_tables(self.dj)
             _,_,self.Event,_=workspace_tables(self.dj)
-        else: self.Profile,self.Annotation,self.Event=tables
+            self.TagTime=annotation_tag_time_table(self.dj)
+        else:
+            # Injected doubles may omit the per-tag time table; chips then
+            # report the row time as approximate instead of inventing one.
+            self.Profile,self.Annotation,self.Event,*rest=tables
+            self.TagTime=rest[0] if rest else None
         self._vocabulary=None
         self._batch_lock=contextvars.ContextVar("annotation_batch_lock",default=None)
         self._batch_transaction=contextvars.ContextVar("annotation_batch_transaction",default=None)
@@ -205,11 +235,22 @@ class SharedAnnotations:
         return values
 
     @staticmethod
-    def _chips(row):
+    def _chips(row,times=None):
         values=SharedAnnotations._validated_tags(row)
+        from disco.decisions.tag_times import chip_time
         return [{'tag':tag,'profile_uuid':row['profile_uuid'],'author_name':row['author_name'],
-                 'target_kind':row['target_kind'],'target_uuid':row['target_uuid'],'revision':row['revision']}
+                 'target_kind':row['target_kind'],'target_uuid':row['target_uuid'],'revision':row['revision'],
+                 **chip_time(row,tag,times)}
                 for tag in sorted(values)]
+
+    def delete_tag_times(self,targets):
+        """Drop per-tag times for deleted targets inside the caller's transaction."""
+        from disco.decisions.tag_times import delete_targets
+        delete_targets(self,targets)
+
+    def _tag_times(self,rows):
+        from disco.decisions.tag_times import read_times
+        return read_times(self,rows)
 
     def _index_record_tags(self,row):
         if row['target_kind'] not in ('cell','epoch'):
@@ -274,6 +315,13 @@ class SharedAnnotations:
         """Indexed membership only; provenance is hydrated for visible rows."""
         from workspace_service import validate_tag_filter_predicate
         predicate=validate_tag_filter_predicate(filters['tag_predicate']) if 'tag_predicate' in filters else None
+        from disco.navigation.tag_time_filter import has_time_fields
+        if predicate is not None and has_time_fields(predicate):
+            from disco.decisions.tag_times import filter_with_times
+            return filter_with_times(self,rows,filters,predicate)
+        return self._filter_plain(rows,filters,predicate)
+
+    def _filter_plain(self,rows,filters,predicate):
         lookup=getattr(self,'native_tag_lookup',None)
         if lookup is not None and lookup.ready:
             before=self.generation_token()
@@ -298,8 +346,9 @@ class SharedAnnotations:
     def read_targets(self,kind,ids):
         ids=self._scope(kind,ids)
         output={key:{'target_kind':kind,'target_uuid':key,'tags':[],'revisions':{}} for key in ids}
-        for row in self._rows(kind,ids,selected_only=True):
-            output[row['target_uuid']]['tags'].extend(self._chips(row))
+        records=self._rows(kind,ids,selected_only=True);times=self._tag_times(records)
+        for row in records:
+            output[row['target_uuid']]['tags'].extend(self._chips(row,times))
             output[row['target_uuid']]['revisions'][row['profile_uuid']]=row['revision']
         for item in output.values():item['tags'].sort(key=lambda r:(r['tag'],r['author_name'],r['profile_uuid']))
         return output
@@ -312,8 +361,9 @@ class SharedAnnotations:
         # Summary/export calls may cover whole projects. No per-epoch SQL reads.
         direct={key:{'tags':[],'revisions':{}} for key in ids};inherited={key:{'tags':[],'revisions':{}} for key in cells}
         for kind,keys,target in [('epoch',ids,direct),('cell',cells,inherited)]:
-            for row in self._rows(kind,keys):
-                item=target[row['target_uuid']];item['tags'].extend(self._chips(row));item['revisions'][row['profile_uuid']]=row['revision']
+            records=self._rows(kind,keys);times=self._tag_times(records)
+            for row in records:
+                item=target[row['target_uuid']];item['tags'].extend(self._chips(row,times));item['revisions'][row['profile_uuid']]=row['revision']
         for scope in (direct,inherited):
             for item in scope.values():item['tags'].sort(key=lambda r:(r['tag'],r['author_name'],r['profile_uuid']))
         result={}
@@ -456,7 +506,8 @@ class SharedAnnotations:
             for row in (relation&requested).to_dicts():
                 if _group_budget is not None:_group_budget.charge(row)
                 saved[(row['target_kind'],row['target_uuid'],row['profile_uuid'])]=row
-        pending_rows=[]
+        pending_rows=[];time_removed=[];time_added=[]
+        now=dt.datetime.now(dt.timezone.utc).replace(tzinfo=None,microsecond=0)
         for key,expected,add,remove in parsed:
             if key[2] not in authors:raise ValueError('Select an existing local annotation profile')
             old=saved.get(key);revision=old['revision'] if old else 0
@@ -467,20 +518,29 @@ class SharedAnnotations:
             if set(previous)==set(current):continue
             row={'project_uuid':self.project_uuid,'target_kind':key[0],'target_uuid':key[1],
                  'profile_uuid':key[2],'tags':current,'author_name':authors[key[2]]['display_name'],
-                 'revision':revision+1,'updated_at':dt.datetime.now(dt.timezone.utc).replace(tzinfo=None)}
+                 'revision':revision+1,'updated_at':now}
             prior={**{k:row[k] for k in ('target_kind','target_uuid','profile_uuid','author_name')},'revision':revision,'tags':previous}
             current={k:row[k] for k in ('target_kind','target_uuid','profile_uuid','author_name','revision','tags')}
             if _group_budget is not None:_group_budget.charge((row,prior,current))
             before.append(prior);after.append(current)
             pending_rows.append((old,row))
+            if self.TagTime is not None:
+                from disco.decisions.tag_times import time_changes
+                time_changes(self.project_uuid,row,previous,time_removed,time_added)
         if _group_budget is not None:
             # Audit construction copies before/after facts. Reserve its retained
             # evidence before any annotation write, including native JSON input.
             _group_budget.charge({'before':before,'after':after})
         # Validate every target/profile and tag limit before the first write.
+        if _group_budget is not None:_group_budget.charge((time_removed,time_added))
         for old,row in pending_rows:
             if old:self.Annotation.update1(row)
             else:self.Annotation.insert1(row)
+        if self.TagTime is not None:
+            # Same transaction as the tags JSON: removing a tag deletes its
+            # time; (re-)adding records this commit's time and revision.
+            from disco.decisions.tag_times import write_changes
+            write_changes(self.TagTime,time_removed,time_added)
         changed=len(pending_rows)
         if changed:
             used_authors={row['profile_uuid'] for row in after}
