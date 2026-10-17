@@ -144,3 +144,28 @@ fix should report medians at ≥2 project sizes (e.g. 20k / 200k / 1M) so a flat
 one number, demonstrates decoupling. A dev-only request ledger (requests per action,
 duplicate GETs within a window, time waiting on `db_lock`) would make A-items measurable
 in the live app.
+
+## Live results on a real project (2026-10-17)
+
+Project: 5,669 epochs, 19 cells, 5 sources, 7 protocols. Same machine, same data;
+`main` at `e5dd7ce` versus this branch, both run from source against the project with
+a cloned desktop runtime. Browser timings from Chrome Resource/Long Task APIs; endpoint
+medians of 7 from `live_timing.py` (scratch harness).
+
+| Action | `main` | Branch |
+| --- | --- | --- |
+| Add one epoch tag (epoch browser) | 1 write + 58 reads (15 cell pages, 2 protocol pages, 40 trace prefetches, trace re-read); 16 tree sections redrawn | 1 write (8–19 ms); tag visible 10–48 ms; 0 rereads; no redraw |
+| Remove one epoch tag | 1 write + 38 reads | 1 write; gone in 42–71 ms |
+| Add tag in Cell QC | 1 write + 14 reads (overview ~490 ms ×2, predicate-fields ~900 ms ×2); visible 1.1 s | 1 write; visible ~40–60 ms alone, ~100–130 ms when other views are mounted (app re-render, see below) |
+| Tag, then filter on it | — | Search predicate on the new tag finds it immediately (1 cell, 1 epoch) |
+| Select an epoch (300k-sample stream) | ~21 requests (20 unused 20k prefetch windows) | 1 request |
+| Idle tag poll (`/annotations/scan`, every 3 s) | ~65 ms under the DB lock, incl. a full recovery snapshot | ~2 ms, no lock |
+| Cell QC overview (797-epoch cell) | 514 ms | 185 ms |
+
+Remaining tag cost: a confirmed receipt still bumps the app-wide `revision`, re-rendering
+the App tree (~40–60 ms of main-thread time when several views are mounted). Splitting
+annotation receipts into their own channel would remove it.
+
+Not yet addressed (see B-items): search keystroke (~347 ms), `/explore/predicate-fields`
+(~350 ms), project overview (~650–700 ms), epoch detail inside a protocol (~71 ms, the
+double `native_context` rebuild), per-request generation-token attestation.
