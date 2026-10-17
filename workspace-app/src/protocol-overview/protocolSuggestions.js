@@ -113,6 +113,8 @@ export function pendingProtocolSuggestion(queue,main,protocolId){
   if(!pending.epochs)return null;
   const current=mainProtocolCounts(main);
   const add=(base,delta)=>base!==null&&delta!==null?base+delta:null;
+  // Proposed cells add only cells main lacks; a pending cell may already be in main.
+  const newCells=Number.isSafeInteger(queue.pending_new_cell_count)&&queue.pending_new_cell_count>=0?queue.pending_new_cell_count:pending.cells;
   const recordings=[...new Set((Array.isArray(queue.candidates)?queue.candidates:[])
     .filter(item=>item?.kind!=='workbench_pending_union'&&item?.source_sha256!==''&&safeCount(item?.eligible_pending_epoch_count)>0)
     .map(item=>item.source_filename).filter(name=>typeof name==='string'&&!!name))];
@@ -122,7 +124,7 @@ export function pendingProtocolSuggestion(queue,main,protocolId){
     pending_cell_count:pending.cells,pending_epoch_count:pending.epochs,
     can_merge:queue.capabilities?.cumulative_pending_browse===true&&queue.capabilities?.additive_accept===true,
     diff_counts:{added:pending.epochs,removed:0,changed:0},
-    diff_summary:{current,proposed:{cells:add(current.cells,pending.cells),epochs:add(current.epochs,pending.epochs)},delta:{cells:pending.cells,epochs:pending.epochs}},
+    diff_summary:{current,proposed:{cells:add(current.cells,newCells),epochs:add(current.epochs,pending.epochs)},delta:{cells:newCells,epochs:pending.epochs}},
   };
 }
 

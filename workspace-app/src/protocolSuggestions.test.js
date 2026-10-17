@@ -128,7 +128,10 @@ const mainSummary={counts:{epochs:36},cells:[{cell_uuid:'x'},{cell_uuid:'y'},{ce
 test('pending card model sums the cumulative queue across recordings and lists only mergeable recordings',async()=>{
   const {pendingProtocolSuggestion,mergeAllRequest}=await import('./protocol-overview/protocolSuggestions.js');
   const card=pendingProtocolSuggestion(pendingQueue(),mainSummary,'protocol-A');
-  assert.deepEqual(card.diff_summary,{current:{cells:2,epochs:36},proposed:{cells:6,epochs:791},delta:{cells:4,epochs:755}});
+  assert.deepEqual(card.diff_summary,{current:{cells:2,epochs:36},proposed:{cells:6,epochs:791},delta:{cells:4,epochs:755}},'older services fall back to pending cells');
+  const exact=pendingProtocolSuggestion(pendingQueue({pending_new_cell_count:3}),mainSummary,'protocol-A');
+  assert.deepEqual(exact.diff_summary,{current:{cells:2,epochs:36},proposed:{cells:5,epochs:791},delta:{cells:3,epochs:755}},'a pending cell already in main is not counted twice');
+  assert.equal(exact.pending_cell_count,4);
   assert.deepEqual(card.diff_counts,{added:755,removed:0,changed:0});
   assert.deepEqual(card.recordings,['2026-10-12_F.h5','2026-10-13_A.h5'],'nothing-mergeable and union rows contribute no recording');
   assert.equal(card.status,'pending');assert.equal(card.protocol_uuid,'protocol-A');

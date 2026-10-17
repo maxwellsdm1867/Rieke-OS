@@ -2477,10 +2477,10 @@
       ]
     },
     "src/protocol-overview/protocolSuggestions.js": {
-      "fingerprint": "ee2484b7840920ffcbd17a54813e77314dc430dced5e53021546ecd195785f0a",
+      "fingerprint": "cbca7508a376e029d62f0c7d59c096c0f20b1f589e41df65dff0dfe17c9017ed",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds pure source-merge request and verified-receipt card retirement helpers; no lifetime. 2026-10-16: adds pendingProtocolSuggestion/mergeAllRequest/mainProtocolCounts (pure).",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds pure source-merge request and verified-receipt card retirement helpers; no lifetime. 2026-10-16: adds pendingProtocolSuggestion/mergeAllRequest/mainProtocolCounts (pure). Exact new-cell review (2026-10-16): the pending card adds only cells main lacks (pending_new_cell_count), falling back to pending cells on older services; data mapping only, no effect sites changed.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",

@@ -916,6 +916,7 @@ class ProtocolWorkbench:
                     historical_conflict = True
             raw_pending = {}
             main_reason = None
+            main_members = {}
             def excluded(context, key):
                 if cumulative_decisions is None:
                     return self.decision(context, key)['excluded']
@@ -925,6 +926,7 @@ class ProtocolWorkbench:
                 revision = row['summary']['candidate_revision_uuid']
                 context = self.context(protocol, revision, actor)
                 superseded = self.superseded(context)
+                main_members = context['previous']
                 # A superseded diff no longer describes main; it contributes no
                 # pending epochs, and fully merged ones simply read as covered.
                 pending_now = {} if superseded else context['pending']
@@ -983,6 +985,10 @@ class ProtocolWorkbench:
                 pending_cell_count=len(set(cell_ids.values())) if pending <= cell_ids.keys() else None,
                 pending_cell_count_available=pending <= cell_ids.keys(), eligible_pending_epoch_count=len(eligible_union),
                 eligible_pending_cell_count=len({self.service.rows[key]['cell_uuid'] for key in eligible_union}),
+                # Cells that main does not contain yet; a pending cell may already
+                # be in main with earlier epochs.
+                pending_new_cell_count=len({self.service.rows[key]['cell_uuid'] for key in eligible_union}
+                    - {self.service.rows[key]['cell_uuid'] for key in main_members if key in self.service.rows}),
                 main_blocked_reason=main_reason, queue_revision=revision, next_cursor=next_cursor, total_candidate_count=len(items),
                 capabilities=dict(frozen_browse=True, drafts=True, additive_accept=True,
                     incoming_export=getattr(self, 'incoming_export', False),
