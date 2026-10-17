@@ -30,10 +30,20 @@ class NativeRecoveryProject:
         import datajoint as dj
         import workspace_native_mysql as native
         from workspace_projects import create_project
+        self.epochs = [ident('epoch', number) for number in range(epochs)]
         self.temporary = tempfile.TemporaryDirectory(prefix='rieke-incremental-recovery-')
         self.root = Path(create_project(Path(self.temporary.name) / 'projects', 'Incremental recovery fixture')['path'])
         self.native = native
-        native.ensure_native_database(self.root)
+        self.connection = None
+        try:
+            native.ensure_native_database(self.root)
+            self._open(dj, revisions, receipts, annotations)
+        except BaseException:
+            self.close()
+            raise
+
+    def _open(self, dj, revisions, receipts, annotations):
+        native = self.native
         for key, value in native.connection_parameters(self.root).items():
             if key in ('host', 'port', 'user', 'password'):
                 dj.config['database.' + key] = value
@@ -52,13 +62,13 @@ class NativeRecoveryProject:
             factory(dj)
         self.project = json.loads((self.root / 'project.json').read_text())['project_uuid']
         self.protocol = ident('protocol')
-        self.epochs = [ident('epoch', number) for number in range(epochs)]
         self.service = SimpleNamespace()
         self.seed(revisions, receipts, annotations)
 
     def close(self):
         try:
-            self.connection.close()
+            if self.connection is not None:
+                self.connection.close()
         finally:
             self.native.stop_native_database(self.root)
             self.temporary.cleanup()
