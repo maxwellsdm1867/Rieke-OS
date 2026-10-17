@@ -1,3 +1,4 @@
+import {tagStore} from '../../annotations/tagStore.js';
 import {useWorkspaceRequest,useWorkspaceRequestScope} from '../../workspaceRequest.js';
 import {IncomingEpochSelect} from '../../incoming-workbench/ui/IncomingTreeSelection.jsx';
 import {TreeGroupTagButton,useTreeGroupTags} from '../../annotations/ui/TreeGroupTags.jsx';
@@ -22,6 +23,8 @@ import {inspectionNavigation,inspectionPageOffset,toggleInspectionBranch,restore
 function CellEpochPage({highlightedEpochs,cell,offset,restoreOffset,onFrontier,expected,onFault,revealEpoch,seen=[],source,revision,pageReads,focused,onFocus,targets,onSelect,disabled,navigationDisabled=disabled,onToggleInclusion,inclusionForEpoch,setTargets,onTagEpoch}){
   const pageSize=useWorkspaceRequestScope()?.pageSize??60;
   const page=useEpochBrowserPage(source,{cellUuid:cell.cell_uuid,offset},JSON.stringify([revision,source.queryRevision,source.treeRevision]),pageReads);
+  // Loaded rows carry author revisions: hints let selection tags write in one request.
+  useEffect(()=>{if(Array.isArray(page.data?.epochs))tagStore.hint(page.data.epochs);},[page.data]);
   const [expanded,setExpanded]=useState(false);
   const tail=useRef(null);
   let receipt=null,problem=null;
@@ -203,8 +206,11 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
         const remove=explicit&&selection().ids.includes(target.uuid)?new Set(ids):null;
         selection().set(remove?selection().ids.filter(id=>!remove.has(id)):mergeEpochSelection(selection().ids,ids,props.source.readContext?.selection_manifests?Infinity:1000));
       }else{
-        anchor.current=target;
-        if(explicit||multiple||shift)selection().set(toggleEpochSelection(selection().ids,target.uuid,props.source.readContext?.selection_manifests?Infinity:1000));
+        const previous=anchor.current;anchor.current=target;
+        // Starting a ⌘/Ctrl selection keeps the epoch that was just clicked
+        // (Finder-style): click 1, ⌘-click 3 → {1,3}. Workbench highlight keeps its own rules.
+        const base=multiple&&!props.source.readContext&&!selection().ids.length&&previous?.uuid&&previous.explicit===explicit&&previous.uuid!==target.uuid?[previous.uuid]:selection().ids;
+        if(explicit||multiple||shift)selection().set(toggleEpochSelection(base,target.uuid,props.source.readContext?.selection_manifests?Infinity:1000));
       }
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setError(error.message);}
     finally{if(isCurrent())setSelecting(false);}

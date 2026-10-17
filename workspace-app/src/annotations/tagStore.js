@@ -7,7 +7,7 @@ import {applyAnnotationReceipts} from './annotationReceipts.js';
 const keyOf=(kind,uuid)=>JSON.stringify([kind,uuid]);
 
 export function createTagStore({limit=2048}={}){
-  const entries=new Map(),listeners=new Set(),turns=new Map(),verified=new Map();
+  const entries=new Map(),listeners=new Set(),turns=new Map(),verified=new Map(),hints=new Map();
   let version=0,confirmedGeneration=0,staleGeneration=0,ticketSequence=0;
   const memo=new WeakMap();
   function emit(){version++;for(const listener of [...listeners])listener();}
@@ -46,6 +46,18 @@ export function createTagStore({limit=2048}={}){
     read:(kind,uuid)=>entries.get(keyOf(kind,uuid)),
     /** Last confirmed author revision known for a target, or undefined. */
     confirmedRevision(kind,uuid,profile){return entries.get(keyOf(kind,uuid))?.confirmed?.revisions?.[profile];},
+    /** Best known revision for building a write: confirmed, else a page hint, else 0.
+     *  Never displayed; the server verifies it and rejects a stale value. */
+    knownRevision(kind,uuid,profile){return store.confirmedRevision(kind,uuid,profile)??hints.get(keyOf(kind,uuid))?.[profile]??0;},
+    /** Record author revisions seen on loaded epoch rows (no emit, no display effect). */
+    hint(rows){
+      for(const row of Array.isArray(rows)?rows:[]){
+        const revisions=row?.annotations?.revisions;if(!revisions)continue;
+        if(row.epoch_uuid&&revisions.epoch)hints.set(keyOf('epoch',row.epoch_uuid),revisions.epoch);
+        if(row.cell_uuid&&revisions.cell)hints.set(keyOf('cell',row.cell_uuid),revisions.cell);
+      }
+      while(hints.size>limit*4)hints.delete(hints.keys().next().value);
+    },
     /** Show an add/remove now. Returns a ticket; the caller must confirm or fail it. */
     begin({kind,uuid,profile,authorName,tag,remove=false}){
       const value=entry(kind,uuid,true),ticket=++ticketSequence;
@@ -137,7 +149,7 @@ export function createTagStore({limit=2048}={}){
     },
     isPending(ticket){for(const value of entries.values())if(value.pending.some(op=>op.ticket===ticket))return true;return false;},
     error:(kind,uuid)=>entries.get(keyOf(kind,uuid))?.error||null,
-    reset(){entries.clear();turns.clear();verified.clear();staleGeneration=0;confirmedGeneration++;emit();},
+    reset(){entries.clear();turns.clear();verified.clear();hints.clear();staleGeneration=0;confirmedGeneration++;emit();},
   };
   return store;
 }

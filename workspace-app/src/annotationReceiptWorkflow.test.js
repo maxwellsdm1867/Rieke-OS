@@ -31,7 +31,7 @@ test('mounted tag10 then another10 acknowledges each exact receipt, then compose
       const before=h.fixture.requests.length;
       await save(h,tag);
       const calls=h.fixture.requests.slice(before);
-      assert.deepEqual(calls.filter(row=>row.method==='POST').map(row=>row.path),['/annotations/read','/annotations']);
+      assert.deepEqual(calls.filter(row=>row.method==='POST').map(row=>row.path),['/annotations'],'Never-tagged targets: one write, no pre-read');
       assert.deepEqual(calls.find(row=>row.path==='/annotations').body.target_uuids,ids);
       assert.equal(calls.filter(row=>row.path.startsWith('/epochs/')||row.path.includes('/epochs?')).length,0,'Acknowledgment must not wait for an epoch/page read');
       assert.equal(input(h).props.disabled,false);

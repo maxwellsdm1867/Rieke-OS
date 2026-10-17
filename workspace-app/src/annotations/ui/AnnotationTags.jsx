@@ -128,8 +128,46 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
       return false;
     }finally{release();}
   }
+  // Selections: every target shows the tag at once, the editor stays usable,
+  // and one write carries the best known author revisions (confirmed, else
+  // seen on loaded rows, else 0 for never-tagged targets). The server verifies each; only a definite 409 (nothing applied)
+  // reads exact revisions and sends once more.
+  async function optimisticMany(tag,targetKind){
+    if(locked||committedScope.current!==scopeIdentity)return false;
+    const kind=targetKind==='selected-cells'?'cell':'epoch',ids=[...new Set(kind==='cell'?selectedCells:selectedEpochs)],value=tag.trim();
+    const scopeAtClick=scopeIdentity;
+    if(!ids.length||!profileUuid||!value)return false;
+    const ticket=tagStore.beginMany({kind,uuids:ids,profile:profileUuid,authorName:profileName||'You',tag:value});
+    composerDirty.current=false;startTransition(()=>setValue(''));setQuery('');setActive(-1);setOpen(false);setError('');restoreInput.current=true;
+    setMessage(`Tagging ${number(ids.length)} selected ${kind}${ids.length===1?'':'s'}…`);
+    const release=await tagStore.turn(kind,'selection',profileUuid,ticket);
+    try{
+      if(!tagStore.isPending(ticket))return false;
+      let body={target_kind:kind,target_uuids:ids,profile_uuid:profileUuid,tags_add:[value],tags_remove:[],
+        expected_revisions:Object.fromEntries(ids.map(id=>[id,tagStore.knownRevision(kind,id,profileUuid)]))},result;
+      try{result=await api('/annotations',{method:'POST',body});}
+      catch(error){
+        if(error.status!==409)throw error;
+        const read=await api('/annotations/read',{method:'POST',body:{target_kind:kind,target_uuids:ids}});
+        // The retry is a new write: never send it to a selection the user has since changed.
+        if(committedScope.current!==scopeAtClick)throw new Error('Selection changed before saving. The tag was not saved.');
+        body=bulkAnnotationChange({targetKind:kind,targetUuids:ids,profileUuid,tag:value,read});
+        result=await api('/annotations',{method:'POST',body});
+      }
+      const confirmed=confirmAnnotationReceipt(result,body);
+      tagStore.confirm(ticket,confirmed);addVocabularyTag(value);
+      if(!requestScope)epochResourceCache.invalidateAnnotations(confirmed);
+      if(mounted.current)setMessage(`Saved ${number(ids.length)} selected ${kind} tag “${value}”.`);
+      onChange?.(result,confirmed);return true;
+    }catch(error){
+      tagStore.fail(ticket,error);
+      if(mounted.current){setMessage('');setError(error.message);if(!latestValue.current.trim()||latestValue.current.trim()===value)setValue(value);}
+      return false;
+    }finally{release();}
+  }
   async function mutate(tag,targetKind=scope,remove=false){
     if(reconcileReceipt&&!groupMutation&&(targetKind==='epoch'||targetKind==='cell'))return optimistic(tag,targetKind,remove);
+    if(reconcileReceipt&&!groupMutation&&!remove&&(targetKind==='selected'||targetKind==='selected-cells'))return optimisticMany(tag,targetKind);
     if(locked||mutation.current||committedScope.current!==scopeIdentity)return false;
     const controller=new AbortController(),token=generation.current;
     mutation.current=controller;

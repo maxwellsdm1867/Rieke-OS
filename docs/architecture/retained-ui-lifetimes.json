@@ -127,10 +127,10 @@
       ]
     },
     "src/annotations/tagStore.js": {
-      "fingerprint": "53d5512045703a8472875b5a8bf79c38065dfccd0e61eccc62839fa44d029122",
+      "fingerprint": "a8d2c9fbec4e2d8a078a58374884f8c630fe21366282460d40d713820cb85644",
       "sites": [],
       "lifetime": "module-store-subscription",
-      "reason": "Module-level tag channel: confirmed receipts and pending operations per target with listeners; no React effects. Pending intent is never evicted and never used as write authority. Tag channel review (2026-10-17). Multi-selection/branch tag review (2026-10-17): beginMany for multi-selection; changed()/invalidate() mark tag facts stale without dropping overlays; ingestAnnotations records per-epoch verification.",
+      "reason": "Module-level tag channel: confirmed receipts and pending operations per target with listeners; no React effects. Pending intent is never evicted and never used as write authority. Tag channel review (2026-10-17). Multi-selection/branch tag review (2026-10-17): beginMany for multi-selection; changed()/invalidate() mark tag facts stale without dropping overlays; ingestAnnotations records per-epoch verification. Selection tagging review (2026-10-17): knownRevision and hint(rows) keep display-free revision hints for building writes.",
       "tests": [
         "src/annotations/tagStore.test.js",
         "src/annotationReceiptWorkflow.test.js"
@@ -197,7 +197,7 @@
       ]
     },
     "src/annotations/ui/AnnotationTags.jsx": {
-      "fingerprint": "fbfd4ca76a2238c08a2b2cf16e7160f15af96b1c5335e0c5e44626463db6fba7",
+      "fingerprint": "1fd4a9f097e01afd9d64dec96355c8df66b86f6d930e576cb919018298b1412e",
       "sites": [
         {
           "owner": "AnnotationTags",
@@ -241,14 +241,15 @@
         }
       ],
       "lifetime": "semantic-presentation + reconnecting-annotation-authority",
-      "reason": "Epoch identity resets composer-local presentation; query identity resets suggestion keyboard choice. Existing request generation/scope effects still retire and reconnect mutation authority. Deferred focus requests retain their existing handled-intent refs; authored-value bindings now owned by persistence agent. Tag channel review (2026-10-17): single-target tags begin in tagStore synchronously (pending chip in the click frame), write serially per target/author with the last confirmed revision, confirm in place or roll back and restore the draft; bulk receipts are ingested. Editor subscribes urgently to the store. Effect sites unchanged. The composer draft clears inside startTransition so a large draft owner never delays the chip commit; failures restore the draft. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): multi-selection is optimistic (beginMany, confirm/fail, draft restore); group saves call tagStore.changed(); a single-target editor showing an epoch not verified since the last receipt-less change reads its annotations once and ingests them (effect keyed on that read). Tag display/autocomplete review (2026-10-17): chips show the tag name only (author in the tooltip); suggestions come from the local vocabulary (load effect once per project, server query only when incomplete); inline completion selects the completed suffix in a layout effect after render. Ghost completion replaces selected-text completion: the value stays as typed, a grey overlay shows the remainder of the best match, Tab/→ at the end accepts it; the vocabulary loads on first focus (no layout effect for completion).",
+      "reason": "Epoch identity resets composer-local presentation; query identity resets suggestion keyboard choice. Existing request generation/scope effects still retire and reconnect mutation authority. Deferred focus requests retain their existing handled-intent refs; authored-value bindings now owned by persistence agent. Tag channel review (2026-10-17): single-target tags begin in tagStore synchronously (pending chip in the click frame), write serially per target/author with the last confirmed revision, confirm in place or roll back and restore the draft; bulk receipts are ingested. Editor subscribes urgently to the store. Effect sites unchanged. The composer draft clears inside startTransition so a large draft owner never delays the chip commit; failures restore the draft. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): multi-selection is optimistic (beginMany, confirm/fail, draft restore); group saves call tagStore.changed(); a single-target editor showing an epoch not verified since the last receipt-less change reads its annotations once and ingests them (effect keyed on that read). Tag display/autocomplete review (2026-10-17): chips show the tag name only (author in the tooltip); suggestions come from the local vocabulary (load effect once per project, server query only when incomplete); inline completion selects the completed suffix in a layout effect after render. Ghost completion replaces selected-text completion: the value stays as typed, a grey overlay shows the remainder of the best match, Tab/→ at the end accepts it; the vocabulary loads on first focus (no layout effect for completion). Selection tagging review (2026-10-17): selection tags are optimistic without locking the editor; one write uses the best known revisions (confirmed, page hint, else 0), and only a 409 reads exact revisions and retries once, refusing if the selection changed.",
       "tests": [
         "src/retainedControls.test.js",
         "src/annotationReceiptWorkflow.test.js",
         "src/workflowResponsiveness.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
         "src/treeGroupAnnotationWorkflow.test.js",
-        "src/annotations/tagVocabulary.test.js"
+        "src/annotations/tagVocabulary.test.js",
+        "src/treeCellTagWorkflow.test.js"
       ]
     },
     "src/annotations/ui/EpochTags.jsx": {
@@ -951,8 +952,13 @@
       ]
     },
     "src/epoch-browser/ui/InspectionCellTree.jsx": {
-      "fingerprint": "a5a8eadff9cfb0794ec594dd5c47ec11ba481f54a8d5109d5a308c4ea7ce0226",
+      "fingerprint": "4baaca699cc70c55cfea2421a8026ce07b4d20b5ae2829d652d1a8bfc85f7709",
       "sites": [
+        {
+          "owner": "CellEpochPage",
+          "kind": "useEffect",
+          "fingerprint": "fd1889b7bd2a538d7dd1eef8b46183b6b008c95e1ef30d01bae3a06eac1d2c89"
+        },
         {
           "owner": "CellEpochPage",
           "kind": "useLayoutEffect",
@@ -1005,7 +1011,7 @@
         }
       ],
       "lifetime": "fresh-page-focus",
-      "reason": "Focus carries the original row and its validated page; explicit selection retains revision authority.",
+      "reason": "Focus carries the original row and its validated page; explicit selection retains revision authority. Selection tagging review (2026-10-17): loaded rows feed tagStore revision hints in an effect keyed on the page data; ⌘/Ctrl selection keeps the just-clicked epoch (Finder-style) outside Workbench highlight.",
       "tests": [
         "src/epoch-browser/inspectionCellTree.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
@@ -1013,7 +1019,8 @@
         "src/inspectionTreeLifecycle.test.js",
         "src/inspectorNavigationLifecycle.test.js",
         "src/treeCombinedPresentation.test.js",
-        "src/treeTagCoverageWorkflow.test.js"
+        "src/treeTagCoverageWorkflow.test.js",
+        "src/annotationReceiptWorkflow.test.js"
       ]
     },
     "src/epoch-browser/ui/Inspector.jsx": {
