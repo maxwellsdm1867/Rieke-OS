@@ -54,4 +54,8 @@ export function applyAnnotationReceipts(epoch,store){
   annotations.effective_tags=[...(annotations.cell_tags||[]),...(annotations.epoch_tags||[])];
   return {...epoch,annotations};
 }
+// Read tokens that omit project-wide shared tags: Main protocol-state-v4 and the
+// frozen Workbench candidate scope (advertised only when no predicate reads tags).
+export const STABLE_TAG_AUTHORITY_CONTRACTS=Object.freeze(['protocol-state-v4','workbench-candidate-scope-v2']);
+export function stableTagAuthority(protocol){return STABLE_TAG_AUTHORITY_CONTRACTS.includes(protocol?.query_revision_contract);}
 export function annotationFilterNeedsRefresh(filters={}){if(filters.metadata_predicate){try{const walk=node=>!!node?.field?.startsWith('annotations/')||!!node?.field?.startsWith('curation/')||!!node?.not&&walk(node.not)||(node?.all||node?.any||[]).some(walk);if(walk(JSON.parse(filters.metadata_predicate)))return true;}catch{return true;}}return ['tag','tagged','tag_predicate'].some(key=>Object.hasOwn(filters,key));}

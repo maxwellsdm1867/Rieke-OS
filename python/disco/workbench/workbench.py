@@ -81,6 +81,10 @@ class WorkbenchConflict(ValueError):
     pass
 
 
+# Candidate scope revisions omit project-wide shared tags (a separate witness).
+CANDIDATE_SCOPE_CONTRACT = 'workbench-candidate-scope-v2'
+
+
 def workbench_tables(dj):
     schema = dj.Schema('recording_workspace')
 
@@ -429,9 +433,10 @@ class ProtocolWorkbench:
                     binding['version'], summary_origin['baseline_binding_version']))
                 origin_witnesses.append(dict(candidate_revision_uuid=origin['revision_uuid'], recipe_sha256=origin['content_sha256'],
                     annotation_scope_revision=(witness or {}).get('revision')))
-            shared = getattr(self.service, 'shared_annotations', None)
-            shared_snapshot = shared.snapshot() if shared else None
-            shared_revision = shared_snapshot['revision'] if shared_snapshot else None
+            # Project-wide shared tags are keyed by UUID, never copied by merge
+            # and never decide membership, selection or acceptance. They are a
+            # separate cheap witness, not candidate scope evidence (O(1) natively).
+            shared_witness = self.shared_annotation_witness()
             valid_base = bool(main and self._additive_lineage(main, baseline, protocol,
                 binding['version'], summary['baseline_binding_version'])) and origins_valid
             pending = {key: value for key, value in incoming.items() if key not in previous}
@@ -442,14 +447,14 @@ class ProtocolWorkbench:
                 main_recipe_sha256=main['content_sha256'] if main else None,
                 expected_binding_version=binding['version'] if binding else 0,
                 expected_query_revision=query_revision, source_scope_revision=scope['revision'],
-                shared_annotations_revision=shared_revision, annotation_scope_revision=(annotation or {}).get('revision'),
+                annotation_scope_revision=(annotation or {}).get('revision'),
                 origin_witnesses=origin_witnesses,
                 draft_version=header['version'], decisions_sha256=checksum(decisions),
                 selection_mode=header['selection_mode'], deferred=bool(header['deferred']),
                 incoming_sha256=checksum(incoming), current_fingerprints_sha256=checksum(
                     {key: self.service._fingerprints.get(key) for key in proposed.keys() | previous.keys()}))
             evidence['candidate_scope_revision'] = checksum(evidence)
-            return dict(**evidence, _shared_annotation_snapshot=shared_snapshot,
+            return dict(**evidence, shared_annotation_witness=shared_witness,
                 summary=summary, baseline=baseline, candidate=candidate, main=main,
                 previous=previous, incoming=incoming, pending=pending, decisions=decisions,
                 conflicts=conflicts, base_conflicts=base_conflicts, main_conflicts=main_conflicts,
@@ -471,13 +476,34 @@ class ProtocolWorkbench:
                 and not context['valid_base']
                 and context['expected_binding_version'] > summary['baseline_binding_version'])
 
+    def shared_annotation_witness(self):
+        """Project-wide shared-tag witness, separate from candidate scope.
+
+        Natively the shared scope generation (``shared_epoch:shared_generation``,
+        the ``annotation_generation`` format), read without loading tag records.
+        Otherwise the compact revision projection, never full tag text. Only
+        reads whose result depends on shared tags compare it.
+        """
+        shared = getattr(self.service, 'shared_annotations', None)
+        if shared is None:
+            return None
+        token = shared.generation_token() if callable(getattr(shared, 'generation_token', None)) else None
+        if token is not None:
+            return f'{token.shared_epoch}:{token.shared_generation}'
+        if callable(getattr(shared, 'change_revision', None)):
+            return 'revision:' + shared.change_revision()
+        return 'snapshot:' + shared.snapshot()['revision']
+
     def review_generation(self, protocol):
+        # Protocol curation advances this cheap generation, so a prepared
+        # context is never replayed after it changes. Shared tags are not part
+        # of candidate scope, so their generation is deliberately omitted.
         tracker = getattr(self.service, '_explore_state_generation', None)
         token = tracker.token(protocol) if tracker is not None else None
-        if token is not None:
-            return repr(token)
-        shared = getattr(self.service, 'shared_annotations', None)
-        return shared.snapshot()['revision'] if shared is not None else None
+        if token is None:
+            return None
+        return repr((token.authority, token.project_uuid, token.protocol_uuid,
+                     token.protocol_epoch, token.protocol_generation))
 
     def seen_sources(self, main):
         """Recordings main was defined against: those present when its query was
@@ -991,25 +1017,48 @@ class ProtocolWorkbench:
                     for key, value in fingerprints.items() if key in context['pending']}
             scoped.curation_provider = decisions
             # Display coverage uses shared annotations only. It never grants review
-            # or main membership, and finish() rechecks the shared scope witness.
+            # or main membership. It is the one frozen read that depends on shared
+            # tags, so it alone checks the shared witness captured by context().
             coverage_index = None
             def annotation_coverage(rows):
                 nonlocal coverage_index
-                snapshot = context.get('_shared_annotation_snapshot')
-                if snapshot is None:
+                shared = getattr(self.service, 'shared_annotations', None)
+                if shared is None:
                     return None
                 if coverage_index is None:
-                    if snapshot['revision'] != context['shared_annotations_revision']:
+                    if self.shared_annotation_witness() != context.get('shared_annotation_witness'):
                         raise WorkbenchConflict('Shared annotations changed while reading tree coverage')
-                    coverage_index = {'cell': set(), 'epoch': set()}
-                    for record in snapshot['records']:
-                        if record['tags']:
-                            coverage_index[record['target_kind']].add(record['target_uuid'])
+                    coverage_index = dict(epoch=set(), cell=set(), read=set())
+                ids = sorted({row['epoch_uuid'] for row in rows} - coverage_index['read'])
+                if ids:
+                    # Read the candidate's pending scope once (and only targets
+                    # outside it later), never every annotation in the project.
+                    ids = sorted(set(ids) | (set(context['pending']) - coverage_index['read']))
+                    self._tagged_targets(shared, ids, coverage_index)
+                    if self.shared_annotation_witness() != context['shared_annotation_witness']:
+                        raise WorkbenchConflict('Shared annotations changed while reading tree coverage')
                 return dict(total_epochs=len(rows), tagged_epochs=sum(
                     row['epoch_uuid'] in coverage_index['epoch'] or row['cell_uuid'] in coverage_index['cell']
                     for row in rows))
             scoped.tree_annotation_coverage = annotation_coverage
             return scoped
+
+    def _tagged_targets(self, shared, ids, index):
+        """Add tagged epoch/cell targets for exact epoch UUIDs to ``index``."""
+        rows = self.service.rows
+        cells = sorted({rows[key]['cell_uuid'] for key in ids if key in rows} - index.setdefault('cells_read', set()))
+        if callable(getattr(shared, '_rows', None)):
+            for kind, keys in (('epoch', ids), ('cell', cells)):
+                for record in shared._rows(kind, keys):
+                    if shared._validated_tags(record):
+                        index[kind].add(record['target_uuid'])
+        else:
+            # Custom adapters without targeted reads retain the full snapshot.
+            for record in shared.snapshot()['records']:
+                if record['tags']:
+                    index[record['target_kind']].add(record['target_uuid'])
+        index['read'].update(ids)
+        index['cells_read'].update(cells)
 
     def queue(self, protocol, actor, limit=20, cursor=None):
         with elapsed("disco.workbench.workbench", "queue"):
@@ -1266,7 +1315,13 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             if (getattr(scoped.protocol, '__func__', None) is _PROTOCOL_SUMMARY
                 and getattr(scoped._cell_summary, '__func__', None) is _CELL_SUMMARY) else {})
         protocol = copy.deepcopy(scoped.protocol(context['protocol_uuid'], filters, **summary_options))
+        # The frozen scope token omits project-wide shared tags. Advertise that
+        # only when no candidate/origin predicate reads tags, so a renderer may
+        # keep its read authority across tag receipts and refresh only displays.
+        tag_free = context['annotation_scope_revision'] is None and all(
+            witness['annotation_scope_revision'] is None for witness in context['origin_witnesses'])
         protocol.update(query_revision=context['candidate_scope_revision'],
+            **({'query_revision_contract': CANDIDATE_SCOPE_CONTRACT} if tag_free else {}),
             expected_query_revision=context['expected_query_revision'], expected_binding_version=context['expected_binding_version'],
             source_eligibility=dict(excluded_epoch_count=len(context['ineligible']), propagation_required=bool(context['ineligible']),
                 source_scope_revision=context['source_scope_revision']), review_scope='incoming_candidate')

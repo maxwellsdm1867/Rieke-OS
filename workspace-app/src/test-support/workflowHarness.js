@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 
-export async function createWorkflowHarness({total=500,baseline=false,delay=0,liveMetadata=true,enableUndo=false,portals=false,realTreePane=false,baselineRoot:configuredBaselineRoot=process.env.RIEKE_WORKFLOW_BASELINE_ROOT}={}){
+export async function createWorkflowHarness({total=500,baseline=false,delay=0,liveMetadata=true,enableUndo=false,portals=false,realTreePane=false,frozenTraces=false,baselineRoot:configuredBaselineRoot=process.env.RIEKE_WORKFLOW_BASELINE_ROOT}={}){
   const rootPath=fileURLToPath(new URL('../..',import.meta.url));
   const key=`__workflow${Math.random().toString(36).slice(2)}`;
   const baselineRoot=configuredBaselineRoot?path.resolve(configuredBaselineRoot):path.resolve(rootPath,'../docs/dev/scale-audit-2026-09-29/frozen-100000-dense-recovery/snapshot/workspace-app/src');
@@ -112,6 +112,8 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,li
       }
       if(realTreePane&&importer?.endsWith('/epoch-browser/ui/EpochTreePane.jsx')&&id.endsWith('/PagedTree.jsx'))return '\0workflow-child';
       if(realTreePane&&importer?.endsWith('/epoch-browser/ui/MatchingEpochs.jsx')&&id==='./EpochViewer.jsx')return '\0workflow-viewer';
+      // Frozen Workbench browsing needs a trace adapter that accepts frozen read contexts.
+      if(frozenTraces&&importer?.endsWith('/epoch-browser/ui/Inspector.jsx')&&id==='../../traces/ui/TraceViewer.jsx')return '\0workflow-frozen-trace';
       if(importer?.endsWith('/epoch-browser/ui/Inspector.jsx')&&id.endsWith('.jsx')&&!['../../tree-ancestors/treeBranchReads.jsx','../../annotations/ui/AnnotationTags.jsx','../../annotations/ui/EpochTags.jsx','../../components/Common.jsx','../../components/NavigationLoading.jsx','../../incoming-workbench/ui/IncomingEpochReview.jsx','./EpochBrowserChrome.jsx'].includes(id))return id==='./EpochViewer.jsx'?'\0workflow-viewer':'\0workflow-child';
     },
     async load(id){
@@ -128,6 +130,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,li
       if(id==='\0workflow-import-queue')return `export default ()=>({busy:false,remaining:0,active:false});`;
       if(id==='\0workflow-lazy')return 'export default ()=>null;';
       if(id==='\0workflow-child')return generic;
+      if(id==='\0workflow-frozen-trace')return 'function Trace(){return null;}Trace.supportsFrozenReadContext=true;export default Trace;';
       if(id==='\0workflow-dialog')return `import React from 'react';export default ({children,footer})=>React.createElement('workflow-dialog',null,children,footer);`;
       if(id==='\0workflow-viewer')return `import React,{useEffect} from 'react';import ProtocolViewFilter from '/src/typed-query/ui/ProtocolViewFilter.jsx';import InspectionCellTree from '/src/epoch-browser/ui/InspectionCellTree.jsx';import EpochTreePane from '/src/epoch-browser/ui/EpochTreePane.jsx';const fixture=globalThis[${JSON.stringify(key)}];export default function Viewer(props){useEffect(()=>{fixture.mounts++;return()=>{fixture.unmounts++;};},[]);return React.createElement('workflow-viewer',props,fixture.traceComponent&&React.createElement(fixture.traceComponent,{epoch:props.traceEpoch,readContext:props.traceReadContext,revision:props.traceRevision}),React.createElement(ProtocolViewFilter,{filters:props.viewFilters,onChange:props.onViewFilters,revision:props.filterRevision,disabled:props.filterDisabled}),props.tags,props.before,props.readContext?props.detailExtras:null,${realTreePane?'React.createElement(EpochTreePane,props.treePane)':'React.createElement(InspectionCellTree,props.treePane.listProps)'});}`;
     },

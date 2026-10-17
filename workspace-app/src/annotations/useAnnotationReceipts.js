@@ -26,3 +26,17 @@ export function useAnnotationReceipts({revision,filters,stableAuthority=false}){
   const apply=useCallback(epoch=>tagStore.apply(epoch),[tagVersion]);
   return {epochRevision:revision,authorityRevision,dirty,kept:false,flushAuthority,apply};
 }
+
+// Frozen Workbench trees show shared-tag coverage and leaf tag markers from their
+// pages, while their read token omits shared tags. Re-read loaded pages once per
+// confirmed tag burst (after it is idle); 0 when disabled, so other trees never
+// re-read for a tag.
+export function useTagCoverageRevision(enabled){
+  const tagGeneration=useTagGeneration();
+  const [settled,setSettled]=useState(tagGeneration);
+  useEffect(()=>{
+    if(!enabled||settled===tagGeneration)return;
+    const timer=setTimeout(()=>setSettled(tagGeneration),ANNOTATION_AUTHORITY_IDLE_MS);return()=>clearTimeout(timer);
+  },[enabled,tagGeneration,settled]);
+  return enabled?settled:0;
+}

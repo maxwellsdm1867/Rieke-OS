@@ -172,14 +172,12 @@ class FrozenScopedReadTests(unittest.TestCase):
         pager = TreePages(self.manager.frozen_service(fresh))
         with patch.object(pager, '_build_scope', side_effect=AssertionError('Draft rebuilt pure grouping')):
             self.assertEqual(pager.page(body), first)
-        snapshot = shared.snapshot()
-        changed = dict(snapshot, revision='new-shared-revision', records=[dict(
-            target_kind='epoch', target_uuid=self.case.added, tags=['current'])])
-        with patch.object(shared, 'snapshot', return_value=changed):
-            context = self.context()
-            pager = TreePages(self.manager.frozen_service(context))
-            with patch.object(pager, '_build_scope', side_effect=AssertionError('Annotation rebuilt pure grouping')):
-                answer = pager.page(body)
+        self.case.tag(shared, 'epoch', self.case.added, add=['current'])
+        context = self.context()
+        self.assertEqual(context['candidate_scope_revision'], fresh['candidate_scope_revision'])
+        pager = TreePages(self.manager.frozen_service(context))
+        with patch.object(pager, '_build_scope', side_effect=AssertionError('Annotation rebuilt pure grouping')):
+            answer = pager.page(body)
         self.assertEqual(answer['branches'][0]['shared_tag_coverage'], dict(total_epochs=1, tagged_epochs=1))
 
 

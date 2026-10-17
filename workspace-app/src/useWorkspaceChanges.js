@@ -2,18 +2,27 @@ import {useCallback,useLayoutEffect,useRef,useState} from 'react';
 
 // Tag/curation edits invalidate live scientific views immediately. Project
 // registration, import discovery and metadata status have separate lifetimes.
-const confirmedEpochReceipt=event=>event?.kind==='annotations'&&event.confirmed?.version===1&&
-  Array.isArray(event.confirmed.targets)&&event.confirmed.targets.length>0&&event.confirmed.targets.every(target=>target.target_kind==='epoch');
+const confirmedReceipt=event=>event?.kind==='annotations'&&event.confirmed?.version===1&&
+  Array.isArray(event.confirmed.targets)&&event.confirmed.targets.length>0;
+const confirmedEpochReceipt=event=>confirmedReceipt(event)&&event.confirmed.targets.every(target=>target.target_kind==='epoch');
 
 export function useWorkspaceChanges(){
-  const [state,setState]=useState({revision:0,structureRevision:0});
+  const [state,setState]=useState({revision:0,structureRevision:0,reviewRevision:0});
   // Confirmed epoch-tag receipts travel on the tag channel (annotations/tagStore),
   // not this clock: the App does not re-render, and tag-dependent views renew
   // from the store's confirmed generation. Everything else still ticks here.
-  const changed=useCallback(event=>setState(previous=>confirmedEpochReceipt(event)||event?.kind==='annotations'&&event.tagChannel===true?previous:({
-    revision:previous.revision+1,
-    structureRevision:['annotations','curation'].includes(event?.kind)?previous.structureRevision:previous.structureRevision+1,
-  })),[]);
+  // reviewRevision drives the frozen Workbench: its candidate scope omits shared
+  // tags, so no confirmed tag receipt (epoch or cell) reloads it; frozen rows
+  // overlay the receipt from the tag store. Receipt-less tag events still tick.
+  const changed=useCallback(event=>setState(previous=>{
+    const tagChannel=event?.kind==='annotations'&&event.tagChannel===true;
+    if(confirmedEpochReceipt(event)||tagChannel)return previous;
+    return {
+      revision:previous.revision+1,
+      structureRevision:['annotations','curation'].includes(event?.kind)?previous.structureRevision:previous.structureRevision+1,
+      reviewRevision:confirmedReceipt(event)?previous.reviewRevision:previous.reviewRevision+1,
+    };
+  }),[]);
   return {...state,changed};
 }
 

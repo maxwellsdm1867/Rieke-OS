@@ -36,6 +36,7 @@ export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=Trace.supportsFrozenReadContex
 import {inspectionSearches} from '../inspectionScope.js';
 import {saveCurationSelection} from '../curationSelection.js';
 import {useAnnotationReceipts} from '../../annotations/useAnnotationReceipts.js';
+import {stableTagAuthority} from '../../annotations/annotationReceipts.js';
 import {datedCellLabel} from '../../recording-import/recordingIdentity.js';
 import {restoredEpochFocus} from '../../workspace-navigation/workspaceNavigation.js';
 import Trace from '../../traces/ui/TraceViewer.jsx';
@@ -100,7 +101,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const presentationScope=frozenPresentationScope(readContext,id,protocolSearch);
   const preserveCandidateView=typeof readContext?.cohort_key==='string'&&!!readContext.cohort_key;
   function selectTargets(value){const next=typeof value==='function'?value(targets):value;if(!incomingReadContext?.selection_manifests&&next.length>1000){setError('Select at most 1000 epochs.');return;}setTargets(next);onSelectionChange?.([...next]);if(selectedView)setSelectedView(null);}
-  const annotationState=useAnnotationReceipts({revision,stableAuthority:protocol?.query_revision_contract==='protocol-state-v4',filters});
+  const annotationState=useAnnotationReceipts({revision,stableAuthority:stableTagAuthority(protocol),filters});
   const pageRevision=annotationState.authorityRevision;
   const treeIntentScope=incomingTreeSelectionScope({projectId,protocolId:id,readContext,filters,splits,revision:pageRevision});
   const highlightScope=JSON.stringify([projectId,frozenTreePresentationScope({projectId,protocolId:id,readContext,filters,splits})||treeIntentScope,readContext?.actor,splits,designMode,treeMode]);
@@ -152,7 +153,8 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   useLayoutEffect(()=>{if(freshCells)confirmedCells.current={scope:cellScopeKey,presentationScope,key:navigationReadKey,cells:freshCells,queryRevision,bindingVersion};},[cellScopeKey,presentationScope,navigationReadKey,freshCells,queryRevision,bindingVersion]);
   // Keep expanded branches mounted during same-scope refresh, while their
   // controls remain disabled until both authority receipts agree again.
-  const incomingTags=useMemo(()=>readContext&&pageReady?incomingTagSummary(rows.data):null,[readContext,pageReady,rows.data]);
+  // Summaries follow tag receipts in place (the frozen page is not re-read for a tag).
+  const incomingTags=useMemo(()=>readContext&&pageReady?incomingTagSummary(Array.isArray(rows.data?.epochs)?{...rows.data,epochs:rows.data.epochs.map(annotationState.apply)}:rows.data):null,[readContext,pageReady,rows.data,annotationState.apply]);
   const retainedCells=freshCells||(confirmedCells.current?.presentationScope===presentationScope?confirmedCells.current.cells:[]);
   const viewCells=useMemo(()=>readContext&&incomingTags?retainedCells.map(cell=>incomingTags.cellTags[cell.cell_uuid]?{...cell,annotations:{...cell.annotations,cell_tags:incomingTags.cellTags[cell.cell_uuid]}}:cell):retainedCells,[readContext,incomingTags,retainedCells]);
   const cellRevisionError=pageReady&&!cellPage.loading&&cellPage.data&&!cellsReady;

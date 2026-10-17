@@ -322,6 +322,17 @@ there is no client shortcut around preparation. The mounted browser retains loca
 selection and navigation because its candidate root remains the same. A genuinely
 different candidate keeps the existing no-consent/no-edit handoff contract.
 
+Shared tags are not candidate scope (backend `workbench/CONTRACT.md`). The App
+passes `reviewRevision` to `IncomingWorkbench`; it skips every confirmed tag
+receipt (epoch or cell) and tag-channel group receipts, so a tag never reloads the
+queue or context or renews manifests. When the context advertises
+`workbench-candidate-scope-v2` the frozen Inspector keeps page authority across
+tag receipts and overlays them from the tag store (rows and tag summary); older
+servers, predicate-tag candidates and tag filters still re-read the page once per
+confirmed burst. Frozen trees re-read loaded pages once per burst (same token) so
+leaf tag markers stay current. Receipt-less tag events, curation and structural
+changes still refresh as before. `workbenchTagScope.test.js` covers these cases.
+
 `useSelectedEpochView.js` owns selected-view intent separately from a manifest's
 request lifetime. Same-cohort pauses and scope-token changes keep the chosen view,
 but abort uploads and renew its exact UUID manifest before reads/actions resume.

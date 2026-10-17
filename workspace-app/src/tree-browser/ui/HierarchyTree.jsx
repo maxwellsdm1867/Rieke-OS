@@ -15,12 +15,14 @@ import {TreeGroupTagButton,useTreeGroupTags} from '../../annotations/ui/TreeGrou
 import './HierarchyTree.css';
 import {incomingRowAnnotation} from '../../annotations/annotationTags.js';
 import {frozenTreePresentationScope} from '../../epoch-browser/frozenReadContext.js';
+import {useTagCoverageRevision} from '../../annotations/useAnnotationReceipts.js';
 
 const blank=()=>({pages:[],expanded:[],loading:true,error:null,loadingPath:[],notice:''});
 export default function HierarchyTree(props){
   const {protocolId,readContext,predicate,filters={},splits='',revision=0,expectedRevision,initialNavigation,selected}=props;
   const groupTags=useTreeGroupTags({...props,actionsDisabled:props.actionsDisabled||!!props.readPaused});
-  const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:props.readContext?groupTags.revision:0,readPaused:!!props.readPaused});
+  const coverageRevision=useTagCoverageRevision(!!props.readContext);
+  const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:props.readContext?[groupTags.revision,coverageRevision]:0,readPaused:!!props.readPaused});
   const frozenPresentation=frozenTreePresentationScope(props),presentationScope=frozenPresentation||scopeKey;
   const callbacks=useRef(props);callbacks.current=props;
   const [state,setState]=useState(blank),current=useRef(state),controller=useRef(null),serial=useRef(0),scroll=useRef(null),container=useRef(null);
