@@ -136,6 +136,15 @@
         "src/annotationReceiptWorkflow.test.js"
       ]
     },
+    "src/annotations/tagVocabulary.js": {
+      "fingerprint": "d8c06d1e6bbde7b7af9bcac18459791bdc6cadf54e0ad38e5c6ae1e86dbff08d",
+      "sites": [],
+      "lifetime": "module-store-subscription",
+      "reason": "Project tag vocabulary: one load, local matching/completion, extended on save, reloaded when stale; useSyncExternalStore subscription, no effects. Tag display/autocomplete review (2026-10-17).",
+      "tests": [
+        "src/annotations/tagVocabulary.test.js"
+      ]
+    },
     "src/annotations/treeGroupQueryTags.js": {
       "fingerprint": "456a13e0b34b8d45a7cc00e29150d155b610a617dd3163d92d49f52c94757ddc",
       "sites": [],
@@ -188,7 +197,7 @@
       ]
     },
     "src/annotations/ui/AnnotationTags.jsx": {
-      "fingerprint": "363c9d877a51acd69c558d520683e022991ee41f25cc7834d57711fa06b63830",
+      "fingerprint": "fbfd4ca76a2238c08a2b2cf16e7160f15af96b1c5335e0c5e44626463db6fba7",
       "sites": [
         {
           "owner": "AnnotationTags",
@@ -232,13 +241,14 @@
         }
       ],
       "lifetime": "semantic-presentation + reconnecting-annotation-authority",
-      "reason": "Epoch identity resets composer-local presentation; query identity resets suggestion keyboard choice. Existing request generation/scope effects still retire and reconnect mutation authority. Deferred focus requests retain their existing handled-intent refs; authored-value bindings now owned by persistence agent. Tag channel review (2026-10-17): single-target tags begin in tagStore synchronously (pending chip in the click frame), write serially per target/author with the last confirmed revision, confirm in place or roll back and restore the draft; bulk receipts are ingested. Editor subscribes urgently to the store. Effect sites unchanged. The composer draft clears inside startTransition so a large draft owner never delays the chip commit; failures restore the draft. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): multi-selection is optimistic (beginMany, confirm/fail, draft restore); group saves call tagStore.changed(); a single-target editor showing an epoch not verified since the last receipt-less change reads its annotations once and ingests them (effect keyed on that read).",
+      "reason": "Epoch identity resets composer-local presentation; query identity resets suggestion keyboard choice. Existing request generation/scope effects still retire and reconnect mutation authority. Deferred focus requests retain their existing handled-intent refs; authored-value bindings now owned by persistence agent. Tag channel review (2026-10-17): single-target tags begin in tagStore synchronously (pending chip in the click frame), write serially per target/author with the last confirmed revision, confirm in place or roll back and restore the draft; bulk receipts are ingested. Editor subscribes urgently to the store. Effect sites unchanged. The composer draft clears inside startTransition so a large draft owner never delays the chip commit; failures restore the draft. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): multi-selection is optimistic (beginMany, confirm/fail, draft restore); group saves call tagStore.changed(); a single-target editor showing an epoch not verified since the last receipt-less change reads its annotations once and ingests them (effect keyed on that read). Tag display/autocomplete review (2026-10-17): chips show the tag name only (author in the tooltip); suggestions come from the local vocabulary (load effect once per project, server query only when incomplete); inline completion selects the completed suffix in a layout effect after render. Ghost completion replaces selected-text completion: the value stays as typed, a grey overlay shows the remainder of the best match, Tab/→ at the end accepts it; the vocabulary loads on first focus (no layout effect for completion).",
       "tests": [
         "src/retainedControls.test.js",
         "src/annotationReceiptWorkflow.test.js",
         "src/workflowResponsiveness.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
-        "src/treeGroupAnnotationWorkflow.test.js"
+        "src/treeGroupAnnotationWorkflow.test.js",
+        "src/annotations/tagVocabulary.test.js"
       ]
     },
     "src/annotations/ui/EpochTags.jsx": {
@@ -268,16 +278,16 @@
       ]
     },
     "src/annotations/ui/ExternalTagSync.jsx": {
-      "fingerprint": "34bc84db394677922b5ca6a51c17a09231256370c5466b3b2a0e8fbc44f48dac",
+      "fingerprint": "ce2289cda4dcbdd1ac3edf7cdfc7dad8b8b05d88b2acf8c33f512ab8bb9b9fc7",
       "sites": [
         {
           "owner": "ExternalTagSync",
           "kind": "useEffect",
-          "fingerprint": "092106192b3a3406db1b1374246545d0d80815747866e2c356f11940fe657755"
+          "fingerprint": "28ca67c3ec0af9994ce52ed69c41b463c1ec4dc663aa5fc40eae93028dce57e1"
         }
       ],
       "lifetime": "project-owner/outside-Activity",
-      "reason": "App-shell profile preference and external annotation monitor outlive route visibility; cancellation/subscription cleanup and actor changes remain scientific boundaries. External scans still invalidate broad epoch resources; no claim of sample-level invalidation. Tag channel review (2026-10-17): external tag changes also invalidate tagStore overlays (facts changed without a receipt); the monitor effect lifetime is unchanged. Multi-selection/branch tag review (2026-10-17): the first scan sets the baseline only; later external changes mark the tag store stale. Monitor effect lifetime unchanged.",
+      "reason": "App-shell profile preference and external annotation monitor outlive route visibility; cancellation/subscription cleanup and actor changes remain scientific boundaries. External scans still invalidate broad epoch resources; no claim of sample-level invalidation. Tag channel review (2026-10-17): external tag changes also invalidate tagStore overlays (facts changed without a receipt); the monitor effect lifetime is unchanged. Multi-selection/branch tag review (2026-10-17): the first scan sets the baseline only; later external changes mark the tag store stale. Monitor effect lifetime unchanged. Tag display/autocomplete review (2026-10-17): external changes also mark the vocabulary stale.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/presentationSessionsApp.test.js",
@@ -609,10 +619,10 @@
       ]
     },
     "src/components/Common.jsx": {
-      "fingerprint": "7f4d0a436c99e3d036bfa790314b79428352de5f7389643953dd9fb65059ed49",
+      "fingerprint": "4f3ee9fd292702f4fad17a118ad8ec991598673a0cad9ea40a14ffc820c2c343",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced. Reviewed compact table-only relocation of tags; UUID callbacks, disclosure, pagination and effects are unchanged.",
+      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced. Reviewed compact table-only relocation of tags; UUID callbacks, disclosure, pagination and effects are unchanged. Tag display/autocomplete review (2026-10-17): cell tag badges show the tag name only with author in a tooltip. Effect sites unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -3867,7 +3877,7 @@
       ]
     },
     "src/undo/useMutationUndo.js": {
-      "fingerprint": "2b898e016f6c65e71dfe14b1fa15bfa698aff86912c5aa70f6405a4065e10636",
+      "fingerprint": "f9c8387aad686c7062a83a296061f813cc4ba4b7109641d4aac80ec0466af074",
       "sites": [
         {
           "owner": "useMutationUndo",
@@ -3881,7 +3891,7 @@
         }
       ],
       "lifetime": "project-navigation-and-undo-owner",
-      "reason": "Project global undo, canonical revision publication and history listener live outside Activity. Route return keeps history identity; local Explorer undo separately checks active view tokens. Restored history does not restore scientific consent. Tag channel review (2026-10-17): undo of a tag ingests its confirmed receipt into tagStore. Effect sites unchanged.",
+      "reason": "Project global undo, canonical revision publication and history listener live outside Activity. Route return keeps history identity; local Explorer undo separately checks active view tokens. Restored history does not restore scientific consent. Tag channel review (2026-10-17): undo of a tag ingests its confirmed receipt into tagStore. Effect sites unchanged. Tag display/autocomplete review (2026-10-17): tag undo marks the vocabulary stale.",
       "tests": [
         "src/workspace-navigation/workspaceNavigation.test.js",
         "src/retainedControls.test.js",

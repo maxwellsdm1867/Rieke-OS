@@ -2,6 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import {api,time} from "../../api.js";
 import {epochResourceCache} from "../../resourceCache.js";
 import {tagStore} from "../tagStore.js";
+import {markVocabularyStale} from "../tagVocabulary.js";
 import {startExternalTagMonitor} from '../externalTagMonitor.js';
 import {Tags,AlertCircle,CheckCircle2,RefreshCw} from 'lucide-react';
 
@@ -13,7 +14,7 @@ export default function ExternalTagSync({enabled,onChange}){
     if(!enabled)return;
     const control=startExternalTagMonitor({scan:()=>api('/annotations/scan',{method:'POST',body:{}}),
       // The first scan only establishes the baseline: nothing shown yet can be stale.
-      onChange:()=>{epochResourceCache.invalidate();if(scanned.current)tagStore.invalidate();scanned.current=true;changed.current?.();},
+      onChange:()=>{epochResourceCache.invalidate();if(scanned.current){tagStore.invalidate();markVocabularyStale();}scanned.current=true;changed.current?.();},
       onStatus:result=>{setStatus(result);setError('');},onError:setError,
       visible:()=>document.visibilityState!=='hidden'});
     monitor.current=control;

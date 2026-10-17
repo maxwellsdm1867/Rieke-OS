@@ -1,4 +1,5 @@
 import {tagStore} from '../annotations/tagStore.js';
+import {markVocabularyStale} from '../annotations/tagVocabulary.js';
 import {epochResourceCache} from "../resourceCache.js";
 import {useEffect,useRef} from 'react';
 import {api} from "../api.js";
@@ -25,7 +26,7 @@ export async function persistUndo(input,request=api){
   for(const operation of operations){const row=result.annotations.find(value=>value.target_uuid===operation.target_uuid&&value.target_kind===operation.target_kind&&value.profile_uuid===operation.profile_uuid);if(!row||row.revision!==operation.expected_revision+1||!Array.isArray(row.tags)||typeof row.author_name!=='string'||operation.tags_add?.some(tag=>!row.tags.includes(tag))||operation.tags_remove?.some(tag=>row.tags.includes(tag)))throw Error('The original annotation target was not confirmed restored.');}
   const revisions={};for(const row of result.annotations)revisions[`a:${row.target_kind}:${row.target_uuid}:${row.profile_uuid}`]=row.revision;
   const confirmed={version:1,targets:result.annotations.map(row=>({target_kind:row.target_kind,target_uuid:row.target_uuid,revisions:{[row.profile_uuid]:row.revision},tags:row.tags.map(tag=>({target_kind:row.target_kind,target_uuid:row.target_uuid,profile_uuid:row.profile_uuid,author_name:row.author_name,revision:row.revision,tag}))}))};
-  epochResourceCache.invalidateAnnotations(confirmed);tagStore.ingest(confirmed);
+  epochResourceCache.invalidateAnnotations(confirmed);tagStore.ingest(confirmed);markVocabularyStale();
   return {revisions,kind:'annotations',confirmed};
  }
  if(action.kind!=='curation')throw Error('Unknown undo action');

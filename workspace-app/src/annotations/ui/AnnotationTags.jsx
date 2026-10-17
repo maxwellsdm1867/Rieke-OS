@@ -12,6 +12,12 @@ import {confirmAnnotationReceipt,fastAnnotationReceipt} from '../annotationRecei
 import {epochResourceCache} from "../../resourceCache.js";
 import {tagStore} from '../tagStore.js';
 import {useTagStaleGeneration,useTagVersion} from '../useTagStore.js';
+import {addVocabularyTag,completeVocabulary,loadVocabulary,matchVocabulary,useVocabulary} from '../tagVocabulary.js';
+
+function highlightMatch(tag,query){
+  const at=query?tag.toLocaleLowerCase().indexOf(query.toLocaleLowerCase()):-1;
+  return at<0?tag:<>{tag.slice(0,at)}<mark>{tag.slice(at,at+query.length)}</mark>{tag.slice(at+query.length)}</>;
+}
 
 export default function AnnotationTags({composer=null,draftIdentity=null,epoch,revision,disabled=false,onChange,onFilter,focusRequest=0,epochFocusRequest=0,onNavigateEpoch,tools,children,selectedEpochs=[],selectedCells=[],targetScope=null,refreshWithEpoch=false,readSeparately=false,reconcileReceipt=false,verifyTarget,groupMutation}){
   const api=useWorkspaceRequest(defaultApi),requestScope=useWorkspaceRequestScope();
@@ -62,8 +68,21 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
   const tagVersion=useTagVersion();
   const annotationData=useMemo(()=>loadedAnnotations&&identity?tagStore.apply({epoch_uuid:identity,cell_uuid:epoch?.cell_uuid,annotations:loadedAnnotations}).annotations:loadedAnnotations,[loadedAnnotations,identity,epoch?.cell_uuid,tagVersion]);
   const storeError=identity?tagStore.error('epoch',identity)||(epoch?.cell_uuid?tagStore.error('cell',epoch.cell_uuid):null):null;
-  const suggestions=useResource(open?`/annotation-tags?q=${encodeURIComponent(query)}&limit=12`:null,revision,120);
-  const groups=annotationGroups(annotationData),items=suggestions.data?.tags||[];
+  // Suggestions come from the locally held vocabulary (no request per keystroke);
+  // the server query remains only when the project has more tags than one load.
+  const vocabulary=useVocabulary();
+  const suggestions=useResource(open&&vocabulary.loaded&&!vocabulary.complete?`/annotation-tags?q=${encodeURIComponent(query)}&limit=12`:null,revision,120);
+  const items=suggestions.data?.tags&&!vocabulary.complete?suggestions.data.tags:matchVocabulary(query,12);
+  const groups=annotationGroups(annotationData);
+  // Ghost completion: the rest of the best existing match, shown in grey after
+  // the typed text; Tab or → at the end accepts it. The value stays as typed.
+  const completion=open&&active<0&&value?completeVocabulary(value):null;
+  const ghost=completion&&completion.toLocaleLowerCase().startsWith(value.toLocaleLowerCase())?completion.slice(value.length):'';
+  function acceptGhost(event){
+    const node=event.currentTarget;
+    if(!ghost||node.selectionStart!==value.length||node.selectionEnd!==value.length)return false;
+    event.preventDefault();event.stopPropagation();composerDirty.current=true;setValue(completion);setQuery(completion.trim());return true;
+  }
   const editingLocked=disabled||busy||awaitingEpoch||(remoteNeeded&&annotations.loading)||!!annotations.error||(!bulkCells&&!annotationData)||(bulkCells&&(!selectedCount||selectedCount>1000));
   const locked=editingLocked||profileLoading||!profileUuid;
   useSemanticReset(identity,()=>{composerDirty.current=false;setQuery(value.trim());setActive(-1);setMessage('');setError('');setOpen(false);setScope('epoch');setRefreshAfter(null);});
@@ -96,7 +115,7 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
       const body={target_kind:targetKind,target_uuids:[uuid],profile_uuid:profileUuid,tags_add:remove?[]:[tag.trim()],tags_remove:remove?[tag]:[],expected_revisions:{[uuid]:revision}};
       const result=await api('/annotations',{method:'POST',body});
       const confirmed=confirmAnnotationReceipt(result,body);
-      tagStore.confirm(ticket,confirmed);
+      tagStore.confirm(ticket,confirmed);if(!remove)addVocabularyTag(tag.trim());
       if(!requestScope)epochResourceCache.invalidateAnnotations(confirmed);
       onChange?.(result,confirmed);return true;
     }catch(error){
@@ -121,7 +140,7 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
         // Server receipt owns frozen identities/revisions. Durable submit has
         // no cancellation signal; dismissal only closes the presentation.
         const result=await groupMutation.save({tag,profileUuid});
-        tagStore.changed();
+        tagStore.changed();addVocabularyTag(tag);
         if(isCurrent()){composerDirty.current=false;setValue('');setQuery('');setOpen(false);}
         if(groupMutation.canPublish?.()!==false)onChange?.(result,null);return true;
       }
@@ -149,6 +168,7 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
       if(reconcileReceipt){
         try{confirmed=confirmAnnotationReceipt(result,body);}catch(error){if(bulkTicket){tagStore.fail(bulkTicket,error);restoreDraft();}onChange?.(result);throw error;}
         if(bulkTicket)tagStore.confirm(bulkTicket,confirmed);else tagStore.ingest(confirmed);
+        if(body.tags_add?.length)addVocabularyTag(body.tags_add[0]);
         if(!requestScope)epochResourceCache.invalidateAnnotations(confirmed);
       }else if(!result||!Object.hasOwn(result,'changed'))throw new Error('The server did not return an annotation receipt. Refresh tags before retrying.');
       if(isCurrent()){
@@ -182,8 +202,8 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
     if(!value.trim()){input.current?.focus();setOpen(true);return;}
     mutate(value.trim());
   }
-  function chips(rows,kind){return rows.map(chip=><span className={`annotation-chip ${kind} tag-color-${annotationTagColor(chip.tag)}${chip.pending?' pending':''}`} aria-busy={chip.pending?'true':undefined} key={`${kind}:${chip.profile_uuid}:${chip.tag}`} title={`${kind==='cell'?'Inherited from cell':'Direct epoch annotation'} · ${chip.author_name||'Author not recorded'}`}>
-    {kind==='cell'?<CornerDownRight size={11}/>:<MessageCircle size={11}/>}<strong>{chip.tag}</strong><small>{chip.author_name||'Unknown author'}</small>
+  function chips(rows,kind){return rows.map(chip=><span className={`annotation-chip ${kind} tag-color-${annotationTagColor(chip.tag)}${chip.pending?' pending':''}`} aria-busy={chip.pending?'true':undefined} key={`${kind}:${chip.profile_uuid}:${chip.tag}`} title={`${chip.tag} · ${kind==='cell'?'inherited from cell':'epoch tag'} · ${chip.author_name||'author not recorded'}${chip.pending?' · saving…':''}`}>
+    {kind==='cell'?<CornerDownRight size={11}/>:<MessageCircle size={11}/>}<strong>{chip.tag}</strong>
     {onFilter&&<button type="button" disabled={disabled||busy} title={`Find ${kind}-tagged epochs: ${chip.tag}`} aria-label={`Filter by ${kind} tag ${chip.tag}`} onClick={()=>onFilter(annotationPredicate(kind,chip.tag))}><Search size={11}/></button>}
     {canRemoveAnnotation(chip,profileUuid)&&(kind==='epoch'||scope==='cell')&&<button type="button" disabled={locked} aria-label={`Remove my ${kind} tag ${chip.tag}${kind==='cell'?' from the entire cell':''}`} title={kind==='cell'?'Remove this cell tag from all its epochs':'Remove from this epoch only'} onClick={()=>mutate(chip.tag,kind,true)}><X size={11}/></button>}
   </span>);}
@@ -194,8 +214,8 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
     {scope==='selected'&&!targetScope&&<p className="annotation-scope-note">Tags apply to all {number(selectedCount)} selected epochs.</p>}
     {bulkCells&&<p className="annotation-scope-note">Cell tags are inherited by every epoch of these {number(selectedCount)} recorded cells, including epochs outside this view.</p>}
     {scope==='cell'&&<p className="annotation-scope-note">Tags apply to {Number.isFinite(annotationData?.cell_epoch_count)?number(annotationData.cell_epoch_count):'all'} epochs in this cell.</p>}
-    <div className="annotation-composer" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))setOpen(false);}}><form onSubmit={submitTag}><input ref={input} data-saved-undo={value===''&&!composerDirty.current?'true':undefined} role="combobox" aria-label={`Tag ${bulkCells?`${number(selectedCount)} selected cells`:scope==='selected'?`${number(selectedCount)} selected epochs`:scope==='cell'?'cell':'this epoch'}`} aria-expanded={open} aria-controls={open?listId:undefined} aria-autocomplete="list" aria-activedescendant={open&&items[active]?`${listId}-${active}`:undefined} value={value} maxLength={255} placeholder={bulkCells?'Tag selected cells…':scope==='selected'?'Tag selected epochs…':scope==='cell'?'Add a cell tag…':'Add an epoch tag…'} disabled={editingLocked} onFocus={()=>setOpen(true)} onChange={event=>{composerDirty.current=true;setMessage('');setValue(event.target.value);setQuery(event.target.value.trim());setActive(-1);setOpen(true);}} onKeyDown={event=>{if(event.key==='Escape')setOpen(false);if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();setOpen(true);setActive(index=>Math.max(0,Math.min(items.length-1,index+(event.key==='ArrowDown'?1:-1))));}if(event.key==='Enter'&&open&&items[active]){event.preventDefault();const tag=items[active].tag;choose(tag);if(profileUuid)mutate(tag);else openProfile?.();}}}/><button type="submit" disabled={editingLocked||profileLoading} className="primary" aria-label={bulkCells?`Tag ${number(selectedCount)} selected cells`:`Add ${scope} tag`} title={!profileUuid?'Choose an author and add this tag':'Save this tag'}><Plus size={14}/><span>{bulkCells?`Tag ${number(selectedCount)} cells`:scope==='selected'?`Tag ${number(selectedCount)} epochs`:'Add tag'}</span></button></form>
-    {open&&<div className="annotation-options" id={listId} role="listbox" aria-label="Saved shared tags">{suggestions.loading?<small>Finding tags…</small>:suggestions.error?<small>Suggestions unavailable; typed tags can still be saved.</small>:items.length?items.map((item,index)=><button id={`${listId}-${index}`} key={item.tag} role="option" aria-selected={index===active} disabled={editingLocked} onClick={()=>choose(item.tag)}><strong>{item.tag}</strong><small>{(item.authors||[]).map(author=>author.display_name).join(', ')}</small></button>):<small>Type a tag, then click Add tag or press Enter.</small>}</div>}</div>
+    <div className="annotation-composer" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))setOpen(false);}}><form onSubmit={submitTag}>{ghost&&<span className="tag-input-ghost" aria-hidden="true"><span>{value}</span>{ghost}</span>}<input ref={input} data-saved-undo={value===''&&!composerDirty.current?'true':undefined} role="combobox" aria-label={`Tag ${bulkCells?`${number(selectedCount)} selected cells`:scope==='selected'?`${number(selectedCount)} selected epochs`:scope==='cell'?'cell':'this epoch'}`} aria-expanded={open} aria-controls={open?listId:undefined} aria-autocomplete="list" aria-activedescendant={open&&items[active]?`${listId}-${active}`:undefined} value={value} maxLength={255} placeholder={bulkCells?'Tag selected cells…':scope==='selected'?'Tag selected epochs…':scope==='cell'?'Add a cell tag…':'Add an epoch tag…'} disabled={editingLocked} onFocus={()=>{loadVocabulary(api);setOpen(true);}} onChange={event=>{composerDirty.current=true;setMessage('');setValue(event.target.value);setQuery(event.target.value.trim());setActive(-1);setOpen(true);}} onKeyDown={event=>{if((event.key==='Tab'&&!event.shiftKey||event.key==='ArrowRight')&&acceptGhost(event))return;if(event.key==='Escape')setOpen(false);if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();setOpen(true);setActive(index=>Math.max(0,Math.min(items.length-1,index+(event.key==='ArrowDown'?1:-1))));}if(event.key==='Enter'&&open&&items[active]){event.preventDefault();const tag=items[active].tag;choose(tag);if(profileUuid)mutate(tag);else openProfile?.();}}}/><button type="submit" disabled={editingLocked||profileLoading} className="primary" aria-label={bulkCells?`Tag ${number(selectedCount)} selected cells`:`Add ${scope} tag`} title={!profileUuid?'Choose an author and add this tag':'Save this tag'}><Plus size={14}/><span>{bulkCells?`Tag ${number(selectedCount)} cells`:scope==='selected'?`Tag ${number(selectedCount)} epochs`:'Add tag'}</span></button></form>
+    {open&&<div className="annotation-options" id={listId} role="listbox" aria-label="Saved shared tags">{!vocabulary.loaded&&vocabulary.loading||suggestions.loading&&!items.length?<small>Finding tags…</small>:suggestions.error?<small>Suggestions unavailable; typed tags can still be saved.</small>:items.length?items.map((item,index)=><button id={`${listId}-${index}`} key={item.tag} role="option" aria-selected={index===active} disabled={editingLocked} onClick={()=>choose(item.tag)}><strong>{highlightMatch(item.tag,query)}</strong><small>{(item.authors||[]).map(author=>author.display_name).join(', ')}</small></button>):<small>Type a tag, then click Add tag or press Enter.</small>}</div>}</div>
     {(profileError||annotations.error||error||storeError)&&<p className="annotation-error" role="alert">{error||storeError||annotations.error||profileError}{!groupMutation&&<button disabled={busy} onClick={()=>{setRefreshAfter({identity,annotations:epoch?.annotations,force:true});annotations.reload();}}>Refresh tags</button>}</p>}
     {remoteNeeded&&annotations.loading&&!annotationData?<small role="status">Loading annotations…</small>:<>{scope==='epoch'&&<div className="annotation-group"><span>Direct epoch tags</span><div>{chips(groups.epoch,'epoch')}{!groups.epoch.length&&<small>None</small>}</div></div>}{scope!=='selected'&&!bulkCells&&<div className="annotation-group"><span>{scope==='cell'?'Cell tags':'Inherited from cell'} {!targetScope&&<button disabled={disabled||busy} onClick={()=>{setScope('cell');input.current?.focus();}}>Edit cell tags</button>}</span><div>{chips(groups.cell,'cell')}{!groups.cell.length&&<small>None</small>}</div></div>}</>}
     {message&&<small className="annotation-result" role="status">{message}</small>}

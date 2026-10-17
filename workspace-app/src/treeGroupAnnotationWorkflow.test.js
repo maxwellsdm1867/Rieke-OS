@@ -114,3 +114,27 @@ test('group and confirmed epoch receipts do not tick the app clock; other annota
     void React;
   }finally{await h.close();}
 });
+
+test('ghost completion shows the rest of an existing tag in grey; Tab accepts it without saving or navigating',async()=>{
+  const h=await createWorkflowHarness();
+  try{
+    h.fixture.respond=(url,options,fallback)=>url.pathname==='/api/annotation-tags'?{tags:[{tag:'branch-stim',count:4},{tag:'bright',count:1}],has_more:false}:fallback();
+    const Tags=await h.component('AnnotationTags'),navigated=[];
+    const single={...props,targetScope:'epoch',selectedEpochs:[],reconcileReceipt:true,onNavigateEpoch:direction=>navigated.push(direction)};
+    const input=()=>h.root.findAllByType('input').find(row=>row.props['aria-label']==='Tag this epoch');
+    await h.mount(Tags,single);await h.waitFor(()=>input()&&!input().props.disabled);
+    await h.act(()=>input().props.onFocus());
+    await h.waitFor(()=>h.fixture.requests.some(row=>row.path.startsWith('/annotation-tags')));await h.settle(20);
+    const before=h.fixture.requests.length;
+    await h.act(()=>input().props.onChange({target:{value:'bra'},nativeEvent:{}}));
+    const ghost=h.root.findByProps({className:'tag-input-ghost'});
+    assert.equal(ghost.children.at(-1),'nch-stim','Grey remainder of the most used match');
+    assert.equal(input().props.value,'bra','The value stays as typed');
+    const options=h.root.findAllByProps({role:'option'}).length;assert.equal(options,1);
+    let prevented=false;
+    await h.act(()=>input().props.onKeyDown({key:'Tab',shiftKey:false,currentTarget:{selectionStart:3,selectionEnd:3},preventDefault(){prevented=true;},stopPropagation(){}}));
+    assert.equal(prevented,true);assert.equal(input().props.value,'branch-stim');
+    assert.deepEqual(navigated,[]);
+    assert.equal(h.fixture.requests.slice(before).length,0,'Suggestions and completion are local');
+  }finally{await h.close();}
+});
