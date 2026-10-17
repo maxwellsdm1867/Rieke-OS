@@ -33,41 +33,40 @@ class CumulativePendingTests(unittest.TestCase):
             self.assertIn('keep-' + kind, [tag['tag'] for tag in rows[0]['annotations']['effective_tags']])
             self.assertEqual(self.manager.history.get(fresh['candidate_revision_uuid']), original)
 
-    def test_shared_tag_refresh_reuses_exact_candidate_and_keeps_live_authority_fresh(self):
+    def test_another_authors_tag_keeps_queue_candidate_scope_and_frozen_tokens(self):
         shared = WorkbenchTests.coverage_annotations(self)
-        annotation_revision = ['before-tag']
-        with patch.object(shared, 'snapshot', side_effect=lambda: dict(revision=annotation_revision[0], records=[])):
-            prepared, original_request = self.prepare()
-            prepared = self.patch_draft(prepared, [dict(epoch_uuid=self.added, selected=True, reviewed=True)])
-            before = self.get_context('/api' + prepared['root'])
-            old_queue = self.queue()['queue_revision']
-            recipe = copy.deepcopy(self.manager.history.get(prepared['candidate_revision_uuid']))
-            revision_count = len(self.case.explorer_revisions.rows)
-            annotation_revision[0] = 'after-tag'
-            # A tag edit advances the review generation, so a new prepare runs.
-            self.assertNotEqual(self.queue()['queue_revision'], old_queue)
-            fresh, _ = self.prepare()
-            self.assertEqual(fresh['candidate_revision_uuid'], prepared['candidate_revision_uuid'])
-            self.assertEqual(fresh['root'], prepared['root'])
-            self.assertTrue(fresh['reused'])
-            self.assertFalse(fresh['draft_initialization']['initialized'])
-            self.assertEqual(fresh['storage']['revision_count_delta'], 0)
-            self.assertEqual(len(self.case.explorer_revisions.rows), revision_count)
-            self.assertEqual(self.manager.history.get(fresh['candidate_revision_uuid']), recipe)
-            self.assertEqual(fresh['context']['draft'], before['draft'])
-            self.assertNotEqual(fresh['candidate_scope_revision'], before['candidate_scope_revision'])
-            root = '/api' + fresh['root']
-            stale = self.case.client.get(root + '/epochs', query_string={'candidate_scope_revision': before['candidate_scope_revision']})
-            self.assertEqual(stale.status_code, 409, stale.get_json())
-            stale_write = self.case.client.patch(root + '/draft', json=dict(expected_version=before['draft']['draft_version'],
-                expected_candidate_scope_revision=before['candidate_scope_revision'], decisions=[]), headers=self.case.headers)
-            self.assertEqual(stale_write.status_code, 409, stale_write.get_json())
-            page = self.case.client.get(root + '/epochs', query_string={'candidate_scope_revision': fresh['candidate_scope_revision']})
-            self.assertEqual(page.status_code, 200, page.get_json())
-            self.assertEqual([row['epoch_uuid'] for row in page.get_json()['epochs']], [self.added])
-            # A new prepare does not turn an old operation replay into a new receipt.
-            replay, _ = self.prepare(original_request)
-            self.assertNotEqual(replay['candidate_scope_revision'], fresh['candidate_scope_revision'])
+        prepared, original_request = self.prepare()
+        prepared = self.patch_draft(prepared, [dict(epoch_uuid=self.added, selected=True, reviewed=True)])
+        before = self.get_context('/api' + prepared['root'])
+        old_queue = self.queue()['queue_revision']
+        recipe = copy.deepcopy(self.manager.history.get(prepared['candidate_revision_uuid']))
+        revision_count = len(self.case.explorer_revisions.rows)
+        # Another author's (or an external import's) tag is not candidate scope.
+        WorkbenchTests.tag(self, shared, 'cell', self.case.service.rows[self.added]['cell_uuid'],
+                           add=['external'], author='MATLAB import')
+        self.assertEqual(self.queue()['queue_revision'], old_queue)
+        after = self.get_context('/api' + prepared['root'])
+        self.assertEqual(after['candidate_scope_revision'], before['candidate_scope_revision'])
+        self.assertEqual(after['draft'], before['draft'])
+        root = '/api' + prepared['root']
+        page = self.case.client.get(root + '/epochs', query_string={'candidate_scope_revision': before['candidate_scope_revision']})
+        self.assertEqual(page.status_code, 200, page.get_json())
+        self.assertEqual([row['epoch_uuid'] for row in page.get_json()['epochs']], [self.added])
+        self.assertIn('external', [tag['tag'] for tag in page.get_json()['epochs'][0]['annotations']['effective_tags']])
+        # The same prepare replays; nothing new is stored.
+        replay, _ = self.prepare(original_request)
+        self.assertEqual(replay['prepare_operation_uuid'], prepared['prepare_operation_uuid'])
+        self.assertEqual(replay['candidate_revision_uuid'], prepared['candidate_revision_uuid'])
+        self.assertEqual(self.manager.history.get(prepared['candidate_revision_uuid']), recipe)
+        self.assertEqual(len(self.case.explorer_revisions.rows), revision_count)
+        # Writes held across the tag still succeed under their membership fences.
+        saved = self.case.client.patch(root + '/draft', json=dict(expected_version=before['draft']['draft_version'],
+            expected_candidate_scope_revision=before['candidate_scope_revision'], decisions=[]), headers=self.case.headers)
+        self.assertEqual(saved.status_code, 200, saved.get_json())
+        # Membership changes still fail closed: a draft edit renews the scope.
+        stale_write = self.case.client.patch(root + '/draft', json=dict(expected_version=before['draft']['draft_version'],
+            expected_candidate_scope_revision=before['candidate_scope_revision'], decisions=[]), headers=self.case.headers)
+        self.assertEqual(stale_write.status_code, 409, stale_write.get_json())
 
     def native_transaction_receipts(self):
         from workspace_state_generation import GenerationToken
