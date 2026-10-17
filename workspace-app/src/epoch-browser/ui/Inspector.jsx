@@ -449,7 +449,8 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     // Group saves (no per-target receipts) and confirmed receipts within the
     // selection limit travel on the tag channel, not the app clock.
     if(result?.format==='rieke-group-annotation-receipt'&&result.target_kind==='epoch'){if(onChange)onChange({kind:'annotations',protocolId:id,tagChannel:true});return;}
-    const safe=!!confirmed&&confirmed.targets.length<=1000&&committedTagNavigation.current?.identity===tagNavigationIdentity;
+    // The tag store already holds the receipt; the app only needs to know it was confirmed.
+    const safe=!!confirmed&&confirmed.targets.length<=1000;
     if(onChange)onChange({kind:'annotations',protocolId:id,...(safe?{origin:annotationOrigin,confirmed}:{})});
     else{epoch.reload();loadedRows.reload();}
   };

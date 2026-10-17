@@ -2,8 +2,10 @@ import {useCallback,useLayoutEffect,useRef,useState} from 'react';
 
 // Tag/curation edits invalidate live scientific views immediately. Project
 // registration, import discovery and metadata status have separate lifetimes.
+// Confirmed epoch or cell receipts are applied in place by the tag store
+// (cell tags overlay every epoch row of that cell).
 const confirmedEpochReceipt=event=>event?.kind==='annotations'&&event.confirmed?.version===1&&
-  Array.isArray(event.confirmed.targets)&&event.confirmed.targets.length>0&&event.confirmed.targets.every(target=>target.target_kind==='epoch');
+  Array.isArray(event.confirmed.targets)&&event.confirmed.targets.length>0&&event.confirmed.targets.every(target=>['epoch','cell'].includes(target.target_kind));
 
 export function useWorkspaceChanges(){
   const [state,setState]=useState({revision:0,structureRevision:0});
