@@ -145,8 +145,9 @@ class TagPredicates:
                 'registered_cell_links':sorted((key,row['cell_uuid']) for key,row in self.service.rows.items())})
         return states,evidence
 
-    def catalog_fields(self,ids):
+    def catalog_fields(self,ids,only=None):
         definitions=self.definitions()
+        if only is not None:definitions=[field for field in definitions if field['id'] in only]
         if not definitions: return []
         all_fields={field['id'] for field in definitions};indexed={}
         shared=getattr(self.service,'shared_annotations',None)

@@ -473,6 +473,11 @@ class CurationStore:
         return ({key for key in epoch_ids if key in index},
                 self._protocol_export_indexes[protocol_uuid]['signature'])
 
+    def export_signature(self):
+        """Current project export header signature; polls identity columns only."""
+        self._export_index()
+        return self._export_signature
+
     def export_memberships(self):
         """Project-scoped membership across all protocol export revisions."""
         return copy.deepcopy(self._export_index())

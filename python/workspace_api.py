@@ -184,9 +184,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 except (OSError, ValueError) as error:
                     service.manager_recovery(error)
     service.set_source_state_provider(data_stores.source_states)
+    annotation_provider = None
     if hasattr(service, 'set_annotation_provider'):
-        service.set_annotation_provider(lambda protocol_uuid, fingerprints:
-            store.read(protocol_uuid, list(fingerprints), fingerprints))
+        def annotation_provider(protocol_uuid, fingerprints):
+            return store.read(protocol_uuid, list(fingerprints), fingerprints)
+        service.set_annotation_provider(annotation_provider)
     page_curation_provider=service.curation_provider
     if shared_annotations is None and hasattr(service.dj,'Schema'):
         from disco.decisions.annotations import SharedAnnotations
@@ -275,6 +277,73 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if shared_annotations is not None:shared_annotations.state_generation=generation
         app.extensions['state_generation']=generation
         service._explore_state_generation=generation
+
+    def native_method(owner, cls, name):
+        method=getattr(owner,name,None)
+        return getattr(method,'__func__',method) is getattr(cls,name)
+
+    def annotation_catalog_generation(scope_revision):
+        """Witness for memoized annotation catalog fields; None means recompute.
+
+        Valid only for this app's store-backed curation reader and shared
+        annotations under one verified StateGenerationAuthority, whose SQL
+        triggers advance the shared scope and each protocol's curation scope in
+        the writing transaction. Publication, index generation and source scope
+        cover metadata, as for the registered predicate catalog. Replaced or
+        patched readers and unavailable authority always recompute.
+        """
+        from workspace_state_generation import StateGenerationAuthority
+        from disco.decisions.annotations import SharedAnnotations
+        from disco.navigation.tag_predicates import SHARED_FIELDS
+        tracker=getattr(service,'_explore_state_generation',None)
+        if type(tracker) is not StateGenerationAuthority:return None
+        provider=getattr(service,'annotation_provider',None)
+        shared=getattr(service,'shared_annotations',None)
+        if provider is not None and (provider is not annotation_provider or type(store) is not CurationStore
+                or getattr(store,'state_generation',None) is not tracker
+                or not all(native_method(store,CurationStore,name) for name in ('read','_rows','_state'))):
+            return None
+        if shared is not None and (shared is not shared_annotations or type(shared) is not SharedAnnotations
+                or getattr(shared,'state_generation',None) is not tracker
+                or not all(native_method(shared,SharedAnnotations,name)
+                           for name in ('catalog_fields','_membership_index','snapshot','_rows','_validated_tags'))):
+            return None
+        index=getattr(service,'disk_index',None)
+        typed=getattr(service,'typed_index',None)
+        publication=getattr(service,'_explore_publication',None)
+        if publication is None:
+            publication=service._explore_publication=str(uuid.uuid4())
+        # Each field depends on one scope: shared fields on the shared
+        # generation, a protocol tag field on that protocol's curation generation.
+        shared_token=tracker.token(None)
+        if shared_token is None:return None
+        common=(publication,scope_revision,shared_token.authority,shared_token.project_uuid,
+            (id(index),getattr(index,'generation',None)) if index is not None else None,
+            getattr(typed,'generation_token',None) if typed is not None else None,
+            (id(service.rows),len(service.rows)),(id(service._fingerprints),len(service._fingerprints)),
+            (id(service.cells),len(service.cells)),
+            tuple((key,entry['definition']['name']) for key,entry in sorted(service.protocols.items())))
+        fields={}
+        if shared is not None:
+            fields.update(dict.fromkeys(SHARED_FIELDS,(shared_token.shared_epoch,shared_token.shared_generation)))
+        for protocol in (sorted(service.protocols) if provider is not None else ()):
+            token=tracker.token(protocol)
+            if token is None or (token.authority,token.project_uuid)!=(shared_token.authority,shared_token.project_uuid):
+                return None
+            fields[f'curation/{protocol}/tags']=(token.protocol_uuid,token.protocol_epoch,token.protocol_generation)
+        return common,fields
+    service._annotation_catalog_generation=annotation_catalog_generation
+
+    def read_contract():
+        """Attest the native schema once at each end of a complete read response.
+
+        Scope generations still read live for every token; a closing attestation
+        failure discards the response. Unsupported trackers keep fresh tokens.
+        """
+        from workspace_state_generation import StateGenerationAuthority
+        tracker=getattr(store,'state_generation',None)
+        return tracker.response_contract() if type(tracker) is StateGenerationAuthority else contextlib.nullcontext()
+    app.extensions['read_contract']=read_contract
 
     def state(protocol_uuid):
         return selected_state.materialized_state(protocol_uuid)
@@ -431,9 +500,76 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 'view':result.get('effective_view',definition.get('view',{}))}
         return payload
 
+    overview_memo={}
+
+    def overview_witness():
+        """Generation key for the derived project overview, or None to rebuild.
+
+        Native SQL triggers advance every protocol's curation scope and the
+        shared-tag scope; binding headers, export headers and source scope are
+        read live. Published metadata is identified by the index generation,
+        publication and object identities that refresh replaces; small project,
+        source and cell descriptors are compared by content. Event and export
+        lists are always read live and never memoized.
+        """
+        from workspace_state_generation import StateGenerationAuthority
+        from disco.metadata.disk_index import DiskMetadataIndex
+        tracker=getattr(store,'state_generation',None)
+        if (type(tracker) is not StateGenerationAuthority or type(store) is not CurationStore
+                or getattr(store.export_signature,'__func__',None) is not CurationStore.export_signature
+                or getattr(store.export_memberships,'__func__',None) is not CurationStore.export_memberships
+                or not selected_state._native_contract()):
+            return None
+        if shared_annotations is not None and getattr(shared_annotations,'state_generation',None) is not tracker:
+            return None
+        index=getattr(service,'disk_index',None)
+        if not isinstance(index,DiskMetadataIndex):return None
+        index._check()
+        header_provider=getattr(service,'binding_header_provider',None)
+        protocols=[]
+        for identity,entry in sorted(service.protocols.items()):
+            token=tracker.token(identity)
+            if token is None:return None
+            header=header_provider(identity) if header_provider else None
+            protocols.append((identity,id(entry),id(entry['definition']),id(entry['result']),
+                token.protocol_epoch,token.protocol_generation,
+                (header['revision_uuid'],header['version']) if header is not None else None))
+        shared=tracker.token()
+        if shared is None:return None
+        publication=getattr(service,'_explore_publication',None)
+        if publication is None:
+            publication=service._explore_publication=str(uuid.uuid4())
+        try:
+            descriptors=checksum({'project':service.project,'sources':service.sources,'cells':service.cells,
+                'catalog':{key:value for key,value in service.config.items() if key!='connection'},
+                'source_scope':service.source_scope()})
+        except (TypeError,ValueError):
+            return None
+        return (publication,(id(index),index.generation),(id(service.rows),len(service.rows)),
+            (id(service._fingerprints),len(service._fingerprints)),id(service.protocols),tuple(protocols),
+            (shared.authority,shared.shared_epoch,shared.shared_generation),descriptors,store.export_signature())
+
+    app.extensions['overview_memo']=overview_memo
+    app.extensions['overview_memo_witness']=overview_witness
+
     def native_overview():
-        """Refresh project counts using exact decision projections, not tags."""
+        """Project counts from exact decision projections, memoized per generation."""
         if not service.protocols:return None
+        witness=overview_witness()
+        if witness is not None and overview_memo.get('key')==witness:
+            payload=copy.deepcopy(overview_memo['payload'])
+        else:
+            payload=build_native_overview()
+            if payload is None:return None
+            if witness is not None and overview_witness()==witness:
+                overview_memo.update(key=witness,payload=copy.deepcopy(payload))
+        payload['events']=service.events(25)
+        payload['exports']=store.list_dataset_revisions()
+        if witness is not None and overview_witness()!=witness:
+            raise StaleWorkspace('Saved decisions changed while reading this project. Refresh and retry.')
+        return payload
+
+    def build_native_overview():
         export_memberships=store.export_memberships()
         protocols=[];proofs={};covered=set();not_approved=set()
         for identity,entry in service.protocols.items():
@@ -471,8 +607,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         payload={'active_source_counts':{'cells':len({row['cell_uuid'] for row in active_rows}),
                 'epochs':len(active_rows),'sources':len(active)},'source_scope':scope,
             'project':service.project,'catalog':{key:value for key,value in service.config.items() if key!='connection'},
-            'counts':counts,'protocols':protocols,'cells':cells,'sources':service.sources,
-            'events':service.events(25),'exports':store.list_dataset_revisions()}
+            'counts':counts,'protocols':protocols,'cells':cells,'sources':service.sources}
         add_cell_annotations(cells)
         if shared_annotations:
             summary=shared_annotations.summary(rows)
@@ -807,14 +942,22 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise ValueError('Project presentation accepts no parameters')
         return jsonify(load_overview(project_dir, expected_uuid=service.project['project_uuid']))
 
+    saved_overview = {}
+
     def overview_response(payload):
-        from disco.projects.presentation_cache import save_overview
-        save_overview(project_dir, payload)
+        # The display cache is rewritten only when its projection changes.
+        from disco.projects.presentation_cache import save_overview, display_overview
+        try:
+            display = display_overview(payload)
+        except (ValueError, TypeError, KeyError, AttributeError):
+            display = None
+        if display is None or display != saved_overview.get('display'):
+            saved_overview['display'] = display if save_overview(project_dir, payload) else None
         return jsonify(payload)
 
     @app.get("/api/overview")
     def overview():
-        with db_lock:
+        with db_lock, read_contract():
             native=native_overview()
             if native is not None:return overview_response(native)
             payload = copy.deepcopy(service.overview())
@@ -930,7 +1073,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 if native is None and selected_state.read_selected(protocol_uuid,[])[1:]!=before:
                     raise StaleWorkspace('Protocol changed while opening this view. Refresh and retry.')
                 return jsonify(payload)
-        with db_lock:
+        with db_lock, read_contract():
             query_filters=filters()
             from disco.metadata.explore_queries import generation
             context={'protocol_uuid':protocol_uuid,'filters':query_filters}
@@ -1068,7 +1211,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def explorer_predicate_fields():
         if request.args:
             raise ValueError('Predicate fields describe the whole main catalog')
-        with db_lock, data_stores.registration_locks():
+        with db_lock, data_stores.registration_locks(), read_contract():
             return jsonify(service.predicate_fields())
 
     @app.post('/api/explore/preview')
@@ -1354,7 +1497,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     @app.get("/api/epochs/<epoch_uuid>")
     def epoch(epoch_uuid):
-        with db_lock:
+        with db_lock, read_contract():
             row = copy.deepcopy(service.epoch(epoch_uuid))
             protocol_uuid = request.args.get("protocol_uuid")
             if protocol_uuid:
