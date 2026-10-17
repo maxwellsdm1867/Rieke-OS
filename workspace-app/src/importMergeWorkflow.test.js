@@ -8,12 +8,12 @@ import {createIncomingMergeIntents} from './incoming-workbench/incomingMergeInte
 const {JSDOM}=await import(process.env.RIEKE_TEST_DOM_MODULE||'jsdom');
 const root=fileURLToPath(new URL('..',import.meta.url));
 const protocol='merge-protocol',project='merge-project',base=`/protocols/${protocol}/workbench`,candidate=base+'/candidates/union';
-const suggestion={protocol_uuid:protocol,protocol_name:'SplitFieldCentering',candidate_revision_uuid:'original-proposal',status:'pending',source_filename:'Fixture.h5',created_at:'2026-10-02T10:00:00Z',diff_counts:{added:16,removed:0,changed:0},diff_summary:{current:{cells:9,epochs:36,acquisition_protocols:1,duration_seconds:90},proposed:{cells:11,epochs:52,acquisition_protocols:1,duration_seconds:130},delta:{cells:2,epochs:16,acquisition_protocols:0}}};
+const suggestion={protocol_uuid:protocol,protocol_name:'SplitFieldCentering',candidate_revision_uuid:'original-proposal',status:'pending',source_sha256:'fixture-source',source_filename:'Fixture.h5',created_at:'2026-10-02T10:00:00Z',diff_counts:{added:16,removed:0,changed:0},diff_summary:{current:{cells:9,epochs:36,acquisition_protocols:1,duration_seconds:90},proposed:{cells:11,epochs:52,acquisition_protocols:1,duration_seconds:130},delta:{cells:2,epochs:16,acquisition_protocols:0}}};
 const response=(value,status=200)=>({ok:status===200,status,json:async()=>value});
 const deferred=()=>{let resolve;return {promise:new Promise(value=>{resolve=value;}),resolve:()=>resolve()};};
 async function harness({pending=3,failQueue=false,failPrepare=0,failPreview=false,failAccept=false,prepareGate=null,session=null,restore=null}={}){
  const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});
- const calls=[],receiptBodies=[],receipts=new Map();let generation=1,mode='selected',previews=0,accepts=0,lastNavigation,revision=0;
+ const calls=[],receiptBodies=[],receipts=new Map(),held=[];let generation=1,mode='selected',previews=0,accepts=0,lastNavigation,revision=0;
  const caps={cumulative_pending_browse:true,frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true};
  let decisions=[{epoch_uuid:'excluded',selected:false,reviewed:false,excluded:true}];
  const chosen=Array.from({length:pending>1?pending-1:pending},(_,i)=>`epoch-${i}`);
@@ -47,11 +47,13 @@ async function harness({pending=3,failQueue=false,failPrepare=0,failPreview=fals
   const route=navigation.route;
   function launch(id){const intent=ledger.current.issue(project,id);navigation.go('protocol',{protocol:id,workbench:{merge_intent:intent}});return true;}
   function claim(intent){const consumed=navigation.consumeMergeIntent(intent.request_uuid);return ledger.current.claim(intent,project,route.protocol)&&consumed;}
-  return route.page!=='protocol'?React.createElement(Suggestion,{suggestion,onMerge:launch,onProtocol:id=>navigation.go('protocol',{protocol:id,workbench:{}})}):React.createElement(Workbench,{key:route.key,projectId:project,protocolId:route.protocol,revision,initialMergeIntent:route.workbench?.merge_intent,onClaimMergeIntent:claim,session:saved,onSession:value=>{saved=value;}});
+  // The Overview card only holds a source merge; the cumulative Workbench intent
+  // remains an App capability, so this harness issues it from its own control.
+  return route.page!=='protocol'?React.createElement(React.Fragment,null,React.createElement(Suggestion,{suggestion,onMerge:(id,options)=>{held.push([id,options]);return true;},onProtocol:id=>navigation.go('protocol',{protocol:id,workbench:{}})}),React.createElement('button',{onClick:()=>launch(protocol)},'Open cumulative merge preview')):React.createElement(Workbench,{key:route.key,projectId:project,protocolId:route.protocol,revision,initialMergeIntent:route.workbench?.merge_intent,onClaimMergeIntent:claim,session:saved,onSession:value=>{saved=value;}});
  }
  const render=()=>act(async()=>mounted.render(React.createElement(React.StrictMode,null,React.createElement(Demo))));
  await render();
- return {container,calls,receiptBodies,get accepts(){return accepts;},get previews(){return previews;},get saved(){return saved;},get navigation(){return lastNavigation;},
+ return {container,calls,receiptBodies,held,get accepts(){return accepts;},get previews(){return previews;},get saved(){return saved;},get navigation(){return lastNavigation;},
   button(label){return [...container.querySelectorAll('button')].find(button=>button.textContent.trim()===label);},
   async click(label,twice=false){const button=this.button(label);assert.ok(button,`Missing ${label}: ${container.textContent}`);assert.equal(button.disabled,false,label);await act(async()=>{button.dispatchEvent(new window.MouseEvent('click',{bubbles:true}));if(twice)button.dispatchEvent(new window.MouseEvent('click',{bubbles:true}));});},
   async selectAndMerge(twice=false){const inspect=this.container.querySelector('[data-frozen-scope]');assert.ok(inspect);await this.click('Select fixture epochs');await this.click('Merge selection',twice);},
@@ -63,14 +65,18 @@ async function harness({pending=3,failQueue=false,failPrepare=0,failPreview=fals
 test('expanded match visual has one comparison and right-side actions; Inspect only opens cumulative browsing',async()=>{
  const h=await harness();try{
   assert.equal(h.container.querySelectorAll('.protocol-diff').length,1);assert.equal(h.container.querySelectorAll('.protocol-diff-compact').length,0);
-  assert.equal(h.container.querySelector('.protocol-match-actions').children[0].textContent.trim(),'Merge matched data');
+  const actions=h.container.querySelector('.protocol-match-actions');
+  assert.equal(actions.children[0].textContent.trim(),'Inspect in Workbench');assert.equal(h.button('Merge matched data'),undefined,'no click-to-navigate merge button');
+  const hold=actions.querySelector('[aria-label="Hold to merge"]');assert.ok(hold);
+  await act(async()=>hold.dispatchEvent(new window.MouseEvent('click',{bubbles:true})));assert.deepEqual(h.held,[],'a plain click never grants merge consent');
+  assert.equal(h.calls.filter(c=>c.method!=='GET').length,0);
   assert.doesNotMatch(h.container.textContent,/Approve|Details ·|Existing inspection decisions/);
   await h.click('Inspect in Workbench');assert.ok(h.container.querySelector('[data-frozen-scope]'));assert.equal(h.previews,0);assert.equal(h.accepts,0);
  }finally{await h.close();}
 });
 test('StrictMode double click prepares once and selected merge accepts once with exact preview fences',async()=>{
  const h=await harness();try{
-  await h.click('Merge matched data',true);assert.equal(h.calls.filter(c=>c.endpoint===base+'/prepare').length,1);assert.equal(h.previews,0,'opening never previews all');await h.selectAndMerge(true);assert.equal(h.previews,1);assert.equal(h.accepts,1);assert.match(h.container.textContent,/Acceptance saved/);
+  await h.click('Open cumulative merge preview',true);assert.equal(h.calls.filter(c=>c.endpoint===base+'/prepare').length,1);assert.equal(h.previews,0,'opening never previews all');await h.selectAndMerge(true);assert.equal(h.previews,1);assert.equal(h.accepts,1);assert.match(h.container.textContent,/Acceptance saved/);
   assert.equal(h.navigation.route.workbench.merge_intent,undefined);assert.equal(window.history.state.riekeWorkspace.route.workbench.merge_intent,undefined);
   assert.equal(h.accepts,1);assert.equal(h.receiptBodies.length,1);
   const body=JSON.parse(h.receiptBodies[0]);assert.deepEqual({...body,operation_uuid:'operation'},{expected_candidate_scope_revision:'scope-2',expected_draft_version:2,mode:'selected',preview_sha256:'exact-additions',expected_binding_version:7,expected_query_revision:'main-seven',operation_uuid:'operation'});
@@ -79,19 +85,19 @@ test('StrictMode double click prepares once and selected merge accepts once with
 });
 test('cancel zero-addition preview preserves exclusions and history restoration does not replay merge intent',async()=>{
  const h=await harness({pending:1});try{
-  await h.click('Merge matched data');await h.selectAndMerge();const route=h.navigation.route;await h.click('Cancel merge preview');assert.equal(h.accepts,0);assert.equal(h.previews,1);
+  await h.click('Open cumulative merge preview');await h.selectAndMerge();const route=h.navigation.route;await h.click('Cancel merge preview');assert.equal(h.accepts,0);assert.equal(h.previews,1);
   await h.restore({page:'overview',key:'back'});await h.restore(route);assert.equal(h.previews,1);assert.equal(h.accepts,0);assert.equal(h.container.querySelector('[aria-label="Additive acceptance preview"]'),null);
   assert.ok(h.calls.filter(c=>c.endpoint.endsWith('/draft')).every(c=>c.body.decisions.every(d=>!Object.hasOwn(d,'excluded'))));
  }finally{await h.close();}
 });
 test('cancel while preparation is pending prevents late completion from previewing or accepting',async()=>{
  const gate=deferred(),h=await harness({prepareGate:gate});try{
-  await h.click('Merge matched data');await h.click('Cancel merge request');await act(async()=>gate.resolve());assert.equal(h.previews,0);assert.equal(h.accepts,0);
+  await h.click('Open cumulative merge preview');await h.click('Cancel merge request');await act(async()=>gate.resolve());assert.equal(h.previews,0);assert.equal(h.accepts,0);
  }finally{await h.close();}
 });
 test('blocked preparation ends the merge request and exposes saved proposals without changing a draft',async()=>{
  const h=await harness({failPrepare:1});try{
-  await h.click('Merge matched data');
+  await h.click('Open cumulative merge preview');
   assert.match(h.container.querySelector('[role="alert"]').textContent,/stale authority or conflicting fingerprints/);
   assert.doesNotMatch(h.container.textContent,/Preparing your merge preview/);
   assert.equal(h.button('Cancel merge request'),undefined);
@@ -103,7 +109,7 @@ test('blocked preparation ends the merge request and exposes saved proposals wit
 });
 test('explicit preparation retry recovers browsing without replaying the failed merge intent',async()=>{
  const h=await harness({failPrepare:1});try{
-  await h.click('Merge matched data');await h.click('Retry cumulative preparation');
+  await h.click('Open cumulative merge preview');await h.click('Retry cumulative preparation');
   assert.ok(h.container.querySelector('[data-frozen-scope]'));
   assert.equal(h.previews,0,'the failed preview request was consumed');assert.equal(h.accepts,0);
   assert.equal(h.calls.filter(c=>c.endpoint===base+'/prepare').length,2);
@@ -113,7 +119,7 @@ test('explicit preparation retry recovers browsing without replaying the failed 
 });
 for(const [label,options] of [['zero pending',{pending:0}],['unavailable queue',{failQueue:true}],['stale preview',{failPreview:true}],['zero eligible',{pending:1}]])test(`${label} never silently accepts`,async()=>{
  const h=await harness(options);try{
-  await h.click('Merge matched data');assert.equal(h.accepts,0);
+  await h.click('Open cumulative merge preview');assert.equal(h.accepts,0);
   if(options.failPreview){await h.selectAndMerge();assert.match(h.container.textContent,/Queue changed/);await h.rerender();assert.equal(h.previews,1,'failure never auto-retries');}
   else if(options.pending===1){await h.selectAndMerge();assert.equal(h.button('Add these additions to main').disabled,true);assert.match(h.container.textContent,/No eligible new epochs/);}
   else assert.equal(h.previews,0);
@@ -121,7 +127,7 @@ for(const [label,options] of [['zero pending',{pending:0}],['unavailable queue',
 });
 test('lost acceptance response retains the exact operation; repeated click recovers one durable mutation',async()=>{
  const h=await harness({failAccept:true});try{
-  await h.click('Merge matched data');await h.selectAndMerge();assert.equal(h.accepts,1);assert.match(h.container.textContent,/may have committed/);
+  await h.click('Open cumulative merge preview');await h.selectAndMerge();assert.equal(h.accepts,1);assert.match(h.container.textContent,/may have committed/);
   assert.equal(h.button('Cancel merge preview'),undefined);await h.rerender();assert.equal(h.previews,1);assert.equal(h.receiptBodies.length,1);
   await h.click('Recover acceptance receipt');assert.equal(h.accepts,1);assert.equal(h.receiptBodies.length,1);assert.equal(h.calls.filter(call=>call.method==='GET'&&call.endpoint.startsWith(base+'/receipts/')).length,1);
  }finally{await h.close();}

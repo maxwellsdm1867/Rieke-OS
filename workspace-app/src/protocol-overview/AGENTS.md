@@ -21,6 +21,9 @@ showing a suggestion, count or diff is not applying it. Pending main-versus-inco
 counts use their authoritative responses, never sums of overlapping proposal totals.
 The [incoming-workbench owner](../incoming-workbench/AGENTS.md) retains explicit
 acceptance/consent choreography; export preparation/publication remain separate.
+The Overview match card offers Inspect plus the shared one-second Hold to merge
+for its exact candidate and trigger recording (see "Direct held recording merge");
+it has no click-to-merge or cumulative-preview button.
 Network failure preserves error/retry and already-confirmed partial outcomes rather
 than silently treating an uncertain operation as absent.
 

@@ -53,3 +53,38 @@ export async function approveProtocolSuggestion(suggestion,shown,request){
   if(receipt.binding?.revision_uuid!==suggestion.candidate_revision_uuid||!Number.isInteger(receipt.binding?.version))throw new Error('The update did not return a complete receipt. Check Activity & logs before retrying.');
   return {applied:true,receipt};
 }
+
+// Hold consent on a suggestion card (Overview or import review) names exactly
+// one frozen candidate and its trigger recording. The server resolves that
+// recording's pending additions; other recordings in a cumulative proposal are
+// never included, and an unidentified recording cannot be merged directly.
+export function sourceMergeRequest(suggestion){
+  if(!suggestion||suggestion.status!=='pending')return null;
+  const added=suggestion.diff_counts?.added,{candidate_revision_uuid:candidate,source_sha256:source}=suggestion;
+  if(!Number.isSafeInteger(added)||added<=0)return null;
+  if(typeof candidate!=='string'||!candidate||typeof source!=='string'||!source)return null;
+  return {kind:'merge_source',candidate_revision_uuid:candidate,source_sha256:source};
+}
+
+const mergedKey=(projectId,protocolId,candidateId,sourceSha256)=>[projectId,protocolId,candidateId,sourceSha256].every(value=>typeof value==='string'&&!!value)?JSON.stringify([projectId,protocolId,candidateId,sourceSha256]):null;
+
+// Only a verified source-mode receipt retires a card. Its key is the exact
+// project, protocol, frozen candidate and recording; anything else is null.
+export function mergedSourceKey(projectId,receipt){
+  if(receipt?.mode!=='source'||typeof receipt.event_uuid!=='string'||!receipt.event_uuid)return null;
+  return mergedKey(projectId,receipt.protocol_uuid,receipt.candidate_revision_uuid,receipt.source_sha256);
+}
+
+export function rememberMergedSource(previous,key,limit=64){
+  if(!key||previous.includes(key))return previous;
+  return [...previous,key].slice(-limit);
+}
+
+// Hide a pending/stale suggestion whose exact recording merge has a verified
+// receipt while the authoritative list refreshes. Applied history is unchanged.
+export function withoutMergedSources(data,projectId,merged=[]){
+  if(!merged.length||!Array.isArray(data?.suggestions))return data;
+  const done=new Set(merged);
+  const suggestions=data.suggestions.filter(item=>!(['pending','stale'].includes(item?.status)&&done.has(mergedKey(projectId,item.protocol_uuid,item.candidate_revision_uuid,item.source_sha256))));
+  return suggestions.length===data.suggestions.length?data:{...data,suggestions};
+}
