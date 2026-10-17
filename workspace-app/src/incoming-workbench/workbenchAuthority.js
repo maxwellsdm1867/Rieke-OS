@@ -11,6 +11,14 @@ export function requireWorkbenchContext(value){
   if(typeof value?.candidate_scope_revision!=='string'||!value.candidate_scope_revision||!Number.isSafeInteger(value.draft?.draft_version))throw new Error('A complete frozen scope and draft receipt is required. Refresh this proposal.');
   return value;
 }
+export function requirePreparedWorkbench(protocol,value,queueRevision){
+  if(value?.contract_version!==1||value.kind!=='workbench_pending_union'||typeof value.prepare_operation_uuid!=='string'||typeof value.candidate_revision_uuid!=='string'||value.root!==workbenchCandidateRoot(protocol,value.candidate_revision_uuid))throw new Error('The cumulative Workbench did not return an authoritative frozen destination.');
+  requireWorkbenchContext(value.context);
+  const contextProtocol=value.context.protocol?.definition?.protocol_uuid||value.context.protocol?.protocol_uuid;
+  if(value.context.candidate_revision_uuid!==value.candidate_revision_uuid||contextProtocol!==protocol||value.context.protocol?.protocol_uuid&&value.context.protocol.protocol_uuid!==protocol)throw new Error('The cumulative Workbench context belongs to another candidate or protocol.');
+  if(value.candidate_scope_revision!==value.context.candidate_scope_revision||value.queue_revision!==queueRevision)throw new Error('The cumulative Workbench scope changed while preparing. Refresh the queue.');
+  return {...value,queue_revision:queueRevision};
+}
 export async function saveWorkbenchDecisions({root,context,decisions=[],deferred,selectionMode},request,onCommitted=()=>{}){
   requireWorkbenchContext(context);
   if(decisions.some(item=>typeof item.epoch_uuid!=='string'))throw new Error('Review decisions require exact epoch UUIDs.');
@@ -70,4 +78,22 @@ export async function createWorkbenchSelection({root,context,ids,signal},request
     if(value?.selection_token!==upload||value.count!==count||value.total!==selection.length||value.complete!==(count===selection.length)||value.candidate_scope_revision!==context.candidate_scope_revision||value.query_revision!==context.candidate_scope_revision||value.expected_binding_version!==context.expected_binding_version||value.complete&&value.selection_sha256!==digest)throw Error('The complete exact selection could not be verified. Select again.');
   }
   return value;
+}
+
+// Mergeable pending counts. Proposals the backend cannot merge are not pending,
+// so the eligible fields are authoritative; older services fall back to totals.
+export function pendingQueueCounts(queue){
+  const safe=value=>Number.isSafeInteger(value)&&value>=0?value:null;
+  if(!queue)return {epochs:null,cells:null};
+  const eligible=Object.hasOwn(queue,'eligible_pending_epoch_count');
+  return {epochs:safe(eligible?queue.eligible_pending_epoch_count:queue.pending_epoch_count),
+    cells:safe(eligible?queue.eligible_pending_cell_count:queue.pending_cell_count)};
+}
+
+// Finish review leaves every remaining not-yet-excluded pending epoch of the
+// cumulative candidate out (excluded) under the current scope/draft fences.
+export async function finishWorkbenchReview(root,context,request){
+  requireWorkbenchContext(context);
+  const value=await request(`${root}/finish`,{method:'POST',body:{expected_candidate_scope_revision:context.candidate_scope_revision,expected_version:context.draft.draft_version}});
+  return requireWorkbenchContext(value);
 }

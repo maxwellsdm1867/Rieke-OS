@@ -62,3 +62,17 @@ test('renderer recovery pauses new mutations without destroying registered draft
   status({state:'Running'});assert.doesNotThrow(()=>assertDesktopWritable('/edit'));
  }finally{stop();uninstall();}
 });
+
+test('submission flush: a views-only failure does not reject; an unconfirmed accepted write does; close stays strict',async()=>{
+ const {flushBeforeSubmission}=await import('./desktopLifecycle.js');
+ const stop=registerDraftSaver(async()=>{throw new Error('disk full');});
+ try{
+  const result=await flushBeforeSubmission();
+  assert.equal(result.viewSaved,false);assert.match(result.notice,/view could not be saved/);
+  await assert.rejects(flushDesktopDrafts(),/latest view could not be saved/,'close/unmount keep the strict contract');
+  let reject;const pending=trackWrite(new Promise((_resolve,fail)=>{reject=fail;}));
+  const flushing=flushBeforeSubmission();reject(new Error('lost'));await pending.catch(()=>{});
+  await assert.rejects(flushing,/not confirmed/);
+ }finally{stop();}
+ const ok=registerDraftSaver(async()=>{});try{assert.deepEqual(await flushBeforeSubmission(),{viewSaved:true,notice:''});}finally{ok();}
+});

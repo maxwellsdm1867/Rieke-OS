@@ -25,6 +25,18 @@ export async function flushDesktopDrafts(){
   if(views.some(result=>result.status==='rejected'))reasons.push('The latest view could not be saved. The last saved view is retained.');
   if(reasons.length)throw new Error(reasons.join(' '));
 }
+// Before submitting an idempotent acceptance (replay by operation_uuid returns
+// the existing receipt), pending accepted writes still gate submission, but a
+// failed view snapshot does not: the saved view is a convenience, not consent.
+// Close/unmount keep the strict flushDesktopDrafts contract above.
+export async function flushBeforeSubmission(){
+  const accepted=await Promise.allSettled([...writes]);
+  const views=await Promise.allSettled([...savers].map(save=>Promise.resolve().then(save)));
+  const failed=accepted.filter(result=>result.status==='rejected');
+  if(failed.length)throw new Error(failed.every(result=>result.reason?.saved===true)?'Accepted changes were committed to the database, but recovery backup coverage is incomplete.':'Some accepted changes were not confirmed. Existing operation records must be reconciled on relaunch.');
+  const viewSaved=views.every(result=>result.status==='fulfilled');
+  return {viewSaved,notice:viewSaved?'':'The latest view could not be saved; the merge was still submitted. The last saved view is retained.'};
+}
 export function installDesktopLifecycle(bridge=desktopBridge()){
   if(!bridge)return()=>{};
   let releaseCheckpoint=null;

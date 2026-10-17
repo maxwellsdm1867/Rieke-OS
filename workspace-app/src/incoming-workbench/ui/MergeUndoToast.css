@@ -1,0 +1,4 @@
+.merge-undo-toast{position:fixed;right:20px;bottom:20px;z-index:60;display:flex;align-items:center;gap:10px;max-width:min(440px,calc(100vw - 32px));padding:10px 12px 10px 16px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--ink);font-size:13px;line-height:1.45;box-shadow:0 8px 30px color-mix(in srgb,var(--shadow-base) 18%,transparent)}
+.merge-undo-toast>span{flex:1;min-width:0;overflow-wrap:anywhere}
+.merge-undo-toast>button{flex-shrink:0;font-size:12px}
+@media(max-width:600px){.merge-undo-toast{right:16px;left:16px;bottom:16px;max-width:none}}

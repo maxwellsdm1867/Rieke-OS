@@ -2,20 +2,12 @@ import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {api,number,time} from '../../api.js';
 import {Activity,History,RefreshCw} from 'lucide-react';
 import NeuronIcon from '../../components/NeuronIcon.jsx';
-import {requireWorkbenchContext,workbenchCandidateRoot,workbenchRoot} from '../workbenchAuthority.js';
+import {pendingQueueCounts,requirePreparedWorkbench,workbenchRoot} from '../workbenchAuthority.js';
 import FrozenIncomingReview from './FrozenIncomingReview.jsx';
 import WorkbenchExportDialog from "../../exports/ui/WorkbenchExportDialog.jsx";
 import {useAnnotationProfile} from '../../annotations/annotationProfile.js';
 import {requireIncomingBootstrap} from '../incomingBootstrap.js';
 
-export function requirePreparedWorkbench(protocol,value,queueRevision){
-  if(value?.contract_version!==1||value.kind!=='workbench_pending_union'||typeof value.prepare_operation_uuid!=='string'||typeof value.candidate_revision_uuid!=='string'||value.root!==workbenchCandidateRoot(protocol,value.candidate_revision_uuid))throw new Error('The cumulative Workbench did not return an authoritative frozen destination.');
-  requireWorkbenchContext(value.context);
-  const contextProtocol=value.context.protocol?.definition?.protocol_uuid||value.context.protocol?.protocol_uuid;
-  if(value.context.candidate_revision_uuid!==value.candidate_revision_uuid||contextProtocol!==protocol||value.context.protocol?.protocol_uuid&&value.context.protocol.protocol_uuid!==protocol)throw new Error('The cumulative Workbench context belongs to another candidate or protocol.');
-  if(value.candidate_scope_revision!==value.context.candidate_scope_revision||value.queue_revision!==queueRevision)throw new Error('The cumulative Workbench scope changed while preparing. Refresh the queue.');
-  return {...value,queue_revision:queueRevision};
-}
 // A replacement frozen candidate may keep the way the scientist was browsing,
 // never its selected epochs, edit text, receipts or revision-bound tree pages.
 function viewerPresentation(viewer){
@@ -34,6 +26,7 @@ export default function CumulativeIncomingReview({queue,protocolId,session={},on
   const draft=prepared?drafts.current[prepared.candidate_revision_uuid]:null;
   const recovering=(!draft?.receipt&&(!!draft?.acceptPending||!!draft?.unconfirmed))||!!draft?.exportState?.pending||!!draft?.exportState&&!draft.exportState.exported&&!!(draft.exportState.prepared||draft.exportState.acceptOperation);
   const profile=useAnnotationProfile();
+  const pending=pendingQueueCounts(queue.data);
   const owner=useMemo(()=>({projectId:reviewProps.projectId,protocolId,revision:reviewProps.revision,
     profileUuid:profile.profileUuid,profileReady:!!profile.profileUuid&&!profile.loading&&!profile.error,
     queueRevision:queue.data?.queue_revision}),[reviewProps.projectId,protocolId,reviewProps.revision,profile.profileUuid,profile.loading,profile.error,queue.data?.queue_revision]);
@@ -62,7 +55,7 @@ export default function CumulativeIncomingReview({queue,protocolId,session={},on
   useEffect(()=>{
     const token=queue.data?.queue_revision;
     const hasHistory=(queue.data?.total_candidate_count||queue.data?.candidates?.length||0)>0;
-    if(!token||queue.data.pending_epoch_count===0&&!hasHistory||queue.loading||queue.error||recovering||prepared?.queue_revision===token){setBusy(false);return;}
+    if(!token||pending.epochs===0&&!hasHistory||queue.loading||queue.error||recovering||prepared?.queue_revision===token){setBusy(false);return;}
     const key=`${protocolId}:${token}:${nonce}`;
     if(attempted.current?.key!==key||attempted.current.requestOwner!==requestOwner){
       let responseFresh=false;
@@ -92,19 +85,19 @@ export default function CumulativeIncomingReview({queue,protocolId,session={},on
         scopes.current={...scopes.current,[saved.candidate_revision_uuid]:saved};setBusy(false);setPrepared(saved);}
     }).catch(error=>{if(active&&attempted.current===attempt&&latest.current.owner===owner){setBusy(false);setError(error.message);}});
     return()=>{active=false;};
-  },[protocolId,reviewProps.projectId,queue.data?.queue_revision,queue.data?.pending_epoch_count,queue.data?.total_candidate_count,queue.loading,queue.error,recovering,nonce,prepared?.queue_revision,owner,requestOwner]);
+  },[protocolId,reviewProps.projectId,queue.data?.queue_revision,pending.epochs,queue.data?.total_candidate_count,queue.loading,queue.error,recovering,nonce,prepared?.queue_revision,owner,requestOwner]);
   const eligibleProposals=(queue.data?.candidates||[]).filter(item=>['pending','pending_rebased','deferred'].includes(item.status)&&Number.isSafeInteger(item.eligible_pending_epoch_count)&&item.eligible_pending_epoch_count>0);
   const authorityChanged=!!queue.data?.queue_revision&&prepared?.queue_revision!==queue.data.queue_revision;
   const remember=useCallback(value=>{drafts.current={...drafts.current,[prepared.candidate_revision_uuid]:value};onSession?.({...snapshot.current,drafts:drafts.current});setDraftVersion(value=>value+1);},[prepared?.candidate_revision_uuid,onSession]);
   return <section className="incoming-cumulative">
-    {!prepared&&<div className="incoming-action-bar"><div className="incoming-bar-metrics" aria-label="Distinct pending incoming counts"><span className={`incoming-bar-scope ${queue.data?.pending_epoch_count>0?'is-pending':''}`}>{queue.data?.pending_epoch_count>0?'Pending merge':queue.data?.pending_epoch_count===0?'No pending':'Incoming'}</span><span><NeuronIcon size={18}/><strong>{Number.isSafeInteger(queue.data?.pending_cell_count)?`${queue.data.pending_cell_count>0?'+':''}${number(queue.data.pending_cell_count)}`:'Unavailable'}</strong><small>cells</small></span><span><Activity size={18} aria-hidden="true"/><strong>{Number.isSafeInteger(queue.data?.pending_epoch_count)?`${queue.data.pending_epoch_count>0?'+':''}${number(queue.data.pending_epoch_count)}`:'Unavailable'}</strong><small>epochs</small></span></div><div className="incoming-bar-actions"><button disabled={refreshing} onClick={onRefresh}><RefreshCw size={13} aria-hidden="true"/> Refresh</button><button onClick={onHistory}><History size={13} aria-hidden="true"/> Proposal history</button></div></div>}
+    {!prepared&&<div className="incoming-action-bar"><div className="incoming-bar-metrics" aria-label="Distinct pending incoming counts"><span className={`incoming-bar-scope ${pending.epochs>0?'is-pending':''}`}>{pending.epochs>0?'Pending merge':pending.epochs===0?'No pending':'Incoming'}</span><span><NeuronIcon size={18}/><strong>{Number.isSafeInteger(pending.cells)?`${pending.cells>0?'+':''}${number(pending.cells)}`:'Unavailable'}</strong><small>cells</small></span><span><Activity size={18} aria-hidden="true"/><strong>{Number.isSafeInteger(pending.epochs)?`${pending.epochs>0?'+':''}${number(pending.epochs)}`:'Unavailable'}</strong><small>epochs</small></span></div><div className="incoming-bar-actions"><button disabled={refreshing} onClick={onRefresh}><RefreshCw size={13} aria-hidden="true"/> Refresh</button><button onClick={onHistory}><History size={13} aria-hidden="true"/> Proposal history</button></div></div>}
     {recovering&&prepared?.queue_revision!==queue.data?.queue_revision&&<p role="status">The pending set changed. Recover the saved operation before preparing the updated incoming set.</p>}
     {busy&&<p role="status">Preparing the cumulative unmerged snapshot…</p>}
     {error&&<section className="incoming-preparation-error" aria-label="Cumulative review recovery"><div role="alert"><strong>Merge preview unavailable</strong><p>{error}</p></div><p>Combined review is unavailable. Proposal history keeps the original snapshots and saved decisions. An eligible proposal can be reviewed on its own; its own selections and exclusions apply.</p><div className="incoming-actions">{onHistory&&<button onClick={onHistory}>Review saved proposals</button>}<button disabled={busy||queue.loading} onClick={()=>setNonce(value=>value+1)}>Retry cumulative preparation</button></div>{onReviewProposal&&eligibleProposals.map(item=><div key={item.candidate_revision_uuid} className="incoming-actions"><button disabled={busy||queue.loading||!!queue.error||recovering} onClick={()=>onReviewProposal(item.candidate_revision_uuid)}>Review eligible proposal</button><span>{item.source_filename||'Saved incoming proposal'} · {time(item.created_at)} · {number(item.eligible_pending_epoch_count)} eligible epochs</span></div>)}</section>}
     {receiptExport&&<WorkbenchExportDialog protocolId={protocolId} item={{candidate_revision_uuid:receiptExport}} acceptReceipt={drafts.current[receiptExport].receipt} state={drafts.current[receiptExport].exportState||{}} onState={value=>{drafts.current={...drafts.current,[receiptExport]:{...drafts.current[receiptExport],exportState:value}};onSession?.({...snapshot.current,drafts:drafts.current});setDraftVersion(value=>value+1);}} onClose={()=>setReceiptExport(null)} onChanged={reviewProps.onChange}/>}
     {Object.entries(drafts.current).filter(([key])=>key!==prepared?.candidate_revision_uuid).map(([key,value])=><div key={key}>{value.unconfirmed||value.acceptPending?<p role="status">An earlier acceptance needs receipt recovery. <button disabled={!scopes.current[key]} onClick={()=>setPrepared(scopes.current[key])}>Recover earlier acceptance</button></p>:value.receipt&&!value.exportState?.exported?<p>Earlier acceptance saved · {value.receipt.event_uuid} <button onClick={()=>setReceiptExport(key)}>Export accepted additions</button></p>:null}</div>)}
-    {queue.data?.pending_epoch_count===0&&!recovering&&<p role="status">No pending incoming recordings. Saved exclusions remain in your draft.</p>}
-    {prepared?<FrozenIncomingReview {...reviewProps} preparedContextToken={freshContext.current?.token} takePreparedContext={takePreparedContext} mergeRequest={mergeRequest} onMergeRequestHandled={onMergeRequestHandled} onHistory={onHistory} onRefresh={onRefresh} refreshing={refreshing} preserveBrowser pendingCounts={queue.data} externalBusy={busy||!!(queue.loading||queue.error||authorityChanged)&&!recovering} key={prepared.candidate_revision_uuid} protocolId={protocolId} item={{candidate_revision_uuid:prepared.candidate_revision_uuid,protocol_uuid:protocolId}} scopeKind="cumulative_pending" capabilities={queue.data.capabilities} session={draft} onSession={remember}/>:!busy&&!error&&queue.data.pending_epoch_count>0&&<p role="status">Waiting for the authoritative pending queue.</p>}
+    {pending.epochs===0&&!recovering&&<p role="status">No pending incoming recordings. Saved exclusions remain in your draft.</p>}
+    {prepared?<FrozenIncomingReview {...reviewProps} preparedContextToken={freshContext.current?.token} takePreparedContext={takePreparedContext} mergeRequest={mergeRequest} onMergeRequestHandled={onMergeRequestHandled} onHistory={onHistory} onRefresh={onRefresh} refreshing={refreshing} preserveBrowser pendingCounts={queue.data} externalBusy={busy||!!(queue.loading||queue.error||authorityChanged)&&!recovering} key={prepared.candidate_revision_uuid} protocolId={protocolId} item={{candidate_revision_uuid:prepared.candidate_revision_uuid,protocol_uuid:protocolId}} scopeKind="cumulative_pending" capabilities={queue.data.capabilities} session={draft} onSession={remember}/>:!busy&&!error&&pending.epochs>0&&<p role="status">Waiting for the authoritative pending queue.</p>}
     {Object.entries(drafts.current).filter(([key])=>key!==prepared?.candidate_revision_uuid).flatMap(([key,value])=>[...(value.exportState?.completed||[]),...(value.receipt||value.exportState?.exported?[{receipt:value.receipt,exported:value.exportState?.exported}]:[])]).map((value,index)=><p key={value.exported?.dataset_uuid||value.receipt?.event_uuid||index}>{value.receipt&&<>Earlier acceptance · receipt {value.receipt.event_uuid} </>}{value.exported&&<a href={value.exported.download_url} download>{value.exported.name||'Download incoming export'}</a>}</p>)}
   </section>;
 }
