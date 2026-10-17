@@ -245,7 +245,23 @@ class ProtocolWorkbench:
         """A superset alone is insufficient: prove every actual parent transition."""
         seen = set()
         transitions = (self.tables[2] & dict(project_uuid=self.project, protocol_uuid=protocol)).to_dicts()
-        while main['revision_uuid'] != baseline['revision_uuid']:
+        # An undo rebinds main to the exact revision it had before a merge.
+        # Rewind across it to that revision's original binding version.
+        undos = {row['receipt']['binding']['version']: row['receipt'] for row in transitions
+                 if row['receipt'].get('kind') == 'workbench_undo'}
+        def rewind(main, version):
+            for _ in range(1000):
+                undo = undos.get(version)
+                if not undo or undo['binding']['revision_uuid'] != main['revision_uuid']:
+                    break
+                version = undo['restored_binding_version']
+            return version
+        while True:
+            if main['revision_uuid'] == baseline['revision_uuid'] and version == baseline_version:
+                break
+            version = rewind(main, version)
+            if main['revision_uuid'] == baseline['revision_uuid']:
+                break
             identity = main['revision_uuid']
             if identity in seen or len(seen) >= 1000 or main.get('membership_kind') != 'additive_union':
                 return False
@@ -760,6 +776,56 @@ class ProtocolWorkbench:
             self._event(actor, 'workbench_additions_accepted', receipt, receipt['operation_uuid'], event_uuid=receipt['event_uuid'])
         return receipt
 
+    def undo(self, protocol, actor, body):
+        """Restore main to its exact revision before one additive merge.
+
+        Only the latest change to main can be undone: main must still be the
+        revision that merge published. The undone epochs become pending again.
+        """
+        operation = str(uuid.UUID(body['operation_uuid']))
+        if type(body['expected_binding_version']) is not int:
+            raise ValueError('Undo requires the merge receipt binding version')
+        undo_operation = str(uuid.uuid5(uuid.UUID(self.project), 'workbench-undo:' + operation))
+        request_hash = checksum(dict(kind='workbench_undo', protocol_uuid=protocol, actor=actor, **body))
+        existing = self.receipt(undo_operation, actor, request_hash)
+        if existing:
+            return existing
+        rows = (self.tables[2] & dict(project_uuid=self.project, operation_uuid=operation)).to_dicts()
+        merged = rows[0]['receipt'] if rows else None
+        if (not merged or merged.get('protocol_uuid') != protocol or merged.get('kind') == 'workbench_undo'
+                or not merged.get('accepted_epoch_uuids') or not isinstance(merged.get('binding'), dict)):
+            raise ValueError('Only a merge that added epochs can be undone')
+        binding = self.history.protocol_binding_header(protocol)
+        if (not binding or binding['version'] != body['expected_binding_version']
+                or binding['version'] != merged['binding']['version']
+                or binding['revision_uuid'] != merged['binding']['revision_uuid']):
+            raise WorkbenchConflict('Main changed after this merge, so it can no longer be undone safely.')
+        current = self._recipe(binding['revision_uuid'])
+        previous_uuid = current.get('additive_publication', {}).get('previous_revision_uuid')
+        if not previous_uuid or current.get('parent_revision_uuid') != previous_uuid:
+            raise WorkbenchConflict('This merge has no recorded previous main to restore.')
+        previous = self._recipe(previous_uuid)
+        removed = sorted(_members(current).keys() - _members(previous).keys())
+        if removed != sorted(merged['accepted_epoch_uuids']):
+            raise WorkbenchConflict('Main does not match this merge; it cannot be undone safely.')
+        with self.service.dj.conn().transaction:
+            again = self.receipt(undo_operation, actor, request_hash)
+            if again:
+                return again
+            saved = self.history.bind(previous_uuid, protocol, binding['version'], actor,
+                dict(added=[], removed=removed, changed=[]), len(_members(current)),
+                _in_transaction=True, _lock_held=True)
+            receipt = dict(contract_version=1, kind='workbench_undo', operation_uuid=undo_operation,
+                undone_operation_uuid=operation, protocol_uuid=protocol, actor=actor,
+                binding=dict(version=saved['version'], revision_uuid=previous_uuid, event_uuid=saved['event_uuid']),
+                restored_revision_uuid=previous_uuid, restored_binding_version=merged['expected_binding_version'],
+                removed_epoch_uuids=removed, removed_epoch_count=len(removed))
+            self.tables[2].insert1(dict(project_uuid=self.project, operation_uuid=undo_operation, protocol_uuid=protocol,
+                candidate_revision_uuid=merged['candidate_revision_uuid'], actor=actor,
+                request_sha256=request_hash, receipt=receipt))
+            self._event(actor, 'workbench_merge_undone', receipt, undo_operation)
+        return receipt
+
     @staticmethod
     def accept_request_hash(protocol, revision, actor, body):
         return checksum(dict(protocol_uuid=protocol, candidate_revision_uuid=revision, actor=actor, **body))
@@ -1206,6 +1272,14 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         value = body({'expected_version', 'expected_candidate_scope_revision'}, {'decisions', 'selection_mode', 'deferred'})
         with guarded(protocol, revision) as owner:
             return jsonify(public_context(manager.patch(protocol, revision, owner, value)))
+
+    @app.post(root + '/undo')
+    def workbench_undo(protocol):
+        value = body({'operation_uuid', 'expected_binding_version'})
+        with guarded(protocol) as owner:
+            receipt = manager.undo(str(uuid.UUID(protocol)), owner, value)
+            return jsonify(binding=receipt['binding'], restored_revision_uuid=receipt['restored_revision_uuid'],
+                           removed_epoch_count=receipt['removed_epoch_count'], operation_uuid=receipt['operation_uuid'])
 
     @app.post(candidate + '/finish')
     def workbench_finish(protocol, revision):

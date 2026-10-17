@@ -404,6 +404,47 @@ class CumulativePendingTests(unittest.TestCase):
         self.assertEqual(queue['pending_epoch_count'], 0)
         self.assertIn('metadata changed', queue['main_blocked_reason'])
 
+    def undo(self, receipt):
+        return self.case.client.post(self.case.base + '/workbench/undo', json=dict(
+            operation_uuid=receipt['operation_uuid'], expected_binding_version=receipt['binding']['version']), headers=self.case.headers)
+
+    def test_undo_merge_restores_main_and_pending_then_merge_again(self):
+        first, _ = self.more_import()
+        before = self.case.explorer_history.protocol_binding(self.protocol)
+        prepared, _ = self.prepare()
+        prepared = self.patch_draft(prepared, selection_mode='all')
+        receipt = self.accept_selected(prepared)
+        self.assertEqual(self.queue()['pending_epoch_count'], 0)
+        undone = self.undo(receipt)
+        self.assertEqual(undone.status_code, 200, undone.get_json())
+        self.assertEqual(undone.get_json()['removed_epoch_count'], 2)
+        after = self.case.explorer_history.protocol_binding(self.protocol)
+        self.assertEqual(after['revision_uuid'], before['revision_uuid'])
+        self.assertEqual(after['version'], receipt['binding']['version'] + 1)
+        # Undone epochs are pending again, never superseded or conflicting.
+        queue = self.queue()
+        self.assertEqual(queue['pending_epoch_count'], 2)
+        self.assertNotIn('superseded', {item['status'] for item in queue['candidates']})
+        self.assertEqual(self.undo(receipt).get_json(), undone.get_json(), 'undo replay is idempotent')
+        prepared, _ = self.prepare()
+        prepared = self.patch_draft(prepared, selection_mode='all')
+        again = self.accept_selected(prepared)
+        self.assertEqual(sorted(again['accepted_epoch_uuids']), sorted([self.added, first]))
+        self.assertEqual(self.queue()['pending_epoch_count'], 0)
+        # Only the latest change to main can be undone.
+        replayed = self.undo(receipt)  # Its undo receipt replays; it never undoes the re-merge.
+        self.assertEqual(replayed.get_json(), undone.get_json())
+        self.assertEqual(self.queue()['pending_epoch_count'], 0)
+        late, _ = self.more_import()
+        prepared, _ = self.prepare()
+        prepared = self.patch_draft(prepared, selection_mode='all')
+        latest = self.accept_selected(prepared)
+        refused = self.undo(again)
+        self.assertEqual(refused.status_code, 409, refused.get_json())
+        self.assertIn('can no longer be undone', refused.get_json()['error'])
+        self.assertEqual(self.undo(latest).status_code, 200)
+        self.assertEqual(self.queue()['pending_epoch_count'], 1)
+
     def test_prepare_bootstrap_is_response_only_and_replay_reads_fresh_authority(self):
         body = dict(expected_queue_revision=self.queue()['queue_revision'])
         path = self.case.base + '/workbench/prepare'
