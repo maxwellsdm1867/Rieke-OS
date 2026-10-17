@@ -4509,6 +4509,7 @@
               "checkpoint",
               "inspect",
               "load_database",
+              "mirrored_keys",
               "os",
               "pointer_path",
               "storage",
@@ -5361,7 +5362,7 @@
       {
         "file": "python/lifecycle_diagnostic.py",
         "file_sha256": "88ab25a0b97bdd65dab7b3fba42b58ce30165a47be3c07d43efef186cd5c42a3",
-        "reason": "Opt-in observer registration ASTs, fixed module/function targets and observer source are unchanged versus main5aaf0be. WorkspaceService now admits source fingerprints only after exact or bounded converter proof; its source owner witnesses are refreshed. See docs/dev/h5-json-precision-2026-10-09.md. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Dedicated process heap lifecycle: reviewed syntax and targets remain unchanged; owner bytes add explicit refresh and shutdown collector ownership. Recording-rig DTO extension preserves reviewed observer targets and ASTs; combined owner bytes require validation. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md. Binary64 transport review: existing observer and captured method syntax, origins and targets are unchanged; admitted batch route responses now negotiate exact finite binary64 after the same closing guards, with optional fixed-name elapsed timing. See docs/architecture/trace-worker-execution.md. Native trace reader review: reviewed syntax, categories, origins, targets and owner identities remain exact; only trace sample-reading implementation changes. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Foreground trace QoS review: reviewed source, selectors, syntax, categories, origins and targets are unchanged; only WorkspaceService owner bytes add two default-false scheduling keywords and their exact conditional forwarding. Strict whole-file AST equivalence after those four edits is documented in docs/dev/foreground-trace-qos-projection-compatibility-2026-10-15.md. Metadata digest cache review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; WorkspaceService owner bytes only reuse a verified import metadata digest while its file signature is unchanged, mirroring the recording signature cache (projection compatibility receipt metadata-digest-signature-cache-projection-compatibility-2026-10-16). Workbench latency review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; workspace_api owner bytes only lengthen the coalesced recovery-mirror delay so it runs between bursts of activity (close still flushes). Backup quiet-period review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only let any request postpone the coalesced recovery mirror (activity), bounded at 60 s, so its in-process capture does not compete with foreground trace reads.",
+        "reason": "Opt-in observer registration ASTs, fixed module/function targets and observer source are unchanged versus main5aaf0be. WorkspaceService now admits source fingerprints only after exact or bounded converter proof; its source owner witnesses are refreshed. See docs/dev/h5-json-precision-2026-10-09.md. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Dedicated process heap lifecycle: reviewed syntax and targets remain unchanged; owner bytes add explicit refresh and shutdown collector ownership. Recording-rig DTO extension preserves reviewed observer targets and ASTs; combined owner bytes require validation. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md. Binary64 transport review: existing observer and captured method syntax, origins and targets are unchanged; admitted batch route responses now negotiate exact finite binary64 after the same closing guards, with optional fixed-name elapsed timing. See docs/architecture/trace-worker-execution.md. Native trace reader review: reviewed syntax, categories, origins, targets and owner identities remain exact; only trace sample-reading implementation changes. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Foreground trace QoS review: reviewed source, selectors, syntax, categories, origins and targets are unchanged; only WorkspaceService owner bytes add two default-false scheduling keywords and their exact conditional forwarding. Strict whole-file AST equivalence after those four edits is documented in docs/dev/foreground-trace-qos-projection-compatibility-2026-10-15.md. Metadata digest cache review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; WorkspaceService owner bytes only reuse a verified import metadata digest while its file signature is unchanged, mirroring the recording signature cache (projection compatibility receipt metadata-digest-signature-cache-projection-compatibility-2026-10-16). Workbench latency review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; workspace_api owner bytes only lengthen the coalesced recovery-mirror delay so it runs between bursts of activity (close still flushes). Backup quiet-period review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only let any request postpone the coalesced recovery mirror (activity), bounded at 60 s, so its in-process capture does not compete with foreground trace reads. Incremental recovery review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only replace the coalesced recovery-mirror timer and its before_request quiet-period hook with a synchronous incremental backup at each commit point (only changed rows are written).",
         "sites": [
           {
             "selector": "Name:56",
@@ -5402,7 +5403,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "b88e449e7b427d1bc8992d447fe4446d1b09e6e5924b9631154074b9b2412345",
+                "file_sha256": "79a6ec07a5d98eb6696b62ad394e5adbe95c5d52ad5ab723f20e014ea51ef623",
                 "contract_id": null
               }
             ]
@@ -5478,7 +5479,7 @@
       {
         "file": "python/tests/test_recording_workspace.py",
         "file_sha256": "1a1cebf594abfd2ab8466948d187e11a8f3ccf160affce7bd79e4bc7fc33ca40",
-        "reason": "Inject fsync and replace failures through the fixed two-item loop; preserve old JSON bytes and temporary-file cleanup assertions. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
+        "reason": "Inject fsync and replace failures through the fixed two-item loop; preserve old JSON bytes and temporary-file cleanup assertions. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Incremental recovery review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only replace the coalesced recovery-mirror timer and its before_request quiet-period hook with a synchronous incremental backup at each commit point (only changed rows are written).",
         "sites": [
           {
             "selector": "Call:63",
@@ -5502,7 +5503,7 @@
               {
                 "module": "workspace_state_snapshot",
                 "file": "python/workspace_state_snapshot.py",
-                "file_sha256": "a5739d070a735e1aa4588e1051ddb43ec33ea99d99323e88f934f942ef1bfcda",
+                "file_sha256": "9c12410f580905a8f62ad63a0584a934748711e08a2b27909fad6bc32c5ff25b",
                 "contract_id": null
               }
             ]
@@ -5547,8 +5548,8 @@
       },
       {
         "file": "python/tests/test_workspace_annotations.py",
-        "file_sha256": "0f7fd2412e56ba9205120ec077bbf7f49e2452ce9f7249d9e2a98be79c3316a6",
-        "reason": "Freeze monotonic time to verify scoped autocomplete cache contents and reads.",
+        "file_sha256": "36b4927fd63b35f28cd2f2be141f03aa464b20dffce0ebae6c9f54ab294405c7",
+        "reason": "Freeze monotonic time to verify scoped autocomplete cache contents and reads. Incremental recovery review (2026-10-17): the reviewed mock site's syntax, category and target are unchanged; only the HTTP annotation backup test above it now expects a synchronous backup; the site selector is unchanged.",
         "sites": [
           {
             "selector": "Call:135",
@@ -5796,7 +5797,7 @@
       {
         "file": "python/tests/test_workspace_export_boundary.py",
         "file_sha256": "91e363a0f2e0ee82aabfe20b46a48347ffe80fbb289d1b3fedb999fd58ee709d",
-        "reason": "Select protocol/candidate owner in one existing fixture, inject serializer/report faults or alternate artifact paths, and assert publication/failure boundaries. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md. Binary64 transport review: existing observer and captured method syntax, origins and targets are unchanged; admitted batch route responses now negotiate exact finite binary64 after the same closing guards, with optional fixed-name elapsed timing. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Workbench latency review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; workspace_api owner bytes only lengthen the coalesced recovery-mirror delay so it runs between bursts of activity (close still flushes). Backup quiet-period review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only let any request postpone the coalesced recovery mirror (activity), bounded at 60 s, so its in-process capture does not compete with foreground trace reads.",
+        "reason": "Select protocol/candidate owner in one existing fixture, inject serializer/report faults or alternate artifact paths, and assert publication/failure boundaries. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md. Binary64 transport review: existing observer and captured method syntax, origins and targets are unchanged; admitted batch route responses now negotiate exact finite binary64 after the same closing guards, with optional fixed-name elapsed timing. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Workbench latency review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; workspace_api owner bytes only lengthen the coalesced recovery-mirror delay so it runs between bursts of activity (close still flushes). Backup quiet-period review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only let any request postpone the coalesced recovery mirror (activity), bounded at 60 s, so its in-process capture does not compete with foreground trace reads. Incremental recovery review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only replace the coalesced recovery-mirror timer and its before_request quiet-period hook with a synchronous incremental backup at each commit point (only changed rows are written).",
         "sites": [
           {
             "selector": "Assign:7",
@@ -5837,7 +5838,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "b88e449e7b427d1bc8992d447fe4446d1b09e6e5924b9631154074b9b2412345",
+                "file_sha256": "79a6ec07a5d98eb6696b62ad394e5adbe95c5d52ad5ab723f20e014ea51ef623",
                 "contract_id": null
               }
             ]
@@ -5870,7 +5871,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "b88e449e7b427d1bc8992d447fe4446d1b09e6e5924b9631154074b9b2412345",
+                "file_sha256": "79a6ec07a5d98eb6696b62ad394e5adbe95c5d52ad5ab723f20e014ea51ef623",
                 "contract_id": null
               }
             ]
@@ -6439,11 +6440,11 @@
       },
       {
         "file": "python/tests/test_workspace_registered_recovery_policy.py",
-        "file_sha256": "1303549df554b58417186064d622f71a26d844e6d89992f333417a239b0b6755",
-        "reason": "Inject create_app with harmless shared annotations so real registration branches are present when checking registered mutation recovery policy. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch tests add coverage without changing the imported fixture or reviewed mock syntax. Binary64 test-owner review: the existing API test fixture and reviewed method targets remain unchanged; owner bytes add lossless binary transport and timing assertions. Workbench queued-mirror review (2026-10-16): the reviewed create_app injection site is unchanged; the file adds a WORKBENCH_QUEUED table and one test asserting those writes queue the recovery mirror without a synchronous flush.",
+        "file_sha256": "6e84fe271b4a22b05282024e041464591556a191646f9658b241eca92886fe5f",
+        "reason": "Inject create_app with harmless shared annotations so real registration branches are present when checking registered mutation recovery policy. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch tests add coverage without changing the imported fixture or reviewed mock syntax. Binary64 test-owner review: the existing API test fixture and reviewed method targets remain unchanged; owner bytes add lossless binary transport and timing assertions. Workbench queued-mirror review (2026-10-16): the reviewed create_app injection site is unchanged; the file adds a WORKBENCH_QUEUED table and one test asserting those writes queue the recovery mirror without a synchronous flush. Incremental recovery review (2026-10-17): the reviewed module-object site (patch.object(api_fixture, 'create_app', ...) in setUp) has unchanged syntax, category, origin and target; Workbench write cases moved from the queued-mirror expectation back to synchronous checkpointing with a 507 failure case, and the scheduler double lost one counter, so its ordinal selector moves from Name:36 to Name:35.",
         "sites": [
           {
-            "selector": "Name:36",
+            "selector": "Name:35",
             "ast_sha256": "80a06728f1dd21087b431bbb71541183d4513416d056fc13435c93992abd35d8",
             "category": "test-module-object",
             "origins": [

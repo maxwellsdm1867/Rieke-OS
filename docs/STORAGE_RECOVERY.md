@@ -25,22 +25,24 @@ cannot change a pin during recovery. Older query-based backups remain readable
 and must reproduce their recorded membership digest before restore succeeds.
 
 Direct cell/epoch tag edits commit their current rows and an append-only change
-event together in MySQL. The API acknowledges that database commit immediately;
-it does not wait for a separate recovery copy or a page refresh. A burst of tag
-edits queues one background recovery capture after one second of inactivity,
-with a five-second maximum scheduling delay while edits continue. Lock contention
-or a failed capture can extend that delay. The response and `/api/backup/status`
-report pending, running, current, or degraded backup state. Normal database crash
-recovery still preserves acknowledged commits; loss of the database before the
-independent capture finishes can lose those newest edits from the recovery copy.
-Clean project close forces the recovery capture and refuses to finish if it fails.
+event together in MySQL. Right after that commit, before the reply, the same
+request updates the independent recovery copy; there is no background timer or
+scheduling delay. The response and `/api/backup/status` report current or
+degraded backup state. A failed recovery write does not undo the committed edit:
+the reply reports the degraded backup and the next edit or project close retries.
+Normal database crash recovery still preserves acknowledged commits; if the app
+stops between the commit and the recovery write, the next startup capture
+covers that edit. Clean project close forces the recovery capture and refuses to
+finish if it fails.
 
 On supported native databases, a verified change tracker copies only changed
-records into that recovery database. Rows and the coverage watermark commit
-together. An unknown change gap, changed schema/server identity, or unsupported
-database requires a full current-state capture. Other successful mutations still
-wait for the recovery write; a failed write returns `507` with `saved: true` and
-must not be blindly replayed as a new edit.
+records into that recovery database, for tags, curation and Workbench writes
+alike, so each recovery write scales with the edit rather than the project.
+Rows and the coverage watermark commit together. An unknown change gap, changed
+schema/server identity, changed registered sources, or unsupported database
+requires a full current-state capture. Other successful mutations, including
+Workbench steps, wait for the recovery write; a failed write returns `507` with
+`saved: true` and must not be blindly replayed as a new edit.
 
 Startup and recovery captures also create a write-once checkpoint for the active
 UTC day under `backups/app-state/checkpoint-v2-YYYY-MM-DD.sqlite`. It records the

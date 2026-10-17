@@ -267,7 +267,7 @@ class SharedAnnotationTests(unittest.TestCase):
         self.store.on_commit.assert_called_once_with()
         self.assertEqual(result['event_uuid'],self.case.events.rows[0]['event_uuid'])
 
-    def test_http_annotation_ack_queues_backup_and_reports_failure_independently(self):
+    def test_http_annotation_ack_backs_up_synchronously_and_reports_failure_independently(self):
         from unittest.mock import Mock
         save=Mock();self.service.dj.Schema=object()
         with patch('workspace_state_snapshot.save',save), \
@@ -275,7 +275,7 @@ class SharedAnnotationTests(unittest.TestCase):
             app=create_app(self.case.temp.name,self.case.temp.name,service=self.service,store=self.case.store,
                 explorer_history=self.case.explorer_history,data_stores=self.case.data_stores,
                 protocol_suggestions=self.case.protocol_suggestions,shared_annotations=self.store)
-        scheduler=app.extensions['backup_scheduler'];scheduler.delay=60;scheduler.max_delay=60
+        scheduler=app.extensions['backup_scheduler']
         self.addCleanup(lambda:scheduler.close(flush=False))
         self.addCleanup(app.extensions['app_state_session_lock'].close)
         save.reset_mock();client=app.test_client()
@@ -284,15 +284,23 @@ class SharedAnnotationTests(unittest.TestCase):
         response=client.post('/api/annotations',json=body,headers=self.headers)
         self.assertEqual(response.status_code,200,response.get_json())
         self.assertEqual(response.get_json()['persistence']['database'],'committed')
-        self.assertEqual(response.get_json()['persistence']['backup']['status'],'pending')
-        save.assert_not_called()
+        # The commit callback updated the mirror before the reply: no delay.
+        save.assert_called_once()
+        self.assertEqual(response.get_json()['persistence']['backup']['status'],'current')
         self.assertEqual(self.records.rows[0]['tags'],['committed'])
         self.assertEqual(self.case.events.rows[0]['event_uuid'],response.get_json()['event_uuid'])
         save.side_effect=OSError('Disk full')
-        with self.assertRaises(OSError):scheduler.flush()
+        body={**body,'tags_add':['second'],'expected_revisions':{self.first:1}}
+        with self.assertLogs(app.logger,level='ERROR'):
+            response=client.post('/api/annotations',json=body,headers=self.headers)
+        # Saved to SQL; the independent backup failure is reported, not hidden.
+        self.assertEqual(response.status_code,200,response.get_json())
+        self.assertEqual(response.get_json()['persistence']['database'],'committed')
+        self.assertEqual(response.get_json()['persistence']['backup']['status'],'degraded')
+        self.assertEqual(response.get_json()['persistence']['backup']['last_error'],'Disk full')
         self.assertEqual(client.get('/api/backup/status').get_json()['status'],'degraded')
         self.assertEqual(client.post('/api/annotations',json=body,headers=self.headers).status_code,409)
-        self.assertEqual(scheduler.status()['requested_sequence'],1)
+        self.assertEqual(scheduler.status()['requested_sequence'],2)
         save.side_effect=None;scheduler.flush()
         self.assertEqual(client.get('/api/backup/status').get_json()['status'],'current')
 
