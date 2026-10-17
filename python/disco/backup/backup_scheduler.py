@@ -11,7 +11,7 @@ class BackupScheduler:
         self.capture=capture; self.database_lock=database_lock
         self.delay=delay; self.max_delay=max_delay; self.retry_delay=retry_delay; self.logger=logger
         self.condition=threading.Condition(); self.requested=0; self.completed=0
-        self.first_dirty=None; self.last_dirty=None; self.retry_at=0.0
+        self.first_dirty=None; self.last_dirty=None; self.retry_at=0.0; self.last_activity=None
         self.running=False; self.stopped=False; self.last_error=None; self.last_success=None
         self.worker=threading.Thread(target=self._work,name='workspace-state-backup',daemon=True)
         self.worker.start()
@@ -24,6 +24,16 @@ class BackupScheduler:
             self.last_dirty=now
             if self.stopped:self.last_error='Backup worker is stopped; flush before closing'
             self.condition.notify_all()
+
+    def activity(self):
+        """Note foreground work. The capture runs in this process, so it waits
+        for a quiet period instead of competing with requests in flight."""
+        with self.condition:
+            self.last_activity=time.monotonic()
+
+    def _deadline(self):
+        quiet=max(self.last_dirty,self.last_activity or self.last_dirty)
+        return max(self.retry_at,min(quiet+self.delay,self.first_dirty+self.max_delay))
 
     def status(self):
         with self.condition:
@@ -68,7 +78,7 @@ class BackupScheduler:
                 if self.stopped:return
                 if self.requested==self.completed:
                     self.condition.wait(); continue
-                deadline=max(self.retry_at,min(self.last_dirty+self.delay,self.first_dirty+self.max_delay))
+                deadline=self._deadline()
                 remaining=deadline-time.monotonic()
                 if remaining>0:self.condition.wait(remaining); continue
             with self.database_lock:
@@ -76,7 +86,7 @@ class BackupScheduler:
                     if self.stopped:return
                     if self.requested==self.completed:continue
                     # A newer edit may have arrived while waiting for SQL.
-                    deadline=max(self.retry_at,min(self.last_dirty+self.delay,self.first_dirty+self.max_delay))
+                    deadline=self._deadline()
                     if time.monotonic()<deadline:continue
                 try:self._capture_locked()
                 except Exception:

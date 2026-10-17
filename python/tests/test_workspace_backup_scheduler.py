@@ -27,6 +27,20 @@ class BackupSchedulerTests(unittest.TestCase):
         scheduler.flush()
         self.assertEqual(capture.call_count,2)
 
+    def test_requests_in_flight_postpone_capture_until_quiet_but_not_past_max_delay(self):
+        capture=Mock();scheduler=self.scheduler(capture,delay=.1,max_delay=5)
+        scheduler.request()
+        for _ in range(6):  # Foreground reads keep arriving: no capture yet.
+            time.sleep(.05);scheduler.activity()
+        self.assertEqual(capture.call_count,0)
+        self.wait_for(lambda:capture.call_count==1)  # Then a quiet period lets it run.
+        bounded=Mock();busy=self.scheduler(bounded,delay=.1,max_delay=.25)
+        busy.request();started=time.monotonic()
+        while bounded.call_count==0 and time.monotonic()-started<2:
+            time.sleep(.02);busy.activity()  # Constant activity cannot postpone it forever.
+        self.assertEqual(bounded.call_count,1)
+        self.assertLess(time.monotonic()-started,1)
+
     def test_failed_backup_is_visible_and_flush_retries(self):
         capture=Mock(side_effect=[OSError('Disk full'),None])
         scheduler=self.scheduler(capture,delay=.01,retry_delay=10)
