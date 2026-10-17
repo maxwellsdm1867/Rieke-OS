@@ -89,3 +89,20 @@
   .pi-date-list{grid-template-columns:7px minmax(0,1fr) max-content}
   .pi-date-track{display:none}
 }
+
+/* Flat hero, one number size and readable field text. The accent color alone
+   marks the cell count; equal sizes keep all four values on one baseline. */
+.pi-cohort-summary{background:var(--surface)}
+.pi-metrics>div>span{font-size:13px}
+.pi-metrics>div>strong,.pi-metrics>div:first-child>strong,.pi-metrics>div:last-child>strong{font-size:36px;letter-spacing:-1px}
+.protocol-infographic small,.pi-metrics>div>small{font-size:12px}
+.protocol-infographic>header,.pi-scope-note{font-size:13px}
+.pi-scope{font-size:12px}
+.pi-section-title h3{font-size:15px}
+.pi-date-identity strong,.pi-date-count{font-size:13px}
+.pi-inventory,.pi-export-history summary{font-size:13px}
+@container (max-width:470px){
+  .pi-metrics>div>strong,.pi-metrics>div:first-child>strong,.pi-metrics>div:last-child>strong{font-size:28px}
+}
+/* The scope note continues the file-count phrase; drop the flex gap before its "·". */
+.pi-source-size>small:last-child{margin-left:-4px}

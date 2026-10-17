@@ -76,3 +76,10 @@
   .cell-type-accordions-summary .cell-type-toggle .cell-type-count{font-size:30px}
 }
 .cell-type-summary-part{white-space:nowrap}
+
+/* Readable summary rows; a fixed count track keeps names aligned across rows. */
+.cell-type-accordions-summary .cell-type-toggle .cell-type-count{min-width:2ch}
+.cell-type-accordions-summary .cell-type-toggle .cell-type-name{font-size:15px}
+.cell-type-accordions-summary .cell-type-toggle .cell-type-name>small{font-size:12px}
+.cell-type-summary-detail{font-size:13px;font-weight:400}
+.cell-type-accordions-summary .cell-type-disclosure{font-size:13px}
