@@ -1057,7 +1057,8 @@ class WorkbenchTests(unittest.TestCase):
             query_excluded=True, archived=False, frozen=False, version=1, updated_at=None,
             actor='actor-one', server_actor='actor-one', reason='test'))
         queue = self.case.client.get(self.case.base + '/workbench').get_json()
-        self.assertEqual(queue['pending_epoch_count'], 2)
+        # Pending lists only mergeable epochs; the excluded recording's epoch is not offered.
+        self.assertEqual(queue['pending_epoch_count'], 1)
         self.assertEqual(queue['eligible_pending_epoch_count'], 1)
         root = self.case.base + '/workbench/candidates/' + revision
         context = self.get_context(root)

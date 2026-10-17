@@ -73,12 +73,12 @@ def snapshot_authority(manager, protocol, actor, *, query_revision_guard=None):
     for row in sorted(manager.original_records(protocol), key=lambda row: row['summary']['candidate_revision_uuid']):
         context = manager.context(protocol, row['summary']['candidate_revision_uuid'], actor,
             query_revision_guard=query_revision_guard)
-        if not context['pending'] or manager.superseded(context):
+        # Only mergeable epochs enter the combined review; a proposal that
+        # cannot publish contributes nothing instead of refusing preparation.
+        mergeable = manager.mergeable(context)
+        if not mergeable:
             continue
-        if (not context['valid_base'] or context['annotation_changed'] or context['base_conflicts']
-                or context['main_conflicts'] or context['conflicts'] or context['unavailable'] & context['pending'].keys()):
-            raise WorkbenchConflict('An unmerged original proposal has stale authority or conflicting fingerprints; reconcile it before cumulative preparation')
-        for identity, fingerprint in context['pending'].items():
+        for identity, fingerprint in ((key, context['pending'][key]) for key in sorted(mergeable)):
             if identity in pending and pending[identity] != fingerprint:
                 raise WorkbenchConflict('Original incoming proposals disagree on a native epoch fingerprint')
             pending[identity] = fingerprint
@@ -120,7 +120,12 @@ def draft_carry(manager, protocol, actor, pending):
             if pending.get(identity) != decision['metadata_hash']:
                 continue
             if identity in merged and any(merged[identity][field] != decision[field] for field in ('selected', 'reviewed', 'excluded')):
-                raise WorkbenchConflict('Historical actor review decisions disagree; reconcile them before cumulative preparation')
+                # Overlapping proposals disagree: leaving an epoch out wins, and
+                # it is never silently selected.
+                earlier = merged[identity]
+                excluded = bool(earlier['excluded'] or decision['excluded'])
+                decision = dict(decision, excluded=excluded, selected=False if excluded else bool(earlier['selected'] and decision['selected']),
+                                reviewed=bool(earlier['reviewed'] and decision['reviewed']))
             merged[identity] = decision
     return dict(deferred=deferred), merged, witnesses
 

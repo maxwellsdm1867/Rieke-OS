@@ -368,6 +368,42 @@ class CumulativePendingTests(unittest.TestCase):
         self.assertEqual(preview.status_code, 409, preview.get_json())
         self.assertIn('newer saved query', preview.get_json()['error'])
 
+    def test_finish_review_leaves_remaining_out_until_new_data_arrives(self):
+        first, _ = self.more_import()
+        prepared, _ = self.prepare()
+        self.assertEqual(self.epochs(prepared), {self.added, first})
+        # Merge one, then finish: the rest is left out and nothing stays pending.
+        prepared = self.patch_draft(prepared, [dict(epoch_uuid=self.added, selected=True, reviewed=True)])
+        self.accept_selected(prepared)
+        prepared, _ = self.prepare()
+        root, context = '/api' + prepared['root'], prepared['context']
+        fences = dict(expected_version=context['draft']['draft_version'], expected_candidate_scope_revision=context['candidate_scope_revision'])
+        stale = self.case.client.post(root + '/finish', json={**fences, 'expected_version': fences['expected_version'] + 1}, headers=self.case.headers)
+        self.assertEqual(stale.status_code, 409, stale.get_json())
+        finished = self.case.client.post(root + '/finish', json=fences, headers=self.case.headers)
+        self.assertEqual(finished.status_code, 200, finished.get_json())
+        self.assertEqual(self.queue()['pending_epoch_count'], 0)
+        # Left-out epochs stay out across later preparations; new data still appears.
+        late, _ = self.more_import()
+        queue = self.queue()
+        self.assertEqual(queue['pending_epoch_count'], 1)
+        prepared, _ = self.prepare()
+        decisions = {item['epoch_uuid']: item for item in prepared['context']['draft']['decisions']}
+        self.assertTrue(decisions[first]['excluded'])
+        self.assertFalse(decisions.get(late, {}).get('excluded'))
+        self.assertEqual(prepared['context']['counts']['excluded_epochs'], 1)
+        original = '/api' + self.case.base.removeprefix('/api') + '/workbench/candidates/' + self.revision
+        refused = self.case.client.post(original + '/finish', json=fences, headers=self.case.headers)
+        self.assertEqual(refused.status_code, 400, refused.get_json())
+
+    def test_main_level_blocker_offers_nothing_and_names_the_reason(self):
+        main = self.case.explorer_history.protocol_binding(self.protocol)['recipe']
+        drifted = main['epochs'][0]['uuid']
+        self.case.service._fingerprints[drifted] = 'e' * 64
+        queue = self.queue()
+        self.assertEqual(queue['pending_epoch_count'], 0)
+        self.assertIn('metadata changed', queue['main_blocked_reason'])
+
     def test_prepare_bootstrap_is_response_only_and_replay_reads_fresh_authority(self):
         body = dict(expected_queue_revision=self.queue()['queue_revision'])
         path = self.case.base + '/workbench/prepare'
@@ -580,11 +616,14 @@ class CumulativePendingTests(unittest.TestCase):
         self.assertFalse(grown['context']['draft']['decisions'])
         self.case.service._fingerprints[new] = 'c' * 64
         before = len(self.case.explorer_revisions.rows)
-        # Changed native fingerprint is visible as a blocked origin; no invented
-        # winner is persisted into a new aggregate snapshot.
-        response = self.case.client.post(self.case.base + '/workbench/prepare', json=dict(expected_queue_revision=self.queue()['queue_revision']), headers=self.case.headers)
-        self.assertEqual(response.status_code, 409, response.get_json())
-        self.assertEqual(len(self.case.explorer_revisions.rows), before)
+        # A changed native fingerprint is not mergeable, so it is not pending
+        # and never enters the combined review under an invented value.
+        queue = self.queue()
+        self.assertNotIn(new, {key for item in queue['candidates'] for key in ()})
+        self.assertEqual(queue['pending_epoch_count'], 1)
+        response = self.case.client.post(self.case.base + '/workbench/prepare', json=dict(expected_queue_revision=queue['queue_revision']), headers=self.case.headers)
+        self.assertIn(response.status_code, (200, 201), response.get_json())
+        self.assertEqual(self.epochs(response.get_json()), {self.added})
 
     def test_prepare_carries_actor_original_review_once_and_atomic_receipt_failure_rolls_back(self):
         context = self.get_context()
@@ -633,7 +672,7 @@ class CumulativePendingTests(unittest.TestCase):
             'candidate_scope_revision': prepared['candidate_scope_revision']})
         self.assertEqual(response.status_code, 409, response.get_json())
 
-    def test_conflicting_original_actor_flags_and_conflicting_fingerprints_refuse_without_writes(self):
+    def test_disagreeing_original_flags_leave_epoch_out_and_changed_fingerprint_uses_fresh_proposal(self):
         self.more_import()
         contexts = []
         for row in self.manager.original_records(self.protocol):
@@ -645,21 +684,21 @@ class CumulativePendingTests(unittest.TestCase):
             response = self.case.client.patch(root + '/draft', json=dict(expected_version=0,
                 expected_candidate_scope_revision=context['candidate_scope_revision'], decisions=[decision]), headers=self.case.headers)
             self.assertEqual(response.status_code, 200, response.get_json())
-        before = copy.deepcopy([table.rows for table in self.case.connection.tables])
-        response = self.case.client.post(self.case.base + '/workbench/prepare', json=dict(expected_queue_revision=self.queue()['queue_revision']), headers=self.case.headers)
-        self.assertEqual(response.status_code, 409, response.get_json())
-        self.assertIn('Historical', response.get_json()['error'])
-        self.assertEqual([table.rows for table in self.case.connection.tables], before)
+        # Overlapping proposals disagree: leaving the epoch out wins, never selection.
+        prepared, _ = self.prepare()
+        decision = next(item for item in prepared['context']['draft']['decisions'] if item['epoch_uuid'] == self.added)
+        self.assertTrue(decision['excluded'])
+        self.assertFalse(decision['selected'])
         # A later original can contain the SAME native UUID with a new value.
-        # The old immutable witness must then block, never silently win or lose.
+        # Old proposals no longer match it and contribute nothing; the fresh
+        # proposal offers the current value, never an invented winner.
         self.case.service._fingerprints[self.added] = 'c' * 64
         baselines = self.case.protocol_suggestions.freeze_baselines('actor-one', self.manager.state)
         result = self.case.protocol_suggestions.rerun(baselines, 'changed-source', 'changed.h5', 'actor-one')
         self.assertEqual(result['counts']['created_count'], 1, result)
-        before = copy.deepcopy([table.rows for table in self.case.connection.tables])
-        response = self.case.client.post(self.case.base + '/workbench/prepare', json=dict(expected_queue_revision=self.queue()['queue_revision']), headers=self.case.headers)
-        self.assertEqual(response.status_code, 409, response.get_json())
-        self.assertEqual([table.rows for table in self.case.connection.tables], before)
+        fresh, _ = self.prepare()
+        recipe = self.manager.history.get(fresh['candidate_revision_uuid'])['recipe']
+        self.assertEqual({row['uuid']: row['metadata_hash'] for row in recipe['epochs']}[self.added], 'c' * 64)
 
     def test_recovery_receipt_root_retains_nonparent_original_origin_and_missing_origin_refuses(self):
         from pathlib import Path

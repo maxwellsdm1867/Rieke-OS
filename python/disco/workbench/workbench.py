@@ -421,13 +421,37 @@ class ProtocolWorkbench:
                 and context['expected_binding_version'] > summary['baseline_binding_version'])
 
     @staticmethod
+    def main_blocked(context):
+        """Main itself cannot take additions: its saved epochs' metadata changed or
+        one of its recordings is excluded. Applies to every proposal alike."""
+        if context['main_conflicts']:
+            return 'Main contains epochs whose recorded metadata changed; save the query again to update main.'
+        if context['blocked_main']:
+            return 'Main contains epochs from a recording that is excluded from queries; include it again in Data stores.'
+        return None
+
+    def mergeable(self, context):
+        """The pending epochs this proposal can actually add to main right now.
+
+        A proposal that cannot publish contributes nothing, so pending never
+        lists an epoch that a merge would refuse.
+        """
+        if (self.superseded(context) or not context['valid_base'] or context['annotation_changed']
+                or self.main_blocked(context)):
+            return set()
+        return {key for key in context['pending']
+                if key not in context['ineligible'] and key not in context['unavailable']}
+
+    @staticmethod
     def check_scope(context, expected):
         if not isinstance(expected, str) or expected != context['candidate_scope_revision']:
             raise WorkbenchConflict('Candidate, main, sources, annotations or draft changed; reload the frozen context')
 
     @staticmethod
     def publishable(context, selected):
-        if context['base_conflicts'] or context['main_conflicts'] or selected & (context['unavailable'] | context['conflicts']):
+        # base_conflicts describe main epochs inside the proposal's own frozen
+        # snapshot; additions carry the current main forward unchanged.
+        if context['main_conflicts'] or selected & (context['unavailable'] | context['conflicts']):
             raise WorkbenchConflict('Frozen epoch fingerprints changed or are unavailable; explicit reconciliation required')
         if selected & context['ineligible'] or context['blocked_main']:
             raise WorkbenchConflict('Source eligibility blocks publication; reconcile excluded sources explicitly')
@@ -510,6 +534,36 @@ class ProtocolWorkbench:
                 row = dict(**key, **item)
                 (self.tables[1].update1 if item['epoch_uuid'] in context['decisions'] else self.tables[1].insert1)(row)
         return self.context(protocol, revision, actor)
+
+    def finish(self, context, body):
+        """Finish a cumulative review: leave out every epoch still pending.
+
+        Left-out epochs keep their exclusion across later preparations until
+        the user re-allows them; main is unchanged.
+        """
+        if context['summary'].get('kind') != 'workbench_pending_union':
+            raise ValueError('Finish review applies to the combined incoming review')
+        self.check_scope(context, body['expected_candidate_scope_revision'])
+        if type(body['expected_version']) is not int or body['expected_version'] != context['draft_version']:
+            raise WorkbenchConflict('Review draft version changed')
+        key = self.key(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor'])
+        remaining = sorted(identity for identity in context['pending'] if not self.decision(context, identity)['excluded'])
+        with self.service.dj.conn().transaction:
+            current, _ = self.draft(key)
+            if current['version'] != context['draft_version']:
+                raise WorkbenchConflict('Review draft version changed')
+            draft = dict(**key, version=context['draft_version'] + 1, selection_mode='selected', deferred=context['deferred'])
+            (self.tables[0].update1 if context['draft_version'] else self.tables[0].insert1)(draft)
+            for identity in remaining:
+                saved = context['decisions'].get(identity, {})
+                valid = saved.get('metadata_hash') == context['incoming'][identity]
+                row = dict(**key, epoch_uuid=identity, metadata_hash=context['incoming'][identity], selected=False,
+                           reviewed=bool(saved.get('reviewed')) if valid else False, excluded=True)
+                (self.tables[1].update1 if identity in context['decisions'] else self.tables[1].insert1)(row)
+            self._event(context['actor'], 'workbench_review_finished', dict(protocol_uuid=context['protocol_uuid'],
+                candidate_revision_uuid=context['candidate_revision_uuid'], left_out_epoch_count=len(remaining),
+                left_out_epoch_uuids=remaining), str(uuid.uuid4()))
+        return self.context(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor'])
 
     def selection_manifest(self, context, token, *, complete=True):
         if not isinstance(token, str):
@@ -795,6 +849,7 @@ class ProtocolWorkbench:
                     review_header, cumulative_decisions = {}, None
                     historical_conflict = True
             raw_pending = {}
+            main_reason = None
             def excluded(context, key):
                 if cumulative_decisions is None:
                     return self.decision(context, key)['excluded']
@@ -810,15 +865,17 @@ class ProtocolWorkbench:
                 raw_pending.update(pending_now)
                 accepted_receipts = (self.tables[2] & dict(project_uuid=self.project, protocol_uuid=protocol,
                     candidate_revision_uuid=revision)).to_dicts()
-                eligible = set(pending_now) - context['ineligible'] - context['unavailable'] - context['conflicts']
-                eligible = {key for key in eligible if not excluded(context, key)}
-                blocked = not superseded and (not context['valid_base'] or context['annotation_changed'] or bool(context['conflicts'] or context['unavailable'] or context['blocked_main']))
+                eligible = {key for key in self.mergeable(context) if not excluded(context, key)}
+                main_reason = main_reason or self.main_blocked(context)
+                blocked = not superseded and (not context['valid_base'] or context['annotation_changed'] or bool(main_reason))
                 status = (('superseded' if context['pending'] else 'covered') if superseded else
                           'conflict' if blocked else 'source_blocked' if context['ineligible'] else
                           'accepted' if not context['pending'] and accepted_receipts else
                           'covered' if not context['pending'] else 'deferred' if context['deferred'] else
                           'pending' if context['main_revision_uuid'] == context['baseline_revision_uuid'] else 'pending_rebased')
-                unmerged = {key for key in pending_now if not excluded(context, key)}
+                # Only mergeable epochs are pending; anything a merge would refuse
+                # is not offered at all.
+                unmerged = eligible
                 pending |= unmerged
                 for key in unmerged:
                     saved_cell = row['summary'].get('incoming_cell_uuids', {}).get(key)
@@ -829,7 +886,7 @@ class ProtocolWorkbench:
                 if not blocked:
                     eligible_union |= eligible
                 items.append(dict(**{key: value for key, value in row['summary'].items() if key != 'incoming_cell_uuids'},
-                    status=status, pending_epoch_count=len(unmerged), eligible_pending_epoch_count=len(eligible) if not blocked else 0,
+                    status=status, pending_epoch_count=len(unmerged), eligible_pending_epoch_count=len(eligible),
                     candidate_scope_revision=context['candidate_scope_revision'], draft_version=context['draft_version']))
                 witnesses.append(context['candidate_scope_revision'])
             # Initializing a draft must not create a queue-refresh/prepare feedback
@@ -860,7 +917,7 @@ class ProtocolWorkbench:
                 pending_cell_count=len(set(cell_ids.values())) if pending <= cell_ids.keys() else None,
                 pending_cell_count_available=pending <= cell_ids.keys(), eligible_pending_epoch_count=len(eligible_union),
                 eligible_pending_cell_count=len({self.service.rows[key]['cell_uuid'] for key in eligible_union}),
-                queue_revision=revision, next_cursor=next_cursor, total_candidate_count=len(items),
+                main_blocked_reason=main_reason, queue_revision=revision, next_cursor=next_cursor, total_candidate_count=len(items),
                 capabilities=dict(frozen_browse=True, drafts=True, additive_accept=True,
                     incoming_export=getattr(self, 'incoming_export', False),
                     cumulative_pending_browse=getattr(self, 'cumulative_pending_browse', False), initial_page=True))
@@ -1149,6 +1206,12 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         value = body({'expected_version', 'expected_candidate_scope_revision'}, {'decisions', 'selection_mode', 'deferred'})
         with guarded(protocol, revision) as owner:
             return jsonify(public_context(manager.patch(protocol, revision, owner, value)))
+
+    @app.post(candidate + '/finish')
+    def workbench_finish(protocol, revision):
+        value = body({'expected_version', 'expected_candidate_scope_revision'})
+        with guarded(protocol, revision) as owner:
+            return jsonify(public_context(manager.finish(manager.context(protocol, revision, owner), value)))
 
     @app.post(candidate + '/preview')
     def workbench_preview(protocol, revision):
