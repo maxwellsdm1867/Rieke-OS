@@ -1793,7 +1793,7 @@
       ]
     },
     "src/incoming-workbench/ui/IncomingWorkbench.jsx": {
-      "fingerprint": "83fb82cbe57a421f40f8d16ed00456290e5454c371af61aa474c428865b2d083",
+      "fingerprint": "fde541e5251fb62dec465296108792a58a196a2ac10dd5e7e9b414e56044fceb",
       "sites": [
         {
           "owner": "IncomingWorkbench",
@@ -1802,7 +1802,7 @@
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement.",
+      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Superseded-proposal review (2026-10-16): the queue filter hides the new backend superseded status like covered/accepted, and the status label names it; no effect sites, dependencies or authority changed.",
       "tests": [
         "src/workbenchSessionLifecycle.test.js",
         "src/incomingWorkbenchStrictMode.test.js",
