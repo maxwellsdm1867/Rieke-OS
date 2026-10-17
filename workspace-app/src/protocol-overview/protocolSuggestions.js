@@ -94,9 +94,11 @@ const safeCount=value=>Number.isSafeInteger(value)&&value>=0?value:null;
 
 // Main counts as the infographic shows them: each cell UUID once, and the
 // protocol's epoch total. Incomplete cell summaries are unknown, not partial.
+// A project overview protocol row has no cell list; its counts.cells is the
+// same deduplicated cell count, so it is used only when no list is present.
 export function mainProtocolCounts(data){
-  const cells=Array.isArray(data?.cells)&&data.cells.every(cell=>cell?.cell_uuid||cell?.uuid)
-    ?new Set(data.cells.map(cell=>cell.cell_uuid||cell.uuid)).size:null;
+  const cells=Array.isArray(data?.cells)?(data.cells.every(cell=>cell?.cell_uuid||cell?.uuid)
+    ?new Set(data.cells.map(cell=>cell.cell_uuid||cell.uuid)).size:null):safeCount(data?.counts?.cells);
   return {cells,epochs:safeCount(data?.counts?.epochs)};
 }
 
@@ -136,4 +138,27 @@ export function pendingProtocolSuggestion(queue,main,protocolId){
 export function mergeAllRequest(suggestion){
   if(suggestion?.merge_all!==true||suggestion.can_merge!==true||!(suggestion.pending_epoch_count>0)||typeof suggestion.queue_revision!=='string'||!suggestion.queue_revision)return null;
   return {kind:'merge_all',queue_revision:suggestion.queue_revision,origin:'protocol-overview'};
+}
+
+// A /workbench/summary row carries exactly the per-protocol queue fields the
+// Overview card reads, so the row plus the summary's contract version is that
+// protocol's queue. Anything else (wrong contract, missing row) is no queue.
+export function summaryProtocolQueue(summary,protocolId){
+  if(summary?.contract_version!==1||!Array.isArray(summary.workbench_counts)||typeof protocolId!=='string'||!protocolId)return null;
+  const row=summary.workbench_counts.find(item=>item?.protocol_uuid===protocolId);
+  return row?{...row,contract_version:1}:null;
+}
+
+// Review imported data: one card per protocol with mergeable pending data,
+// built by the same pendingProtocolSuggestion as the Overview card, with the
+// project overview's protocol row as Main. Pinned protocols come first in
+// sidebar rank order; zero/unknown pending or a blocked Main shows no card.
+export function importReviewCards({summary,protocols=[],preferences={}}){
+  const rank=item=>preferences?.[item.protocol_uuid]?.rank??999;
+  const rows=[...protocols].filter(item=>typeof item?.protocol_uuid==='string').sort((a,b)=>rank(a)-rank(b)).map(protocol=>{
+    const queue=summaryProtocolQueue(summary,protocol.protocol_uuid),card=pendingProtocolSuggestion(queue,protocol,protocol.protocol_uuid);
+    return card&&!card.blocked?{protocol,queue,main:protocol,card}:null;
+  }).filter(Boolean);
+  const pinned=rows.filter(row=>preferences?.[row.protocol.protocol_uuid]?.section==='pinned'),other=rows.filter(row=>!pinned.includes(row));
+  return {pinned,other,ready:rows.length,pinnedReady:pinned.length};
 }

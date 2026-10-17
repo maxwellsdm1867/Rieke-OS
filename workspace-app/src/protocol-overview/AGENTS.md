@@ -25,6 +25,8 @@ The Overview match card follows the cumulative queue's mergeable pending counts
 and offers Inspect plus the shared one-second Hold to merge all (see "Direct held
 recording merge"); it has no click-to-merge or cumulative-preview button. The
 infographic Needs review tile counts mergeable pending cells from /workbench/summary.
+Review imported data renders the same card per pending protocol from those summary
+rows (`importReviewCards`), with the overview protocol row as Main.
 Network failure preserves error/retry and already-confirmed partial outcomes rather
 than silently treating an uncertain operation as absent.
 

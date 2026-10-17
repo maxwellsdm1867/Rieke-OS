@@ -258,7 +258,9 @@ sends `merge_all` with the queue revision shown; `sourceMerge.startAll` runs
 prepare -> draft all -> preview all -> accept under the same owner token and recovery
 identity. A verified receipt retires the card for that queue revision; uncertain
 outcomes keep it. `main_blocked_reason` replaces the card with one quiet sentence.
-Import review cards keep the per-recording `merge_source` hold.
+Review imported data shows this same card (import view) for each protocol with
+mergeable pending epochs, built by `importReviewCards` from `/workbench/summary`
+rows; its hold sends the same `merge_all` request. It has no per-recording cards.
 
 Cumulative review offers Finish review: after confirmation it POSTs
 `.../candidates/<id>/finish` with the current scope and draft version, leaving the

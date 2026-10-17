@@ -20,24 +20,34 @@ for(const entry of ['Main match card','import page'])test(`actual App ${entry} w
  }finally{await h.close();}
 });
 
-test('held import source merges without entering Workbench and opens Overview only after receipt',async()=>{
+// Import review cards are the Overview card from /workbench/summary rows: the
+// hold sends the same merge_all request (one POST merge-all with the row's queue
+// revision) and the verified receipt shows the corner Undo toast.
+test('held import review card merges all pending epochs with one request and shows Undo',async()=>{
+ const {importReviewCards,mergeAllRequest}=await import('./protocol-overview/protocolSuggestions.js');
  const h=await createWorkflowHarness();h.fixture.route={page:'import',key:'direct-source'};
- let release,started;const accepted=new Promise(resolve=>{started=resolve});
+ const state={receipt:null};let release,started;const accepted=new Promise(resolve=>{started=resolve});
  h.fixture.respond=async(url,options,fallback)=>{
-  const path=url.pathname;
-  if(path.endsWith('/workbench/candidates/original/context'))return {candidate_revision_uuid:'original',actor:'author',source_additive_accept:true,candidate_scope_revision:'scope',draft:{draft_version:0,decisions_truncated:true},protocol:{definition:{protocol_uuid:'protocol-A'}}};
-  if(path.endsWith('/workbench/candidates/original/preview'))return {mode:'source',source_sha256:'source',candidate_scope_revision:'scope',expected_draft_version:0,preview_sha256:'preview',expected_binding_version:1,expected_query_revision:'query',selected_epoch_count:1691,accepted_epoch_count:1691,already_present_epoch_count:0,retained_epoch_count:540,next_epoch_count:2231,accepted_cell_count:3};
-  if(path.endsWith('/workbench/candidates/original/accept')){const body=JSON.parse(options.body);started();await new Promise(resolve=>{release=resolve});return {...body,candidate_scope_revision:'scope',protocol_uuid:'protocol-A',candidate_revision_uuid:'original',actor:'author',binding:{version:2,revision_uuid:'main'},event_uuid:'event'};}
+  const path=url.pathname.replace(/^\/api/,'');
+  if(path==='/workbench/summary')return {contract_version:1,workbench_counts:[{protocol_uuid:'protocol-A',pending_epoch_count:state.receipt?0:12,pending_cell_count:state.receipt?0:2,eligible_pending_epoch_count:state.receipt?0:12,eligible_pending_cell_count:state.receipt?0:2,pending_new_cell_count:1,pending_recordings:[],left_out_epoch_count:0,main_blocked_reason:null,queue_revision:state.receipt?'q2':'q1',capabilities:{cumulative_pending_browse:true,additive_accept:true,merge_all:true}}]};
+  if(path==='/protocols/protocol-A/workbench/merge-all'){const body=JSON.parse(options.body);started();await new Promise(resolve=>{release=resolve});state.receipt={operation_uuid:body.operation_uuid,mode:'all',accepted_epoch_count:12,candidate_scope_revision:'scope',protocol_uuid:'protocol-A',candidate_revision_uuid:'union',actor:'author',binding:{version:2,revision_uuid:'main'},event_uuid:'event'};return state.receipt;}
+  if(path==='/annotation-profiles')return {selected_profile_uuid:'author',profiles:[{profile_uuid:'author',display_name:'Scientist'}]};
   return fallback();
  };
  try{
-  await h.mount();await h.waitFor(()=>h.root.findAllByType('import-suggestions').length>0);
-  let pending;await h.act(()=>{pending=h.root.findByType('import-suggestions').props.onMerge('protocol-A',{kind:'merge_source',candidate_revision_uuid:'original',source_sha256:'source'});});
+  await h.mount();await h.waitFor(()=>h.root.findAll(node=>node.type==='import-suggestions'&&node.props.workbenchSummary?.data?.contract_version===1).length>0);
+  const props=h.root.findByType('import-suggestions').props;
+  const model=importReviewCards({summary:props.workbenchSummary.data,protocols:props.protocols});
+  assert.equal(model.ready,1);const request=mergeAllRequest(model.other[0].card);
+  let pending;await h.act(()=>{pending=props.onMerge('protocol-A',request);});
   await accepted;assert.equal(h.fixture.route.page,'import');assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).filter(visible).length,0);
-  await h.act(async()=>{release();await pending;});await h.settle(15);
-  assert.equal(h.root.findAllByType('import-suggestions').filter(visible).length,0);assert.equal(h.root.findAllByProps({'aria-label':'Overview'}).find(visible).props['aria-selected'],true);
+  await h.act(async()=>{release();assert.equal(await pending,true);});await h.settle(15);
+  const writes=h.fixture.requests.filter(r=>r.method!=='GET');
+  assert.deepEqual(writes.map(r=>r.path),['/protocols/protocol-A/workbench/merge-all'],'one merge-all request, no per-recording merge');
+  assert.deepEqual({...writes[0].body,operation_uuid:'op'},{expected_queue_revision:'q1',operation_uuid:'op'});
+  const toast=h.root.findAll(node=>node.props?.controller&&Object.hasOwn(node.props,'projectId')&&node.props.controller.state!==undefined)[0];
+  assert.equal(toast.props.controller.state?.phase,'merged','the corner Undo toast is shown for the verified receipt');assert.equal(toast.props.controller.state?.count,12);
   assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).filter(visible).length,0);
-  assert.ok(h.fixture.requests.every(r=>!r.path.endsWith('/draft')),'direct merge does not mutate a review draft');
  }finally{release?.();await h.close();}
 });
 
