@@ -1311,8 +1311,12 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         with guarded(None) as owner:
             for protocol in service.protocols:
                 value = manager.queue(protocol, owner, 1)
+                # The same pending pool the Overview card and Workbench read, so
+                # the import review, badges and cards cannot disagree.
                 counts.append(dict(protocol_uuid=protocol, **{key: value[key] for key in
-                    ('pending_cell_count', 'pending_epoch_count', 'queue_revision')}))
+                    ('pending_cell_count', 'pending_epoch_count', 'queue_revision', 'eligible_pending_epoch_count',
+                     'eligible_pending_cell_count', 'pending_new_cell_count', 'pending_recordings',
+                     'left_out_epoch_count', 'main_blocked_reason', 'capabilities')}))
         return jsonify(contract_version=1, workbench_counts=counts)
 
     @app.get(candidate + '/context')
