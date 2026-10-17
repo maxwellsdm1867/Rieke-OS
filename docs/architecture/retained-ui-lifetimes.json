@@ -87,23 +87,25 @@
       ]
     },
     "src/annotations/annotationReceipts.js": {
-      "fingerprint": "ca0087f8ee8ea2dc32d7bd9fc7a4b6e932eb1b05f8a4f014b2102d7efa4addd3",
+      "fingerprint": "0b911f9d785817601cb6c8263e998e6da3e42e02bb1d4e8d7d808f3243b2a69a",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Per-tag time review (2026-10-17): receipt validation additionally checks optional chip added_at (ISO UTC Z) and time_source; no lifecycle sites changed.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/annotationReceiptWorkflow.test.js"
       ]
     },
     "src/annotations/annotationTags.js": {
-      "fingerprint": "fa804159a48ccfbc2efd2baf7f77c7ccb9133614a6a5210ae2d4b3884763674d",
+      "fingerprint": "3319b9738985e969500b6dace9cce3dba161b54c17644dd2e453e76f289ac5bd",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Per-tag time review (2026-10-17): adds pure formatTagTime/annotationChipTitle helpers; no lifecycle sites changed.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/annotationTags.test.js"
       ]
     },
     "src/annotations/externalTagMonitor.js": {
@@ -197,7 +199,7 @@
       ]
     },
     "src/annotations/ui/AnnotationTags.jsx": {
-      "fingerprint": "fbfd4ca76a2238c08a2b2cf16e7160f15af96b1c5335e0c5e44626463db6fba7",
+      "fingerprint": "b30561b359eff911b57beb49ce94fb87c473e6cfa2fa540b4c259971d48a9165",
       "sites": [
         {
           "owner": "AnnotationTags",
@@ -241,14 +243,15 @@
         }
       ],
       "lifetime": "semantic-presentation + reconnecting-annotation-authority",
-      "reason": "Epoch identity resets composer-local presentation; query identity resets suggestion keyboard choice. Existing request generation/scope effects still retire and reconnect mutation authority. Deferred focus requests retain their existing handled-intent refs; authored-value bindings now owned by persistence agent. Tag channel review (2026-10-17): single-target tags begin in tagStore synchronously (pending chip in the click frame), write serially per target/author with the last confirmed revision, confirm in place or roll back and restore the draft; bulk receipts are ingested. Editor subscribes urgently to the store. Effect sites unchanged. The composer draft clears inside startTransition so a large draft owner never delays the chip commit; failures restore the draft. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): multi-selection is optimistic (beginMany, confirm/fail, draft restore); group saves call tagStore.changed(); a single-target editor showing an epoch not verified since the last receipt-less change reads its annotations once and ingests them (effect keyed on that read). Tag display/autocomplete review (2026-10-17): chips show the tag name only (author in the tooltip); suggestions come from the local vocabulary (load effect once per project, server query only when incomplete); inline completion selects the completed suffix in a layout effect after render. Ghost completion replaces selected-text completion: the value stays as typed, a grey overlay shows the remainder of the best match, Tab/→ at the end accepts it; the vocabulary loads on first focus (no layout effect for completion).",
+      "reason": "Epoch identity resets composer-local presentation; query identity resets suggestion keyboard choice. Existing request generation/scope effects still retire and reconnect mutation authority. Deferred focus requests retain their existing handled-intent refs; authored-value bindings now owned by persistence agent. Tag channel review (2026-10-17): single-target tags begin in tagStore synchronously (pending chip in the click frame), write serially per target/author with the last confirmed revision, confirm in place or roll back and restore the draft; bulk receipts are ingested. Editor subscribes urgently to the store. Effect sites unchanged. The composer draft clears inside startTransition so a large draft owner never delays the chip commit; failures restore the draft. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): multi-selection is optimistic (beginMany, confirm/fail, draft restore); group saves call tagStore.changed(); a single-target editor showing an epoch not verified since the last receipt-less change reads its annotations once and ingests them (effect keyed on that read). Tag display/autocomplete review (2026-10-17): chips show the tag name only (author in the tooltip); suggestions come from the local vocabulary (load effect once per project, server query only when incomplete); inline completion selects the completed suffix in a layout effect after render. Ghost completion replaces selected-text completion: the value stays as typed, a grey overlay shows the remainder of the best match, Tab/→ at the end accepts it; the vocabulary loads on first focus (no layout effect for completion). Per-tag time review (2026-10-17): chip tooltip text now comes from annotationChipTitle (author, added time, saving…); effect sites and fingerprints unchanged.",
       "tests": [
         "src/retainedControls.test.js",
         "src/annotationReceiptWorkflow.test.js",
         "src/workflowResponsiveness.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
         "src/treeGroupAnnotationWorkflow.test.js",
-        "src/annotations/tagVocabulary.test.js"
+        "src/annotations/tagVocabulary.test.js",
+        "src/annotationTags.test.js"
       ]
     },
     "src/annotations/ui/EpochTags.jsx": {
@@ -3675,13 +3678,15 @@
       ]
     },
     "src/typed-query/protocolViewFilter.js": {
-      "fingerprint": "4b402f314d3cc4c4394c3fe87805528a508eb1c2c633a6c4de9a9847aa5e3b1c",
+      "fingerprint": "da64d33ace99f47b660ec173af63cefa441d74a506f99d5cd9351802582f7101",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Per-tag time review (2026-10-17): tag rules may carry an added-after/before window compiled to tag_times predicates; pure functions, no lifecycle sites.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/typed-query/protocolViewFilter.test.js",
+        "src/tagTimeFilter.test.js"
       ]
     },
     "src/typed-query/ui/JointGroupingEditor.jsx": {
@@ -3779,13 +3784,14 @@
       ]
     },
     "src/typed-query/ui/ProtocolViewFilter.jsx": {
-      "fingerprint": "9b72d2ca7af3c5caa371d9a639b4fc28afc3337d643edb647963a05a2c140ae9",
+      "fingerprint": "81a9081dd8a5b243f86c045d208c2646b75bc658559c22124e6a73225297ddcb",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Per-tag time review (2026-10-17): adds two datetime-local inputs per tag rule in existing component state; no effect sites added.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/tagTimeFilter.test.js"
       ]
     },
     "src/typed-query/ui/ScopedPredicateFilter.jsx": {

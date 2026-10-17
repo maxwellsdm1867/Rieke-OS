@@ -15,6 +15,17 @@ export function annotationChange({epoch,targetKind,profileUuid,annotations,tag,r
   if(!Number.isSafeInteger(revision)||revision<0)throw new Error('Reload annotations before editing.');
   return {target_kind:targetKind,target_uuids:[uuid],profile_uuid:profileUuid,tags_add:remove?[]:[tag.trim()],tags_remove:remove?[tag]:[],expected_revisions:{[uuid]:revision}};
 }
+export function formatTagTime(value,format=date=>date.toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})){
+  const time=typeof value==='string'?Date.parse(value):NaN;
+  return Number.isFinite(time)?format(new Date(time)):'';
+}
+/** Chip tooltip: tag, scope, author and added time (or saving… while pending). */
+export function annotationChipTitle(chip,kind,format){
+  const parts=[chip.tag,kind==='cell'?'inherited from cell':'epoch tag',chip.author_name||'author not recorded'];
+  if(chip.pending)parts.push('saving…');
+  else{const time=formatTagTime(chip.added_at,format);if(time)parts.push(`added ${chip.time_source==='approximate'?'about ':''}${time}${chip.time_source==='approximate'?' (approximate)':''}`);}
+  return parts.join(' · ');
+}
 export function canRemoveAnnotation(chip,profileUuid){return !!profileUuid&&chip?.profile_uuid===profileUuid;}
 export function annotationPredicate(scope,tag){
   if(!['cell','epoch','effective'].includes(scope)||typeof tag!=='string')throw new Error('Unknown annotation filter.');

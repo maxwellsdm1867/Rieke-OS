@@ -7,6 +7,7 @@ import uuid
 from disco.navigation.predicates import MAX_NODES, validate, matches, predicate_catalog
 from disco.workbench.recipes import checksum
 from disco.navigation.tree import value_key, value_order, value_label
+from disco.navigation.tag_time_filter import TIME_FIELDS, TIME_LABELS, samples, check_time_nodes
 
 PREFIX = 'curation/'
 SHARED_FIELDS = {
@@ -91,6 +92,12 @@ class TagPredicates:
                         annotation_scope={'kind':'shared_annotations'},
                         description='Shared project annotations joined by exact cell/epoch UUID. Local authors are attribution, not authentication; empty arrays mean no tags.')
                        for field,label in SHARED_FIELDS.items()]
+            # Tag-time rules are composed by the tag filter, not listed as
+            # editor fields: their value is a {tag, after, before} object.
+            result += [dict(id=field,label=label,path=field.replace('/','.'),category='Shared annotations',
+                        annotation_scope={'kind':'shared_annotations'},value_shape='tag_time',
+                        description='Per-tag added time (UTC) of shared annotations; contains {tag, after, before}. Backfilled times may be approximate.')
+                       for field,label in TIME_LABELS.items()]
         return result
 
     def snapshot(self,fields):
@@ -102,7 +109,7 @@ class TagPredicates:
         fingerprints=self.service._fingerprints
         universe=checksum(sorted(fingerprints))
         for field in sorted(fields):
-            if field in SHARED_FIELDS: continue
+            if field in SHARED_FIELDS or field in TIME_FIELDS: continue
             protocol=definitions[field]['annotation_scope']['protocol_uuid']
             current=self.service.annotation_provider(protocol,dict(fingerprints))
             if not isinstance(current,dict) or current.keys()-fingerprints.keys():
@@ -123,7 +130,8 @@ class TagPredicates:
             states[field]=values
         evidence={'version':1,'revision':checksum([(p['protocol_uuid'],p['revision']) for p in protocols]),'protocols':protocols}
         shared_fields=fields & SHARED_FIELDS.keys()
-        if shared_fields:
+        time_fields=fields & TIME_FIELDS.keys()
+        if shared_fields or time_fields:
             snapshot=self.service.shared_annotations.snapshot()
             cell_records={};epoch_records={}
             for row in snapshot['records']:
@@ -139,14 +147,14 @@ class TagPredicates:
                         'annotations/author_uuids':sorted({r['profile_uuid'] for r in effective if r['tags']})}
                 for field in shared_fields:
                     if values[field]:states[field][key]=values[field]
-            evidence.update(version=2,shared=snapshot,fields=sorted(shared_fields))
+            evidence.update(version=2,shared=snapshot,fields=sorted(shared_fields|time_fields))
             evidence['revision']=checksum({'protocols':[(p['protocol_uuid'],p['revision']) for p in protocols],
-                'shared_revision':snapshot['revision'],'shared_fields':sorted(shared_fields),
+                'shared_revision':snapshot['revision'],'shared_fields':sorted(shared_fields|time_fields),
                 'registered_cell_links':sorted((key,row['cell_uuid']) for key,row in self.service.rows.items())})
         return states,evidence
 
     def catalog_fields(self,ids):
-        definitions=self.definitions()
+        definitions=[field for field in self.definitions() if field.get('value_shape')!='tag_time']
         if not definitions: return []
         all_fields={field['id'] for field in definitions};indexed={}
         shared=getattr(self.service,'shared_annotations',None)
@@ -179,7 +187,7 @@ class TagPredicates:
         definitions=[field for field in registered['fields'] if not field['id'].startswith('joint/')]+self.definitions()
         # This pass enforces the entire AST's limits/shape and tag literal types.
         # Raw metadata subtrees below retain their exact registered-type validator.
-        validated=validate(predicate,{'fields':definitions},{field:{field:['']} for field in fields})
+        validated=check_time_nodes(validate(predicate,{'fields':definitions},samples(fields,[''])))
         universe=set(ids)
         def walk(node):
             if not referenced_fields(node):
@@ -194,6 +202,22 @@ class TagPredicates:
                 return result
             if 'not' in node: return universe-walk(node['not'])
             key=node['field']
+            if key in TIME_FIELDS: return self._time_leaf(node,ids)
             return {identity for identity in ids if matches(node,{key:states[key].get(identity,[])})}
         matched=walk(validated)
         return validated,[identity for identity in ids if identity in matched],copy.deepcopy(evidence)
+
+    def _time_leaf(self,node,ids):
+        """Validated per-tag times; canonical chips when no time table exists."""
+        from disco.navigation.tag_time_filter import condition, in_window, chip_matches
+        shared=self.service.shared_annotations
+        value=condition(node['value']);kinds=TIME_FIELDS[node['field']]
+        from disco.decisions.tag_times import tag_time_targets
+        found=tag_time_targets(shared,value['tag']) if hasattr(shared,'TagTime') else None
+        if found is None:
+            annotations=shared.for_epochs([self.service.rows[key] for key in ids])
+            return {key for key in ids if chip_matches(node,annotations.get(key))}
+        epochs=set();cells=set()
+        for kind,target,added_at in found:
+            if kind in kinds and in_window(added_at,value):(epochs if kind=='epoch' else cells).add(target)
+        return {key for key in ids if key in epochs or self.service.rows[key]['cell_uuid'] in cells}
