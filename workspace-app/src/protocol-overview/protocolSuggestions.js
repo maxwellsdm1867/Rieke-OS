@@ -1,4 +1,5 @@
 import {IMPORT_TERMINAL,jobProgressView} from "../recording-import/importProgress.js";
+import {pendingQueueCounts} from "../incoming-workbench/workbenchAuthority.js";
 export function pendingProtocolSuggestions(data){
   const rows=Array.isArray(data?.suggestions)?data.suggestions:[];
   return rows.filter(item=>item.status==='pending'&&typeof item.protocol_uuid==='string'&&typeof item.candidate_revision_uuid==='string');
@@ -87,4 +88,47 @@ export function withoutMergedSources(data,projectId,merged=[]){
   const done=new Set(merged);
   const suggestions=data.suggestions.filter(item=>!(['pending','stale'].includes(item?.status)&&done.has(mergedKey(projectId,item.protocol_uuid,item.candidate_revision_uuid,item.source_sha256))));
   return suggestions.length===data.suggestions.length?data:{...data,suggestions};
+}
+
+const safeCount=value=>Number.isSafeInteger(value)&&value>=0?value:null;
+
+// Main counts as the infographic shows them: each cell UUID once, and the
+// protocol's epoch total. Incomplete cell summaries are unknown, not partial.
+export function mainProtocolCounts(data){
+  const cells=Array.isArray(data?.cells)&&data.cells.every(cell=>cell?.cell_uuid||cell?.uuid)
+    ?new Set(data.cells.map(cell=>cell.cell_uuid||cell.uuid)).size:null;
+  return {cells,epochs:safeCount(data?.counts?.epochs)};
+}
+
+// The Overview "New data matches your saved query" card, driven by the
+// cumulative queue: one card per protocol summing every pending import. Only
+// mergeable data is pending, so a zero/unknown mergeable count shows no card
+// and proposals with nothing mergeable never contribute a recording name.
+// Returns a suggestion-shaped value that ProtocolSuggestion renders unchanged,
+// or {blocked} when Main itself cannot accept additions.
+export function pendingProtocolSuggestion(queue,main,protocolId){
+  if(queue?.contract_version!==1||typeof queue.queue_revision!=='string'||!queue.queue_revision||typeof protocolId!=='string'||!protocolId)return null;
+  if(typeof queue.main_blocked_reason==='string'&&queue.main_blocked_reason)return {blocked:queue.main_blocked_reason,queue_revision:queue.queue_revision};
+  const pending=pendingQueueCounts(queue);
+  if(!pending.epochs)return null;
+  const current=mainProtocolCounts(main);
+  const add=(base,delta)=>base!==null&&delta!==null?base+delta:null;
+  const recordings=[...new Set((Array.isArray(queue.candidates)?queue.candidates:[])
+    .filter(item=>item?.kind!=='workbench_pending_union'&&item?.source_sha256!==''&&safeCount(item?.eligible_pending_epoch_count)>0)
+    .map(item=>item.source_filename).filter(name=>typeof name==='string'&&!!name))];
+  return {
+    merge_all:true,status:'pending',protocol_uuid:protocolId,queue_revision:queue.queue_revision,
+    recordings,more_recordings:typeof queue.next_cursor==='string'&&!!queue.next_cursor,
+    pending_cell_count:pending.cells,pending_epoch_count:pending.epochs,
+    can_merge:queue.capabilities?.cumulative_pending_browse===true&&queue.capabilities?.additive_accept===true,
+    diff_counts:{added:pending.epochs,removed:0,changed:0},
+    diff_summary:{current,proposed:{cells:add(current.cells,pending.cells),epochs:add(current.epochs,pending.epochs)},delta:{cells:pending.cells,epochs:pending.epochs}},
+  };
+}
+
+// Hold on that card grants consent to merge everything mergeable at the queue
+// revision the scientist saw; prepare refuses if the pending set changed since.
+export function mergeAllRequest(suggestion){
+  if(suggestion?.merge_all!==true||suggestion.can_merge!==true||!(suggestion.pending_epoch_count>0)||typeof suggestion.queue_revision!=='string'||!suggestion.queue_revision)return null;
+  return {kind:'merge_all',queue_revision:suggestion.queue_revision,origin:'protocol-overview'};
 }

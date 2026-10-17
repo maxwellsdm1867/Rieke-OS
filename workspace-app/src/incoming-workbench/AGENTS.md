@@ -250,16 +250,22 @@ tokens retire pre-submission work across A→B→A navigation and unmount. Verif
 same-project completion refreshes data even after navigation; only a still-current
 owner opens Overview. Lost/invalid replies retain recovery identity.
 
-The protocol Overview "New data matches your saved query" card uses the same
-`InspectImportButton` hold and `merge_source` request (`sourceMergeRequest` in
-`protocol-overview/protocolSuggestions.js`): its exact candidate and trigger
-recording SHA, never the cumulative proposal. A plain click never merges or opens
-a cumulative preview; additions from other pending recordings stay in Workbench.
-A hold from that protocol's own still-current Overview stays there instead of
-pushing a duplicate route. Completion passes the verified receipt to App, which
-hides only the matching project/protocol/candidate/recording card until the
-structure refresh returns the authoritative (superseded) list; uncertain outcomes
-never hide a card. The cumulative `merge_intent` handoff remains an App capability.
+The protocol Overview "New data matches your saved query" card follows the
+cumulative queue (`pendingProtocolSuggestion` in `protocol-overview/protocolSuggestions.js`):
+it shows whenever mergeable pending epochs exist (eligible counts; zero/unknown shows
+nothing), sums all pending imports and lists their recordings. Its one-second hold
+sends `merge_all` with the queue revision shown; `sourceMerge.startAll` runs
+prepare -> draft all -> preview all -> accept under the same owner token and recovery
+identity. A verified receipt retires the card for that queue revision; uncertain
+outcomes keep it. `main_blocked_reason` replaces the card with one quiet sentence.
+Import review cards keep the per-recording `merge_source` hold.
+
+Cumulative review offers Finish review: after confirmation it POSTs
+`.../candidates/<id>/finish` with the current scope and draft version, leaving the
+remaining pending epochs out (excluded). Proposal history lists only candidates with
+mergeable epochs. After any verified merge, App's `mergeUndo.js` controller shows an
+Undo toast; Undo POSTs `.../workbench/undo` with the receipt operation and binding
+version, refreshes on success, and shows the 409 reason without retrying.
 
 Run `sourceMerge.test.js`, `useSourceMerge.test.js`, `importMergeAppRoute.test.js`,
 `protocolSuggestionHold.test.js`, `protocolSuggestions.test.js`, renderer-draft
@@ -289,8 +295,10 @@ Existing sealed preview, exact counts and acceptance/replay remain authoritative
 in the disk checkpoint when their aggregate presentation budget is exceeded. Live
 selections remain exact. It records an omitted count for a restart notice; it never
 restores a partial selection or drops a preview, operation, receipt or export state.
-Frozen review publishes its recovery operation and awaits `flushDesktopDrafts`
-before acceptance. Failed persistence or retired ownership submits nothing.
+Frozen review publishes its recovery operation and awaits `flushBeforeSubmission`
+before acceptance. Unconfirmed accepted writes or retired ownership submit nothing.
+A view-saver failure alone does not block (acceptance is idempotent per
+operation_uuid); it shows a quiet note. Close/unmount keep strict `flushDesktopDrafts`.
 
 The large-selection backend/renderer tests cover 1,691 incoming epochs, truncated
 saved draft details, tokenized views, exact summary/merge membership, replay and

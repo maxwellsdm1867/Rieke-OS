@@ -4,7 +4,7 @@
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
     "src/App.jsx": {
-      "fingerprint": "0f02e73fc90e915710d240f9ddda8201fb6c6add6c8054abecfe88946dbe4e82",
+      "fingerprint": "f108825953906b268f0d9eef4d311c9aafca4fbd8f6fe3ff0b9f0055d9771554",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -48,7 +48,7 @@
         }
       ],
       "lifetime": "mixed-project-and-retained-composition",
-      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes. Independent review on 2026-10-15 confirmed project setup closes only after successful project activation; pending, refused and migration paths retain context. Callback return values changed; lifecycle hooks, dependencies and scientific owners are unchanged. Six actual App composition regression cases cover both setup callbacks. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Overview source-merge review (2026-10-16): the Overview card hold reuses the App source-merge owner; App adds presentation-only state that hides the exact project/protocol/candidate/recording card after a verified receipt until the existing structure refresh returns, plus a captured origin so a hold on the still-current same-protocol Overview does not push a duplicate route. No effect sites, dependencies, consent or recovery owners changed. Checkpoint size review (2026-10-16): disk checkpoints now prune unreachable cumulative candidates (keeping the current candidate and any draft that needs recovery or still offers export) and drop the oldest back/forward view snapshots only above 1.5 MiB, never the current route, protocol latest views or recovery sessions. Live sessions are not mutated; no effect sites, dependencies, consent or recovery owners changed.",
+      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes. Independent review on 2026-10-15 confirmed project setup closes only after successful project activation; pending, refused and migration paths retain context. Callback return values changed; lifecycle hooks, dependencies and scientific owners are unchanged. Six actual App composition regression cases cover both setup callbacks. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Overview source-merge review (2026-10-16): the Overview card hold reuses the App source-merge owner; App adds presentation-only state that hides the exact project/protocol/candidate/recording card after a verified receipt until the existing structure refresh returns, plus a captured origin so a hold on the still-current same-protocol Overview does not push a duplicate route. No effect sites, dependencies, consent or recovery owners changed. Checkpoint size review (2026-10-16): disk checkpoints now prune unreachable cumulative candidates (keeping the current candidate and any draft that needs recovery or still offers export) and drop the oldest back/forward view snapshots only above 1.5 MiB, never the current route, protocol latest views or recovery sessions. Live sessions are not mutated; no effect sites, dependencies, consent or recovery owners changed. 2026-10-16 (pending card): Overview renders ProtocolSuggestion in queue mode (pendingProtocol) instead of the latest per-recording suggestion; merge_all routes to the same sourceMerge owner (startAll) with the same owner token, origin fence and recovery. persist uses flushBeforeSubmission (views-only failure is a quiet notice). A ref-held mergeUndo controller (no new effect sites) receives verified receipts from sourceMerged and Workbench onMerged; MergeUndoToast is mounted once in main-shell, filtered by current project. Effect sites unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -59,7 +59,8 @@
         "src/workbenchSessionLifecycle.test.js",
         "src/workbenchRouteRendering.test.js",
         "src/incomingWorkbenchRendering.test.js",
-        "src/incoming-workbench/selectedIncomingWorkflow.test.js"
+        "src/incoming-workbench/selectedIncomingWorkflow.test.js",
+        "src/incoming-workbench/mergeUndo.test.js"
       ]
     },
     "src/annotations/annotationProfile.js": {
@@ -704,13 +705,14 @@
       ]
     },
     "src/desktopLifecycle.js": {
-      "fingerprint": "4342183f338a2d1a77d782ef6ba5ca1610c25831afbaf40fbc3c2f5787421427",
+      "fingerprint": "73a34d70a86def2c2d6169805beca94f1df9937ec735ce318153ce7cd86c29e5",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds flushBeforeSubmission (accepted writes still gate; view-saver failure returns viewSaved:false). flushDesktopDrafts and close/unmount acknowledgement stay strict.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/desktopLifecycle.test.js"
       ]
     },
     "src/epoch-browser/curationSelection.js": {
@@ -1582,6 +1584,15 @@
         "src/presentationSessionsIntegration.test.js"
       ]
     },
+    "src/incoming-workbench/mergeUndo.js": {
+      "fingerprint": "a37c23857a091851de4559cc75ddd235a68a7c18e7dc70bd9c409528383c14fd",
+      "sites": [],
+      "lifetime": "project-command-owner",
+      "reason": "2026-10-16: plain Undo-merge controller held by an App ref above route mounts. One toast at a time; a token fences late undo replies so an older undo cannot overwrite a newer merge notice. Undo is one explicit request bound to the receipt operation and binding version; 409 refuses without refresh, other failures refresh and never retry.",
+      "tests": [
+        "src/incoming-workbench/mergeUndo.test.js"
+      ]
+    },
     "src/incoming-workbench/selectedIncomingWorkflow.js": {
       "fingerprint": "8687e9f3b2d692aa96f78d8fa83d1b07078ff9dea30ee9d9aa919ca9f658a663",
       "sites": [],
@@ -1594,17 +1605,18 @@
       ]
     },
     "src/incoming-workbench/sourceMerge.js": {
-      "fingerprint": "01c391a5ea3e6b1d7e374ff065a57a74cd9e33d73218040e0edc9d0cc93c9fd0",
+      "fingerprint": "0bc0457ff00f1df06d1c3144dd57c2eb93c2f03636a8ba013bdfdb96e35ba12a",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds startAll (prepare -> draft all -> preview all -> accept) under the same owner token/current() checks and recovery identity; restore/validation accept mode all. Persist failure from accepted writes still refuses; view-only failure sets a notice.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/incoming-workbench/sourceMerge.test.js"
       ]
     },
     "src/incoming-workbench/ui/CumulativeIncomingReview.jsx": {
-      "fingerprint": "275247169180ff7c2062e588b631304d195cdbae774cd8c24c52a7cc287a4ad2",
+      "fingerprint": "9d9b32e7e16ab7762a1cf395b8a7e983173677575fc81fb0631a13d8427c46e1",
       "sites": [
         {
           "owner": "CumulativeIncomingReview",
@@ -1619,20 +1631,21 @@
         {
           "owner": "CumulativeIncomingReview",
           "kind": "useEffect",
-          "fingerprint": "23844a6ff251c95e8c3d703b8b26bd0e877a6c243e2ca724a4e1a89ff1a1df2b"
+          "fingerprint": "4312f03b2acde39565076ab47d18a44ba5bd150c1b761a46d1e0fd182e3ae661"
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination.",
+      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination. 2026-10-16 review: the preparation effect now reads mergeable pending counts via pendingQueueCounts (eligible fields) instead of queue.data.pending_epoch_count; the dependency is the same primitive count, so preparation timing, owner/generation fences and the idempotent prepare rejoin are unchanged. requirePreparedWorkbench moved to workbenchAuthority.js.",
       "tests": [
         "src/workbenchSessionLifecycle.test.js",
         "src/incomingWorkbenchStrictMode.test.js",
         "src/workbenchSummaryReads.test.js",
-        "src/importMergeWorkflow.test.js"
+        "src/importMergeWorkflow.test.js",
+        "src/incomingWorkbenchRendering.test.js"
       ]
     },
     "src/incoming-workbench/ui/FrozenIncomingReview.jsx": {
-      "fingerprint": "14b77c2837d77697742cb9b9c3eae90bdce2c8abcd09199dbae502c22137be14",
+      "fingerprint": "39792421359799a34eb8bb94a89fd2575a3175897125aaf0eef7f116720dd111",
       "sites": [
         {
           "owner": "FrozenIncomingReview",
@@ -1666,7 +1679,7 @@
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Prepared display capability passes from the frozen candidate without changing draft, selection, merge or publication ownership. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement.",
+      "reason": "Prepared display capability passes from the frozen candidate without changing draft, selection, merge or publication ownership. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. 2026-10-16: acceptance awaits flushBeforeSubmission (views-only failure is a quiet note, accepted-write failure still refuses); Finish review is an explicit confirmed write under activeOwner/inFlight guards like save(); onMerged reports verified receipts. Effect sites unchanged.",
       "tests": [
         "src/importMergeWorkflow.test.js",
         "src/incomingWorkbenchRendering.test.js",
@@ -1795,7 +1808,7 @@
       ]
     },
     "src/incoming-workbench/ui/IncomingWorkbench.jsx": {
-      "fingerprint": "fde541e5251fb62dec465296108792a58a196a2ac10dd5e7e9b414e56044fceb",
+      "fingerprint": "235a39da3bc1f78706b085d2037721942d9f6cda98eb2c45023e79feef22e399",
       "sites": [
         {
           "owner": "IncomingWorkbench",
@@ -1804,7 +1817,7 @@
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Superseded-proposal review (2026-10-16): the queue filter hides the new backend superseded status like covered/accepted, and the status label names it; no effect sites, dependencies or authority changed.",
+      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Superseded-proposal review (2026-10-16): the queue filter hides the new backend superseded status like covered/accepted, and the status label names it; no effect sites, dependencies or authority changed. 2026-10-16: history lists only candidates with eligible_pending_epoch_count > 0; counts use mergeable fields; forwards onMerged. Effect sites unchanged.",
       "tests": [
         "src/workbenchSessionLifecycle.test.js",
         "src/incomingWorkbenchStrictMode.test.js",
@@ -1812,6 +1825,21 @@
         "src/importMergeWorkflow.test.js",
         "src/workbenchRouteRendering.test.js",
         "src/incomingWorkbenchRendering.test.js"
+      ]
+    },
+    "src/incoming-workbench/ui/MergeUndoToast.jsx": {
+      "fingerprint": "cb913f8702532ad8798e7d939f8e36fbf49cc7a97879e9a15bd1cd65ba5be1bf",
+      "sites": [
+        {
+          "owner": "MergeUndoToast",
+          "kind": "useEffect",
+          "fingerprint": "7cf1fc5d768ac00e57abfc650d91e5900bc08b7216fc555f796b0de70039195f"
+        }
+      ],
+      "lifetime": "project-command-owner",
+      "reason": "2026-10-16: one effect subscribes to the App-held mergeUndo controller and unsubscribes on unmount/controller change; presentation only, filtered to the current project. No requests or navigation from effects.",
+      "tests": [
+        "src/incoming-workbench/mergeUndo.test.js"
       ]
     },
     "src/incoming-workbench/useIncomingMergeIntent.js": {
@@ -1857,7 +1885,7 @@
       ]
     },
     "src/incoming-workbench/useSourceMerge.js": {
-      "fingerprint": "d57c4bf3536622d621f365d5953b0f6df3f1b6092b80ddb48d590656406d453f",
+      "fingerprint": "389a07e2ad9dda3f060717e7977992de5dd6908deab1ec5b0c393124c9a2b706",
       "sites": [
         {
           "owner": "useSourceMerge",
@@ -1866,11 +1894,12 @@
         }
       ],
       "lifetime": "project-command-owner",
-      "reason": "App retains import/source merge orchestration outside Activity. Each request carries project/protocol/route intent and refuses stale completion navigation; pending or uncertain writes remain protected through flush/recovery. 2026-10-16: completion also passes the verified receipt to onAccepted; owner tokens, navigation fences and recovery are unchanged.",
+      "reason": "App retains import/source merge orchestration outside Activity. Each request carries project/protocol/route intent and refuses stale completion navigation; pending or uncertain writes remain protected through flush/recovery. 2026-10-16: completion also passes the verified receipt to onAccepted; owner tokens, navigation fences and recovery are unchanged. 2026-10-16: exposes startAll through the same complete()/owner-token path as start.",
       "tests": [
         "src/importMergeAppRoute.test.js",
         "src/importMergeWorkflow.test.js",
-        "src/incoming-workbench/useSourceMerge.test.js"
+        "src/incoming-workbench/useSourceMerge.test.js",
+        "src/incoming-workbench/sourceMerge.test.js"
       ]
     },
     "src/incoming-workbench/useWorkbenchQueue.js": {
@@ -1897,13 +1926,14 @@
       ]
     },
     "src/incoming-workbench/workbenchAuthority.js": {
-      "fingerprint": "fac90ade4e716c807d1ff1023e4c0d3266fb5d9d5f37a37686e200df467a91f5",
+      "fingerprint": "9bc64dfe8e0260011ede47a6dd2a3b272c1f38136e73236a6655100c8e761192",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds pendingQueueCounts, finishWorkbenchReview and hosts requirePreparedWorkbench (moved, unchanged).",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/incoming-workbench/workbenchAuthority.test.js"
       ]
     },
     "src/loadingNotice.js": {
@@ -2447,10 +2477,10 @@
       ]
     },
     "src/protocol-overview/protocolSuggestions.js": {
-      "fingerprint": "b1dc89a45ae86b8aab1b20a9140332916c7aa92c9fb3b90b2b0861f35e298926",
+      "fingerprint": "ee2484b7840920ffcbd17a54813e77314dc430dced5e53021546ecd195785f0a",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds pure source-merge request and verified-receipt card retirement helpers; no lifetime.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds pure source-merge request and verified-receipt card retirement helpers; no lifetime. 2026-10-16: adds pendingProtocolSuggestion/mergeAllRequest/mainProtocolCounts (pure).",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -2586,7 +2616,7 @@
       ]
     },
     "src/protocol-overview/ui/ProtocolSuggestion.jsx": {
-      "fingerprint": "c4da9ef533b07d4bb270a68f9cbf70c9a085b68c22977ea2943a9c5ca405728a",
+      "fingerprint": "e20b23a86dea635641c3a718bb71555798dbf93dede51f2cb3897a604372a402",
       "sites": [
         {
           "owner": "ImportSuggestions",
@@ -2605,7 +2635,7 @@
         }
       ],
       "lifetime": "semantic-auto-open-intent + project-review-state",
-      "reason": "autoOpenJobUuid is an explicit open intent, consumed once per semantic transition; user dismissal survives reconnect. Review pending state/managed message and modal presentation retain existing behavior. 2026-10-16: the Overview card renders the shared hold control with the same source-scoped request instead of a click-to-navigate merge; existing ImportSuggestions effects are unchanged.",
+      "reason": "autoOpenJobUuid is an explicit open intent, consumed once per semantic transition; user dismissal survives reconnect. Review pending state/managed message and modal presentation retain existing behavior. 2026-10-16: the Overview card renders the shared hold control with the same source-scoped request instead of a click-to-navigate merge; existing ImportSuggestions effects are unchanged. 2026-10-16 review: queue mode (pendingProtocol) reads the protocol queue through useWorkbenchQueue (its own abort/generation fences; provided=null in import view, so no read there). A verified merge_all receipt retires the card only for the queue revision it showed, then reloads; uncertain outcomes keep it. No new effect sites; ImportSuggestions effects unchanged.",
       "tests": [
         "src/useSemanticReset.test.js",
         "src/semanticPresentationControls.test.js",
@@ -2799,7 +2829,7 @@
       ]
     },
     "src/recording-import/ui/InspectImportButton.jsx": {
-      "fingerprint": "a6601142ff852033810041656566d05c9d7786b91d331cbc1ac2b03ff8ec2dd6",
+      "fingerprint": "bff5b818488693617b711e13286f1b1c6ff6ca1286b795ab69c0dd5cb9d27758",
       "sites": [
         {
           "owner": "InspectImportButton",
@@ -2813,7 +2843,7 @@
         }
       ],
       "lifetime": "explicit-hold-intent",
-      "reason": "Hold timers and committed callbacks retire on identity/disabled changes; only an explicit uninterrupted gesture creates a merge intent. No timer/gesture is restored as consent.",
+      "reason": "Hold timers and committed callbacks retire on identity/disabled changes; only an explicit uninterrupted gesture creates a merge intent. No timer/gesture is restored as consent. 2026-10-16: optional mergeTitle prop only; hold timer lifetime unchanged.",
       "tests": [
         "src/recording-import/inspectImportButton.test.js",
         "src/incoming-workbench/importedHoldNavigation.test.js"

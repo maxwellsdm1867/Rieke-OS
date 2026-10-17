@@ -67,11 +67,12 @@ test('actual Workbench renders authoritative queue and session worklist controls
   const html=renderToStaticMarkup(React.createElement(Workbench,props));
   for(const text of ['Incoming proposals','candidate-immutable','base-immutable','incoming.h5','Earlier unmerged updates'])assert.ok(html.includes(text),text);
   assert.doesNotMatch(html,/>Other</);assert.match(html,/disabled=""[^>]*>Merge &amp; export/);
-  const cumulative={contract_version:1,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:false},queue_revision:'union',pending_cell_count:2,pending_epoch_count:30,candidates:[{...item,pending_epoch_count:20},{...item,candidate_revision_uuid:'second-proposal',pending_epoch_count:20}]};
+  const cumulative={contract_version:1,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:false},queue_revision:'union',pending_cell_count:2,pending_epoch_count:30,candidates:[{...item,pending_epoch_count:20,eligible_pending_epoch_count:20},{...item,candidate_revision_uuid:'second-proposal',pending_epoch_count:20,eligible_pending_epoch_count:20}]};
   const cumulativeHtml=renderToStaticMarkup(React.createElement(Workbench,{...props,authority:cumulative}));
   assert.match(cumulativeHtml,/2<\/strong>.*cells/);assert.match(cumulativeHtml,/30<\/strong>.*epochs/);assert.match(cumulativeHtml,/second-proposal/);assert.doesNotMatch(cumulativeHtml,/Earlier unmerged updates/);
-  const blockedHtml=renderToStaticMarkup(React.createElement(Workbench,{...props,authority:{...cumulative,pending_cell_count:0,pending_epoch_count:0,candidates:[{...item,status:'conflict',pending_epoch_count:0},{...item,candidate_revision_uuid:'blocked-source',status:'source_blocked',pending_epoch_count:0}]}}));
-  assert.match(blockedHtml,/Conflict requires review/);assert.match(blockedHtml,/Source unavailable/);assert.match(blockedHtml,/blocked-source/);assert.doesNotMatch(blockedHtml,/No current incoming proposals/);
+  const blockedHtml=renderToStaticMarkup(React.createElement(Workbench,{...props,authority:{...cumulative,pending_cell_count:0,pending_epoch_count:0,candidates:[{...item,status:'conflict',pending_epoch_count:0,eligible_pending_epoch_count:0},{...item,candidate_revision_uuid:'blocked-source',status:'source_blocked',pending_epoch_count:0,eligible_pending_epoch_count:0}]}}));
+  // Nothing mergeable is not pending: such proposals are not listed at all.
+  assert.doesNotMatch(blockedHtml,/Conflict requires review/);assert.doesNotMatch(blockedHtml,/Source unavailable/);assert.doesNotMatch(blockedHtml,/blocked-source/);assert.match(blockedHtml,/No current incoming proposals/);
   const unknownHtml=renderToStaticMarkup(React.createElement(Workbench,{...props,authority:{...cumulative,pending_cell_count:null}}));assert.match(unknownHtml,/Cells unavailable/);assert.doesNotMatch(unknownHtml,/0 distinct cells/);
   let renderer,saved;
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Workbench,{...props,onSession:value=>{saved=value;}}));});
@@ -259,7 +260,7 @@ test('shared change callback and external revision refresh frozen token while pr
 test('default cumulative Workbench prepares once per queue fence, refreshes after partial acceptance, and keeps proposal history separate',async()=>{
  const server=await create(),oldFetch=globalThis.fetch;let renderer,preparedCalls=0,saved;
  const protocol='history',root='/protocols/history/workbench';
- const makeQueue=(token,count)=>({contract_version:1,queue_revision:token,pending_epoch_count:count,pending_cell_count:1,candidates:[{protocol_uuid:protocol,candidate_revision_uuid:'original-a',status:'pending',pending_epoch_count:count},{protocol_uuid:protocol,candidate_revision_uuid:'original-b',status:'pending',pending_epoch_count:count}],capabilities:{cumulative_pending_browse:true,frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}});
+ const makeQueue=(token,count)=>({contract_version:1,queue_revision:token,pending_epoch_count:count,pending_cell_count:1,candidates:[{protocol_uuid:protocol,candidate_revision_uuid:'original-a',status:'pending',pending_epoch_count:count,eligible_pending_epoch_count:count},{protocol_uuid:protocol,candidate_revision_uuid:'original-b',status:'pending',pending_epoch_count:count,eligible_pending_epoch_count:count}],capabilities:{cumulative_pending_browse:true,frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}});
  globalThis.fetch=async(path,options={})=>{
   const endpoint=String(path).replace(/^\/api/,''),body=options.body?JSON.parse(options.body):null;let value;
   if(endpoint===`${root}/prepare`){preparedCalls++;const id=`union-${body.expected_queue_revision}`;value={contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:`prepare-${body.expected_queue_revision}`,candidate_revision_uuid:id,root:`${root}/candidates/${id}`,candidate_scope_revision:'frozen',queue_revision:body.expected_queue_revision,context:{candidate_revision_uuid:id,candidate_scope_revision:'frozen',draft:{draft_version:1,selection_mode:'selected'},protocol:{protocol_uuid:protocol}}};}
@@ -326,7 +327,7 @@ test('queue changes preserve in-flight acceptance and older confirmed receipt ke
 test('prepared cumulative scope refuses mismatched candidate, protocol, root or queue identity',async()=>{
  const server=await create();
  try{
-  const {requirePreparedWorkbench}=await server.ssrLoadModule('/src/incoming-workbench/ui/CumulativeIncomingReview.jsx');
+  const {requirePreparedWorkbench}=await server.ssrLoadModule('/src/incoming-workbench/workbenchAuthority.js');
   const protocol='7d76b76a-4c43-42c6-ac54-881ff2fc108a',candidate='b411db17-0ab4-42aa-872a-e6e614106041';
   const value={contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare-operation',candidate_revision_uuid:candidate,root:`/protocols/${protocol}/workbench/candidates/${candidate}`,queue_revision:'queue',candidate_scope_revision:'scope',context:{candidate_revision_uuid:candidate,protocol:{definition:{protocol_uuid:protocol}},candidate_scope_revision:'scope',draft:{draft_version:1}}};
   assert.equal(requirePreparedWorkbench(protocol,value,'queue').candidate_revision_uuid,candidate);
@@ -605,18 +606,25 @@ test('one explicit Merge handles 1691 selected epochs and a truncated saved draf
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
-test('Workbench acceptance waits for recovery persistence and a failed save submits nothing',async()=>{
- const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[];let renderer,snapshot,stop;
+// A view snapshot is a convenience, not consent: acceptance replays by
+// operation_uuid, so a views-only save failure no longer blocks submission.
+// Pending accepted writes still gate it, and their failure still refuses.
+for(const failure of ['view','accepted-write'])test(`Workbench acceptance waits for recovery persistence; ${failure==='view'?'a views-only save failure still submits with a quiet note':'an unconfirmed accepted write submits nothing'}`,async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[];let renderer,snapshot,stop,fail;
  let context={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:1,pending_cells:1},protocol:{definition:{protocol_uuid:'history'}}};
  globalThis.fetch=async(path,options={})=>{
   if(options.method==='PATCH'){context={...context,draft:{...context.draft,draft_version:2,decisions:[{epoch_uuid:'a',selected:true,reviewed:true}],decisions_total:1}};}
-  if(options.method==='POST'){calls.push(String(path));assert.ok(String(path).endsWith('/preview'),'accept must not be sent');return {ok:true,status:200,json:async()=>({preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',selected_epoch_count:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:40,next_epoch_count:41,accepted_cell_count:1})};}
+  if(options.method==='POST'){calls.push(String(path));
+   if(String(path).endsWith('/accept')){const body=JSON.parse(options.body);return {ok:true,status:200,json:async()=>({binding:{revision_uuid:'merged',version:3},event_uuid:'event',operation_uuid:body.operation_uuid})};}
+   if(fail)setTimeout(()=>fail(Error('lost')),5);
+   return {ok:true,status:200,json:async()=>({preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',selected_epoch_count:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:40,next_epoch_count:41,accepted_cell_count:1})};}
   return {ok:true,status:200,json:async()=>context};
  };
  try{
   const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
-  const {registerDraftSaver}=await server.ssrLoadModule('/src/desktopLifecycle.js');
-  stop=registerDraftSaver(async()=>{assert.equal(snapshot.acceptPending,true);assert.equal(snapshot.preview.preview_sha256,'sealed');assert.ok(snapshot.operation);throw Error('disk full');});
+  const {registerDraftSaver,trackWrite}=await server.ssrLoadModule('/src/desktopLifecycle.js');
+  stop=registerDraftSaver(async()=>{assert.equal(snapshot.acceptPending,true);assert.equal(snapshot.preview.preview_sha256,'sealed');assert.ok(snapshot.operation);if(failure==='view')throw Error('disk full');});
+  if(failure==='accepted-write')trackWrite(new Promise((_resolve,reject)=>{fail=reject;})).catch(()=>{});
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'candidate'},session:{selected:[],selection_omitted_count:100000},onSession:value=>{snapshot=value;},capabilities:{drafts:true,frozen_browse:true,additive_accept:true}}));});
   assert.match(label(renderer.root),/100,000 epochs was too large to restore/);
   const inspector=()=>renderer.root.find(node=>node.type?.name==='Inspector');
@@ -624,8 +632,39 @@ test('Workbench acceptance waits for recovery persistence and a failed save subm
   await act(async()=>inspector().props.onSelectionChange(['a']));
   assert.doesNotMatch(label(renderer.root),/too large to restore/);
   await act(async()=>inspector().props.draftSelection.onMerge(['a']));
-  assert.equal(calls.length,1);assert.match(label(renderer.root),/Merge was not submitted/);assert.equal(snapshot.acceptPending,false);assert.ok(snapshot.operation);assert.equal(snapshot.preview.preview_sha256,'sealed');
+  if(failure==='view'){
+   assert.deepEqual(calls.map(path=>path.split('/').at(-1)),['preview','accept']);
+   assert.match(label(renderer.root),/Acceptance saved/);assert.match(label(renderer.root),/view could not be saved; the merge was still submitted/);
+   assert.doesNotMatch(label(renderer.root),/Merge was not submitted/);
+  }else{
+   assert.deepEqual(calls.map(path=>path.split('/').at(-1)),['preview'],'accept must not be sent');
+   assert.match(label(renderer.root),/Merge was not submitted/);assert.equal(snapshot.acceptPending,false);assert.ok(snapshot.operation);assert.equal(snapshot.preview.preview_sha256,'sealed');
+  }
  }finally{stop?.();if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('Finish review asks for confirmation, then posts the cumulative fences and reports left-out epochs',async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,posts=[],events=[];let renderer;
+ let context={candidate_revision_uuid:'union',candidate_scope_revision:'scope',draft:{draft_version:4,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:3,pending_cells:1,excluded_epochs:0},protocol:{definition:{protocol_uuid:'history'}}};
+ globalThis.fetch=async(path,options={})=>{
+  if(options.method){posts.push({path:String(path),method:options.method,body:JSON.parse(options.body)});context={...context,draft:{...context.draft,draft_version:5},counts:{pending_epochs:0,pending_cells:0,excluded_epochs:3}};}
+  return {ok:true,status:200,json:async()=>context};
+ };
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
+  const pendingCounts={contract_version:1,queue_revision:'q',pending_epoch_count:3,pending_cell_count:1,eligible_pending_epoch_count:3,eligible_pending_cell_count:1};
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'union'},scopeKind:'cumulative_pending',pendingCounts,onChange:()=>events.push('change'),onRefresh:()=>events.push('refresh'),capabilities:{drafts:true,frozen_browse:true,additive_accept:true}}));});
+  const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
+  await act(async()=>button('Finish review').props.onClick());
+  assert.match(label(renderer.root),/Leave out 3 remaining new epochs\?/);assert.match(label(renderer.root),/They stay out until you re-allow them or change the query\./);
+  assert.equal(posts.length,0,'opening the confirmation writes nothing');
+  await act(async()=>button('Keep reviewing').props.onClick());assert.doesNotMatch(label(renderer.root),/Leave out 3/);
+  await act(async()=>button('Finish review').props.onClick());
+  await act(async()=>button('Leave out & finish').props.onClick());
+  assert.deepEqual(posts,[{path:'/api/protocols/history/workbench/candidates/union/finish',method:'POST',body:{expected_candidate_scope_revision:'scope',expected_version:4}}]);
+  assert.deepEqual(events,['change','refresh'],'queue, card and badge refresh after finishing');
+  assert.match(label(renderer.root),/3 epochs left out · not pending/);
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
 test('owner retirement during recovery save cannot become a committing recovery after restart',async()=>{

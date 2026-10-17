@@ -1656,7 +1656,8 @@
             "workspace-app/src/incoming-workbench/useWorkbenchQueue.js",
             "workspace-app/src/incoming-workbench/useIncomingMergeIntent.js",
             "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.css",
-            "workspace-app/src/retainedWorkspaceViews.js"
+            "workspace-app/src/retainedWorkspaceViews.js",
+            "workspace-app/src/incoming-workbench/workbenchAuthority.js"
           ]
         },
         {
@@ -1761,6 +1762,21 @@
             "workspace-app/src/incoming-workbench/workbenchAuthority.js",
             "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js",
             "workspace-app/src/retainedWorkspaceViews.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/mergeUndo.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/ui/MergeUndoToast.jsx",
+          "allow": [
+            "react",
+            "lucide-react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/incoming-workbench/ui/MergeUndoToast.css"
           ]
         }
       ],
@@ -3864,16 +3880,18 @@
             "path": "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js",
             "exports": [
               "compactWorkbenchSelections",
+              "compactWorkspaceCheckpoint",
               "exactSelectedIds",
               "prepareSelectedIncoming",
+              "pruneCumulativeSession",
               "selectedReview",
-              "selectedViewFilters"
+              "selectedViewFilters",
+              "workbenchDraftNeedsRecovery"
             ]
           },
           {
             "path": "workspace-app/src/incoming-workbench/ui/CumulativeIncomingReview.jsx",
             "exports": [
-              "requirePreparedWorkbench",
               "default"
             ]
           },
@@ -3944,7 +3962,10 @@
               "acceptWorkbench",
               "acceptanceFailureKind",
               "createWorkbenchSelection",
+              "finishWorkbenchReview",
+              "pendingQueueCounts",
               "previewWorkbench",
+              "requirePreparedWorkbench",
               "requireWorkbenchContext",
               "requireWorkbenchQueue",
               "saveWorkbenchDecisions",
@@ -3987,6 +4008,13 @@
             ]
           },
           {
+            "path": "workspace-app/src/incoming-workbench/mergeUndo.js",
+            "exports": [
+              "createMergeUndo",
+              "mergeUndoTarget"
+            ]
+          },
+          {
             "path": "workspace-app/src/incoming-workbench/sourceMerge.js",
             "exports": [
               "createSourceMerge"
@@ -4002,6 +4030,12 @@
             "path": "workspace-app/src/incoming-workbench/useSelectedEpochView.js",
             "exports": [
               "useSelectedEpochView"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/ui/MergeUndoToast.jsx",
+            "exports": [
+              "default"
             ]
           }
         ]

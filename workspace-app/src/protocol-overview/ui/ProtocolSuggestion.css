@@ -86,3 +86,7 @@
 .import-ready-protocol .protocol-diff-chips,.import-ready-protocol .protocol-diff-footer{font-variant-numeric:tabular-nums}
 @media(max-width:700px){.import-ready-protocol .protocol-diff-metrics{grid-template-columns:minmax(0,1fr)}.import-ready-protocol .protocol-diff-metric{border-right:0;border-bottom:1px solid var(--border);padding-bottom:12px}.import-ready-protocol .protocol-diff-metric:last-child{border-bottom:0;padding-bottom:0}.import-ready-protocol .protocol-diff-metric>div{padding-right:0}.import-ready-protocol .protocol-match-actions{flex-wrap:wrap}.import-ready-protocol .protocol-match-actions button{white-space:normal}}
 @media(prefers-reduced-motion:reduce){.import-hold-merge.is-holding::before{transition:none}}
+
+/* Main itself cannot accept additions: one quiet sentence replaces the card. */
+.protocol-merge-blocked{display:flex;align-items:center;gap:8px;margin:0 0 16px;padding:10px 14px;border-radius:8px;background:var(--surface-subtle);color:var(--ink-secondary);font-size:12px;line-height:1.5}
+.protocol-merge-blocked>svg{flex-shrink:0;color:var(--ink-muted)}

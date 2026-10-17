@@ -114,3 +114,36 @@ test('only a verified source receipt retires its exact card while suggestions re
   assert.deepEqual(rememberMergedSource(['a'],null),['a']);assert.deepEqual(rememberMergedSource(['a'],'a'),['a']);
   assert.deepEqual(rememberMergedSource(['a','b'],'c',2),['b','c']);
 });
+
+const pendingQueue=(overrides={})=>({contract_version:1,queue_revision:'q1',pending_epoch_count:755,pending_cell_count:4,eligible_pending_epoch_count:755,eligible_pending_cell_count:4,next_cursor:null,
+  capabilities:{cumulative_pending_browse:true,additive_accept:true,frozen_browse:true,drafts:true,incoming_export:true},
+  candidates:[
+    {candidate_revision_uuid:'a',source_filename:'2026-10-12_F.h5',source_sha256:'sa',eligible_pending_epoch_count:500},
+    {candidate_revision_uuid:'b',source_filename:'2026-10-13_A.h5',source_sha256:'sb',eligible_pending_epoch_count:255},
+    {candidate_revision_uuid:'c',source_filename:'2026-10-01_old.h5',source_sha256:'sc',status:'conflict',eligible_pending_epoch_count:0},
+    {candidate_revision_uuid:'u',kind:'workbench_pending_union',source_filename:'Accumulated incoming',source_sha256:'',eligible_pending_epoch_count:755},
+  ],...overrides});
+const mainSummary={counts:{epochs:36},cells:[{cell_uuid:'x'},{cell_uuid:'y'},{cell_uuid:'x'}]};
+
+test('pending card model sums the cumulative queue across recordings and lists only mergeable recordings',async()=>{
+  const {pendingProtocolSuggestion,mergeAllRequest}=await import('./protocol-overview/protocolSuggestions.js');
+  const card=pendingProtocolSuggestion(pendingQueue(),mainSummary,'protocol-A');
+  assert.deepEqual(card.diff_summary,{current:{cells:2,epochs:36},proposed:{cells:6,epochs:791},delta:{cells:4,epochs:755}});
+  assert.deepEqual(card.diff_counts,{added:755,removed:0,changed:0});
+  assert.deepEqual(card.recordings,['2026-10-12_F.h5','2026-10-13_A.h5'],'nothing-mergeable and union rows contribute no recording');
+  assert.equal(card.status,'pending');assert.equal(card.protocol_uuid,'protocol-A');
+  assert.deepEqual(mergeAllRequest(card),{kind:'merge_all',queue_revision:'q1',origin:'protocol-overview'});
+});
+test('pending card model is hidden at zero or unknown mergeable counts and uses eligible fields',async()=>{
+  const {pendingProtocolSuggestion,mergeAllRequest}=await import('./protocol-overview/protocolSuggestions.js');
+  assert.equal(pendingProtocolSuggestion(pendingQueue({eligible_pending_epoch_count:0,eligible_pending_cell_count:0}),mainSummary,'protocol-A'),null,'non-mergeable pending is not pending');
+  assert.equal(pendingProtocolSuggestion(pendingQueue({eligible_pending_epoch_count:null}),mainSummary,'protocol-A'),null);
+  assert.equal(pendingProtocolSuggestion(null,mainSummary,'protocol-A'),null);
+  assert.equal(pendingProtocolSuggestion({...pendingQueue(),contract_version:2},mainSummary,'protocol-A'),null);
+  const legacy=pendingQueue();delete legacy.eligible_pending_epoch_count;delete legacy.eligible_pending_cell_count;
+  assert.equal(pendingProtocolSuggestion(legacy,mainSummary,'protocol-A').pending_epoch_count,755,'older services fall back to totals');
+  const unknownMain=pendingProtocolSuggestion(pendingQueue(),{counts:{},cells:[{}]},'protocol-A');
+  assert.deepEqual(unknownMain.diff_summary.proposed,{cells:null,epochs:null},'unknown main never becomes a partial total');
+  assert.equal(mergeAllRequest(pendingProtocolSuggestion(pendingQueue({capabilities:{cumulative_pending_browse:false,additive_accept:true}}),mainSummary,'protocol-A')),null);
+  assert.deepEqual(pendingProtocolSuggestion(pendingQueue({main_blocked_reason:'Main contains epochs whose recorded metadata changed; save the query again to update main.',eligible_pending_epoch_count:0}),mainSummary,'protocol-A'),{blocked:'Main contains epochs whose recorded metadata changed; save the query again to update main.',queue_revision:'q1'});
+});

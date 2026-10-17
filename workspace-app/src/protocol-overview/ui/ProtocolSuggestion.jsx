@@ -1,7 +1,8 @@
 import {useSemanticReset} from '../../useSemanticReset.js';
 import {useEffect,useRef,useState} from 'react';
-import {sourceMergeRequest} from '../protocolSuggestions.js';
-import {ArrowRight,Check,LoaderCircle,Sparkles,Pin,Database,FileCheck2,X,CheckCircle2} from 'lucide-react';
+import {mergeAllRequest,pendingProtocolSuggestion,sourceMergeRequest} from '../protocolSuggestions.js';
+import useWorkbenchQueue from '../../incoming-workbench/useWorkbenchQueue.js';
+import {ArrowRight,Check,Info,LoaderCircle,Sparkles,Pin,Database,FileCheck2,X,CheckCircle2} from 'lucide-react';
 import {humanize,time,number} from "../../api.js";
 import ProtocolDiff from './ProtocolDiff.jsx';
 import InspectImportButton from '../../recording-import/ui/InspectImportButton.jsx';
@@ -11,29 +12,38 @@ import {importReadiness} from "../../recording-import/importReadiness.js";
 import {useProjectPreference} from "../../project-preferences/useProjectPreference.js";
 import {importReviewStatusLabel} from "../../recording-import/useImportReviewStatus.js";
 
-export default function ProtocolSuggestion({suggestion,onMerge,onProtocol,importView=false,disabled=false}){
-  const launching=useRef(false),[merging,setMerging]=useState(false),[error,setError]=useState('');
+// Overview mode passes pendingProtocol/main instead of a suggestion: the card
+// then follows the cumulative queue (mergeable pending only) and its hold merges
+// all of it. A verified receipt retires the card for the queue revision it
+// showed; the refreshed queue then decides whether anything is still pending.
+export default function ProtocolSuggestion({suggestion:given,pendingProtocol=null,main=null,revision,queue:provided,onMerge,onProtocol,importView=false,disabled=false}){
+  const launching=useRef(false),[merging,setMerging]=useState(false),[error,setError]=useState(''),[retired,setRetired]=useState(null);
+  const queue=useWorkbenchQueue(pendingProtocol||'',revision,pendingProtocol?provided:null);
+  const pending=pendingProtocol&&!given?pendingProtocolSuggestion(queue.data,main,pendingProtocol):null;
+  if(pending?.blocked)return <p className="protocol-merge-blocked" role="status"><Info size={14} aria-hidden="true"/> {pending.blocked}</p>;
+  const suggestion=given||(pending&&retired!==pending.queue_revision?pending:null);
   if(!suggestion)return null;
+  const mergeAll=suggestion.merge_all===true;
   const applied=suggestion.status==='applied',stale=suggestion.status==='stale';
   const hasAdditions=Number.isSafeInteger(suggestion.diff_counts?.added)&&suggestion.diff_counts.added>0;
-  const sourceRequest=sourceMergeRequest(suggestion),identity=`${suggestion.candidate_revision_uuid}:${suggestion.source_sha256}`;
+  const sourceRequest=mergeAll?mergeAllRequest(suggestion):sourceMergeRequest(suggestion),identity=mergeAll?`${suggestion.protocol_uuid}:${suggestion.queue_revision}`:`${suggestion.candidate_revision_uuid}:${suggestion.source_sha256}`;
   // Overview and import review share one hold control and one source-scoped
   // merge request; a plain click never merges or opens a cumulative preview.
-  const holdMerge=onMerge&&sourceRequest?()=>merge(importView?sourceRequest:{...sourceRequest,origin:'protocol-overview'}):undefined;
+  const holdMerge=onMerge&&sourceRequest?()=>merge(importView||mergeAll?sourceRequest:{...sourceRequest,origin:'protocol-overview'}):undefined;
   async function merge(options){
-    if(launching.current||disabled||applied||stale||!hasAdditions||!onMerge)return;
+    if(launching.current||disabled||applied||stale||!hasAdditions||!onMerge||mergeAll&&(queue.loading||queue.error))return;
     launching.current=true;setMerging(true);setError('');
-    try{if(await onMerge(suggestion.protocol_uuid,options)!==true)throw Error('The destination is unavailable. Refresh the project before merging.');}
+    try{if(await onMerge(suggestion.protocol_uuid,options)!==true)throw Error('The destination is unavailable. Refresh the project before merging.');if(mergeAll){setRetired(suggestion.queue_revision);queue.reload();}}
     catch(error){setError(error.message);}
     finally{launching.current=false;setMerging(false);}
   }
   return <section className={`protocol-new-data ${importView?'import-ready-protocol':''} ${applied?'is-added':''}`} aria-label={importView?humanize(suggestion.protocol_name):'New data matching saved protocol query'}>
-    <div className="protocol-new-data-heading"><Sparkles size={19}/><div><h2>{importView?humanize(suggestion.protocol_name):applied?'Applied dataset update':stale?'Saved proposal needs a refresh':'New data matches your saved query'}</h2><p>{suggestion.source_filename||'Imported recording'} · {time(suggestion.created_at)}</p></div></div>
-    <div className="protocol-match-summary"><ProtocolDiff comparison={suggestion}/><div className="protocol-match-actions">
-      {importView?<InspectImportButton key={identity} identity={identity} disabled={disabled||merging||!onProtocol} onInspect={()=>onProtocol?.(suggestion.protocol_uuid,{candidate_revision_uuid:suggestion.candidate_revision_uuid})} onMerge={holdMerge}/>:!applied?<InspectImportButton key={identity} identity={identity} disabled={disabled||merging||!onProtocol} onInspect={()=>onProtocol?.(suggestion.protocol_uuid)} onMerge={holdMerge}/>:<button disabled={disabled||!onProtocol} onClick={()=>onProtocol?.(suggestion.protocol_uuid)}>Inspect in Workbench <ArrowRight size={14}/></button>}
-      {!importView&&!applied&&<small>{stale?'Refresh the saved proposal in Workbench.':holdMerge?`Hold to merge eligible additions from ${suggestion.source_filename||'this recording'} into Main. Main recordings and draft exclusions are kept; additions from other pending recordings stay in Workbench.`:'Inspect in Workbench to review and merge these additions.'}</small>}
+    <div className="protocol-new-data-heading"><Sparkles size={19}/><div><h2>{importView?humanize(suggestion.protocol_name):applied?'Applied dataset update':stale?'Saved proposal needs a refresh':'New data matches your saved query'}</h2><p>{mergeAll?`${number(suggestion.pending_epoch_count)} new ${suggestion.pending_epoch_count===1?'epoch':'epochs'}${Number.isSafeInteger(suggestion.pending_cell_count)?` from ${number(suggestion.pending_cell_count)} ${suggestion.pending_cell_count===1?'cell':'cells'}`:''} not yet in Main${suggestion.recordings.length?` · from ${suggestion.recordings.join(', ')}${suggestion.more_recordings?' and more':''}`:''}`:<>{suggestion.source_filename||'Imported recording'} · {time(suggestion.created_at)}</>}</p></div></div>
+    <div className="protocol-match-summary"><ProtocolDiff comparison={suggestion} showProtocolCount={!mergeAll}/><div className="protocol-match-actions">
+      {importView?<InspectImportButton key={identity} identity={identity} disabled={disabled||merging||!onProtocol} onInspect={()=>onProtocol?.(suggestion.protocol_uuid,{candidate_revision_uuid:suggestion.candidate_revision_uuid})} onMerge={holdMerge}/>:!applied?<InspectImportButton key={identity} identity={identity} disabled={disabled||merging||!onProtocol||mergeAll&&(queue.loading||!!queue.error)} onInspect={()=>onProtocol?.(suggestion.protocol_uuid)} onMerge={holdMerge} {...(mergeAll?{mergeLabel:'Hold to merge all',mergeTitle:'Hold for one second to merge every new mergeable epoch into Main'}:{})}/>:<button disabled={disabled||!onProtocol} onClick={()=>onProtocol?.(suggestion.protocol_uuid)}>Inspect in Workbench <ArrowRight size={14}/></button>}
+      {!importView&&!applied&&<small>{stale?'Refresh the saved proposal in Workbench.':mergeAll?(holdMerge?'Hold to merge all new epochs into Main, or inspect them in Workbench to pick some. Existing Main recordings and draft exclusions are kept.':'Inspect in Workbench to review and merge these additions.'):holdMerge?`Hold to merge eligible additions from ${suggestion.source_filename||'this recording'} into Main. Main recordings and draft exclusions are kept; additions from other pending recordings stay in Workbench.`:'Inspect in Workbench to review and merge these additions.'}</small>}
     </div></div>
-    {merging&&<p role="status">Merging eligible additions into Main…</p>}
+    {merging&&<p role="status">{mergeAll?'Merging all new epochs into Main…':'Merging eligible additions into Main…'}</p>}
     {error&&<p className="error" role="alert">{error}</p>}
   </section>;
 }

@@ -84,3 +84,14 @@ test('manifest creation refuses late cancellation and corrupt final membership r
   assert.equal(calls,1);
  }
 });
+
+test('finish review posts the cumulative candidate fences and returns the fresh context',async()=>{
+  const {finishWorkbenchReview}=await import('./workbenchAuthority.js');
+  const calls=[];const root='/protocols/p/workbench/candidates/union';
+  const fresh={candidate_scope_revision:'scope',draft:{draft_version:8},counts:{pending_epochs:0,excluded_epochs:12}};
+  const value=await finishWorkbenchReview(root,{candidate_scope_revision:'scope',draft:{draft_version:7}},async(path,options)=>{calls.push([path,options]);return fresh;});
+  assert.deepEqual(calls,[[`${root}/finish`,{method:'POST',body:{expected_candidate_scope_revision:'scope',expected_version:7}}]]);
+  assert.equal(value,fresh);
+  await assert.rejects(finishWorkbenchReview(root,{candidate_scope_revision:'scope',draft:{}},async()=>fresh),/complete frozen scope/);
+  await assert.rejects(finishWorkbenchReview(root,{candidate_scope_revision:'scope',draft:{draft_version:7}},async()=>({})),/complete frozen scope/);
+});
