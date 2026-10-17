@@ -1,6 +1,7 @@
 """Portable bootstrap safeguards; no network, package install or SQL writes."""
 import configparser
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -105,6 +106,34 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(result['retinanalysis_commit'],'a'*40)
         self.assertTrue((self.root/'.rieke-runtime/runtime.json').is_file())
         self.assertFalse((self.root/'project.json').exists())
+
+    def test_setup_applies_the_packaged_scipy_override_on_apple_silicon(self):
+        checkout=self.root/'.rieke-runtime/retinanalysis'
+        (self.root/'desktop').mkdir(exist_ok=True)
+        (self.root/'desktop/scientific-wheels.lock').write_text('scipy @ https://example.invalid/scipy.whl --hash=sha256:'+'a'*64+'\n')
+        def commands(args,**kwargs):
+            if args[:2]==['git','clone']:
+                Path(args[-1]).mkdir(parents=True)
+        for platform,machine,expected in (('darwin','arm64',True),('linux','x86_64',False)):
+            with self.subTest(platform=platform), patch.object(boot.shutil,'which',return_value='/tools/tool'), \
+                 patch.object(boot,'captured',side_effect=lambda args,**kw:'v24.0.0' if args[0]=='node' else 'a'*40), \
+                 patch.object(boot,'verify_checkout',return_value=checkout), \
+                 patch.object(boot,'run',side_effect=commands) as invoked, \
+                 patch.object(boot.sys,'platform',platform), \
+                 patch.object(boot.os,'uname',return_value=os.uname_result(('Darwin','host','1','1',machine))), \
+                 patch.object(boot,'install_mysql_runtime',return_value={'root':str(self.root/'.rieke-runtime/mysql')}), \
+                 patch.object(boot,'probe_runtime',return_value={'parser_import':'ok'}):
+                boot.setup(self.root)
+            rows=[list(map(str,call.args[0])) for call in invoked.call_args_list]
+            override=[row for row in rows if any(part.endswith('scientific-wheels.lock') for part in row)]
+            self.assertEqual(bool(override),expected)
+            if expected:
+                main=next(i for i,row in enumerate(rows) if any(part.endswith('workspace-runtime.lock') for part in row))
+                self.assertGreater(rows.index(override[0]),main,'the override follows the main lock')
+                self.assertIn('--require-hashes',override[0]);self.assertIn('--no-deps',override[0])
+
+    def test_runtime_probe_loads_the_scipy_module_a_wrong_build_cannot(self):
+        self.assertIn("'scipy.sparse.linalg'",boot.PROBE)
 
     def test_managed_doctor_uses_private_mysql_without_node_git_or_docker(self):
         runtime = self.root / '.rieke-runtime'

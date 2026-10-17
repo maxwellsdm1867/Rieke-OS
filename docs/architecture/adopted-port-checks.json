@@ -4389,15 +4389,15 @@
       },
       {
         "file": "python/workspace_bootstrap.py",
-        "file_sha256": "cdf014e61d3754eac6ce700a3054c849b77af3f5dec55ca4a23be1f66f7d499a",
+        "file_sha256": "c124cc69539584ea2a907380be93e4a26babd844b30dbf13c9befb1e52feaeeb",
         "sites": [
           {
             "selector": "assignment:PROBE",
-            "ast_sha256": "1a0c10301b479ba5967f2b0b6f826bc776cebd8df8b245cfa53793779c713b18",
+            "ast_sha256": "265b877f421174f51b4362a0faa5467a5505e534d9180ad712b7093699c88799",
             "kind": "embedded-python"
           }
         ],
-        "reason": "Reviewed startup-only required-resource change defers the MySQL executable check to data use; explicit hash audits still require it. The embedded third-party/parser PROBE and its AST remain unchanged; no new execution permission."
+        "reason": "Reviewed startup-only required-resource change defers the MySQL executable check to data use; explicit hash audits still require it. The embedded third-party/parser PROBE and its AST remain unchanged; no new execution permission. Development environment review (2026-10-17): setup also installs the hash-pinned desktop/scientific-wheels.lock SciPy build on Apple silicon (the same build the packaged app uses), and the embedded PROBE additionally imports scipy.sparse.linalg so a SciPy build that cannot load PROPACK on newer macOS is reported. No other embedded code or execution permission changed."
       },
       {
         "file": "python/disco/decisions/tests/test_checkpoint_refusal_public.py",

@@ -123,7 +123,9 @@ import retinanalysis
 assert pathlib.Path(retinanalysis.__file__).resolve().parent == (checkout/'src/retinanalysis').resolve(), 'Installed RetinAnalysis does not match the selected parser checkout or wheel'
 if os.environ.get('RIEKE_DESKTOP_RUNTIME'):
     assert pathlib.Path(retinanalysis.__file__).resolve().is_relative_to(pathlib.Path(os.environ['RIEKE_DESKTOP_RUNTIME']).resolve()), 'Parser wheel escapes desktop resources'
-for module in ('flask','datajoint','h5py','hdf5storage','numpy','scipy','bin2py'):
+# scipy.sparse.linalg loads PROPACK, the compiled module that a wrong SciPy
+# build cannot load on newer macOS; importing bare scipy would not notice.
+for module in ('flask','datajoint','h5py','hdf5storage','numpy','scipy','scipy.sparse.linalg','bin2py'):
     importlib.import_module(module)
 assert md.version('datajoint') == '2.2.2', 'DataJoint must be 2.2.2'
 spec=importlib.util.spec_from_file_location('bootstrap_parser',checkout/'src/retinanalysis/utils/parse_data.py')
@@ -330,6 +332,11 @@ def setup(root=ROOT, *, checkout=None, managed_root=None):
     # Never sync or uninstall from a supplied scientist environment. This venv
     # belongs only to this clone, and every registry package is hash pinned.
     run(['uv','pip','install','--python',python,'--require-hashes','-r',root/'python/workspace-runtime.lock'])
+    # The packaged app replaces SciPy with a build that loads on newer macOS;
+    # development uses the same hash-pinned wheel so both environments match.
+    wheels = root / 'desktop/scientific-wheels.lock'
+    if sys.platform == 'darwin' and os.uname().machine == 'arm64' and wheels.is_file():
+        run(['uv','pip','install','--python',python,'--require-hashes','--no-deps','--reinstall','-r',wheels])
     run(['uv','pip','install','--python',python,'--no-deps','--no-build-isolation','-e',selected,
          selected/spec['utilities']])
     run(['uv','pip','check','--python',python])
