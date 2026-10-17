@@ -476,8 +476,13 @@ class ProtocolWorkbench:
         if (self.superseded(context) or not context['valid_base'] or context['annotation_changed']
                 or self.main_blocked(context)):
             return set()
+        # A merge refuses epochs recorded under a protocol ID the entry does not
+        # list (pinned entries list every ID they span), so they are not pending.
+        from workspace_protocol_identity import protocol_ids
+        allowed = protocol_ids(self.service, context['protocol_uuid'])
         return {key for key in context['pending']
-                if key not in context['ineligible'] and key not in context['unavailable']}
+                if key not in context['ineligible'] and key not in context['unavailable']
+                and self.service.rows.get(key, {}).get('protocol_name') in allowed}
 
     @staticmethod
     def check_scope(context, expected):

@@ -445,6 +445,23 @@ class CumulativePendingTests(unittest.TestCase):
         self.assertEqual(self.undo(latest).status_code, 200)
         self.assertEqual(self.queue()['pending_epoch_count'], 1)
 
+    def test_pending_follows_the_entry_protocol_ids_including_pinned_multi_protocol(self):
+        foreign, _ = self.more_import()
+        recorded = self.case.service.rows[self.added]['protocol_name']
+        self.case.service.rows[foreign]['protocol_name'] = 'other.lab.protocols.TripleHistory'
+        # A protocol entry lists one recorded ID; a foreign protocol is never pending.
+        self.assertEqual(self.queue()['pending_epoch_count'], 1)
+        prepared, _ = self.prepare()
+        self.assertEqual(self.epochs(prepared), {self.added})
+        # An entry listing both IDs (as a pinned multi-protocol entry does) offers both.
+        definition = self.case.service.protocols[self.protocol]['definition']
+        definition['query']['all'][0].update(operator='in', value=sorted([recorded, 'other.lab.protocols.TripleHistory']))
+        self.assertEqual(self.queue()['pending_epoch_count'], 2)
+        prepared, _ = self.prepare()
+        prepared = self.patch_draft(prepared, selection_mode='all')
+        receipt = self.accept_selected(prepared)
+        self.assertEqual(sorted(receipt['accepted_epoch_uuids']), sorted([self.added, foreign]))
+
     def test_prepare_bootstrap_is_response_only_and_replay_reads_fresh_authority(self):
         body = dict(expected_queue_revision=self.queue()['queue_revision'])
         path = self.case.base + '/workbench/prepare'

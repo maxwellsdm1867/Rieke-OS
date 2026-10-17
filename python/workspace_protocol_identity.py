@@ -20,6 +20,12 @@ def selection_protocols(service, identities):
             'protocols': [{'protocol_id': name, 'epoch_count': count} for name, count in sorted(counts.items())]}
 
 
+def protocol_ids(service, protocol_uuid):
+    """The recorded Protocol IDs an entry accepts; a pinned entry may list several."""
+    expected = validate_protocol_definition(service.protocols[protocol_uuid]['definition'])
+    return frozenset(expected if isinstance(expected, list) else [expected])
+
+
 def protocol_compatibility(service, protocol_uuid, identities):
     expected = validate_protocol_definition(service.protocols[protocol_uuid]['definition'])
     expected_ids = expected if isinstance(expected, list) else [expected]
