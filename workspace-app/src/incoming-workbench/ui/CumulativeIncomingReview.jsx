@@ -1,5 +1,5 @@
-import {mergeWasUndone} from '../mergeUndo.js';
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {mergeUndoneVersion,mergeWasUndone,subscribeMergeUndone} from '../mergeUndo.js';
+import {useCallback,useEffect,useMemo,useRef,useState,useSyncExternalStore} from 'react';
 import {api,number,time} from '../../api.js';
 import {Activity,History,RefreshCw} from 'lucide-react';
 import NeuronIcon from '../../components/NeuronIcon.jsx';
@@ -22,6 +22,8 @@ function viewerPresentation(viewer){
 export default function CumulativeIncomingReview({queue,protocolId,session={},onSession,onHistory,onRefresh,onReviewProposal,refreshing=false,mergeRequest=null,onMergeRequestHandled,...reviewProps}){
   const [prepared,setPrepared]=useState(session.prepared||null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[nonce,setNonce]=useState(0);
   const [receiptExport,setReceiptExport]=useState(null),[,setDraftVersion]=useState(0);
+  // Re-render when a merge is undone so its "Export those additions" offer disappears.
+  useSyncExternalStore(subscribeMergeUndone,mergeUndoneVersion);
   const drafts=useRef(session.drafts||{}),scopes=useRef(session.scopes||(session.prepared?{[session.prepared.candidate_revision_uuid]:session.prepared}:{})),attempted=useRef(null),snapshot=useRef(null);
   const presentationOwner=useRef({protocolId,projectId:reviewProps.projectId});
   const draft=prepared?drafts.current[prepared.candidate_revision_uuid]:null;
