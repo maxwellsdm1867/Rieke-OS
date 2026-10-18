@@ -13,7 +13,11 @@ Hydrate before writing. Project identity, response format/version and per-field
 revisions remain mandatory. Browser storage is a cache and one-time legacy source;
 a field is acknowledged only after a saved receipt. Missing portable preferences
 must not silently adopt another browser's values. Updates serialize, preserve
-visible unsaved edits and refuse flush with unsaved errors. An optimistic-conflict
+visible unsaved edits. `flush()` re-sends each failed PUT once (the visible
+value; a revision conflict reapplies the original change to fresh state) and
+rejects only if that retry fails, naming the preference; a later flush retries
+again, so one failure never blocks Quit/close permanently. A read-only load failure
+leaves nothing unsaved and does not block flush. An optimistic-conflict
 retry reads the current receipt and reapplies the change once. Refresh must not
 overwrite unsaved local edits. Keep the hook's current client-map lifetime,
 subscription cleanup, focus/storage refresh and pre-effect visible-scope gate.
