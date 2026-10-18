@@ -1705,8 +1705,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 or len(sources) != len(set(sources))):
             raise ValueError("Mask source revisions must be unique SHA256 strings")
         members = mask["epochs"]
-        if not isinstance(members, list) or not members or len(members) > 10000:
-            raise ValueError("A mask must contain 1–10,000 epochs and cover the complete protocol query")
+        # No size cap: export is unbounded, membership must equal the query
+        # exactly below, and CurationStore writes changed epochs in batches.
+        if not isinstance(members, list) or not members:
+            raise ValueError("A mask must contain at least one epoch and cover the complete protocol query")
         inclusion = {}
         for member in members:
             if (not isinstance(member, dict) or set(member) != {"epoch_uuid", "included"}

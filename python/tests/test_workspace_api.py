@@ -470,8 +470,37 @@ class WorkspaceAPITests(unittest.TestCase):
         for key, state in result['curation'].items():
             self.assertEqual(state['tags'], ['inspected'])
             self.assertEqual(state['review_state'], 'approved')
-            self.assertEqual(state['revision'], 2)
+            # Unchanged epochs keep their revision; only the excluded one is rewritten.
+            self.assertEqual(state['revision'], 2 if key == mask['epochs'][0]['epoch_uuid'] else 1)
         self.assertEqual(sum(row['included'] for row in result['curation'].values()), 1)
+        self.assertEqual(self.mask(), mask)
+
+    def test_mask_larger_than_ten_thousand_epochs_round_trips(self):
+        service = self.service
+        template_key = service.ids[0]
+        service.ids = [str(uuid.UUID(int=(7 << 64) | index)) for index in range(10050)]
+        rows, details = {}, {}
+        for index, key in enumerate(service.ids):
+            rows[key] = {**service.rows[template_key], 'epoch_uuid': key,
+                         'cell_uuid': service.cell_ids[index % 2], 'block_uuid': str(uuid.UUID(int=(8 << 64) | index // 100))}
+            details[key] = {'parameters': {'example': index}, 'properties': {}, 'attributes': {},
+                            'metadata': {'epoch': {'uuid': key}}}
+        service.rows, service.details = rows, details
+        service._fingerprints = {key: 'b' * 64 for key in service.ids}
+        service.protocols[service.protocol_id]['result']['epochs'] = [
+            {'uuid': key, 'metadata_hash': 'b' * 64} for key in service.ids]
+        mask = self.mask()
+        self.assertEqual(len(mask['epochs']), 10050)
+        excluded = {row['epoch_uuid'] for row in mask['epochs'][::3]}
+        for row in mask['epochs']:
+            row['included'] = row['epoch_uuid'] not in excluded
+        with patch.object(self.curation, 'insert1', side_effect=AssertionError('one statement per epoch')):
+            response = self.import_mask(mask)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual((response.get_json()['imported_count'], response.get_json()['included_count']),
+                         (10050, 10050 - len(excluded)))
+        # Only changed epochs are written, in batched statements.
+        self.assertEqual(len(self.curation.rows), len(excluded))
         self.assertEqual(self.mask(), mask)
 
     def test_mask_rejects_malformed_duplicate_unknown_or_partial_membership(self):
@@ -515,14 +544,11 @@ class WorkspaceAPITests(unittest.TestCase):
     def test_mask_write_failure_rolls_back_entire_mixed_selection(self):
         mask = self.mask()
         mask['epochs'][0]['included'] = False
-        original_insert = self.curation.insert1
-        calls = []
-        def fail_second(row):
-            calls.append(row)
-            if len(calls) == 2:
-                raise RuntimeError('simulated second row failure')
-            original_insert(row)
-        with patch.object(self.curation, 'insert1', side_effect=fail_second), \
+        original_insert = self.curation.insert
+        def fail_after_first(rows, replace=False):
+            original_insert(rows[:1], replace=replace)  # partial statement effect
+            raise RuntimeError('simulated second row failure')
+        with patch.object(self.curation, 'insert', side_effect=fail_after_first), \
              self.assertLogs(self.app.logger, level='ERROR'):
             response = self.import_mask(mask)
         self.assertEqual(response.status_code, 500)
