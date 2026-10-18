@@ -26,7 +26,7 @@ import H5Inbox from './recording-import/ui/H5Inbox.jsx';
 import BrowseFilesButton from './file-picker/ui/BrowseFilesButton.jsx';
 import ProjectClosedNotice from './project-workspace/ui/ProjectClosedNotice.jsx';
 import AppUpdates from './app-updates/ui/AppUpdates.jsx';
-import {flushBeforeSubmission} from './desktopLifecycle.js';
+import {flushBeforeSubmission,flushDesktopDrafts} from './desktopLifecycle.js';
 import {saveUnmountView,readUnmountView,clearUnmountView} from './projectUnmount.js';
 import ProjectUnmountDialog from './project-workspace/ui/ProjectUnmountDialog.jsx';
 import {useDesktopDraft} from './renderer-drafts/useDesktopDraft.js';

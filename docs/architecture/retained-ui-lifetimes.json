@@ -4,7 +4,7 @@
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
     "src/App.jsx": {
-      "fingerprint": "70e149f00557f103d98cc4feaeaadf97e6239fbc68d8c50e175bbacadfff6756",
+      "fingerprint": "c9a1c4eb41f36efafe72dea3aa5730f31770c705c73bd8f94bcbacd10c5b6469",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -63,7 +63,8 @@
         "src/incoming-workbench/mergeUndo.test.js",
         "src/annotationReceiptWorkflow.test.js",
         "src/cellQCNavigationLifecycle.test.js",
-        "src/workbenchTagScope.test.js"
+        "src/workbenchTagScope.test.js",
+        "src/appLifecycleImports.test.js"
       ]
     },
     "src/annotations/annotationProfile.js": {
