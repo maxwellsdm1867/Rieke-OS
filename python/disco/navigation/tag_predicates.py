@@ -3,9 +3,7 @@ from __future__ import annotations
 import copy
 import contextlib
 import hashlib
-import json
 import uuid
-from collections import OrderedDict
 from disco.navigation.predicates import MAX_NODES, validate, matches, predicate_catalog
 from disco.workbench.recipes import checksum
 from disco.navigation.tree import value_key, value_order, value_label
@@ -81,9 +79,17 @@ def _protocol_locks(service,protocols):
 MEMO_ENTRIES=4
 
 
-def _canonical(value):
-    """The JSON text checksum() hashes for this value."""
-    return json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False)
+_PLAIN=frozenset('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_./:-')
+
+
+def _canonical_strings(value):
+    """checksum()'s JSON text for nested lists of plain strings; None otherwise."""
+    if isinstance(value,str):
+        return '"'+value+'"' if _PLAIN.issuperset(value) else None
+    if isinstance(value,(list,tuple)):
+        parts=[_canonical_strings(item) for item in value]
+        return None if any(part is None for part in parts) else '['+','.join(parts)+']'
+    return None
 
 
 class _Publication:
@@ -112,15 +118,16 @@ class _Publication:
         and the publication's sorted cell links, so that hash state is kept and
         each shared generation only appends its own suffix.
         """
-        if protocols:
-            return checksum({'protocols':protocols,'shared_revision':shared_revision,
-                             'shared_fields':fields,'registered_cell_links':self.cell_links()})
+        identity=lambda:checksum({'protocols':protocols,'shared_revision':shared_revision,
+                                  'shared_fields':fields,'registered_cell_links':self.cell_links()})
+        names,revision=_canonical_strings(fields),_canonical_strings(shared_revision)
+        if protocols or names is None or revision is None:return identity()
         if self._links_hash is None:
-            state=hashlib.sha256(b'{"protocols":[],"registered_cell_links":')
-            state.update(_canonical(self.cell_links()).encode())
-            self._links_hash=state
+            links=_canonical_strings(self.cell_links())
+            if links is None:return identity()
+            self._links_hash=hashlib.sha256(('{"protocols":[],"registered_cell_links":'+links).encode())
         state=self._links_hash.copy()
-        state.update((',"shared_fields":'+_canonical(fields)+',"shared_revision":'+_canonical(shared_revision)+'}').encode())
+        state.update((',"shared_fields":'+names+',"shared_revision":'+revision+'}').encode())
         return state.hexdigest()
 
 
@@ -215,13 +222,13 @@ class TagPredicates:
         witness=self._witness(fields)
         memo=getattr(self.service,'_tag_predicate_memo',None)
         if witness is not None and memo is not None and witness in memo:
-            memo.move_to_end(witness)
+            memo[witness]=memo.pop(witness)  # Most recently used last.
             return memo[witness]
         entry=self._build(fields,self._derived(witness[0] if witness else None))
         if witness is not None and self._witness(fields)==witness:
-            if memo is None:memo=self.service._tag_predicate_memo=OrderedDict()
+            if memo is None:memo=self.service._tag_predicate_memo={}
             memo[witness]=entry
-            while len(memo)>MEMO_ENTRIES:memo.popitem(last=False)
+            while len(memo)>MEMO_ENTRIES:memo.pop(next(iter(memo)))
         return entry
 
     def snapshot(self,fields):
@@ -390,22 +397,8 @@ class TagPredicates:
         return result
 
     def _approximate_times(self,shared,tag,universe,derived):
-        """Chip times for a store without a time table, read from its records.
-
-        Equivalent to hydrating every scoped epoch's chips: a chip's time is the
-        record's update time (approximate). Only records whose target is in
-        scope (an epoch in the universe or a cell with an epoch in it) are read
-        as chips, and each is validated exactly as hydration would.
-        """
-        from disco.decisions.annotations import SharedAnnotations
-        if type(shared) is not SharedAnnotations or getattr(shared,'TagTime',None) is not None:return None
-        from disco.decisions.tag_times import chip_time
-        found=[]
-        for kind in ('epoch','cell'):
-            for row in shared._rows(kind):
-                target=row['target_uuid']
-                if not (target in universe if kind=='epoch' else
-                        any(key in universe for key in derived.cell_epochs(target))):continue
-                values=shared._validated_tags(row)
-                if tag in values:found.append((kind,row['target_uuid'],chip_time(row,tag,None)['added_at']))
-        return found
+        """Chip times for a store without a time table, read from its records."""
+        reader=getattr(shared,'approximate_tag_times',None)
+        if reader is None:return None
+        return reader(tag,universe.__contains__,
+                      lambda cell:any(key in universe for key in derived.cell_epochs(cell)))

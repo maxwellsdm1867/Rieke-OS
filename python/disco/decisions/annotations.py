@@ -353,6 +353,26 @@ class SharedAnnotations:
         for item in output.values():item['tags'].sort(key=lambda r:(r['tag'],r['author_name'],r['profile_uuid']))
         return output
 
+    def approximate_tag_times(self,tag,epoch_in_scope,cell_in_scope):
+        """(kind,target,added_at) of in-scope chips with this tag, or None.
+
+        Only for this native store without a time table: equal to hydrating every
+        scoped epoch's chips with for_epochs (approximate update times), read
+        from the project's annotation records instead of per epoch. Each scoped
+        record is validated exactly as hydration would.
+        """
+        native=all(getattr(type(self),name) is getattr(SharedAnnotations,name)
+                   for name in ('for_epochs','_rows','_validated_tags','_chips'))
+        if self.TagTime is not None or not native:return None
+        from disco.decisions.tag_times import chip_time
+        found=[]
+        for kind,in_scope in (('epoch',epoch_in_scope),('cell',cell_in_scope)):
+            for row in self._rows(kind):
+                if not in_scope(row['target_uuid']):continue
+                if tag in self._validated_tags(row):
+                    found.append((kind,row['target_uuid'],chip_time(row,tag,None)['added_at']))
+        return found
+
     def for_epochs(self,rows):
         if not rows:return {}
         ids=[r['epoch_uuid'] for r in rows];cells=sorted({r['cell_uuid'] for r in rows})
