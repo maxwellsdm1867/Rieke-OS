@@ -224,5 +224,62 @@ class SummaryPollTests(unittest.TestCase):
             self.assertEqual(self.jobs.poll(request_id)['status'], 'stale')
 
 
+class WholeCatalogEligibilityTests(unittest.TestCase):
+    """Preview eligibility is kept per publication and selected by source (B9)."""
+    join = explore_fixture.RequestedSummaryTests.join
+
+    def setUp(self):
+        from pathlib import Path
+        from disco.metadata.disk_index import DiskMetadataIndex
+        from disco.metadata.typed_lifecycle import prepare
+        explore_fixture.RequestedSummaryTests.setUp(self)
+        path = Path(self.fixture.temp.name) / 'cache' / 'metadata' / ('e' * 64 + '.sqlite')
+        index = DiskMetadataIndex.build(path, self.service.rows, self.service.details,
+            self.service.sources, 'e' * 64, self.service.project['project_uuid'])
+        self.service.disk_index = index
+        self.service.typed_index, _ = prepare(index)
+        self.service._explore_publication = 'first-publication'
+
+    def predicate(self):
+        return {'field': 'cell', 'operator': 'eq', 'value': self.service.rows[self.service.ids[0]]['cell_uuid']}
+
+    def reference(self, predicate):
+        ids = [row['epoch_uuid'] for row in sorted(
+            (row for row in self.service.rows.values()
+             if row['source_sha256'] in set(self.service.source_scope()['active_source_revisions'])),
+            key=lambda row: (row['date'], row['start_time'], row['epoch_uuid']))]
+        return self.service.match_predicate(predicate, ids)
+
+    def test_whole_catalog_scope_is_cached_and_selected_by_source(self):
+        from disco.metadata.typed_index import TypedMetadataIndex
+        scopes = []
+        original = TypedMetadataIndex.iter_membership
+
+        def observed(reader, predicate=None, scope=None):
+            scopes.append(dict(scope) if isinstance(scope, dict) else scope)
+            return original(reader, predicate, scope)
+        with patch.object(TypedMetadataIndex, 'iter_membership', observed):
+            first = self.service.explore_preview(self.predicate(), 'cell', include_tree=False, include_catalog_summary=False)
+            second = self.service.explore_preview(self.predicate(), 'cell', include_tree=False, include_catalog_summary=False)
+        self.assertEqual(first, second)
+        self.assertEqual([set(scope) for scope in scopes], [{'sources'}, {'sources'}])
+        self.assertIs(self.service._eligible()[1], self.service._eligible()[1])
+        expected = self.reference(self.predicate())
+        self.assertEqual([item['uuid'] for item in first['membership']], sorted(expected[1]))
+        self.assertEqual(self.service.match_predicate(self.predicate())[1], expected[1])
+
+    def test_publication_and_source_scope_invalidate_cached_eligibility(self):
+        before = self.service._eligible()[1]
+        self.service._explore_publication = 'next-publication'
+        self.assertIsNot(self.service._eligible()[1], before)
+        self.assertEqual(self.service._eligible()[1], before)
+        excluded = self.service.rows[self.service.ids[0]]['source_sha256']
+        with patch.object(self.service, 'source_state_provider',
+                          lambda: {excluded: {'archived': False, 'query_excluded': True, 'version': 1}}):
+            self.assertNotIn(self.service.ids[0], self.service._eligible()[1])
+            self.assertEqual(list(self.service.match_predicate({'all': []})[1]),
+                             list(self.service._eligible()[1]))
+
+
 if __name__ == '__main__':
     unittest.main()
