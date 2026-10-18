@@ -3990,10 +3990,12 @@
           {
             "path": "workspace-app/src/incoming-workbench/workbenchAuthority.js",
             "exports": [
+              "MERGE_UNDONE_MESSAGE",
               "acceptWorkbench",
               "acceptanceFailureKind",
               "createWorkbenchSelection",
               "finishWorkbenchReview",
+              "isMergeUndone",
               "pendingQueueCounts",
               "previewWorkbench",
               "requirePreparedWorkbench",
