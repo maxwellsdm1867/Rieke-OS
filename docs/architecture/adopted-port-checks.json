@@ -5469,7 +5469,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "b92d4b2de7d9f1922f0d53e3badb0c86ab45416bb775d773a62f7280046d3dc5",
+                "file_sha256": "9ce9e4fcf1715f2e076c7373ac542d0fa2b074dd12e7b709789b15b2136258b1",
                 "contract_id": null
               }
             ]
@@ -5904,7 +5904,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "b92d4b2de7d9f1922f0d53e3badb0c86ab45416bb775d773a62f7280046d3dc5",
+                "file_sha256": "9ce9e4fcf1715f2e076c7373ac542d0fa2b074dd12e7b709789b15b2136258b1",
                 "contract_id": null
               }
             ]
@@ -5937,7 +5937,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "b92d4b2de7d9f1922f0d53e3badb0c86ab45416bb775d773a62f7280046d3dc5",
+                "file_sha256": "9ce9e4fcf1715f2e076c7373ac542d0fa2b074dd12e7b709789b15b2136258b1",
                 "contract_id": null
               }
             ]

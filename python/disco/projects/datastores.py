@@ -28,6 +28,11 @@ ACTIONS = {'freeze': 'data_store_frozen', 'unfreeze': 'data_store_unfrozen',
            'exclude': 'data_store_query_excluded', 'include': 'data_store_query_included'}
 
 
+class DataStoreBusy(RuntimeError):
+    """Another exclusive data-store operation holds its lock; retryable (HTTP 409)."""
+    code = 'lock_busy'
+
+
 class DataStoreConflict(RevisionConflict):
     def __init__(self, current, message='Data store registration changed; reload before updating its lifecycle.'):
         super().__init__(current)
@@ -102,8 +107,7 @@ def migrate_query_eligibility(dj, event_table):
     table = '`recording_workspace`.`data_store_state`'
     lock = hashlib.sha256(b'recording_workspace:query_eligibility_migration:v1').hexdigest()
     if connection.query(f"SELECT GET_LOCK('{lock}', 10)").fetchone()[0] != 1:
-        from workspace_service import LockBusy
-        raise LockBusy('Another source eligibility schema upgrade is running')
+        raise DataStoreBusy('Another source eligibility schema upgrade is running')
     try:
         columns = connection.query(f"SHOW COLUMNS FROM {table} LIKE 'query_excluded'", as_dict=True).fetchall()
         if not columns:
@@ -212,8 +216,7 @@ class DataStores:
         connection = self.dj.conn()
         lock = hashlib.sha256(('source-eligibility:' + self.project_uuid).encode()).hexdigest()
         if connection.query(f"SELECT GET_LOCK('{lock}', 10)").fetchone()[0] != 1:
-            from workspace_service import LockBusy
-            raise LockBusy('Another source eligibility operation is running')
+            raise DataStoreBusy('Another source eligibility operation is running')
         try:
             yield
         finally:

@@ -752,7 +752,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if isinstance(error, WorkspaceNotReady):
             # Never served from the previous publication: reads stay refused.
             return jsonify(error=str(error), code=error.code, retryable=True), 503
-        if isinstance(error, LockBusy):
+        if isinstance(error, LockBusy) or (isinstance(error, RuntimeError) and getattr(type(error), 'code', None) == 'lock_busy'):
             return jsonify(error=str(error), code=error.code, retryable=True), 409
         if isinstance(error, (ValueError, KeyError, FileNotFoundError)):
             return jsonify(error=str(error)), 400
