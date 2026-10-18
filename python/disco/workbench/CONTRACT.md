@@ -111,18 +111,30 @@ seen that main's saved query matches, from active sources, under a protocol
 name the entry accepts (`pending_pool`). "Seen" recordings are those present
 when main was last defined (query save, pinned creation or baseline freeze);
 additive merges do not change it. A main-level blocker offers nothing. The pool
-is cached and recomputed only when main's binding, sources, fingerprints, the
-entry definition or tags its query uses change. Re-running a search predicate
+is cached and recomputed only when main's binding, sources, the service
+publication token (every refresh publishes a new one; map addresses are never a
+key), fingerprints, the entry definition or tags its query uses change. Re-running a search predicate
 is the separate, explicit full-diff path.
 
 The combined review is one immutable candidate per main revision and pool
 (`prepare_pool_candidate`): main plus the whole pool, parented on main, with no
 origin proposals to re-prove. Left-out decisions carry forward for unchanged
-fingerprints; new epochs never inherit an earlier 'all' consent. A derived
+fingerprints; new epochs never inherit an earlier 'all' consent. The actor's
+latest combined-review draft is the one with the highest draft version (newest
+candidate on ties): carries start at the latest version and every edit adds
+one. When a pool returns to an earlier content (a recording excluded and
+included again) and reuses that candidate, its existing draft is brought up to
+the latest draft exactly as a fresh carry would be, at the latest version, so
+the queue fence is unchanged and the queue and `merge-all` read the same
+decisions. A derived
 prepare operation replays its receipt unless the queue is unchanged but its
 context went stale. `merge-all` adds every pending, not left-out epoch in one
 locked request fenced by the queue revision the scientist saw, and replays its
-receipt for the same operation UUID.
+receipt for the same operation UUID only when that receipt is an additive 'all'
+acceptance of the same protocol. It resolves 'all' for that request only: it
+never persists 'all' consent or advances the draft version, so a failed merge
+leaves the draft unchanged. An accepted-additions export refuses (409) once
+that merge is undone or main's binding is no longer the one the merge published.
 
 A successful preparation response that computed and closed its context during
 that request includes `X-Disco-Workbench-Context: fresh-v1` only after its SQL

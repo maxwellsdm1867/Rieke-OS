@@ -6652,8 +6652,8 @@
       },
       {
         "file": "python/tests/test_workspace_workbench_exports.py",
-        "file_sha256": "e88d8c5fd7d5d24e51ad2507481d89668a7bb8c90bd6446b4742bf10305b995a",
-        "reason": "Available formats now include linked SQLite; the two existing artifact-staging failure targets and publication assertions remain unchanged. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
+        "file_sha256": "aa8415beb59a650307b567dbde49636ff51509857d9b248cf136e2936f6286c1",
+        "reason": "Available formats now include linked SQLite; the two existing artifact-staging failure targets and publication assertions remain unchanged. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Workbench decisions update: an appended undone/superseded-merge export test adds no mock target; workbench_exports owner bytes add the undo and binding refusal.",
         "sites": [
           {
             "selector": "Call:55",
@@ -6673,7 +6673,7 @@
               {
                 "module": "disco.workbench.workbench_exports",
                 "file": "python/disco/workbench/workbench_exports.py",
-                "file_sha256": "a1787d1c4a3c413f9f0cf63a5ac2f8505c5cec8a9c69789a8af1f1a4ab3b61c7",
+                "file_sha256": "63f127f24c4a5d13706e72725a62d5bc72544ad36db5f29726ad6be853b9b51d",
                 "contract_id": "backend-workbench"
               },
               {
@@ -6708,7 +6708,7 @@
               {
                 "module": "disco.workbench.workbench_exports",
                 "file": "python/disco/workbench/workbench_exports.py",
-                "file_sha256": "a1787d1c4a3c413f9f0cf63a5ac2f8505c5cec8a9c69789a8af1f1a4ab3b61c7",
+                "file_sha256": "63f127f24c4a5d13706e72725a62d5bc72544ad36db5f29726ad6be853b9b51d",
                 "contract_id": "backend-workbench"
               }
             ]

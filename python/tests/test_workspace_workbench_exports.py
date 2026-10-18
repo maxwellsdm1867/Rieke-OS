@@ -191,6 +191,27 @@ class IncomingExportTests(unittest.TestCase):
         self.assertEqual(reuse.status_code, 200, reuse.get_json())
         self.assertEqual(reuse.get_json()['kind'], 'workbench_incoming')
 
+    def test_undone_or_superseded_merge_is_not_exportable_as_accepted(self):
+        acceptance = self.accept(self.accepted_request()).get_json()
+        root, body = self.receipt_export_request(acceptance)
+        undone = self.case.client.post(self.case.base + '/workbench/undo', json=dict(
+            operation_uuid=acceptance['operation_uuid'], expected_binding_version=acceptance['binding']['version']),
+            headers=self.case.headers)
+        self.assertEqual(undone.status_code, 200, undone.get_json())
+        context = self.case.client.get(root + '/export-context')
+        self.assertEqual(context.status_code, 409, context.get_json())
+        self.assertIn('undone', context.get_json()['error'])
+        exported = self.case.client.post(root + '/exports', json=body, headers=self.case.headers)
+        self.assertEqual(exported.status_code, 409, exported.get_json())
+        self.assertFalse(self.case.datasets.rows)
+        # A main rebound after the merge (here by the undo's binding version)
+        # also refuses, even without consulting the undo receipt.
+        undo_operation = str(uuid.uuid5(uuid.UUID(self.manager.project), 'workbench-undo:' + acceptance['operation_uuid']))
+        self.tables[2].rows[:] = [row for row in self.tables[2].rows if row['operation_uuid'] != undo_operation]
+        context = self.case.client.get(root + '/export-context')
+        self.assertEqual(context.status_code, 409, context.get_json())
+        self.assertIn('Main changed', context.get_json()['error'])
+
 
 if __name__ == '__main__':
     unittest.main()
