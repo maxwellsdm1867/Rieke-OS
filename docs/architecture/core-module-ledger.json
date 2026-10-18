@@ -3890,16 +3890,16 @@
       "id": "display-invalidation-clocks",
       "implementation_commits": [],
       "source_observed_at": "df40a19efbb13237cab2b7ff1bb4750313118854",
-      "purpose": "Separate immediate scientific display invalidation from structural refresh and deferred hidden summaries.",
+      "purpose": "Separate immediate scientific display invalidation from structural refresh, per-protocol membership/curation changes and deferred hidden summaries.",
       "owner": "useWorkspaceChanges/useSummaryRevision; App emits events and Protocol chooses summary visibility.",
       "status": "implemented",
       "interface": {
-        "inputs": "Change event kind and optional confirmed annotation delta; current revision, structural revision and visible flag.",
-        "outputs": "Monotonic local display/structure revisions, optional confirmed annotation event; deferred summary revision."
+        "inputs": "Change event kind ('membership'|'curation' with protocolId, 'structure', legacy untyped/annotations) and optional confirmed annotation delta; current revision, structural revision and visible flag.",
+        "outputs": "Monotonic local display/structure/review revisions, per-protocol clocks (protocolRevision, protocolReviewRevision, protocolMembershipRevision), content/membership counters, last typed change {seq,kind,protocolId}; deferred summary revision."
       },
       "scientific_contract": {
         "identities": "Local revisions are display clocks, never native query/binding/source receipts. Confirmed annotation payload requires version1 before propagation.",
-        "types": "annotations/curation increment display only; other/unspecified events increment structure too. Nonannotation events clear annotation delta.",
+        "types": "Typed membership/curation events advance only that protocol's clock plus content (and membership) counters; structure events advance every clock. Legacy: annotations/curation without protocolId increment display only; other/unspecified events increment structure too. Tag-channel and confirmed epoch/cell receipts advance nothing.",
         "order": "Hidden summary holds last committed display revision; any structural change or visibility refreshes it. Live pages/edit authority never use this deferred clock.",
         "units": "Integer counters only; no elapsed-time or scientific-unit meaning.",
         "provenance": "Events invalidate derived display; native command/source owners establish scientific facts."
@@ -3924,7 +3924,8 @@
         "existing_tests": [
           "workspace-app/src/inspectorCurationLifecycle.test.js",
           "workspace-app/src/inspectorTreeAuthority.test.js",
-          "workspace-app/src/presentationSessionsApp.test.js"
+          "workspace-app/src/presentationSessionsApp.test.js",
+          "workspace-app/src/workspaceChangesLedger.test.js"
         ],
         "execution_this_review": "Not run; source and existing test locations inspected. Listed tests are evidence surfaces, not a new pass receipt.",
         "deliberate_fault_ideas": [
@@ -3950,11 +3951,12 @@
         ]
       },
       "integration_capabilities": [
-        "Current two-clock invalidation implemented; no universal generation service for frontend authority."
+        "Typed change kinds (2026-10-18, PR F2): merge-all/undo/finish/accept/apply emit membership for one protocol; /projects, /jobs, /metadata/status and suggestions stay on the structure clock; overview cache invalidates per protocol; useWorkspaceChanges exports the pure applyWorkspaceChange reducer for full-App harnesses. No universal generation service for frontend authority."
       ],
       "change_rules": [
         "Do not merge clocks without proving every live/readiness and hidden-summary consumer.",
-        "Keep server receipts explicit despite local counter reuse."
+        "Keep server receipts explicit despite local counter reuse.",
+        "Typed events must name their protocol; untyped events keep the broad structural refresh. Writes keep their own expected revisions; these clocks never grant write authority."
       ],
       "inventory_reference_id": "FE10-display-invalidation-clocks",
       "depends_on": [],
@@ -3966,7 +3968,8 @@
       "existing_tests": [
         "workspace-app/src/inspectorCurationLifecycle.test.js",
         "workspace-app/src/inspectorTreeAuthority.test.js",
-        "workspace-app/src/presentationSessionsApp.test.js"
+        "workspace-app/src/presentationSessionsApp.test.js",
+        "workspace-app/src/workspaceChangesLedger.test.js"
       ],
       "not_newly_run_fault_ideas": [
         {
