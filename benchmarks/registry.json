@@ -1,7 +1,7 @@
 {
   "format": "rieke-benchmark-registry",
   "version": 1,
-  "suite_version": "1.0.7",
+  "suite_version": "1.0.8",
   "fixture_version": "native-truth-v1+mounted-workflow-500-v1",
   "samples": 4,
   "method": {
@@ -331,6 +331,49 @@
       "fixture_version": "workflow-owned-v4",
       "default_protocol_epochs": 1000000,
       "ci_protocol_epochs": 20000
+    },
+    "route-million": {
+      "version": "1.0.0",
+      "runner": "tools/benchmark_routes.py",
+      "fixture_version": "route-owned-v1",
+      "samples": 3,
+      "max_worker_seconds": 3600,
+      "max_rss_bytes": 6442450944,
+      "profiles": {
+        "1m-protocol-1m": {
+          "epochs": 1000000,
+          "protocol_epochs": 1000000
+        },
+        "1m-protocol-20k": {
+          "epochs": 1000000,
+          "protocol_epochs": 20000
+        },
+        "100k-protocol-100k": {
+          "epochs": 100000,
+          "protocol_epochs": 100000
+        },
+        "smoke": {
+          "epochs": 2000,
+          "protocol_epochs": 2000
+        }
+      },
+      "default_profiles": [
+        "1m-protocol-1m",
+        "1m-protocol-20k",
+        "100k-protocol-100k"
+      ],
+      "comparison": {
+        "relative": 0.25,
+        "absolute_ms": 5.0,
+        "meaning": "Provisional per-case review trigger on warm medians and cold samples. Count increases are listed for review. Never average a regression away."
+      },
+      "expected_by_contract": [
+        "ne_cell_type",
+        "exists_cell_type",
+        "missing_cell_type",
+        "missing_recorded"
+      ],
+      "scope": "Production Flask routes, WorkspaceService, ProtocolStateReader, TreePages, CurationStore, SharedAnnotations, Workbench and a real sealed DiskMetadataIndex over owned SQL doubles and an in-process client. Generation authority leaf SQL and schema attestation are counted doubles advanced by double writes. One cold and three warm samples per case plus one separate cProfile counting pass. No H5, traces, HTTP transport, renderer, native MySQL or release qualification."
     }
   }
 }

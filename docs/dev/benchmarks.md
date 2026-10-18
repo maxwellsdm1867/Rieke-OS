@@ -56,8 +56,8 @@ declaration. Earlier runners without it retain their original flat schema paths
 and receipt keys; current runners use the metadata package paths. Neither lookup
 imports historical code or rewrites an existing receipt.
 
-The core receipt schema is unchanged. Registry suite version 1.0.7 includes the separate everyday-million and
-workflow-million tracks; core cases and sampling are unchanged, but
+The core receipt schema is unchanged. Registry suite version 1.0.7 added the separate everyday-million and
+workflow-million tracks and 1.0.8 adds the diagnostic route-million track; core cases and sampling are unchanged, but
 the registry edit intentionally changes the core suite fingerprint. Retain older
 receipts as historical evidence and establish a matched current-suite baseline.
 A test relocation changes path keys
@@ -456,6 +456,60 @@ This is metadata-only **synthetic query stress evidence**. No waveform is read.
 It does not qualify native SQL/disk behavior, HTTP, renderer paint, UI interaction,
 startup, index build/sealing, mutation/recovery, import/export, packaged apps or
 release promotion. The existing core and native release blockers remain intact.
+
+## Million-epoch backend route track (diagnostic)
+
+`tools/benchmark_routes.py` measures request paths that the everyday query lanes
+do not exercise: the production Flask routes, `WorkspaceService`,
+`ProtocolStateReader`, `TreePages`, `CurationStore`, `SharedAnnotations` and the
+Workbench pending pool, over the owned workflow fixture
+(`benchmarks/workflow/server.py`) with its synthetic index replaced by a real
+sealed `DiskMetadataIndex`. The production `StateGenerationAuthority` runs with
+its leaf SQL replaced: schema attestation is a counted constant and generation
+rows are in-memory counters that the SQL doubles advance on every curation and
+shared-annotation write, standing in for the native triggers. No H5 file may be
+opened after fixture construction; traces are a separate path.
+
+```sh
+# Small composition check (seconds per case, never a million-row claim).
+.rieke-runtime/benchmark-python/bin/python -B tools/benchmark_routes.py run \
+  --profile smoke --source-root . --output benchmarks/results/routes-smoke-unique
+# Matched baseline then candidate at the registry default profiles.
+.rieke-runtime/benchmark-python/bin/python -B tools/benchmark_routes.py pair \
+  --baseline-source /absolute/path/to/clean-baseline --source-root . \
+  --output benchmarks/results/routes-pair-unique
+```
+
+Default profiles are 1,000,000 project epochs with a 1,000,000-member protocol,
+the same project with a 20,000-member protocol, and 100,000/100,000. Work that
+scales with the target stays flat across the first two and grows only with the
+protocol; work that grows from 100k to 1M with an unchanged target is project
+scaling. Cases cover epoch detail inside the protocol, protocol pages, overview,
+tree root/expand/next page/column batch/selection and a shared-tag filtered tree,
+text and UUID-prefix search, predicate fields, explore page and preview for
+equality, `ne`, `exists`/`missing` on a built-in and on a partly missing recorded
+field, ranges, protocol tags, shared and effective tags, tag times and AND/OR,
+explore run, summary jobs with polling, curation toggle (with and without its
+batch read), curation and approval followed by the next epoch read, page and
+tree reads, epoch tag writes followed by reads and overview, and the Workbench
+queue, summary, merge-all (with paired undo), undo and the queue after undo.
+
+Each case records one cold/first request and three warm requests, response bytes
+and attestations per request, then one separate cProfile pass whose call counts
+(SQLite statements, deep copies, predicate row evaluations, protocol-state
+witness and metadata reads, refreshes, scope builds, SQL-double reads/writes and
+transactions) never touch the timed samples. No production class method is
+replaced, so identity-checked fast paths remain eligible. Receipts record the
+load average before and after each profile and every 30 seconds during it.
+
+`compare` flags medians and cold samples over the larger of baseline +25% or
++5 ms, lists count increases separately, and reports predicate-count changes on
+`expected_by_contract` labels (the missing-value semantics of B11) as contract
+changes rather than regressions. Fixture UUIDs are regenerated per run, so
+response hashes are not compared. SQL doubles copy rows on every transaction and
+scan linearly, so write latencies overstate native costs; use counts for writes.
+This is synthetic route evidence, not native MySQL, HTTP transport, renderer or
+release qualification, and it is not part of the required CI families.
 
 ## What the first slice measures
 
