@@ -506,6 +506,43 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(len(self.curation.rows), len(excluded))
         self.assertEqual(self.mask(), mask)
 
+    def test_curation_post_receipt_is_exact_and_chains_the_next_write(self):
+        first, second = self.service.ids
+        prior = self.curation_body({'tags_add': ['keep']}, ids=[first])
+        self.assertEqual(self.client.post(self.base + '/curation', json=prior, headers=self.headers).status_code, 200)
+        body = {**self.curation_body({'tags_add': ['keep']}), 'expected_revisions': {first: 1, second: 0},
+                'expected_binding_version': 0}
+        response = self.client.post(self.base + '/curation', json=body, headers=self.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        receipt = response.get_json()
+        # first already had the tag (no-op, unchanged revision); only second changed.
+        self.assertEqual(receipt['curation_revisions'], {second: 1})
+        fresh = self.client.post(self.base + '/curation/read', json={'epoch_uuids': [first, second],
+            'query_revision': receipt['query_revision'], 'expected_binding_version': receipt['expected_binding_version'],
+            'selection_scope': {'filters': {}, 'cell_uuid': None}}, headers=self.headers)
+        self.assertEqual(fresh.status_code, 200, fresh.get_json())
+        fresh = fresh.get_json()
+        self.assertEqual(receipt['query_revision'], fresh['query_revision'])
+        self.assertEqual(receipt['query_revision'], self.revision())
+        self.assertEqual(receipt['expected_binding_version'], fresh['expected_binding_version'])
+        self.assertEqual({row['epoch_uuid']: row['curation_revision'] for row in fresh['epochs']},
+                         {key: value['revision'] for key, value in receipt['curation'].items()})
+        # The receipt alone is enough for the next write; the old tokens are refused.
+        revisions = {first: 1, **receipt['curation_revisions']}
+        stale = {'epoch_uuids': [first, second], 'changes': {'included': False},
+                 'query_revision': body['query_revision'], 'expected_binding_version': 0,
+                 'expected_revisions': {first: 1, second: 0}}
+        self.assertEqual(self.client.post(self.base + '/curation', json=stale, headers=self.headers).status_code, 409)
+        chained = {**stale, 'query_revision': receipt['query_revision'],
+                   'expected_binding_version': receipt['expected_binding_version'], 'expected_revisions': revisions}
+        old_epoch_revisions = {**chained, 'expected_revisions': {first: 1, second: 0}}
+        self.assertEqual(self.client.post(self.base + '/curation', json=old_epoch_revisions,
+                                          headers=self.headers).status_code, 409)
+        response = self.client.post(self.base + '/curation', json=chained, headers=self.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()['curation_revisions'], {first: 2, second: 2})
+        self.assertNotEqual(response.get_json()['query_revision'], receipt['query_revision'])
+
     def test_curation_post_larger_than_ten_thousand_epochs_keeps_exact_checks(self):
         self.grow_protocol(10050)
         ids = self.service.ids

@@ -1671,7 +1671,14 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                                    audit_context={"query_revision": revision, "source_revisions": result["source_revisions"]},
                                    expected_binding_version=result.get("dataset_binding", {}).get("version", 0),
                                    generation_preflight=(lambda:selected_state.assert_context_locked(protocol_uuid,context)) if context else None)
-            return jsonify(changed)
+            # Receipt read after commit under the same db_lock: the exact
+            # tokens the next write must present (checks stay server-side).
+            current, new_revision, new_binding_version = selected_state.read_selected(protocol_uuid, ids)
+            expected = body["expected_revisions"]
+            return jsonify(**changed, query_revision=new_revision,
+                           expected_binding_version=new_binding_version,
+                           curation_revisions={key: current[key]["revision"] for key in ids
+                                               if current[key]["revision"] != expected[key]})
 
     @app.get("/api/protocols/<protocol_uuid>/masks/export")
     def export_mask(protocol_uuid):

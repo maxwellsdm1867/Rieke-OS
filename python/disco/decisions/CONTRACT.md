@@ -20,6 +20,14 @@ must not rerun a changed query. Admission limits are not streaming guarantees.
 `disco.decisions.curation` owns versioned project curation and frozen reference records.
 A metadata fingerprint change makes old approval unreviewed; revision conflicts
 must expose current state. Acquisition data and raw recordings are immutable.
+`CurationStore.update` writes only epochs whose persisted decision changes, in
+batched multi-row statements inside its locked transaction; a no-op epoch keeps its
+revision but its expected revision is still checked. `POST /api/protocols/<id>/curation`
+returns a receipt read after commit under the same lock: `curation` (per-epoch state),
+`query_revision` and `expected_binding_version` (current tokens), and
+`curation_revisions` (new revision for each changed epoch only). The next write may
+present these tokens without re-reading; every check stays server-side and stale
+tokens get 409. Neither curation POST nor selection-mask import caps the epoch count.
 
 `disco.decisions.external_tags.ExternalTags.receive` owns immutable message identity
 and receipt replay. An identical message returns its existing receipt without
