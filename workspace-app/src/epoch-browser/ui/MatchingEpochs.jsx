@@ -52,10 +52,14 @@ function MatchingEpochsContent({projectId=null,designMode=false,builder=null,col
   useEffect(()=>{callbacks.current.onSession?.({tracePreference,revision:preview.tree_revision,offset,focused,treeOpen,treeMode,targets,listNavigation,annotationDrafts});},[tracePreference,preview.tree_revision,offset,focused,treeOpen,treeMode,targets,listNavigation,annotationDrafts]);
   const inPage=currentPage&&page.data.epochs.some(row=>row.epoch_uuid===focused);
   const detailRevision=`${preview.tree_revision}:${annotationRevision}`;
+  // Recorded samples follow the result revision only: tag changes re-read the
+  // epoch detail (tags live there), never trace samples. Source hash, stream,
+  // rate, units and count are still checked on every warm or retained trace.
+  const traceRevision=preview.tree_revision;
   const inspection=useEpochInspection({focused,path:inPage?`/epochs/${focused}`:null,row:inPage?page.data.epochs.find(row=>row.epoch_uuid===focused):null,scope:JSON.stringify([source,filterRevision]),revision:detailRevision,reloadRow:page.reload});
   const epoch=inspection.resource,detail=useMemo(()=>inPage&&epoch.data?.epoch_uuid===focused?tagStore.apply(epoch.data):null,[inPage,epoch.data,focused,tagVersion]);
   const index=page.data?.epochs.findIndex(row=>row.epoch_uuid===focused)??-1;
-  useEpochPrefetch(inPage&&!epoch.loading&&index>=0?epochPrefetchPaths(page.data.epochs,index,wholeTracePrefetchPath,{progressive:true}):[],detailRevision,180,{traces:true,traceOnly:true,progressive:true,concurrency:2});
+  useEpochPrefetch(inPage&&!epoch.loading&&index>=0?epochPrefetchPaths(page.data.epochs,index,wholeTracePrefetchPath,{progressive:true}):[],traceRevision,180,{traces:true,traceOnly:true,progressive:true,concurrency:2});
   function selectEpoch(uuid){setCellTagRequest(null);toggleMetadata(true);navigationIntent.current=null;setFocused(uuid);if(!page.data?.epochs.some(row=>row.epoch_uuid===uuid))setRequest({anchorUuid:uuid});}
   function move(direction){
     const next=advanceEpochIntent({page:currentPage?page.data:null,focused,intent:navigationIntent.current,direction});
@@ -79,7 +83,7 @@ function MatchingEpochsContent({projectId=null,designMode=false,builder=null,col
     treePane={{treeMode:treeMode,onTreeMode:value=>{setTreeMode(value);if(value)setSizes(old=>({...old,tree:Math.max(420,pane.tree)}));},onDesign:onDesign,designDisabled:designDisabled,collapseRequest:collapseRequest,onCollapse:()=>setCollapseRequest(value=>value+1),treeProps:{onAnnotationsChanged:annotationsChanged,actionsDisabled:filterDisabled,inclusionForEpoch,onToggleInclusion,cells,selectedEpochs:targets,setSelectedEpochs:setTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{selectEpoch(epoch.epoch_uuid);setTargets([]);toggleMetadata(true);setCellTagRequest((cells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},predicate,splits,revision:preview.tree_revision,expectedRevision:preview.tree_revision,onRefreshPreview:onRefresh,selected:focused,onSelectEpoch:selectEpoch},listStatus:{data:cells,loading:!cells&&page.loading,error:page.error,retry:onRefresh},listProps:{navigationScope:listScope,initialNavigation:listNavigation,onNavigationChange:setListNavigation,revealEpoch:!page.loading&&!page.error?page.data?.epochs?.find(row=>row.epoch_uuid===focused):null,inclusionForEpoch,onToggleInclusion,cells:cells||[],source,revision:preview.tree_revision,focused:cellTagRequest?null:focused,onFocus:selectEpoch,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cell,epoch)=>{selectEpoch(epoch.epoch_uuid);setTargets([]);toggleMetadata(true);setCellTagRequest(cell);},focusedCell:detail?.cell_uuid??null,onTargetCell:cell=>{setTargets([]);toggleMetadata(true);setCellTagRequest(cell);},targets,setTargets,disabled:!!page.error||filterDisabled}}} resource={{...epoch,blocked:!!page.error,loading:detailLoading,retry:epoch.reload}}
     epoch={detail&&inclusionForEpoch?inclusionForEpoch(detail):detail} targets={targets}
     navigation={{position:index<0?-1:offset+index,total:page.data?.total||0,loading:page.loading,onMove:move}}
-    traceRevision={detailRevision} detailDisabled={!currentPage||epoch.loading} onQC={onQC}
+    traceRevision={traceRevision} detailDisabled={!currentPage||epoch.loading} onQC={onQC}
     inclusion={onToggleInclusion?{disabled:filterDisabled||!currentPage||epoch.loading,onToggle:onToggleInclusion}:null} tags={tagEntry}
     metadata={{loadingPolicy:inspection.metadata,selectionCell:cellTagRequest,selectedEpochs:targets,onClearSelection:()=>setTargets([]),catalog:{data:preview.catalog},onClose:()=>toggleMetadata(false),connections:inspection.metadata.values.data&&<EpochConnections epoch={inspection.metadata.values.data} protocolName={humanize(detail.protocol_name)} contextLabel="Acquisition protocol"/>}}/>;
 }

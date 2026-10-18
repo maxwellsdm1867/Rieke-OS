@@ -1230,7 +1230,7 @@
       ]
     },
     "src/epoch-browser/ui/MatchingEpochs.jsx": {
-      "fingerprint": "2427fb8f85247f4e6df59d3f1a0e7536b702014ce6e247281a7da683ec054ef4",
+      "fingerprint": "7c359997e93c33673cd7fd94bef5d888900fbbd1df66e33a034bec96a74cbaca",
       "sites": [
         {
           "owner": "MatchingEpochsContent",
@@ -1249,7 +1249,7 @@
         }
       ],
       "lifetime": "session-publication-and-current-data",
-      "reason": "Known stream descriptors are independent of optional live values; current result and annotation authority remain required. Tag decoupling review (2026-10-17): confirmed receipts apply in place without epoch reload or detail-revision bump; prefetch uses wholeTracePrefetchPath. Effect sites unchanged. Tag channel review (2026-10-17): detail overlays tagStore through a deferred subscription; no private receipt state. Effect sites unchanged. Cell-row review (2026-10-17): list props add focusedCell and onTargetCell, which only set the cell tag target (no read, no focus change).",
+      "reason": "Known stream descriptors are independent of optional live values; current result and annotation authority remain required. Tag decoupling review (2026-10-17): confirmed receipts apply in place without epoch reload or detail-revision bump; prefetch uses wholeTracePrefetchPath. Effect sites unchanged. Tag channel review (2026-10-17): detail overlays tagStore through a deferred subscription; no private receipt state. Effect sites unchanged. Cell-row review (2026-10-17): list props add focusedCell and onTargetCell, which only set the cell tag target (no read, no focus change). Search trace identity review (2026-10-18): trace prefetch and viewer revision follow the result tree revision only; receipt-less tag changes re-read epoch detail, never samples; effect census unchanged.",
       "tests": [
         "src/authoredDrafts.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
@@ -1258,7 +1258,8 @@
         "src/retainedControls.test.js",
         "src/scopedPredicateLifecycle.test.js",
         "src/resourceCache.test.js",
-        "src/annotationReceiptWorkflow.test.js"
+        "src/annotationReceiptWorkflow.test.js",
+        "src/traces/traceSurfaceIntegration.test.js"
       ]
     },
     "src/epoch-browser/ui/MetadataPanel.jsx": {
