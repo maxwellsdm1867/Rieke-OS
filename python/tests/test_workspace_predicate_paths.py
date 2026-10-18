@@ -229,6 +229,30 @@ class GenerationMemoTests(MemoFixture):
         actual = {item['id']: item for item in TagPredicates(self.service).catalog_fields(self.ids, only=set(SHARED_FIELDS))}
         self.assertEqual(actual, {key: {**definitions[key], **value} for key, value in expected.items()})
 
+    def test_tag_field_summaries_equal_the_per_epoch_loop(self):
+        import disco.metadata.explore_queries as queries
+        from disco.navigation.predicates import equality_key, kind
+        self.fixture.edit('epoch', self.ids[0], ['drift', 'z'])
+        self.fixture.edit('cell', self.service.rows[self.ids[1]]['cell_uuid'], ['good cell'])
+        self.save_curation(tags_add=['protocol-flag'])
+        fields = ['annotations/effective/tags', 'annotations/epoch/tags', f'curation/{self.protocol}/tags']
+        context = {'predicate': {'all': []}, 'scope': {}, 'protocol_uuid': None, 'filters': {}, 'summary_fields': fields}
+        result = queries._native_summaries(self.service, context, lambda: False)
+        states = TagPredicates(self.service).snapshot(set(fields))[0]
+        ids = list(self.service.match_predicate({'all': []})[1])
+        for field in fields:
+            values, seen = [], {}
+            for identity in ids:
+                value = states[field].get(identity, [])
+                bucket = seen.get(equality_key(value))
+                if bucket is None:
+                    bucket = seen[equality_key(value)] = {'value': value, 'type': kind(value), 'count': 0}
+                    values.append(bucket)
+                bucket['count'] += 1
+            self.assertEqual(result['summaries'][field], {'values': values, 'present_count': len(ids),
+                             'missing_count': 0, 'values_truncated': False})
+        self.assertEqual(result['matched_count'], len(ids))
+
     def test_unavailable_or_changing_witness_never_stores_a_memo(self):
         self.service._tag_predicate_memo = None
         with self.unmemoized():

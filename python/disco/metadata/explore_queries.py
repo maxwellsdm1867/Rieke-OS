@@ -203,12 +203,17 @@ def _native_rows(service, context):
 
 
 def _native_summaries(service, context, cancelled):
-    rows = _native_rows(service, context)
-    _, identities, _ = service.match_predicate(context['predicate'], (row['epoch_uuid'] for row in rows))
+    if _whole_catalog(service, context):
+        _, identities, _ = service.match_predicate(context['predicate'])
+    else:
+        rows = _native_rows(service, context)
+        _, identities, _ = service.match_predicate(context['predicate'], (row['epoch_uuid'] for row in rows))
     catalog, values = predicate_scope(*service._registered_tree_fields())
     definitions = {field['id'] for field in catalog['fields']}
     annotation_fields = {field for field in context['summary_fields'] if field.startswith(('annotations/', 'curation/'))}
-    annotations = TagPredicates(service).snapshot(annotation_fields)[0] if annotation_fields else {}
+    tags = TagPredicates(service)
+    entry = tags._entry(annotation_fields) if annotation_fields else None
+    annotations = entry.states if entry is not None else {}
     summaries, seen = {}, {}
     for field in context['summary_fields']:
         if field not in definitions and field not in annotations:
@@ -216,6 +221,20 @@ def _native_summaries(service, context, cancelled):
         summaries[field] = {'values': [], 'present_count': 0,
             'missing_count': len(identities), 'values_truncated': False}
         seen[field] = {}
+    if entry is not None and summaries:
+        # Every matched epoch has an annotation array (empty when untagged).
+        # Buckets come from the generation's distinct arrays in first-match
+        # order instead of one lookup per matched epoch.
+        universe = set(identities)
+        positions = {identity: position for position, identity in enumerate(identities)}
+        for field in annotations.keys() & summaries.keys():
+            if cancelled():
+                raise InterruptedError('Summary cancelled')
+            buckets = entry.buckets(field, identities, universe, positions.__getitem__)
+            summary = summaries[field]
+            summary.update(present_count=len(identities), missing_count=0, values_truncated=len(buckets) > 60,
+                           values=[{'value': copy.deepcopy(value), 'type': kind(value), 'count': amount}
+                                   for value, amount in buckets[:60]])
     metadata_fields = definitions.intersection(summaries) - annotations.keys()
     # The disk mapping has a small row LRU. Walking the entire identity scope
     # once per field evicts every row before its next use. Borrow one full native
@@ -227,7 +246,7 @@ def _native_summaries(service, context, cancelled):
             and len(set(identities)) == len(identities)):
         stream = StreamingValueView(values.base.subset(identities), allowed=values.allowed,
                                     combinations=values.combinations).items()
-    for identity in identities if summaries else ():
+    for identity in identities if metadata_fields else ():
         if cancelled():
             raise InterruptedError('Summary cancelled')
         if stream is not None:
@@ -240,7 +259,7 @@ def _native_summaries(service, context, cancelled):
             if cancelled():
                 raise InterruptedError('Summary cancelled')
             if field in annotations:
-                value = annotations[field].get(identity, [])
+                continue
             elif field in current:
                 value = current[field]
             else:
