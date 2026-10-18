@@ -14,6 +14,7 @@ read the corresponding entry, then use its existing interface and examples.
 | Persist preferences | [project_preferences.py](project_preferences.py): `ProjectPreferences`, `PreferenceConflict`, validation and route registration own portable shortcuts, not scientific membership or device geometry. |
 | Manage acquisitions | [datastores.py](datastores.py): `DataStores` separates freeze, archive and query eligibility. [datastore_deletion.py](datastore_deletion.py): `DataStoreDeletion` owns exact detachment and recoverable filesystem deletion. |
 | Ask whether a project database runs | [runtime_state.py](runtime_state.py): `project_runtime_state(root)` returns one of `never_started`, `stopped_clean`, `stopped_unclean`, `running_owned`, `running_foreign` from receipts plus PID + creation time + exact executable/argv proof. `recorded_process_alive` / `import_worker_alive` apply the same PID-reuse rule to service and import records. Read-only; never signals. |
+| Own transfer/migration staging | [staging.py](staging.py): `create_staging`, `release_owner`, `forget_staging`, `discard_staging`, `sweep_registered_staging`, `last_report`. Owner file + per-user registry; sweeps only provably abandoned registered folders. |
 | Migrate legacy source | [migration.py](migration.py) performs explicit source inspection/snapshot/restore into a separate owned destination. It delegates to the retained portability/native owners; it does not adopt the source database. |
 
 `recording_registry.library_directory` and `library_candidate` create/recover the
@@ -256,5 +257,12 @@ running server preserves everything. Interrupted import jobs can be dismissed wi
 Project activation sweeps `.incoming-*` library staging folders only while the
 shared recording lock is uncontended (copies hold that lock and publish by rename).
 Transfer, verify and migration staging (`.rieke-transfer-*`, `.rieke-verify-*`,
-`.rieke-migration-*`) live in user-chosen parents without a covering lock or owner
-record and are not swept.
+`.rieke-migration-*`) is created by [staging.py](staging.py): each folder holds an
+owner file (PID, process creation time, operation id) and is recorded in
+`staging-registry.json` beside the project index. Launcher startup (in the
+background) and every new staging folder sweep only registered folders whose owner
+file matches the registry and whose owner is provably gone; a verify folder's
+database is stopped with `stop_native_database` first and the folder is kept if it
+cannot be stopped. Unregistered folders and folders without a matching owner file
+are never deleted; the desktop health reports them as `staging_attention`. The
+owner file is removed before a transfer package's inventory and publication.

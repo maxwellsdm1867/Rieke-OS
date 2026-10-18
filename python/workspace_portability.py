@@ -19,7 +19,6 @@ import re
 import secrets
 import shutil
 import subprocess
-import tempfile
 import uuid
 
 FORMAT = 'rieke-project-transfer'
@@ -676,7 +675,8 @@ def prepare_project(project_dir, destination):
         ProjectPreferences(root, identity).read()
         ensure_project_database(root)
         connection = _connection(root)
-        staging = Path(tempfile.mkdtemp(prefix='.rieke-transfer-', dir=target.parent))
+        from disco.projects.staging import create_staging, discard_staging, forget_staging, release_owner
+        staging = create_staging(target.parent, '.rieke-transfer-', 'prepare_transfer')
         try:
             register_empty_project(root, connection)
             with connection.cursor() as cursor:
@@ -736,22 +736,26 @@ def prepare_project(project_dir, destination):
                 cursor.execute('UNLOCK TABLES')
             connection.close()
             connection = None
+            # The owner file never enters a published package or its inventory.
+            release_owner(staging)
             _write(staging / MANIFEST, {'format': FORMAT, 'version': 1, 'mode': 'complete',
                 'database_format': 'mysql8-logical-v1', 'project_uuid': identity,
                 'sources': inventory, 'database_inventory': database_inventory, 'files': _files(staging)})
             # Real restore verification, including identities and current source locators.
-            verify_parent = Path(tempfile.mkdtemp(prefix='.rieke-verify-', dir=target.parent))
+            verify_parent = create_staging(target.parent, '.rieke-verify-', 'verify_transfer')
             try:
                 verified = restore_project(staging, str(verify_parent / 'project'))
                 _remove_runtime(Path(verified['directory']))
             except BaseException:
-                # A failed runtime shutdown leaves evidence for manual recovery.
-                # Failed restores remove their own partial project already.
+                # A failed runtime shutdown leaves evidence for manual recovery;
+                # the owned registry record lets a later sweep stop and remove it
+                # once this process is gone. Failed restores remove their own
+                # partial project already.
                 if not (verify_parent / 'project').exists():
-                    shutil.rmtree(verify_parent)
+                    discard_staging(verify_parent)
                 raise
             else:
-                shutil.rmtree(verify_parent)
+                discard_staging(verify_parent)
             # Claim the final path exclusively before replacing our own empty
             # reservation with the fully verified package.
             try:
@@ -766,6 +770,7 @@ def prepare_project(project_dir, destination):
                 connection.close()  # Releases the database-wide read lock on every failure.
             if staging.exists():
                 shutil.rmtree(staging)
+            forget_staging(staging)
 
 
 def _replace_json(path, value):
