@@ -350,8 +350,8 @@
     },
     {
       "id": "export-materialization",
-      "purpose": "Materialize caller-frozen output while caller retains staging, validation and publication authority.",
-      "owner": "workspace_export_artifacts.materialize_export_format",
+      "purpose": "Stage and materialize caller-frozen output with one failure marker; callers retain validation, package contents and publication authority.",
+      "owner": "workspace_export_artifacts.stage_export",
       "interfaces": [
         "P05 adopted format tail"
       ],
@@ -372,8 +372,7 @@
       ],
       "unmeasured_gaps": [
         "native export qualification",
-        "materialization throughput and disk cost",
-        "workbench path retains separate format tail"
+        "materialization throughput and disk cost"
       ],
       "replacement_option": "No replacement work selected. H5/Ovation/native export explicitly deferred; mappings grant no permission to run.",
       "metrics": {
@@ -392,9 +391,9 @@
         "inputs": "Receives caller-owned package/output/format plus bound lazy matlab_writer and strict atomic write_json. reference-json returns existing recordings.json; wheeler-sqlite builds SQLite and annotation return folder; matlab-mat calls bound writer and emits report without internal path fields, returning actual artifact Path.",
         "outputs": "Selected artifact Path; reference JSON path refers to already staged file, SQLite/MAT paths follow adapter creation. Adapter exceptions propagate unchanged.",
         "identity_types_order_units_provenance": "Helper forwards original package/recipe/epoch_records without query reconstruction/copy or identity remapping. Output order, scientific types/units and provenance are caller package and adapter obligations. No scientific authority is inferred from returned Path.",
-        "errors_partial_success": "Unsupported format raises ValueError; adapter errors propagate unchanged. File may be partly staged on failure; caller owns failure report/cleanup/publication. Returning artifact path is not successful dataset publication.",
+        "errors_partial_success": "Unsupported format raises ValueError; adapter errors propagate unchanged. stage_export writes one failure.json shape (at, status, error, artifact_published false, plus caller failure_fields) for any failure after the fresh folder exists and re-raises the original error; an OSError writing the marker never replaces it. Partly staged files stay for diagnosis. Returning artifact path is not successful dataset publication; publication is the caller callback.",
         "freshness_invalidation": "No freshness policy inside helper; callers freeze selection and revalidate authority around materialization. Writer bindings preserve existing service/source context.",
-        "transactions_idempotency": "No locks, SQL transaction, replay receipt or cancellation protocol added. Output directory already exists and reference package already staged. Imports stay lazy; caller-bound adapter lifetime retained.",
+        "transactions_idempotency": "No locks, SQL transaction, replay receipt or cancellation protocol added. stage_export creates the fresh output directory outside its catch and stages recipe/reference JSON; materialize_export_format runs after that. Imports stay lazy; caller-bound adapter lifetime retained.",
         "cancellation_lifetime": "Synchronous helper has no cancellation handle or cleanup ownership. Caller owns directory/writer context lifetime and partial artifacts; lazy adapters load only for selected format.",
         "caller_dependencies": [
           "adopted protocol/candidate export callers",
@@ -403,8 +402,8 @@
           "caller MATLAB adapter",
           "strict JSON writer"
         ],
-        "integration_capabilities": "Keep helper authority narrow and preserve adapter call shape, lazy imports and unchanged errors. Current workbench export tail is separate; universal adoption must not be claimed.",
-        "change_rules": "Keep helper authority narrow and preserve adapter call shape, lazy imports and unchanged errors. Current workbench export tail is separate; universal adoption must not be claimed."
+        "integration_capabilities": "Protocol, saved-candidate and incoming-workbench exports all stage through stage_export (2026-10-18, user-approved). Keep helper authority to staging/materialization/marker; callers keep validation, package contents and publication.",
+        "change_rules": "Keep helper authority to staging, format materialization and the failure marker; preserve adapter call shape, lazy imports and unchanged errors. Scientific validation, membership and publication stay with callers."
       },
       "existing_tests": [
         "python/tests/test_workspace_export_artifacts.py",

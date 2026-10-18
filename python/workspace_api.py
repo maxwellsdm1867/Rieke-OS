@@ -34,7 +34,7 @@ from disco.workbench.diff import summarize_diff
 from workspace_protocol_identity import selection_protocols, protocol_compatibility, require_protocol_compatibility
 from workspace_import_check import classify_source
 from workspace_audit import build_audit_payload, normalize_event, normalize_events, repeat_suggestions
-from workspace_export_artifacts import materialize_export_format
+from workspace_export_artifacts import stage_export
 
 
 class StaleWorkspace(ValueError):
@@ -1847,10 +1847,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             from workspace_export_folder import prepare_export_root
             prepare_export_root(project_dir)
             output = managed_directory(project_dir, 'exports') / recipe["export_uuid"]
-            output.mkdir(parents=True, exist_ok=False)
-            try:
-                save_snapshot(output / "recipe.json", recipe)
-                eligible = {r["uuid"] for r in recipe["epochs"]}
+            eligible = {r["uuid"] for r in recipe["epochs"]}
+            def build_package():
                 package = {"format": "recording-reference-package", "version": 1,
                            "recipe": recipe, "epochs": [{**service.epoch(r["epoch_uuid"]),
                                         "curation": status(curation[r["epoch_uuid"]])} for r in rows
@@ -1861,28 +1859,18 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 if shared_annotations:
                     annotations=shared_annotations.for_epochs([service.rows[item['epoch_uuid']] for item in package['epochs']])
                     for item in package['epochs']:item['annotations']=annotations[item['epoch_uuid']]
-                artifact = output / "recordings.json"
-                if export_format == 'linked-sqlite':
-                    from workspace_linked_sqlite import prepare_linked_package
-                    package = prepare_linked_package(package, service.manifests, service.project_dir,
-                                                     grouping_sources=service.sources)
-                else:
-                    write_json(artifact, package)
-                def matlab_writer(recipe, output_dir, *, epoch_records):
-                    from workspace_matlab import build_matlab_export
-                    return build_matlab_export(service, recipe, output_dir, epoch_records=epoch_records)
-                artifact = materialize_export_format(package, output, format=export_format,
-                    matlab_writer=matlab_writer, write_json=write_json)
-                saved = store.record_dataset_revision(recipe, actor=os.environ.get("USER", "local-user"),
+                return package
+            def matlab_writer(recipe, output_dir, *, epoch_records):
+                from workspace_matlab import build_matlab_export
+                return build_matlab_export(service, recipe, output_dir, epoch_records=epoch_records)
+            def publish(artifact):
+                return store.record_dataset_revision(recipe, actor=os.environ.get("USER", "local-user"),
                     expected_revisions={k: v["revision"] for k, v in curation.items()},
                     artifact_path=str(artifact), artifact_sha256=digest(artifact))
-            except Exception as error:
-                try:
-                    write_json(output / "failure.json", {"at": now(), "status": "failed",
-                               "error": str(error), "artifact_published": False})
-                except OSError:
-                    pass  # Preserve the original failure; SQL publication did not succeed.
-                raise
+            saved = stage_export(output, recipe, format=export_format, build_package=build_package,
+                publish=publish, matlab_writer=matlab_writer, write_json=write_json,
+                save_snapshot=save_snapshot, now=now,
+                linked_sources=(service.manifests, service.project_dir, service.sources))
             saved["format"] = export_format
             saved["download_url"] = "/api/exports/" + saved["dataset_uuid"] + "/download"
             return jsonify(saved), 201
