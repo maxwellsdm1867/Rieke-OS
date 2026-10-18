@@ -1638,8 +1638,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def curate(protocol_uuid):
         body = request.get_json()
         ids = body["epoch_uuids"]
-        if not isinstance(ids, list) or not ids or len(ids) > 10000 or len(set(ids)) != len(ids):
-            raise ValueError("Choose a nonempty, unique list of epochs (at most 10,000).")
+        # No size cap: per-epoch expected revisions, query_revision and binding
+        # version are still exact, and CurationStore writes in batches.
+        if not isinstance(ids, list) or not ids or len(set(ids)) != len(ids):
+            raise ValueError("Choose a nonempty, unique list of epochs.")
         with db_lock:
             if body.get("changes", {}).get("review_state") == "approved":
                 service.refresh()

@@ -475,10 +475,10 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(sum(row['included'] for row in result['curation'].values()), 1)
         self.assertEqual(self.mask(), mask)
 
-    def test_mask_larger_than_ten_thousand_epochs_round_trips(self):
+    def grow_protocol(self, count):
         service = self.service
         template_key = service.ids[0]
-        service.ids = [str(uuid.UUID(int=(7 << 64) | index)) for index in range(10050)]
+        service.ids = [str(uuid.UUID(int=(7 << 64) | index)) for index in range(count)]
         rows, details = {}, {}
         for index, key in enumerate(service.ids):
             rows[key] = {**service.rows[template_key], 'epoch_uuid': key,
@@ -489,6 +489,9 @@ class WorkspaceAPITests(unittest.TestCase):
         service._fingerprints = {key: 'b' * 64 for key in service.ids}
         service.protocols[service.protocol_id]['result']['epochs'] = [
             {'uuid': key, 'metadata_hash': 'b' * 64} for key in service.ids]
+
+    def test_mask_larger_than_ten_thousand_epochs_round_trips(self):
+        self.grow_protocol(10050)
         mask = self.mask()
         self.assertEqual(len(mask['epochs']), 10050)
         excluded = {row['epoch_uuid'] for row in mask['epochs'][::3]}
@@ -502,6 +505,31 @@ class WorkspaceAPITests(unittest.TestCase):
         # Only changed epochs are written, in batched statements.
         self.assertEqual(len(self.curation.rows), len(excluded))
         self.assertEqual(self.mask(), mask)
+
+    def test_curation_post_larger_than_ten_thousand_epochs_keeps_exact_checks(self):
+        self.grow_protocol(10050)
+        ids = self.service.ids
+        stale = self.curation_body({'tags_add': ['bulk']})
+        stale['expected_revisions'][ids[-1]] = 1
+        response = self.client.post(self.base + '/curation', json=stale, headers=self.headers)
+        self.assertEqual(response.status_code, 409, response.get_json())
+        self.assertFalse(self.curation.rows)
+        stale_query = self.curation_body({'tags_add': ['bulk']})
+        stale_query['query_revision'] = 'stale'
+        response = self.client.post(self.base + '/curation', json=stale_query, headers=self.headers)
+        self.assertEqual(response.status_code, 409, response.get_json())
+        stale_binding = {**self.curation_body({'tags_add': ['bulk']}), 'expected_binding_version': 7}
+        response = self.client.post(self.base + '/curation', json=stale_binding, headers=self.headers)
+        self.assertEqual(response.status_code, 409, response.get_json())
+        self.assertFalse(self.curation.rows)
+        with patch.object(self.curation, 'insert1', side_effect=AssertionError('one statement per epoch')):
+            response = self.client.post(self.base + '/curation', json={
+                **self.curation_body({'tags_add': ['bulk']}), 'expected_binding_version': 0}, headers=self.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        result = response.get_json()['curation']
+        self.assertEqual(len(result), 10050)
+        self.assertTrue(all(state['tags'] == ['bulk'] and state['revision'] == 1 for state in result.values()))
+        self.assertEqual(len(self.curation.rows), 10050)
 
     def test_mask_rejects_malformed_duplicate_unknown_or_partial_membership(self):
         import copy
