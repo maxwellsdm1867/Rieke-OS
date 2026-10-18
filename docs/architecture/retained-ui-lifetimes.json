@@ -4,7 +4,7 @@
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
     "src/App.jsx": {
-      "fingerprint": "5d2da84999da88398bbd4466ac150721d938f9aa2bcc2bda929795a6441c41ca",
+      "fingerprint": "15b29ba1389c60f48230b3887fef5729821d17be1d050c35819956d8c6a95be5",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -4008,7 +4008,7 @@
       ]
     },
     "src/useWorkspaceChanges.js": {
-      "fingerprint": "e88b478450929d713d49eb331e31ff63bbc9326c4d70407cec32e86ebfc85955",
+      "fingerprint": "644c1724c0594e2cdc82294426cf19d631099ee4611cd667a8ed7b74a76a916a",
       "sites": [
         {
           "owner": "useSummaryRevision",

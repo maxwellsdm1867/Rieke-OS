@@ -48,12 +48,16 @@ test('the cap evicts clean destinations but preserves dirty views and busy effec
 test('completed display reads survive reveal while revision changes and scientific page witnesses reread',async()=>{
  const owner=sessionOwner(),oldFetch=globalThis.fetch,reads=[];let tree,revision=0,current;
  globalThis.fetch=async path=>{reads.push(path);return new Response(JSON.stringify({items:[],generation:reads.length}),{status:200});};
- function Page({destination}){current=useResource(destination.page==='stores'?'/protocols/p/epochs?limit=10':'/events',revision);return null;}
+ function Page({destination}){current=useResource(destination.page==='stores'?'/protocols/p/workbench/candidates/c/epochs?limit=10':destination.page==='inspect'?'/protocols/p/epochs?limit=10':'/events',revision);return null;}
  const render=async destination=>act(async()=>{const element=React.createElement(RetainedWorkspaceViews,{route:destination,projectId:'p',projectPath:'/p',presentation:owner,render:destination=>React.createElement(Page,{destination})});tree?tree.update(element):tree=TestRenderer.create(element);});
  try{
   await render(route('a'));await render(route('b','stores'));await render(route('a'));
   assert.equal(reads.filter(path=>path==='/api/events').length,1);
-  await render(route('b','stores'));assert.equal(reads.filter(path=>path.includes('/epochs?')).length,2,'fresh scientific reads are not treated as display cache');
+  await render(route('b','stores'));assert.equal(reads.filter(path=>path.includes('/candidates/c/epochs?')).length,2,'scoped candidate pages are not treated as display cache');
+  // The canonical main epoch page is retained on an unchanged return (writes
+  // still carry their query revision); a revision change reads it again.
+  await render(route('c','inspect'));await render(route('a'));await render(route('c','inspect'));
+  assert.equal(reads.filter(path=>path==='/api/protocols/p/epochs?limit=10').length,1,'unchanged main page return reuses the completed read');
   revision=1;await render(route('a'));assert.equal(reads.filter(path=>path==='/api/events').length,2);
   assert.equal(current.loading,false);
  }finally{await act(()=>tree.unmount());globalThis.fetch=oldFetch;}

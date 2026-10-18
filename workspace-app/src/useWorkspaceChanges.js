@@ -41,7 +41,9 @@ export function applyWorkspaceChange(previous,event){
 }
 // One protocol's display/review clocks: the global clock plus that protocol's
 // typed counter, so a change to protocol A never re-keys protocol B's reads.
-export function protocolClock(base,state,protocolId){return `${base}.${state.protocols[protocolId]||0}`;}
+// Sums of monotonic counters: any change yields a new, larger number, so the
+// clocks stay valid equality keys and numeric comparisons.
+export function protocolClock(base,state,protocolId){return base+(state.protocols[protocolId]||0);}
 
 export function useWorkspaceChanges(){
   const [state,setState]=useState(INITIAL_WORKSPACE_CHANGES);
@@ -52,7 +54,7 @@ export function useWorkspaceChanges(){
   const protocolMembershipRevision=useCallback(protocolId=>state.members[protocolId]||0,[state]);
   return {...state,
     // Project-wide readers whose content follows protocol membership/curation.
-    dataRevision:`${state.revision}.${state.contentRevision}`,
+    dataRevision:state.revision+state.contentRevision,
     protocolRevision,protocolReviewRevision,protocolMembershipRevision,changed};
 }
 
