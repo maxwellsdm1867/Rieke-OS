@@ -162,31 +162,13 @@ def publish_frozen(value, *, rows=False):
 _PUBLICATIONS = __import__('itertools').count(1)
 
 
-class _Published:
-    """Read-model attribute whose every assignment advances the publication serial.
-
-    The serial is process-monotonic and never reused, so equal serials prove the
-    same published objects. Together with FrozenDict contents (which cannot be
-    mutated in place) an unchanged serial proves unchanged read-model content.
-    """
-    def __set_name__(self, owner, name):
-        self.name = name
-
-    def __get__(self, obj, owner=None):
-        if obj is None:
-            return self
-        try:
-            return obj.__dict__[self.name]
-        except KeyError:
-            raise AttributeError(self.name) from None
-
-    def __set__(self, obj, value):
-        obj.__dict__[self.name] = value
-        obj.__dict__['_publication_serial'] = next(_PUBLICATIONS)
-
-    def __delete__(self, obj):
-        obj.__dict__.pop(self.name, None)
-        obj.__dict__['_publication_serial'] = next(_PUBLICATIONS)
+# Read-model attributes whose every assignment advances the publication serial.
+# The serial is process-monotonic and never reused, so equal serials prove the
+# same published objects; with FrozenDict contents (which cannot be mutated in
+# place) an unchanged serial proves unchanged read-model content. Assignment is
+# intercepted in WorkspaceService.__setattr__ so reads stay plain attribute loads.
+PUBLISHED_ATTRIBUTES = frozenset(('rows', 'cells', 'protocols', '_fingerprints', 'details', 'disk_index',
+                                  'sources', 'manifests', '_explore_publication'))
 
 
 PUBLISHED_MAPS = ('rows', 'cells', 'protocols', '_fingerprints')
@@ -492,17 +474,17 @@ from disco.operation_timing import elapsed
 
 
 class WorkspaceService:
-    # Every assignment of a published read-model attribute advances the
-    # process-monotonic publication serial (see publication_serial()).
-    rows = _Published()
-    cells = _Published()
-    protocols = _Published()
-    _fingerprints = _Published()
-    details = _Published()
-    disk_index = _Published()
-    sources = _Published()
-    manifests = _Published()
-    _explore_publication = _Published()
+    def __setattr__(self, name, value):
+        # Every assignment of a published read-model attribute advances the
+        # process-monotonic publication serial (see publication_serial()).
+        object.__setattr__(self, name, value)
+        if name in PUBLISHED_ATTRIBUTES:
+            object.__setattr__(self, '_publication_serial', next(_PUBLICATIONS))
+
+    def __delattr__(self, name):
+        object.__delattr__(self, name)
+        if name in PUBLISHED_ATTRIBUTES:
+            object.__setattr__(self, '_publication_serial', next(_PUBLICATIONS))
 
     def __init__(self, project_dir, curation_provider=None):
         self.project_dir = Path(project_dir).resolve()
