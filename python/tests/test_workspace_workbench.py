@@ -276,7 +276,10 @@ class WorkbenchTests(unittest.TestCase):
     def test_list_selection_custom_pages_and_closing_changes_fail_closed(self):
         context = self.get_context()
         original = self.manager.frozen_service
-        for change in ('partial', 'wrong-cell', 'draft', 'source', 'recipe'):
+        # A stored recipe is immutable and sealed with its UUID: the opening
+        # context verifies it and the close keeps that verified value. Stored
+        # tampering is refused by the next opening (test_context_rechecks_*).
+        for change in ('partial', 'wrong-cell', 'draft', 'source'):
             with self.subTest(change=change):
                 before_tables = [copy.deepcopy(table.rows) for table in self.case.connection.tables]
                 original_scope = self.case.service.source_scope
@@ -292,9 +295,6 @@ class WorkbenchTests(unittest.TestCase):
                                 version=99, selection_mode='selected', deferred=False))
                         elif change == 'source':
                             self.case.service.source_scope = lambda: {**original_scope(), 'revision': 'changed'}
-                        elif change == 'recipe':
-                            row = next(row for row in self.case.explorer_revisions.rows if row['revision_uuid'] == self.revision)
-                            row['recipe']['epochs'][0]['metadata_hash'] = 'f' * 64
                         return result
                     scoped.epoch_page = read
                     return scoped
@@ -305,6 +305,14 @@ class WorkbenchTests(unittest.TestCase):
                 self.case.service.source_scope = original_scope
                 for table, rows in zip(self.case.connection.tables, before_tables): table.rows[:] = rows
                 self.assertEqual(self.list_selection(context).status_code, 200, 'Failed read must not poison the next read')
+        row = next(row for row in self.case.explorer_revisions.rows if row['revision_uuid'] == self.revision)
+        original_recipe = copy.deepcopy(row['recipe'])
+        row['recipe']['epochs'][0]['metadata_hash'] = 'f' * 64
+        tampered = self.list_selection(context)
+        self.assertIn(tampered.status_code, (400, 409), tampered.get_json())
+        self.assertNotIn('epoch_uuids', tampered.get_json())
+        row['recipe'] = original_recipe
+        self.assertEqual(self.list_selection(context).status_code, 200)
 
     def test_optional_context_bootstrap_matches_fresh_context_and_page(self):
         plain = self.get_context()

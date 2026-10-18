@@ -526,7 +526,9 @@ class CumulativePendingTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.get_json())
         self.assertEqual(response.get_json()['epoch_uuids'], expected)
         self.assertEqual([cell['cell_uuid'] for cell in response.get_json()['cells']], [cell['cell_uuid'] for cell in cells])
-        self.assertEqual(sum(row['operation'] == 'context' for row in timings), 2)
+        # One full opening context; the close compares current tokens against it.
+        self.assertEqual(sum(row['operation'] == 'context' for row in timings), 1)
+        self.assertEqual(sum(row['operation'] == 'closing_context' for row in timings), 1)
         canonical_reads = sum(row['operation'] == 'get' and row['module'] == 'disco.decisions.explorer' for row in timings)
         original = self.manager.history.get
         with patch.object(self.manager.history, 'get', side_effect=original), capture_timings() as custom_timings:
@@ -823,3 +825,87 @@ class CumulativePendingTests(unittest.TestCase):
         self.case.service.rows[foreign]['protocol_name'] = recorded
         self.case.service._explore_publication = 'publication-two'
         self.assertEqual(self.queue()['pending_epoch_count'], 2)
+
+    def recipe_reads(self, action):
+        """Stored recipe reads (ExplorerHistory.get fetches and re-hashes) by one action."""
+        log = self.case.explorer_revisions.read_log
+        start = len(log)
+        action()
+        return sum(any('revision_uuid' in restriction for restriction in entry['restrictions']
+                       if isinstance(restriction, dict)) for entry in log[start:])
+
+    def test_queue_and_candidate_recipe_reads_stay_flat_as_imports_grow(self):
+        queue_reads, page_reads = [], []
+        for _ in range(5):
+            self.more_import()
+            prepared, _ = self.prepare()
+            self.queue()  # Admit discovery facts once; later reads must not re-read them.
+            self.epochs(prepared)
+            queue_reads.append(self.recipe_reads(self.queue))
+            page_reads.append(self.recipe_reads(lambda: self.epochs(prepared)))
+        self.assertEqual(len(set(queue_reads)), 1, queue_reads)
+        self.assertEqual(len(set(page_reads)), 1, page_reads)
+        # A candidate read verifies candidate, baseline and main once each.
+        self.assertLessEqual(page_reads[0], 3, page_reads)
+
+    def test_candidate_read_builds_one_full_context_and_closes_with_tokens(self):
+        prepared, _ = self.prepare()
+        with patch.object(self.manager, 'proposal', wraps=self.manager.proposal) as proposals:
+            self.epochs(prepared)
+        self.assertEqual(proposals.call_count, 1)
+        revision, actor = prepared['candidate_revision_uuid'], prepared['actor']
+        opened = self.manager.context(self.protocol, revision, actor)
+        def closing():
+            return self.manager.context(self.protocol, revision, actor, closing=opened)['candidate_scope_revision']
+        def full():
+            return self.manager.context(self.protocol, revision, actor)['candidate_scope_revision']
+        with patch.object(self.manager, 'proposal', side_effect=AssertionError('closing must not rebuild')):
+            self.assertEqual(closing(), opened['candidate_scope_revision'])
+        service = self.case.service
+        original_scope = service.source_scope
+        changes = [
+            ('draft', lambda: self.patch_draft(prepared, deferred=True), None),
+            ('source', lambda: setattr(service, 'source_scope', lambda: {**original_scope(), 'revision': 'changed'}),
+             lambda: setattr(service, 'source_scope', original_scope)),
+            ('publication', lambda: setattr(service, '_explore_publication', 'replaced'), None),
+            ('fingerprint map', lambda: setattr(service, '_fingerprints', dict(service._fingerprints)), None),
+        ]
+        for name, change, restore in changes:
+            with self.subTest(change=name):
+                opened = self.manager.context(self.protocol, revision, actor)
+                change()
+                if name in ('publication', 'fingerprint map'):
+                    # Unprovable identity: the close rebuilds in full (same content here).
+                    with patch.object(self.manager, 'proposal', wraps=self.manager.proposal) as rebuilt:
+                        self.assertEqual(closing(), opened['candidate_scope_revision'])
+                    self.assertEqual(rebuilt.call_count, 1)
+                    changed = next(iter(opened['pending']))
+                    service._fingerprints[changed] = 'c' * 64
+                    self.assertNotEqual(closing(), opened['candidate_scope_revision'])
+                    service._fingerprints[changed] = opened['pending'][changed]
+                else:
+                    self.assertNotEqual(closing(), opened['candidate_scope_revision'])
+                self.assertEqual(closing(), full(), 'closing tokens agree with a full rebuild')
+                if restore:
+                    restore()
+        # A main rebound to another version of the same revision also refuses.
+        opened = self.manager.context(self.protocol, revision, actor)
+        binding = next(row for row in self.case.protocol_bindings.rows if row['protocol_uuid'] == self.protocol)
+        binding['version'] += 1
+        self.assertNotEqual(closing(), opened['candidate_scope_revision'])
+        binding['version'] -= 1
+
+    def test_finish_and_carry_write_decisions_in_one_statement(self):
+        first, _ = self.more_import()
+        prepared, _ = self.prepare()
+        root, context = '/api' + prepared['root'], prepared['context']
+        with patch.object(self.tables[1], 'insert1', side_effect=AssertionError('per-row insert')), \
+                patch.object(self.tables[1], 'insert', wraps=self.tables[1].insert) as inserts:
+            finished = self.case.client.post(root + '/finish', json=dict(expected_version=context['draft']['draft_version'],
+                expected_candidate_scope_revision=context['candidate_scope_revision']), headers=self.case.headers)
+            self.assertEqual(finished.status_code, 200, finished.get_json())
+            self.assertEqual(inserts.call_count, 1)
+            self.more_import()
+            carried, _ = self.prepare()
+            self.assertEqual(inserts.call_count, 2)
+        self.assertEqual(carried['draft_initialization']['carried_decision_count'], 2)

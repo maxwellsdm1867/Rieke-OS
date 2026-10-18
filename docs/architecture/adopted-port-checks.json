@@ -5752,8 +5752,8 @@
       },
       {
         "file": "python/tests/test_workspace_curation.py",
-        "file_sha256": "9ae93ce7dfa961cefce1559e659dcb0fbee8c71601c0fc5d215b57d64b5eeef8",
-        "reason": "Inject owned in-memory workspace table fixtures during curation construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md.",
+        "file_sha256": "41d40b23c34bc749fa880e1c061fd71e0f943390854fa479b36899d8bb5c16ed",
+        "reason": "Inject owned in-memory workspace table fixtures during curation construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Workbench context reads (2026-10-18): the table double gains a multi-row insert defined after all reviewed sites; reviewed syntax and targets are unchanged.",
         "sites": [
           {
             "selector": "Call:48",

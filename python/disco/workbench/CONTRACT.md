@@ -51,8 +51,31 @@ project/manager teardown releases the store. No cache eviction truncates a scope
 Canonical context derivation reads a binding header before freshly verifying its
 main recipe within the existing context-local read scope. It avoids a detached
 cached recipe that would be discarded. Custom binding/header/get overrides retain
-full binding reads. Opening/closing context, generation, transaction and acceptance
-checks are unchanged. This optimization does not claim page-size-only authority work:
+full binding reads. Generation, transaction and acceptance checks are unchanged.
+
+A read closes against the context it opened with
+(`context(..., closing=opened)`), not a second full derivation. The close reads
+fresh exactly what an opening reads for every mutable input: draft header and
+decisions, binding header (version and revision UUID), query revision (the
+captured transaction guard or a fresh native revision proof), source scope and
+the candidate/origin predicate annotation witnesses. It keeps the opened values
+only for immutable inputs: candidate/baseline recipes (insert-only, sealed with
+their UUIDs), main (the same binding revision UUID) and values derived from
+them. Current fingerprints are proven by the same published fingerprint map
+and rows objects plus the same publication token: a refresh replaces both,
+under the database lock every Workbench read holds, with a new token, and no
+code mutates them in place. Any other case (a changed main revision, custom
+binding or state readers, an unbound main, a replaced map or token) falls back
+to the full context. A stored recipe tampered with during a read is refused by
+the next opening context, which still verifies candidate, baseline and main.
+Mutations (accept, prepare) keep full closing contexts.
+
+Lock discovery and seen-recording reads use small facts (predicate, lineage
+pointer, source revisions, origin UUIDs) derived once per revision UUID from a
+verified recipe and kept in a bounded per-manager map; seen recordings are
+remembered per main revision. They never confer scope authority, so per-read
+recipe verification no longer grows with the number of imports. Custom recipe
+readers keep per-call reads. This optimization does not claim page-size-only authority work:
 candidate/main validation and persisted global annotation evidence still run.
 Single-epoch detail reads retain their membership check but hydrate curation only
 for that epoch, just as epoch pages already do; custom curation readers retain
