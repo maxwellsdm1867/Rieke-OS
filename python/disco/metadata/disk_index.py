@@ -32,9 +32,8 @@ CHUNK_SIZE = 256
 CACHE_SIZE = 64
 DETAIL_CACHE_BYTES = 8 * 1024 * 1024
 # Per-key value reads borrow one bounded, adaptively sized window of the scope
-# per connection: sequential callers read in batches, random access shrinks to
-# one key per read. Never the whole scope.
-VALUE_WINDOW_MIN = 8
+# per connection. A window starts at one key and doubles while callers walk the
+# scope in order; random access stays at one key per read. Never the whole scope.
 VALUE_WINDOW_MAX = 512
 
 
@@ -248,11 +247,15 @@ class DiskMetadataIndex:
         if _signature(self.path)!=self._signature: raise ValueError('Metadata index changed; reopen a verified generation')
 
     @contextmanager
-    def _connect(self,ids=None):
+    def _connect(self,ids=None,start=None,limit=None):
         self._check()
         connection=sqlite3.connect(self.path.as_uri()+'?mode=ro&immutable=1',uri=True)
         try:
-            if ids is None:
+            if start is not None:
+                # A bounded run of the generation's order beginning at one identity.
+                connection.execute('CREATE TEMP TABLE scope(ordinal INTEGER PRIMARY KEY,epoch_id INTEGER UNIQUE)')
+                connection.execute('INSERT INTO scope(epoch_id) SELECT epoch_id FROM epochs WHERE epoch_id>=(SELECT epoch_id FROM epochs WHERE epoch_uuid=?) ORDER BY epoch_id LIMIT ?',(start,limit))
+            elif ids is None:
                 # Full generations already have an ordered identity index. A
                 # view preserves scope semantics without copying every identity
                 # into a new temporary table for each immutable read.
@@ -509,9 +512,10 @@ class DiskMetadataIndex:
 
 
 class _Values(Mapping):
-    def __init__(self,index,ids,fields):
+    def __init__(self,index,ids,fields,_start=None,_limit=None):
         self.index=index;self.ids=None if ids is None else tuple(ids);self.fields=None if fields is None else tuple(fields);self.idset=None if self.ids is None else frozenset(self.ids);self.cache=OrderedDict();self._length=None
-        self._window={};self._window_hits=0;self._window_size=VALUE_WINDOW_MIN;self._positions=None
+        self._window={};self._window_hits=0;self._window_size=1;self._next=None;self._positions=None
+        self._start=_start;self._limit=_limit
     def __len__(self):
         self.index._check()
         if self._length is None:
@@ -535,21 +539,24 @@ class _Values(Mapping):
         self.cache.move_to_end(key);return copy.deepcopy(self.cache[key])
     def _read_window(self,key):
         # One connection reads this key and the scope rows that follow it.
-        # Grow while the previous window was mostly used; shrink otherwise.
+        # Double while the caller continues in scope order; halve otherwise.
         if self._window:
-            used=self._window_hits*2>=len(self._window)
-            self._window_size=min(VALUE_WINDOW_MAX,self._window_size*2) if used else max(1,self._window_size//2)
-        self._window={};self._window_hits=0
+            onward=key==self._next or self._window_hits*2>=len(self._window)>1
+            self._window_size=min(VALUE_WINDOW_MAX,self._window_size*2) if onward else max(1,self._window_size//2)
+        self._window={};self._window_hits=0;self._next=None;size=self._window_size
         if self.ids is not None:
             if self._positions is None:
                 positions={}
                 for number,identity in enumerate(self.ids): positions.setdefault(identity,number)
                 self._positions=positions
-            start=self._positions[key];batch=self.ids[start:start+self._window_size]
+            start=self._positions[key]
+            if start+size<len(self.ids): self._next=self.ids[start+size]
+            self._window=dict(_Values(self.index,self.ids[start:start+size],self.fields).items())
         else:
-            with self.index._connect([]) as connection:
-                batch=[row[0] for row in connection.execute('SELECT epoch_uuid FROM epochs WHERE epoch_id>=(SELECT epoch_id FROM epochs WHERE epoch_uuid=?) ORDER BY epoch_id LIMIT ?',(key,self._window_size))]
-        if batch: self._window=dict(_Values(self.index,batch,self.fields).items())
+            # One extra identity reveals whether the next miss continues in order.
+            found=list(_Values(self.index,None,self.fields,_start=key,_limit=size+1).items())
+            if len(found)>size: self._next=found[size][0]
+            self._window=dict(found[:size])
     def subset(self,ids):
         """A streaming view of these identities in their order: one read, not one per key."""
         ids=tuple(ids)
@@ -569,7 +576,7 @@ class _Values(Mapping):
                 if key.startswith('joint/'): joints[key]=tree.joint_components(key,definitions)
                 elif key not in definitions: raise ValueError('Unknown indexed field: '+key)
         required=None if requested is None else requested|{key for components in joints.values() for key in components}
-        with self.index._connect(self.ids) as connection:
+        with self.index._connect(self.ids,self._start,self._limit) as connection:
             connection.execute('CREATE TEMP TABLE wanted(field_no INTEGER PRIMARY KEY)')
             if required is None: connection.execute('INSERT INTO wanted SELECT field_no FROM fields')
             else: connection.executemany('INSERT INTO wanted SELECT field_no FROM fields WHERE field_id=?',[(key,) for key in required])

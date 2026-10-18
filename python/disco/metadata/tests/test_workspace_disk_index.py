@@ -256,7 +256,7 @@ class DiskIndexTests(unittest.TestCase):
             with patch.object(index,'_connect',wraps=index._connect) as connect:
                 read={key:values[key] for key in order}
             self.assertEqual(read,{key:expected[key] for key in order})
-            self.assertLessEqual(connect.call_count,2*(1+(len(order)//disk.VALUE_WINDOW_MAX)+8),connect.call_count)
+            self.assertLessEqual(connect.call_count,(len(order)//disk.VALUE_WINDOW_MAX)+11,connect.call_count)
             read[order[0]].clear()
             self.assertEqual(values[order[0]],expected[order[0]],'Each access returns an independent copy')
         scoped=index.values(ids[:3])
