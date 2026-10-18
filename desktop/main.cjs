@@ -173,6 +173,45 @@ function draftOrigins(event){
   if(owner)origins.add(owner.binding.origin);
   return origins;
 }
+// One project = one draft writer. The writer for a project's saved-view scope is
+// the most recently registered owner for that project. A newer owner is admitted
+// to write only after the previous owner's final checkpoint completes or is
+// declared unconfirmed; afterwards the previous owner's saves are refused and it
+// is disposed. No two documents can ever interleave writes to one saved view.
+const draftWriters=new Map();
+const draftScope=binding=>binding.project_uuid==='launcher'?'launcher':JSON.stringify([binding.project_uuid,binding.project_path]);
+function claimDraftWriter(owner){
+  if(!owner.binding)return;
+  const scope=draftScope(owner.binding),previous=draftWriters.get(scope);
+  const entry={owner,previous:previous?.owner,settled:false};
+  entry.ready=(async()=>{
+    if(!entry.previous)return;
+    await previous.ready;
+    if(entry.previous.isDestroyed()||entry.previous.draftUnavailable)return;
+    entry.checkpointing=true;
+    try{const result=await draftBarrier.prepare([entry.previous],{purpose:'project-checkpoint',timeout:5000});if(!result.ready)retiredDraftsUnconfirmed=true;}
+    catch{retiredDraftsUnconfirmed=true;}
+    finally{entry.checkpointing=false;}
+  })().finally(()=>{
+    entry.settled=true;
+    const stale=entry.previous;
+    if(stale&&!stale.isDestroyed()&&stale.retired===undefined)projectViews.get(stale.parentWindow)?.dispose(stale);
+  });
+  draftWriters.set(scope,entry);
+}
+function releaseDraftWriter(owner){
+  if(!owner.binding)return;
+  const scope=draftScope(owner.binding);
+  if(draftWriters.get(scope)?.owner===owner)draftWriters.delete(scope);
+}
+// Resolves when this owner may write; rejects for a superseded owner.
+async function admitDraftWriter(owner){
+  if(!owner.binding)return;
+  const entry=draftWriters.get(draftScope(owner.binding));
+  if(entry?.owner===owner){await entry.ready;if(draftWriters.get(draftScope(owner.binding))===entry)return;}
+  else if(entry?.checkpointing&&entry.previous===owner)return; // Only the superseded owner's final checkpoint.
+  throw Error('Another document now owns this project\'s saved view.');
+}
 function retainedOwners(){return [...projectViews.values()].flatMap(views=>[...views.owners.values()].map(owner=>({views,owner})));}
 // After a failed backend, checkpoint retained documents while their old bindings
 // still authenticate; a replacement root invalidates every one of those bindings.
@@ -241,8 +280,8 @@ function viewsFor(window){
   if(!projectViews.has(window))projectViews.set(window,new ProjectViews({window,
     createView:()=>new WebContentsView({webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,nodeIntegrationInWorker:false,webSecurity:true,allowRunningInsecureContent:false,webviewTag:false,spellcheck:false,partition:'rieke-desktop'}}),
     prepare:owners=>draftBarrier.prepare(owners,{purpose:'project-checkpoint'}),
-    onRegister:owner=>{scientificWindows.add(owner);secureContents(owner);},
-    onDispose:owner=>scientificWindows.delete(owner),
+    onRegister:owner=>{scientificWindows.add(owner);secureContents(owner);claimDraftWriter(owner);},
+    onDispose:owner=>{scientificWindows.delete(owner);releaseDraftWriter(owner);},
     onActivate:async owner=>{
       if(owner.binding.project_uuid!=='launcher')try{await startupSession.remember(owner.binding.project_uuid,owner.binding.project_path,'workspace');}catch{broadcast({...status(),message:'The project opened, but its startup preference could not be saved.'});}
       if(!preview){const title=owner.webContents.getTitle();if(title)window.setTitle(title);}
@@ -505,6 +544,7 @@ function registerIPC() {
     return draftBarrier.acknowledge(payload, window);
   });
   handle('desktop:save-draft', async (payload,window) => {
+    await admitDraftWriter(window);
     const {store,record}=await scopedDraftStore(window,payload?.projectId);
     const result=await store.save(payload);
     // The startup preference is a separate convenience; its failure never turns

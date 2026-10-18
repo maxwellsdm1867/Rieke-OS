@@ -25,7 +25,10 @@ implementation state, not JavaScript-enforced privacy.
 Main's scopedDraftStore binds a current authenticated window origin to project
 UUID, canonical path and app-version:view-v1 namespace. Identical UUIDs at different
 paths must not borrow saved views. This owner does not derive that trust itself.
-Saving a view occurs before StartupSession.remember in main; that ordering remains
+Main guarantees one draft writer per saved-view scope (see
+[retained project documents](../PROJECT_VIEWS.md)); a superseded document's saves
+are refused after its final checkpoint, so this store never sees interleaved
+writers for one project. Saving a view occurs before StartupSession.remember in main; that ordering remains
 unchanged. remember writes only when the project, path, page or mode changes, and
 its failure is reported as a notice without failing the persisted draft save. Strict replacement and bounded explicit Quit remain distinct
 [close coordination](../close/README.md) obligations.

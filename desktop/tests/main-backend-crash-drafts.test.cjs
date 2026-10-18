@@ -21,12 +21,14 @@ async function fixture(t){
   send(channel,value){
    this.messages.push({channel,value});
    if(channel!=='desktop:prepare-close')return;
+   if(this.held){this.held.push(value);return;}
    queueMicrotask(async()=>{
     let ok=true;
     if(this.draft)try{await call(this,'desktop:save-draft',this.draft);}catch(error){ok=false;failures.push(['save',error.message]);}
     try{await call(this,'desktop:drafts-ack',{requestId:value.requestId,ok});}catch(error){failures.push(['ack',error.message]);}
    });
   }
+  async respond(value,ok=true){await call(this,'desktop:drafts-ack',{requestId:value.requestId,ok});}
   focus(){}isFocused(){return false;}close(){this.destroyed=true;}
  }
  class Window extends EventEmitter{
@@ -45,7 +47,7 @@ async function fixture(t){
  const actualRequire=require('node:module').createRequire(path.join(__dirname,'../main.cjs'));
  const electron={app,BrowserWindow:Window,WebContentsView:View,ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},dialog:{},session:{},shell:{},Menu:{},powerMonitor:{}};
  const context={require:name=>name==='electron'?electron:actualRequire(name),__dirname:path.join(__dirname,'..'),process,console,URL,AbortSignal,setTimeout,clearTimeout,queueMicrotask,directory};
- vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../main.cjs'),'utf8')+`\nglobalThis.h={createWindow,activateProject,projectViews,scientificWindows,recovery,registerIPC,prepareQuit,startScientificUI,status:()=>lifecycleStatus,
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../main.cjs'),'utf8')+`\nglobalThis.h={createWindow,activateProject,projectViews,scientificWindows,recovery,registerIPC,prepareQuit,startScientificUI,status:()=>lifecycleStatus,unconfirmed:()=>retiredDraftsUnconfirmed,
   set(value){supervisor=value;coordinator={start:async()=>{},stop(){},getStatus:()=>({state:'Current'})};startupSession={claim:()=>null,remember:async()=>{}};draftStore=new DraftStore(globalThis.directory);}};`,context);
  context.h.set(supervisor);context.h.registerIPC();const window=context.h.createWindow();
  await context.h.activateProject(window,'http://127.0.0.1:42002');const views=context.h.projectViews.get(window),first=views.active;
@@ -96,4 +98,51 @@ test('a failed Retry keeps retained views and their draft path for a later Quit'
  await h.startScientificUI();
  assert.equal(h.status().state,'Recovery');assert.equal(h.first.isDestroyed(),false);
  assert.equal((await h.prepareQuit()).ready,true);assert.deepEqual(h.failures,[]);
+});
+
+const turns=async(count=5)=>{for(let index=0;index<count;index++)await new Promise(resolve=>setImmediate(resolve));};
+async function readDraft(directory,projectId){
+ const names=await savedDrafts(directory),name=names.find(item=>item.endsWith(`${projectId}.json`));
+ return JSON.parse(fs.readFileSync(path.join(directory,'scoped-views',name),'utf8')).value;
+}
+// The one way a second document for a project can appear: a new backend binding
+// for the same project while the previous document is still retained.
+async function successor(h){
+ h.records.push({...h.records[0],port:42012,pid:210,created_at:9});
+ h.first.webContents.held=[];
+ await h.activateProject(h.window,'http://127.0.0.1:42012');
+ return h.views.active;
+}
+const view=(index,edit)=>({projectId:ids[index],value:{format:'rieke-renderer-draft',version:1,projectId:ids[index],value:{route:{page:'protocol'},edit}}});
+test('one project has one draft writer: the successor writes only after the predecessor final checkpoint',{timeout:4000},async t=>{
+ const h=await fixture(t),next=await successor(h);
+ assert.notEqual(next,h.first);assert.equal(h.first.webContents.held.length,1);
+ assert.equal(h.first.webContents.held[0].purpose,'project-checkpoint');
+ let admitted=false;const nextSave=h.call(next.webContents,'desktop:save-draft',view(0,'successor')).then(value=>{admitted=true;return value;});
+ await turns();assert.equal(admitted,false,'Successor waits for the predecessor checkpoint');
+ assert.deepEqual(await h.call(h.first.webContents,'desktop:save-draft',view(0,'final checkpoint')),{saved:true});
+ await h.first.webContents.respond(h.first.webContents.held[0]);
+ assert.deepEqual(await nextSave,{saved:true});
+ assert.equal((await readDraft(h.directory,ids[0])).edit,'successor');
+ assert.equal(h.first.isDestroyed(),true);assert.equal(h.scientificWindows.has(h.first),false);
+ await assert.rejects(h.call(h.first.webContents,'desktop:save-draft',view(0,'late stale write')),/Unauthorized/);
+ assert.equal((await readDraft(h.directory,ids[0])).edit,'successor');
+});
+test('a superseded owner cannot write outside its final checkpoint, and an unanswered checkpoint is unconfirmed',{timeout:9000},async t=>{
+ const h=await fixture(t),next=await successor(h);
+ const stale=h.first,staleFrame=stale.webContents.mainFrame;
+ // Simulate the gate after the checkpoint deadline without disposal racing the assertion.
+ await h.call(next.webContents,'desktop:save-draft',view(0,'successor'));
+ assert.equal(stale.isDestroyed(),true);
+ const result=await h.prepareQuit();
+ assert.equal(result.ready,true);assert.equal(h.unconfirmed(),true);
+ stale.webContents.destroyed=false;h.scientificWindows.add(stale);stale.webContents.mainFrame=staleFrame;
+ await assert.rejects(h.call(stale.webContents,'desktop:save-draft',view(0,'resurrected stale write')),/now owns this project/);
+});
+test('skip-unchanged stays correct: the single writer never sees a foreign write in between',{timeout:4000},async t=>{
+ const h=await fixture(t),next=await successor(h);
+ await h.first.webContents.respond(h.first.webContents.held[0]);
+ await h.call(next.webContents,'desktop:save-draft',view(0,'same'));
+ await assert.rejects(h.call(h.first.webContents,'desktop:save-draft',view(0,'foreign')),/Unauthorized/);
+ assert.equal((await readDraft(h.directory,ids[0])).edit,'same');
 });
