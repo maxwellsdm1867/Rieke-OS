@@ -146,11 +146,25 @@ def main():
     index = DiskMetadataIndex.build(Path(folder) / 'index' / 'routes.sqlite', service.rows, Details(service.rows),
                                     index_sources, f'route-million-{args.epochs}-{args.protocol_epochs}', project)
     service.disk_index, service.details = index, index.details
+    # Production refresh prepares the typed sidecar right after sealing
+    # (WorkspaceService.refresh -> disco.metadata.typed_lifecycle.prepare).
+    typed_started = time.perf_counter()
+    try:
+        from disco.metadata.typed_lifecycle import prepare as prepare_typed
+    except ImportError:
+        service.typed_index = None
+        result['typed_index'] = {'status': 'unavailable in this source revision'}
+    else:
+        service.typed_index, typed_status = prepare_typed(index, None)
+        result['typed_index'] = {'status': typed_status, 'seconds': time.perf_counter() - typed_started,
+                                 'present': service.typed_index is not None}
+    service._explore_publication = str(uuid.uuid4())
+    service._tree_page_scope_cache = None
     service._tree_catalog_cache = {}
     for name in ('_registered_tree_cache', '_registered_predicate_cache', '_predicate_catalog_cache'):
         if hasattr(service, name):
             setattr(service, name, None)
-    report('index_sealed', seconds=time.perf_counter() - seal_started)
+    report('index_sealed', seconds=time.perf_counter() - seal_started, typed_index=result['typed_index'])
 
     counters = {'attest': 0, 'generation_sql': 0}
     generations = {}
@@ -380,7 +394,8 @@ def main():
     measure('overview', same(None), lambda s: call('get', '/api/overview'))
 
     # ---- Tree pages --------------------------------------------------------
-    tree_body = {'protocol_uuid': protocol, 'splits': 'date,cell,block'}
+    # Mirrors workspace-app/src/pagedTreeRequest.js: counts_only, explicit filters, 60-row pages.
+    tree_body = {'protocol_uuid': protocol, 'splits': 'date,cell,block', 'filters': {}, 'counts_only': True, 'offset': 0, 'limit': 60}
 
     def tree_root():
         return call('post', '/api/tree-pages', tree_body).get_json()
@@ -398,10 +413,10 @@ def main():
         return {'path': level['branches'][0]['path'], 'revision': level['revision'], 'date': date}
     measure('tree.expand_cell', tree_cell_state, lambda s: call('post', '/api/tree-pages', {**tree_body, 'path': s['path'], 'revision': s['revision']}))
     measure('tree.next_page_cells', tree_child_state,
-            lambda s: call('post', '/api/tree-pages', {**tree_body, 'path': s['path'], 'revision': s['revision'], 'offset': 80, 'limit': 80}))
+            lambda s: call('post', '/api/tree-pages', {**tree_body, 'path': s['path'], 'revision': s['revision'], 'offset': 60}))
     measure('tree.column_batch', tree_cell_state,
             lambda s: call('post', '/api/tree-pages', {**tree_body, 'path': s['path'], 'revision': s['revision'], 'include_ancestors': True}))
-    measure('tree.root_counts_only', same(None), lambda s: call('post', '/api/tree-pages', {**tree_body, 'counts_only': True}))
+    measure('tree.root_full_statistics', same(None), lambda s: call('post', '/api/tree-pages', {**tree_body, 'counts_only': False}))
     pager = app.extensions.get('disco.navigation.tree_pages')
 
     class Reply:  # Adapter so in-process production calls share measure().
@@ -414,11 +429,12 @@ def main():
             cell = tree_cell_state(phase)
             page = call('post', '/api/tree-pages', {**tree_body, 'path': cell['path'], 'revision': cell['revision']}).get_json()
             return {'path': cell['path'], 'revision': cell['revision'], 'count': page['selection']['count']}
+        selection_scope = {key: tree_body[key] for key in ('protocol_uuid', 'filters', 'splits')}
         measure('tree.select_cell', selection_state, lambda s: Reply(pager.selection(
-            {**tree_body, 'path': s['path'], 'revision': s['revision']}, s['count'])),
+            {**selection_scope, 'path': s['path'], 'revision': s['revision']}, s['count'])),
             oracle=lambda r, s: len(r[0].value['epoch_uuids']) == s['count'] or (_ for _ in ()).throw(AssertionError('count')))
     # The tree 'tag' filter reads shared effective tags (cell chips inherit).
-    tag_tree = {'protocol_uuid': protocol, 'splits': 'cell', 'filters': {'tag': 'drift'}}
+    tag_tree = {**tree_body, 'splits': 'cell', 'filters': {'tag': 'drift'}}
     expected_tag_total = len(shared_epochs) if shared is not None else 0
     measure('tree.tag_filtered_root', same(None), lambda s: call('post', '/api/tree-pages', tag_tree),
             oracle=lambda r, s: r[0].get_json()['total_epochs'] == expected_tag_total or (_ for _ in ()).throw(AssertionError(f"tag total {r[0].get_json().get('total_epochs')} != {expected_tag_total}")))
@@ -462,11 +478,32 @@ def main():
 
         def preview_counts(responses, state, _label=label):
             counts.setdefault(_label, {})['preview'] = countable(responses[0].get_json())
+        # The UI's draft/result previews send summary_only with catalog_summary false.
         measure(f'explore.preview.{label}', same(None), lambda s, p=predicate: call('post', '/api/explore/preview',
-                {'predicate': p, 'splits': 'cell', 'summary_only': True}), oracle=preview_counts)
+                {'predicate': p, 'splits': 'cell', 'summary_only': True, 'catalog_summary': False}), oracle=preview_counts)
+    for label in ('eq_cell_type', 'protocol_tag', 'and_or'):
+        # Tree-step preview with the full catalog summary (catalog_summary true in the UI).
+        measure(f'explore.preview_catalog.{label}', same(None), lambda s, p=predicates[label]: call('post', '/api/explore/preview',
+                {'predicate': p, 'splits': 'cell', 'summary_only': True, 'catalog_summary': True}))
+
+    class WithoutTyped:
+        # Explicitly named fallback: the same route with no typed sidecar.
+        def __enter__(self):
+            self.saved = getattr(service, 'typed_index', None)
+            service.typed_index = None
+        def __exit__(self, *error):
+            service.typed_index = self.saved
+    if getattr(service, 'typed_index', None) is not None:
+        for label in ('eq_cell_type', 'range_contrast', 'protocol_tag'):
+            def fallback(s, p=predicates[label]):
+                with WithoutTyped():
+                    return call('post', '/api/explore/page', {'predicate': p, 'protocol_uuid': protocol, 'limit': 60})
+            measure(f'explore.page_untyped_fallback.{label}', same(None), fallback)
+    else:
+        result['skipped']['explore.page_untyped_fallback.*'] = 'No typed index: explore.page.* already measure the fallback'
     for label in ('eq_cell_type', 'protocol_tag', 'and_or'):
         measure(f'explore.run.{label}', same(None), lambda s, p=predicates[label]: call('post', '/api/explore/run',
-                {'predicate': p, 'splits': 'cell'}))
+                {'predicate': p, 'splits': 'cell', 'catalog_summary': False}))
 
     def summaries(state):
         submitted = call('post', '/api/explore/summaries', {'predicate': predicates['range_contrast'],

@@ -464,7 +464,11 @@ do not exercise: the production Flask routes, `WorkspaceService`,
 `ProtocolStateReader`, `TreePages`, `CurationStore`, `SharedAnnotations` and the
 Workbench pending pool, over the owned workflow fixture
 (`benchmarks/workflow/server.py`) with its synthetic index replaced by a real
-sealed `DiskMetadataIndex`. The production `StateGenerationAuthority` runs with
+sealed `DiskMetadataIndex` and the typed sidecar that production refresh prepares
+after sealing (`typed_lifecycle.prepare`). Request bodies mirror the UI: tree pages
+send `counts_only`, explicit filters and 60-row pages; previews and runs send
+`catalog_summary: false`. Full-statistics tree roots, catalog-summary previews and
+the untyped explore-page fallback are separately named cases. The production `StateGenerationAuthority` runs with
 its leaf SQL replaced: schema attestation is a counted constant and generation
 rows are in-memory counters that the SQL doubles advance on every curation and
 shared-annotation write, standing in for the native triggers. No H5 file may be

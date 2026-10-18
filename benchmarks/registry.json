@@ -333,9 +333,9 @@
       "ci_protocol_epochs": 20000
     },
     "route-million": {
-      "version": "1.0.0",
+      "version": "1.1.0",
       "runner": "tools/benchmark_routes.py",
-      "fixture_version": "route-owned-v1",
+      "fixture_version": "route-owned-v2",
       "samples": 3,
       "max_worker_seconds": 3600,
       "max_rss_bytes": 6442450944,
@@ -373,7 +373,7 @@
         "missing_cell_type",
         "missing_recorded"
       ],
-      "scope": "Production Flask routes, WorkspaceService, ProtocolStateReader, TreePages, CurationStore, SharedAnnotations, Workbench and a real sealed DiskMetadataIndex over owned SQL doubles and an in-process client. Generation authority leaf SQL and schema attestation are counted doubles advanced by double writes. One cold and three warm samples per case plus one separate cProfile counting pass. No H5, traces, HTTP transport, renderer, native MySQL or release qualification."
+      "scope": "Production Flask routes, WorkspaceService, ProtocolStateReader, TreePages, CurationStore, SharedAnnotations, Workbench and a real sealed DiskMetadataIndex with its production typed sidecar (typed_lifecycle.prepare) over owned SQL doubles and an in-process client. Generation authority leaf SQL and schema attestation are counted doubles advanced by double writes. One cold and three warm samples per case plus one separate cProfile counting pass. No H5, traces, HTTP transport, renderer, native MySQL or release qualification."
     }
   }
 }
