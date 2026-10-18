@@ -78,7 +78,9 @@ class _FrozenReadProjections:
 
 
 class WorkbenchConflict(ValueError):
-    pass
+    # Response code; an instance may name a more specific one (for example
+    # 'workbench_merge_undone' when an export names an undone merge).
+    code = 'workbench_conflict'
 
 
 # Candidate scope revisions omit project-wide shared tags (a separate witness).
@@ -989,6 +991,19 @@ class ProtocolWorkbench:
             self._event(actor, 'workbench_merge_undone', receipt, undo_operation)
         return receipt
 
+    def undone_by(self, operation):
+        """The undo operation UUID that reverted this merge, or None."""
+        undo = str(uuid.uuid5(uuid.UUID(self.project), 'workbench-undo:' + str(uuid.UUID(operation))))
+        return undo if (self.tables[2] & dict(project_uuid=self.project, operation_uuid=undo)).to_dicts() else None
+
+    def public_merge_receipt(self, receipt):
+        """public_receipt plus durable undo state for an additive merge receipt."""
+        result = public_receipt(receipt)
+        if 'accepted_epoch_uuids' in receipt and 'kind' not in receipt:
+            undo = self.undone_by(receipt['operation_uuid'])
+            result.update(undone=undo is not None, undone_by_operation_uuid=undo)
+        return result
+
     @staticmethod
     def accept_request_hash(protocol, revision, actor, body):
         return checksum(dict(protocol_uuid=protocol, candidate_revision_uuid=revision, actor=actor, **body))
@@ -1380,7 +1395,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     @app.errorhandler(WorkbenchConflict)
     def conflict(error):
-        return jsonify(error=str(error), code='workbench_conflict'), 409
+        return jsonify(error=str(error), code=error.code), 409
 
     root = '/api/protocols/<protocol>/workbench'
     candidate = root + '/candidates/<revision>'
@@ -1472,11 +1487,11 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             existing = manager.receipt(value['operation_uuid'], owner,
                 manager.accept_request_hash(protocol, revision, owner, value))
             if existing:
-                return jsonify(public_receipt(existing))
+                return jsonify(manager.public_merge_receipt(existing))
         with guarded(protocol, revision) as owner:
             # Acceptance verifies the sources and fingerprints it publishes
             # (verify_sources); a whole-catalog refresh here only repeated work.
-            return jsonify(public_receipt(manager.accept(protocol, revision, owner, value)))
+            return jsonify(manager.public_merge_receipt(manager.accept(protocol, revision, owner, value)))
 
     @app.get(candidate + '/epochs')
     def workbench_epochs(protocol, revision):

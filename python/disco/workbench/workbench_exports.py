@@ -41,9 +41,11 @@ def accepted_export_context(manager, protocol, operation, actor):
         raise ValueError('This acceptance added no new epochs to export')
     # An accepted export claims its epochs are main's additions. An undone
     # merge, or a main that changed since, no longer supports that claim.
-    undo = str(uuid.uuid5(uuid.UUID(manager.project), 'workbench-undo:' + str(uuid.UUID(operation))))
-    if (manager.tables[2] & dict(project_uuid=manager.project, operation_uuid=undo)).to_dicts():
-        raise WorkbenchConflict('This merge was undone; its epochs are no longer accepted additions to export')
+    if manager.undone_by(operation):
+        undone = WorkbenchConflict('This merge was undone, so its epochs are no longer in main and cannot be '
+                                   'exported as accepted additions.')
+        undone.code = 'workbench_merge_undone'
+        raise undone
     binding = manager.history.protocol_binding_header(protocol)
     accepted_binding = receipt.get('binding') or {}
     if (not binding or binding['version'] != accepted_binding.get('version')
@@ -207,7 +209,7 @@ def register_workbench_export_routes(app, manager, store, db_lock, guarded, acto
             receipt = manager.receipt(operation, actor())
             if not receipt or receipt.get('protocol_uuid') != protocol:
                 raise KeyError('Workbench receipt not found')
-            return jsonify(public_receipt(receipt))
+            return jsonify(manager.public_merge_receipt(receipt))
 
     @app.post(candidate_root + '/exports')
     def workbench_incoming_export(protocol, revision):

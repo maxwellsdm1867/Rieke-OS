@@ -193,6 +193,7 @@ class IncomingExportTests(unittest.TestCase):
 
     def test_undone_or_superseded_merge_is_not_exportable_as_accepted(self):
         acceptance = self.accept(self.accepted_request()).get_json()
+        self.assertEqual((acceptance['undone'], acceptance['undone_by_operation_uuid']), (False, None))
         root, body = self.receipt_export_request(acceptance)
         undone = self.case.client.post(self.case.base + '/workbench/undo', json=dict(
             operation_uuid=acceptance['operation_uuid'], expected_binding_version=acceptance['binding']['version']),
@@ -200,9 +201,16 @@ class IncomingExportTests(unittest.TestCase):
         self.assertEqual(undone.status_code, 200, undone.get_json())
         context = self.case.client.get(root + '/export-context')
         self.assertEqual(context.status_code, 409, context.get_json())
-        self.assertIn('undone', context.get_json()['error'])
+        self.assertEqual(context.get_json()['code'], 'workbench_merge_undone')
+        self.assertIn('was undone', context.get_json()['error'])
         exported = self.case.client.post(root + '/exports', json=body, headers=self.case.headers)
         self.assertEqual(exported.status_code, 409, exported.get_json())
+        self.assertEqual(exported.get_json()['code'], 'workbench_merge_undone')
+        # The receipt read carries the durable undo state, so a reloaded
+        # client can withdraw "Export accepted" without session memory.
+        receipt = self.case.client.get(root).get_json()
+        self.assertTrue(receipt['undone'])
+        self.assertEqual(receipt['undone_by_operation_uuid'], undone.get_json()['operation_uuid'])
         self.assertFalse(self.case.datasets.rows)
         # A main rebound after the merge (here by the undo's binding version)
         # also refuses, even without consulting the undo receipt.

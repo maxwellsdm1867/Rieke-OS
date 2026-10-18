@@ -134,7 +134,11 @@ receipt for the same operation UUID only when that receipt is an additive 'all'
 acceptance of the same protocol. It resolves 'all' for that request only: it
 never persists 'all' consent or advances the draft version, so a failed merge
 leaves the draft unchanged. An accepted-additions export refuses (409) once
-that merge is undone or main's binding is no longer the one the merge published.
+that merge is undone (code `workbench_merge_undone`) or main's binding is no
+longer the one the merge published (`workbench_conflict`). Merge receipts
+returned by accept, `merge-all` and the receipt read carry `undone` and
+`undone_by_operation_uuid` (the undo receipt's operation UUID, or null), read
+from the durable undo receipt, so a reloaded client can withdraw export.
 
 A successful preparation response that computed and closed its context during
 that request includes `X-Disco-Workbench-Context: fresh-v1` only after its SQL

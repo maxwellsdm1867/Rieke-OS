@@ -209,8 +209,7 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
                     if (existing.get('protocol_uuid') != protocol or 'kind' in existing or 'format' in existing
                             or existing.get('mode') != 'all' or 'accepted_epoch_uuids' not in existing):
                         raise WorkbenchConflict('Operation UUID already used by another request')
-                    from disco.workbench.workbench import public_receipt
-                    return jsonify(public_receipt(existing))
+                    return jsonify(manager.public_merge_receipt(existing))
                 queue_fence(protocol, owner, value['expected_queue_revision'])
                 with manager.service.dj.conn().transaction:
                     summary = prepare_pool_candidate(manager, protocol, owner)[0]
@@ -225,7 +224,6 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
                     expected_draft_version=context['draft_version'], mode='all', operation_uuid=operation,
                     **{key: preview[key] for key in ('preview_sha256', 'expected_binding_version', 'expected_query_revision')}),
                     merge_all=True)
-                from disco.workbench.workbench import public_receipt
-                return jsonify(public_receipt(receipt))
+                return jsonify(manager.public_merge_receipt(receipt))
 
     manager.cumulative_pending_browse = True
