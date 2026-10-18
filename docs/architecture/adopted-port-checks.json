@@ -4401,7 +4401,7 @@
       },
       {
         "file": "python/tests/test_desktop_test_release.py",
-        "file_sha256": "f912cc3b95dd3cccbe9a2c6404b36d04c75fd0ae1c3cc80ca72afb1c2faa6113",
+        "file_sha256": "e3dade40ff95d4cdf120029108e828b41068e95b60f79f66960caabc193a24ed",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -5981,7 +5981,7 @@
               {
                 "module": "workspace_matlab",
                 "file": "python/workspace_matlab.py",
-                "file_sha256": "f3bd00d7b0f3c2cc8c68d18a0242cbb4a10f4c998726c75b79f412da76893f94",
+                "file_sha256": "c103a0cbb915ffcb3f7e04231cb764c16dbec4f643aa923a35902fce643a13ec",
                 "contract_id": null
               }
             ]

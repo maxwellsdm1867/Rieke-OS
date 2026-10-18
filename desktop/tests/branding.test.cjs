@@ -4,12 +4,12 @@ const {Readable}=require('node:stream');
 const {configureBranding}=require('../branding.cjs');
 const {releaseList,assetURL}=require('../updates/testing-updater.cjs');
 const {approvedURL}=require('../updates/testing-update-validation.cjs');
-test('Disco preserves established and explicitly selected Electron profiles',()=>{
+test('DISCO preserves established and explicitly selected Electron profiles',()=>{
  for(const explicit of [null,'/tmp/selected-existing-profile']){
   let name='new package name',saved;
   const app={setName:value=>{name=value;},getPath:()=>explicit||`/profiles/${name}`,setPath:(_,value)=>{saved=value;}};
   assert.equal(configureBranding(app),explicit||'/profiles/Rieke OS');
-  assert.equal(name,'Disco');assert.equal(saved,explicit||'/profiles/Rieke OS');
+  assert.equal(name,'DISCO');assert.equal(saved,explicit||'/profiles/Rieke OS');
  }
 });
 test('testing feed uses the existing repository once for success and server failures',async()=>{
@@ -35,6 +35,7 @@ test('macOS visible and helper names agree while installation identity stays com
  assert.equal(build.productName,'Disco');
  assert.equal(build.mac.extendInfo.CFBundleName,build.productName);
  assert.equal(build.mac.extendInfo.CFBundleDisplayName,'Disco');
+ assert.equal(build.mac.extendInfo.LSHasLocalizedDisplayName,true);
  assert.equal(build.mac.executableName,'Disco');
  assert.equal(build.dmg.contents[0].name,'Disco.app');
  assert.equal(build.artifactName,'Disco-${version}-${arch}.${ext}');

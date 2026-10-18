@@ -82,7 +82,7 @@ async function main(){
  receipt.application_version=manifest.application_version;receipt.manifest_sha256=initial.manifest_sha256;receipt.asar_sha256=initial.asar_sha256;
  await check('packaged launcher starts with matching app and backend versions',async()=>{
   await start();const brand=await application.evaluate(({app,Menu})=>({name:app.getName(),version:app.getVersion(),executable:process.execPath,menu:Menu.getApplicationMenu().items[0].label,quit:Menu.getApplicationMenu().items[0].submenu.items.at(-1).label}));
-  const version=brand.version;assert.equal(version,manifest.application_version);assert.equal(brand.name,'Disco');assert.equal(brand.menu,'Disco');assert.equal(brand.quit,'Quit Disco');assert.equal(path.basename(brand.executable),'Disco');assert.equal(path.basename(fixture.bundle),'Disco.app');
+  const version=brand.version;assert.equal(version,manifest.application_version);assert.equal(brand.name,'DISCO');assert.equal(brand.menu,'DISCO');assert.equal(brand.quit,'Quit DISCO');assert.equal(path.basename(brand.executable),'Disco');assert.equal(path.basename(fixture.bundle),'Disco.app');
   const health=await bounded(ownedControl(fixture,'health'),'Root readiness');assert.equal(health.ready,true);assert.equal(health.application_version,version);
   return{app_version:version,root_ready:true,isolated_home_and_profile:true,branding:brand};
  });

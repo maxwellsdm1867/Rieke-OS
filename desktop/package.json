@@ -2,8 +2,8 @@
   "name": "disco-desktop",
   "version": "0.1.19",
   "private": true,
-  "description": "Disco self-contained desktop application",
-  "author": "Disco contributors",
+  "description": "DISCO self-contained desktop application",
+  "author": "DISCO contributors",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
@@ -90,13 +90,14 @@
       "sign": "./sign-runtime.cjs",
       "extendInfo": {
         "CFBundleDisplayName": "Disco",
-        "CFBundleName": "Disco"
+        "CFBundleName": "Disco",
+        "LSHasLocalizedDisplayName": true
       },
       "executableName": "Disco"
     },
     "dmg": {
       "sign": false,
-      "title": "Open Disco to install",
+      "title": "Open DISCO to install",
       "backgroundColor": "#f7f4fa",
       "window": {
         "width": 560,

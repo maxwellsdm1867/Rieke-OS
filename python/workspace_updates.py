@@ -156,13 +156,13 @@ def check_for_updates(root=ROOT, *, force=False):
             available = _version(version) > _version(result['installed'])
             result.update(state='update_available' if available else 'up_to_date', available=version,
                           release_url=release_url, release_notes=str(release.get('body') or '')[:12000],
-                          message=(f'Disco {version} is available.' if available else
+                          message=(f'DISCO {version} is available.' if available else
                                    'This installation is at or ahead of the latest published release.'))
             if available and not result['can_stage']:
                 result['message'] += ' Automatic installation is not configured; review the release instructions.'
         except HTTPError as error:
             result.update(state='unavailable' if error.code == 404 else 'error',
-                          message=('No stable Disco release has been published yet.' if error.code == 404
+                          message=('No stable DISCO release has been published yet.' if error.code == 404
                                    else f'The release server returned HTTP {error.code}. Try again later.'))
         except (OSError, URLError, ValueError, TypeError) as error:
             result.update(state='error', message='Could not verify release availability. Your current app remains usable.')
@@ -218,7 +218,7 @@ def installation_lock(installation, *, exclusive=False, filename='application.lo
         try:
             fcntl.flock(handle.fileno(), (fcntl.LOCK_EX | fcntl.LOCK_NB) if exclusive else fcntl.LOCK_SH)
         except BlockingIOError as error:
-            raise ValueError('Close all Disco launchers and project services before activating an update.') from error
+            raise ValueError('Close all DISCO launchers and project services before activating an update.') from error
         yield handle.fileno()
 
 
@@ -315,7 +315,7 @@ def stage_release(installation, *, root=ROOT):
         command = shlex.join([sys.executable, str(installation / 'manager.py'),
                               '--installation', str(installation), 'activate-and-launch'])
         result = {'state': 'staged', 'version': version, 'apply_command': command,
-                  'message': 'Update ready. Close Disco and all project services; the next launch will use this version.'}
+                  'message': 'Update ready. Close DISCO and all project services; the next launch will use this version.'}
         if destination.exists():
             # Other tabs/project services may already have prepared this exact
             # signed artifact. Reuse only its matching completed receipt.
@@ -381,7 +381,7 @@ def activate_and_launch(installation, *, wait_seconds=300):
             activate_staged(installation)
             break
         except ValueError as error:
-            if 'Close all Disco' not in str(error) or time.monotonic() >= deadline:
+            if 'Close all DISCO' not in str(error) or time.monotonic() >= deadline:
                 raise
             time.sleep(0.5)
     return main(['--installation', str(installation), 'launch'])

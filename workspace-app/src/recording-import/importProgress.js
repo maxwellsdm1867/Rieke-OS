@@ -68,9 +68,9 @@ export function managedRecordingMessage(job){
   const completed=['complete','completed','success','complete_with_warnings'].includes(job?.status)&&job?.catalog_committed===true;
   if(!storage||storage.verified!==true||!storage.path||job?.requires_reconciliation||(job?.status!=='duplicate'&&!completed))return null;
   const saved=storage.kind==='managed_library'
-    ?'Disco has saved and verified this recording in its managed library. Projects in this library reuse the same H5 without another copy.'
-    :'Disco has verified a managed copy of this recording.';
+    ?'DISCO has saved and verified this recording in its managed library. Projects in this library reuse the same H5 without another copy.'
+    :'DISCO has verified a managed copy of this recording.';
   return saved+(storage.original_removal_safe===true
-    ?' You can delete the original copy outside Disco, such as the file in Downloads. Keep the managed copy.'
-    :' Keep this managed recording; Disco uses it to load your data.');
+    ?' You can delete the original copy outside DISCO, such as the file in Downloads. Keep the managed copy.'
+    :' Keep this managed recording; DISCO uses it to load your data.');
 }

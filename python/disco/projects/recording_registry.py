@@ -38,7 +38,7 @@ def library_directory(project):
         return root
     root.mkdir(exist_ok=True)
     if any(root.iterdir()):
-        raise ValueError('The recordings folder is not a Disco library; choose a different project parent folder')
+        raise ValueError('The recordings folder is not a DISCO library; choose a different project parent folder')
     marker = root / LIBRARY_MARKER
     with marker.open('x') as handle:
         json.dump({'format': 'disco-recording-library', 'version': 1, 'library_uuid': str(uuid.uuid4())}, handle)

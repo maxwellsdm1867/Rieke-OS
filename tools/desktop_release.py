@@ -186,7 +186,7 @@ def promote(directory, tag, evidence_path):
         raise ValueError('A newer stable version is already published')
     release = next((item for item in releases if item['tag_name'] == tag), None)
     if release is None:
-        release = gh_json(f'repos/{repository}/releases', '-X', 'POST', payload={'tag_name': tag, 'target_commitish': evidence['source_commit'], 'name': 'Disco ' + tag,
+        release = gh_json(f'repos/{repository}/releases', '-X', 'POST', payload={'tag_name': tag, 'target_commitish': evidence['source_commit'], 'name': 'DISCO ' + tag,
                            'draft': True, 'prerelease': False, 'make_latest': 'false'})
     if release['prerelease']:
         raise ValueError('Stable and prerelease channels cannot share a release')

@@ -194,7 +194,7 @@ class Acceptance {
     const actual=await this.app.evaluate(({app,BrowserWindow})=>({packaged:app.isPackaged,name:app.getName(),version:app.getVersion(),
       appPath:app.getAppPath(),home:process.env.HOME,userData:app.getPath('userData'),preferences:process.env.RIEKE_PREFERENCES_DIR,
       electron:process.versions.electron,window:BrowserWindow.getAllWindows()[0]?.webContents.getLastWebPreferences()}));
-    assert.equal(actual.packaged,true); assert.equal(actual.name,'Disco'); assert.equal(actual.version,this.manifest.application_version);
+    assert.equal(actual.packaged,true); assert.equal(actual.name,'DISCO'); assert.equal(actual.version,this.manifest.application_version);
     assert.equal(actual.home,this.home); assert.equal(actual.userData,this.userData); assert.equal(actual.preferences,this.preferences);
     assert.ok(within(this.bundle,actual.appPath)); assert.equal(actual.electron,'44.5.0');
     const preferences=await this.app.evaluate(({BrowserWindow})=>{

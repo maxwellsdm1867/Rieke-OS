@@ -20,7 +20,7 @@ from disco.decisions.tag_exchange import frozen_annotation_entries, frozen_docum
 from disco.workbench.recipes import verify, parse_splits, SPLIT_FIELDS
 from disco.navigation.tree import catalog, value_key, field_value_order, materialize_combinations
 
-MATLAB_DATA_GUIDE = """Disco MATLAB data export
+MATLAB_DATA_GUIDE = """DISCO MATLAB data export
 
 Load the standard MAT file with MATLAB, Octave, or a compatible MAT reader:
     data = load('recordings.mat');

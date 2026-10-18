@@ -57,7 +57,7 @@ CREATE VIEW epoch_overview AS SELECT e.*,c.cell_uuid,c.cell_label,c.cell_type,c.
  JOIN cells c USING(cell_uuid) JOIN sources s ON s.source_sha256=e.source_sha256;
 '''
 
-README = '''# Disco linked SQLite export
+README = '''# DISCO linked SQLite export
 
 This is a small, frozen selection for internal analysis. It is not a portable
 archive: the referenced metadata and H5 files must remain available in their
@@ -104,7 +104,7 @@ functions require the Python loader. `epoch_groups` means acquisition groups;
 values. `analysis_group_epochs` preserves exact membership at every tree level.
 Selections, grouping, curation and shared tags are export-time snapshots; later
 project edits do not update this file. Store analysis results in a separate file.
-This reference bundle does not automatically send annotations back to Disco.
+This reference bundle does not automatically send annotations back to DISCO.
 
 ## Relocation and verification
 

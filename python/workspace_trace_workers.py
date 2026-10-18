@@ -106,7 +106,7 @@ class TraceWorkers:
             try:
                 for _ in range(self.worker_count):
                     parent, child = self.context.Pipe(duplex=True)
-                    process = self.context.Process(target=_worker, args=(child,), name='Disco trace reader')
+                    process = self.context.Process(target=_worker, args=(child,), name='DISCO trace reader')
                     worker = {'process': process, 'connection': parent, 'child': child,
                               'ready': False, 'busy': False, 'stop_sent': False, 'started': False}
                     # Keep every handle before attempting start, including uncertain starts.

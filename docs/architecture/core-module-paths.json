@@ -10044,7 +10044,7 @@
         },
         {
           "path": "desktop/branding.cjs",
-          "sha256": "4965417a337ae571231b1ae740828555faa46e25470f30392d9f4dc1e44028b7",
+          "sha256": "3a44579e29988d5a6983de9d7770a87d0cf98f2d7c58c562b3fd39a55167aeb4",
           "kind": "cjs_or_js",
           "ledger_owner_ids": [
             "desktop.profile-path-policy",
@@ -10310,7 +10310,7 @@
         },
         {
           "path": "desktop/quit-coordinator.cjs",
-          "sha256": "11018465421b92ddbe518a72ef8dff9385d44dcce498837b08e47cd9ae42e754",
+          "sha256": "9501984b0ae03f6a66576b3c13806324177f1fa887eef008a8221c18c74b587f",
           "kind": "cjs_or_js",
           "ledger_owner_ids": [
             "desktop.close-coordination"
@@ -10359,7 +10359,7 @@
         },
         {
           "path": "desktop/recovery.html",
-          "sha256": "47e97d761c283bebeb15be358544d442a4e4eff6e1f065bd14a4e53dc97f6291",
+          "sha256": "1ed839d1c608068c2d39c40267935c9d0c711b86be46781963501fdae7601e71",
           "kind": "configuration_or_resource_or_launcher",
           "ledger_owner_ids": [
             "desktop.integrity-recovery"
@@ -10373,7 +10373,7 @@
         },
         {
           "path": "desktop/recovery.js",
-          "sha256": "c45a1e680050c5f86a9fc936d048df58f739f28f364f6f32832322143ee75181",
+          "sha256": "1c4d7774e063c70a99279434c8c5b25230e1d2ae930a280b866d9cf4439d22cf",
           "kind": "cjs_or_js",
           "ledger_owner_ids": [
             "desktop.integrity-recovery",
@@ -10430,7 +10430,7 @@
         },
         {
           "path": "desktop/seal-testing.cjs",
-          "sha256": "3aa20d521a9c53f5a70163e609d89f4ebee6ad9486267d31749aa57ec2771f78",
+          "sha256": "85ff1807fc07bd76c890fb11ae9f98b8359d56647507289a81e4d888781adf27",
           "kind": "cjs_or_js",
           "ledger_owner_ids": [
             "desktop.packaging-qualification"
@@ -10672,7 +10672,7 @@
         },
         {
           "path": "desktop/e2e/branding-browser.e2e.cjs",
-          "sha256": "42955e5be097560e36d4c68b804ce9a47b6bd0b1d148009d8adca1c18d6e1396",
+          "sha256": "87dc3857e0077f518b104baf5c35f7f4e478f6be6a8d0a61bc57489140fe95b0",
           "role": "final_app_e2e_or_support",
           "associated_areas": [
             "final-app-e2e"

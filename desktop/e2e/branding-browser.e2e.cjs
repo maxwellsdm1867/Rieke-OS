@@ -34,7 +34,7 @@ function server(){let icon='rieke',theme='fred';return http.createServer((reques
   const fresh=await browser.newContext();const next=await fresh.newPage();await next.goto(origins[1]);
   assert.equal(await next.evaluate(async status=>{const{claimUpdateDiscovery}=await import('/appUpdates.js');return claimUpdateDiscovery(status,new Set());},status),true);
   await page.goto(origins[0]);await page.waitForFunction(()=>document.querySelector('link[rel="icon"]')?.getAttribute('href')==='/rieke-emblem.png');
-  assert.match(await page.title(),/Disco/);
+  assert.match(await page.title(),/DISCO/);
   await page.getByRole('button',{name:'Appearance',exact:true}).first().click();
   await page.getByRole('dialog',{name:'Appearance',exact:true}).locator('label').filter({has:page.getByRole('radio',{name:/^Light/})}).click();
   await page.waitForFunction(()=>document.querySelector('link[rel="icon"]')?.getAttribute('href')==='/disco-icon.png');

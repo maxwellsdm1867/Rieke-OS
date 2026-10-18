@@ -5,7 +5,7 @@ export function releaseLink(value){
 }
 export function updateNotice(status){
   const version=typeof status?.available==='string'?status.available:status?.available?.version;
-  return (status?.state==='update_available'||['Available','Downloading','Validating','Ready','Draining','Installing'].includes(status?.state))&&version?{version,message:`Disco ${version} is available`,url:releaseLink(status.release_url)||releaseRoot}:null;
+  return (status?.state==='update_available'||['Available','Downloading','Validating','Ready','Draining','Installing'].includes(status?.state))&&version?{version,message:`DISCO ${version} is available`,url:releaseLink(status.release_url)||releaseRoot}:null;
 }
 
 // A failed refresh does not erase a release we already discovered. A successful

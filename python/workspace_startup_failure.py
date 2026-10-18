@@ -21,10 +21,10 @@ def safe_component_failure(value):
 
 def startup_failure_message(log_path, failure=None):
     failure = safe_component_failure(failure)
-    message = 'Disco could not open this project. '
+    message = 'DISCO could not open this project. '
     if failure:
         message += f"The bundled {COMPONENTS[failure['component']]} {REASONS[failure['reason']]}. "
-        message += ('Quit Disco and confirm it has finished closing. Replace only the application with a complete '
+        message += ('Quit DISCO and confirm it has finished closing. Replace only the application with a complete '
                     'copy from your trusted distribution, then reopen this project. Keep your project folders '
                     'and settings; do not delete or replace the project database. ')
     else:

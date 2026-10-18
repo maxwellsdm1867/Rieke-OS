@@ -63,7 +63,7 @@ if (bootstrap) {
 }
 let supervisor, backendStartup, coordinator, quitAuthorized = false, startupInProgress = false, quitting;
 let draftStore, viewUnavailable = false, navigationGeneration = 0;
-let lifecycleStatus = {state: 'Starting', title: 'Starting Disco', message: 'Opening your workspace.'};
+let lifecycleStatus = {state: 'Starting', title: 'Starting DISCO', message: 'Opening your workspace.'};
 let applicationVerification, verificationController, verificationRecovery, verificationRecoveryResult;
 let integrityFailed=false;
 async function verifyApplicationFiles() {
@@ -118,7 +118,7 @@ function broadcast(value) {
 function status() { return previewStatus(lifecycleStatus.state === 'Running' ? (coordinator?.getStatus() || {state: 'Current', installed_version: app.getVersion()}) : lifecycleStatus); }
 function publishUpdateStatus(value){if(lifecycleStatus.state==='Running')broadcast(value);}
 function recovery(message, detail = '') {
-  lifecycleStatus = {state: 'Recovery', channel:distribution.channel, title: 'Disco recovery', message, detail}; broadcast(lifecycleStatus);
+  lifecycleStatus = {state: 'Recovery', channel:distribution.channel, title: 'DISCO recovery', message, detail}; broadcast(lifecycleStatus);
   // Recovery hides documents but cannot discard a healthy unsaved draft.
   // IPC still permits persistence; all new scientific/user actions are fenced.
   navigationGeneration++;
@@ -206,7 +206,7 @@ function secureContents(window) {
       window.draftUnavailable=true;viewUnavailable=true;
       const views=projectViews.get(window.parentWindow),wasActive=views?.active===window;
       views?.suspend(window);
-      const notice=()=>broadcast({...status(),message:'A project renderer stopped. Other projects are retained. Quit and reopen Disco to recover its last saved view.'});
+      const notice=()=>broadcast({...status(),message:'A project renderer stopped. Other projects are retained. Quit and reopen DISCO to recover its last saved view.'});
       if(wasActive)activateProject(window.parentWindow,supervisor.origin).then(notice,error=>recovery('The project renderer stopped. Healthy views are retained.',error.message));
       else notice();
       return;
@@ -230,7 +230,7 @@ function viewsFor(window){
 }
 async function activateProject(window,url){
   const generation=navigationGeneration;
-  if(quitting||integrityFailed||lifecycleStatus.state==='Recovery')throw Error('Disco is closing; new work is paused.');
+  if(quitting||integrityFailed||lifecycleStatus.state==='Recovery')throw Error('DISCO is closing; new work is paused.');
   if(typeof url!=='string'||!await supervisor.authorizeProjectURL(url))throw Error('Project service failed ownership verification.');
   if(generation!==navigationGeneration||quitting||integrityFailed||lifecycleStatus.state==='Recovery')throw Error('Project activation was cancelled.');
   // Legacy host adapters retain their existing navigation contract.
@@ -276,7 +276,7 @@ function projectIdentity(value){
 }
 function createWindow() {
   const window = new BrowserWindow({width: 1440, height: 960, minWidth: 960, minHeight: 650,
-    icon:iconPath(appIcon), title: preview?.label || 'Disco', backgroundColor: '#f4f5f3', show: false,
+    icon:iconPath(appIcon), title: preview?.label || 'DISCO', backgroundColor: '#f4f5f3', show: false,
     webPreferences: {preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true,
       sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false,
       webSecurity: true, allowRunningInsecureContent: false, webviewTag: false, spellcheck: false,
@@ -377,7 +377,7 @@ async function startScientificUI() {
     // Resolve the remembered project before the first application document.
     // The existing authenticated open/authorization/cleanup path retains ownership.
     // No intermediate chooser renderer, draft read, React mount or IPC round trip.
-    lifecycleStatus={state:'Starting',title:'Opening Disco',message:'Restoring your workspace.'};
+    lifecycleStatus={state:'Starting',title:'Opening DISCO',message:'Restoring your workspace.'};
     const target=startupSession.claim();
     for (const window of windows) {
       let restored=false;
@@ -410,7 +410,7 @@ function registerIPC() {
     if(window.active===false&&['desktop:choose-project-folder','desktop:prepare-project-close','desktop:confirm-project-closed','desktop:cancel-project-close'].includes(channel))throw Error('The project is not visible.');
     const recoveryHost=!window.parentWindow&&isOwnedURL(window.webContents?.getURL(),null,[recoveryPage]);
     if ((quitting || integrityFailed || lifecycleStatus.state==='Recovery') && !['desktop:quit', 'desktop:status', 'desktop:drafts-ack', 'desktop:save-draft', ...(!quitting&&!integrityFailed&&recoveryHost?['desktop:retry-startup','desktop:restore-previous']:[])].includes(channel))
-      throw new Error('Disco is closing; new work is paused.');
+      throw new Error('DISCO is closing; new work is paused.');
     return action(payload, window);
   });
   const noPayload = (channel, action) => handle(channel, (payload, window) => {
@@ -510,7 +510,7 @@ else {
   app.on('before-quit', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
   app.on('window-all-closed', () => { if (quitAuthorized) app.quit(); });
   app.whenReady().then(async () => {
-    app.setAboutPanelOptions({applicationName:preview ? 'DISCO Preview' : 'Disco',applicationVersion:app.getVersion(),copyright:preview ? `Source ${preview.source_commit}` : 'Data Inspection, Selection, Comparison Operations · A Rieke Lab OS'});
+    app.setAboutPanelOptions({applicationName:preview ? 'DISCO Preview' : 'DISCO',applicationVersion:app.getVersion(),copyright:preview ? `Source ${preview.source_commit}` : 'Data Inspection, Selection, Comparison Operations · A Rieke Lab OS'});
     supervisor = new ServiceSupervisor({resourcesPath: app.isPackaged ? process.resourcesPath : path.join(__dirname, 'build'),
       userData: app.getPath('userData'), appVersion: app.getVersion(), onFailure: recovery});
     // Backend ownership/readiness can progress while the native window and its
@@ -523,15 +523,15 @@ else {
     if(startupSession.value?.mode==='resume')lifecycleStatus={state:'Starting',title:'Restoring your workspace',message:'Reopening your saved '+startupSession.value.view+' view. Checking the project before loading scientific data.'};
     configureSession(); registerIPC(); createWindow();
     powerMonitor.on('shutdown', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
-    Menu.setApplicationMenu(Menu.buildFromTemplate([{label: 'Disco', submenu: [{role: 'about'}, {type: 'separator'},
+    Menu.setApplicationMenu(Menu.buildFromTemplate([{label: 'DISCO', submenu: [{role: 'about'}, {type: 'separator'},
       {label: 'Check for Updates', enabled:!preview, click: () => coordinator?.check()},
       {id:'verify-application',label:'Verify Application Files…', enabled:app.isPackaged&&!bootstrap, click:()=>void verifyApplicationFiles()},
       {label:'Cancel Application Verification',click:()=>void cancelApplicationVerification()},
-      {type: 'separator'}, {label: 'Quit Disco', accelerator: 'CommandOrControl+Q', click: () => orderlyQuit()}]},
+      {type: 'separator'}, {label: 'Quit DISCO', accelerator: 'CommandOrControl+Q', click: () => orderlyQuit()}]},
     {label: 'Edit', submenu: [{label: 'Undo', accelerator: 'CommandOrControl+Z', click: (_item, window) => (projectViews.get(window)?.active?.webContents||window?.webContents)?.send('desktop:undo')}, {role: 'redo'}, {type: 'separator'}, {role: 'cut'}, {role: 'copy'}, {role: 'paste'}, {role: 'selectAll'}]},
 
     {label: 'Window', submenu: [{label:'Resume Last Workspace at Startup',type:'checkbox',checked:startupSession.value?.mode!=='chooser',click:item=>{(item.checked?startupSession.resume():startupSession.choose()).catch(()=>broadcast({...status(),message:'Startup preference could not be saved.'}));}},{role: 'minimize'}, {role: 'zoom'}]}]));
-    if (bootstrap) { lifecycleStatus = {state: 'Bootstrap', channel:distribution.channel, title: 'Install Disco', message: 'Install this complete app in your Applications folder and open it.', detail: distribution.channel === 'unsigned-testing' ? 'Unsigned testing release. Install a copy downloaded from the official Disco GitHub release. macOS may require a one-time Open Anyway approval in Privacy & Security. Existing projects stay in their selected folders.' : 'The downloaded app and installed copy must pass Developer ID signature verification. Existing projects stay in their selected folders.'}; broadcast(lifecycleStatus); }
+    if (bootstrap) { lifecycleStatus = {state: 'Bootstrap', channel:distribution.channel, title: 'Install DISCO', message: 'Install this complete app in your Applications folder and open it.', detail: distribution.channel === 'unsigned-testing' ? 'Unsigned testing release. Install a copy downloaded from the official DISCO GitHub release. macOS may require a one-time Open Anyway approval in Privacy & Security. Existing projects stay in their selected folders.' : 'The downloaded app and installed copy must pass Developer ID signature verification. Existing projects stay in their selected folders.'}; broadcast(lifecycleStatus); }
     else await startScientificUI();
   }).catch(error => { console.error('Desktop startup failed:', error.name); app.exit(1); });
 }

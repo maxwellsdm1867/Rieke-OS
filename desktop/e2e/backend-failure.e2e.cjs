@@ -27,7 +27,7 @@ const {verifyResources} = require('../updater-validation.cjs');
   await run('/usr/bin/codesign', ['--verify', '--deep', '--strict', fixture.bundle]);
   const {application, page} = await launch(fixture,{renderer:'shell'});
   await fs.writeFile(releaseFault, 'release\n', {flag:'wx', mode:0o600});
-  await page.getByRole('heading', {name: 'Disco recovery', exact: true}).waitFor({timeout: 90000});
+  await page.getByRole('heading', {name: 'DISCO recovery', exact: true}).waitFor({timeout: 90000});
   // The initial startup shell can already have this heading. Wait for the
   // actual backend-exit status, not presentation alone, before sampling it.
   await page.waitForFunction(async () => {

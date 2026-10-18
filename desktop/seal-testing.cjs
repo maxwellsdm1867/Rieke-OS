@@ -14,6 +14,9 @@ module.exports=async context=>{
   // inventory here to silently accept copy corruption or a mixed runtime.
   const manifest=await require('./bootstrap.cjs').readBundleManifest(app);
   await require('./updater-validation.cjs').verifyResources(runtime,manifest.resources);
+  // Shown name only; written before any signature so the seal covers it.
+  const preview=context.packager.config?.mac?.extendInfo?.DiscoLocalPreview===true;
+  await require('./display-name.cjs').writeLocalizedDisplayName(app,preview?{name:'DISCO Preview'}:{});
   if(distribution.channel!=='unsigned-testing')return;
   const {signAsync}=require('@electron/osx-sign');
   await signAsync({app,identity:'-',identityValidation:false,platform:'darwin',type:'development',

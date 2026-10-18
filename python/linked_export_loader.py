@@ -1,4 +1,4 @@
-"""Read a Disco linked SQLite export without installing Disco or DataJoint.
+"""Read a DISCO linked SQLite export without installing DISCO or DataJoint.
 
 Metadata and SQL use the Python standard library. Recorded sample reads also
 require numpy and h5py. Run this file with --help for command-line examples.

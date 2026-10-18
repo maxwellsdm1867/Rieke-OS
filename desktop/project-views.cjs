@@ -18,13 +18,13 @@ class ProjectViews {
       if(generation!==this.generation||!this.admit())throw Error('Project activation was cancelled.');
       if(bindingKey(owner.binding)!==key)throw Error('The retained project binding changed.');
       if(owner.closing)throw Error('This project is closing.');
-      if(owner.draftUnavailable)throw Error('This project renderer stopped. Quit and reopen Disco to recover its last saved view.');
+      if(owner.draftUnavailable)throw Error('This project renderer stopped. Quit and reopen DISCO to recover its last saved view.');
       const current=this.owners.get(key);
       if(current!==owner){
         if(!current&&owner.retired==='evicted')return false;
         throw Error('The retained project owner changed.');
       }
-      if(owner.isDestroyed())throw Error('This project renderer stopped. Quit and reopen Disco to recover its last saved view.');
+      if(owner.isDestroyed())throw Error('This project renderer stopped. Quit and reopen DISCO to recover its last saved view.');
       return true;
     };
     const operation=this.chain.catch(()=>{}).then(async()=>{
@@ -42,7 +42,7 @@ class ProjectViews {
     if(!this.admit())throw Error('Project activation is unavailable.');
     const key=bindingKey(binding);let owner=this.owners.get(key);
     if(owner?.closing)throw Error('This project is closing.');
-    if(owner?.draftUnavailable)throw Error('This project renderer stopped. Quit and reopen Disco to recover its last saved view.');
+    if(owner?.draftUnavailable)throw Error('This project renderer stopped. Quit and reopen DISCO to recover its last saved view.');
     if(owner?.isDestroyed()){this.dispose(owner);owner=null;}
     if(!owner){
       const view=this.createView();

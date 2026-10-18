@@ -93,7 +93,7 @@ function createUpdateCoordinator({app, manifest, publishStatus = () => {}, prepa
     on('update-available', info => {
       try {
         if (compareVersions(info.version, manifest.application_version) <= 0) throw new Error('Older release');
-        set('Available', {available: info.version, release_url: `https://github.com/maxwellsdm1867/${feedRepository}/releases/tag/v${info.version}`, message: `Disco ${info.version} is available.`});
+        set('Available', {available: info.version, release_url: `https://github.com/maxwellsdm1867/${feedRepository}/releases/tag/v${info.version}`, message: `DISCO ${info.version} is available.`});
       } catch { updater.autoDownload = false; defer('Published update metadata was rejected.'); }
     });
     on('download-progress', progress => set('Downloading', {progress: Math.max(0, Math.min(100, Number(progress.percent) || 0)), message: 'Downloading an update quietly.'}));
