@@ -28,7 +28,12 @@ import {useTagCoverageRevision} from '../../annotations/useAnnotationReceipts.js
 export default function ColumnTree(props){
   const {protocolId,readContext,predicate,filters={},splits='',revision=0,expectedRevision,initialNavigation,selected}=props;
   const active=props.active!==false;
-  const readOwner=useTreeBranchReads(),ownerIdentity=readOwner?.identity||'';
+  // Presentation follows the owner's presentation identity; activation-only
+  // changes (focus, visibility, desktop status) revoke leases but neither
+  // remount nor re-read. Reads always use the latest owner and lease.
+  const readOwner=useTreeBranchReads(),ownerIdentity=readOwner?.presentationIdentity??readOwner?.identity??'';
+  const ownerRef=useRef(readOwner);ownerRef.current=readOwner;
+  const activationIdentity=readOwner?.identity??'';
   const [state,setState]=useState({columns:[],loading:true,error:null,ownerIdentity:null});
   const ownerBlocked=!active||!!props.readPaused||state.activation!==props.presentationActivation||state.ownerIdentity!==ownerIdentity||!!readOwner&&!readOwner.active();
   const actionProps={...props,actionsDisabled:props.actionsDisabled||ownerBlocked||state.loading||!!state.error};
@@ -44,7 +49,7 @@ export default function ColumnTree(props){
   const scrollIntent=useRef(0);
   const callbacks=useRef(props);callbacks.current=props;
   const visible=useRef(active),permitted=useRef(false);permitted.current=active&&!ownerBlocked&&!state.loading&&!state.error&&!props.actionsDisabled;
-  const navigationIdentity=useMemo(()=>({scopeKey}),[scopeKey,readOwner]);
+  const navigationIdentity=useMemo(()=>({scopeKey}),[scopeKey]);
   const liveNavigation=useRef(null),navigationPermitted=useRef(false);
   navigationPermitted.current=(!state.loading||!props.onSelectBranch)&&active&&!ownerBlocked&&!state.error&&state.loadedScope===scopeKey&&!(props.navigationDisabled??props.actionsDisabled);
   const canNavigate=()=>visible.current&&liveNavigation.current===navigationIdentity&&navigationPermitted.current&&(!readOwner||readOwner.active());
@@ -79,9 +84,10 @@ export default function ColumnTree(props){
     return()=>element.removeEventListener('wheel',wheel);
   },[]);
   const load=useCallback(async({path=[],offset=0,reset=false,revisionOverride=null,columnPositions=[],scrollTop=0,scrollLeft=null,anchor=null,freshContinuation=false,restorePresentation=null}={})=>{
+    const readOwner=ownerRef.current;
     if(!active||props.readPaused||!visible.current||liveNavigation.current!==navigationIdentity||readOwner&&!readOwner.active())return;
     const observer=callbacks.current; // Completion belongs to the initiating scope.
-    retryIntent.current={scopeKey,options:{path:[...path],offset,anchor,columnPositions:columnPositions.map(position=>({...position})),scrollTop,scrollLeft}};
+    retryIntent.current={scopeKey,options:{path:[...path],offset,anchor,columnPositions:columnPositions.map(position=>({...position})),scrollTop,scrollLeft},renew:{reset,revisionOverride,freshContinuation,restorePresentation}};
     controller.current?.abort();const request=new AbortController();controller.current=request;const token=++serial.current;pending.current=true;navigationIntent.current={token,path:[...path],offset};
     const startedScrollIntent=scrollIntent.current;
     const prior=current.current,priorPositions=prior.map(page=>({offset:page.offset,scrollTop:panes.current.get(page.depth)?.scrollTop||0}));
@@ -102,7 +108,17 @@ export default function ColumnTree(props){
       pending.current=false;setState({columns,loading:false,error:null,loadedScope:scopeKey,ownerIdentity,activation:props.presentationActivation,preservedSelection:preserve?latestSelected.current:undefined});observer.onStatus?.({loading:false,error:null});observer.onMetadata?.({...page,count:page.total_epochs});
     }catch(error){if(error.name!=='AbortError'&&!request.signal.aborted&&token===serial.current&&(!readOwner||readOwner.active())){setState(old=>({...old,loading:false,error:error.message}));observer.onStatus?.({loading:false,error:error.message});}}
     finally{if(token===serial.current){pending.current=false;navigationIntent.current=null;}}
-  },[scopeKey,readOwner,navigationIdentity]);
+  },[scopeKey,navigationIdentity]);
+  // A read interrupted by an activation-only change is renewed on the same
+  // path under the new owner; a settled presentation is left as it is.
+  const seenActivation=useRef(activationIdentity);
+  useEffect(()=>{
+    if(seenActivation.current===activationIdentity)return;
+    seenActivation.current=activationIdentity;
+    const intent=retryIntent.current;
+    if(!pending.current||!intent||intent.scopeKey!==scopeKey||!active||props.readPaused)return;
+    load({...intent.options,...intent.renew});
+  },[activationIdentity]);
   function retry(){
     if(!visible.current||!active||readOwner&&!readOwner.active())return;
     const intent=retryIntent.current;

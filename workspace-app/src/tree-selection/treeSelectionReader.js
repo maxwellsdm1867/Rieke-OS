@@ -16,8 +16,10 @@ function checkAborted(signal){
  * (scope, pageOptions, signal) is the transport adapter; default uses api so its
  * POST tracking and desktop write barriers still apply. Paths/rows are opaque.
  * The caller owns cancellation, scope lifetime and final selection publication.
- * firstEpoch(scope, {path, revision, signal}) resolves the original first DTO or
+ * firstEpoch(scope, {path, revision, signal, page?}) resolves the original first DTO or
  * undefined, following only first branches. Expected revision wins over revision.
+ * An optional supplied page (or Promise of one) for exactly that path at offset 0
+ * replaces the first read; its revision is still checked against the pin.
  * rangeEpochIds(scope, {page, firstIndex, lastIndex, signal}) returns ordered UUIDs
  * for normalized nonnegative absolute indices (firstIndex <= lastIndex) in the
  * supplied branch/revision: an array synchronously when the
@@ -67,8 +69,14 @@ export function createTreeSelectionReader({requestPage=requestTreePage}={}){
       return ids;
     }
     return collect(Math.floor(firstIndex/TREE_PAGE_SIZE)*TREE_PAGE_SIZE);
-  },async firstEpoch(scope,{path,revision,signal}){
-    let page=await read(scope,{path,currentRevision:revision},signal);
+  },async firstEpoch(scope,{path,revision,signal,page:supplied=null}){
+    // A caller's own first page of this exact branch (or its pending read)
+    // replaces the duplicate request; any other or failed page reads fresh.
+    let page=null;
+    if(supplied)try{page=await supplied;}catch{page=null;}
+    checkAborted(signal);
+    if(!page||!Array.isArray(page.path)||page.path.length!==path.length||page.path.some((key,index)=>key!==path[index])||page.offset!==0)
+      page=await read(scope,{path,currentRevision:revision},signal);
     checkAborted(signal);
     const pinned=scope.expectedRevision||revision||page.revision;
     if(page.revision!==pinned)throw new Error('Tree changed. Select the cell again.');

@@ -46,6 +46,9 @@ export {Trace};
 function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters:baseFilters,revision,structureRevision=revision,metadataPresentationRevision=structureRevision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,onReviewDetails,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null,readContext:incomingReadContext=null,onSelectionChange,onReviewDecision,draftSelection=null,draftSelectionTarget=null,readPaused:ownerReadPaused=false,browseRequest=0,initialPageRead=null,traceReadContext:contextTraceReadContext=undefined}) {
   const api=useWorkspaceRequest(defaultApi),requestScope=useWorkspaceRequestScope(),pageSize=requestScope?.pageSize??60;
   const inheritedTreeReadOwner=useTreeBranchReads(),treeReadOwner=requestScope?null:inheritedTreeReadOwner;
+  // Page/tree read keys follow the owner's presentation identity: focus and
+  // visibility revoke leases (checked live via active()) without re-reading.
+  const treeOwnerIdentity=treeReadOwner?(treeReadOwner.presentationIdentity??treeReadOwner.identity):undefined;
   const id=protocol.definition.protocol_uuid,annotationOrigin=useId();
   const selectedViewState=useSelectedEpochView({projectId,protocolId:id,context:incomingReadContext,filters:baseFilters,
     selected:draftSelection?.selected,paused:ownerReadPaused,disabled:!!draftSelection?.disabled,request:api});
@@ -122,7 +125,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   }
 
   useLayoutEffect(()=>{setTreeSelectionIntent(old=>old&&old.scope!==treeIntentScope?null:old);},[treeIntentScope]);
-  const cellScopeKey=JSON.stringify([projectId,treeReadOwner?.identity,readRoot,id,protocolSearch]),confirmedCells=useRef(null);
+  const cellScopeKey=JSON.stringify([projectId,treeOwnerIdentity,readRoot,id,protocolSearch]),confirmedCells=useRef(null);
   const navigationReadKey=JSON.stringify([cellScopeKey,focusCell,pageRevision,annotationState.kept?pageRevision:revision,structureRevision,protocol.query_revision,protocol.expected_binding_version]);
   // The all-cell list is identical for every offset/anchor page of one exact
   // scope and revision. Request it with the first page only; later page turns
@@ -132,7 +135,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const rowsPath=`${readRoot}/epochs?${search}&${pendingNavigation?.anchorUuid?`anchor_uuid=${encodeURIComponent(pendingNavigation.anchorUuid)}`:`offset=${offset}`}&limit=${pageSize}${includeCells?'&include_cells=true':''}`;
   // A new owner or descriptor must obtain its own receipt, including at the
   // same URL. Keep the annotation idle delay except for explicit navigation.
-  const pageReadRevision=JSON.stringify([pageRevision,projectId,treeReadOwner?.identity,protocol.query_revision,protocol.expected_binding_version]);
+  const pageReadRevision=JSON.stringify([pageRevision,projectId,treeOwnerIdentity,protocol.query_revision,protocol.expected_binding_version]);
   const loadedRows=useResource(rowsPath,pageReadRevision,0,{paused:readPaused||annotationState.dirty&&!pendingNavigation,initialRead:initialPageRead});
   const rows=resourceForPath(loadedRows,rowsPath);
   // The compact page receipt owns current curation authority and exact filtered
@@ -182,10 +185,10 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const selectionOwnerReady=!treeReadOwner||treeReadOwner.available;
   const selectionAvailable=!readPaused&&!annotationState.dirty&&!busy&&!draftSelection?.disabled&&selectionOwnerReady&&
     selectionReceipt?.key===navigationReadKey&&(cellsReady||selectionNavigationPending)&&!cellPage.error;
-  const selectionIdentity=JSON.stringify([navigationReadKey,selectionReceipt?.queryRevision,selectionReceipt?.bindingVersion,treeReadOwner?.identity??null]);
+  const selectionIdentity=JSON.stringify([navigationReadKey,selectionReceipt?.queryRevision,selectionReceipt?.bindingVersion,treeOwnerIdentity??null]);
   const treeSelectionAuthority={identity:selectionIdentity,available:!!selectionAvailable,
     current:()=>committedNavigationReadKey.current===navigationReadKey&&(!treeReadOwner||treeReadOwner.available&&treeReadOwner.active())};
-  const designAuthorityKey=JSON.stringify([treeReadOwner?.identity,id,protocolSearch,splits,pageRevision,readContext,protocol.query_revision,protocol.expected_binding_version]);
+  const designAuthorityKey=JSON.stringify([treeOwnerIdentity,id,protocolSearch,splits,pageRevision,readContext,protocol.query_revision,protocol.expected_binding_version]);
   const treeReceiptCurrent=treeReceipt?.scope===designAuthorityKey;
   const designFocusReady=!focused||treeReceiptCurrent&&(treeReceipt.focused===focused||treePage?.epochs?.some(row=>row.epoch_uuid===focused));
   const designBlocked=designMode&&(treeStatus.scope!==designAuthorityKey||treeStatus.loading||!!treeStatus.error||!designFocusReady||treeReadOwner&&!treeReadOwner.active());
