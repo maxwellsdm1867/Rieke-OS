@@ -5,6 +5,8 @@ import {useWorkspaceRequestScope} from './workspaceRequest.js';
 import {mutationUndo,isUndoableRequest} from "./undo/mutationUndo.js";
 import {startResourceRequest,visibleResourceState} from './resourceRequest.js';
 import {cachedResourceRequest,epochResourceCache,peekEpochWithTrace,prefetchEpochMetadata,prefetchEpochTraces,prefetchTraceWindows,requestEpochWithTrace} from './resourceCache.js';
+import {readWholeTrace,MAX_WHOLE_TRACE_CHUNK_SAMPLES} from './traces/readWholeTrace.js';
+import {MAX_TRACE_SAMPLES} from './traces/ui/traceGeometry.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {trackWrite,assertDesktopWritable} from './desktopLifecycle.js';
 export function createApiRequest(transport=requestApi){
@@ -22,14 +24,41 @@ export function createApiRequest(transport=requestApi){
 }
 export const api=createApiRequest();
 
+// Canonical global trace identity: exact epoch, stream, source hash, rate,
+// units and count under the caller's trace revision (structure/source events,
+// never annotation or curation). Scoped/imported/prepared reads never use it.
+export function wholeTraceIdentity(revision,epoch,stream){
+  return JSON.stringify([revision,epoch?.epoch_uuid??null,epoch?.source_sha256??null,stream?.uuid??null,stream?.sample_count??null,stream?.sample_rate??null,stream?.units??null]);
+}
+const traceMatches=(value,epoch,stream,start,count)=>value?.epoch_uuid===epoch.epoch_uuid&&value.stream_uuid===stream.uuid&&value.start===start&&value.count===count&&value.values?.length===count&&
+  (!epoch.source_sha256||value.source_sha256===epoch.source_sha256)&&(!Number.isFinite(stream.sample_rate)||value.sample_rate===stream.sample_rate)&&
+  (stream.units===undefined||value.units===stream.units);
+// An exact view of retained samples; nothing is resampled or copied for typed arrays.
+function sliceTrace(trace,start,count){
+  if(start===trace.start&&count===trace.count)return trace;
+  const from=start-trace.start,values=trace.values instanceof Float64Array?trace.values.subarray(from,from+count):trace.values.slice(from,from+count);
+  return {...trace,start,count,values};
+}
+// A window inside an already admitted whole stream is served from it: the
+// decoded cache (streams over 20k) or the whole-stream window snapshot (<=20k).
+function retainedWindow(revision,epoch,stream,start,count){
+  if(!epoch?.epoch_uuid||!stream?.uuid||!Number.isSafeInteger(stream.sample_count)||start<0||start+count>stream.sample_count)return undefined;
+  const whole=epochResourceCache.peekWholeTrace(wholeTraceIdentity(revision,epoch,stream));
+  if(whole&&traceMatches(whole,epoch,stream,0,stream.sample_count))return sliceTrace(whole,start,count);
+  // The exact whole-stream snapshot path keeps its normal demand admission.
+  if(stream.sample_count>MAX_TRACE_SAMPLES||start===0&&count===stream.sample_count)return undefined;
+  const snapshot=epochResourceCache.peek(`/epochs/${epoch.epoch_uuid}/trace?${new URLSearchParams({stream_uuid:stream.uuid,start:'0',count:String(stream.sample_count)})}`,revision);
+  return snapshot&&traceMatches(snapshot,epoch,stream,0,stream.sample_count)?sliceTrace(snapshot,start,count):undefined;
+}
+
 // Canonical global trace reads reuse the prefetch key while checking the selected
 // source/descriptor. Scoped/imported viewers retain their supplied request owner.
 // Cache generations, stale warm/in-flight responses and fresh admission stay here,
 // outside presentation. Cancellation and mismatch errors are never hidden.
 export async function requestTraceWindow(path,{revision=0,signal,epoch,stream,window:{start,count}}){
-  const matches=value=>value?.epoch_uuid===epoch.epoch_uuid&&value.stream_uuid===stream.uuid&&value.start===start&&value.count===count&&value.values?.length===count&&
-    (!epoch.source_sha256||value.source_sha256===epoch.source_sha256)&&(!Number.isFinite(stream.sample_rate)||value.sample_rate===stream.sample_rate)&&
-    (stream.units===undefined||value.units===stream.units);
+  const matches=value=>traceMatches(value,epoch,stream,start,count);
+  const retained=retainedWindow(revision,epoch,stream,start,count);
+  if(retained)return retained;
   const warm=epochResourceCache.peek(path,revision);
   if(!warm||matches(warm)){
     const result=await cachedResourceRequest(path,{request:api,revision,signal});
@@ -40,6 +69,51 @@ export async function requestTraceWindow(path,{revision=0,signal,epoch,stream,wi
   if(!matches(fresh))throw Error('Trace source or descriptor does not match the selected recording. Refresh and retry.');
   epochResourceCache.put(path,revision,fresh,token);
   return fresh;
+}
+
+// Canonical global whole-stream (>20k) demand. A complete validated stream is
+// retained in the bounded decoded cache and answers later windows inside it.
+// Partial windows outside a retained stream read exactly their own window.
+export async function requestWholeTrace({revision=0,signal,epoch,stream,window={start:0,count:stream.sample_count},background=false}){
+  const retained=retainedWindow(revision,epoch,stream,window.start,window.count);
+  if(retained)return retained;
+  const complete=window.start===0&&window.count===stream.sample_count;
+  const request=background?(path,options)=>api(path,{...options,background:true}):api;
+  const read=readSignal=>readWholeTrace({request,epochUuid:epoch.epoch_uuid,sourceSha256:epoch.source_sha256,stream,readContext:null,signal:readSignal,window,
+    maxChunkSamples:complete?MAX_WHOLE_TRACE_CHUNK_SAMPLES:MAX_TRACE_SAMPLES});
+  if(!complete)return read(signal);
+  const id=wholeTraceIdentity(revision,epoch,stream),admission=epochResourceCache.token();
+  const end=background?()=>{}:epochResourceCache.beginDemand();
+  try{
+    const trace=await epochResourceCache.pendingWholeTrace(id,read,{signal});
+    signal?.throwIfAborted();
+    if(!traceMatches(trace,epoch,stream,0,stream.sample_count))throw Error('Trace source or descriptor does not match the selected recording. Refresh and retry.');
+    epochResourceCache.putWholeTrace(id,epoch.epoch_uuid,trace,admission);
+    return trace;
+  }finally{end();}
+}
+
+// Warm only the next epoch's first response stream (20k < count <= 1M samples)
+// in the background, after the delay and while no demand read is running.
+export const WHOLE_TRACE_WARM_MAX_SAMPLES=1000000;
+export function warmNextWholeTrace(epoch,{revision=0,delayMs=180}={}){
+  const stream=epoch?.streams?.find(item=>item.kind==='responses'&&Number.isSafeInteger(item.sample_count)&&item.sample_count>0);
+  if(!epoch?.epoch_uuid||!stream?.uuid||stream.sample_count<=MAX_TRACE_SAMPLES||stream.sample_count>WHOLE_TRACE_WARM_MAX_SAMPLES)return()=>{};
+  if(epochResourceCache.peekWholeTrace(wholeTraceIdentity(revision,epoch,stream)))return()=>{};
+  const controller=new AbortController();
+  const timer=setTimeout(async()=>{
+    while(!controller.signal.aborted&&epochResourceCache.hasDemand())await new Promise(resolve=>setTimeout(resolve,8));
+    if(controller.signal.aborted)return;
+    try{await requestWholeTrace({revision,signal:controller.signal,epoch,stream,background:true});}catch{/* demand owns errors */}
+  },Math.max(0,delayMs));
+  return()=>{clearTimeout(timer);controller.abort();};
+}
+export function useWholeTraceWarm(epoch,revision=0,delayMs=180){
+  const owner=useWorkspaceRequestScope(),active=useRetainedView()?.active!==false;
+  const stream=epoch?.streams?.find(item=>item.kind==='responses'&&Number.isSafeInteger(item.sample_count)&&item.sample_count>0);
+  const identity=epoch&&stream?JSON.stringify([epoch.epoch_uuid,epoch.source_sha256??null,stream.uuid,stream.sample_count,stream.sample_rate??null,stream.units??null]):null;
+  const latest=useRef(epoch);latest.current=epoch;
+  useEffect(()=>!active||owner||!identity?undefined:warmNextWholeTrace(latest.current,{revision,delayMs}),[identity,revision,delayMs,owner,active]);
 }
 
 export async function requestApi(path, options = {}) {

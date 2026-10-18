@@ -11,7 +11,12 @@ test('viewing preferences validate restored input, strip authority and isolate p
  const whole={kind:'whole',start:0,count:200};
  for(const invalid of [null,{},'sample',{kind:'sample',start:-1,count:2},{kind:'sample',start:0,count:0},{kind:'sample',start:Infinity,count:5},{kind:'sample',start:0,count:'20'}])assert.deepEqual(normalize(invalid),whole);
  assert.deepEqual(normalize({kind:'sample',start:100,count:50000}),{kind:'sample',start:100,count:50000});
- assert.deepEqual(normalize({kind:'sample',start:0,count:100,amplitude:{min:-10,max:5}}),{kind:'sample',start:0,count:100,amplitude:{min:-10,max:5}});
+ const range={min:-10,max:5,units:'pA',device:'Amp1'};
+ assert.deepEqual(normalize({kind:'sample',start:0,count:100,amplitude:{...range,lease:'x'}}),{kind:'sample',start:0,count:100,amplitude:range});
+ assert.deepEqual(normalize({kind:'sample',start:0,count:100,amplitude:{...range,units:null}}),{kind:'sample',start:0,count:100,amplitude:{...range,units:null}});
+ // Unbound legacy ranges and malformed labels cannot be matched to a stream.
+ for(const amplitude of [{min:-10,max:5},{min:-10,max:5,units:'pA'},{...range,units:7},{...range,device:'x'.repeat(129)}])
+  assert.deepEqual(normalize({kind:'sample',start:0,count:100,amplitude}),{kind:'sample',start:0,count:100});
  assert.deepEqual(normalize({kind:'sample',start:0,count:100,amplitude:{min:5,max:-10}}),{kind:'sample',start:0,count:100});
  const sample={kind:'sample',start:30000,count:1000};
  assert.deepEqual(normalize({...sample,epoch_uuid:'not-a-preference',read_context:{root:'untrusted'}}),sample);

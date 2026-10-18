@@ -25,6 +25,10 @@ revision and generation stay distinct. Default 64 entries, 12 MiB estimated
 UTF-16 payload and 30-second TTL are limits, not measured heap. Only a valid
 metadata/initial-trace pair skips delay; trace failure can leave usable metadata.
 Candidate scope never falls back to global reads. Invalidation prevents late puts;
+annotation receipts evict and fence only epoch-detail metadata, never trace
+samples, decoded streams or in-flight trace prefetch. A separate decoded-stream
+store (6 streams, 24 MiB) holds complete canonical streams over 20k samples; see
+[trace cache identity](traces/AGENTS.md#trace-cache-identity);
 neighbor prefetch is serial and at most two distinct metadata reads, without traces.
 Trace geometry remains its own dependency.
 

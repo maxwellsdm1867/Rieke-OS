@@ -8,7 +8,7 @@ import {normalizeTraceViewPreference,useTraceViewPreference} from '../traceViewP
 import {useWorkspaceRequestScope} from '../../workspaceRequest.js';
 import {useEffect,useId,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {Activity,ArrowLeft,ArrowRight,Hand,LoaderCircle,MousePointer2,ZoomIn,ZoomOut} from 'lucide-react';
-import {api,number,useResource,requestTraceWindow} from '../../api.js';
+import {api,number,useResource,requestTraceWindow,requestWholeTrace} from '../../api.js';
 import {clampWindow,dragWindow,formatTick,MAX_TRACE_SAMPLES,sampleAtPixel,ticks,timeRange,traceDisplaySegments,zoomWindow} from './traceGeometry.js';
 import './TraceViewer.css';
 import {readWholeTrace,MAX_WHOLE_TRACE_CHUNK_SAMPLES} from '../readWholeTrace.js';
@@ -85,7 +85,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
     setSelection({epoch:epoch?.epoch_uuid,stream});
     setPreference(normalizeTraceViewPreference({...preference,responseSelection:{epoch_uuid:epoch?.epoch_uuid,stream_uuid:stream}}));
   };
-  const setWindowPreference=next=>setPreference(normalizeTraceViewPreference({...next,responseSelection:preference.responseSelection}));
+  const setWindowPreference=next=>setPreference(normalizeTraceViewPreference({...next,...(next.amplitude?{amplitude:{min:next.amplitude.min,max:next.amplitude.max,units:stream?.units??null,device:stream?.device??null}}:{}),responseSelection:preference.responseSelection}));
   const stream=streams.find(item=>item.uuid===selectedStream) || streams[0];
   const bounded=whole?{start:0,count:stream?.sample_count||0}:clampWindow(preference.start,preference.count,stream?.sample_count,stream?.sample_count);
   const [mode,setMode]=useState('zoom'),[entryStart,setEntryStart]=useState('0'),[entryCount,setEntryCount]=useState(String(bounded.count));
@@ -119,11 +119,15 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   if(!covered&&(retainedRead.identity!==nextWindow.identity||retainedRead.owner!==owner||retainedRead.start!==bounded.start||retainedRead.count!==bounded.count))setRetainedRead(nextWindow);
   const chunked=readWindow.count>MAX_TRACE_SAMPLES;
   const requestPath=traceRequestPath(epoch?.epoch_uuid,stream,clampWindow(readWindow.start,readWindow.count,stream?.sample_count),readContext);
+  const canonical=!owner&&!readContext;
   const requestPort=useMemo(()=>{
+    // Canonical global streams use the bounded decoded cache; scoped, imported
+    // and prepared reads keep their own owner and never enter it.
+    if(chunked&&canonical&&stream)return {request:(_path,{signal})=>requestWholeTrace({revision:contextKey,signal,epoch,stream,window:{start:readWindow.start,count:readWindow.count}})};
     if(chunked||prepared)return {request:(_path,{signal})=>readWholeTrace({request:owner?.request??api,epochUuid:epoch.epoch_uuid,sourceSha256:epoch.source_sha256,stream,readContext,signal,window:{start:readWindow.start,count:readWindow.count},maxChunkSamples:readWindow.start===0&&readWindow.count===stream.sample_count?MAX_WHOLE_TRACE_CHUNK_SAMPLES:MAX_TRACE_SAMPLES})};
     if(owner||imported||!stream)return undefined;
     return {request:(path,{signal})=>requestTraceWindow(path,{revision:contextKey,signal,epoch,stream,window:readWindow})};
-  },[chunked,owner,epoch?.epoch_uuid,epoch?.source_sha256,stream?.uuid,stream?.sample_count,stream?.sample_rate,stream?.units,contextKey,readWindow.start,readWindow.count,imported,prepared]);
+  },[chunked,owner,canonical,epoch?.epoch_uuid,epoch?.source_sha256,stream?.uuid,stream?.sample_count,stream?.sample_rate,stream?.units,contextKey,readWindow.start,readWindow.count,imported,prepared]);
   const ordinaryResource=useResource(prepared?null:requestPath,identity,0,{cache:false,requestPort});
   const preparedResource=usePreparedTraceRead(prepared&&rawEnabled?requestPath:null,identity,requestPort);
   const rawResource=prepared?preparedResource:ordinaryResource;
@@ -150,7 +154,9 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   const range=valid?timeRange(data.start,data.count,data.sample_rate):null;
   const gapCount=valid?statistics.missingCount:0;
   const total=stream?.sample_count || 0;
-  const amplitude=whole?null:preference.amplitude;
+  // A response range belongs to the units and device it was chosen on.
+  const saved=preference.amplitude,amplitudeMatches=!!saved&&!!stream&&saved.units===(stream.units??null)&&saved.device===(stream.device??null);
+  const amplitude=useMemo(()=>whole||!amplitudeMatches?null:{min:saved.min,max:saved.max},[whole,amplitudeMatches,saved?.min,saved?.max]);
   const canPan=bounded.count<total||!!amplitude;
   function moveWindow(next,nextAmplitude=amplitude){
     const window=clampWindow(next.start,next.count,total,total);drag.current=null;cursor.current=null;setEntryError('');setWindowPreference({kind:'sample',...window,...(nextAmplitude?{amplitude:nextAmplitude}:{})});
