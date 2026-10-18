@@ -213,19 +213,21 @@ def witness_check(source_root, epochs, repeats):
         fx = build(source_root, folder, epochs, 1)
         reader = fx.app.extensions['protocol_state_reader']
         protocol = fx.protocols[0]
+        # None means the native proof was not admitted (for example above the
+        # proof byte budget): every call then rebuilds it and the caller falls
+        # back to the legacy full-state oracle. Its per-call cost is reported.
         cold = counted(fx, lambda: reader.native_context(protocol))
-        if cold[0] is None:
-            raise RuntimeError('native context unavailable: ' + str(fx.service.__dict__.get('_loaded')))
         samples, counts = [], []
         for _ in range(repeats):
             value, elapsed, delta = counted(fx, lambda: reader.native_context(protocol, [fx.epoch]))
-            if value['query_revision'] != cold[0]['query_revision']:
+            if (value is None) != (cold[0] is None) or (value is not None and value['query_revision'] != cold[0]['query_revision']):
                 raise RuntimeError('revision changed between identical warm calls')
             samples.append(elapsed)
             counts.append(delta)
         fx.index.close()
         fx.case.doCleanups()
-        return {'epochs': epochs, 'protocol_members': epochs, 'cold_ms': round(cold[1], 2), 'cold_counts': cold[2],
+        return {'epochs': epochs, 'protocol_members': epochs, 'native_proof_admitted': cold[0] is not None,
+                'cold_ms': round(cold[1], 2), 'cold_counts': cold[2],
                 'median_ms': round(statistics.median(samples), 3), 'min_ms': round(min(samples), 3),
                 'per_call_counts': {key: statistics.median(item[key] for item in counts) for key in counts[0]},
                 'samples_ms': [round(value, 3) for value in samples]}
@@ -292,7 +294,8 @@ if __name__ == '__main__':
         if args.output:
             args.output.write_text(text + '\n')
         for item in results:
-            print(item['epochs'], item['median_ms'], item['per_call_counts'], 'cold', item['cold_ms'], item['cold_counts'])
+            print(item['epochs'], 'admitted' if item['native_proof_admitted'] else 'NOT admitted', item['median_ms'],
+                  item['per_call_counts'], 'cold', item['cold_ms'], item['cold_counts'])
         raise SystemExit(0)
     results = [run(source, n, args.protocols, args.repeats) for n in args.epochs]
     text = json.dumps({'harness_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
