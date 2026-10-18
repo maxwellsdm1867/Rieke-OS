@@ -432,7 +432,11 @@ class SummaryJobs:
     def poll(self, request_id):
         with self.lock:
             job = self.jobs[str(uuid.UUID(request_id))]
-        if job['status'] in ('pending', 'ready'):
+        status = job['status']
+        # Ready results are always fenced. A pending job is fenced by its worker
+        # before and after calculation, so a poll is a status read and never
+        # waits behind that worker; it fences early only when the lock is free.
+        if status in ('pending', 'ready') and self.db_lock.acquire(blocking=status == 'ready'):
             try:
                 self._fence(job)
             except Exception as error:
@@ -440,6 +444,8 @@ class SummaryJobs:
                     job['cancel'].set()
                     job.pop('result', None)
                     job.update(status='stale', error=str(error))
+            finally:
+                self.db_lock.release()
         with self.lock:
             return self._payload(job)
 
