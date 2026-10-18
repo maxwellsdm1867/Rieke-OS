@@ -117,7 +117,7 @@ class ExportBoundaryTests(unittest.TestCase):
     def test_protocol_matlab(self): self.success('protocol', 'matlab-mat')
     def test_candidate_matlab(self): self.success('candidate', 'matlab-mat')
 
-    def test_reference_json_failure_has_distinct_caller_catch_boundaries(self):
+    def test_reference_json_failure_reports_failure_in_both_callers(self):
         for kind in ('protocol', 'candidate'):
             with self.subTest(kind=kind), self.caller(kind) as (fixture, owner, request, outputs, before):
                 write = owner.write_json
@@ -133,10 +133,11 @@ class ExportBoundaryTests(unittest.TestCase):
                 root, = outputs()
                 self.assertTrue((root / 'recipe.json').is_file())
                 self.assertEqual((root / 'recordings.json').read_text(), 'partial reference artifact')
-                self.assertEqual((root / 'failure.json').exists(), kind == 'candidate')
+                # Every staged folder that did not publish carries a failure marker.
+                self.assertEqual(json.loads((root / 'failure.json').read_text())['error'], 'reference artifact fault')
                 self.assert_unpublished(fixture, before)
 
-    def test_recipe_failure_has_distinct_caller_catch_boundaries(self):
+    def test_recipe_failure_reports_failure_in_both_callers(self):
         for kind in ('protocol', 'candidate'):
             with self.subTest(kind=kind), self.caller(kind) as (fixture, owner, request, outputs, before):
                 with patch.object(owner, 'save_snapshot', side_effect=ValueError('recipe fault')):
@@ -144,7 +145,7 @@ class ExportBoundaryTests(unittest.TestCase):
                 self.assertEqual(response.status_code, 400)
                 root, = outputs()
                 self.assertFalse((root / 'recordings.json').exists())
-                self.assertEqual((root / 'failure.json').exists(), kind == 'candidate')
+                self.assertEqual(json.loads((root / 'failure.json').read_text())['error'], 'recipe fault')
                 self.assert_unpublished(fixture, before)
 
     def test_serializer_failure_retains_artifacts_without_publication(self):
@@ -270,7 +271,7 @@ class ExportBoundaryTests(unittest.TestCase):
                 self.assertEqual(outputs(), [])
                 self.assert_unpublished(fixture, before)
 
-    def test_failure_report_oserror_preserves_only_candidate_original_error(self):
+    def test_failure_report_oserror_preserves_original_error_in_both_callers(self):
         for kind in ('protocol', 'candidate'):
             with self.subTest(kind=kind), self.caller(kind) as (fixture, owner, request, outputs, before):
                 write = owner.write_json
@@ -281,14 +282,8 @@ class ExportBoundaryTests(unittest.TestCase):
                 with patch.object(workspace_sqlite, 'build_sqlite_export', side_effect=ValueError('primary serializer fault')), \
                      patch.object(owner, 'write_json', side_effect=fail_report):
                     response = request('wheeler-sqlite')
-                self.assertEqual(response.status_code, 400 if kind == 'candidate' else 500)
-                if kind == 'candidate':
-                    self.assertEqual(response.get_json()['error'], 'primary serializer fault')
-                else:
-                    incident = response.get_json()['incident']
-                    logs = list(fixture.service.project_dir.rglob(incident + '.txt'))
-                    self.assertEqual(len(logs), 1)
-                    self.assertIn('secondary failure report fault', logs[0].read_text())
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.get_json()['error'], 'primary serializer fault')
                 root, = outputs()
                 self.assertFalse((root / 'failure.json').exists())
                 self.assert_unpublished(fixture, before)

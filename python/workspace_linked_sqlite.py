@@ -164,7 +164,9 @@ def build_linked_sqlite_export(package, output_path):
         known_fields=[field for field in frozen_fields if isinstance(field, dict)],
         sources=package.get('grouping_sources', ()))
     split = recipe.get('options', {}).get('split_order', ','.join(recipe.get('view', {}).get('group_by', [])))
-    tree = build_tree(records, split, values, set(fields) | {field for field in frozen_fields if isinstance(field, str)})
+    # catalog() returns a summary object; its split vocabulary is the field ids.
+    allowed = {field['id'] for field in fields['fields']} | {field for field in frozen_fields if isinstance(field, str)}
+    tree = build_tree(records, split, values, allowed)
     path = Path(output_path)
     if path.exists():
         raise ValueError('Linked SQLite artifact already exists; refusing overwrite')

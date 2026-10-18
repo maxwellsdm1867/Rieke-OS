@@ -1848,26 +1848,26 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             prepare_export_root(project_dir)
             output = managed_directory(project_dir, 'exports') / recipe["export_uuid"]
             output.mkdir(parents=True, exist_ok=False)
-            save_snapshot(output / "recipe.json", recipe)
-            eligible = {r["uuid"] for r in recipe["epochs"]}
-            package = {"format": "recording-reference-package", "version": 1,
-                       "recipe": recipe, "epochs": [{**service.epoch(r["epoch_uuid"]),
-                                    "curation": status(curation[r["epoch_uuid"]])} for r in rows
-                                    if r["epoch_uuid"] in eligible],
-                       "sources": [{"source_sha256": s["source_sha256"], "source_path": s["source_path"]}
-                                   for s in service.sources if s['source_sha256'] in snapshot['source_revisions']],
-                       "waveforms": "references-only; original H5 files must remain accessible"}
-            if shared_annotations:
-                annotations=shared_annotations.for_epochs([service.rows[item['epoch_uuid']] for item in package['epochs']])
-                for item in package['epochs']:item['annotations']=annotations[item['epoch_uuid']]
-            artifact = output / "recordings.json"
-            if export_format == 'linked-sqlite':
-                from workspace_linked_sqlite import prepare_linked_package
-                package = prepare_linked_package(package, service.manifests, service.project_dir,
-                                                 grouping_sources=service.sources)
-            else:
-                write_json(artifact, package)
             try:
+                save_snapshot(output / "recipe.json", recipe)
+                eligible = {r["uuid"] for r in recipe["epochs"]}
+                package = {"format": "recording-reference-package", "version": 1,
+                           "recipe": recipe, "epochs": [{**service.epoch(r["epoch_uuid"]),
+                                        "curation": status(curation[r["epoch_uuid"]])} for r in rows
+                                        if r["epoch_uuid"] in eligible],
+                           "sources": [{"source_sha256": s["source_sha256"], "source_path": s["source_path"]}
+                                       for s in service.sources if s['source_sha256'] in snapshot['source_revisions']],
+                           "waveforms": "references-only; original H5 files must remain accessible"}
+                if shared_annotations:
+                    annotations=shared_annotations.for_epochs([service.rows[item['epoch_uuid']] for item in package['epochs']])
+                    for item in package['epochs']:item['annotations']=annotations[item['epoch_uuid']]
+                artifact = output / "recordings.json"
+                if export_format == 'linked-sqlite':
+                    from workspace_linked_sqlite import prepare_linked_package
+                    package = prepare_linked_package(package, service.manifests, service.project_dir,
+                                                     grouping_sources=service.sources)
+                else:
+                    write_json(artifact, package)
                 def matlab_writer(recipe, output_dir, *, epoch_records):
                     from workspace_matlab import build_matlab_export
                     return build_matlab_export(service, recipe, output_dir, epoch_records=epoch_records)
@@ -1877,8 +1877,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     expected_revisions={k: v["revision"] for k, v in curation.items()},
                     artifact_path=str(artifact), artifact_sha256=digest(artifact))
             except Exception as error:
-                write_json(output / "failure.json", {"at": now(), "status": "failed",
-                           "error": str(error), "artifact_published": False})
+                try:
+                    write_json(output / "failure.json", {"at": now(), "status": "failed",
+                               "error": str(error), "artifact_published": False})
+                except OSError:
+                    pass  # Preserve the original failure; SQL publication did not succeed.
                 raise
             saved["format"] = export_format
             saved["download_url"] = "/api/exports/" + saved["dataset_uuid"] + "/download"
