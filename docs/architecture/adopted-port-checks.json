@@ -5469,7 +5469,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "a00916acc4871678f02b7d997a046204027baaa8bd73050b64d59e4d0913e6ea",
+                "file_sha256": "4271ee06f9d77af6e5e196ab1da0b0ade629268d68b51dd1286e6de3aec8b412",
                 "contract_id": null
               }
             ]
@@ -5862,7 +5862,7 @@
       },
       {
         "file": "python/tests/test_workspace_export_boundary.py",
-        "file_sha256": "91e363a0f2e0ee82aabfe20b46a48347ffe80fbb289d1b3fedb999fd58ee709d",
+        "file_sha256": "02962ae30f72d5becf68f43c9027ae8c1cf212d5e577efeb74df0e313944a795",
         "reason": "Select protocol/candidate owner in one existing fixture, inject serializer/report faults or alternate artifact paths, and assert publication/failure boundaries. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md. Binary64 transport review: existing observer and captured method syntax, origins and targets are unchanged; admitted batch route responses now negotiate exact finite binary64 after the same closing guards, with optional fixed-name elapsed timing. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Workbench latency review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; workspace_api owner bytes only lengthen the coalesced recovery-mirror delay so it runs between bursts of activity (close still flushes). Backup quiet-period review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only let any request postpone the coalesced recovery mirror (activity), bounded at 60 s, so its in-process capture does not compete with foreground trace reads. Tag decoupling review (2026-10-17): owner sources gain protocol-state-v4 (shared tags excluded from curation authority; full-token read fences), the tag-filtered export witness and external-receipt scan revision; reviewed targets unchanged. Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Incremental recovery review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only replace the coalesced recovery-mirror timer and its before_request quiet-period hook with a synchronous incremental backup at each commit point (only changed rows are written).",
         "sites": [
           {
@@ -5904,7 +5904,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "a00916acc4871678f02b7d997a046204027baaa8bd73050b64d59e4d0913e6ea",
+                "file_sha256": "4271ee06f9d77af6e5e196ab1da0b0ade629268d68b51dd1286e6de3aec8b412",
                 "contract_id": null
               }
             ]
@@ -5937,7 +5937,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "a00916acc4871678f02b7d997a046204027baaa8bd73050b64d59e4d0913e6ea",
+                "file_sha256": "4271ee06f9d77af6e5e196ab1da0b0ade629268d68b51dd1286e6de3aec8b412",
                 "contract_id": null
               }
             ]
@@ -6009,7 +6009,7 @@
             ]
           },
           {
-            "selector": "Name:632",
+            "selector": "Name:619",
             "ast_sha256": "bb3ec10adc4d6b64350a7c6c332dd93892ed65f75eac2ad309ed48d3c03c1b11",
             "category": "test-module-object",
             "origins": [
