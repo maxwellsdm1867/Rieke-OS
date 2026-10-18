@@ -188,6 +188,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     if hasattr(service, 'set_annotation_provider'):
         def annotation_provider(protocol_uuid, fingerprints):
             return store.read(protocol_uuid, list(fingerprints), fingerprints)
+        # Saved decisions only; absent epochs have read()'s default state.
+        annotation_provider.saved_states = lambda protocol_uuid, fingerprints: store.saved_states(protocol_uuid, fingerprints)
         service.set_annotation_provider(annotation_provider)
     page_curation_provider=service.curation_provider
     if shared_annotations is None and hasattr(service.dj,'Schema'):
@@ -313,7 +315,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         shared=getattr(service,'shared_annotations',None)
         if provider is not None and (provider is not annotation_provider or type(store) is not CurationStore
                 or getattr(store,'state_generation',None) is not tracker
-                or not all(native_method(store,CurationStore,name) for name in ('read','_rows','_state'))):
+                or not all(native_method(store,CurationStore,name) for name in ('read','_rows','_state','saved_states'))):
             return None
         if shared is not None and (shared is not shared_annotations or type(shared) is not SharedAnnotations
                 or getattr(shared,'state_generation',None) is not tracker

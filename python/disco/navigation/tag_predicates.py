@@ -4,7 +4,7 @@ import copy
 import contextlib
 import hashlib
 import uuid
-from disco.navigation.predicates import MAX_NODES, validate, matches, predicate_catalog
+from disco.navigation.predicates import MAX_CHOICES, MAX_NODES, validate, matches
 from disco.workbench.recipes import checksum
 from disco.navigation.tree import value_key, value_order, value_label
 from disco.navigation.tag_time_filter import TIME_FIELDS, TIME_LABELS, samples, check_time_nodes
@@ -134,7 +134,7 @@ class _Publication:
 class _Entry:
     """One generation's tag states, evidence and lazily inverted values."""
     def __init__(self,states,evidence):
-        self.states,self.evidence=states,evidence;self._groups={}
+        self.states,self.evidence=states,evidence;self._groups={};self._plain={}
 
     def groups(self,field):
         """Epochs grouped by exact tag array; untagged epochs are implicit."""
@@ -146,6 +146,27 @@ class _Entry:
             found=self._groups[field]=([(value,frozenset(members)) for value,members in grouped.values()],
                                        frozenset(self.states[field]))
         return found
+
+    def plain(self,field):
+        """True when every tag's JSON text is the same in Python and SQLite."""
+        found=self._plain.get(field)
+        if found is None:
+            found=self._plain[field]=all(not any(ord(char)<32 or 0xd800<=ord(char)<=0xdfff for char in tag)
+                for value,_ in self.groups(field)[0] for tag in value)
+        return found
+
+    def buckets(self,field,ids,universe,rank):
+        """(value, count) per distinct array in `ids`, ordered by first occurrence."""
+        groups,tagged=self.groups(field);found=[]
+        for value,members in groups:
+            inside=members & universe
+            if inside:found.append((min(map(rank,inside)),value,len(inside)))
+        untagged=len(universe)-len(tagged & universe)
+        if untagged:
+            first=next(identity for identity in ids if identity not in tagged)
+            found.append((rank(first),[],untagged))
+        found.sort(key=lambda item:item[0])
+        return [(value,amount) for _,value,amount in found]
 
     def leaf(self,node,universe):
         """Exact `matches` per distinct value instead of per epoch."""
@@ -247,7 +268,11 @@ class TagPredicates:
         for field in sorted(fields):
             if field in SHARED_FIELDS or field in TIME_FIELDS: continue
             protocol=definitions[field]['annotation_scope']['protocol_uuid']
-            current=self.service.annotation_provider(protocol,dict(fingerprints))
+            provider=self.service.annotation_provider
+            saved=getattr(provider,'saved_states',None)
+            # Saved decisions only: an absent epoch is untagged at revision 0
+            # and contributes no record or value, exactly as its default state.
+            current=saved(protocol,fingerprints) if saved is not None else provider(protocol,dict(fingerprints))
             if not isinstance(current,dict) or current.keys()-fingerprints.keys():
                 raise ValueError('Protocol tag provider returned an invalid epoch scope')
             records=[];values={}
@@ -305,27 +330,71 @@ class TagPredicates:
         return entry
 
     def catalog_fields(self,ids,only=None):
+        """Annotation catalog fields over `ids` (in scope order).
+
+        Buckets come from the generation's tag states: one pass over tagged
+        epochs and distinct tag arrays, never one value per epoch. Output is
+        exactly the previous construction: the shared index's format for shared
+        fields it would answer, the per-epoch catalog format otherwise. When
+        `ids` is the service's cached eligible tuple, its universe and tree-key
+        order are reused instead of indexing every ID.
+        """
         definitions=[field for field in self.definitions() if field.get('value_shape')!='tag_time']
         if only is not None:definitions=[field for field in definitions if field['id'] in only]
         if not definitions: return []
-        all_fields={field['id'] for field in definitions};indexed={}
+        ids=ids if isinstance(ids,(list,tuple)) else list(ids)
+        all_fields={field['id'] for field in definitions};indexed={};index_format=set()
         shared=getattr(self.service,'shared_annotations',None)
-        if shared is not None and hasattr(shared,'catalog_fields'):
-            indexed=shared.catalog_fields([self.service.rows[key] for key in ids],all_fields & SHARED_FIELDS.keys()) or {}
+        shared_fields=all_fields & SHARED_FIELDS.keys()
+        if shared is not None and hasattr(shared,'catalog_fields') and shared_fields:
+            if self._witness(shared_fields) is not None:
+                # A verified native store answers these from its shared index;
+                # the same statistics follow from the tag states below.
+                index_format=set(shared_fields)
+            else:
+                indexed=shared.catalog_fields([self.service.rows[key] for key in ids],shared_fields) or {}
         remaining=all_fields-indexed.keys()
-        states=self._entry(remaining).states if remaining else {}
+        entry=self._entry(remaining) if remaining else None
+        if entry is not None:
+            for key in sorted(index_format):
+                if not entry.plain(key):
+                    # Text whose JSON spelling could differ: ask the index itself.
+                    indexed.update(shared.catalog_fields([self.service.rows[item] for item in ids],{key}) or {})
+            index_format-=indexed.keys()
+        cached=getattr(self.service,'_eligible_cache',None)
+        if cached is not None and ids is cached[1][1]:
+            universe,rows=cached[1][3],self.service.rows
+            rank=lambda key:(rows[key]['date'],rows[key]['start_time'],key)
+        else:
+            universe=set(ids)
+            positions={identity:position for position,identity in enumerate(ids)}
+            rank=positions.__getitem__
         fields=[]
         for definition in definitions:
-            if definition['id'] in indexed:
-                fields.append({**definition,**indexed[definition['id']]});continue
-            key=definition['id'];values={identity:{key:states[key].get(identity,[])} for identity in ids}
-            distinct={value_key(current[key]):current[key] for current in values.values()}
-            examples=[value_label(value)[:160] for value in sorted(distinct.values(),key=value_order)[:5]]
-            field={**definition,'count':len(ids),'distinct_count':len(distinct),'recorded_distinct_count':len(distinct),
-                   'missing_count':0,'null_count':0,'varying':len(distinct)>1,'examples':examples,
-                   'grouping_role':'annotation','grouping_priority':100,'varies_within_cell':False,
-                   'suggested_rank':None,'suggestion_reason':'','high_cardinality':len(distinct)>24}
-            field=predicate_catalog({'fields':[field]},values)['fields'][0]
+            key=definition['id']
+            if key in indexed:
+                fields.append({**definition,**indexed[key]});continue
+            buckets=entry.buckets(key,ids,universe,rank)
+            distinct=len(buckets);count=len(ids)
+            if key in index_format:
+                examples=sorted(value_key(value)[:160] for value,_ in buckets)[:5]
+                fields.append({**definition,'count':count,'distinct_count':distinct,'recorded_distinct_count':distinct,
+                    'missing_count':0,'null_count':0,'varying':distinct>1,'examples':examples,
+                    'grouping_role':'annotation','grouping_priority':100,'varies_within_cell':False,
+                    'suggested_rank':None,'suggestion_reason':'','high_cardinality':distinct>24,
+                    'active_types':['array'] if count else [],'types':['array'],'types_scope':'project_annotations',
+                    'element_types':['string'],'choices':[{'value':copy.deepcopy(value),'type':'array','count':amount}
+                        for value,amount in buckets[:MAX_CHOICES]],'choices_truncated':distinct>MAX_CHOICES})
+                continue
+            examples=[value_label(value)[:160] for value in sorted((value for value,_ in buckets),key=value_order)[:5]]
+            field=copy.deepcopy(definition)
+            field.update({'count':count,'distinct_count':distinct,'recorded_distinct_count':distinct,
+                'missing_count':0,'null_count':0,'varying':distinct>1,'examples':examples,
+                'grouping_role':'annotation','grouping_priority':100,'varies_within_cell':False,
+                'suggested_rank':None,'suggestion_reason':'','high_cardinality':distinct>24,
+                'types':['array'] if count else [],
+                'choices':[{'value':copy.deepcopy(value),'type':'array','count':amount} for value,amount in buckets[:MAX_CHOICES]],
+                'choices_truncated':distinct>MAX_CHOICES})
             field.update(active_types=field['types'],types=['array'],types_scope='project_annotations',element_types=['string'])
             fields.append(field)
         return fields

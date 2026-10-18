@@ -65,6 +65,23 @@ def reference_match(service, predicate, ids):
     return [identity for identity in ids if leaf(predicate, identity)]
 
 
+def previous_catalog_field(definition, ids, states):
+    """The previous per-epoch annotation catalog construction, kept as an oracle."""
+    from disco.navigation.predicates import predicate_catalog
+    from disco.navigation.tree import value_key, value_label, value_order
+    key = definition['id']
+    values = {identity: {key: states.get(identity, [])} for identity in ids}
+    distinct = {value_key(current[key]): current[key] for current in values.values()}
+    examples = [value_label(value)[:160] for value in sorted(distinct.values(), key=value_order)[:5]]
+    field = {**definition, 'count': len(ids), 'distinct_count': len(distinct), 'recorded_distinct_count': len(distinct),
+             'missing_count': 0, 'null_count': 0, 'varying': len(distinct) > 1, 'examples': examples,
+             'grouping_role': 'annotation', 'grouping_priority': 100, 'varies_within_cell': False,
+             'suggested_rank': None, 'suggestion_reason': '', 'high_cardinality': len(distinct) > 24}
+    field = predicate_catalog({'fields': [field]}, values)['fields'][0]
+    field.update(active_types=field['types'], types=['array'], types_scope='project_annotations', element_types=['string'])
+    return field
+
+
 class PerValueLeafTests(unittest.TestCase):
     def predicates(self, field):
         contains = {'field': field, 'operator': 'contains', 'value': 'flag'}
@@ -114,6 +131,21 @@ class PerValueLeafTests(unittest.TestCase):
                 self.assertEqual(fast, reference_match(service, predicate, ids))
         # Sparse results (40 of 2000) use the order function; dense ones scan.
         self.assertTrue(calls and max(calls) <= 40, calls)
+
+
+    def test_catalog_fields_equal_the_per_epoch_construction(self):
+        service = StubService(3000, tagged=0)
+        keys = list(service.rows)
+        long_tag = 'x' * 170
+        for index, key in enumerate(keys[:400]):
+            tags = [f'tag-{index % 70}', 'caf\u00e9 "q"'] if index % 3 else [long_tag + str(index % 2)]
+            service.saved[key] = {'tags': tags, 'revision': 2}
+        field = f'curation/{service.protocol}/tags'
+        definition = next(item for item in TagPredicates(service).definitions() if item['id'] == field)
+        states = {key: sorted(value['tags']) for key, value in service.saved.items()}
+        for ids in (keys, list(reversed(keys)), keys[100:2500:3], []):
+            with self.subTest(size=len(ids)):
+                self.assertEqual(TagPredicates(service).catalog_fields(ids), [previous_catalog_field(definition, ids, states)])
 
     def test_snapshot_states_and_revision_equal_previous_construction(self):
         service = StubService(300, tagged=12)
@@ -184,6 +216,18 @@ class GenerationMemoTests(MemoFixture):
                     'protocols': [(item['protocol_uuid'], item['revision']) for item in evidence['protocols']],
                     'shared_revision': evidence['shared']['revision'], 'shared_fields': shared,
                     'registered_cell_links': links}))
+
+
+    def test_shared_catalog_fields_equal_the_shared_index(self):
+        from disco.navigation.tag_predicates import SHARED_FIELDS
+        cell = self.service.rows[self.ids[0]]['cell_uuid']
+        self.fixture.edit('cell', cell, ['caf\u00e9', 'q"uote', 'y' * 200])
+        self.fixture.edit('epoch', self.ids[1], ['b\\slash', 'y' * 200 + 'z'])
+        rows = [self.service.rows[key] for key in self.ids]
+        expected = self.shared.catalog_fields(rows, set(SHARED_FIELDS))
+        definitions = {item['id']: item for item in TagPredicates(self.service).definitions()}
+        actual = {item['id']: item for item in TagPredicates(self.service).catalog_fields(self.ids, only=set(SHARED_FIELDS))}
+        self.assertEqual(actual, {key: {**definitions[key], **value} for key, value in expected.items()})
 
     def test_unavailable_or_changing_witness_never_stores_a_memo(self):
         self.service._tag_predicate_memo = None

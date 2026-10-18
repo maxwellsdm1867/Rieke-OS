@@ -382,7 +382,8 @@ class WorkspaceService:
         missing = [key for key in definitions if key not in cached]
         built = {}
         if missing:
-            ids = [row['epoch_uuid'] for row in self._tree_rows(None)]
+            # The cached eligible tuple lets tag fields reuse its universe and order.
+            ids = self._eligible()[1]
             built = {field['id']: field for field in TagPredicates(self).catalog_fields(ids, only=set(missing))}
             if built.keys() != set(missing):
                 raise ValueError('Annotation catalog fields changed while loading')
