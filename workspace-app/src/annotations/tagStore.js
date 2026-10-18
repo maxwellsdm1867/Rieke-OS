@@ -71,12 +71,18 @@ export function createTagStore({limit=2048}={}){
       evict();emit();return ticket;
     },
     /** Resolve when every earlier operation on this target/profile has settled. */
-    turn(kind,uuid,profile,ticket){
-      const key=JSON.stringify([kind,uuid,profile]),previous=turns.get(key)||Promise.resolve();
-      let release;const current=new Promise(resolve=>{release=resolve;});
-      const chained=previous.then(()=>current);turns.set(key,chained);
-      chained.then(()=>{if(turns.get(key)===chained)turns.delete(key);});
-      return previous.then(()=>release);
+    turn(kind,uuid,profile,ticket){return store.turnMany(kind,[uuid],profile);},
+    /** One turn across many targets: resolves when every earlier operation on any
+     *  of them has settled, and later single or selection writes on any of them
+     *  wait for this one. Keys are taken synchronously, so turns cannot deadlock. */
+    turnMany(kind,uuids,profile){
+      let release;const current=new Promise(resolve=>{release=resolve;});const previous=[];
+      for(const uuid of new Set(uuids)){
+        const key=JSON.stringify([kind,uuid,profile]),prior=turns.get(key)||Promise.resolve();previous.push(prior);
+        const chained=prior.then(()=>current);turns.set(key,chained);
+        chained.then(()=>{if(turns.get(key)===chained)turns.delete(key);});
+      }
+      return Promise.all(previous).then(()=>release);
     },
     confirm(ticket,receipt){
       let changed=false;
@@ -88,16 +94,24 @@ export function createTagStore({limit=2048}={}){
       if(changed)confirmedGeneration++;
       emit();
     },
+    /** Roll back a failed operation. Later queued operations by the same author on
+     *  the same target depended on it and are cancelled (never sent); they are
+     *  returned once each (by ticket) so the caller can restore or name their text. */
     fail(ticket,error){
+      const cancelled=new Map();
       for(const value of entries.values()){
         const index=value.pending.findIndex(op=>op.ticket===ticket);
         if(index<0)continue;
         // Later queued operations on the same target depended on this one.
         const failed=value.pending[index];
+        for(const op of value.pending.slice(index+1))if(op.profile===failed.profile&&op.ticket!==ticket&&!cancelled.has(op.ticket))
+          cancelled.set(op.ticket,{ticket:op.ticket,kind:value.kind,uuid:value.uuid,profile:op.profile,tag:op.tag,remove:op.remove});
         value.pending=value.pending.filter((op,position)=>position<index||op.profile!==failed.profile);
         value.error=error?.message||String(error||'Tag save failed');touch(value);
       }
       emit();
+      // A selection operation still pending on other targets will be sent.
+      return [...cancelled.values()].filter(op=>!store.isPending(op.ticket));
     },
     /** Confirmed receipts from undo, imports or other producers. */
     ingest(receipt){

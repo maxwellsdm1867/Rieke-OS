@@ -6,7 +6,7 @@ import {startTransition,useEffect,useId,useLayoutEffect,useMemo,useRef,useState}
 import {MessageCircle,Plus,X,Search,ChevronDown,UserRound,CornerDownRight} from 'lucide-react';
 import {api as defaultApi,useResource,number} from "../../api.js";
 import {useAnnotationProfile} from '../annotationProfile.js';
-import {annotationTagColor,annotationChipTitle,annotationChange,annotationGroups,canRemoveAnnotation,annotationPredicate,bulkAnnotationChange,navigateAfterTagSave} from '../annotationTags.js';
+import {annotationTagColor,annotationChipTitle,annotationChange,annotationGroups,canRemoveAnnotation,annotationPredicate,bulkAnnotationChange,navigateAfterTagSave,unsavedTagRecovery,unsavedTagMessage} from '../annotationTags.js';
 import './AnnotationTags.css';
 import {confirmAnnotationReceipt,fastAnnotationReceipt} from '../annotationReceipts.js';
 import {epochResourceCache} from "../../resourceCache.js";
@@ -119,11 +119,13 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
       if(!requestScope)epochResourceCache.invalidateAnnotations(confirmed);
       onChange?.(result,confirmed);return true;
     }catch(error){
-      tagStore.fail(ticket,error);
+      const cancelled=tagStore.fail(ticket,error);
       if(mounted.current){
-        setError(error.message);
-        // A failed save never loses typed text: restore it unless new text was typed.
-        if(!remove&&currentIdentity.current===identity&&(!latestValue.current.trim()||latestValue.current.trim()===tag.trim()))setValue(tag);
+        // A failed save never loses typed text: the first unsaved text returns to an
+        // empty composer and any other (cancelled queued tags) is named in the error.
+        const {restore,unsaved}=unsavedTagRecovery({failedTag:remove?null:tag,cancelled,composer:latestValue.current,restorable:currentIdentity.current===identity});
+        setError(unsavedTagMessage(error.message,unsaved));
+        if(restore)setValue(restore);
       }
       return false;
     }finally{release();}
@@ -140,7 +142,9 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
     const ticket=tagStore.beginMany({kind,uuids:ids,profile:profileUuid,authorName:profileName||'You',tag:value});
     composerDirty.current=false;startTransition(()=>setValue(''));setQuery('');setActive(-1);setOpen(false);setError('');restoreInput.current=true;
     setMessage(`Tagging ${number(ids.length)} selected ${kind}${ids.length===1?'':'s'}…`);
-    const release=await tagStore.turn(kind,'selection',profileUuid,ticket);
+    // Shares per-target ordering with single-target writes, so the two paths
+    // never race each other to a revision conflict.
+    const release=await tagStore.turnMany(kind,ids,profileUuid);
     try{
       if(!tagStore.isPending(ticket))return false;
       let body={target_kind:kind,target_uuids:ids,profile_uuid:profileUuid,tags_add:[value],tags_remove:[],
@@ -160,8 +164,8 @@ export default function AnnotationTags({composer=null,draftIdentity=null,epoch,r
       if(mounted.current)setMessage(`Saved ${number(ids.length)} selected ${kind} tag “${value}”.`);
       onChange?.(result,confirmed);return true;
     }catch(error){
-      tagStore.fail(ticket,error);
-      if(mounted.current){setMessage('');setError(error.message);if(!latestValue.current.trim()||latestValue.current.trim()===value)setValue(value);}
+      const cancelled=tagStore.fail(ticket,error);
+      if(mounted.current){setMessage('');const {restore,unsaved}=unsavedTagRecovery({failedTag:value,cancelled,composer:latestValue.current});setError(unsavedTagMessage(error.message,unsaved));if(restore)setValue(restore);}
       return false;
     }finally{release();}
   }

@@ -69,3 +69,14 @@ test('chip tooltip shows author and added time; approximate and pending states a
  assert.equal(formatTagTime('not a time',format),'');
  assert.ok(formatTagTime('2026-10-01T12:30:00Z').length>0);
 });
+
+test('unsaved tag recovery restores one text and names every other cancelled text',async()=>{
+  const {unsavedTagRecovery,unsavedTagMessage}=await import('./annotations/annotationTags.js');
+  const cancelled=[{tag:'b'},{tag:'x',remove:true},{tag:'c '}];
+  assert.deepEqual(unsavedTagRecovery({failedTag:'a',cancelled,composer:''}),{restore:'a',unsaved:['b','c']});
+  assert.deepEqual(unsavedTagRecovery({failedTag:'a',cancelled,composer:'typing'}),{restore:null,unsaved:['a','b','c']});
+  assert.deepEqual(unsavedTagRecovery({failedTag:null,cancelled,composer:''}),{restore:'b',unsaved:['c']},'a failed removal restores the first cancelled add');
+  assert.deepEqual(unsavedTagRecovery({failedTag:'a',cancelled,composer:'',restorable:false}),{restore:null,unsaved:['a','b','c']});
+  assert.equal(unsavedTagMessage('Conflict.',['b','c']),'Conflict. Not saved: “b”, “c”.');
+  assert.equal(unsavedTagMessage('Conflict.',[]),'Conflict.');
+});
