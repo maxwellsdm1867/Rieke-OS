@@ -34,7 +34,8 @@ test('macOS visible and helper names agree while installation identity stays com
  const {build}=require('../package.json');
  assert.equal(build.productName,'Disco');
  assert.equal(build.mac.extendInfo.CFBundleName,build.productName);
- assert.equal(build.mac.extendInfo.CFBundleDisplayName,'DISCO');
+ assert.equal(build.mac.extendInfo.CFBundleDisplayName,'Disco');
+ assert.equal(build.mac.extendInfo.LSHasLocalizedDisplayName,true);
  assert.equal(build.mac.executableName,'Disco');
  assert.equal(build.dmg.contents[0].name,'Disco.app');
  assert.equal(build.artifactName,'Disco-${version}-${arch}.${ext}');

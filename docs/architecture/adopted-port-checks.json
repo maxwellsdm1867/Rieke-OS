@@ -4401,7 +4401,7 @@
       },
       {
         "file": "python/tests/test_desktop_test_release.py",
-        "file_sha256": "eead0ed8d2f77fd175623b959b6344c7916ccec080be5763d187b0a00f79745e",
+        "file_sha256": "e3dade40ff95d4cdf120029108e828b41068e95b60f79f66960caabc193a24ed",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",

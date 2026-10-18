@@ -89,8 +89,9 @@
       "notarize": true,
       "sign": "./sign-runtime.cjs",
       "extendInfo": {
-        "CFBundleDisplayName": "DISCO",
-        "CFBundleName": "Disco"
+        "CFBundleDisplayName": "Disco",
+        "CFBundleName": "Disco",
+        "LSHasLocalizedDisplayName": true
       },
       "executableName": "Disco"
     },

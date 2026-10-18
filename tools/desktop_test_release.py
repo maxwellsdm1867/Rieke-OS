@@ -47,6 +47,15 @@ def electron_helper(bundle, app_plist):
         raise ValueError('Electron helper identity or executable declaration differs')
     return executable, info
 
+def localized_display_name(bundle, app_plist):
+    # macOS shows DISCO in the menu bar and Dock from InfoPlist.strings while the
+    # raw names stay Disco for Disco.app updates and Electron helper lookup.
+    strings = '"CFBundleDisplayName" = "DISCO";\n"CFBundleName" = "DISCO";\n'
+    folders = sorted((bundle/'Contents/Resources').glob('*.lproj'))
+    if (app_plist.get('LSHasLocalizedDisplayName') is not True or bundle/'Contents/Resources/en.lproj' not in folders
+            or any(not (folder/'InfoPlist.strings').is_file() or (folder/'InfoPlist.strings').read_text('utf-8') != strings for folder in folders)):
+        raise ValueError('App localized display name is not DISCO in every bundled language')
+
 def build_descriptor(bundle,archive):
     bundle,archive=Path(bundle),Path(archive)
     runtime=bundle/'Contents/Resources/runtime'
@@ -56,7 +65,8 @@ def build_descriptor(bundle,archive):
     if manifest.get('format')!='rieke-desktop-runtime' or manifest.get('version')!=1 or manifest.get('platform')!='darwin' or manifest.get('architecture')!='arm64':raise ValueError('Unsupported desktop runtime')
     app_info=bundle/'Contents/Info.plist';app_info_bytes=app_info.read_bytes();plist=plistlib.loads(app_info_bytes)
     if plist.get('CFBundleIdentifier')!='org.riekeos.desktop' or plist.get('CFBundleShortVersionString')!=version:raise ValueError('App identity or version differs')
-    if plist.get('CFBundleDisplayName')!='DISCO' or plist.get('CFBundleName')!='Disco':raise ValueError('App display or bundle name differs from DISCO')
+    if plist.get('CFBundleDisplayName')!='Disco' or plist.get('CFBundleName')!='Disco':raise ValueError('App display or bundle name differs from Disco')
+    localized_display_name(bundle,plist)
     executable=bundle/'Contents/MacOS/Disco'
     if bundle.name!='Disco.app' or plist.get('CFBundleExecutable')!='Disco' or not executable.is_file() or not os.access(executable,os.X_OK) or not executable.resolve().is_relative_to(bundle.resolve()):raise ValueError('Shipping app filename or executable differs from Disco')
     helper_executable,helper_info=electron_helper(bundle,plist)

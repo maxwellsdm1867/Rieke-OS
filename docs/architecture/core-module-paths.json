@@ -10430,7 +10430,7 @@
         },
         {
           "path": "desktop/seal-testing.cjs",
-          "sha256": "3aa20d521a9c53f5a70163e609d89f4ebee6ad9486267d31749aa57ec2771f78",
+          "sha256": "85ff1807fc07bd76c890fb11ae9f98b8359d56647507289a81e4d888781adf27",
           "kind": "cjs_or_js",
           "ledger_owner_ids": [
             "desktop.packaging-qualification"

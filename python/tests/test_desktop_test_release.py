@@ -12,12 +12,15 @@ spec=importlib.util.spec_from_file_location('desktop_test_release',Path(__file__
 module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
 
 class TestUnsignedReleaseDescriptor(unittest.TestCase):
-    def fixture(self, root, helper_name='Disco Helper', internal_name='Disco'):
+    def fixture(self, root, helper_name='Disco Helper', internal_name='Disco', languages=('en','de'), localized=True):
         app=root/'Disco.app';resources=app/'Contents/Resources';runtime=resources/'runtime';runtime.mkdir(parents=True)
         manifest={'format':'rieke-desktop-runtime','version':1,'application_version':'0.1.3','platform':'darwin','architecture':'arm64','workspace_formats':[1],'database_compatibility':1,'mysql_version':'8.4.2','minimum_macos_version':'14.0','source_commit':'a'*40,'source_dirty':True}
         (runtime/'runtime-manifest.json').write_text(json.dumps(manifest))
         (resources/'app.asar').write_bytes(b'candidate shell fixture')
-        (app/'Contents/Info.plist').write_bytes(plistlib.dumps({'CFBundleIdentifier':'org.riekeos.desktop','CFBundleShortVersionString':'0.1.3','CFBundleName':internal_name,'CFBundleDisplayName':'DISCO','CFBundleExecutable':'Disco'}))
+        (app/'Contents/Info.plist').write_bytes(plistlib.dumps({'CFBundleIdentifier':'org.riekeos.desktop','CFBundleShortVersionString':'0.1.3','CFBundleName':internal_name,'CFBundleDisplayName':'Disco','CFBundleExecutable':'Disco','LSHasLocalizedDisplayName':localized}))
+        for language in languages:
+            (resources/f'{language}.lproj').mkdir()
+            (resources/f'{language}.lproj/InfoPlist.strings').write_text('"CFBundleDisplayName" = "DISCO";\n"CFBundleName" = "DISCO";\n')
         (app/'Contents/MacOS').mkdir()
         main=app/'Contents/MacOS/Disco';main.write_bytes(b'main fixture');main.chmod(0o755)
         helper=app/'Contents/Frameworks'/(helper_name+'.app')/'Contents'
@@ -82,6 +85,19 @@ class TestUnsignedReleaseDescriptor(unittest.TestCase):
                 elif fault=='helper_info':self.update_plist(helper/'Info.plist',{'CFBundleVersion':'other'})
                 else:executable.write_bytes(b'changed helper after archive')
                 with self.assertRaises(ValueError):module.build_descriptor(app,archive)
+
+    def test_menu_bar_and_dock_name_is_localized_in_every_language(self):
+        for fault in ['flag','missing_english','missing_language','raw_name']:
+            with self.subTest(fault=fault),tempfile.TemporaryDirectory() as tmp:
+                root=Path(tmp)
+                if fault=='flag':app,archive,_,_=self.fixture(root,localized=False)
+                elif fault=='missing_english':app,archive,_,_=self.fixture(root,languages=('de',))
+                else:
+                    app,archive,_,_=self.fixture(root)
+                    if fault=='missing_language':(app/'Contents/Resources/fr.lproj').mkdir()
+                    else:(app/'Contents/Resources/de.lproj/InfoPlist.strings').write_text('"CFBundleDisplayName" = "Disco";\n"CFBundleName" = "Disco";\n')
+                    self.pack(app,archive)
+                with self.assertRaisesRegex(ValueError,'localized display name'):module.build_descriptor(app,archive)
 
     def test_archive_cannot_omit_the_selected_helper(self):
         with tempfile.TemporaryDirectory() as tmp:
