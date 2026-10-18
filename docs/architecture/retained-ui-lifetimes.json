@@ -984,7 +984,7 @@
       ]
     },
     "src/epoch-browser/ui/InspectionCellTree.jsx": {
-      "fingerprint": "56da04415df11c4126370bd5476e2289dff2c162c249c1df4e66c6730bf4aad3",
+      "fingerprint": "b35eea6fd7bf0fecb01c7de4cb1441c586bd75acf84a2b55bfeb94431a622d32",
       "sites": [
         {
           "owner": "CellEpochPage",
@@ -1043,7 +1043,7 @@
         }
       ],
       "lifetime": "fresh-page-focus",
-      "reason": "Focus carries the original row and its validated page; explicit selection retains revision authority. Selection tagging review (2026-10-17): loaded rows feed tagStore revision hints in an effect keyed on the page data; ⌘/Ctrl selection keeps the just-clicked epoch (Finder-style) outside Workbench highlight. Cell-row review (2026-10-17): clicking a cell row (browse or edit tree, not its buttons, not the already selected cell) runs the existing bounded selectCell, so the tag panel targets the cell; epoch focus clears it. Browse refinement: in browse lists a cell click targets the cell only when the inspected epoch is in it (no read) or nothing is inspected; it never replaces an inspected epoch from another cell.",
+      "reason": "Focus carries the original row and its validated page; explicit selection retains revision authority. Selection tagging review (2026-10-17): loaded rows feed tagStore revision hints in an effect keyed on the page data; ⌘/Ctrl selection keeps the just-clicked epoch (Finder-style) outside Workbench highlight. Cell-row review (2026-10-17): clicking a cell row (browse or edit tree, not its buttons, not the already selected cell) runs the existing bounded selectCell, so the tag panel targets the cell; epoch focus clears it. Browse refinement: in browse lists a cell click targets the cell only when the inspected epoch is in it (no read) or nothing is inspected; it never replaces an inspected epoch from another cell. F3 tree-presentation-identity review (2026-10-18): memoized date/cell/page branches with scope-fenced stable action forwarders (old-scope handlers stay inert); per-cell loaded-row registries narrow focus/selection/highlight re-renders; Set lookups. No new effects or request owners.",
       "tests": [
         "src/epoch-browser/inspectionCellTree.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
@@ -1056,7 +1056,7 @@
       ]
     },
     "src/epoch-browser/ui/Inspector.jsx": {
-      "fingerprint": "158594044f0e554ad4042edb849b21c4009118a0f9d35194f3319285200c54c3",
+      "fingerprint": "ba392cda13c088037113f679b25a11f085d575bc816faae897ec32f515768e10",
       "sites": [
         {
           "owner": "InspectorContent",
@@ -1185,7 +1185,7 @@
         }
       ],
       "lifetime": "focused-display-and-fresh-curation",
-      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal. Independently reviewed initial selected-manifest acquisition withholds only the parent page offer; same-selected renewal keeps its own inert trace and strict capability validation is unchanged. Frozen sidebar presentation keys include owner, cohort, focus, cell selection and structure revision, excluding Live metadata and annotation-dependent or unproven selected scopes. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Tag decoupling review (2026-10-17): v4 contract enables kept receipt authority; the all-cell key follows kept authority; neighbour prefetch uses wholeTracePrefetchPath. Effect sites unchanged. Tag channel review (2026-10-17): useAnnotationReceipts takes revision, v4 contract and filters only. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): group receipts and confirmed receipts within the selection limit are reported on the tag channel. Effect sites unchanged. Edit Tree tagging review (2026-10-17): any confirmed receipt within the selection limit is forwarded on the tag channel (the store holds it; navigation identity no longer gates it). Effect sites unchanged. Cell-row review (2026-10-17): list props add focusedCell and onTargetCell, which only set the cell tag target (no read, no focus change). Workbench tag-scope review (2026-10-17): page authority is stable for the advertised workbench-candidate-scope-v2 token as for protocol-state-v4; the frozen tag summary overlays tag-store receipts on the retained page (memo only). Effect sites unchanged.",
+      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal. Independently reviewed initial selected-manifest acquisition withholds only the parent page offer; same-selected renewal keeps its own inert trace and strict capability validation is unchanged. Frozen sidebar presentation keys include owner, cohort, focus, cell selection and structure revision, excluding Live metadata and annotation-dependent or unproven selected scopes. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Tag decoupling review (2026-10-17): v4 contract enables kept receipt authority; the all-cell key follows kept authority; neighbour prefetch uses wholeTracePrefetchPath. Effect sites unchanged. Tag channel review (2026-10-17): useAnnotationReceipts takes revision, v4 contract and filters only. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): group receipts and confirmed receipts within the selection limit are reported on the tag channel. Effect sites unchanged. Edit Tree tagging review (2026-10-17): any confirmed receipt within the selection limit is forwarded on the tag channel (the store holds it; navigation identity no longer gates it). Effect sites unchanged. Cell-row review (2026-10-17): list props add focusedCell and onTargetCell, which only set the cell tag target (no read, no focus change). Workbench tag-scope review (2026-10-17): page authority is stable for the advertised workbench-candidate-scope-v2 token as for protocol-state-v4; the frozen tag summary overlays tag-store receipts on the retained page (memo only). Effect sites unchanged. F3 tree-presentation-identity review (2026-10-18): page/tree read keys use the owner presentation identity; activation (focus/visibility) no longer re-reads pages, leases are still checked live.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
@@ -1202,7 +1202,8 @@
         "src/incomingWorkbenchRendering.test.js",
         "src/resourceCache.test.js",
         "src/treeGroupAnnotationWorkflow.test.js",
-        "src/workbenchTagScope.test.js"
+        "src/workbenchTagScope.test.js",
+        "src/inspectorTreeAuthority.test.js"
       ]
     },
     "src/epoch-browser/ui/InspectorActions.jsx": {
@@ -3440,10 +3441,10 @@
       ]
     },
     "src/tree-ancestors/columnTreeReads.js": {
-      "fingerprint": "aaa935b91c83746955fd2b5a736824e570c447ebfd19140dfe77adaa51dfa03a",
+      "fingerprint": "872db7e0a5aa3d828c9de0527bab13aed9d599cef0b4013dd030321ebe356d18",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Independently reviewed explicit target and continuation-root revision checks before adoption or attestation; Workbench continuity cannot override a caller revision. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Independently reviewed explicit target and continuation-root revision checks before adoption or attestation; Workbench continuity cannot override a caller revision. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads. F3 tree-presentation-identity review (2026-10-18): frozen expand reuses displayed parents only on full fence equality, else one bounded batch.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -3462,12 +3463,12 @@
       ]
     },
     "src/tree-ancestors/treeBranchReads.jsx": {
-      "fingerprint": "902dfd80e79663fb848b9a44c672b243f7413efd44eeeb5dd02a6c2e7c6c358b",
+      "fingerprint": "ac9419f8e43732d19dd4024b1e2c5c856cb967794077708db6988c02afbf606b",
       "sites": [
         {
           "owner": "TreeBranchReadOwner",
           "kind": "useLayoutEffect",
-          "fingerprint": "73103a7f3353324f4b359655c693bcba063b923e98c1f30443f30ac26725502a"
+          "fingerprint": "1f8e7c4ab95108efb3679718042eebc39fd2d79003114e5af15f391c079bacb5"
         },
         {
           "owner": "TreeBranchReadOwner",
@@ -3476,11 +3477,12 @@
         }
       ],
       "lifetime": "project-search-and-revocable-read-cache",
-      "reason": "Global search is App-shell owned. Cached lookup/ancestor witnesses retire on focus, backend state, actor or scope changes; subscriber requests/timers reconnect with generation checks. Current scientific witness refresh remains independent of display reuse.",
+      "reason": "Global search is App-shell owned. Cached lookup/ancestor witnesses retire on focus, backend state, actor or scope changes; subscriber requests/timers reconnect with generation checks. Current scientific witness refresh remains independent of display reuse. F3 tree-presentation-identity review (2026-10-18): provider exposes presentationIdentity (no activation) and republishes after activation in its existing layout effect; revocation on focus/visibility/status is unchanged.",
       "tests": [
         "src/search-activation/navigationReadStrictMode.test.js",
         "src/tree-ancestors/treeBranchReads.test.js",
-        "src/presentationSessionsApp.test.js"
+        "src/presentationSessionsApp.test.js",
+        "src/inspectorTreeAuthority.test.js"
       ]
     },
     "src/tree-browser/boundedTree.js": {
@@ -3534,12 +3536,17 @@
       ]
     },
     "src/tree-browser/ui/ColumnTree.jsx": {
-      "fingerprint": "d56c2479560615f70151b902d9f838578f7f621155a2294b1b6b545f453924c3",
+      "fingerprint": "3fd12409f0a27b43859aca940ac785576a3b09514947379d3ef45a9fd2b84517",
       "sites": [
         {
           "owner": "ColumnTree",
           "kind": "useEffect",
           "fingerprint": "ae0a0a13821aa206ed5a05f48e333d5a1bedd86dc8d9b74a39c55ef33145e2a1"
+        },
+        {
+          "owner": "ColumnTree",
+          "kind": "useEffect",
+          "fingerprint": "c5065f0c646fbf5e88e61aec2d6c64db390c5331cb34fc4fcaa0583278243213"
         },
         {
           "owner": "ColumnTree",
@@ -3578,7 +3585,7 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads. Explicit owner read pause blocks gestures and retires pending root or target reads while retaining inert presentation; fresh resume revalidates all authority. Independently reviewed trailing preview retention requires the same committed frozen presentation scope, selected UUID, pane key and terminal-page membership; the existing flex section remains inert through refresh and retry. Changed actor/cohort/selected view/focus and unrelated branch intent cannot borrow it; frozen freshness also checks the loaded scope before passive renewal. Independently reviewed frozen initial navigation treats saved revisions as history even when presentation scopes differ: fresh anchor or root establishes continuation authority, while explicit expectedRevision and live-navigation behavior remain unchanged. Multi-selection/branch tag review (2026-10-17): main (counts-only) trees no longer reload on group tag saves; Workbench trees keep the group-tag revision for coverage. Effect sites unchanged. Edit Tree tagging review (2026-10-17): Edit Tree epoch rows show Tag This Epoch outside Workbench too. Effect sites unchanged. Workbench tag-scope review (2026-10-17): frozen (readContext) scope keys add the settled tag coverage revision, so loaded pages re-read once per confirmed tag burst with the same frozen token; live trees unchanged. Effect sites unchanged.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads. Explicit owner read pause blocks gestures and retires pending root or target reads while retaining inert presentation; fresh resume revalidates all authority. Independently reviewed trailing preview retention requires the same committed frozen presentation scope, selected UUID, pane key and terminal-page membership; the existing flex section remains inert through refresh and retry. Changed actor/cohort/selected view/focus and unrelated branch intent cannot borrow it; frozen freshness also checks the loaded scope before passive renewal. Independently reviewed frozen initial navigation treats saved revisions as history even when presentation scopes differ: fresh anchor or root establishes continuation authority, while explicit expectedRevision and live-navigation behavior remain unchanged. Multi-selection/branch tag review (2026-10-17): main (counts-only) trees no longer reload on group tag saves; Workbench trees keep the group-tag revision for coverage. Effect sites unchanged. Edit Tree tagging review (2026-10-17): Edit Tree epoch rows show Tag This Epoch outside Workbench too. Effect sites unchanged. Workbench tag-scope review (2026-10-17): frozen (readContext) scope keys add the settled tag coverage revision, so loaded pages re-read once per confirmed tag burst with the same frozen token; live trees unchanged. Effect sites unchanged. F3 tree-presentation-identity review (2026-10-18): scope keyed on presentation identity; reads use the latest owner via ref; new effect renews only a read interrupted by an activation change, on the same path.",
       "tests": [
         "src/inspectionTreeLifecycle.test.js",
         "src/hierarchyRetention.test.js",
@@ -3588,11 +3595,12 @@
         "src/tree-ancestors/frozenColumnReads.test.js",
         "src/tree-browser/frozenColumnMount.test.js",
         "src/treeGroupLifecycleWorkflow.test.js",
-        "src/workbenchTagScope.test.js"
+        "src/workbenchTagScope.test.js",
+        "src/inspectorTreeAuthority.test.js"
       ]
     },
     "src/tree-browser/ui/HierarchyTree.jsx": {
-      "fingerprint": "8acdb9988982b8f1a84ad642d34cf82da38cf477a4f965ad814f10882215c446",
+      "fingerprint": "fc77c6bfd2a32cbdc1baf0baa4e70dd8b2b1aa11a63b038af49e8ebaba55b1a2",
       "sites": [
         {
           "owner": "HierarchyTree",
@@ -3626,7 +3634,7 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Explicit owner read pause retains inert pages, aborts root and descendant reads, and refuses late publication until fresh resume. Multi-selection/branch tag review (2026-10-17): same scope-key change as ColumnTree. Effect sites unchanged. Workbench tag-scope review (2026-10-17): frozen (readContext) scope key adds the settled tag coverage revision (one page re-read per tag burst, same frozen token); live trees unchanged. Effect sites unchanged.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Explicit owner read pause retains inert pages, aborts root and descendant reads, and refuses late publication until fresh resume. Multi-selection/branch tag review (2026-10-17): same scope-key change as ColumnTree. Effect sites unchanged. Workbench tag-scope review (2026-10-17): frozen (readContext) scope key adds the settled tag coverage revision (one page re-read per tag burst, same frozen token); live trees unchanged. Effect sites unchanged. F3 tree-presentation-identity review (2026-10-18): expansion page passed to first-epoch selection; collapse/collapse-all notify the selection owner.",
       "tests": [
         "src/inspectionTreeLifecycle.test.js",
         "src/hierarchyRetention.test.js",
@@ -3634,11 +3642,12 @@
         "src/treeCombinedPresentation.test.js",
         "src/treeCellIdentityIcons.test.js",
         "src/treeGroupLifecycleWorkflow.test.js",
-        "src/workbenchTagScope.test.js"
+        "src/workbenchTagScope.test.js",
+        "src/inspectorTreeAuthority.test.js"
       ]
     },
     "src/tree-browser/ui/PagedTree.jsx": {
-      "fingerprint": "3f526dae0fc0d63f0facdac11afad35f1263cb501d913bc17952c842902036b1",
+      "fingerprint": "c25a55273a6dbf6595096be4a4d5cf4ad0114811f5fd0ba793dc65c5532be2dd",
       "sites": [
         {
           "owner": "PagedTree",
@@ -3647,23 +3656,25 @@
         }
       ],
       "lifetime": "scoped-selection-authority",
-      "reason": "Selection summaries, manifests and ordered selection queue use committed scope/generation with abort and stale-publication refusal. Visibility may retire a read witness; retained selection presentation never substitutes for fresh command authority. Explicit owner read pause retires selection scope and blocks pending or new focus/range publication, including standalone callers without selectionAuthority.",
+      "reason": "Selection summaries, manifests and ordered selection queue use committed scope/generation with abort and stale-publication refusal. Visibility may retire a read witness; retained selection presentation never substitutes for fresh command authority. Explicit owner read pause retires selection scope and blocks pending or new focus/range publication, including standalone callers without selectionAuthority. F3 tree-presentation-identity review (2026-10-18): collapse aborts the pending first-epoch selection for that branch.",
       "tests": [
         "src/incomingSelectionSummaryRendering.test.js",
         "src/incomingTreeSelectionQueue.test.js",
-        "src/pagedTreeLifecycle.test.js"
+        "src/pagedTreeLifecycle.test.js",
+        "src/inspectorTreeAuthority.test.js"
       ]
     },
     "src/tree-browser/ui/RetainedTreePresentation.jsx": {
-      "fingerprint": "214aa3c6b720e8cbe82cc91dfb68199fc96aa41d6dae8c336ea0a7d206f88742",
+      "fingerprint": "71b38a50f624c44b5026762c08e86626e310fc52fd6a334b5a999c2fb9d063b7",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Active annotation-independent frozen presentation uses proven project/actor/cohort/filter/split/selection-view identity through authority renewal; raw selection tokens without semantic proof retain exact-context eviction. Hidden frozen views remain unmounted. The outer workspace owner evicts on physical project-path changes. Fresh tree receipts still gate every action.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Active annotation-independent frozen presentation uses proven project/actor/cohort/filter/split/selection-view identity through authority renewal; raw selection tokens without semantic proof retain exact-context eviction. Hidden frozen views remain unmounted. The outer workspace owner evicts on physical project-path changes. Fresh tree receipts still gate every action. F3 tree-presentation-identity review (2026-10-18): slot key uses owner presentation identity, so activation-only changes do not remount.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
         "src/hierarchyRetention.test.js",
-        "src/retainedWorkspaceViews.test.js"
+        "src/retainedWorkspaceViews.test.js",
+        "src/inspectorTreeAuthority.test.js"
       ]
     },
     "src/tree-browser/ui/TreeBranchIcon.jsx": {
@@ -3676,13 +3687,14 @@
       ]
     },
     "src/tree-selection/treeSelectionReader.js": {
-      "fingerprint": "99e7afd9d9c1c1d0b2387933144bb0af501202c628ef8f0b63347b98283837e0",
+      "fingerprint": "cd6ac70c1e848d106d1d08415e75529ffc33776c6c59dc45bada661d12f0603a",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. F3 tree-presentation-identity review (2026-10-18): firstEpoch accepts the caller's exact first page (or its pending read).",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/inspectorTreeAuthority.test.js"
       ]
     },
     "src/typed-query/jointGrouping.js": {

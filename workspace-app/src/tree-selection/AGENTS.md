@@ -14,6 +14,10 @@ combiners, ancestor-cache leases and browser readiness retain their existing own
 No additional adapter, cache or scientific authority belongs here.
 
 `firstEpoch` resolves the original DTO or undefined, following only first branches.
+An optional `page` (or a Promise of one) for exactly that path at offset 0 replaces
+the first read, so an expansion and its first-epoch selection share one request;
+its revision is still checked against the pin, and a missing/failed/other page reads fresh.
+Callers abort a pending selection when its branch is collapsed.
 Expected revision takes precedence. Range indices are inclusive, normalized,
 nonnegative absolute positions in one branch; callers supply matching scope/path
 and page offset. Preserve 60-row stepping, the Main 1,000-position limit (capable Workbench ranges are uncapped), exact server
