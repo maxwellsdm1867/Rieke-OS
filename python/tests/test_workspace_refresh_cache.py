@@ -339,9 +339,27 @@ class RefreshCacheTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'before refresh completed'):self.service.refresh()
         self.assertFalse(self.service._loaded)
 
+    def test_refresh_publishes_immutable_maps_with_a_monotonic_serial(self):
+        from workspace_service import FrozenDict, publication_serial
+        first = publication_serial(self.service)
+        self.assertIsNotNone(first)
+        for name in ('rows', 'cells', 'protocols', '_fingerprints'):
+            self.assertIs(type(getattr(self.service, name)), FrozenDict, name)
+        identity = next(iter(self.service.rows))
+        for mutate in (lambda: self.service.rows[identity].__setitem__('cell_type', 'x'),
+                       lambda: self.service.rows[identity]['streams'].append({}),
+                       lambda: self.service.rows[identity]['streams'][0].__setitem__('units', 'x'),
+                       lambda: self.service._fingerprints.__setitem__(identity, 'x'),
+                       lambda: self.service.protocols[self.protocol]['result']['epochs'].pop()):
+            with self.assertRaises(TypeError):
+                mutate()
+        self.service.refresh()
+        self.assertGreater(publication_serial(self.service), first)
+
     def test_public_read_model_mutation_does_not_poison_private_cache(self):
         identity = next(iter(self.service.rows))
-        self.service.rows[identity]['streams'][0]['units'] = 'incorrect'
+        with self.assertRaises(TypeError):
+            self.service.rows[identity]['streams'][0]['units'] = 'incorrect'
         self.service.details[identity]['properties']['bathTemperature'] = -1
         self.service.refresh()
         self.assertEqual(self.service.rows[identity]['streams'][0]['units'], 'mV')

@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import copy
 import contextlib
-import marshal
 import math
+import os
 import sys
 import uuid
 from itertools import chain
@@ -20,7 +20,7 @@ from disco.decisions.curation import RevisionConflict
 from disco.metadata.disk_index import DiskMetadataIndex
 from disco.decisions.curation import CurationStore
 from disco.decisions.explorer import ExplorerHistory
-from workspace_service import WorkspaceService
+from workspace_service import WorkspaceService, publication_serial, FrozenDict, FrozenList
 from disco.decisions.annotations import SharedAnnotations
 
 PROTOCOL_STATE_CONTRACT='protocol-state-v4'
@@ -30,15 +30,19 @@ STATE_CACHE_SCOPES = 8
 _STORE_METHODS={name:getattr(CurationStore,name) for name in ('read','_rows','_state','summary_decisions')}
 _SHARED_METHODS={name:getattr(SharedAnnotations,name) for name in ('snapshot','_rows','for_epochs','_validated_tags','summary','read_targets')}
 _SERVICE_METHODS={name:getattr(WorkspaceService,name)
-    for name in ('query_result','fingerprints','source_scope','binding','_ready','epoch_page','_epoch_page_identities','_decorate')}
+    for name in ('query_result','query_view','fingerprints','source_scope','binding','_ready','epoch_page','_epoch_page_identities','_decorate')}
 _HISTORY_METHODS={name:getattr(ExplorerHistory,name) for name in ('protocol_binding','protocol_binding_header','get')}
+
+
+_PLAIN={FrozenDict:dict,FrozenList:list}
 
 
 def _exact_equal(left, right):
     """JSON-like equality with numeric types and signed zero preserved."""
     if left is right:
         return True
-    if type(left) is not type(right):
+    # Published frozen containers compare exactly like their plain types.
+    if _PLAIN.get(type(left),type(left)) is not _PLAIN.get(type(right),type(right)):
         return False
     if isinstance(left, dict):
         return (left.keys() == right.keys()
@@ -62,11 +66,11 @@ def _epoch_query_equal(current, proof):
     current record's exact types permits C-level dictionary equality for this
     large, common schema while preserving the recursive comparator elsewhere.
     """
-    if type(current) is not dict or current.keys()!=proof.keys():return False
+    if type(current) not in (dict,FrozenDict) or current.keys()!=proof.keys():return False
     epochs=current['epochs'];expected=proof['epochs']
-    if type(epochs) is not list or len(epochs)!=len(expected):return False
+    if type(epochs) not in (list,FrozenList) or len(epochs)!=len(expected):return False
     for row,saved in zip(epochs,expected):
-        if (type(row) is not dict or len(row)!=2 or type(row.get('uuid')) is not str
+        if (type(row) not in (dict,FrozenDict) or len(row)!=2 or type(row.get('uuid')) is not str
                 or type(row.get('metadata_hash')) is not str or row!=saved):return False
     return all(_exact_equal(value,proof[key]) for key,value in current.items() if key!='epochs')
 
@@ -114,7 +118,9 @@ class _NativeProtocolRead:
         if any(key not in self.proof['allowed'] for key in ids):
             raise ValueError('Curation includes epochs outside this protocol query')
         saved=self.reader.store._rows(self.protocol,ids,selected_only=True)
-        fingerprints=self.proof['metadata']['fingerprints']
+        # Members are proven by the admitted proof; the closing native_context
+        # fence rejects the response if the publication changed meanwhile.
+        fingerprints=self.reader.service._fingerprints
         return {key:self.reader.store._state(saved.get(key),fingerprints[key]) for key in ids}
 
     def accepts_shared(self, token):
@@ -129,6 +135,7 @@ class ProtocolStateReader:
         self.cache={}
         self.rejected={}
         self.native_cache={}
+        self.native_rejected={}
 
     @staticmethod
     def _native_method(owner, name, expected):
@@ -161,8 +168,14 @@ class ProtocolStateReader:
             and all(self._native_method(owner,name,method) for name,method in _HISTORY_METHODS.items()))
 
     @staticmethod
-    def _generation_key(service,index,header):
-        return ((id(index),index.generation,id(service.rows),id(service.protocols),id(service._fingerprints)),
+    def _publication_generation(service,index):
+        # Every assignment of a published map advances this monotonic serial;
+        # object identities alone are never a freshness key (address reuse).
+        return (getattr(service,'_publication_serial',None),index.generation)
+
+    @classmethod
+    def _generation_key(cls,service,index,header):
+        return (cls._publication_generation(service,index),
                 header['version'] if header else None,header.get('revision_uuid') if header else None)
 
     def _rejection_key(self, protocol):
@@ -208,13 +221,13 @@ class ProtocolStateReader:
         # Native revisions describe this effective cohort, including a frozen
         # binding, not its original query or unrelated project cells/epochs.
         # The legacy oracle deliberately retains its historical global inputs.
-        query=service.query_result(protocol) if scoped else entry['result']
+        query=service.query_view(protocol) if scoped else entry['result']
         members=[member['uuid'] for member in query['epochs']] if scoped else None
         fingerprints=({key:service._fingerprints[key] for key in members}
                       if scoped else service._fingerprints)
         cells=({key:service.cells[key] for key in sorted({service.rows[key]['cell_uuid'] for key in members})}
                if scoped else service.cells)
-        return {'generation':(id(index),index.generation,id(service.rows),id(service.protocols),id(service._fingerprints)),
+        return {'generation':self._publication_generation(service,index),
             'project_uuid':service.project['project_uuid'],
             'definition':entry['definition'],'query':query,
             'fingerprints':fingerprints,'binding':header,
@@ -223,48 +236,49 @@ class ProtocolStateReader:
             'source_scope_revision':service.source_scope()['revision'],
             'shared_revision':self.shared.snapshot()['revision'] if self.shared and include_shared else None}
 
-    def _input_witness(self, protocol):
-        """Exact live inputs of the scoped metadata proof, without rebuilding it.
+    def _publication_key(self, protocol):
+        """O(1) proof key for a frozen publication, or None (compare contents).
 
-        Covers every input of _metadata(scoped=True): the published objects'
-        identities, the protocol entry, binding header, the canonical reader's
-        cached frozen recipe, and the members' fingerprints, cells and rows.
-        marshal version 2 is type-exact (bool/int/float, signed zero, list/tuple,
-        exact dict/str types only) and reference-independent; subclasses and
-        non-marshallable values return None so the full comparison applies.
+        Valid only when every published proof map is deep-frozen: in-place
+        mutation is then impossible and any replacement advances the monotonic
+        publication serial. The binding header (revision/version) names the
+        immutable, checksum-verified recipe; source scope is read live.
         Callers have verified the native contract and index for this read.
         """
         service=self.service
-        index=service.disk_index
+        serial=publication_serial(service)
+        if serial is None:return None
         provider=getattr(service,'binding_header_provider',None)
-        if provider is None:return None
-        header=provider(protocol)
-        entry=service.protocols[protocol]
-        recipe=None
-        try:
-            if header is None:
-                members=[member['uuid'] for member in entry['result']['epochs']]
-            else:
-                recipe=service.binding_provider.__self__._recipe_cache.get(header['revision_uuid'])
-                if recipe is None:return None
-                members=[member['uuid'] for member in recipe['epochs']]
-            rows={key:service.rows[key] for key in members}
-            cells={key:service.cells[key] for key in sorted({row['cell_uuid'] for row in rows.values()})}
-            fingerprints={key:service._fingerprints[key] for key in members}
-            content=marshal.dumps((entry['definition'],entry['result'],recipe,fingerprints,cells,rows),2)
-        except (KeyError,TypeError,ValueError,AttributeError):
-            return None
-        return {'generation':(id(index),index.generation,id(service.rows),id(service.protocols),
-                    id(service._fingerprints),id(service.cells),id(entry)),
-            'project_uuid':service.project['project_uuid'],'header':header,
-            'source_scope_revision':service.source_scope()['revision'],'content':content}
+        if provider is None and getattr(service,'binding_provider',None) is not None:return None
+        header=provider(protocol) if provider else None
+        if header is not None and type(header) is not dict:return None
+        return {'serial':serial,'index':service.disk_index.generation,
+            'project_uuid':service.project['project_uuid'],'header':copy.deepcopy(header),
+            'source_scope_revision':service.source_scope()['revision']}
 
     @staticmethod
-    def _same_witness(current, saved):
-        return (current is not None and saved is not None and current['content']==saved['content']
-            and current['generation']==saved['generation'] and current['project_uuid']==saved['project_uuid']
+    def _same_key(current, saved):
+        return (current is not None and saved is not None and current['serial']==saved['serial']
+            and current['index']==saved['index'] and current['project_uuid']==saved['project_uuid']
             and current['source_scope_revision']==saved['source_scope_revision']
             and _exact_equal(current['header'],saved['header']))
+
+    @staticmethod
+    def _proof_digest(metadata):
+        """Exact digest of the scoped proof inputs; reads, never mutates them."""
+        query=metadata['query'];fingerprints=metadata['fingerprints']
+        result={**query,'epochs':[{**row,'metadata_hash':fingerprints[row['uuid']]} for row in query['epochs']],
+            'metadata_fingerprint_version':2,'source_scope':{'revision':metadata['source_scope_revision']}}
+        digest=checksum({'query':result,'definition':metadata['definition'],'cell_metadata':metadata['cells'],
+                         'epoch_metadata':metadata['rows']})
+        return digest,result
+
+    def _debug_verify(self, protocol, cached):
+        """Opt-in (DISCO_PROTOCOL_STATE_VERIFY=1) content assertion for key hits."""
+        if os.environ.get('DISCO_PROTOCOL_STATE_VERIFY')!='1':return
+        metadata=self._metadata(protocol,include_shared=False,scoped=True)
+        if metadata is None or self._proof_digest(metadata)[0]!=cached['digest']:
+            raise AssertionError('Publication-keyed protocol proof differs from current content')
 
     @staticmethod
     def _metadata_equal(left,right,*,plain_epochs=False):
@@ -375,8 +389,10 @@ class ProtocolStateReader:
         """Selected mutation/read inputs and an explicit v3 opaque revision.
 
         Native scope generations replace whole-dataset curation serialization.
-        Exact metadata comparison remains mandatory; dense saved tags never enter
-        this bounded cache. None means the unchanged legacy contract applies.
+        A frozen publication is proven in O(1) by its monotonic serial, binding
+        header, source scope and index generation; the cache keeps only a digest
+        and member set, never rows. Unfrozen read models compare exact contents.
+        Dense saved tags never enter this cache. None means the legacy contract.
         """
         protocol=str(uuid.UUID(protocol_uuid))
         ids=tuple(str(uuid.UUID(key)) for key in epoch_ids)
@@ -388,32 +404,91 @@ class ProtocolStateReader:
             return None
         token=tracker.token(protocol)
         if token is None:return None
+        self.service._ready()
+        index=getattr(self.service,'disk_index',None)
+        if not isinstance(index,DiskMetadataIndex):return None
+        index._check()
+        key=self._publication_key(protocol)
         cached=self.native_cache.get(protocol)
-        if cached is not None and cached.get('witness') is not None:
-            # Exact fast path: unchanged live inputs imply the admitted proof.
-            self.service._ready()
-            index=getattr(self.service,'disk_index',None)
-            if isinstance(index,DiskMetadataIndex):
-                index._check()
-                if self._same_witness(self._input_witness(protocol),cached['witness']):
-                    if any(key not in cached['allowed'] for key in ids):
-                        raise ValueError('Curation includes epochs outside this protocol query')
-                    return self._native_revision(token,cached,{key:self.service._fingerprints[key] for key in ids})
+        if key is not None:
+            if cached is not None and self._same_key(key,cached.get('key')):
+                # O(1) hit: frozen maps + unchanged serial/header/scope/index
+                # prove the admitted digest. Only the requested IDs are read.
+                self._debug_verify(protocol,cached)
+                if any(k not in cached['allowed'] for k in ids):
+                    raise ValueError('Curation includes epochs outside this protocol query')
+                return self._native_revision(token,cached,{k:self.service._fingerprints[k] for k in ids})
+            return self._published_context(protocol,ids,token,key,cached,tracker)
+        return self._content_context(protocol,ids,token,cached,tracker)
+
+    def _published_context(self, protocol, ids, token, key, cached, tracker):
+        """Admit a digest-only proof for a frozen publication (no row snapshot)."""
+        for name,(serial,_) in list(self.native_rejected.items()):
+            if serial!=key['serial']:self.native_rejected.pop(name,None)  # Dropped on publish.
+        memo=self.native_rejected.get(protocol)
+        if memo is not None and memo[1]==(token,key['index'],key['source_scope_revision'],
+                                          checksum(key['header']) if key['header'] is not None else None):
+            return None  # Same futile admission; legacy oracle serves the read.
+        metadata=self._metadata(protocol,include_shared=False,scoped=True)
+        if metadata is None:return None
+        digest,result=self._proof_digest(metadata)
+        members=tuple(row['uuid'] for row in result['epochs'])
+        if not self._same_key(self._publication_key(protocol),key) or tracker.token(protocol)!=token:
+            return None  # A racing publication or write prevents admission.
+        allowed=None
+        for entry in self.native_cache.values():
+            if members==entry['members']:
+                members,allowed=entry['members'],entry['allowed']
+                break
+        entry={'key':key,'members':members,'allowed':allowed if allowed is not None else frozenset(members),
+            'digest':digest,'bound_cells':self._bound_cells(members,metadata),
+            'source_revisions':tuple(result['source_revisions']),
+            'binding_version':result.get('dataset_binding',{}).get('version',0)}
+        entry['size']=sys.getsizeof(entry['members'])+sys.getsizeof(entry['allowed'])+4096
+        if entry['size']>STATE_CACHE_BYTES:
+            self.native_cache.pop(protocol,None)
+            self.native_rejected.pop(protocol,None)
+            self.native_rejected[protocol]=(key['serial'],(token,key['index'],key['source_scope_revision'],
+                checksum(key['header']) if key['header'] is not None else None))
+            while len(self.native_rejected)>STATE_CACHE_SCOPES:
+                self.native_rejected.pop(next(iter(self.native_rejected)))
+            return None
+        self.native_cache.pop(protocol,None)
+        self.native_cache[protocol]=entry
+        self.native_rejected.pop(protocol,None)
+        self._evict_native()
+        if any(k not in entry['allowed'] for k in ids):
+            raise ValueError('Curation includes epochs outside this protocol query')
+        return self._native_revision(token,entry,{k:metadata['fingerprints'][k] for k in ids})
+
+    def _evict_native(self):
+        def retained():
+            seen=set()
+            snapshots={key:entry for key,entry in self.native_cache.items() if 'metadata' in entry}
+            total=(_retained_bytes(snapshots,STATE_CACHE_BYTES)+4096*len(snapshots)) if snapshots else 0
+            for entry in self.native_cache.values():
+                if 'metadata' in entry:continue
+                for value in (entry['members'],entry['allowed']):
+                    if id(value) not in seen:
+                        seen.add(id(value));total+=sys.getsizeof(value)
+                total+=4096
+            return total
+        # Shared member sets count once; snapshots (unfrozen path) count fully.
+        while len(self.native_cache)>STATE_CACHE_SCOPES or retained()>STATE_CACHE_BYTES:
+            self.native_cache.pop(next(iter(self.native_cache)))
+
+    def _content_context(self, protocol, ids, token, cached, tracker):
+        """Unfrozen read model: compare exact current contents with a snapshot."""
+        if cached is not None and 'metadata' not in cached:cached=None
         metadata=self._metadata(protocol,include_shared=False,scoped=True)
         if metadata is None:return None
         if cached is None or not self._metadata_equal(metadata,cached['metadata'],plain_epochs=cached['plain_epochs']) or self._bound_cells(cached['members'],metadata)!=cached['bound_cells']:
             self.native_cache.pop(protocol,None)
             if _retained_bytes(metadata,STATE_CACHE_BYTES)>STATE_CACHE_BYTES:return None
-            witness=self._input_witness(protocol)
             snapshot=self._native_snapshot(metadata)
             plain_epochs=_plain_epoch_records(snapshot['query'].get('epochs'))
-            result=copy.deepcopy(metadata['query'])
-            for row in result['epochs']:row['metadata_hash']=metadata['fingerprints'][row['uuid']]
-            result['metadata_fingerprint_version']=2
-            result['source_scope']={'revision':metadata['source_scope_revision']}
+            digest,result=self._proof_digest(metadata)
             members=tuple(row['uuid'] for row in result['epochs'])
-            digest=checksum({'query':result,'definition':metadata['definition'],'cell_metadata':metadata['cells'],
-                             'epoch_metadata':metadata['rows']})
             after=self._metadata(protocol,include_shared=False,scoped=True)
             if after is None or not self._metadata_equal(after,snapshot,plain_epochs=plain_epochs) or tracker.token(protocol)!=token:return None
             allowed=None
@@ -421,21 +496,15 @@ class ProtocolStateReader:
                 if members==entry['members']:
                     members,allowed=entry['members'],entry['allowed']
                     break
-            # Retain the input witness only if it also held across this proof.
-            if not self._same_witness(self._input_witness(protocol),witness):witness=None
             cached={'metadata':snapshot,'members':members,'allowed':allowed if allowed is not None else frozenset(members),'digest':digest,
-                'plain_epochs':plain_epochs,'witness':witness,
+                'plain_epochs':plain_epochs,'key':None,
                 'bound_cells':self._bound_cells(members,after),
                 'source_revisions':tuple(result['source_revisions']),
                 'binding_version':result.get('dataset_binding',{}).get('version',0)}
             cached['size']=_retained_bytes(cached,STATE_CACHE_BYTES)+4096
             if cached['size']>STATE_CACHE_BYTES:return None
             self.native_cache[protocol]=cached
-            # Shared immutable snapshots count once in the retained graph.
-            # Summing per-protocol estimates would evict identical large proofs.
-            while (len(self.native_cache)>STATE_CACHE_SCOPES
-                    or _retained_bytes(self.native_cache,STATE_CACHE_BYTES)+4096*len(self.native_cache)>STATE_CACHE_BYTES):
-                self.native_cache.pop(next(iter(self.native_cache)))
+            self._evict_native()
         if any(key not in cached['allowed'] for key in ids):
             raise ValueError('Curation includes epochs outside this protocol query')
         return self._native_revision(token,cached,{key:metadata['fingerprints'][key] for key in ids})
@@ -457,9 +526,15 @@ class ProtocolStateReader:
         self.store.state_generation.assert_current_locked(context['generation'])
         protocol=str(uuid.UUID(protocol_uuid))
         cached=self.native_cache.get(protocol)
+        if cached is None or cached['digest']!=context['metadata_digest']:
+            raise RevisionConflict({'query_revision':'metadata changed during mutation'})
+        if cached.get('key') is not None:
+            # Frozen publication: the serial/header/scope key is a complete proof.
+            if not self._same_key(self._publication_key(protocol),cached['key']):
+                raise RevisionConflict({'query_revision':'metadata changed during mutation'})
+            return context['query_revision']
         current=self._metadata(protocol,include_shared=False,scoped=True)
-        if (cached is None or current is None or cached['digest']!=context['metadata_digest']
-                or not self._metadata_equal(current,cached['metadata'],plain_epochs=cached['plain_epochs'])
+        if (current is None or not self._metadata_equal(current,cached['metadata'],plain_epochs=cached['plain_epochs'])
                 or self._bound_cells(cached['members'],current)!=cached['bound_cells']):
             raise RevisionConflict({'query_revision':'metadata changed during mutation'})
         return context['query_revision']

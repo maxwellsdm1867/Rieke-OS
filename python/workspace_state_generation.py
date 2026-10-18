@@ -97,6 +97,9 @@ class StateGenerationAuthority:
         self._read_generation=contextvars.ContextVar('rieke_native_read_generation',default=None)
         self._response_contract=contextvars.ContextVar('rieke_native_response_contract',default=None)
         self._verified_read_token=None
+        # Last full attestation: ((connection epoch, DDL counters, InnoDB table
+        # ids), authority). Only the real _attest_contract records it.
+        self._attestation=None
 
     def _rows(self, sql, args=()):
         return list(self.connection.query(sql,args,as_dict=True,reconnect=False).fetchall())
@@ -185,35 +188,69 @@ class StateGenerationAuthority:
                 raise ValueError('authority primary key is incompatible')
         self._schema_counter=ddl
 
+    def _table_ids(self):
+        optional_lookup=('app_shared_tag_lookup','app_shared_tag_lookup_checkpoint',
+                         'app_shared_tag_dictionary','app_shared_tag_authors')
+        names=','.join('%s' for _ in (*WATCHED,*optional_lookup))
+        rows=self._rows(f'SELECT NAME,TABLE_ID FROM information_schema.INNODB_TABLES WHERE NAME IN ({names})',
+                        tuple(SCHEMA+'/'+table for table in (*WATCHED,*optional_lookup)))
+        return {row['NAME']:int(row['TABLE_ID']) for row in rows}
+
+    def _read_attestation(self):
+        """Read-path attestation reusing the last full one while nothing changed.
+
+        Valid only outside a transaction on the same connection incarnation:
+        unchanged (connection epoch, global DDL command counters, InnoDB table
+        ids) means no DDL began since the full attestation, whose own active-DDL
+        guard and before/after counter fence proved none was in progress.
+        Mutations never use this path (assert_current_locked runs in a
+        transaction and always performs the full attestation).
+        """
+        cached=self._attestation
+        if (cached is not None and not self._in_transaction()
+                and getattr(self.connection,'_conn',None) is self._connection_ref):
+            try:
+                key=(self._connection_epoch,self._ddl(),tuple(sorted(self._table_ids().items())))
+            except Exception:
+                key=None
+            if key is not None and key==cached[0]:
+                return cached[1]
+        self._attestation=None
+        return self._attest_contract()
+
     def _contract(self):
         lease=self._response_contract.get()
         driver=getattr(self.connection,'_conn',None)
-        if (lease is not None and lease['active'] and not self._in_transaction()
+        if self._in_transaction():
+            return self._attest_contract()
+        if (lease is not None and lease['active'] and not lease['failed']
                 and lease['thread']==threading.get_ident() and driver is lease['driver']
                 and getattr(driver,'_sock',None) is lease['socket']):
+            if lease['authority'] is None:
+                # Lazy opening: routes that never read a native token never attest.
+                try:
+                    lease['authority']=self._read_attestation()
+                except Exception:
+                    lease['failed']=True
+                    raise
             return lease['authority']
-        return self._attest_contract()
+        return self._read_attestation()
 
     @contextlib.contextmanager
     def response_contract(self):
-        """Attest schema once before and after a complete read response.
+        """Attest schema at most once before and once after a complete read response.
 
-        Scope generations still read live before/after the response. Contract
-        reuse is confined to this thread, socket and autocommit read interval;
-        the owner must discard derived work if the closing attestation fails.
+        The opening attestation happens lazily at the first native token read;
+        a response that never reads one never attests. Scope generations still
+        read live. Contract reuse is confined to this thread, socket and
+        autocommit read interval; the owner must discard derived work if the
+        closing attestation fails.
         """
         if not self.ready or self._in_transaction() or self._response_contract.get() is not None:
             yield
             return
-        try:
-            authority=self._attest_contract()
-        except Exception:
-            # Preserve the ordinary fresh-token/fallback behavior when a native
-            # contract cannot be established at the opening boundary.
-            yield
-            return
         driver=getattr(self.connection,'_conn',None)
-        lease={'active':True,'authority':authority,'driver':driver,
+        lease={'active':True,'authority':None,'failed':False,'driver':driver,
             'socket':getattr(driver,'_sock',None),'thread':threading.get_ident()}
         reset=self._response_contract.set(lease)
         try:
@@ -221,13 +258,16 @@ class StateGenerationAuthority:
         finally:
             lease['active']=False
             self._response_contract.reset(reset)
+        if lease['authority'] is None:
+            return
         try:
-            if self._attest_contract()!=authority:
+            if self._read_attestation()!=lease['authority']:
                 raise ValueError('Native database contract changed while reading the response')
         except Exception:
             self._connection_epoch=str(uuid.uuid4())
             self._schema_counter=None
             self._verified_read_token=None
+            self._attestation=None
             raise
 
     def _attest_contract(self):
@@ -244,12 +284,7 @@ class StateGenerationAuthority:
         # This contract is validated against the bundled MySQL 8.4 family.
         if not str(server['version']).startswith('8.4.'):
             raise ValueError('native generation authority requires verified MySQL 8.4')
-        optional_lookup=('app_shared_tag_lookup','app_shared_tag_lookup_checkpoint',
-                         'app_shared_tag_dictionary','app_shared_tag_authors')
-        names=','.join('%s' for _ in (*WATCHED,*optional_lookup))
-        rows=self._rows(f'SELECT NAME,TABLE_ID FROM information_schema.INNODB_TABLES WHERE NAME IN ({names})',
-                        tuple(SCHEMA+'/'+table for table in (*WATCHED,*optional_lookup)))
-        incarnations={row['NAME']:int(row['TABLE_ID']) for row in rows}
+        incarnations=self._table_ids()
         if not {SCHEMA+'/'+table for table in WATCHED} <= set(incarnations):
             raise ValueError('watched InnoDB table incarnation is unavailable')
         triggers=self._triggers()
@@ -263,11 +298,14 @@ class StateGenerationAuthority:
         self._active_ddl_guard()
         after=self._ddl()
         if before!=after:raise ValueError('DDL changed while verifying native authority')
+        if self._table_ids()!=incarnations:raise ValueError('InnoDB table incarnations changed while verifying')
         payload={'server':server,'connection_epoch':self._connection_epoch,'tables':incarnations,
                  'ddl':after,'triggers':known,
                  'lookup_triggers':{row['TRIGGER_NAME']:row for row in triggers
                     if row['TRIGGER_NAME'].startswith('rieke_tag_lookup_v1_')}}
-        return hashlib.sha256(json.dumps(payload,sort_keys=True,default=str).encode()).hexdigest()
+        authority=hashlib.sha256(json.dumps(payload,sort_keys=True,default=str).encode()).hexdigest()
+        self._attestation=((self._connection_epoch,after,tuple(sorted(incarnations.items()))),authority)
+        return authority
 
     def bootstrap(self):
         if self._in_transaction():
@@ -299,7 +337,7 @@ class StateGenerationAuthority:
                 else:
                     self.connection.query(f"CREATE TRIGGER `{SCHEMA}`.`{name}` AFTER {expected['event']} ON "
                                           f"`{SCHEMA}`.`{expected['table']}` FOR EACH ROW {expected['body']}",reconnect=False)
-            self._contract()
+            self._attest_contract()
             self.ready=True;self.reason=None
         except Exception as error:
             self.ready=False;self.reason=str(error)
@@ -377,6 +415,7 @@ class StateGenerationAuthority:
             # coincident counters. Never reuse the previous private authority.
             self._connection_epoch=str(uuid.uuid4())
             self._schema_counter=None
+            self._attestation=None
             self.reason=str(error);return None
 
     def assert_current_locked(self, expected):

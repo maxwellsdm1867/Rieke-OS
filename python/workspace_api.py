@@ -37,6 +37,56 @@ from workspace_audit import build_audit_payload, normalize_event, normalize_even
 from workspace_export_artifacts import materialize_export_format
 
 
+class _ReadLeaseLock:
+    """The workspace RLock; GET/HEAD responses also hold the native read lease.
+
+    The outermost ``with db_lock`` of a GET/HEAD request opens the schema
+    response contract (lazily attested at its first native token read and
+    re-attested at close). A closing failure raises and discards the response.
+    Other methods, nested entries and plain acquire/release are unchanged.
+    """
+    def __init__(self, lock, contract):
+        self._lock, self._contract, self._local = lock, contract, threading.local()
+
+    def acquire(self, *args, **kwargs):
+        return self._lock.acquire(*args, **kwargs)
+
+    def release(self):
+        self._lock.release()
+
+    def _is_owned(self):
+        return self._lock._is_owned()
+
+    def __enter__(self):
+        self._lock.acquire()
+        depth = getattr(self._local, 'depth', 0)
+        self._local.depth = depth + 1
+        if depth == 0:
+            from flask import has_request_context
+            if has_request_context() and request.method in ('GET', 'HEAD'):
+                try:
+                    manager = self._contract()
+                    manager.__enter__()
+                except BaseException:
+                    self._local.depth = depth
+                    self._lock.release()
+                    raise
+                self._local.manager = manager
+        return self
+
+    def __exit__(self, *exc):
+        manager = None
+        if self._local.depth == 1:
+            manager, self._local.manager = getattr(self._local, 'manager', None), None
+        try:
+            if manager is not None:
+                manager.__exit__(*exc)
+        finally:
+            self._local.depth -= 1
+            self._lock.release()
+        return False
+
+
 class StaleWorkspace(ValueError):
     pass
 
@@ -137,7 +187,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 session_lock.close()
                 raise ValueError('Another app or state recovery owns this project; close it before opening') from None
         app.extensions['app_state_session_lock'] = session_lock
-    db_lock = threading.RLock()
+    db_lock = _ReadLeaseLock(threading.RLock(), lambda: read_contract())
     importing = threading.Lock()
     from workspace_import_progress import ProgressReporter, read_jobs, recover_jobs, progress_for, load_json
     owner_run_id = str(uuid.uuid4())
@@ -345,6 +395,17 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             fields[f'curation/{protocol}/tags']=(token.protocol_uuid,token.protocol_epoch,token.protocol_generation)
         return common,fields
     service._annotation_catalog_generation=annotation_catalog_generation
+
+    def refresh_service():
+        """Route-level refresh. A failure leaves the service not ready (manager
+        recovery exposes registrations only); the previous publication is never
+        served as current. The original error propagates to the caller."""
+        try:
+            return service.refresh()
+        except (OSError, ValueError) as error:
+            with contextlib.suppress(Exception):
+                service.manager_recovery(error)
+            raise
 
     def read_contract():
         """Attest the native schema once at each end of a complete read response.
@@ -687,6 +748,12 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             return jsonify(error=str(error), code="stale_workspace"), 409
         if isinstance(error, TraceWorkerUnavailable):
             return jsonify(error=str(error), code='trace_worker_unavailable', retryable=True), 503
+        from workspace_service import WorkspaceNotReady, LockBusy
+        if isinstance(error, WorkspaceNotReady):
+            # Never served from the previous publication: reads stay refused.
+            return jsonify(error=str(error), code=error.code, retryable=True), 503
+        if isinstance(error, LockBusy):
+            return jsonify(error=str(error), code=error.code, retryable=True), 409
         if isinstance(error, (ValueError, KeyError, FileNotFoundError)):
             return jsonify(error=str(error)), 400
         incident = str(uuid.uuid4())
@@ -734,7 +801,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         started = time.perf_counter()
         try:
             with db_lock, data_stores.registration_locks():
-                result = service.refresh()
+                result = refresh_service()
                 result = {**result, 'completed_at': now(),
                           'elapsed_seconds': round(time.perf_counter() - started, 3)}
                 service.last_refresh = result
@@ -929,7 +996,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 not isinstance(body['protocol_uuid'], str) or not isinstance(body['expected_preview_revision'], str)):
             raise ValueError('Propagation requires a protocol UUID and the exact preview revision')
         with db_lock, data_stores.registration_locks():
-            service.refresh()
+            refresh_service()
             plan = propagation_plan(source_sha256)
             item = next((item for item in plan['protocols'] if item['protocol_uuid'] == body['protocol_uuid']), None)
             if item is None or item['expected_preview_revision'] != body['expected_preview_revision']:
@@ -1288,7 +1355,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if type(body.get('summary_only', False)) is not bool:
             raise ValueError('summary_only must be a boolean')
         with db_lock, data_stores.registration_locks(), annotation_locks(service, body['predicate']):
-            service.refresh()
+            refresh_service()
             preview = service.explore_preview(body['predicate'], body['splits'], include_tree=not body.get('summary_only', False), include_catalog_summary=body.get('catalog_summary', True))
             result = explorer_history.create(preview, service.sources, project_dir / 'catalog.json',
                 os.environ.get('USER', 'local-user'), name=body.get('name'),
@@ -1467,7 +1534,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         with db_lock:
             recipe = explorer_history.get(revision_uuid)['recipe']
             with data_stores.registration_locks(), annotation_locks(service, recipe['predicate']):
-                service.refresh()
+                refresh_service()
                 record, candidate = validated_candidate(revision_uuid)
                 if body['expected_recipe_sha256'] != record['recipe']['content_sha256']:
                     raise StaleWorkspace('The saved selection changed. Review it again before creating a protocol.')
@@ -1490,7 +1557,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if not isinstance(body['protocol_uuid'], str) or type(body['expected_binding_version']) is not int:
             raise ValueError('Protocol UUID and integer expected binding version are required')
         with db_lock, data_stores.registration_locks(), candidate_annotation_guard(revision_uuid, body['protocol_uuid']):
-            service.refresh()
+            refresh_service()
             comparison = compare_protocol_candidate(revision_uuid, body['protocol_uuid'])
             if (body['expected_binding_version'] != comparison['expected_binding_version'] or
                     body['expected_query_revision'] != comparison['expected_query_revision']):
@@ -1642,7 +1709,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise ValueError("Choose a nonempty, unique list of epochs (at most 10,000).")
         with db_lock:
             if body.get("changes", {}).get("review_state") == "approved":
-                service.refresh()
+                refresh_service()
             context=selected_state.native_context(protocol_uuid,ids)
             if context is None:
                 result, _, revision = state(protocol_uuid)
@@ -1676,7 +1743,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if request.args:
             raise ValueError("Masks cover the entire protocol query; filtered mask exports are unsupported")
         with db_lock:
-            service.refresh()
+            refresh_service()
             result, curation, _ = state(protocol_uuid)
             response = jsonify(format="recording-selection-mask", version=1,
                            protocol_uuid=protocol_uuid,
@@ -1717,7 +1784,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 raise ValueError("Mask has a noncanonical or duplicate epoch UUID")
             inclusion[identity] = member["included"]
         with db_lock:
-            service.refresh()
+            refresh_service()
             result, current, revision = state(protocol_uuid)
             if body["query_revision"] != revision:
                 raise StaleWorkspace("The query, source metadata, or curation changed. Refresh before importing the mask.")
@@ -1739,7 +1806,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     @app.post("/api/protocols/<protocol_uuid>/refresh")
     def refresh(protocol_uuid):
         with db_lock, data_stores.registration_locks():
-            service.refresh()
+            refresh_service()
             binding = explorer_history.protocol_binding(protocol_uuid)
             if binding:
                 recipe = binding['recipe']
@@ -1806,7 +1873,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise ValueError('Unsupported export format')
         managed_directory(project_dir, 'exports')  # Recheck live links before any query/publication work.
         with db_lock, data_stores.registration_locks(), (shared_annotations.lock() if shared_annotations else contextlib.nullcontext()):
-            service.refresh()  # Recheck source identity and live query before publication.
+            refresh_service()  # Recheck source identity and live query before publication.
             result, curation, revision = state(protocol_uuid)
             if body.get("query_revision") != revision:
                 raise StaleWorkspace("The query or curation changed. Refresh before exporting.")

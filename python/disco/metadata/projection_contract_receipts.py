@@ -263,4 +263,29 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
                            'docs/dev/request-decoupling-audit.md',
                            'python/tests/test_workspace_slow_read_memos.py',
                            'python/tests/test_workspace_projection_contract.py',
-                           'python/tests/test_workspace_refresh_cache.py')})}
+                           'python/tests/test_workspace_refresh_cache.py')},
+             {'id': 'protocol-state-freshness-compatibility-2026-10-18',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 'dd1b6a1d93de6b7ab5af4bb0748d5b70e2c06ac9854d945bb69ea2e0952cbeb2',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to clean a7aca9b, workspace_service publishes the same refreshed rows, '
+                           'cells, protocols and fingerprints as deep-frozen FrozenDict/FrozenList copies '
+                           'after every projection, index and SQL check has completed (projection cache '
+                           'writes still receive the plain projections), counts every read-model assignment '
+                           'with a monotonic publication serial, adds the read-only query_view memo over '
+                           'query_result, and raises typed WorkspaceNotReady/LockBusy (RuntimeError '
+                           'subclasses). Projection keys, codecs, decoded values, membership, source '
+                           'validation, index generation and cache authority are unchanged; all other '
+                           'ordered owners and the resolver are byte-identical.',
+              'evidence': ('git:a7aca9b',
+                           'python/tests/test_workspace_slow_read_memos.py',
+                           'python/tests/test_workspace_refresh_cache.py',
+                           'python/tests/test_workspace_projection_contract.py')})}

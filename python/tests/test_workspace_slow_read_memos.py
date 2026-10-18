@@ -188,14 +188,95 @@ class ProtocolContextFastPathTests(MemoFixture):
     def context(self):
         return self.reader.native_context(self.protocol)
 
+    def publish(self):
+        """Publish the fixture maps as production refresh does (deep-frozen)."""
+        from workspace_service import publish_frozen
+        service=self.service
+        service.rows=publish_frozen(service.rows,rows=True)
+        service.cells,service.protocols,service._fingerprints=(publish_frozen(service.cells),
+            publish_frozen(service.protocols),publish_frozen(service._fingerprints))
+        self.assertIsNotNone(service.rows)
+
     def test_unchanged_inputs_skip_the_metadata_rebuild_with_identical_revision(self):
+        self.publish()
         first=self.context()
-        self.assertIsNotNone(self.reader.native_cache[self.protocol]['witness'])
+        entry=self.reader.native_cache[self.protocol]
+        self.assertIsNotNone(entry['key'])
+        self.assertNotIn('metadata',entry)  # Digest + member set only, never rows.
         with patch.object(self.reader,'_metadata',side_effect=AssertionError('fast path rebuilt metadata')):
             second=self.context()
             detail=self.get(f'/api/epochs/{self.ids[0]}?protocol_uuid={self.protocol}')
         self.assertEqual(first,second)
         self.assertEqual(detail['curation']['revision'],0)
+
+    def test_published_maps_refuse_in_place_mutation_and_republish_advances_serial(self):
+        from workspace_service import publication_serial
+        self.publish()
+        before=self.context()
+        serial=publication_serial(self.service)
+        row=self.service.rows[self.ids[0]]
+        mutations=[lambda:row.__setitem__('duration_seconds',2),lambda:row.update(group_label='x'),
+            lambda:self.service.rows.pop(self.ids[0]),lambda:self.service._fingerprints.__setitem__(self.ids[0],'e'*64),
+            lambda:self.service.cells[row['cell_uuid']].__setitem__('label','x'),
+            lambda:self.service.protocols[self.protocol]['result']['epochs'].reverse(),
+            lambda:self.service.protocols[self.protocol]['result']['epochs'][0].__setitem__('uuid','x'),
+            lambda:self.service.protocols[self.protocol]['definition'].setdefault('x',1),
+            lambda:self.service.protocols.__ior__({})]
+        for mutate in mutations:
+            with self.assertRaises(TypeError):mutate()
+        self.assertEqual(self.context(),before)
+        self.assertEqual(publication_serial(self.service),serial)
+        # Replacing a map (the only way to change content) advances the serial.
+        changed={**self.service.rows,self.ids[0]:{**row,'duration_seconds':2.0}}
+        from workspace_service import publish_frozen
+        self.service.rows=publish_frozen(changed,rows=True)
+        self.assertGreater(publication_serial(self.service),serial)
+        with patch.object(self.reader,'_metadata',wraps=self.reader._metadata) as metadata:
+            after=self.context()
+        self.assertTrue(metadata.called)
+        self.assertNotEqual(after['query_revision'],before['query_revision'])
+        # Unfrozen replacement disables the key path entirely (exact contents).
+        self.service.rows=dict(self.service.rows)
+        self.assertIsNone(publication_serial(self.service))
+        self.assertEqual(self.context()['query_revision'],after['query_revision'])
+        self.assertIsNone(self.reader.native_cache[self.protocol]['key'])
+
+    def test_query_view_is_one_shared_read_only_value_per_binding(self):
+        self.publish()
+        service=self.service
+        with patch.object(WorkspaceService,'query_result',autospec=True,side_effect=WorkspaceService.query_result) as copies:
+            first=service.query_view(self.protocol);second=service.query_view(self.protocol)
+        self.assertIs(first,second);self.assertEqual(copies.call_count,0)
+        self.assertEqual(first,service.query_result(self.protocol))
+        with self.assertRaises(TypeError):first['epochs'].append({})
+        history=self.case.explorer_history
+        preview=service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        created=history.create(preview,service.sources,'catalog.json','fixture')
+        history.bind(created['revision_uuid'],self.protocol,0,'fixture',{},2)
+        bound=service.query_view(self.protocol)
+        self.assertEqual(bound['dataset_binding']['version'],1)
+        self.assertEqual(bound,service.query_result(self.protocol))
+        self.assertIs(service.query_view(self.protocol),bound)
+        service.cells=service.cells  # Republish: a new serial never reuses the view.
+        self.assertIsNot(service.query_view(self.protocol),bound)
+        self.assertEqual(service.query_view(self.protocol),bound)
+
+    def test_frozen_copies_are_plain_mutable_values(self):
+        import copy as copying, json as encoding, pickle
+        self.publish()
+        row=self.service.rows[self.ids[0]]
+        for value in (copying.deepcopy(row),copying.copy(row),dict(row),{**row},pickle.loads(pickle.dumps(row))):
+            self.assertIs(type(value),dict);value['changed']=1
+        self.assertEqual(encoding.loads(encoding.dumps(self.service.protocols[self.protocol]['result'])),
+                         copying.deepcopy(self.service.protocols[self.protocol]['result']))
+
+    def test_debug_verification_detects_content_differing_from_the_key(self):
+        self.publish()
+        self.context()
+        entry=self.reader.native_cache[self.protocol]
+        entry['digest']='tampered'
+        with patch.dict('os.environ',{'DISCO_PROTOCOL_STATE_VERIFY':'1'}):
+            with self.assertRaisesRegex(AssertionError,'differs'):self.context()
 
     def test_in_place_value_and_numeric_type_changes_take_the_exact_path(self):
         baseline=self.context()['query_revision']
@@ -218,18 +299,29 @@ class ProtocolContextFastPathTests(MemoFixture):
         self.service.cells[self.service.rows[self.ids[0]]['cell_uuid']]['label']='changed in place'
         self.assertNotIn(self.context()['query_revision'],revisions)
 
-    def test_unmarshallable_inputs_disable_the_witness_but_keep_exact_reuse(self):
-        class Mapping(dict):pass
-        class Text(str):pass
-        for value in (Mapping(a=1),Text('x')):
-            self.service.rows[self.ids[0]]['custom']=value
-            first=self.context()
-            self.assertIsNone(self.reader.native_cache[self.protocol]['witness'])
-            self.assertEqual(self.context(),first)
-        self.service.rows[self.ids[0]]['custom']='plain'
-        changed=self.context()
-        self.assertNotEqual(changed['query_revision'],first['query_revision'])
-        self.assertIsNotNone(self.reader.native_cache[self.protocol]['witness'])
+    def test_racing_publication_prevents_admission_of_a_key_proof(self):
+        self.publish()
+        original=self.reader._metadata
+        def republish(*args,**kwargs):
+            result=original(*args,**kwargs)
+            self.service._fingerprints=self.service._fingerprints  # Any assignment republishes.
+            return result
+        with patch.object(self.reader,'_metadata',republish):
+            self.assertIsNone(self.context())
+        self.assertNotIn(self.protocol,self.reader.native_cache)
+        self.assertIsNotNone(self.context())
+
+    def test_oversized_proof_uses_negative_memo_until_next_publication(self):
+        self.publish()
+        with patch('workspace_protocol_state.STATE_CACHE_BYTES',10):
+            self.assertIsNone(self.context())
+            self.assertIn(self.protocol,self.reader.native_rejected)
+            with patch.object(self.reader,'_metadata',side_effect=AssertionError('futile admission retried')):
+                self.assertIsNone(self.context())
+            self.service.cells=self.service.cells  # Publish drops the memo.
+            with patch.object(self.reader,'_metadata',wraps=self.reader._metadata) as metadata:
+                self.assertIsNone(self.context())
+            self.assertTrue(metadata.called)
 
     def test_witness_is_not_admitted_when_inputs_change_during_the_proof(self):
         original=self.reader._metadata
@@ -276,6 +368,21 @@ class ResponseContractTests(MemoFixture):
             self.get(path)
             self.assertEqual(self.attestations-before,2,path)
 
+    def test_every_get_route_holds_one_lazy_lease(self):
+        paths=[f'/api/protocols/{self.protocol}/overview',f'/api/protocols/{self.protocol}/epochs?limit=5',
+               '/api/tags',f'/api/protocols/{self.protocol}/tree?splits=cell',
+               f'/api/protocols/{self.protocol}/tree-fields','/api/metadata/fields','/api/metadata/status']
+        for path in paths:
+            self.get(path)
+        for path in paths:
+            before=self.attestations
+            self.get(path)
+            self.assertLessEqual(self.attestations-before,2,path)
+        # Routes that never read a native token never attest.
+        before=self.attestations
+        self.get('/api/metadata/fields')
+        self.assertEqual(self.attestations,before)
+
     def test_closing_attestation_change_discards_the_response(self):
         self.get(f'/api/epochs/{self.ids[0]}?protocol_uuid={self.protocol}')
         state={'calls':0}
@@ -286,6 +393,34 @@ class ResponseContractTests(MemoFixture):
         response=self.client.get(f'/api/epochs/{self.ids[0]}?protocol_uuid={self.protocol}')
         self.assertEqual(response.status_code,400)
         self.assertIn('contract changed',response.get_json()['error'])
+
+
+class TypedReadinessErrorTests(MemoFixture):
+    def test_not_ready_is_retryable_503_and_never_served_from_previous_state(self):
+        self.get('/api/overview')
+        self.service._loaded=False
+        for path in ('/api/overview','/api/metadata/fields',f'/api/protocols/{self.protocol}'):
+            response=self.client.get(path)
+            self.assertEqual(response.status_code,503,path)
+            body=response.get_json()
+            self.assertEqual(body['code'],'workspace_not_ready');self.assertTrue(body['retryable'])
+
+    def test_lock_busy_is_retryable_409(self):
+        from workspace_service import LockBusy
+        with patch.object(self.service,'metadata_fields',side_effect=LockBusy('Another operation is running')):
+            response=self.client.get('/api/metadata/fields')
+        self.assertEqual(response.status_code,409)
+        self.assertEqual(response.get_json()['code'],'lock_busy')
+
+    def test_failed_route_refresh_stays_not_ready_and_uses_manager_recovery(self):
+        recovered=[]
+        with patch.object(self.service,'refresh',side_effect=ValueError('Source recording changed')), \
+             patch.object(self.service,'manager_recovery',side_effect=lambda error:recovered.append(str(error))):
+            self.service._loaded=False
+            response=self.client.get(f'/api/protocols/{self.protocol}/masks/export')
+        self.assertEqual(response.status_code,400)
+        self.assertEqual(recovered,['Source recording changed'])
+        self.assertEqual(self.client.get('/api/overview').status_code,503)
 
 
 class OverviewMemoTests(MemoFixture):
