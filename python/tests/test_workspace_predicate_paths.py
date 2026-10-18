@@ -4,6 +4,8 @@ Results must equal the unmemoized reference exactly; work must not grow with
 project epochs on a warm request. The SQL doubles and the production
 StateGenerationAuthority come from the slow-read memo fixture.
 """
+import cProfile
+import pstats
 import threading
 import unittest
 from unittest.mock import patch
@@ -11,7 +13,7 @@ import uuid
 
 from disco.decisions.annotations import SharedAnnotations
 from disco.decisions.curation import CurationStore
-import disco.navigation.tag_predicates as tag_predicates
+from disco.navigation.predicates import matches
 from disco.navigation.tag_predicates import TagPredicates
 from disco.workbench.recipes import checksum
 import test_workspace_explore_queries as explore_fixture
@@ -59,7 +61,7 @@ def reference_match(service, predicate, ids):
             return any(leaf(child, identity) for child in node['any'])
         if 'not' in node:
             return not leaf(node['not'], identity)
-        return tag_predicates.matches(node, {field: states.get(identity, [])})
+        return matches(node, {field: states.get(identity, [])})
     return [identity for identity in ids if leaf(predicate, identity)]
 
 
@@ -78,17 +80,17 @@ class PerValueLeafTests(unittest.TestCase):
             service = StubService(epochs, tagged=40)
             field = f'curation/{service.protocol}/tags'
             ids = list(service.rows)
-            original = tag_predicates.matches
             for predicate in self.predicates(field):
-                calls = []
-
-                def counted(node, current):
-                    calls.append(1)
-                    return original(node, current)
-                with self.subTest(epochs=epochs, predicate=predicate), \
-                        patch.object(tag_predicates, 'matches', counted):
-                    _, matched, evidence = TagPredicates(service).match(predicate, ids)
-                    leaf_calls = len(calls)
+                with self.subTest(epochs=epochs, predicate=predicate):
+                    profile = cProfile.Profile()
+                    profile.enable()
+                    try:
+                        _, matched, evidence = TagPredicates(service).match(predicate, ids)
+                    finally:
+                        profile.disable()
+                    leaf_calls = sum(primitive for (filename, _line, name), (primitive, *_rest)
+                                     in pstats.Stats(profile).stats.items()
+                                     if name == 'matches' and filename.endswith('navigation/predicates.py'))
                 self.assertEqual(matched, reference_match(service, predicate, ids))
                 # Two distinct saved arrays plus the implicit empty array per leaf.
                 self.assertLessEqual(leaf_calls, 3 * 2, (epochs, predicate, leaf_calls))
@@ -251,8 +253,8 @@ class SummaryPollTests(unittest.TestCase):
             release.set()
             thread.join(5)
         # With the lock free, a pending poll still refuses a changed generation.
-        with patch('disco.metadata.explore_queries.generation', return_value={'changed': True}):
-            self.assertEqual(self.jobs.poll(request_id)['status'], 'stale')
+        self.service._explore_publication = 'changed-publication'
+        self.assertEqual(self.jobs.poll(request_id)['status'], 'stale')
 
 
 class WholeCatalogEligibilityTests(unittest.TestCase):
@@ -312,18 +314,18 @@ class WholeCatalogEligibilityTests(unittest.TestCase):
                              list(self.service._eligible()[1]))
 
     def test_whole_catalog_native_page_matches_listed_rows_reference(self):
-        import disco.metadata.explore_queries as queries
+        from workspace_service import WorkspaceService
         predicate = {'not': {'field': f'curation/{self.service.protocol_id}/tags', 'operator': 'contains', 'value': 'x'}}
-        with patch.object(queries, '_native_rows', side_effect=AssertionError('listed every row')):
+        ids = list(self.service._eligible()[1])
+        expected = sorted((self.service.rows[key] for key in self.service.match_predicate(predicate, ids)[1]),
+                          key=lambda row: (row['date'], row['start_time'][11:], row['epoch_uuid']))
+        with patch.object(WorkspaceService, '_tree_rows', autospec=True,
+                          side_effect=AssertionError('listed every row')):
             first = self.service.explore_page(predicate, limit=1)
             second = self.service.explore_page(predicate, limit=1, cursor=first['cursor'])
-        with patch.object(queries, '_whole_catalog', return_value=False):
-            reference = self.service.explore_page(predicate, limit=1)
-            following = self.service.explore_page(predicate, limit=1, cursor=reference['cursor'])
-        self.assertEqual(first['rows'], reference['rows'])
-        self.assertEqual(second['rows'], following['rows'])
+        self.assertEqual(first['rows'] + second['rows'], expected)
+        self.assertEqual(len(expected), 2)
         self.assertIsNone(second['cursor'])
-        self.assertEqual(len(first['rows'] + second['rows']), 2)
 
 if __name__ == '__main__':
     unittest.main()
