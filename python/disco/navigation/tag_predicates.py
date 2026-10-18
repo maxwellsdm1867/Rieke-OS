@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import contextlib
 import hashlib
+import json
 import uuid
 from collections import OrderedDict
 from disco.navigation.predicates import MAX_NODES, validate, matches, predicate_catalog
@@ -80,10 +81,15 @@ def _protocol_locks(service,protocols):
 MEMO_ENTRIES=4
 
 
+def _canonical(value):
+    """The JSON text checksum() hashes for this value."""
+    return json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False)
+
+
 class _Publication:
     """Structures derived from one metadata publication, built on first use."""
     def __init__(self,service):
-        self.service=service;self._universe=None;self._cells=None
+        self.service=service;self._universe=None;self._cells=None;self._links_hash=None
 
     def universe(self):
         if self._universe is None:self._universe=checksum(sorted(self.service._fingerprints))
@@ -98,6 +104,24 @@ class _Publication:
 
     def cell_links(self):
         return sorted((key,row['cell_uuid']) for key,row in self.service.rows.items())
+
+    def shared_revision(self,protocols,shared_revision,fields):
+        """checksum() of the shared evidence identity, byte for byte.
+
+        Without protocol fields the canonical JSON begins with a fixed prefix
+        and the publication's sorted cell links, so that hash state is kept and
+        each shared generation only appends its own suffix.
+        """
+        if protocols:
+            return checksum({'protocols':protocols,'shared_revision':shared_revision,
+                             'shared_fields':fields,'registered_cell_links':self.cell_links()})
+        if self._links_hash is None:
+            state=hashlib.sha256(b'{"protocols":[],"registered_cell_links":')
+            state.update(_canonical(self.cell_links()).encode())
+            self._links_hash=state
+        state=self._links_hash.copy()
+        state.update((',"shared_fields":'+_canonical(fields)+',"shared_revision":'+_canonical(shared_revision)+'}').encode())
+        return state.hexdigest()
 
 
 class _Entry:
@@ -268,9 +292,8 @@ class TagPredicates:
                     for field in shared_fields:
                         if values[field]:states[field][key]=values[field]
             evidence.update(version=2,shared=snapshot,fields=sorted(shared_fields|time_fields))
-            evidence['revision']=checksum({'protocols':[(p['protocol_uuid'],p['revision']) for p in protocols],
-                'shared_revision':snapshot['revision'],'shared_fields':sorted(shared_fields|time_fields),
-                'registered_cell_links':derived.cell_links()})
+            evidence['revision']=derived.shared_revision([(p['protocol_uuid'],p['revision']) for p in protocols],
+                snapshot['revision'],sorted(shared_fields|time_fields))
         entry=_Entry(states,evidence);entry.publication=derived
         return entry
 

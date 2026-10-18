@@ -169,6 +169,20 @@ class GenerationMemoTests(MemoFixture):
         self.assertEqual(after_protocol['matched_count'], 1)
         self.assertEqual(after_protocol, self.reference(protocol_predicate))
 
+    def test_shared_evidence_revision_is_the_previous_checksum(self):
+        self.fixture.edit('epoch', self.ids[0], ['drift'])
+        self.save_curation(tags_add=['protocol-flag'])
+        links = sorted((key, row['cell_uuid']) for key, row in self.service.rows.items())
+        for fields in ({'annotations/epoch/tags'}, {'annotations/effective/tag_times', 'annotations/cell/tags'},
+                       {'annotations/epoch/tags', f'curation/{self.protocol}/tags'}):
+            with self.subTest(fields=fields):
+                evidence = TagPredicates(self.service).snapshot(fields)[1]
+                shared = sorted(field for field in fields if field.startswith('annotations/'))
+                self.assertEqual(evidence['revision'], checksum({
+                    'protocols': [(item['protocol_uuid'], item['revision']) for item in evidence['protocols']],
+                    'shared_revision': evidence['shared']['revision'], 'shared_fields': shared,
+                    'registered_cell_links': links}))
+
     def test_unavailable_or_changing_witness_never_stores_a_memo(self):
         self.service._tag_predicate_memo = None
         with self.unmemoized():
