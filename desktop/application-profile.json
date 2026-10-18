@@ -67,6 +67,7 @@
     "disco/projects/project_validation.py",
     "disco/projects/recording_files.py",
     "disco/projects/recording_registry.py",
+    "disco/projects/runtime_state.py",
     "disco/projects/storage.py",
     "disco/recovery/__init__.py",
     "disco/recovery/mutation_outcomes.py",

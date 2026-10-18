@@ -74,6 +74,37 @@ def _copy_library_recording(project, source, expected_sha256):
             temporary.rmdir()
 
 
+def sweep_incoming_staging(project_dir):
+    """Remove library staging folders left by crashed copies.
+
+    Copies run only while holding the shared recording lock and publish by
+    renaming to the checksum name, so with that lock held any ``.incoming-*``
+    folder is an unpublished, unowned remnant. If another process holds the
+    lock (a copy is running) nothing is touched; a later start retries.
+    Returns the removed names, or None when the sweep was deferred.
+    """
+    import fcntl
+    from disco.projects.recording_registry import LIBRARY_DIRECTORY, library_identity, project_identity
+    project = Path(project_dir).resolve()
+    if project_identity(project) is None:
+        return []
+    root = project.parent / LIBRARY_DIRECTORY
+    lock_path = project.parent / '.disco-recordings.lock'
+    if lock_path.is_symlink() or not root.is_dir() or root.is_symlink() or library_identity(root) is None:
+        return []
+    with lock_path.open('a') as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return None
+        removed = []
+        for entry in sorted(root.iterdir()):
+            if entry.name.startswith('.incoming-') and not entry.is_symlink() and entry.is_dir():
+                shutil.rmtree(entry)
+                removed.append(entry.name)
+        return removed
+
+
 def _copy_recording(project_dir, source, expected_sha256):
     source = Path(source).resolve(strict=True)
     root = managed_directory(Path(project_dir).resolve(), 'raw-uploads')

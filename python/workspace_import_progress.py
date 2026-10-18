@@ -48,7 +48,10 @@ def atomic_json(path, value):
 class ProgressReporter:
     def __init__(self, path=None):
         self.path = Path(path) if path else None
-        self.current = {'version': 1, 'commit_state': 'not_started', 'pid': os.getpid()}
+        # Creation time distinguishes this worker from a later process reusing its PID.
+        from disco.projects.runtime_state import current_process_created
+        self.current = {'version': 1, 'commit_state': 'not_started', 'pid': os.getpid(),
+                        'process_created': current_process_created()}
         self._written_at = 0
 
     def emit(self, stage, **fields):

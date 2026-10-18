@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 import uuid
 
 from flask import Flask, jsonify
-from disco.projects.project_shell import create_project_shell, unused_session
+from disco.projects.project_shell import create_project_shell, released_session, unused_session
 from workspace_desktop import DesktopServices
 from disco.projects.project_validation import validate_project_folder
 
@@ -147,6 +147,33 @@ class ProjectShellTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'still writing'):
             self.data.stop()
         self.assertEqual(self.client.get('/api/health').status_code, 200)
+
+    def test_failed_first_start_releases_service_so_retry_close_and_relaunch_work(self):
+        def fail(capture, begin):
+            begin()
+            raise ValueError('This copied or moved database was not closed cleanly')
+        self.build.side_effect = fail
+        self.assertEqual(self.activate().status_code, 400)
+        self.cleanup.assert_called_once()
+        self.assertIsNone(self.data.status()['cleanup_error'])
+        self.assertTrue(released_session(self.root / 'state', self.identity))
+        self.assertFalse(unused_session(self.root / 'state', self.identity))
+        # Close does not repeat cleanup or fail after the confirmed release.
+        self.data.stop()
+        self.cleanup.assert_called_once()
+        # The exited service is dismissed; nothing blocks other projects.
+        services = DesktopServices.__new__(DesktopServices)
+        services.user_state = self.root / 'state'
+        services.lock = threading.RLock()
+        services.recovery = {}
+        process = Mock(); process.poll.return_value = 0
+        services.children = {str(self.project): {'record': self.identity, 'process': process}}
+        services._save = Mock()
+        self.assertEqual(services.records(), [])
+        # An explicit retry starts a new attempt with its own receipt.
+        self.build.side_effect = self.successful_build
+        self.assertEqual(self.activate(retry=True).status_code, 200)
+        self.assertFalse(released_session(self.root / 'state', self.identity))
 
     def test_partial_worker_close_failure_still_releases_process_heap(self):
         close_heap = Mock()

@@ -132,6 +132,39 @@ class UnmountTests(unittest.TestCase):
         self.assertEqual(client.post('/api/projects/unmount',json=self.body).status_code,409)
         self.assertEqual(read_project_index().get('unmounted',[]),[])
 
+    def test_recycled_service_and_database_pids_do_not_block_inactive_unmount(self):
+        import psutil
+        other = psutil.Process(os.getppid())  # Alive, but none of these records' processes.
+        client = self.app().test_client()
+        server = self.path / 'logs/workspace-server.json'
+        server.parent.mkdir(exist_ok=True)
+        server.write_text(json.dumps({'pid': other.pid, 'process_created': other.create_time()}))
+        self.assertEqual(client.post('/api/projects/unmount', json=self.body).status_code, 409)
+        server.write_text(json.dumps({'pid': other.pid, 'process_created': other.create_time() - 100}))
+        native = self.path / 'database/native-runtime.json'
+        native.write_text(json.dumps({'pid': other.pid, 'process_created': other.create_time() - 100,
+                                      'executable': '/old/mysqld', 'argv': ['/old/mysqld'], 'project_path': str(self.path)}))
+        response = client.post('/api/projects/unmount', json=self.body)
+        self.assertEqual(response.status_code, 200, response.json)
+
+    def test_legacy_service_record_without_creation_time_uses_entry_point_proof(self):
+        server = self.path / 'logs/workspace-server.json'
+        server.parent.mkdir(exist_ok=True)
+        server.write_text(json.dumps({'pid': os.getppid()}))  # Not a DISCO project server.
+        self.assertEqual(self.app().test_client().post('/api/projects/unmount', json=self.body).status_code, 200)
+
+    def test_clean_server_exit_releases_its_pid_but_keeps_port_preference(self):
+        from workspace_project_servers import release_server_record, server_record, write_server_record
+        with patch('workspace_updates.release_metadata', return_value={'version': 'test'}):
+            write_server_record(self.path, self.project['uuid'], 8899)
+        record = json.loads(server_record(self.path).read_text())
+        self.assertEqual(record['pid'], os.getpid())
+        self.assertIn('process_created', record)
+        release_server_record(self.path)
+        record = json.loads(server_record(self.path).read_text())
+        self.assertNotIn('pid', record)
+        self.assertEqual(record['port'], 8899)
+
     def test_missing_path_can_detach_saved_reference_and_unknown_identity_cannot(self):
         # Rename disposable fixture to simulate a disconnected/moved drive.
         self.path.rename(self.path.with_name('moved'))

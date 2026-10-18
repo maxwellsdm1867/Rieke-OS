@@ -13,6 +13,7 @@ read the corresponding entry, then use its existing interface and examples.
 | Read project inventory | [project_inventory.py](project_inventory.py): `ProjectInventory.managed/current` reuse the retained discovery rules in a bounded read-only child. `pause/resume` control only those children; `ProjectInventoryUnavailable` is not an empty inventory. |
 | Persist preferences | [project_preferences.py](project_preferences.py): `ProjectPreferences`, `PreferenceConflict`, validation and route registration own portable shortcuts, not scientific membership or device geometry. |
 | Manage acquisitions | [datastores.py](datastores.py): `DataStores` separates freeze, archive and query eligibility. [datastore_deletion.py](datastore_deletion.py): `DataStoreDeletion` owns exact detachment and recoverable filesystem deletion. |
+| Ask whether a project database runs | [runtime_state.py](runtime_state.py): `project_runtime_state(root)` returns one of `never_started`, `stopped_clean`, `stopped_unclean`, `running_owned`, `running_foreign` from receipts plus PID + creation time + exact executable/argv proof. `recorded_process_alive` / `import_worker_alive` apply the same PID-reuse rule to service and import records. Read-only; never signals. |
 | Migrate legacy source | [migration.py](migration.py) performs explicit source inspection/snapshot/restore into a separate owned destination. It delegates to the retained portability/native owners; it does not adopt the source database. |
 
 `recording_registry.library_directory` and `library_candidate` create/recover the
@@ -231,3 +232,29 @@ No source hashing, H5 reads or scientific-database opens are permitted here. The
 cache is not copied into project exports, and deleting it loses no scientific state.
 The focused cache/shell/API tests exercise process restart and failure fallback;
 those tests do not qualify installed-app startup latency.
+
+## Project runtime state and per-project recovery
+
+Desktop supervision, failed-load cleanup, inactive unmount and import admission
+use `runtime_state` instead of interpreting PIDs. A PID never counts without its
+recorded creation time (older records fall back to entry-point command-line proof).
+Only a live owned database (`running_owned`) of a crashed service or unfinished
+transfer refuses desktop startup for every project. A crashed service without a
+clean receipt otherwise marks only its project (`recovery_required` in the desktop
+service registry, `recovery_projects` in health); opening it again first requires
+that no database process remains. The native per-project gate still refuses
+copied/moved unclean data exactly as before.
+
+A failed data load needs only "no owned process alive" to finish cleanup. The
+shell then records `database_released`, a service-exit receipt (not a data-clean
+receipt) that the supervisor rechecks against the runtime state. A failed first
+`--initialize`/bootstrap stops its bootstrap server and removes only the new
+credentials and data directory it created; an existing owner receipt or a still
+running server preserves everything. Interrupted import jobs can be dismissed with
+`POST /api/jobs/<id>/acknowledge` once their worker is proven gone.
+
+Project activation sweeps `.incoming-*` library staging folders only while the
+shared recording lock is uncontended (copies hold that lock and publish by rename).
+Transfer, verify and migration staging (`.rieke-transfer-*`, `.rieke-verify-*`,
+`.rieke-migration-*`) live in user-chosen parents without a covering lock or owner
+record and are not swept.
