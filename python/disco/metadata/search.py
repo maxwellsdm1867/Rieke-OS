@@ -53,18 +53,17 @@ def _epoch_prefix_hits(service, prefix, limit):
     return rows, total
 
 
-def _canonical_binding_header(service):
-    """The canonical ExplorerHistory header reader, or None for any other policy."""
-    from workspace_service import _readonly_binding_reader
-    from disco.decisions.explorer import is_canonical_binding_reader
-    provider = getattr(service, 'binding_provider', None)
-    header = getattr(service, 'binding_header_provider', None)
-    owner = getattr(provider, '__self__', None)
-    if (provider is None or header is None or not is_canonical_binding_reader(provider)
-            or getattr(header, '__self__', None) is not owner
-            or getattr(header, '__func__', None) is not getattr(type(owner), 'protocol_binding_header', None)):
+def _binding_header(service):
+    """The header reader paired with the binding reader (``set_binding_provider``).
+
+    The pair contract makes a header's (revision, version) identify the frozen
+    recipe the reader returns. A reader installed without a header returns
+    False: callers then keep the full ``query_result`` path.
+    """
+    if getattr(service, 'binding_provider', None) is None:
         return None
-    return header if all(_readonly_binding_reader(service, key) for key in service.protocols) else None
+    header = getattr(service, 'binding_header_provider', None)
+    return header if callable(header) else False
 
 
 def _protocol_members(service, protocol_id, header):
@@ -73,7 +72,8 @@ def _protocol_members(service, protocol_id, header):
     Bound protocols key on the binding (revision, version) and the row
     publication: a revision's frozen recipe is immutable. Unbound protocols key on
     the publication and the very result/epoch-list objects (held, never reused)
-    plus the list length. Other binding policies return None (query_result path).
+    plus the list length. A reader without a paired header returns None
+    (query_result path).
     """
     entry = service.protocols[protocol_id]
     publication = getattr(service, '_explore_publication', None)
@@ -84,6 +84,8 @@ def _protocol_members(service, protocol_id, header):
     if cache is None or cache[0] != rows_key:
         cache = service._search_protocol_members = (rows_key, {})
     members = cache[1]
+    if header is False:
+        return None
     binding = None if header is None else header(protocol_id)
     if binding is not None:
         key = ('bound', binding['revision_uuid'], binding['version'])
@@ -97,8 +99,6 @@ def _protocol_members(service, protocol_id, header):
         if any(identity not in service.rows for identity in identities):
             raise ValueError('Bound dataset contains unavailable epochs; explicit reconciliation is required')
     else:
-        if header is None and getattr(service, 'binding_provider', None) is not None:
-            return None
         if entry['definition'].get('initial_revision_uuid'):
             return None  # query_result raises its interrupted-creation error.
         result = entry['result']
@@ -167,7 +167,7 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
         if uuid_query:
             memberships = {}
             shown = [item for item in results[:limit] if item['kind'] == 'epoch']
-            header = _canonical_binding_header(service) if shown else None
+            header = _binding_header(service) if shown else None
             for protocol_id, workspace in (service.protocols.items() if shown else ()):
                 members = _protocol_members(service, protocol_id, header)
                 if members is None:

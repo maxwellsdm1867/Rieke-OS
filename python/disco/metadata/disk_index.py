@@ -19,7 +19,6 @@ import zlib
 from collections import OrderedDict
 from collections.abc import Mapping
 from contextlib import contextmanager
-from types import MappingProxyType
 from urllib.parse import unquote
 
 import disco.navigation.tree as tree
@@ -54,9 +53,19 @@ def _signature(path):
     return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns
 
 
+class _FrozenMapping(Mapping):
+    """Read-only mapping shared by every caller of one opened generation."""
+    __slots__ = ('_data',)
+    def __init__(self, data): self._data = data
+    def __getitem__(self, key): return self._data[key]
+    def __iter__(self): return iter(self._data)
+    def __len__(self): return len(self._data)
+    def __repr__(self): return f'_FrozenMapping({self._data!r})'
+
+
 def _freeze(value):
     if isinstance(value, dict):
-        return MappingProxyType({key: _freeze(item) for key, item in value.items()})
+        return _FrozenMapping({key: _freeze(item) for key, item in value.items()})
     if isinstance(value, (list, tuple)):
         return tuple(_freeze(item) for item in value)
     return value
@@ -330,14 +339,14 @@ class DiskMetadataIndex:
         """Read-only ``field id -> definition`` view of the full catalog.
 
         Built once per opened generation and shared by every caller: no per-call
-        copy. Nested mappings and lists are frozen (mapping proxies, tuples), so
+        copy. Nested mappings and lists are frozen (read-only mappings, tuples), so
         callers that need a mutable catalog must keep using ``catalog()``.
         """
         self._check()
         view=getattr(self,'_definitions_view',None)
         if view is None:
             catalog=self._catalog_cache if getattr(self,'_catalog_cache',None) is not None else self.catalog()
-            view=self._definitions_view=MappingProxyType({field['id']:_freeze(field) for field in catalog['fields']})
+            view=self._definitions_view=_FrozenMapping({field['id']:_freeze(field) for field in catalog['fields']})
         return view
 
     def epoch_prefix(self,prefix,limit):

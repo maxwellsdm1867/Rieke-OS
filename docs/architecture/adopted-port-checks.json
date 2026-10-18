@@ -5782,7 +5782,7 @@
       {
         "file": "python/tests/test_workspace_epoch_page_performance.py",
         "file_sha256": "9d84a4eb9649d6acccd68d5e15c5ed3d44f1b79e221d3a0e5770f9b8e0caff9b",
-        "reason": "Warm-page test rejects recipe deepcopy; structural-only native-index fixture bypasses constructor to isolate method/fallback behavior. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Request-decoupling review (2026-10-17): the disk_index owner adds a bulk _Details.many read for Cell QC; reviewed targets and fixture behavior are unchanged.",
+        "reason": "Warm-page test rejects recipe deepcopy; structural-only native-index fixture bypasses constructor to isolate method/fallback behavior. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Request-decoupling review (2026-10-17): the disk_index owner adds a bulk _Details.many read for Cell QC; reviewed targets and fixture behavior are unchanged. Metadata index reads review (2026-10-18): disk_index adds a shared read-only catalog_definitions view, windowed per-key value reads, _Values.subset and an epoch_uuid prefix probe; explore_queries streams index-only summaries; reviewed targets and fixture behavior are unchanged.",
         "sites": [
           {
             "selector": "Call:55",
@@ -5824,7 +5824,7 @@
               {
                 "module": "disco.metadata.disk_index",
                 "file": "python/disco/metadata/disk_index.py",
-                "file_sha256": "7c3926f7e6ec1fbab9e1f0059ad0b7b8804c81ede0882c2a28eaa858ba3e2567",
+                "file_sha256": "9d5f47efaa06ac21cd3d2c2913d59f09afd317e7bcfd3efa6d1dcc3b398a84ca",
                 "contract_id": "backend-metadata"
               }
             ]
@@ -5833,8 +5833,8 @@
       },
       {
         "file": "python/tests/test_workspace_explore_queries.py",
-        "file_sha256": "8eb815d3cdc0c34a5bce89be0a0a6668c7d22b8ce04d4773459bd07b7c670441",
-        "reason": "Choose the existing typed/native summary target and block it to exercise asynchronous request lifecycle. Explicit refresh recovery tests added; existing reviewed mock syntax and targets remain unchanged. Stale live readers still refuse; refresh reopens only fully verified sidecars. Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py.",
+        "file_sha256": "f3641827c1c10181a7527d382673dd72e6a01a0af7d5e7d4edc083f4dd878911",
+        "reason": "Choose the existing typed/native summary target and block it to exercise asynchronous request lifecycle. Explicit refresh recovery tests added; existing reviewed mock syntax and targets remain unchanged. Stale live readers still refuse; refresh reopens only fully verified sidecars. Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py. Metadata index reads review (2026-10-18): disk_index adds a shared read-only catalog_definitions view, windowed per-key value reads, _Values.subset and an epoch_uuid prefix probe; explore_queries streams index-only summaries; reviewed targets and fixture behavior are unchanged.",
         "sites": [
           {
             "selector": "Name:384",
@@ -5853,7 +5853,7 @@
               {
                 "module": "disco.metadata.explore_queries",
                 "file": "python/disco/metadata/explore_queries.py",
-                "file_sha256": "7cedc94344c6c095c2db5803c35f23fa418d1af16832657a12c57292750b0c31",
+                "file_sha256": "19b3eb4cf7448698d05020b63ec13dd45785f96e0f315ce365b7ed3ebf124d9d",
                 "contract_id": "backend-metadata"
               }
             ]
@@ -6536,7 +6536,7 @@
       {
         "file": "python/tests/test_workspace_scoped_predicates.py",
         "file_sha256": "efd596da924301418aa6d294296a04081be1c68e1dad7e15d2489cf8e207d938",
-        "reason": "Capture annotation-lock protocol scope without taking native locks; preserve exact expected scope assertion. Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md.",
+        "reason": "Capture annotation-lock protocol scope without taking native locks; preserve exact expected scope assertion. Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Metadata index reads review (2026-10-18): disk_index adds a shared read-only catalog_definitions view, windowed per-key value reads, _Values.subset and an epoch_uuid prefix probe; explore_queries streams index-only summaries; reviewed targets and fixture behavior are unchanged.",
         "sites": [
           {
             "selector": "Call:110",
@@ -6556,7 +6556,7 @@
               {
                 "module": "disco.metadata.explore_queries",
                 "file": "python/disco/metadata/explore_queries.py",
-                "file_sha256": "7cedc94344c6c095c2db5803c35f23fa418d1af16832657a12c57292750b0c31",
+                "file_sha256": "19b3eb4cf7448698d05020b63ec13dd45785f96e0f315ce365b7ed3ebf124d9d",
                 "contract_id": "backend-metadata"
               },
               {

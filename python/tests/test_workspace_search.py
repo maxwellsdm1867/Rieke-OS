@@ -155,15 +155,14 @@ class WorkspaceSearchTests(unittest.TestCase):
         class NoSort(dict):
             def items(self): raise AssertionError('UUID search sorted every published row')
         self.service.rows = NoSort(self.service.rows)
-        import disco.decisions.explorer as explorer
         reads = []
-        copy_recipe = explorer._copy_recipe
+        binding = self.service.binding
         with patch.object(self.service, 'query_result', side_effect=AssertionError('Copied a protocol result to label hits')), \
-                patch.object(explorer, '_copy_recipe', side_effect=lambda recipe: reads.append(recipe['revision_uuid']) or copy_recipe(recipe)):
+                patch.object(self.service, 'binding', side_effect=lambda key: reads.append(key) or binding(key)):
             for _ in range(2):
                 for query, limit in queries:
                     self.assertEqual(search_workspace(self.service, query, limit), expected[query], query)
-        self.assertEqual(reads, [history.Binding.rows[0]['revision_uuid']], 'One frozen recipe read per binding revision')
+        self.assertEqual(reads, [bound], 'One frozen recipe read per binding revision')
         labelled = search_workspace(self.service, 'abcdef01-0000-4000-8000-000000000003')['results'][0]
         self.assertEqual(labelled['protocols'], [{'protocol_uuid': bound, 'name': 'Bound protocol'}])
         # A new binding revision relabels; a replaced unbound result does too.

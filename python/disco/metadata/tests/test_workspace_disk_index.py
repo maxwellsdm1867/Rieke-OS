@@ -232,9 +232,9 @@ class DiskIndexTests(unittest.TestCase):
         index=self.build(count=140)
         self.addCleanup(index.close)
         expected={field['id']:field for field in index.catalog()['fields']}
-        with patch.object(disk.copy,'deepcopy',side_effect=AssertionError('Definitions must not be copied per call')):
-            first=index.catalog_definitions();second=index.catalog_definitions()
-        self.assertIs(first,second)
+        first=index.catalog_definitions();second=index.catalog_definitions()
+        self.assertIs(first,second,'One shared view per generation, never a per-call copy')
+        self.assertIs(first['epoch'],second['epoch'])
         self.assertEqual(json.dumps(dict(first),default=dict,sort_keys=True),json.dumps(expected,sort_keys=True))
         definition=first['parameters/frequencyCutoff']
         with self.assertRaises(TypeError): first['new']={}
@@ -256,7 +256,7 @@ class DiskIndexTests(unittest.TestCase):
             with patch.object(index,'_connect',wraps=index._connect) as connect:
                 read={key:values[key] for key in order}
             self.assertEqual(read,{key:expected[key] for key in order})
-            self.assertLessEqual(connect.call_count,(len(order)//disk.VALUE_WINDOW_MAX)+11,connect.call_count)
+            self.assertLessEqual(connect.call_count,(len(order)//512)+11,connect.call_count)
             read[order[0]].clear()
             self.assertEqual(values[order[0]],expected[order[0]],'Each access returns an independent copy')
         scoped=index.values(ids[:3])
