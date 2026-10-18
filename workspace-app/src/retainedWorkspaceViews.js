@@ -89,10 +89,15 @@ export function useRetainedViewProtection(protectedState){
 }
 
 // Only completed presentation reads may skip an Activity effect restart. Scoped
-// pages, browse witnesses, deletion plans and all custom request owners keep their
-// original freshness path. This is deliberately not a generic GET cache.
+// pages, deletion plans and all custom request owners keep their original
+// freshness path. This is deliberately not a generic GET cache. The canonical
+// main protocol browse descriptor and epoch pages are retained on tab return
+// when path and revision are unchanged: every write they enable still carries
+// its query revision and binding version and fails closed at action time.
 export function retainablePresentationRead(path){
   return typeof path==='string'&&(
+    /^\/protocols\/[^/?]+\?projection=browse$/.test(path)||
+    /^\/protocols\/[^/?]+\/epochs\?/.test(path)||
     /^\/(?:events|exports|search-presets|explore\/revisions)(?:\?|$)/.test(path)||
     /^\/(?:metadata\/fields|explore\/predicate-fields)$/.test(path)||
     /^\/cells\/[^/?]+\/qc(?:\?|$|\/(?:response|response-summary)(?:\?|$))/.test(path)

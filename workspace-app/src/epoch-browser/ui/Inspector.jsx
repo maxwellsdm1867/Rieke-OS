@@ -133,7 +133,10 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   // A new owner or descriptor must obtain its own receipt, including at the
   // same URL. Keep the annotation idle delay except for explicit navigation.
   const pageReadRevision=JSON.stringify([pageRevision,projectId,treeReadOwner?.identity,protocol.query_revision,protocol.expected_binding_version]);
-  const loadedRows=useResource(rowsPath,pageReadRevision,0,{paused:readPaused||annotationState.dirty&&!pendingNavigation,initialRead:initialPageRead});
+  // A resolved off-page anchor already holds its whole page: offer it once to
+  // the identical offset read that follows, instead of reading it twice.
+  const anchorHandoff=useRef(null);
+  const loadedRows=useResource(rowsPath,pageReadRevision,0,{paused:readPaused||annotationState.dirty&&!pendingNavigation,initialRead:anchorHandoff.current??initialPageRead});
   const rows=resourceForPath(loadedRows,rowsPath);
   // The compact page receipt owns current curation authority and exact filtered
   // cell counts. A focused navigation page needs a separate all-cell receipt.
@@ -350,7 +353,13 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     navigationIntent.current=target;
     if(!target){setFocused(null);setPendingNavigation(null);return;}
     const uuid=epochAtIntent(page,target);
-    if(uuid){setFocused(uuid);setOffset(page.offset);setPendingNavigation(null);}
+    if(uuid){
+      if(pendingNavigation.anchorUuid&&rows.path===rowsPath&&Number.isSafeInteger(page.offset)){
+        const path=rowsPath.replace(`anchor_uuid=${encodeURIComponent(pendingNavigation.anchorUuid)}`,`offset=${page.offset}`),revision=pageReadRevision;let offered=true;
+        anchorHandoff.current={claim:request=>{if(!offered||request.path!==path||request.revision!==revision)return undefined;offered=false;return page;}};
+      }
+      setFocused(uuid);setOffset(page.offset);setPendingNavigation(null);
+    }
     else{setOffset(target.offset);setPendingNavigation({offset:target.offset,targetIndex:target.index});}
   },[pendingNavigation,rows.data,rows.loading,rows.error,preserveCandidateView,focused,focusLocatorKey]);
   // Persist grouping only after the server has successfully built that tree.

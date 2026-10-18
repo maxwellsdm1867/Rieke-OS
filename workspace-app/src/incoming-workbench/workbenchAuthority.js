@@ -97,3 +97,9 @@ export async function finishWorkbenchReview(root,context,request){
   const value=await request(`${root}/finish`,{method:'POST',body:{expected_candidate_scope_revision:context.candidate_scope_revision,expected_version:context.draft.draft_version}});
   return requireWorkbenchContext(value);
 }
+
+// The server refuses to export (or load the context of) an undone merge with
+// HTTP 409 code workbench_merge_undone. Its additions left main, so the dialog
+// says so instead of reporting an acceptance that no longer holds.
+export const MERGE_UNDONE_MESSAGE="This merge was undone; its additions can't be exported as accepted.";
+export const isMergeUndone=error=>error?.status===409&&(error?.data?.code==='workbench_merge_undone'||error?.data?.error?.code==='workbench_merge_undone');
