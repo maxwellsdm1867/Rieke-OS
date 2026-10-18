@@ -216,7 +216,7 @@ class UpdateTests(unittest.TestCase):
         self.assertTrue((self.installation / 'releases/0.2.0/.stage-failed.json').exists())
 
     def test_bounded_restart_never_kills_active_writer(self):
-        with patch.object(updates, 'activate_staged', side_effect=ValueError('Close all Disco launchers')) as activate, \
+        with patch.object(updates, 'activate_staged', side_effect=ValueError('Close all DISCO launchers')) as activate, \
                 patch.object(updates, 'main') as launch:
             with self.assertRaises(ValueError):
                 updates.activate_and_launch(self.installation, wait_seconds=0)

@@ -10,7 +10,7 @@ test('import history shows verified managed location and external-original guida
   const text=()=>h.root.findAll(node=>node.type==='p').map(node=>node.children.filter(child=>typeof child==='string').join('')).join(' ');
   try{
     await h.mount(History,{jobs:[job]});
-    assert.match(text(),/delete the original copy outside Disco/);
+    assert.match(text(),/delete the original copy outside DISCO/);
     assert.equal(h.root.findByType('code').children.join(''),storage.path);
     assert.equal(h.root.findAllByType('details')[0].props.open,true);
     await h.render(History,{jobs:[{...job,status:'interrupted',catalog_committed:null}]});

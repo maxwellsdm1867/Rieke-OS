@@ -132,7 +132,7 @@ async function main() {
   receipt.manifest_sha256 = createHash('sha256').update(bytes).digest('hex'); receipt.application_version = manifest.application_version;
   receipt.app_asar_sha256 = createHash('sha256').update(await fs.readFile(path.join(fixture.bundle, 'Contents/Resources/app.asar'))).digest('hex');
   receipt.app_icon_sha256 = createHash('sha256').update(await fs.readFile(path.join(runtime, 'frontend/disco-icon.png'))).digest('hex');
-  assert.equal(receipt.app_icon_sha256, '7226c3d97a2a35cf9318c615afe20c21b6281af71a53ae22cf23ba215bc5e89e', 'Packaged renderer must include the default Disco icon');
+  assert.equal(receipt.app_icon_sha256, '7226c3d97a2a35cf9318c615afe20c21b6281af71a53ae22cf23ba215bc5e89e', 'Packaged renderer must include the default DISCO icon');
   await check('cold packaged launcher and state isolation', async () => {const actual = await start(); assert.equal(actual.packaged, true); assert.equal(actual.electronVersion, '44.5.0'); return {isolated_user_state: true, packaged: true, electron_version: actual.electronVersion};});
   await check('launcher actual app icon loads at upper right at normal and narrow native widths',
     () => verifyHeaderIcon('.onboarding-app-icon', '.project-onboarding>header', 'launcher-icon'));
@@ -477,7 +477,7 @@ async function main() {
     assert.equal(recoveredBrowser.contexts().length,1);
     page=watchRenderer(await waitForRenderer(application,{mode:'shell',bundle:fixture.bundle,pagesContext:recoveredBrowser.contexts()[0],timeout:15000}),'recovered-renderer-pageerror');
     assert.equal(await rendererId(application,page),rootId);
-    await page.getByRole('heading',{name:'Disco recovery',exact:true}).waitFor({timeout:15000});
+    await page.getByRole('heading',{name:'DISCO recovery',exact:true}).waitFor({timeout:15000});
     assert.equal(await application.evaluate(({webContents},id)=>!webContents.fromId(id).isDestroyed(),projectId),true);
     const after=await ownedControl(fixture,'health');
     assert.equal(after.pid,before.pid);

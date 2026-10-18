@@ -56,7 +56,7 @@ def build_descriptor(bundle,archive):
     if manifest.get('format')!='rieke-desktop-runtime' or manifest.get('version')!=1 or manifest.get('platform')!='darwin' or manifest.get('architecture')!='arm64':raise ValueError('Unsupported desktop runtime')
     app_info=bundle/'Contents/Info.plist';app_info_bytes=app_info.read_bytes();plist=plistlib.loads(app_info_bytes)
     if plist.get('CFBundleIdentifier')!='org.riekeos.desktop' or plist.get('CFBundleShortVersionString')!=version:raise ValueError('App identity or version differs')
-    if plist.get('CFBundleDisplayName')!='Disco' or plist.get('CFBundleName')!='Disco':raise ValueError('App display or bundle name differs from Disco')
+    if plist.get('CFBundleDisplayName')!='DISCO' or plist.get('CFBundleName')!='Disco':raise ValueError('App display or bundle name differs from DISCO')
     executable=bundle/'Contents/MacOS/Disco'
     if bundle.name!='Disco.app' or plist.get('CFBundleExecutable')!='Disco' or not executable.is_file() or not os.access(executable,os.X_OK) or not executable.resolve().is_relative_to(bundle.resolve()):raise ValueError('Shipping app filename or executable differs from Disco')
     helper_executable,helper_info=electron_helper(bundle,plist)

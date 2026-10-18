@@ -44,6 +44,6 @@ async function verifyApplication({bundle, signed, run = runAuditCommand, signal,
   return {verified:true, publisherAuthenticated:Boolean(signed)};
 }
 function repairGuidance(bundle) {
-  return `First choose Quit. Once Disco and all its owned services have closed, move only the damaged application bundle (${bundle}) to a holding folder outside Applications. Do not launch that retained copy. Leave all project folders and user settings in place. Open a newly downloaded complete Disco.app from the trusted release source and choose Install and Open. The installer validates the incoming and staged copy. If closure is unconfirmed, finish service recovery before moving the app.`;
+  return `First choose Quit. Once DISCO and all its owned services have closed, move only the damaged application bundle (${bundle}) to a holding folder outside Applications. Do not launch that retained copy. Leave all project folders and user settings in place. Open a newly downloaded complete Disco.app from the trusted release source and choose Install and Open. The installer validates the incoming and staged copy. If closure is unconfirmed, finish service recovery before moving the app.`;
 }
 module.exports = {verifyApplication, runAuditCommand, repairGuidance};

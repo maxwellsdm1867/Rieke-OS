@@ -96,7 +96,7 @@ test('preview builder adds the marker/display label and keeps production/helper 
   assert.equal(build.mac.extendInfo.DiscoLocalPreview, undefined);
   assert.equal(preview.mac.extendInfo.DiscoLocalPreview, true);
   assert.equal(preview.mac.extendInfo.CFBundleDisplayName, 'DISCO Preview');
-  assert.equal(build.mac.extendInfo.CFBundleDisplayName, 'Disco');
+  assert.equal(build.mac.extendInfo.CFBundleDisplayName, 'DISCO');
   assert.equal(preview.appId, build.appId);
   assert.equal(preview.mac.extendInfo.CFBundleName, build.mac.extendInfo.CFBundleName);
   assert.deepEqual(preview.files, build.files); assert.deepEqual(preview.extraResources, build.extraResources);

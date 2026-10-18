@@ -3,7 +3,7 @@ const bridge = window.riekeDesktop;
 function display(status) {
   document.getElementById('chooser').hidden=status.state!=='Starting';
   const testing = status.channel === 'unsigned-testing';
-  document.getElementById('title').textContent = status.title || 'Disco recovery';
+  document.getElementById('title').textContent = status.title || 'DISCO recovery';
   document.getElementById('message').textContent = status.message || 'Startup has not completed.';
   document.getElementById('detail').textContent = status.detail || '';
   document.getElementById('channel').textContent = 'Unsigned testing';

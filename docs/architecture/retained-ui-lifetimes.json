@@ -4,7 +4,7 @@
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
     "src/App.jsx": {
-      "fingerprint": "c9a1c4eb41f36efafe72dea3aa5730f31770c705c73bd8f94bcbacd10c5b6469",
+      "fingerprint": "15afe38d248bd656defcdc3a12ed59a0aa3d639e915b39eb80c1f12f75a474f5",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -44,7 +44,7 @@
         {
           "owner": "App",
           "kind": "useEffect",
-          "fingerprint": "f7c559c68c6493015cd04283e6c9340f7a3e7034e04114fbd0fe5c2b79efbc82"
+          "fingerprint": "5ed85c3750a382bc00e61578bc5b6e51179b60c145f1aab55bafe214bc7aee27"
         }
       ],
       "lifetime": "mixed-project-and-retained-composition",
@@ -458,7 +458,7 @@
       ]
     },
     "src/app-updates/appUpdates.js": {
-      "fingerprint": "9da0d5ad17f9256e9a0b015e33ca01aaa6b26afeba07c99be793859b9227eb90",
+      "fingerprint": "116a339918ed0c2bbd952407a2dc431475f8ae4e4fd4ac73ed4b65875be5e734",
       "sites": [],
       "lifetime": "transitive-dependency",
       "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
@@ -468,7 +468,7 @@
       ]
     },
     "src/app-updates/ui/AppUpdates.jsx": {
-      "fingerprint": "74ee28ee212524f50c3d6abab27ac6e1af927ab00229bbf93ee3e254f2f7735f",
+      "fingerprint": "03af79984f9a6f6970f67e5616b90390d577ce7b1656552aa0c52cca49840274",
       "sites": [
         {
           "owner": "UpdateDialog",
@@ -532,7 +532,7 @@
       ]
     },
     "src/appearance/ui/AppAppearance.jsx": {
-      "fingerprint": "6899e1b15c08ceedd6050e5f80c6c55c4b3f3bfa310e3c615e74486ca48e4c1b",
+      "fingerprint": "c92f10c58ed42f076e964685fc86e731af2235a03dd34af0d604b76f94f27247",
       "sites": [
         {
           "owner": "AppAppearance",
@@ -790,7 +790,7 @@
       ]
     },
     "src/desktopLifecycle.js": {
-      "fingerprint": "73a34d70a86def2c2d6169805beca94f1df9937ec735ce318153ce7cd86c29e5",
+      "fingerprint": "1ef412ece7c87b5f3e10ff6003d45fe9e06a3fde11d96d611394673663182e6f",
       "sites": [],
       "lifetime": "transitive-dependency",
       "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds flushBeforeSubmission (accepted writes still gate; view-saver failure returns viewSaved:false). flushDesktopDrafts and close/unmount acknowledgement stay strict.",
@@ -2389,7 +2389,7 @@
       ]
     },
     "src/project-workspace/ui/ProjectFiles.jsx": {
-      "fingerprint": "9e3830e9c7d938289b566368f04434b84a62ec3f42e9dc24266f023ef7349ff3",
+      "fingerprint": "bfb9cfe96190d937625a2725cb6847321be91c4954174d8fb119634571e4dc55",
       "sites": [],
       "lifetime": "transitive-dependency",
       "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
@@ -2434,7 +2434,7 @@
       ]
     },
     "src/project-workspace/ui/ProjectOnboarding.jsx": {
-      "fingerprint": "b788090c4e97b883b6f9c35d4b9709d1cf9ff3c44ba7fd4c25619c8672938cbd",
+      "fingerprint": "92fa8bf3b92c7bbee838db51fe222afd4ebe8d9d68cffb7ac29ba32dce116ce5",
       "sites": [
         {
           "owner": "ProjectOnboarding",
@@ -2478,7 +2478,7 @@
       ]
     },
     "src/project-workspace/ui/ProjectStartupError.jsx": {
-      "fingerprint": "f439d86696befd7a5f5209204aead5aebad7c98bb019df25d80a7e183c54f640",
+      "fingerprint": "b9e182c89e4f3f5501b8d3402312c1a502fb1d32c16553583aa76ddb09c7cfe5",
       "sites": [
         {
           "owner": "ProjectStartupError",
@@ -2852,7 +2852,7 @@
       ]
     },
     "src/recording-import/importProgress.js": {
-      "fingerprint": "eb10cb2fe01c6db3bb780a73f0c71607564b8927ac19f535312d51583346b074",
+      "fingerprint": "7d50d304ebd5f1d2718454c09b78f3c665e4f01015df6bdb76b2229bc596e082",
       "sites": [],
       "lifetime": "transitive-dependency",
       "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",

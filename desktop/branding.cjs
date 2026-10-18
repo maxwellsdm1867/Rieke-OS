@@ -3,7 +3,7 @@
 function configureBranding(app){
   app.setName('Rieke OS');
   const legacyUserData=app.getPath('userData');
-  app.setName('Disco');
+  app.setName('DISCO');
   app.setPath('userData',legacyUserData);
   return legacyUserData;
 }

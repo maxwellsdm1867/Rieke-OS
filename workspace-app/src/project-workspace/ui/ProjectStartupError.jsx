@@ -5,7 +5,7 @@ export default function ProjectStartupError({message,className}){
   const generation=useRef(0);
   useEffect(()=>{generation.current++;setCopy(null);return()=>{generation.current++;};},[message]);
   if(!message)return null;
-  const diagnostic=message.startsWith('Disco could not open this project. ');
+  const diagnostic=message.startsWith('DISCO could not open this project. ');
   async function copyDetails(){
     const current=++generation.current;
     try{await navigator.clipboard.writeText(message);if(current===generation.current)setCopy({message,text:'Details copied'});}

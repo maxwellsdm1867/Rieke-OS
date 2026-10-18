@@ -39,7 +39,7 @@ export default function AppAppearance({appearance}){
  return <dialog ref={dialog} className="app-appearance" aria-labelledby="app-appearance-title" onCancel={event=>{event.preventDefault();appearance.setOpen(false);}}>
   <header><div><span className="appearance-eyebrow">MAKE IT YOURS</span><h2 id="app-appearance-title">Appearance</h2></div><button autoFocus className="icon-button" onClick={()=>appearance.setOpen(false)} aria-label="Close appearance"><X size={19}/></button></header>
   <ThemePicker appearance={appearance}/>
-  <div className="appearance-about"><img src={appearance.source} alt={appearance.icon==='rieke'?'Classic Rieke emblem':'Disco ball'} width="56" height="56"/><div><strong>{appearance.theme==='fred'?'A little lab tradition':'Disco'}</strong><p>{appearance.theme==='fred'?'The Rieke emblem, in familiar purple.':'Data Inspection, Selection, Comparison Operations'}</p><small>A Rieke Lab OS</small></div></div>
+  <div className="appearance-about"><img src={appearance.source} alt={appearance.icon==='rieke'?'Classic Rieke emblem':'DISCO ball'} width="56" height="56"/><div><strong>{appearance.theme==='fred'?'A little lab tradition':'DISCO'}</strong><p>{appearance.theme==='fred'?'The Rieke emblem, in familiar purple.':'Data Inspection, Selection, Comparison Operations'}</p><small>A Rieke Lab OS</small></div></div>
   {appearance.error&&<p className="appearance-error" role="alert">{appearance.error}</p>}
  </dialog>;
 }

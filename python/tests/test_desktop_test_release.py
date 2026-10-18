@@ -17,7 +17,7 @@ class TestUnsignedReleaseDescriptor(unittest.TestCase):
         manifest={'format':'rieke-desktop-runtime','version':1,'application_version':'0.1.3','platform':'darwin','architecture':'arm64','workspace_formats':[1],'database_compatibility':1,'mysql_version':'8.4.2','minimum_macos_version':'14.0','source_commit':'a'*40,'source_dirty':True}
         (runtime/'runtime-manifest.json').write_text(json.dumps(manifest))
         (resources/'app.asar').write_bytes(b'candidate shell fixture')
-        (app/'Contents/Info.plist').write_bytes(plistlib.dumps({'CFBundleIdentifier':'org.riekeos.desktop','CFBundleShortVersionString':'0.1.3','CFBundleName':internal_name,'CFBundleDisplayName':'Disco','CFBundleExecutable':'Disco'}))
+        (app/'Contents/Info.plist').write_bytes(plistlib.dumps({'CFBundleIdentifier':'org.riekeos.desktop','CFBundleShortVersionString':'0.1.3','CFBundleName':internal_name,'CFBundleDisplayName':'DISCO','CFBundleExecutable':'Disco'}))
         (app/'Contents/MacOS').mkdir()
         main=app/'Contents/MacOS/Disco';main.write_bytes(b'main fixture');main.chmod(0o755)
         helper=app/'Contents/Frameworks'/(helper_name+'.app')/'Contents'

@@ -149,7 +149,7 @@ class SharedRecordingTests(unittest.TestCase):
         library = self.a.parent / 'recordings'
         library.mkdir()
         (library / 'unrelated.h5').write_bytes(b'keep this')
-        with self.assertRaisesRegex(ValueError, 'not a Disco library'):
+        with self.assertRaisesRegex(ValueError, 'not a DISCO library'):
             retain_recording(self.a, self.source, self.sha)
         self.assertEqual((library / 'unrelated.h5').read_bytes(), b'keep this')
         shutil.rmtree(library)
