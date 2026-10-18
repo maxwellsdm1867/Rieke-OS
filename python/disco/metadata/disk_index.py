@@ -19,6 +19,7 @@ import zlib
 from collections import OrderedDict
 from collections.abc import Mapping
 from contextlib import contextmanager
+from types import MappingProxyType
 from urllib.parse import unquote
 
 import disco.navigation.tree as tree
@@ -30,6 +31,11 @@ FORMAT = 3  # Shared ancestors are referenced by source revision and exact UUID.
 CHUNK_SIZE = 256
 CACHE_SIZE = 64
 DETAIL_CACHE_BYTES = 8 * 1024 * 1024
+# Per-key value reads borrow one bounded, adaptively sized window of the scope
+# per connection: sequential callers read in batches, random access shrinks to
+# one key per read. Never the whole scope.
+VALUE_WINDOW_MIN = 8
+VALUE_WINDOW_MAX = 512
 
 
 def _json(value):
@@ -47,6 +53,14 @@ def _sha(path):
 def _signature(path):
     stat = os.stat(path)
     return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns
+
+
+def _freeze(value):
+    if isinstance(value, dict):
+        return MappingProxyType({key: _freeze(item) for key, item in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze(item) for item in value)
+    return value
 
 
 def _raw_definition(field):
@@ -309,6 +323,41 @@ class DiskMetadataIndex:
             if lazy_details: details=_ScopedDetails(self.details,rows)
             return dict(rows=rows,details=details,cells=cells,source=json.loads(source[0]),fingerprints=fingerprints)
 
+    def catalog_definitions(self):
+        """Read-only ``field id -> definition`` view of the full catalog.
+
+        Built once per opened generation and shared by every caller: no per-call
+        copy. Nested mappings and lists are frozen (mapping proxies, tuples), so
+        callers that need a mutable catalog must keep using ``catalog()``.
+        """
+        self._check()
+        view=getattr(self,'_definitions_view',None)
+        if view is None:
+            catalog=self._catalog_cache if getattr(self,'_catalog_cache',None) is not None else self.catalog()
+            view=self._definitions_view=MappingProxyType({field['id']:_freeze(field) for field in catalog['fields']})
+        return view
+
+    def epoch_prefix(self,prefix,limit):
+        """Epoch UUIDs starting with a lowercase prefix: an index range probe.
+
+        Returns ``(first limit identities in UUID order, exact total)``, or None
+        when this generation holds non-lowercase identities (callers then use
+        their own case-insensitive scan).
+        """
+        if type(prefix) is not str or not prefix or prefix!=prefix.lower() or type(limit) is not int or limit<0:
+            raise ValueError('Epoch prefix lookup needs a lowercase prefix and a nonnegative limit')
+        upper=prefix[:-1]+chr(ord(prefix[-1])+1)
+        with self._connect([]) as connection:
+            if getattr(self,'_lowercase_identities',None) is None:
+                self._lowercase_identities=not connection.execute(
+                    'SELECT EXISTS(SELECT 1 FROM epochs WHERE epoch_uuid<>lower(epoch_uuid))').fetchone()[0]
+            if not self._lowercase_identities:
+                return None
+            total=connection.execute('SELECT COUNT(*) FROM epochs WHERE epoch_uuid>=? AND epoch_uuid<?',(prefix,upper)).fetchone()[0]
+            identities=[row[0] for row in connection.execute(
+                'SELECT epoch_uuid FROM epochs WHERE epoch_uuid>=? AND epoch_uuid<? ORDER BY epoch_uuid LIMIT ?',(prefix,upper,limit))]
+        return identities,total
+
     def catalog(self,ids=None,known_fields=None):
         if ids is None and known_fields is None and self._catalog_cache is not None:
             self._check();return copy.deepcopy(self._catalog_cache)
@@ -462,6 +511,7 @@ class DiskMetadataIndex:
 class _Values(Mapping):
     def __init__(self,index,ids,fields):
         self.index=index;self.ids=None if ids is None else tuple(ids);self.fields=None if fields is None else tuple(fields);self.idset=None if self.ids is None else frozenset(self.ids);self.cache=OrderedDict();self._length=None
+        self._window={};self._window_hits=0;self._window_size=VALUE_WINDOW_MIN;self._positions=None
     def __len__(self):
         self.index._check()
         if self._length is None:
@@ -475,12 +525,38 @@ class _Values(Mapping):
     def __getitem__(self,key):
         self.index._check()
         if key not in self.cache:
-            if self.idset is not None and key not in self.idset: raise KeyError(key)
-            result=dict(_Values(self.index,[key],self.fields).items())
-            if key not in result: raise KeyError(key)
-            self.cache[key]=result[key]
+            if key in self._window: self._window_hits+=1
+            else:
+                if self.idset is not None and key not in self.idset: raise KeyError(key)
+                self._read_window(key)
+                if key not in self._window: raise KeyError(key)
+            self.cache[key]=self._window[key]
             if len(self.cache)>CACHE_SIZE: self.cache.popitem(last=False)
         self.cache.move_to_end(key);return copy.deepcopy(self.cache[key])
+    def _read_window(self,key):
+        # One connection reads this key and the scope rows that follow it.
+        # Grow while the previous window was mostly used; shrink otherwise.
+        if self._window:
+            used=self._window_hits*2>=len(self._window)
+            self._window_size=min(VALUE_WINDOW_MAX,self._window_size*2) if used else max(1,self._window_size//2)
+        self._window={};self._window_hits=0
+        if self.ids is not None:
+            if self._positions is None:
+                positions={}
+                for number,identity in enumerate(self.ids): positions.setdefault(identity,number)
+                self._positions=positions
+            start=self._positions[key];batch=self.ids[start:start+self._window_size]
+        else:
+            with self.index._connect([]) as connection:
+                batch=[row[0] for row in connection.execute('SELECT epoch_uuid FROM epochs WHERE epoch_id>=(SELECT epoch_id FROM epochs WHERE epoch_uuid=?) ORDER BY epoch_id LIMIT ?',(key,self._window_size))]
+        if batch: self._window=dict(_Values(self.index,batch,self.fields).items())
+    def subset(self,ids):
+        """A streaming view of these identities in their order: one read, not one per key."""
+        ids=tuple(ids)
+        if self.idset is not None:
+            missing=next((key for key in ids if key not in self.idset),None)
+            if missing is not None: raise KeyError(missing)
+        return _Values(self.index,ids,self.fields)
     def items(self):
         definitions={field['id']:field for field in self.index._definitions}
         joints={}
