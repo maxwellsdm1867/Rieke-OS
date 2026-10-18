@@ -37,7 +37,10 @@ async function assertNotRunning(bundle, run = runFile, ignorePid = null) {
 // private temporary directory, so a lock left by SIGKILL or power loss can be
 // proven abandoned and reclaimed. A live owner is never signalled or replaced.
 const INSTALL_LOCK = '.rieke-os-install.lock';
-const LEGACY_LOCK_STALE_MS = 60 * 60 * 1000;
+// Any process whose executable lives in a Disco.app or Rieke OS*.app bundle
+// (installed, downloaded, staged or previous copies; the testing-install helper
+// runs as that bundle's executable) may be an installer.
+const DISCO_BUNDLE_PROCESS = /\/(?:Disco|\.?Rieke OS[^/]*)\.app\//;
 const STAGING_COPY = /^\.Rieke OS\.install-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.app$/;
 const STALE_LOCK = /^\.rieke-os-install\.lock\.stale-[0-9a-f-]{36}$/;
 async function processStart(pid, run) {
@@ -45,6 +48,21 @@ async function processStart(pid, run) {
     const {stdout} = await run('/bin/ps', ['-o', 'lstart=', '-p', String(pid)]);
     return stdout.trim() || null;
   } catch (error) { if (error.code === 1) return null; throw error; }
+}
+// An ownerless lock (from an older installer) records nothing to prove liveness.
+// Like git's documented index.lock recovery, automated: it is abandoned when no
+// other Disco/Rieke OS process can be holding it. This process and its own
+// descendants (Electron helpers, owned backend, progress reporter) are excluded.
+async function otherDiscoProcessRunning(run) {
+  const {stdout} = await run('/bin/ps', ['-axo', 'pid=,ppid=,comm=']);
+  const rows = stdout.split('\n').map(line => /^\s*(\d+)\s+(\d+)\s+(.+)$/.exec(line)).filter(Boolean)
+    .map(([, pid, ppid, command]) => ({pid: Number(pid), ppid: Number(ppid), command}));
+  const own = new Set([process.pid]);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const row of rows) if (!own.has(row.pid) && own.has(row.ppid)) { own.add(row.pid); grew = true; }
+  }
+  return rows.some(row => !own.has(row.pid) && DISCO_BUNDLE_PROCESS.test(row.command));
 }
 async function lockOwnerAlive(owner, run) {
   try { process.kill(owner.pid, 0); }
@@ -66,7 +84,7 @@ async function reclaimAbandonedLock(lock, run) {
   if (owner?.invalid) throw new Error('Installation lock owner record is unreadable; remove it after confirming no installation is running');
   if (owner) {
     if (await lockOwnerAlive(owner, run)) return false;
-  } else if (Date.now() - stat.mtimeMs < LEGACY_LOCK_STALE_MS) return false; // Ownerless lock from an older installer.
+  } else if (await otherDiscoProcessRunning(run)) return false;
   const stale = `${lock}.stale-${randomUUID()}`;
   try { await fs.rename(lock, stale); } catch (error) { if (error.code === 'ENOENT') return true; throw error; }
   const moved = await readLockOwner(stale);

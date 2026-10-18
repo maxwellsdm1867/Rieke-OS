@@ -56,8 +56,11 @@ permission to alter scientific data or macOS approval.
 `.rieke-os-install.lock`. The lock directory is published by renaming a private
 temporary directory that already holds `owner.json` (pid, `ps lstart` start time,
 nonce). A lock whose owner PID is gone, or whose PID now has a different start
-time, is renamed aside and reclaimed; an ownerless lock from an older installer
-is respected for one hour after its mtime. A live owner is never signalled.
+time, is renamed aside and reclaimed. An ownerless lock from an older installer
+is reclaimed at once only when `ps` shows no other process whose executable lives
+in a `Disco.app` or `Rieke OS*.app` bundle (this covers the testing-install helper,
+which runs as the bundle executable); this process and its descendants are excluded.
+Otherwise it is refused. A live owner is never signalled.
 The holder then sweeps leaked `.Rieke OS.install-<uuid>.app` staging copies and
 reclaimed locks, and releases only a lock whose nonce is still its own.
 
