@@ -191,7 +191,7 @@ class IncomingExportTests(unittest.TestCase):
         self.assertEqual(reuse.status_code, 200, reuse.get_json())
         self.assertEqual(reuse.get_json()['kind'], 'workbench_incoming')
 
-    def test_undone_or_superseded_merge_is_not_exportable_as_accepted(self):
+    def test_undone_merge_is_not_exportable_as_accepted(self):
         acceptance = self.accept(self.accepted_request()).get_json()
         self.assertEqual((acceptance['undone'], acceptance['undone_by_operation_uuid']), (False, None))
         root, body = self.receipt_export_request(acceptance)
@@ -206,20 +206,59 @@ class IncomingExportTests(unittest.TestCase):
         exported = self.case.client.post(root + '/exports', json=body, headers=self.case.headers)
         self.assertEqual(exported.status_code, 409, exported.get_json())
         self.assertEqual(exported.get_json()['code'], 'workbench_merge_undone')
+        self.assertFalse(self.case.datasets.rows)
         # The receipt read carries the durable undo state, so a reloaded
         # client can withdraw "Export accepted" without session memory.
         receipt = self.case.client.get(root).get_json()
         self.assertTrue(receipt['undone'])
         self.assertEqual(receipt['undone_by_operation_uuid'], undone.get_json()['operation_uuid'])
-        self.assertFalse(self.case.datasets.rows)
-        # A main rebound after the merge (here by the undo's binding version)
-        # also refuses, even without consulting the undo receipt.
-        undo_operation = str(uuid.uuid5(uuid.UUID(self.manager.project), 'workbench-undo:' + acceptance['operation_uuid']))
-        self.tables[2].rows[:] = [row for row in self.tables[2].rows if row['operation_uuid'] != undo_operation]
+
+    def test_merge_whose_epoch_left_main_is_not_exportable_as_accepted(self):
+        acceptance = self.accept(self.accepted_request()).get_json()
+        root, body = self.receipt_export_request(acceptance)
+        # Main is replaced by a revision without the merged epoch (e.g. a query save).
+        main = self.case.explorer_history.protocol_binding(self.protocol)
+        kept = [row for row in main['recipe']['epochs'] if row['uuid'] != self.added]
+        record = self.case.explorer_history.create(dict(predicate=main['recipe']['predicate'],
+            splits=main['recipe']['splits'], membership=kept, matched_count=len(kept),
+            total_source=len(self.case.service.rows), metadata_fingerprint_version=2,
+            source_revisions=sorted({self.case.service.rows[row['uuid']]['source_sha256'] for row in kept}),
+            tree=dict(split_order=main['recipe']['tree_view']['fields'])), self.case.service.sources,
+            self.case.service.project_dir / 'catalog.json', 'actor-one', name='Without merged epoch')
+        self.case.explorer_history.bind(record['revision_uuid'], self.protocol, main['version'], 'actor-one',
+            dict(added=[], removed=[self.added], changed=[]), len(main['recipe']['epochs']))
         context = self.case.client.get(root + '/export-context')
         self.assertEqual(context.status_code, 409, context.get_json())
-        self.assertIn('Main changed', context.get_json()['error'])
+        self.assertEqual(context.get_json()['code'], 'workbench_conflict')
+        self.assertIn('no longer contains', context.get_json()['error'])
+        exported = self.case.client.post(root + '/exports', json=body, headers=self.case.headers)
+        self.assertEqual(exported.status_code, 409, exported.get_json())
+        self.assertFalse(self.case.datasets.rows)
 
+    def test_unrelated_later_merge_keeps_accepted_export_of_the_frozen_membership(self):
+        acceptance = self.accept(self.accepted_request()).get_json()
+        # A later merge advances main but keeps the earlier merge's epochs.
+        main = self.case.explorer_history.protocol_binding(self.protocol)
+        present = {row['uuid'] for row in main['recipe']['epochs']}
+        extra = next((key for key in self.case.service.rows if key not in present), None)
+        members = list(main['recipe']['epochs'])
+        if extra:
+            members.append(dict(uuid=extra, metadata_hash=self.case.service._fingerprints[extra]))
+        record = self.case.explorer_history.create(dict(predicate=main['recipe']['predicate'],
+            splits=main['recipe']['splits'], membership=sorted(members, key=lambda row: row['uuid']),
+            matched_count=len(members), total_source=len(self.case.service.rows), metadata_fingerprint_version=2,
+            source_revisions=sorted({self.case.service.rows[row['uuid']]['source_sha256'] for row in members}),
+            tree=dict(split_order=main['recipe']['tree_view']['fields'])), self.case.service.sources,
+            self.case.service.project_dir / 'catalog.json', 'actor-one', name='Later merge')
+        self.case.explorer_history.bind(record['revision_uuid'], self.protocol, main['version'], 'actor-one',
+            dict(added=[extra] if extra else [], removed=[], changed=[]), len(main['recipe']['epochs']))
+        self.assertNotEqual(self.case.explorer_history.protocol_binding_header(self.protocol)['version'],
+                            acceptance['binding']['version'])
+        root, body = self.receipt_export_request(acceptance)
+        exported = self.case.client.post(root + '/exports', json=body, headers=self.case.headers)
+        self.assertEqual(exported.status_code, 201, exported.get_json())
+        self.assertEqual([row['epoch_uuid'] for row in self.artifact(exported.get_json())['epochs']],
+                         sorted(acceptance['accepted_epoch_uuids']))
 
 if __name__ == '__main__':
     unittest.main()

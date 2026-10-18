@@ -46,11 +46,13 @@ def accepted_export_context(manager, protocol, operation, actor):
                                    'exported as accepted additions.')
         undone.code = 'workbench_merge_undone'
         raise undone
-    binding = manager.history.protocol_binding_header(protocol)
-    accepted_binding = receipt.get('binding') or {}
-    if (not binding or binding['version'] != accepted_binding.get('version')
-            or binding['revision_uuid'] != accepted_binding.get('revision_uuid')):
-        raise WorkbenchConflict('Main changed after this merge; its additions can no longer be exported as accepted')
+    # A later merge that keeps these epochs does not block export; main losing
+    # any of them (or holding a different fingerprint) does.
+    binding = manager.history.protocol_binding(protocol)
+    members = {row['uuid']: row['metadata_hash'] for row in binding['recipe']['epochs']} if binding else {}
+    if any(members.get(key) != value for key, value in fingerprints.items()):
+        raise WorkbenchConflict('Main no longer contains every epoch this merge added; '
+                                'its additions can no longer be exported as accepted')
     shared = getattr(manager.service, 'shared_annotations', None)
     scope = manager.service.source_scope()
     context = dict(protocol_uuid=protocol, actor=actor, candidate_revision_uuid=receipt['candidate_revision_uuid'],

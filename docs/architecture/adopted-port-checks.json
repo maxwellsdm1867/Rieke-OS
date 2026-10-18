@@ -6652,7 +6652,7 @@
       },
       {
         "file": "python/tests/test_workspace_workbench_exports.py",
-        "file_sha256": "283099ae30269509388fac172906fba1652161e9d8c2e99309cdd212bae11f7d",
+        "file_sha256": "3a31e78e1080994b60afff75645454636ffaa150ba71165ab1112654dafdb900",
         "reason": "Available formats now include linked SQLite; the two existing artifact-staging failure targets and publication assertions remain unchanged. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Workbench decisions update: an appended undone/superseded-merge export test adds no mock target; workbench_exports owner bytes add the undo and binding refusal.",
         "sites": [
           {
@@ -6673,7 +6673,7 @@
               {
                 "module": "disco.workbench.workbench_exports",
                 "file": "python/disco/workbench/workbench_exports.py",
-                "file_sha256": "56b9ae89676c7ca6025dd1abcb5fa8659f0dde9c56fdde382f3c7c05b26671ef",
+                "file_sha256": "65ed90fa6849ede8a800f28d652d31b4aa03a87300838937809fab9a2a96725b",
                 "contract_id": "backend-workbench"
               },
               {
@@ -6708,7 +6708,7 @@
               {
                 "module": "disco.workbench.workbench_exports",
                 "file": "python/disco/workbench/workbench_exports.py",
-                "file_sha256": "56b9ae89676c7ca6025dd1abcb5fa8659f0dde9c56fdde382f3c7c05b26671ef",
+                "file_sha256": "65ed90fa6849ede8a800f28d652d31b4aa03a87300838937809fab9a2a96725b",
                 "contract_id": "backend-workbench"
               }
             ]
