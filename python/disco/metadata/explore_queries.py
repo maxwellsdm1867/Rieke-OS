@@ -191,6 +191,12 @@ def field_registry(service):
             'summary_available': False}
 
 
+def _whole_catalog(service, context):
+    from workspace_service import WorkspaceService
+    return (context['protocol_uuid'] is None and not context['filters'] and not context['scope']
+            and getattr(service._tree_rows, '__func__', None) is WorkspaceService._tree_rows)
+
+
 def _native_rows(service, context):
     rows = service._tree_rows(context['protocol_uuid'], context['filters'])
     return [row for row in rows if all(row.get(key) == value for key, value in context['scope'].items())]
@@ -498,15 +504,24 @@ def explore_page(service, predicate, *, scope=None, protocol_uuid=None, filters=
                 combined, typed = typed_scope(service, context)
                 result = reader.page(combined, typed, limit=limit, cursor=rank)
             else:
-                rows = _native_rows(service, context)
-                _, identities, _ = service.match_predicate(predicate, (row['epoch_uuid'] for row in rows))
-                members = set(identities)
-                rows = sorted((row for row in rows if row['epoch_uuid'] in members),
-                              key=lambda row: (row['date'], row['start_time'][11:], row['epoch_uuid']))
-                membership = checksum(rows)
+                if _whole_catalog(service, context):
+                    # The unfiltered project scope is the service's cached eligible
+                    # catalog; match it directly instead of re-listing every row.
+                    _, identities, _ = service.match_predicate(predicate)
+                    rows = [service.rows[key] for key in identities]
+                else:
+                    rows = _native_rows(service, context)
+                    _, identities, _ = service.match_predicate(predicate, (row['epoch_uuid'] for row in rows))
+                    members = set(identities)
+                    rows = [row for row in rows if row['epoch_uuid'] in members]
+                rows.sort(key=lambda row: (row['date'], row['start_time'][11:], row['epoch_uuid']))
+                offset = rank or 0
+                # The membership witness binds continuations; a single complete
+                # page without a cursor has nothing to bind.
+                if token is not None or offset + limit < len(rows):
+                    membership = checksum(rows)
                 if token is not None and token.get('membership') != membership:
                     raise StaleQuery('Authoritative filtered membership changed during paging')
-                offset = rank or 0
                 result = {'rows': copy.deepcopy(rows[offset:offset+limit]),
                           'cursor': offset+limit if offset+limit < len(rows) else None}
         if before != generation(service, context):

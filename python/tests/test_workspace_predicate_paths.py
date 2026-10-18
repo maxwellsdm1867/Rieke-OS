@@ -96,6 +96,23 @@ class PerValueLeafTests(unittest.TestCase):
                                  [dict(epoch_uuid=key, revision=1, tags=sorted(value['tags']))
                                   for key, value in sorted(service.saved.items())])
 
+    def test_supplied_universe_and_sparse_order_equal_the_scanned_order(self):
+        service = StubService(2000, tagged=40)
+        field = f'curation/{service.protocol}/tags'
+        ids = tuple(reversed(list(service.rows)))
+        rank = {key: index for index, key in enumerate(ids)}
+        calls = []
+
+        def order(found):
+            calls.append(len(found))
+            return sorted(found, key=rank.__getitem__)
+        for predicate in self.predicates(field):
+            with self.subTest(predicate=predicate):
+                fast = TagPredicates(service).match(predicate, ids, universe=frozenset(ids), order=order)[1]
+                self.assertEqual(fast, reference_match(service, predicate, ids))
+        # Sparse results (40 of 2000) use the order function; dense ones scan.
+        self.assertTrue(calls and max(calls) <= 40, calls)
+
     def test_snapshot_states_and_revision_equal_previous_construction(self):
         service = StubService(300, tagged=12)
         field = f'curation/{service.protocol}/tags'
@@ -280,6 +297,19 @@ class WholeCatalogEligibilityTests(unittest.TestCase):
             self.assertEqual(list(self.service.match_predicate({'all': []})[1]),
                              list(self.service._eligible()[1]))
 
+    def test_whole_catalog_native_page_matches_listed_rows_reference(self):
+        import disco.metadata.explore_queries as queries
+        predicate = {'not': {'field': f'curation/{self.service.protocol_id}/tags', 'operator': 'contains', 'value': 'x'}}
+        with patch.object(queries, '_native_rows', side_effect=AssertionError('listed every row')):
+            first = self.service.explore_page(predicate, limit=1)
+            second = self.service.explore_page(predicate, limit=1, cursor=first['cursor'])
+        with patch.object(queries, '_whole_catalog', return_value=False):
+            reference = self.service.explore_page(predicate, limit=1)
+            following = self.service.explore_page(predicate, limit=1, cursor=reference['cursor'])
+        self.assertEqual(first['rows'], reference['rows'])
+        self.assertEqual(second['rows'], following['rows'])
+        self.assertIsNone(second['cursor'])
+        self.assertEqual(len(first['rows'] + second['rows']), 2)
 
 if __name__ == '__main__':
     unittest.main()

@@ -429,7 +429,14 @@ class WorkspaceService:
         from disco.navigation.tag_predicates import TagPredicates
         if ids is None:
             # Drawn from the published rows by construction; no membership recheck.
-            eligible = self._eligible()[1]
+            _, eligible, _, universe = self._eligible()
+            rows = self.rows
+            # Eligible order is exactly this unique tree key, so a sparse match is
+            # ordered by sorting it instead of scanning every eligible ID.
+            order = lambda found: sorted(found, key=lambda key: (rows[key]['date'], rows[key]['start_time'], key))
+            if getattr(self._filter_rows, '__func__', None) is not WorkspaceService._filter_rows:
+                order = None
+            return TagPredicates(self).match(predicate, eligible, universe=universe, order=order)
         else:
             eligible = list(ids)
             if set(eligible) - self.rows.keys():
@@ -1303,7 +1310,8 @@ class WorkspaceService:
         # A replaced filter policy keeps deciding unfiltered eligibility itself.
         if getattr(self._filter_rows, '__func__', None) is not WorkspaceService._filter_rows:
             rows = tuple(self._filter_rows([row for row in self.rows.values() if row['source_sha256'] in active], {}))
-            return rows, tuple(row['epoch_uuid'] for row in rows), scope
+            ids = tuple(row['epoch_uuid'] for row in rows)
+            return rows, ids, scope, frozenset(ids)
         publication = getattr(self, '_explore_publication', None)
         key = (publication, id(self.rows), len(self.rows), scope['revision'])
         cached = getattr(self, '_eligible_cache', None)
@@ -1311,7 +1319,8 @@ class WorkspaceService:
             return cached[1]
         rows = tuple(sorted((row for row in self.rows.values() if row['source_sha256'] in active),
                             key=lambda row: (row['date'], row['start_time'], row['epoch_uuid'])))
-        value = (rows, tuple(row['epoch_uuid'] for row in rows), scope)
+        ids = tuple(row['epoch_uuid'] for row in rows)
+        value = (rows, ids, scope, frozenset(ids))
         if publication is not None:
             self._eligible_cache = (key, value)
         return value

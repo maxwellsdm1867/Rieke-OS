@@ -300,7 +300,12 @@ class TagPredicates:
             fields.append(field)
         return fields
 
-    def match(self,predicate,ids):
+    def match(self,predicate,ids,*,universe=None,order=None):
+        """Validated predicate, matching IDs in `ids` order, and tag evidence.
+
+        A caller that owns `ids` may pass its precomputed `universe` (exactly
+        set(ids)) and `order`, a function returning matched IDs in `ids` order.
+        """
         fields=referenced_fields(predicate)
         if not fields:
             validated,matched=self.service._match_metadata_predicate(predicate,ids)
@@ -312,23 +317,31 @@ class TagPredicates:
         # Raw metadata subtrees below retain their exact registered-type validator.
         validated=check_time_nodes(validate(predicate,{'fields':definitions},samples(fields,[''])))
         ids=ids if isinstance(ids,(list,tuple)) else list(ids)
-        universe=set(ids)
+        universe=set(ids) if universe is None else universe
         def walk(node):
+            # Every branch returns a fresh mutable subset of the universe.
             if not referenced_fields(node):
                 return set(self.service._match_metadata_predicate(node,ids)[1])
             if 'all' in node:
-                result=set(universe)
-                for child in node['all']: result.intersection_update(walk(child))
+                children=node['all']
+                if not children:return set(universe)
+                result=walk(children[0])
+                # No short circuit: each metadata subtree is still validated.
+                for child in children[1:]: result.intersection_update(walk(child))
                 return result
             if 'any' in node:
                 result=set()
                 for child in node['any']: result.update(walk(child))
                 return result
-            if 'not' in node: return universe-walk(node['not'])
+            if 'not' in node:
+                result=set(universe);result.difference_update(walk(node['not']))
+                return result
             if node['field'] in TIME_FIELDS: return self._time_leaf(node,ids,universe,entry)
             return entry.leaf(node,universe)
         matched=walk(validated)
-        return validated,[identity for identity in ids if identity in matched],copy.deepcopy(entry.evidence)
+        ordered=(order(matched) if order is not None and len(matched)*8<len(ids)
+                 else [identity for identity in ids if identity in matched])
+        return validated,ordered,copy.deepcopy(entry.evidence)
 
     def _time_leaf(self,node,ids,universe=None,entry=None):
         """Validated per-tag times; canonical chips when no time table exists."""
