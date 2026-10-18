@@ -3016,7 +3016,7 @@
       ]
     },
     "src/renderer-drafts/desktopDraftSession.js": {
-      "fingerprint": "65c5bd538e7d8e30b9b15a4715eb316f3cf4b3573fe4055ada37fc43f08df7c7",
+      "fingerprint": "d4ca0c9da72249c2f4903c6cfa957d06cfde7374dcb644a46a54c7991ab9b4a4",
       "sites": [],
       "lifetime": "transitive-dependency",
       "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",

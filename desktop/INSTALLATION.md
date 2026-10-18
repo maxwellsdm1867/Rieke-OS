@@ -42,12 +42,24 @@ that distinction instead of claiming equivalent proofs.
 Testing `launchTestingInstall({receiptPath,currentExecutable,currentPid,run,
 spawnHelper,readyTimeoutMs})` validates current parent identity and helper origin,
 then waits for a matching readiness line. Spawn alone cannot resolve it. Failure
-or timeout rejects without signaling the current app. On success it returns
+or timeout rejects without signaling the current app; a helper that has not
+exited receives one SIGTERM (never a force kill) so a later ordinary Quit cannot
+complete an installation this app declared failed. Only a ready helper is
+detached (unref). On success it returns
 `{ready:true,helperPid,resultPath}`. `applyTestingInstall` publishes readiness,
 checks exact parent identity until disappearance, and rechecks cached bytes before
 replacement. A changed creation time after readiness is still a rejection.
 Partial/failed installation and rollback remain existing recovery outcomes, not
 permission to alter scientific data or macOS approval.
+
+`installCompleteBundle` serializes installations per Applications folder with
+`.rieke-os-install.lock`. The lock directory is published by renaming a private
+temporary directory that already holds `owner.json` (pid, `ps lstart` start time,
+nonce). A lock whose owner PID is gone, or whose PID now has a different start
+time, is renamed aside and reclaimed; an ownerless lock from an older installer
+is respected for one hour after its mtime. A live owner is never signalled.
+The holder then sweeps leaked `.Rieke OS.install-<uuid>.app` staging copies and
+reclaimed locks, and releases only a lock whose nonce is still its own.
 
 ## Executable public examples and limits
 

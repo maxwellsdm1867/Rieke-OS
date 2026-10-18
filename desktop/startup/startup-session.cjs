@@ -30,10 +30,18 @@ class StartupSession {
     }catch{} // Unknown/corrupt/older state is preserved and opens the chooser.
   }
   claim(){if(this.claimed)return null;this.claimed=true;this.target=!this.cancelled&&this.value?.mode==='resume'?{...this.value}:null;return this.target;}
-  save(value){this.value=value;const next={...value};this.chain=this.chain.catch(()=>{}).then(()=>atomicJSON(this.file,next));return this.chain;}
+  save(value){
+    this.value=value;const next={...value},key=JSON.stringify(next);this.requested=key;
+    // A failed write forgets its request so the same value is attempted again.
+    this.chain=this.chain.catch(()=>{}).then(()=>atomicJSON(this.file,next)).catch(error=>{if(this.requested===key)this.requested=null;throw error;});
+    return this.chain;
+  }
   remember(projectId,projectPath,view){
     const value={format:FORMAT,version:1,compatibility:this.compatibility,mode:this.preference||this.value?.mode||'resume',projectId,projectPath,view:typeof view==='string'?view.slice(0,80):'overview'};
-    if(!valid(value,this.compatibility))throw Error('Invalid startup session');return this.save(value);
+    if(!valid(value,this.compatibility))throw Error('Invalid startup session');
+    // Only a project/page change writes; repeated autosaves of one page do not fsync.
+    if(JSON.stringify(value)===this.requested)return this.chain;
+    return this.save(value);
   }
   async choose(){this.cancelled=true;this.preference='chooser';if(this.value)await this.save({...this.value,mode:'chooser'});}
   async resume(){this.cancelled=false;this.preference='resume';if(this.value)await this.save({...this.value,mode:'resume'});}

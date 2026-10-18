@@ -32,6 +32,81 @@ async function assertNotRunning(bundle, run = runFile, ignorePid = null) {
   }))
     throw new Error('The installed DISCO app is running. Quit it before installation.');
 }
+// One installation per Applications folder. The lock directory carries an owner
+// record (pid, process start time, nonce) published atomically by renaming a
+// private temporary directory, so a lock left by SIGKILL or power loss can be
+// proven abandoned and reclaimed. A live owner is never signalled or replaced.
+const INSTALL_LOCK = '.rieke-os-install.lock';
+const LEGACY_LOCK_STALE_MS = 60 * 60 * 1000;
+const STAGING_COPY = /^\.Rieke OS\.install-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.app$/;
+const STALE_LOCK = /^\.rieke-os-install\.lock\.stale-[0-9a-f-]{36}$/;
+async function processStart(pid, run) {
+  try {
+    const {stdout} = await run('/bin/ps', ['-o', 'lstart=', '-p', String(pid)]);
+    return stdout.trim() || null;
+  } catch (error) { if (error.code === 1) return null; throw error; }
+}
+async function lockOwnerAlive(owner, run) {
+  try { process.kill(owner.pid, 0); }
+  catch (error) { if (error.code === 'ESRCH') return false; if (error.code !== 'EPERM') throw error; }
+  // The PID exists; a recorded start time distinguishes a reused PID.
+  return owner.started === null || await processStart(owner.pid, run) === owner.started;
+}
+async function readLockOwner(lock) {
+  try {
+    const value = JSON.parse(await fs.readFile(path.join(lock, 'owner.json'), 'utf8'));
+    return value?.format === 'disco-install-lock' && value.version === 1 && Number.isSafeInteger(value.pid) && value.pid > 0 &&
+      (value.started === null || typeof value.started === 'string') && typeof value.nonce === 'string' ? value : {invalid: true};
+  } catch (error) { return error.code === 'ENOENT' ? null : {invalid: true}; }
+}
+async function reclaimAbandonedLock(lock, run) {
+  const stat = await fs.lstat(lock);
+  if (!stat.isDirectory() || stat.isSymbolicLink() || stat.uid !== process.getuid()) throw new Error('Installation lock is not a user-owned directory; remove it after confirming no installation is running');
+  const owner = await readLockOwner(lock);
+  if (owner?.invalid) throw new Error('Installation lock owner record is unreadable; remove it after confirming no installation is running');
+  if (owner) {
+    if (await lockOwnerAlive(owner, run)) return false;
+  } else if (Date.now() - stat.mtimeMs < LEGACY_LOCK_STALE_MS) return false; // Ownerless lock from an older installer.
+  const stale = `${lock}.stale-${randomUUID()}`;
+  try { await fs.rename(lock, stale); } catch (error) { if (error.code === 'ENOENT') return true; throw error; }
+  const moved = await readLockOwner(stale);
+  if ((moved?.nonce ?? null) !== (owner?.nonce ?? null)) {
+    // Another installer replaced the lock between inspection and rename: put it back.
+    await fs.rename(stale, lock).catch(() => {});
+    return false;
+  }
+  await fs.rm(stale, {recursive: true, force: true});
+  return true;
+}
+async function acquireInstallLock(parent, run) {
+  const lock = path.join(parent, INSTALL_LOCK);
+  const owner = {format: 'disco-install-lock', version: 1, pid: process.pid, started: await processStart(process.pid, run), nonce: randomUUID()};
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let present = true;
+    try { await fs.lstat(lock); } catch (error) { if (error.code !== 'ENOENT') throw error; present = false; }
+    if (!present) {
+      const temporary = `${lock}.${owner.nonce}.tmp`;
+      await fs.mkdir(temporary, {mode: 0o700});
+      try {
+        await fs.writeFile(path.join(temporary, 'owner.json'), JSON.stringify(owner), {mode: 0o600, flag: 'wx'});
+        try { await fs.rename(temporary, lock); }
+        catch (error) { if (!['EEXIST', 'ENOTEMPTY'].includes(error.code)) throw error; continue; }
+      } finally { await fs.rm(temporary, {recursive: true, force: true}); }
+      // Only the lock holder sweeps leaked staging copies and reclaimed locks.
+      for (const name of await fs.readdir(parent)) {
+        if (!STAGING_COPY.test(name) && !STALE_LOCK.test(name)) continue;
+        const entry = path.join(parent, name), info = await fs.lstat(entry);
+        if (info.isDirectory() && !info.isSymbolicLink() && info.uid === process.getuid()) await fs.rm(entry, {recursive: true, force: true});
+      }
+      return {lock, owner};
+    }
+    if (!await reclaimAbandonedLock(lock, run)) break;
+  }
+  throw Object.assign(new Error('Another DISCO installation is in progress. Wait for it to finish, then try again.'), {code: 'EEXIST'});
+}
+async function releaseInstallLock({lock, owner}) {
+  if ((await readLockOwner(lock))?.nonce === owner.nonce) await fs.rm(lock, {recursive: true, force: true});
+}
 async function readBundleManifest(bundle) {
   return JSON.parse(await fs.readFile(path.join(bundle, 'Contents', 'Resources', 'runtime', 'runtime-manifest.json'), 'utf8'));
 }
@@ -242,8 +317,7 @@ async function installCompleteBundle({source, destination = path.join(os.homedir
   const sourcePlist = await run('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleShortVersionString', path.join(source, 'Contents', 'Info.plist')]);
   if (sourcePlist.stdout.trim() !== sourceManifest.application_version) throw new Error('App and runtime versions differ');
   if (!unsignedTesting) await verifyResources(path.join(source, 'Contents', 'Resources', 'runtime'), sourceManifest.resources);
-  const lock = path.join(parent, '.rieke-os-install.lock');
-  await fs.mkdir(lock, {mode: 0o700});
+  const lock = await acquireInstallLock(parent, run);
   const staging = consumePrepared ? prepared.source : path.join(parent, `.Rieke OS.install-${randomUUID()}.app`);
   const previous = path.join(parent, '.Rieke OS.previous.app');
   let movedPrevious = false, previousDigest = null;
@@ -305,7 +379,7 @@ async function installCompleteBundle({source, destination = path.join(os.homedir
     return {destination, previous: movedPrevious ? previous : null, ...(retainPreviousDigest ? {previousDigest} : {})};
   } finally {
     if (!consumePrepared) await fs.rm(staging, {recursive: true, force: true});
-    await fs.rm(lock, {recursive: true, force: true});
+    await releaseInstallLock(lock);
   }
 }
 module.exports = {APP_ID, enclosingApp, signatureIdentity, assertNotRunning, compatibleManifest, installCompleteBundle, readBundleManifest, bundleDigest, verifyTestingBundle, quarantinePreserved};

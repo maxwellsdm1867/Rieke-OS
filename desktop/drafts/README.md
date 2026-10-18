@@ -11,7 +11,7 @@ process owner. See [local instructions](AGENTS.md) and
 | --- | --- |
 | `new DraftStore(userData)` | Uses `userData/drafts`; main supplies launcher userData or its canonical UUID/path/compatibility namespace. No directory migration. |
 | `load(projectId)` | Validates identity. Returns null for absent file, exact version-1 draft, or a version-1 unreadable recovery marker. Wrong-owner, symlink, oversized, malformed/mismatched and unreadable state require recovery. |
-| `save({projectId,value})` | Exact two-key envelope; value is a matching `rieke-renderer-draft` version1 object with a nonarray object value. Loads prior state before writing; pending recovery refuses overwrite. Returns `{saved:true}` only after temporary-file rename. Validation and filesystem errors propagate. |
+| `save({projectId,value})` | Exact two-key envelope; value is a matching `rieke-renderer-draft` version1 object with a nonarray object value. Loads prior state before writing unless this store already read it as valid/absent or wrote it itself in this process; pending recovery refuses overwrite. Returns `{saved:true}` only after temporary-file rename. Validation and filesystem errors propagate. |
 | `reset(projectId)` | Requires verified pending recovery. Renames original to `<id>.corrupt-<uuid>.json`, clears pending recovery and returns `{reset:true}`. Never follows/removes a symlink target. |
 | `validStoredDraft(value,projectId)` | Existing envelope structural/identity predicate. It is not origin admission or scientific validity. |
 | `MAX_DRAFT_BYTES` | 2 MiB; serialized saves and existing file size remain bounded. |
@@ -26,7 +26,8 @@ Main's scopedDraftStore binds a current authenticated window origin to project
 UUID, canonical path and app-version:view-v1 namespace. Identical UUIDs at different
 paths must not borrow saved views. This owner does not derive that trust itself.
 Saving a view occurs before StartupSession.remember in main; that ordering remains
-unchanged. Strict replacement and bounded explicit Quit remain distinct
+unchanged. remember writes only when the project, path, page or mode changes, and
+its failure is reported as a notice without failing the persisted draft save. Strict replacement and bounded explicit Quit remain distinct
 [close coordination](../close/README.md) obligations.
 
 ## Public examples and verification

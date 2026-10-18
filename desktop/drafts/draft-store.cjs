@@ -10,7 +10,7 @@ function validStoredDraft(value, projectId) {
     value.value !== null && typeof value.value === 'object' && !Array.isArray(value.value);
 }
 class DraftStore {
-  constructor(userData) { this.userData = userData; this.directory = path.join(userData, 'drafts'); this.pending = new Set(); }
+  constructor(userData) { this.userData = userData; this.directory = path.join(userData, 'drafts'); this.pending = new Set(); this.verified = new Set(); }
   async location(projectId) {
     const id = validateProjectId(projectId);
     await fs.mkdir(this.directory, {recursive: true, mode: 0o700});
@@ -18,7 +18,7 @@ class DraftStore {
     if (!stat.isDirectory() || stat.isSymbolicLink() || stat.uid !== process.getuid()) throw new Error('Draft state directory is redirected or not privately owned');
     return {id, filename: path.join(this.directory, `${id}.json`)};
   }
-  recovery(id) { this.pending.add(id); return {format: 'rieke-draft-recovery', version: 1, projectId: id, reason: 'saved-draft-unreadable'}; }
+  recovery(id) { this.verified.delete(id); this.pending.add(id); return {format: 'rieke-draft-recovery', version: 1, projectId: id, reason: 'saved-draft-unreadable'}; }
   async load(projectId) {
     const id = validateProjectId(projectId);
     if (this.pending.has(id)) return this.recovery(id);
@@ -29,19 +29,22 @@ class DraftStore {
       const stat = await fs.lstat(filename);
       if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_DRAFT_BYTES || stat.uid !== process.getuid()) return this.recovery(id);
       const value = JSON.parse(await fs.readFile(filename, 'utf8'));
-      return validStoredDraft(value, id) ? value : this.recovery(id);
-    } catch (error) { return error.code === 'ENOENT' ? null : this.recovery(id); }
+      if (!validStoredDraft(value, id)) return this.recovery(id);
+      this.verified.add(id); return value;
+    } catch (error) { if (error.code !== 'ENOENT') return this.recovery(id); this.verified.add(id); return null; }
   }
   async save(payload) {
     const {projectId, serialized} = validateDraft(payload);
     if (!validStoredDraft(payload.value, projectId)) throw new TypeError('Invalid renderer draft identity or schema');
-    await this.load(projectId);
+    // State this store already read as valid/absent, or wrote itself, is kept in
+    // memory; repeated saves do not re-read the file they just replaced.
+    if (!this.verified.has(projectId)) await this.load(projectId);
     if (this.pending.has(projectId)) throw new Error('Saved view needs an explicit recovery decision before it can be replaced');
     const {filename} = await this.location(projectId);
     const temporary = `${filename}.${randomUUID()}.tmp`;
     try { await fs.writeFile(temporary, serialized, {mode: 0o600, flag: 'wx'}); await fs.rename(temporary, filename); }
     finally { await fs.rm(temporary, {force: true}); }
-    return {saved: true};
+    this.verified.add(projectId); return {saved: true};
   }
   async reset(projectId) {
     const id = validateProjectId(projectId);
@@ -49,7 +52,7 @@ class DraftStore {
     const {filename} = await this.location(id);
     try { await fs.rename(filename, path.join(this.directory, `${id}.corrupt-${randomUUID()}.json`)); }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
-    this.pending.delete(id); return {reset: true};
+    this.pending.delete(id); this.verified.delete(id); return {reset: true};
   }
 }
 module.exports = {DraftStore, validStoredDraft, MAX_DRAFT_BYTES};
