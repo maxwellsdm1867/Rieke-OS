@@ -303,3 +303,6 @@ class DataStoreDeletion:
             targets += [{'project_uuid': self.project, 'target_kind': 'cell', 'target_uuid': key} for key in orphan_cells]
             if targets:
                 (annotations.Annotation & targets).delete_quick()
+                remove_times = getattr(annotations, 'delete_tag_times', None)
+                if remove_times is not None:
+                    remove_times(targets)

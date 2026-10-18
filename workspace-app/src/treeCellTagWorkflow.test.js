@@ -21,8 +21,8 @@ test('bulk cell composer writes only explicit cells with verified per-author rev
   await h.act(()=>input(h).parent.props.onSubmit({preventDefault(){}}));
   await h.waitFor(()=>receipt);
   const reads=h.fixture.requests.filter(row=>row.path==='/annotations/read'),writes=h.fixture.requests.filter(row=>row.path==='/annotations');
-  assert.equal(reads.length,1);assert.equal(writes.length,1);
-  assert.deepEqual(reads[0].body,{target_kind:'cell',target_uuids:['cell-0','cell-2']});
+  // Never-tagged cells: one write with expected revision 0, verified by the server; no pre-read.
+  assert.equal(reads.length,0);assert.equal(writes.length,1);
   assert.deepEqual(writes[0].body,{target_kind:'cell',target_uuids:['cell-0','cell-2'],profile_uuid:'author',tags_add:['two cells only'],tags_remove:[],expected_revisions:{'cell-0':0,'cell-2':0}});
   assert.deepEqual([...h.fixture.cellAnnotations.keys()].sort(),['cell-0','cell-2']);
   assert.equal(h.fixture.annotations.size,0);assert.ok(receipt.targets.every(target=>target.target_kind==='cell'));
@@ -30,17 +30,22 @@ test('bulk cell composer writes only explicit cells with verified per-author rev
  }finally{await h.close();}
 });
 
-test('changing selected cells cancels a pending revision read without losing unfinished text or writing old targets',async()=>{
+test('a conflicting selection write re-reads once and refuses if the selection changed meanwhile, keeping the draft',async()=>{
  const h=await createWorkflowHarness();let release,read;
  try{
   const Tags=await h.component('AnnotationTags');
+  h.fixture.annotationVersions.set('cell:cell-0',3); // the guessed revision 0 is stale → 409, nothing applied
   h.fixture.respond=(url,options,fallback)=>{if(url.pathname==='/api/annotations/read'){read=JSON.parse(options.body);return new Promise(resolve=>{release=resolve;});}return fallback();};
   await h.mount(Tags,props);await h.waitFor(()=>input(h)&&!input(h).props.disabled);
   await h.act(()=>input(h).props.onChange({target:{value:'keep this draft'}}));
   await h.act(()=>input(h).parent.props.onSubmit({preventDefault(){}}));
+  await h.waitFor(()=>!!release);
+  assert.equal(h.fixture.requests.filter(row=>row.path==='/annotations').length,1,'First write rejected (409)');
   await h.render(Tags,{...props,selectedCells:['cell-1']});
-  await h.act(()=>release({targets:Object.fromEntries(read.target_uuids.map(id=>[id,{target_kind:'cell',target_uuid:id,revisions:{}}]))}));
-  assert.equal(h.fixture.requests.filter(row=>row.path==='/annotations').length,0);
+  await h.act(()=>release({targets:Object.fromEntries(read.target_uuids.map(id=>[id,{target_kind:'cell',target_uuid:id,revisions:{author:id==='cell-0'?3:0}}]))}));
+  await h.settle(30);
+  assert.equal(h.fixture.requests.filter(row=>row.path==='/annotations').length,1,'No retry to the old selection');
+  assert.equal(h.fixture.cellAnnotations.size,0);
   assert.equal(input(h).props.value,'keep this draft');
  }finally{await h.close();}
 });

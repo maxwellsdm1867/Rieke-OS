@@ -82,3 +82,59 @@ test('dismissed query composer still publishes a submitted durable receipt',asyn
   assert.equal(changed.changed,1857);
  }finally{await h.close();}
 });
+
+test('multi-selection tags show pending on every selected epoch before the write returns, then confirm',async()=>{
+  const h=await createWorkflowHarness();
+  try{
+    const Tags=await h.component('AnnotationTags'),{tagStore}=await h.module('annotations/tagStore.js');
+    let hold=300;h.fixture.delay=record=>record.path==='/annotations'?hold:0;
+    await h.mount(Tags,{...props,reconcileReceipt:true});
+    await h.waitFor(()=>editor(h)&&!editor(h).props.disabled);
+    await h.act(()=>editor(h).props.onChange({target:{value:'group tag'}}));
+    await h.act(()=>editor(h).parent.props.onSubmit({preventDefault(){}}));
+    for(const id of ['epoch-0','epoch-1'])assert.deepEqual(tagStore.read('epoch',id).pending.map(op=>op.tag),['group tag'],'Shown before the write returns');
+    await h.waitFor(()=>['epoch-0','epoch-1'].every(id=>!tagStore.read('epoch',id).pending.length));
+    for(const id of ['epoch-0','epoch-1'])assert.deepEqual(tagStore.read('epoch',id).confirmed.tags.map(chip=>chip.tag),['group tag']);
+    assert.equal(h.fixture.requests.filter(row=>row.path==='/annotations').length,1);
+  }finally{await h.close();}
+});
+
+test('group and confirmed epoch receipts do not tick the app clock; other annotation changes do',async()=>{
+  const h=await createWorkflowHarness();
+  try{
+    const {useWorkspaceChanges}=await h.module('useWorkspaceChanges.js'),React=await import('react');let api;
+    const Probe=()=>{api=useWorkspaceChanges();return null;};
+    await h.mount(Probe,{});
+    const receipt={version:1,targets:[{target_kind:'epoch',target_uuid:'epoch-0',revisions:{me:1},tags:[]}]};
+    await h.act(()=>api.changed({kind:'annotations',tagChannel:true}));
+    await h.act(()=>api.changed({kind:'annotations',confirmed:receipt}));
+    assert.equal(api.revision,0);
+    await h.act(()=>api.changed({kind:'annotations'}));
+    assert.equal(api.revision,1);assert.equal(api.structureRevision,0);
+    void React;
+  }finally{await h.close();}
+});
+
+test('ghost completion shows the rest of an existing tag in grey; Tab accepts it without saving or navigating',async()=>{
+  const h=await createWorkflowHarness();
+  try{
+    h.fixture.respond=(url,options,fallback)=>url.pathname==='/api/annotation-tags'?{tags:[{tag:'branch-stim',count:4},{tag:'bright',count:1}],has_more:false}:fallback();
+    const Tags=await h.component('AnnotationTags'),navigated=[];
+    const single={...props,targetScope:'epoch',selectedEpochs:[],reconcileReceipt:true,onNavigateEpoch:direction=>navigated.push(direction)};
+    const input=()=>h.root.findAllByType('input').find(row=>row.props['aria-label']==='Tag this epoch');
+    await h.mount(Tags,single);await h.waitFor(()=>input()&&!input().props.disabled);
+    await h.act(()=>input().props.onFocus());
+    await h.waitFor(()=>h.fixture.requests.some(row=>row.path.startsWith('/annotation-tags')));await h.settle(20);
+    const before=h.fixture.requests.length;
+    await h.act(()=>input().props.onChange({target:{value:'bra'},nativeEvent:{}}));
+    const ghost=h.root.findByProps({className:'tag-input-ghost'});
+    assert.equal(ghost.children.at(-1),'nch-stim','Grey remainder of the most used match');
+    assert.equal(input().props.value,'bra','The value stays as typed');
+    const options=h.root.findAllByProps({role:'option'}).length;assert.equal(options,1);
+    let prevented=false;
+    await h.act(()=>input().props.onKeyDown({key:'Tab',shiftKey:false,currentTarget:{selectionStart:3,selectionEnd:3},preventDefault(){prevented=true;},stopPropagation(){}}));
+    assert.equal(prevented,true);assert.equal(input().props.value,'branch-stim');
+    assert.deepEqual(navigated,[]);
+    assert.equal(h.fixture.requests.slice(before).length,0,'Suggestions and completion are local');
+  }finally{await h.close();}
+});

@@ -1,3 +1,4 @@
+import {formatBytes} from "../byteSize.js";
 import {distinctCells,recordedCellType,isUnclassifiedType} from "../cell-qc/cellTypes.js";
 export function isTypingProtocol(protocol){
   const definition=protocol.definition||protocol;
@@ -10,10 +11,29 @@ export function recordingStorage(inventory,sourceIds){
   for(const id of ids){const source=sources.get(id);if(source?.file_status==='available'&&Number.isFinite(source.size_bytes)&&source.size_bytes>=0)bytes+=source.size_bytes;else unknown++;}
   return {bytes:unknown?null:bytes,knownBytes:bytes,unknown,sources:ids.size};
 }
-export function sizeLabel(bytes){if(!Number.isFinite(bytes))return '—';if(bytes<1000)return `${bytes} B`;if(bytes<1e6)return `${(bytes/1000).toFixed(1)} KB`;if(bytes<1e9)return `${(bytes/1e6).toFixed(1)} MB`;return `${(bytes/1e9).toFixed(2)} GB`;}
+// Shared app-wide byte presentation; kept under this name for existing callers.
+export const sizeLabel=bytes=>formatBytes(bytes);
 
 export const validCellCount=value=>Number.isSafeInteger(value)&&value>=0;
 export const validRecordedDuration=value=>typeof value==='number'&&Number.isFinite(value)&&value>=0;
+
+// Count with the correctly inflected noun ("1 cell", "3 cells"). An invalid count
+// stays visibly unavailable instead of becoming a fabricated zero.
+export function countNoun(value,singular,plural=`${singular}s`){
+  return validCellCount(value)?`${value.toLocaleString()} ${value===1?singular:plural}`:`Unavailable ${plural}`;
+}
+// Sum one per-type field across groups; any unavailable group makes the total unavailable.
+export function groupTotal(groups,field){
+  let total=0;
+  for(const group of groups||[]){const value=group?.[field];if(!validCellCount(value)||!validCellCount(total+value))return null;total+=value;}
+  return total;
+}
+// Display date for cell recording metadata; unparseable values are shown verbatim.
+export function recordingDateLabel(date){
+  if(date==='Not recorded')return date;
+  const parsed=new Date(date+'T12:00:00');
+  return Number.isNaN(parsed.getTime())?date:parsed.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+}
 
 // The summary DTO partitions current epoch UUIDs by cell UUID. Its `exported`
 // field intersects that membership with a SET of saved-export epoch UUIDs;

@@ -180,6 +180,8 @@ def field_registry(service):
             'operators': field_operators(field.get('types', []))}
         fields.append(definition)
     for field in TagPredicates(service).definitions():
+        if field.get('value_shape') == 'tag_time':
+            continue  # Composed by the tag filter's time window, not the field editor.
         fields.append({**field, 'types': ['array'], 'element_types': ['string'],
                        'types_scope': 'project_annotations', 'operators': field_operators(['array'])})
     if before != generation(service):

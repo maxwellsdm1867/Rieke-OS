@@ -30,7 +30,8 @@ function row(root,n,cell='Cell 0'){return root.findAllByType('button').find(node
 async function openCell(h,index=0){
  const date=h.root.findAllByType('details').find(n=>n.props.className==='cell-tree-date');if(!date.props.open)await h.act(()=>date.props.onToggle({currentTarget:{open:true}}));
  const cell=h.root.findAllByType('details').filter(n=>n.props.className==='cell-tree-cell')[index];
- assert.equal(cell.findByType('summary').props.onClick,undefined);
+ const before=h.fixture.requests.length;cell.findByType('summary').props.onClick?.({target:{closest:()=>null}});
+ assert.equal(h.fixture.requests.length,before,'a browse cell click never reads or replaces inspection');
  await h.act(()=>cell.props.onToggle({currentTarget:{open:true}}));
  await h.waitFor(()=>!!row(h.root,1,`Cell ${index}`));return cell;
 }

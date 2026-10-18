@@ -4,7 +4,7 @@
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
     "src/App.jsx": {
-      "fingerprint": "72ec7b011e5405ff4896bbeb6f0595bd251916da65968226fc5e42e4c10492ac",
+      "fingerprint": "70e149f00557f103d98cc4feaeaadf97e6239fbc68d8c50e175bbacadfff6756",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -48,7 +48,7 @@
         }
       ],
       "lifetime": "mixed-project-and-retained-composition",
-      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes. Independent review on 2026-10-15 confirmed project setup closes only after successful project activation; pending, refused and migration paths retain context. Callback return values changed; lifecycle hooks, dependencies and scientific owners are unchanged. Six actual App composition regression cases cover both setup callbacks. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Overview source-merge review (2026-10-16): the Overview card hold reuses the App source-merge owner; App adds presentation-only state that hides the exact project/protocol/candidate/recording card after a verified receipt until the existing structure refresh returns, plus a captured origin so a hold on the still-current same-protocol Overview does not push a duplicate route. No effect sites, dependencies, consent or recovery owners changed. Checkpoint size review (2026-10-16): disk checkpoints now prune unreachable cumulative candidates (keeping the current candidate and any draft that needs recovery or still offers export) and drop the oldest back/forward view snapshots only above 1.5 MiB, never the current route, protocol latest views or recovery sessions. Live sessions are not mutated; no effect sites, dependencies, consent or recovery owners changed. 2026-10-16 (pending card): Overview renders ProtocolSuggestion in queue mode (pendingProtocol) instead of the latest per-recording suggestion; merge_all routes to the same sourceMerge owner (startAll) with the same owner token, origin fence and recovery. persist uses flushBeforeSubmission (views-only failure is a quiet notice). A ref-held mergeUndo controller (no new effect sites) receives verified receipts from sourceMerged and Workbench onMerged; MergeUndoToast is mounted once in main-shell, filtered by current project. Effect sites unchanged. 2026-10-16 import review sync: both ImportSuggestions callers receive the existing workbenchSummary resource instead of suggestions/approved history; the dialog hold reaches the same mergeIncoming merge_all -> sourceMerge.startAll owner and announceMerge toast. Effect sites unchanged.",
+      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes. Independent review on 2026-10-15 confirmed project setup closes only after successful project activation; pending, refused and migration paths retain context. Callback return values changed; lifecycle hooks, dependencies and scientific owners are unchanged. Six actual App composition regression cases cover both setup callbacks. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Overview source-merge review (2026-10-16): the Overview card hold reuses the App source-merge owner; App adds presentation-only state that hides the exact project/protocol/candidate/recording card after a verified receipt until the existing structure refresh returns, plus a captured origin so a hold on the still-current same-protocol Overview does not push a duplicate route. No effect sites, dependencies, consent or recovery owners changed. Checkpoint size review (2026-10-16): disk checkpoints now prune unreachable cumulative candidates (keeping the current candidate and any draft that needs recovery or still offers export) and drop the oldest back/forward view snapshots only above 1.5 MiB, never the current route, protocol latest views or recovery sessions. Live sessions are not mutated; no effect sites, dependencies, consent or recovery owners changed. 2026-10-16 (pending card): Overview renders ProtocolSuggestion in queue mode (pendingProtocol) instead of the latest per-recording suggestion; merge_all routes to the same sourceMerge owner (startAll) with the same owner token, origin fence and recovery. persist uses flushBeforeSubmission (views-only failure is a quiet notice). A ref-held mergeUndo controller (no new effect sites) receives verified receipts from sourceMerged and Workbench onMerged; MergeUndoToast is mounted once in main-shell, filtered by current project. Effect sites unchanged. 2026-10-16 import review sync: both ImportSuggestions callers receive the existing workbenchSummary resource instead of suggestions/approved history; the dialog hold reaches the same mergeIncoming merge_all -> sourceMerge.startAll owner and announceMerge toast. Effect sites unchanged. Request-decoupling review (2026-10-17): passes structureRevision to CellQC only; effect sites unchanged. Tag decoupling review (2026-10-17): TreeBranchReadOwner, Cell QC live reads and Search epoch/preset reads follow readOwnerRevision, which ignores confirmed epoch-tag receipts; Cell QC passes confirmed receipts to changed(). Effect sites unchanged. Tag channel review (2026-10-17): confirmed epoch-tag receipts no longer change app state; overview summaries key on revision plus the confirmed tag generation read at render. Effect sites unchanged. Workbench tag-scope review (2026-10-17): Protocol forwards reviewRevision (default revision) to IncomingWorkbench only; no effect or lifetime changed.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -60,7 +60,10 @@
         "src/workbenchRouteRendering.test.js",
         "src/incomingWorkbenchRendering.test.js",
         "src/incoming-workbench/selectedIncomingWorkflow.test.js",
-        "src/incoming-workbench/mergeUndo.test.js"
+        "src/incoming-workbench/mergeUndo.test.js",
+        "src/annotationReceiptWorkflow.test.js",
+        "src/cellQCNavigationLifecycle.test.js",
+        "src/workbenchTagScope.test.js"
       ]
     },
     "src/annotations/annotationProfile.js": {
@@ -85,23 +88,26 @@
       ]
     },
     "src/annotations/annotationReceipts.js": {
-      "fingerprint": "ca0087f8ee8ea2dc32d7bd9fc7a4b6e932eb1b05f8a4f014b2102d7efa4addd3",
+      "fingerprint": "2f17b24b8f9602a1f15953766a86f132b54c7d0982ea94cd7e587e990e71e1bc",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Per-tag time review (2026-10-17): receipt validation additionally checks optional chip added_at (ISO UTC Z) and time_source; no lifecycle sites changed. Workbench tag-scope review (2026-10-17): stableTagAuthority() is a pure contract check (protocol-state-v4 or workbench-candidate-scope-v2); no effects.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/annotationReceiptWorkflow.test.js",
+        "src/workbenchTagScope.test.js"
       ]
     },
     "src/annotations/annotationTags.js": {
-      "fingerprint": "fa804159a48ccfbc2efd2baf7f77c7ccb9133614a6a5210ae2d4b3884763674d",
+      "fingerprint": "3319b9738985e969500b6dace9cce3dba161b54c17644dd2e453e76f289ac5bd",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Per-tag time review (2026-10-17): adds pure formatTagTime/annotationChipTitle helpers; no lifecycle sites changed.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/annotationTags.test.js"
       ]
     },
     "src/annotations/externalTagMonitor.js": {
@@ -122,6 +128,25 @@
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/annotations/tagStore.js": {
+      "fingerprint": "a8d2c9fbec4e2d8a078a58374884f8c630fe21366282460d40d713820cb85644",
+      "sites": [],
+      "lifetime": "module-store-subscription",
+      "reason": "Module-level tag channel: confirmed receipts and pending operations per target with listeners; no React effects. Pending intent is never evicted and never used as write authority. Tag channel review (2026-10-17). Multi-selection/branch tag review (2026-10-17): beginMany for multi-selection; changed()/invalidate() mark tag facts stale without dropping overlays; ingestAnnotations records per-epoch verification. Selection tagging review (2026-10-17): knownRevision and hint(rows) keep display-free revision hints for building writes.",
+      "tests": [
+        "src/annotations/tagStore.test.js",
+        "src/annotationReceiptWorkflow.test.js"
+      ]
+    },
+    "src/annotations/tagVocabulary.js": {
+      "fingerprint": "d8c06d1e6bbde7b7af9bcac18459791bdc6cadf54e0ad38e5c6ae1e86dbff08d",
+      "sites": [],
+      "lifetime": "module-store-subscription",
+      "reason": "Project tag vocabulary: one load, local matching/completion, extended on save, reloaded when stale; useSyncExternalStore subscription, no effects. Tag display/autocomplete review (2026-10-17).",
+      "tests": [
+        "src/annotations/tagVocabulary.test.js"
       ]
     },
     "src/annotations/treeGroupQueryTags.js": {
@@ -176,7 +201,7 @@
       ]
     },
     "src/annotations/ui/AnnotationTags.jsx": {
-      "fingerprint": "b49a4439e25ad9ee727f3c0e5b1d55ce40ec384823ab2a336240f3fcd1f5063e",
+      "fingerprint": "e09e7acfa178441d5cbaccaa80c962323ad9416cbe690dd6fb92d0b4fb19ae66",
       "sites": [
         {
           "owner": "AnnotationTags",
@@ -187,6 +212,11 @@
           "owner": "AnnotationTags",
           "kind": "useLayoutEffect",
           "fingerprint": "6a2b88370010cd119fd2b15b5ce132ef842aab0aa0502dd9c2681523131a3f34"
+        },
+        {
+          "owner": "AnnotationTags",
+          "kind": "useEffect",
+          "fingerprint": "2c08ef221e1dc9252de7e1ed1d99856ed9d1192bc078088316eb704f0cb5dc61"
         },
         {
           "owner": "AnnotationTags",
@@ -215,10 +245,16 @@
         }
       ],
       "lifetime": "semantic-presentation + reconnecting-annotation-authority",
-      "reason": "Epoch identity resets composer-local presentation; query identity resets suggestion keyboard choice. Existing request generation/scope effects still retire and reconnect mutation authority. Deferred focus requests retain their existing handled-intent refs; authored-value bindings now owned by persistence agent.",
+      "reason": "Epoch identity resets composer-local presentation; query identity resets suggestion keyboard choice. Existing request generation/scope effects still retire and reconnect mutation authority. Deferred focus requests retain their existing handled-intent refs; authored-value bindings now owned by persistence agent. Tag channel review (2026-10-17): single-target tags begin in tagStore synchronously (pending chip in the click frame), write serially per target/author with the last confirmed revision, confirm in place or roll back and restore the draft; bulk receipts are ingested. Editor subscribes urgently to the store. Effect sites unchanged. The composer draft clears inside startTransition so a large draft owner never delays the chip commit; failures restore the draft. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): multi-selection is optimistic (beginMany, confirm/fail, draft restore); group saves call tagStore.changed(); a single-target editor showing an epoch not verified since the last receipt-less change reads its annotations once and ingests them (effect keyed on that read). Tag display/autocomplete review (2026-10-17): chips show the tag name only (author in the tooltip); suggestions come from the local vocabulary (load effect once per project, server query only when incomplete); inline completion selects the completed suffix in a layout effect after render. Ghost completion replaces selected-text completion: the value stays as typed, a grey overlay shows the remainder of the best match, Tab/→ at the end accepts it; the vocabulary loads on first focus (no layout effect for completion). Selection tagging review (2026-10-17): selection tags are optimistic without locking the editor; one write uses the best known revisions (confirmed, page hint, else 0), and only a 409 reads exact revisions and retries once, refusing if the selection changed. Per-tag time review (2026-10-17): chip tooltip text now comes from annotationChipTitle (author, added time, saving…); effect sites and fingerprints unchanged.",
       "tests": [
         "src/retainedControls.test.js",
-        "src/annotationReceiptWorkflow.test.js"
+        "src/annotationReceiptWorkflow.test.js",
+        "src/workflowResponsiveness.test.js",
+        "src/epoch-browser/inspectionMetadata.test.js",
+        "src/treeGroupAnnotationWorkflow.test.js",
+        "src/annotations/tagVocabulary.test.js",
+        "src/treeCellTagWorkflow.test.js",
+        "src/annotationTags.test.js"
       ]
     },
     "src/annotations/ui/EpochTags.jsx": {
@@ -248,19 +284,20 @@
       ]
     },
     "src/annotations/ui/ExternalTagSync.jsx": {
-      "fingerprint": "521e35b41f883479843db57f1f094d2ee90d9dd6099d589b5600b98370c5a1d4",
+      "fingerprint": "ce2289cda4dcbdd1ac3edf7cdfc7dad8b8b05d88b2acf8c33f512ab8bb9b9fc7",
       "sites": [
         {
           "owner": "ExternalTagSync",
           "kind": "useEffect",
-          "fingerprint": "e7f06510291b130255a10812ec1cda92f58991ab81b8002f855c2a0fb260c6c1"
+          "fingerprint": "28ca67c3ec0af9994ce52ed69c41b463c1ec4dc663aa5fc40eae93028dce57e1"
         }
       ],
       "lifetime": "project-owner/outside-Activity",
-      "reason": "App-shell profile preference and external annotation monitor outlive route visibility; cancellation/subscription cleanup and actor changes remain scientific boundaries. External scans still invalidate broad epoch resources; no claim of sample-level invalidation.",
+      "reason": "App-shell profile preference and external annotation monitor outlive route visibility; cancellation/subscription cleanup and actor changes remain scientific boundaries. External scans still invalidate broad epoch resources; no claim of sample-level invalidation. Tag channel review (2026-10-17): external tag changes also invalidate tagStore overlays (facts changed without a receipt); the monitor effect lifetime is unchanged. Multi-selection/branch tag review (2026-10-17): the first scan sets the baseline only; later external changes mark the tag store stale. Monitor effect lifetime unchanged. Tag display/autocomplete review (2026-10-17): external changes also mark the vocabulary stale.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
-        "src/presentationSessionsApp.test.js"
+        "src/presentationSessionsApp.test.js",
+        "src/externalTagMonitor.test.js"
       ]
     },
     "src/annotations/ui/GroupAnnotationRecovery.jsx": {
@@ -312,7 +349,7 @@
       ]
     },
     "src/annotations/ui/TreeGroupTags.jsx": {
-      "fingerprint": "5334fb4482cbbf686446efef9920deaa3cb82512a126dd26536c557aaab0e6c7",
+      "fingerprint": "e98d2be44ee14c87e8a0103de55b0ab0fe0badfb07b4c8f0bf71157a77ea71a2",
       "sites": [
         {
           "owner": "GroupDialog",
@@ -326,7 +363,7 @@
         }
       ],
       "lifetime": "scoped-authority-and-dialog",
-      "reason": "Preview leases, committed scope and request generations retire on disconnect; annotation watermark flush is an ordinary timer. Group composer text is separately owned; never restore a released preview or prior consent as authority. Modal command lifetime and same-target resumption must preserve those boundaries.",
+      "reason": "Preview leases, committed scope and request generations retire on disconnect; annotation watermark flush is an ordinary timer. Group composer text is separately owned; never restore a released preview or prior consent as authority. Modal command lifetime and same-target resumption must preserve those boundaries. Edit Tree tagging review (2026-10-17): single-epoch dialogs describe a one-epoch target. Effect sites unchanged.",
       "tests": [
         "src/treeGroupLifecycleWorkflow.test.js",
         "src/treeGroupAnnotationWorkflow.test.js",
@@ -335,26 +372,53 @@
       ]
     },
     "src/annotations/useAnnotationReceipts.js": {
-      "fingerprint": "d918550e1fcf5d8d6d5dc6d0fa52edd041face0f9363ceb20ae624395c515e12",
+      "fingerprint": "1cba51217947b322660999ed50299dafd2c3479997bcbb62a8b742b025885a5b",
       "sites": [
         {
           "owner": "useAnnotationReceipts",
-          "kind": "useLayoutEffect",
-          "fingerprint": "d0a1b5aaa33a926026db238e0dfcdce4872aa7662f60ceae385e9cc5da0e5ce3"
+          "kind": "useEffect",
+          "fingerprint": "43f186633a47e5808b88f0e68b9b3e56e415c88ea06bfcfae0b191fe70c6eb96"
         },
         {
-          "owner": "useAnnotationReceipts",
+          "owner": "useTagCoverageRevision",
           "kind": "useEffect",
-          "fingerprint": "68b504800a629411b52a8281bb3fde3e6aa2f32f1ebc98adf9d75dad79d2394a"
+          "fingerprint": "2c894df34033c7baac95fe09b8e922c7ff2bbce327f95f884d9ba4bd8735459e"
         }
       ],
       "lifetime": "scoped-authority-and-dialog",
-      "reason": "Preview leases, committed scope and request generations retire on disconnect; annotation watermark flush is an ordinary timer. Group composer text is separately owned; never restore a released preview or prior consent as authority. Modal command lifetime and same-target resumption must preserve those boundaries.",
+      "reason": "Preview leases, committed scope and request generations retire on disconnect; annotation watermark flush is an ordinary timer. Group composer text is separately owned; never restore a released preview or prior consent as authority. Modal command lifetime and same-target resumption must preserve those boundaries. Tag decoupling review (2026-10-17): with protocol-state-v4 page authority, a confirmed own epoch-tag receipt keeps authorityRevision and is applied in place (kept, never dirty); tag-dependent filters, cell receipts, scope changes and other changes renew as before. Effect sites unchanged. Tag channel review (2026-10-17): receipt state moved to tagStore; authority renews from the confirmed tag generation only for tag-dependent results or legacy page tokens, after a 75 ms idle timer (ordinary timer effect, cleared on change). No layout effect remains. Workbench tag-scope review (2026-10-17): useTagCoverageRevision adds one idle-debounced effect (cleared timer) that settles the confirmed tag generation for frozen Workbench trees only; disabled trees return 0 and schedule nothing.",
       "tests": [
         "src/treeGroupLifecycleWorkflow.test.js",
         "src/treeGroupAnnotationWorkflow.test.js",
         "src/annotationReceiptWorkflow.test.js",
-        "src/authoredDrafts.test.js"
+        "src/authoredDrafts.test.js",
+        "src/workbenchTagScope.test.js"
+      ]
+    },
+    "src/annotations/useTagStore.js": {
+      "fingerprint": "b44ae1fb6befcb2bff47c57ba376e8d0dbcb47415b71c14f1bd9f7ec10cdf20e",
+      "sites": [
+        {
+          "owner": "useDeferredTagVersion",
+          "kind": "useEffect",
+          "fingerprint": "c547c1f283f5752f03bc53c73135c08e2e444dc4c6ddd01926e8c9d4378a9009"
+        },
+        {
+          "owner": "useTagGeneration",
+          "kind": "useEffect",
+          "fingerprint": "423d9ac24f88969ef5f20be837b9943c589b41e88c50a569f365f2d3b76ad681"
+        },
+        {
+          "owner": "useTagStaleGeneration",
+          "kind": "useEffect",
+          "fingerprint": "2f48a50997eb74283e6edd4d7499d72d8b438d84cbec3e730c08f590e9a52402"
+        }
+      ],
+      "lifetime": "module-store-subscription",
+      "reason": "useSyncExternalStore subscriptions to tagStore (urgent for the editor, deferred for large views, confirmed generation for dependents); no effects. Tag channel review (2026-10-17). Large views and the confirmed generation subscribe in an effect whose listener updates state inside startTransition (cleanup unsubscribes), so tags never re-render them in the click frame; the editor keeps useSyncExternalStore. Multi-selection/branch tag review (2026-10-17): adds useTagStaleGeneration (transition-scheduled subscription effect).",
+      "tests": [
+        "src/annotations/tagStore.test.js",
+        "src/annotationReceiptWorkflow.test.js"
       ]
     },
     "src/annotations/useTreeCellSelection.js": {
@@ -483,6 +547,16 @@
         "src/presentationSessionsApp.test.js"
       ]
     },
+    "src/byteSize.js": {
+      "fingerprint": "484a8a65d138fb79bce169747d6724c693192e14acc8622623b6501b579a1a26",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/byteSize.test.js",
+        "src/storageSizeAgreement.test.js"
+      ]
+    },
     "src/cell-qc/cellTypes.js": {
       "fingerprint": "15b47a802defcde40f4c9a1c47fb8c76ae4ab2f114c1d3f0af3523c15335ad15",
       "sites": [],
@@ -506,7 +580,7 @@
       ]
     },
     "src/cell-qc/ui/CellQC.jsx": {
-      "fingerprint": "6bfea69936f42ae43bab6f3ea034913e2b0891e7831a542cf08c52f2fa068fac",
+      "fingerprint": "cfdcb910400ed19647428379b91741c081dbade45b314a0c7721e4aeeb53d9b1",
       "sites": [
         {
           "owner": "CellQC",
@@ -520,7 +594,7 @@
         }
       ],
       "lifetime": "session-publication-and-current-data",
-      "reason": "Publish route-owned presentation snapshots; current pages/focus and ResizeObserver refresh independently. Initial CellQC family selection is guarded by absence of a user-selected family. Authored annotation text is checkpointed separately. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Reviewed 0.1.13 QC tile: presentation-only title/icon placement and exact display aliases; request, session, annotation and retained effect ownership unchanged.",
+      "reason": "Publish route-owned presentation snapshots; current pages/focus and ResizeObserver refresh independently. Initial CellQC family selection is guarded by absence of a user-selected family. Authored annotation text is checkpointed separately. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Reviewed 0.1.13 QC tile: presentation-only title/icon placement and exact display aliases; request, session, annotation and retained effect ownership unchanged. Request-decoupling review (2026-10-17): QC overview, trial pages, response summaries, traces and the metadata catalog follow structureRevision plus explicit refresh; only the annotation-bearing epoch detail and tag controls follow live revision, so tag edits no longer reread samples. The epoch detail uses the shared cache without warming an unused 20k trace window. Effect sites unchanged. Tag decoupling review (2026-10-17): confirmed tag receipts are merged and applied to the displayed epoch; live reads follow annotationRevision so a confirmed save sends one POST and no reread. Effect sites unchanged. Trace and metadata panel keep the source epoch object; only tag display uses the receipt-applied epoch. Effect sites unchanged. Tag channel review (2026-10-17): displayed epoch overlays tagStore through a deferred subscription; no private receipt state. Effect sites unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/authoredDrafts.test.js",
@@ -529,7 +603,7 @@
       ]
     },
     "src/cell-qc/ui/CellTypeAccordions.jsx": {
-      "fingerprint": "06b0a21ee86f1b6686514a45006ba7eb14c775ec004595337b4cd63d82a5cfcd",
+      "fingerprint": "ee8428be06e78d9dbfdeb2b2dd73e0e7699b93260836e93c12c07eb2918598db",
       "sites": [
         {
           "owner": "CellTypeGroup",
@@ -538,12 +612,13 @@
         }
       ],
       "lifetime": "semantic-reveal-intent",
-      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced.",
+      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
       "tests": [
         "src/useSemanticReset.test.js",
         "src/semanticPresentationControls.test.js",
         "src/overviewPresentation.test.js",
-        "src/cellTypeIconsRendering.test.js"
+        "src/cellTypeIconsRendering.test.js",
+        "src/storageSizeAgreement.test.js"
       ]
     },
     "src/cell-qc/ui/CellTypeSummary.jsx": {
@@ -566,11 +641,20 @@
         "src/presentationSessionsIntegration.test.js"
       ]
     },
-    "src/components/Common.jsx": {
-      "fingerprint": "7f4d0a436c99e3d036bfa790314b79428352de5f7389643953dd9fb65059ed49",
+    "src/components/CellsIcon.jsx": {
+      "fingerprint": "cce4d6e167d46fbd89e2b2ad711362f9b3777bad0b43266f6bf367a43b78fd6d",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced. Reviewed compact table-only relocation of tags; UUID callbacks, disclosure, pagination and effects are unchanged.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/overviewPresentation.test.js"
+      ]
+    },
+    "src/components/Common.jsx": {
+      "fingerprint": "4f3ee9fd292702f4fad17a118ad8ec991598673a0cad9ea40a14ffc820c2c343",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced. Reviewed compact table-only relocation of tags; UUID callbacks, disclosure, pagination and effects are unchanged. Tag display/autocomplete review (2026-10-17): cell tag badges show the tag name only with author in a tooltip. Effect sites unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -899,8 +983,13 @@
       ]
     },
     "src/epoch-browser/ui/InspectionCellTree.jsx": {
-      "fingerprint": "a5a8eadff9cfb0794ec594dd5c47ec11ba481f54a8d5109d5a308c4ea7ce0226",
+      "fingerprint": "56da04415df11c4126370bd5476e2289dff2c162c249c1df4e66c6730bf4aad3",
       "sites": [
+        {
+          "owner": "CellEpochPage",
+          "kind": "useEffect",
+          "fingerprint": "fd1889b7bd2a538d7dd1eef8b46183b6b008c95e1ef30d01bae3a06eac1d2c89"
+        },
         {
           "owner": "CellEpochPage",
           "kind": "useLayoutEffect",
@@ -953,7 +1042,7 @@
         }
       ],
       "lifetime": "fresh-page-focus",
-      "reason": "Focus carries the original row and its validated page; explicit selection retains revision authority.",
+      "reason": "Focus carries the original row and its validated page; explicit selection retains revision authority. Selection tagging review (2026-10-17): loaded rows feed tagStore revision hints in an effect keyed on the page data; ⌘/Ctrl selection keeps the just-clicked epoch (Finder-style) outside Workbench highlight. Cell-row review (2026-10-17): clicking a cell row (browse or edit tree, not its buttons, not the already selected cell) runs the existing bounded selectCell, so the tag panel targets the cell; epoch focus clears it. Browse refinement: in browse lists a cell click targets the cell only when the inspected epoch is in it (no read) or nothing is inspected; it never replaces an inspected epoch from another cell.",
       "tests": [
         "src/epoch-browser/inspectionCellTree.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
@@ -961,11 +1050,12 @@
         "src/inspectionTreeLifecycle.test.js",
         "src/inspectorNavigationLifecycle.test.js",
         "src/treeCombinedPresentation.test.js",
-        "src/treeTagCoverageWorkflow.test.js"
+        "src/treeTagCoverageWorkflow.test.js",
+        "src/annotationReceiptWorkflow.test.js"
       ]
     },
     "src/epoch-browser/ui/Inspector.jsx": {
-      "fingerprint": "82f423e3e7fa7d422bf586b51b12db43c46e7ad6a78dbfcde3eb2378e2c93028",
+      "fingerprint": "158594044f0e554ad4042edb849b21c4009118a0f9d35194f3319285200c54c3",
       "sites": [
         {
           "owner": "InspectorContent",
@@ -1094,7 +1184,7 @@
         }
       ],
       "lifetime": "focused-display-and-fresh-curation",
-      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal. Independently reviewed initial selected-manifest acquisition withholds only the parent page offer; same-selected renewal keeps its own inert trace and strict capability validation is unchanged. Frozen sidebar presentation keys include owner, cohort, focus, cell selection and structure revision, excluding Live metadata and annotation-dependent or unproven selected scopes. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement.",
+      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal. Independently reviewed initial selected-manifest acquisition withholds only the parent page offer; same-selected renewal keeps its own inert trace and strict capability validation is unchanged. Frozen sidebar presentation keys include owner, cohort, focus, cell selection and structure revision, excluding Live metadata and annotation-dependent or unproven selected scopes. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Tag decoupling review (2026-10-17): v4 contract enables kept receipt authority; the all-cell key follows kept authority; neighbour prefetch uses wholeTracePrefetchPath. Effect sites unchanged. Tag channel review (2026-10-17): useAnnotationReceipts takes revision, v4 contract and filters only. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): group receipts and confirmed receipts within the selection limit are reported on the tag channel. Effect sites unchanged. Edit Tree tagging review (2026-10-17): any confirmed receipt within the selection limit is forwarded on the tag channel (the store holds it; navigation identity no longer gates it). Effect sites unchanged. Cell-row review (2026-10-17): list props add focusedCell and onTargetCell, which only set the cell tag target (no read, no focus change). Workbench tag-scope review (2026-10-17): page authority is stable for the advertised workbench-candidate-scope-v2 token as for protocol-state-v4; the frozen tag summary overlays tag-store receipts on the retained page (memo only). Effect sites unchanged.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
@@ -1108,7 +1198,10 @@
         "src/epoch-browser/selectedTraceAdmission.test.js",
         "src/epoch-browser/metadataPresentation.test.js",
         "src/workbenchRouteRendering.test.js",
-        "src/incomingWorkbenchRendering.test.js"
+        "src/incomingWorkbenchRendering.test.js",
+        "src/resourceCache.test.js",
+        "src/treeGroupAnnotationWorkflow.test.js",
+        "src/workbenchTagScope.test.js"
       ]
     },
     "src/epoch-browser/ui/InspectorActions.jsx": {
@@ -1128,7 +1221,7 @@
       ]
     },
     "src/epoch-browser/ui/MatchingEpochs.jsx": {
-      "fingerprint": "136f34004f5e1d228392dcb7fab40053a905bcdcc179c7f6b2210c230a519758",
+      "fingerprint": "2427fb8f85247f4e6df59d3f1a0e7536b702014ce6e247281a7da683ec054ef4",
       "sites": [
         {
           "owner": "MatchingEpochsContent",
@@ -1147,14 +1240,16 @@
         }
       ],
       "lifetime": "session-publication-and-current-data",
-      "reason": "Known stream descriptors are independent of optional live values; current result and annotation authority remain required.",
+      "reason": "Known stream descriptors are independent of optional live values; current result and annotation authority remain required. Tag decoupling review (2026-10-17): confirmed receipts apply in place without epoch reload or detail-revision bump; prefetch uses wholeTracePrefetchPath. Effect sites unchanged. Tag channel review (2026-10-17): detail overlays tagStore through a deferred subscription; no private receipt state. Effect sites unchanged. Cell-row review (2026-10-17): list props add focusedCell and onTargetCell, which only set the cell tag target (no read, no focus change).",
       "tests": [
         "src/authoredDrafts.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
         "src/navigationSurfaces.test.js",
         "src/presentationSessionsApp.test.js",
         "src/retainedControls.test.js",
-        "src/scopedPredicateLifecycle.test.js"
+        "src/scopedPredicateLifecycle.test.js",
+        "src/resourceCache.test.js",
+        "src/annotationReceiptWorkflow.test.js"
       ]
     },
     "src/epoch-browser/ui/MetadataPanel.jsx": {
@@ -1967,7 +2062,7 @@
       ]
     },
     "src/metadata-explorer/ui/MetadataExplorer.jsx": {
-      "fingerprint": "f6d774d4fb8f5bfd25f5cb85d518b4516c2c6f200a6384fab73ceceb0a166354",
+      "fingerprint": "87b0105793c70a381a51cfd456e34c087bb7c861b49cfe68508c7ba1fa74ce3d",
       "sites": [
         {
           "owner": "MetadataExplorer",
@@ -2036,11 +2131,12 @@
         }
       ],
       "lifetime": "semantic-presentation + hydration-witness + active-local-undo",
-      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged.",
+      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged. Tag decoupling review (2026-10-17): tag saves report kind annotations (not an untyped structural change) with the confirmed receipt; focused epoch and presets follow annotationRevision. Effect sites unchanged.",
       "tests": [
         "src/retainedControls.test.js",
         "src/requested-summaries/requestedSummariesLifecycle.test.js",
-        "src/navigationSurfaces.test.js"
+        "src/navigationSurfaces.test.js",
+        "src/annotationReceiptWorkflow.test.js"
       ]
     },
     "src/metadata-explorer/ui/QueryPresetDialog.jsx": {
@@ -2249,7 +2345,7 @@
       ]
     },
     "src/project-workspace/ui/DataStores.jsx": {
-      "fingerprint": "7a19328a014fdb56670aec5ed27869c13771e456fc1e9bcfccd8aa8f4525154c",
+      "fingerprint": "6016267de8da0544ae782c556bdf1dd5e5c90e68a17e12bce9522f1c53a417c4",
       "sites": [
         {
           "owner": "StoreTimeline",
@@ -2273,10 +2369,12 @@
         }
       ],
       "lifetime": "semantic-source-pagination + fresh-source-reads",
-      "reason": "StoreTimeline source SHA resets event offset; same-source Activity return retains offset and performs normal resource revalidation. Main saved tab/query paging already has a committed-filter guard; source actions remain explicit. Authored-reason binding now owned by persistence agent.",
+      "reason": "StoreTimeline source SHA resets event offset; same-source Activity return retains offset and performs normal resource revalidation. Main saved tab/query paging already has a committed-filter guard; source actions remain explicit. Authored-reason binding now owned by persistence agent. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
       "tests": [
         "src/useSemanticReset.test.js",
-        "src/semanticPresentationControls.test.js"
+        "src/semanticPresentationControls.test.js",
+        "src/overviewPresentation.test.js",
+        "src/storageSizeAgreement.test.js"
       ]
     },
     "src/project-workspace/ui/ProjectClosedNotice.jsx": {
@@ -2290,13 +2388,14 @@
       ]
     },
     "src/project-workspace/ui/ProjectFiles.jsx": {
-      "fingerprint": "e4a33354277b694041d445a09f614d93f99ba7efd1791aa197b8c63b77c3d3cc",
+      "fingerprint": "9e3830e9c7d938289b566368f04434b84a62ec3f42e9dc24266f023ef7349ff3",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/byteSize.test.js"
       ]
     },
     "src/project-workspace/ui/ProjectFolder.jsx": {
@@ -2467,13 +2566,15 @@
       ]
     },
     "src/protocol-overview/protocolOverviewModel.js": {
-      "fingerprint": "6886bcbdb6e2833519cbcc51b12f397481372e7fc4bc168e746c32dda2aa8873",
+      "fingerprint": "9bab79ddbfe1bfadab19df74875e0e486f6c5ca8eb1fd3e2f530104e3136bda9",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/overviewPresentation.test.js",
+        "src/storageSizeAgreement.test.js"
       ]
     },
     "src/protocol-overview/protocolSuggestions.js": {
@@ -2511,13 +2612,15 @@
       ]
     },
     "src/protocol-overview/ui/Overview.jsx": {
-      "fingerprint": "933d521771e3ef1e66fda6a5f946258d1cc90f63f01302daed3a77018843a562",
+      "fingerprint": "dae1d7e47a932d4b5d8bb078ca8466486f82b377d62a90d130345885ed74296c",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/overviewPresentation.test.js",
+        "src/storageSizeAgreement.test.js"
       ]
     },
     "src/protocol-overview/ui/ProtocolApplyPanel.jsx": {
@@ -2567,15 +2670,16 @@
       ]
     },
     "src/protocol-overview/ui/ProtocolInfographic.jsx": {
-      "fingerprint": "d8d67897bd4095e565ee7a087c39adce0bc3a8fc715cd4fbb54218f56de8a135",
+      "fingerprint": "1e4a2e416db5e26e5730b176e23f1b514418050b0ebe73076e762eeaf0a0e9ac",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced.",
+      "reason": "Reviewed recording-rig and desktop presentation changes: pure recorded-label formatting, larger aligned columns and supplemental facts; existing effect sites, semantic reset, UUID keys and pagination state remain unchanged. QC continues through the parent-owned UUID callback with CSS-only reveal; no reads, consent or preparation are introduced. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
         "src/overviewPresentation.test.js",
-        "src/cellTypeIconsRendering.test.js"
+        "src/cellTypeIconsRendering.test.js",
+        "src/storageSizeAgreement.test.js"
       ]
     },
     "src/protocol-overview/ui/ProtocolSelectionSummary.jsx": {
@@ -2747,13 +2851,14 @@
       ]
     },
     "src/recording-import/importProgress.js": {
-      "fingerprint": "2a01381f6ea78a47128c943e39732cc0772cf1b9477a67838914f0dee585fc23",
+      "fingerprint": "eb10cb2fe01c6db3bb780a73f0c71607564b8927ac19f535312d51583346b074",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/recording-import/importProgress.test.js"
       ]
     },
     "src/recording-import/recordingIdentity.js": {
@@ -2973,13 +3078,14 @@
       ]
     },
     "src/resourceCache.js": {
-      "fingerprint": "525850011ef8dc4ff3b43bfad5c7b422a83632f3558abb286e1e97604740f1bb",
+      "fingerprint": "69bb68ee486742d6c2c504d123279bf0f30543a73c831e8bb40f86db71eb97ac",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Tag decoupling review (2026-10-17): adds wholeTracePrefetchPath (initial window only when it is the whole stream). Effect sites unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/resourceCache.test.js"
       ]
     },
     "src/resourceRequest.js": {
@@ -3153,15 +3259,16 @@
       ]
     },
     "src/traces/readWholeTrace.js": {
-      "fingerprint": "19e4e02709d0c927651bfc138236d162268e909484d5036dfe065bb2fbc33f2b",
+      "fingerprint": "572987ebd2c8c42049c5aae7eb1da2a7548bdd2f5ca8807606149947c0c0dd32",
       "sites": [],
       "lifetime": "bounded-request-composition",
-      "reason": "Binary batches retain cancellation and exact identity/count admission; partial arrays never publish as complete.",
+      "reason": "Binary batches retain cancellation and exact identity/count admission; partial arrays never publish as complete. Request-decoupling review (2026-10-17): whole-stream reads also opt into a one-window binary batch; identity/count admission, cancellation and legacy JSON fallback unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
         "src/traceReadContext.test.js",
-        "src/traces/traceBinary.test.js"
+        "src/traces/traceBinary.test.js",
+        "src/traces/readWholeTrace.test.js"
       ]
     },
     "src/traces/traceBinary.js": {
@@ -3426,7 +3533,7 @@
       ]
     },
     "src/tree-browser/ui/ColumnTree.jsx": {
-      "fingerprint": "6577db04b72bb9198926dadab221a6fe217a70e04fbd67db84d3d1dc26da1f87",
+      "fingerprint": "d56c2479560615f70151b902d9f838578f7f621155a2294b1b6b545f453924c3",
       "sites": [
         {
           "owner": "ColumnTree",
@@ -3470,7 +3577,7 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads. Explicit owner read pause blocks gestures and retires pending root or target reads while retaining inert presentation; fresh resume revalidates all authority. Independently reviewed trailing preview retention requires the same committed frozen presentation scope, selected UUID, pane key and terminal-page membership; the existing flex section remains inert through refresh and retry. Changed actor/cohort/selected view/focus and unrelated branch intent cannot borrow it; frozen freshness also checks the loaded scope before passive renewal. Independently reviewed frozen initial navigation treats saved revisions as history even when presentation scopes differ: fresh anchor or root establishes continuation authority, while explicit expectedRevision and live-navigation behavior remain unchanged.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads. Explicit owner read pause blocks gestures and retires pending root or target reads while retaining inert presentation; fresh resume revalidates all authority. Independently reviewed trailing preview retention requires the same committed frozen presentation scope, selected UUID, pane key and terminal-page membership; the existing flex section remains inert through refresh and retry. Changed actor/cohort/selected view/focus and unrelated branch intent cannot borrow it; frozen freshness also checks the loaded scope before passive renewal. Independently reviewed frozen initial navigation treats saved revisions as history even when presentation scopes differ: fresh anchor or root establishes continuation authority, while explicit expectedRevision and live-navigation behavior remain unchanged. Multi-selection/branch tag review (2026-10-17): main (counts-only) trees no longer reload on group tag saves; Workbench trees keep the group-tag revision for coverage. Effect sites unchanged. Edit Tree tagging review (2026-10-17): Edit Tree epoch rows show Tag This Epoch outside Workbench too. Effect sites unchanged. Workbench tag-scope review (2026-10-17): frozen (readContext) scope keys add the settled tag coverage revision, so loaded pages re-read once per confirmed tag burst with the same frozen token; live trees unchanged. Effect sites unchanged.",
       "tests": [
         "src/inspectionTreeLifecycle.test.js",
         "src/hierarchyRetention.test.js",
@@ -3478,11 +3585,13 @@
         "src/treeCombinedPresentation.test.js",
         "src/treeCellIdentityIcons.test.js",
         "src/tree-ancestors/frozenColumnReads.test.js",
-        "src/tree-browser/frozenColumnMount.test.js"
+        "src/tree-browser/frozenColumnMount.test.js",
+        "src/treeGroupLifecycleWorkflow.test.js",
+        "src/workbenchTagScope.test.js"
       ]
     },
     "src/tree-browser/ui/HierarchyTree.jsx": {
-      "fingerprint": "a5d38fc2e5264b30da2bb15892d3018d4e65a71a73238a7d46831e120b0d600d",
+      "fingerprint": "8acdb9988982b8f1a84ad642d34cf82da38cf477a4f965ad814f10882215c446",
       "sites": [
         {
           "owner": "HierarchyTree",
@@ -3516,13 +3625,15 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Explicit owner read pause retains inert pages, aborts root and descendant reads, and refuses late publication until fresh resume.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Explicit owner read pause retains inert pages, aborts root and descendant reads, and refuses late publication until fresh resume. Multi-selection/branch tag review (2026-10-17): same scope-key change as ColumnTree. Effect sites unchanged. Workbench tag-scope review (2026-10-17): frozen (readContext) scope key adds the settled tag coverage revision (one page re-read per tag burst, same frozen token); live trees unchanged. Effect sites unchanged.",
       "tests": [
         "src/inspectionTreeLifecycle.test.js",
         "src/hierarchyRetention.test.js",
         "src/treeTagCoverageWorkflow.test.js",
         "src/treeCombinedPresentation.test.js",
-        "src/treeCellIdentityIcons.test.js"
+        "src/treeCellIdentityIcons.test.js",
+        "src/treeGroupLifecycleWorkflow.test.js",
+        "src/workbenchTagScope.test.js"
       ]
     },
     "src/tree-browser/ui/PagedTree.jsx": {
@@ -3614,13 +3725,15 @@
       ]
     },
     "src/typed-query/protocolViewFilter.js": {
-      "fingerprint": "4b402f314d3cc4c4394c3fe87805528a508eb1c2c633a6c4de9a9847aa5e3b1c",
+      "fingerprint": "da64d33ace99f47b660ec173af63cefa441d74a506f99d5cd9351802582f7101",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Per-tag time review (2026-10-17): tag rules may carry an added-after/before window compiled to tag_times predicates; pure functions, no lifecycle sites.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/typed-query/protocolViewFilter.test.js",
+        "src/tagTimeFilter.test.js"
       ]
     },
     "src/typed-query/ui/JointGroupingEditor.jsx": {
@@ -3718,13 +3831,14 @@
       ]
     },
     "src/typed-query/ui/ProtocolViewFilter.jsx": {
-      "fingerprint": "9b72d2ca7af3c5caa371d9a639b4fc28afc3337d643edb647963a05a2c140ae9",
+      "fingerprint": "81a9081dd8a5b243f86c045d208c2646b75bc658559c22124e6a73225297ddcb",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Per-tag time review (2026-10-17): adds two datetime-local inputs per tag rule in existing component state; no effect sites added.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/tagTimeFilter.test.js"
       ]
     },
     "src/typed-query/ui/ScopedPredicateFilter.jsx": {
@@ -3816,7 +3930,7 @@
       ]
     },
     "src/undo/useMutationUndo.js": {
-      "fingerprint": "8a567d727ec9470ab2e0050b5b3d8310b0e87e663aa1bd7329793fb923ceeedb",
+      "fingerprint": "f9c8387aad686c7062a83a296061f813cc4ba4b7109641d4aac80ec0466af074",
       "sites": [
         {
           "owner": "useMutationUndo",
@@ -3830,11 +3944,12 @@
         }
       ],
       "lifetime": "project-navigation-and-undo-owner",
-      "reason": "Project global undo, canonical revision publication and history listener live outside Activity. Route return keeps history identity; local Explorer undo separately checks active view tokens. Restored history does not restore scientific consent.",
+      "reason": "Project global undo, canonical revision publication and history listener live outside Activity. Route return keeps history identity; local Explorer undo separately checks active view tokens. Restored history does not restore scientific consent. Tag channel review (2026-10-17): undo of a tag ingests its confirmed receipt into tagStore. Effect sites unchanged. Tag display/autocomplete review (2026-10-17): tag undo marks the vocabulary stale.",
       "tests": [
         "src/workspace-navigation/workspaceNavigation.test.js",
         "src/retainedControls.test.js",
-        "src/presentationSessionsApp.test.js"
+        "src/presentationSessionsApp.test.js",
+        "src/mutationUndoWorkflow.test.js"
       ]
     },
     "src/useSemanticReset.js": {
@@ -3870,7 +3985,7 @@
       ]
     },
     "src/useWorkspaceChanges.js": {
-      "fingerprint": "110be9637ebc85dbef4a11d1e43c9b4ccbb9aa9228b0f8e2bf770502aa60de31",
+      "fingerprint": "c94f16d53f5379ed2b78492cdb517e7e22be85d7c1fa2532ad7b42ee573797d7",
       "sites": [
         {
           "owner": "useSummaryRevision",
@@ -3879,11 +3994,14 @@
         }
       ],
       "lifetime": "project-navigation-and-undo-owner",
-      "reason": "Project global undo, canonical revision publication and history listener live outside Activity. Route return keeps history identity; local Explorer undo separately checks active view tokens. Restored history does not restore scientific consent.",
+      "reason": "Project global undo, canonical revision publication and history listener live outside Activity. Route return keeps history identity; local Explorer undo separately checks active view tokens. Restored history does not restore scientific consent. Tag decoupling review (2026-10-17): adds readOwnerRevision, unchanged for confirmed epoch-only annotation receipts. Effect sites unchanged. Tag channel review (2026-10-17): confirmed epoch-only annotation receipts return the previous state (no App render); readOwnerRevision and annotationChange removed. Effect sites unchanged. Annotation events marked tagChannel (group receipts) also leave the clock unchanged. Effect sites unchanged. Edit Tree tagging review (2026-10-17): confirmed cell receipts also travel on the tag channel (cell tags overlay every epoch row of that cell). Effect sites unchanged. Workbench tag-scope review (2026-10-17): adds reviewRevision, which skips every confirmed tag receipt (epoch or cell) and tag-channel events; curation, structure and receipt-less tag events still tick it. No effects.",
       "tests": [
         "src/workspace-navigation/workspaceNavigation.test.js",
         "src/retainedControls.test.js",
-        "src/presentationSessionsApp.test.js"
+        "src/presentationSessionsApp.test.js",
+        "src/annotationReceiptWorkflow.test.js",
+        "src/treeGroupAnnotationWorkflow.test.js",
+        "src/workbenchTagScope.test.js"
       ]
     },
     "src/workspace-navigation/useWorkspaceNavigation.js": {

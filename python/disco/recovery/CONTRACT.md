@@ -38,7 +38,10 @@ test replaces its former central file instead of layering duplicate tests.
 ## Results, failures and exclusions
 
 Successful annotation-update/undo replies keep the existing receipt and add the
-committed-database/current-backup status without synchronous flush. Status errors
+committed-database/current-backup status without a second flush: the commit
+callback already updated the incremental mirror, and a failure there is
+reported as degraded backup status. Workbench writes checkpoint like other
+writes. Status errors
 retain existing exception propagation. Successful other writes checkpoint once,
 including no-op or replay replies. Existing read-only POST endpoint exemptions,
 exact close/unmount paths and desktop-control prefix/mode exclusions stay exact;

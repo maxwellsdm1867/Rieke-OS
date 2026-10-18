@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import contextlib
+import marshal
 import math
 import sys
 import uuid
@@ -21,6 +22,8 @@ from disco.decisions.curation import CurationStore
 from disco.decisions.explorer import ExplorerHistory
 from workspace_service import WorkspaceService
 from disco.decisions.annotations import SharedAnnotations
+
+PROTOCOL_STATE_CONTRACT='protocol-state-v4'
 
 STATE_CACHE_BYTES = 64 * 1024 * 1024
 STATE_CACHE_SCOPES = 8
@@ -90,6 +93,12 @@ def _retained_bytes(value, limit):
         elif isinstance(current,(list,tuple,set,frozenset)):
             pending.append(iter(current))
     return total
+
+
+def same_protocol_state(after, context):
+    """Read fence: v4 revisions omit shared tags, so also compare the full token."""
+    return (after is not None and after['query_revision']==context['query_revision']
+            and after.get('generation')==context.get('generation'))
 
 
 class _NativeProtocolRead:
@@ -214,6 +223,49 @@ class ProtocolStateReader:
             'source_scope_revision':service.source_scope()['revision'],
             'shared_revision':self.shared.snapshot()['revision'] if self.shared and include_shared else None}
 
+    def _input_witness(self, protocol):
+        """Exact live inputs of the scoped metadata proof, without rebuilding it.
+
+        Covers every input of _metadata(scoped=True): the published objects'
+        identities, the protocol entry, binding header, the canonical reader's
+        cached frozen recipe, and the members' fingerprints, cells and rows.
+        marshal version 2 is type-exact (bool/int/float, signed zero, list/tuple,
+        exact dict/str types only) and reference-independent; subclasses and
+        non-marshallable values return None so the full comparison applies.
+        Callers have verified the native contract and index for this read.
+        """
+        service=self.service
+        index=service.disk_index
+        provider=getattr(service,'binding_header_provider',None)
+        if provider is None:return None
+        header=provider(protocol)
+        entry=service.protocols[protocol]
+        recipe=None
+        try:
+            if header is None:
+                members=[member['uuid'] for member in entry['result']['epochs']]
+            else:
+                recipe=service.binding_provider.__self__._recipe_cache.get(header['revision_uuid'])
+                if recipe is None:return None
+                members=[member['uuid'] for member in recipe['epochs']]
+            rows={key:service.rows[key] for key in members}
+            cells={key:service.cells[key] for key in sorted({row['cell_uuid'] for row in rows.values()})}
+            fingerprints={key:service._fingerprints[key] for key in members}
+            content=marshal.dumps((entry['definition'],entry['result'],recipe,fingerprints,cells,rows),2)
+        except (KeyError,TypeError,ValueError,AttributeError):
+            return None
+        return {'generation':(id(index),index.generation,id(service.rows),id(service.protocols),
+                    id(service._fingerprints),id(service.cells),id(entry)),
+            'project_uuid':service.project['project_uuid'],'header':header,
+            'source_scope_revision':service.source_scope()['revision'],'content':content}
+
+    @staticmethod
+    def _same_witness(current, saved):
+        return (current is not None and saved is not None and current['content']==saved['content']
+            and current['generation']==saved['generation'] and current['project_uuid']==saved['project_uuid']
+            and current['source_scope_revision']==saved['source_scope_revision']
+            and _exact_equal(current['header'],saved['header']))
+
     @staticmethod
     def _metadata_equal(left,right,*,plain_epochs=False):
         # Fingerprints are validated SHA256 strings in the full-state oracle;
@@ -305,7 +357,7 @@ class ProtocolStateReader:
             # This is deliberately outside read_scope: a real SQL attestation
             # validates all membership, current rows and visible provenance.
             after=self.native_context(protocol)
-            if after is None or after['query_revision']!=context['query_revision']:
+            if not same_protocol_state(after,context):
                 raise RevisionConflict({'query_revision':'changed while reading protocol response'})
         except BaseException:
             # Nested index operations may have loaded rows while an external
@@ -336,12 +388,23 @@ class ProtocolStateReader:
             return None
         token=tracker.token(protocol)
         if token is None:return None
+        cached=self.native_cache.get(protocol)
+        if cached is not None and cached.get('witness') is not None:
+            # Exact fast path: unchanged live inputs imply the admitted proof.
+            self.service._ready()
+            index=getattr(self.service,'disk_index',None)
+            if isinstance(index,DiskMetadataIndex):
+                index._check()
+                if self._same_witness(self._input_witness(protocol),cached['witness']):
+                    if any(key not in cached['allowed'] for key in ids):
+                        raise ValueError('Curation includes epochs outside this protocol query')
+                    return self._native_revision(token,cached,{key:self.service._fingerprints[key] for key in ids})
         metadata=self._metadata(protocol,include_shared=False,scoped=True)
         if metadata is None:return None
-        cached=self.native_cache.get(protocol)
         if cached is None or not self._metadata_equal(metadata,cached['metadata'],plain_epochs=cached['plain_epochs']) or self._bound_cells(cached['members'],metadata)!=cached['bound_cells']:
             self.native_cache.pop(protocol,None)
             if _retained_bytes(metadata,STATE_CACHE_BYTES)>STATE_CACHE_BYTES:return None
+            witness=self._input_witness(protocol)
             snapshot=self._native_snapshot(metadata)
             plain_epochs=_plain_epoch_records(snapshot['query'].get('epochs'))
             result=copy.deepcopy(metadata['query'])
@@ -358,8 +421,10 @@ class ProtocolStateReader:
                 if members==entry['members']:
                     members,allowed=entry['members'],entry['allowed']
                     break
+            # Retain the input witness only if it also held across this proof.
+            if not self._same_witness(self._input_witness(protocol),witness):witness=None
             cached={'metadata':snapshot,'members':members,'allowed':allowed if allowed is not None else frozenset(members),'digest':digest,
-                'plain_epochs':plain_epochs,
+                'plain_epochs':plain_epochs,'witness':witness,
                 'bound_cells':self._bound_cells(members,after),
                 'source_revisions':tuple(result['source_revisions']),
                 'binding_version':result.get('dataset_binding',{}).get('version',0)}
@@ -373,11 +438,20 @@ class ProtocolStateReader:
                 self.native_cache.pop(next(iter(self.native_cache)))
         if any(key not in cached['allowed'] for key in ids):
             raise ValueError('Curation includes epochs outside this protocol query')
-        revision='protocol-state-v3:'+checksum({'metadata':cached['digest'],'generation':asdict(token)})
-        return {'query_revision':revision,'query_revision_contract':'protocol-state-v3','generation':token,
+        return self._native_revision(token,cached,{key:metadata['fingerprints'][key] for key in ids})
+
+    @staticmethod
+    def _native_revision(token, cached, fingerprints):
+        # v4 covers protocol metadata and curation generations only. Shared tags
+        # carry their own per-target author revisions, so a tag write does not
+        # retire every page's curation authority. Reads still fence shared
+        # annotations separately (accepts_shared) and keep the full token.
+        scoped={key:value for key,value in asdict(token).items() if key not in ('shared_epoch','shared_generation')}
+        revision=PROTOCOL_STATE_CONTRACT+':'+checksum({'metadata':cached['digest'],'generation':scoped})
+        return {'query_revision':revision,'query_revision_contract':PROTOCOL_STATE_CONTRACT,'generation':token,
             'binding_version':cached['binding_version'],'source_revisions':cached['source_revisions'],
             'metadata_digest':cached['digest'],
-            'fingerprints':{key:metadata['fingerprints'][key] for key in ids}}
+            'fingerprints':fingerprints}
 
     def assert_context_locked(self, protocol_uuid, context):
         self.store.state_generation.assert_current_locked(context['generation'])
@@ -405,9 +479,9 @@ class ProtocolStateReader:
         if context is None:return self.full_state(protocol_uuid)
         result,current,_=self.full_state(protocol_uuid)
         after=self.native_context(protocol_uuid)
-        if after is None or after['query_revision']!=context['query_revision']:
+        if not same_protocol_state(after,context):
             raise RevisionConflict({'query_revision':'changed during read'})
-        result['query_revision_contract']='protocol-state-v3'
+        result['query_revision_contract']=PROTOCOL_STATE_CONTRACT
         return result,current,context['query_revision']
 
     def read_selected(self, protocol_uuid, epoch_ids):
@@ -427,7 +501,7 @@ class ProtocolStateReader:
             selected={key:self.store._state(saved.get(key),context['fingerprints'][key]) for key in ids}
             tracker=self.store.state_generation
             after=self.native_context(protocol,ids)
-            if after is None or after['query_revision']!=context['query_revision']:
+            if not same_protocol_state(after,context):
                 raise RevisionConflict({'query_revision':'changed during selected read'})
             return selected,context['query_revision'],context['binding_version']
         if protocol in self.rejected:

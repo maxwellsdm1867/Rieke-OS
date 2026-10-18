@@ -9,6 +9,7 @@ identity and partial-success facts; it does not create scientific membership.
 | --- | --- |
 | Profile selection and chips | `annotationProfile.js`, `annotationTags.js`, `ui/AnnotationProfile.jsx`, `ui/AnnotationTags.jsx`, `ui/EpochTags.jsx`, `ui/AnnotationIndicator.jsx` |
 | Confirmed display receipts | `annotationReceipts.js`, `useAnnotationReceipts.js` |
+| Tag channel (pending + confirmed state, subscriptions) | `tagStore.js`, `useTagStore.js` |
 | Exact tree/cell targets | `treeGroupTargets.js`, `treeGroupQueryTags.js`, `useTreeCellSelection.js`, `ui/TreeGroupTags.jsx` |
 | Recovery and summaries | `ui/GroupAnnotationRecovery.jsx`, `ui/ProtocolTagSummary.jsx` |
 | Tag exchange and monitoring | `tagExchange.js`, `externalTagMonitor.js`, `ui/TagExchangeControls.jsx`, `ui/TagExchangeDialog.jsx`, `ui/ExternalTagSync.jsx` |
@@ -69,3 +70,22 @@ a second per-epoch annotation request or temporarily relock complete page-backed
 controls during ordinary sibling navigation. Missing annotations, explicit
 refresh, and required whole-cell counts keep their existing read/lock behavior;
 per-author expected revisions and late-response scope fences remain unchanged.
+
+Tags travel on their own channel (`tagStore.js`), not the App `revision` clock.
+A single-target save calls `begin()` synchronously so the chip paints in the
+click's frame (pending style), writes serially per target/author with the last
+confirmed revision, then `confirm()`s in place or `fail()`s with rollback and the
+draft restored. Pending operations are presentation only: never expected
+revisions, never in exports or filters, never evicted. Confirmed epoch-only
+receipts do not tick `useWorkspaceChanges`; tag-dependent results (filters,
+legacy page tokens) renew once from `getConfirmedGeneration()` after a 75 ms idle
+window, and summaries read that generation when they render. Bulk, undo and
+external changes enter through `ingest()`/`invalidate()`. Store tests:
+`tagStore.test.js`; mounted: `annotationReceiptWorkflow.test.js`.
+
+Confirmed chips may carry `added_at` (ISO UTC with `Z`) and `time_source`
+(`recorded`, `audit_event`, `approximate`); `confirmAnnotationReceipt` refuses
+malformed values and propagates them. Chips stay name-only; `annotationChipTitle`
+puts author and added time (or `saving…` for pending chips) in the tooltip.
+Tag-time view filters (`annotations/*/tag_times`) are composed in
+`typed-query/protocolViewFilter.js`; times are never invented client-side.

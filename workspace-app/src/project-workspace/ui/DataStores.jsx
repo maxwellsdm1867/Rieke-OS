@@ -8,6 +8,7 @@ import {Archive,ArrowLeft,ArrowRight,Check,ChevronRight,Database,FileClock,FileU
 import {api,duration,humanize,number,useResource} from '../../api.js';
 import {Badge,Empty,Metadata,Status} from '../../components/Common.jsx';
 import './DataStores.css';
+import {formatBytes} from '../../byteSize.js';
 import {epochResourceCache} from '../../resourceCache.js';
 import SourcePropagation from '../../protocol-overview/ui/SourcePropagation.jsx';
 import {availabilityLabel,availabilityExplanation} from '../../metadata-refresh/metadataRefresh.js';
@@ -26,7 +27,7 @@ function timestamp(value){
   if(!value)return 'Not recorded';
   const date=new Date(value);return Number.isNaN(date.getTime())?String(value):date.toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
 }
-function fileSize(value){if(!Number.isFinite(value)||value<0)return 'Not recorded';if(value<1000)return `${value} B`;const units=['KB','MB','GB','TB'];let size=value/1000,index=0;while(size>=1000&&index<units.length-1){size/=1000;index++;}return `${size.toLocaleString(undefined,{maximumFractionDigits:1})} ${units[index]}`;}
+const fileSize=value=>formatBytes(value,{unavailable:'Not recorded'});
 function StorageSummary({storage}){
   if(!storage)return null;
   return <section className="ds-project-storage" aria-label="All project recording and metadata sizes"><header><HardDrive size={17}/><h2>Recording & metadata storage</h2><span>All registered sources · includes archived</span></header><div className="ds-storage-cards">{[['recordings','H5 recordings',HardDrive],['parsed_metadata','Parsed metadata',Database],['combined','Combined file size',FolderOpen]].map(([key,label,Icon])=>{const item=storage[key];if(!item)return null;return <div key={key}><span><Icon size={17}/>{label}</span><strong>{item.size_bytes==null?`${fileSize(item.known_bytes)} known`:fileSize(item.size_bytes)}</strong><small>{item.unavailable_files>0?`${number(item.unavailable_files)} file sizes unavailable · partial total`:key==='combined'?'H5 recordings + parsed metadata':`${number(item.files)} registered files`}</small></div>;})}</div><p>Parsed metadata means the imported metadata files. MySQL database storage, caches, exports, logs, and unregistered files are not included.</p></section>;

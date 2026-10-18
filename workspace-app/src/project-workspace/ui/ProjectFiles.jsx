@@ -7,15 +7,9 @@ import {
 import { useResource, number } from '../../api.js';
 import { Badge, Empty, Status } from '../../components/Common.jsx';
 import './ProjectFiles.css';
+import {formatBytes} from '../../byteSize.js';
 
-function fileSize(bytes) {
-  if (bytes === null || bytes === undefined) return '—';
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ['KB', 'MB', 'GB', 'TB'];
-  let value = bytes / 1024, unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {value /= 1024; unit++;}
-  return `${value.toLocaleString(undefined, {maximumFractionDigits: 1})} ${units[unit]}`;
-}
+const fileSize=bytes=>formatBytes(bytes);
 function modified(value) {
   if (!value) return '—';
   const date = new Date(value);

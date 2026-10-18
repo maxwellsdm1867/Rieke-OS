@@ -186,6 +186,11 @@ its actual version is recorded and must match the comparison run.
   --output benchmarks/results/workflow-comparison-unique.json
 ```
 
+`compare` flags a median over the larger of baseline +25%, +5 ms or one 60 Hz
+display frame (+16.7 ms, plus 1 ms timer margin). Browser timings resolve to whole
+frames, so a short action moving from two frames (33.3 ms) to three (50.0 ms) is
+within measurement resolution; two extra frames are still flagged.
+
 Use `--runtime development --profile` for a separate diagnostic run when
 investigating a result. Production React does not provide ordinary Profiler
 callbacks, so `--profile` with the default production runtime fails before setup.

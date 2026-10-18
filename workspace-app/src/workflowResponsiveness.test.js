@@ -123,18 +123,22 @@ test('mounted shared save507 retains the draft, does not navigate or invalidate,
   }finally{await h.close();}
 });
 
-test('mounted selected shared save refuses old selection after its cancellable revision read',async()=>{
+test('mounted selected shared save writes the clicked selection once; a conflict retry refuses a changed selection',async()=>{
   const h=await createWorkflowHarness(),pending=deferred();
   try{
     await h.mount();await ready(h);let read;
+    h.fixture.annotationVersions.set('epoch:epoch-2',5); // guessed revision 0 is stale → 409
     h.fixture.respond=(url,options,fallback)=>{if(url.pathname==='/api/annotations/read'){read=JSON.parse(options.body);return pending.promise;}return fallback();};
     await h.act(()=>h.viewer.treePane.listProps.setTargets(['epoch-0','epoch-2']));
     const input=h.root.findByProps({'aria-label':'Tag 2 selected epochs'});
     await h.act(()=>input.props.onChange({target:{value:'retained selection draft'}}));
     await h.act(()=>input.parent.props.onSubmit({preventDefault(){}}));
+    await h.waitFor(()=>!!read);
+    assert.deepEqual(h.fixture.requests.filter(record=>record.path==='/annotations').map(record=>record.body.target_uuids),[['epoch-0','epoch-2']]);
     await h.act(()=>h.viewer.treePane.listProps.setTargets(['epoch-4']));
-    await h.act(()=>pending.resolve({targets:Object.fromEntries(read.target_uuids.map(identity=>[identity,{target_kind:'epoch',target_uuid:identity,revisions:{author:0}}]))}));
-    assert.equal(h.fixture.requests.filter(record=>record.path==='/annotations').length,0);
+    await h.act(()=>pending.resolve({targets:Object.fromEntries(read.target_uuids.map(identity=>[identity,{target_kind:'epoch',target_uuid:identity,revisions:{author:identity==='epoch-2'?5:0}}]))}));
+    await h.settle(30);
+    assert.equal(h.fixture.requests.filter(record=>record.path==='/annotations').length,1,'No retry after the selection changed');
     assert.equal(h.root.findByProps({'aria-label':'Tag 1 selected epochs'}).props.value,'retained selection draft');
   }finally{await h.close();}
 });

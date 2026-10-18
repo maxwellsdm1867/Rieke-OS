@@ -146,7 +146,7 @@ class NativeProtocolBrowseTests(state_tests.ProtocolStateTests):
         self.assertEqual(response.status_code, 200, response.get_json())
         entry = response.get_json()
         self.assertEqual(entry['query_revision'], full['query_revision'])
-        self.assertEqual(entry['query_revision_contract'], 'protocol-state-v3')
+        self.assertEqual(entry['query_revision_contract'], 'protocol-state-v4')
         self.assertEqual(entry['expected_binding_version'], full['expected_binding_version'])
         self.assertNotIn('counts', entry)
 

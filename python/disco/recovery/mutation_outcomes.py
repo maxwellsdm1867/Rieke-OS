@@ -20,7 +20,8 @@ def register_mutation_recovery(app, scheduler, *, desktop_mode):
     def backup_saved_state(response):
         if request.endpoint in {'annotation_update','annotation_undo'} and 200<=response.status_code<300:
             # Rows and their immutable event are already committed together.
-            # The post-commit callback queued the independent recovery mirror.
+            # The post-commit callback already updated the independent recovery
+            # mirror synchronously; report its status, including a failure.
             result=response.get_json()
             result['persistence']={'database':'committed','backup':scheduler.status()}
             response.set_data(app.json.dumps(result))
@@ -35,16 +36,13 @@ def register_mutation_recovery(app, scheduler, *, desktop_mode):
             'compare_protocol_revision'}
         read_posts.update({'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary', 'workbench_selection_summary', 'workbench_tree_selection'})
         read_posts.update({'group_annotation_preview', 'group_annotation_preview_release'})
+        # The 3 s external-tag poll only reads unless a message arrives; received
+        # tags commit through SharedAnnotations, whose on_commit queues the mirror.
+        read_posts.add('scan_tags')
         readonly = request.method == 'POST' and request.endpoint in read_posts
-        # Workbench writes commit their rows, receipts and audit events in one
-        # SQL transaction before responding. Like annotations, they queue the
-        # independent recovery mirror (coalesced, flushed before close) instead
-        # of capturing the whole app state synchronously on every step.
-        queued = {'workbench_prepare', 'workbench_patch', 'workbench_selected_review', 'workbench_finish',
-                  'workbench_accept', 'workbench_undo', 'workbench_selection_manifest', 'workbench_merge_all'}
-        if request.endpoint in queued and 200 <= response.status_code < 300:
-            scheduler.request()
-            return response
+        # Workbench writes, like every other write, checkpoint here. The
+        # mirror writes only the rows changed since its watermark, so this
+        # synchronous step scales with the edit rather than the project.
         desktop_control = desktop_mode() and request.path.startswith('/api/desktop/')
         if not readonly and not desktop_control and request.path not in {'/api/project/close', '/api/projects/unmount'} and request.method in {'POST', 'PUT', 'PATCH', 'DELETE'} and 200 <= response.status_code < 300:
             try:

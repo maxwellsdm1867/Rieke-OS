@@ -190,6 +190,21 @@ class DiskIndexTests(unittest.TestCase):
         self.assertLessEqual(len(index.details.cache),64)
         self.assertEqual(index.details['epoch-0'],self.details['epoch-0'])
 
+    def test_bulk_details_use_one_connection_and_leave_shared_cache_unchanged(self):
+        index=self.build(count=140)
+        index.details['epoch-7']
+        cached=list(index.details.cache)
+        keys=[f'epoch-{i}' for i in (9,7,130,0)]
+        with patch.object(index,'_connect',wraps=index._connect) as connect:
+            result=list(index.details.many(keys))
+        self.assertEqual(connect.call_count,1)
+        self.assertEqual([key for key,_ in result],keys)
+        self.assertEqual(dict(result),{key:self.details[key] for key in keys})
+        self.assertEqual(list(index.details.cache),cached,'Bulk reads do not evict or admit shared entries')
+        dict(result)['epoch-7']['parameters'].clear()
+        self.assertEqual(index.details['epoch-7'],self.details['epoch-7'])
+        with self.assertRaises(KeyError): list(index.details.many(['epoch-1','unknown']))
+
     def test_failed_rebuild_keeps_old_database(self):
         index=self.build()
         bad=dict(self.details);bad['epoch-0']={'parameters':{'invalid':float('nan')}}

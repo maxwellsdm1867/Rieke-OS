@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 from test_workspace_suggestions import ImportSuggestionTests
 from test_workspace_curation import Table
+from disco.workbench.workbench import WorkbenchConflict
 from disco.workbench.workbench import ProtocolWorkbench, WorkbenchConflict
 
 
@@ -806,43 +807,109 @@ class WorkbenchTests(unittest.TestCase):
         self.case.service.shared_annotations = store
         return store
 
+    def tag(self, shared, kind, target, add=(), remove=(), author='Fixture author'):
+        """Save a real shared tag as another author (as an external import would)."""
+        profile = shared.create_profile(author, 'actor-two')['profile_uuid']
+        current = shared.read_targets(kind, [target])[target]['revisions'].get(profile, 0)
+        shared.update(kind, [target], profile, {'tags_add': list(add), 'tags_remove': list(remove)},
+                      {target: current}, 'actor-two')
+
     def test_tree_shared_tag_coverage_inherits_deduplicates_and_removes(self):
         shared = self.coverage_annotations()
         rows = list(self.case.service.rows.values())[:2]
-        records = []
-        def snapshot():
-            return dict(revision=str(records), records=copy.deepcopy(records))
-        with patch.object(shared, 'snapshot', side_effect=snapshot):
-            def coverage():
-                context = self.manager.context(self.protocol, self.revision, 'actor-one')
-                return self.manager.frozen_service(context).tree_annotation_coverage(rows)
-            self.assertEqual(coverage(), dict(total_epochs=2, tagged_epochs=0))
-            records.append(dict(target_kind='epoch', target_uuid=rows[0]['epoch_uuid'], tags=['one']))
-            self.assertEqual(coverage()['tagged_epochs'], 1)
-            records.append(dict(target_kind='cell', target_uuid=rows[1]['cell_uuid'], tags=['other']))
-            self.assertEqual(coverage()['tagged_epochs'], 2)
-            records.append(dict(target_kind='epoch', target_uuid=rows[1]['epoch_uuid'], tags=['duplicate']))
-            self.assertEqual(coverage()['tagged_epochs'], 2)
-            for record in records:
-                record['tags'] = []
-            self.assertEqual(coverage()['tagged_epochs'], 0)
+        def coverage():
             context = self.manager.context(self.protocol, self.revision, 'actor-one')
-            scoped = self.manager.frozen_service(context)
-            records.append(dict(target_kind='cell', target_uuid=rows[0]['cell_uuid'], tags=['changed']))
-            with patch.object(shared, 'snapshot', side_effect=AssertionError('Coverage must reuse captured snapshot')):
-                self.assertEqual(scoped.tree_annotation_coverage(rows)['tagged_epochs'], 0)
-            self.assertNotEqual(context['candidate_scope_revision'],
-                self.manager.context(self.protocol, self.revision, 'actor-one')['candidate_scope_revision'])
+            return self.manager.frozen_service(context).tree_annotation_coverage(rows)
+        self.assertEqual(coverage(), dict(total_epochs=2, tagged_epochs=0))
+        self.tag(shared, 'epoch', rows[0]['epoch_uuid'], add=['one'])
+        self.assertEqual(coverage()['tagged_epochs'], 1)
+        self.tag(shared, 'cell', rows[1]['cell_uuid'], add=['other'])
+        self.assertEqual(coverage()['tagged_epochs'], 2)
+        self.tag(shared, 'epoch', rows[1]['epoch_uuid'], add=['duplicate'], author='Second author')
+        self.assertEqual(coverage()['tagged_epochs'], 2)
+        self.tag(shared, 'epoch', rows[0]['epoch_uuid'], remove=['one'])
+        self.tag(shared, 'cell', rows[1]['cell_uuid'], remove=['other'])
+        self.tag(shared, 'epoch', rows[1]['epoch_uuid'], remove=['duplicate'], author='Second author')
+        self.assertEqual(coverage()['tagged_epochs'], 0)
         with patch.object(self.case.service, 'shared_annotations', None):
             context = self.manager.context(self.protocol, self.revision, 'actor-one')
             self.assertIsNone(self.manager.frozen_service(context).tree_annotation_coverage(rows))
 
-    def test_frozen_tree_coverage_is_scope_fenced_and_review_does_not_create_tags(self):
+    def test_shared_tags_are_not_candidate_scope_and_coverage_checks_their_own_witness(self):
+        shared = self.coverage_annotations()
+        rows = list(self.case.service.rows.values())[:2]
+        context = self.manager.context(self.protocol, self.revision, 'actor-one')
+        witness = context['shared_annotation_witness']
+        self.assertTrue(witness)
+        # Another author's tag (or an external import) is outside candidate scope.
+        with patch.object(shared, 'snapshot', side_effect=AssertionError('Context must not read every annotation')):
+            self.tag(shared, 'cell', rows[0]['cell_uuid'], add=['external'], author='MATLAB import')
+            fresh = self.manager.context(self.protocol, self.revision, 'actor-one')
+        self.assertEqual(fresh['candidate_scope_revision'], context['candidate_scope_revision'])
+        self.assertNotEqual(fresh['shared_annotation_witness'], witness)
+        self.assertNotIn('shared_annotations_revision', fresh)
+        # A coverage read opened before the tag refuses instead of mixing states.
+        with self.assertRaisesRegex(WorkbenchConflict, 'Shared annotations changed'):
+            self.manager.frozen_service(context).tree_annotation_coverage(rows)
+        # A tag landing while coverage is read also refuses.
+        scoped = self.manager.frozen_service(fresh)
+        original = shared._rows
+        def tag_during_read(*args, **kwargs):
+            result = original(*args, **kwargs)
+            if args and args[0] == 'cell':
+                shared._rows = original
+                self.tag(shared, 'epoch', rows[1]['epoch_uuid'], add=['racing'], author='MATLAB import')
+            return result
+        shared._rows = tag_during_read
+        try:
+            with self.assertRaisesRegex(WorkbenchConflict, 'Shared annotations changed'):
+                scoped.tree_annotation_coverage(rows)
+        finally:
+            shared._rows = original
+        # Coverage reads only the candidate's targets, never a project snapshot.
+        with patch.object(shared, 'snapshot', side_effect=AssertionError('Coverage must not snapshot the project')):
+            latest = self.manager.context(self.protocol, self.revision, 'actor-one')
+            self.assertEqual(self.manager.frozen_service(latest).tree_annotation_coverage(rows),
+                             dict(total_epochs=2, tagged_epochs=2))
+
+    def test_context_advertises_tag_free_scope_only_without_predicate_tag_witnesses(self):
+        self.coverage_annotations()
+        self.assertEqual(self.get_context()['protocol']['query_revision_contract'], 'workbench-candidate-scope-v2')
+        original = self.manager.context
+        def predicate_tags(*args, **kwargs):
+            return dict(original(*args, **kwargs), annotation_scope_revision='predicate-tags')
+        with patch.object(self.manager, 'context', side_effect=predicate_tags):
+            self.assertNotIn('query_revision_contract', self.get_context()['protocol'])
+
+    def test_accept_ignores_other_authors_tags_but_refuses_a_changed_main_binding(self):
+        shared = self.coverage_annotations()
+        request = self.accepted_request()
+        # A tag between preview and accept (another author, external import)
+        # changes no membership, so the held preview and scope still accept.
+        self.tag(shared, 'epoch', self.added, add=['external'], author='MATLAB import')
+        response = self.accept(request)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()['accepted_epoch_uuids'], [self.added])
+        self.assertEqual([tag['tag'] for tag in shared.read_targets('epoch', [self.added])[self.added]['tags']],
+                         ['external'], 'Merging neither copies nor removes shared tags')
+
+    def test_accept_refuses_a_main_binding_changed_after_preview(self):
+        self.coverage_annotations()
+        request = self.accepted_request()
+        main = self.case.explorer_history.protocol_binding(self.protocol)
+        self.case.explorer_history.bind(main['revision_uuid'], self.protocol, main['version'], 'fixture', {},
+                                        len(main['recipe']['epochs']))
+        self.assertNotEqual(self.case.explorer_history.protocol_binding(self.protocol)['version'], main['version'])
+        response = self.accept(request)
+        self.assertEqual(response.status_code, 409, response.get_json())
+
+    def test_frozen_tree_coverage_is_witness_fenced_and_review_does_not_create_tags(self):
         shared = self.coverage_annotations()
         snapshot = shared.snapshot()
         # Review/selection is independent from shared tags.
         context = self.get_context()
         self.assertNotIn('_shared_annotation_snapshot', context)
+        self.assertNotIn('shared_annotation_witness', context)
         context = self.save(context, [dict(epoch_uuid=self.added, selected=True, reviewed=True)]).get_json()
         def read(token):
             return self.case.client.post(self.root + '/tree/page', json=dict(
@@ -851,32 +918,33 @@ class WorkbenchTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.get_json())
         self.assertEqual(response.get_json()['branches'][0]['shared_tag_coverage'],
                          dict(total_epochs=1, tagged_epochs=0))
-        changed = dict(snapshot, revision='changed', records=[dict(target_kind='epoch',
-            target_uuid=self.added, tags=['checked'])])
-        with patch.object(shared, 'snapshot', return_value=changed):
-            self.assertEqual(read(context['candidate_scope_revision']).status_code, 409)
-            fresh = self.get_context()
-            response = read(fresh['candidate_scope_revision'])
-            self.assertEqual(response.status_code, 200, response.get_json())
-            self.assertEqual(response.get_json()['branches'][0]['shared_tag_coverage'],
-                             dict(total_epochs=1, tagged_epochs=1))
-        # A read that changes after coverage evaluation cannot publish green.
+        self.tag(shared, 'epoch', self.added, add=['checked'], author='MATLAB import')
+        # The held frozen token stays valid; coverage is freshly read.
+        response = read(context['candidate_scope_revision'])
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()['candidate_scope_revision'], context['candidate_scope_revision'])
+        self.assertEqual(response.get_json()['branches'][0]['shared_tag_coverage'],
+                         dict(total_epochs=1, tagged_epochs=1))
+        # A tag that lands after coverage evaluation cannot publish stale counts.
         original = self.manager.frozen_service
         def changing(context):
             scoped = original(context)
             coverage = scoped.tree_annotation_coverage
             def changed_after(rows):
                 result = coverage(rows)
-                shared.snapshot = lambda: changed
+                self.tag(shared, 'epoch', self.added, remove=['checked'], author='MATLAB import')
                 return result
             scoped.tree_annotation_coverage = changed_after
             return scoped
-        with patch.object(shared, 'snapshot', return_value=snapshot), patch.object(self.manager, 'frozen_service', side_effect=changing):
+        with patch.object(self.manager, 'frozen_service', side_effect=changing):
             response = read(context['candidate_scope_revision'])
             self.assertEqual(response.status_code, 409, response.get_json())
+            self.assertNotIn('branches', response.get_json())
+        tags = shared.snapshot()
         accepted = self.accept(self.accepted_request())
         self.assertEqual(accepted.status_code, 200, accepted.get_json())
-        self.assertEqual(shared.snapshot(), snapshot, 'Merging must never author shared tags')
+        self.assertEqual(shared.snapshot(), tags, 'Merging must never author shared tags')
+        self.assertEqual(snapshot['records'], [])
 
     def test_frozen_tree_leaf_has_saved_proposal_decision_without_scientific_curation(self):
         context = self.get_context()
@@ -1362,7 +1430,7 @@ class WorkbenchTests(unittest.TestCase):
         self.assertIsNotNone(callback, 'API wires the native-only revision callback')
         with patch.object(self.manager, 'read_revision', None):
             expected = self.manager.context(self.protocol, self.revision, 'actor-one')
-        self.assertTrue(expected['expected_query_revision'].startswith('protocol-state-v3:'))
+        self.assertTrue(expected['expected_query_revision'].startswith('protocol-state-v4:'))
         with patch.object(reader, 'full_state', side_effect=AssertionError('Unused full curation must not load')):
             actual = self.manager.context(self.protocol, self.revision, 'actor-one')
             repeated = self.manager.context(self.protocol, self.revision, 'actor-one')
@@ -1380,7 +1448,7 @@ class WorkbenchTests(unittest.TestCase):
             result = self.manager.context(self.protocol, self.revision, 'actor-one')
         self.assertEqual(oracle.call_count, 1)
         self.assertEqual(native_read.call_count, 1, 'unsupported proof is attempted once before the unchanged oracle')
-        self.assertFalse(result['expected_query_revision'].startswith('protocol-state-v3:'))
+        self.assertFalse(result['expected_query_revision'].startswith('protocol-state-v4:'))
         tracker.disabled = False
         for method in ('protocol_binding', 'protocol_binding_header', 'get'):
             with self.subTest(method=method), \

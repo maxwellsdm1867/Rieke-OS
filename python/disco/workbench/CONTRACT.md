@@ -36,7 +36,7 @@ binding version, exact selected-view UUID set, and metadata generation. An unbou
 main additionally retains its live query revision. Index and published mapping
 identities fence the retained entry. Candidate minus base minus main determines
 pending membership. Draft-only or shared-tag-only updates of a bound main can reuse
-pure grouping while fresh adapters and closing checks read current decisions/tags.
+pure grouping while fresh adapters and closing checks read current decisions; coverage reads current tags.
 Empty selected views are distinct from unrestricted pending membership. A scope
 or generation change replaces the retained binding; custom readers execute
 uncached. Index integrity and relevant fingerprints remain checked on reuse.
@@ -65,7 +65,30 @@ closing-read rejection. SQL doubles do not qualify native transaction behavior.
 
 Project/protocol/candidate/baseline/main UUIDs, recipe hashes, metadata fingerprints,
 actor draft version, source/query/binding/shared-annotation witnesses are separate
-identities. Pending membership is candidate minus baseline minus current main.
+identities.
+
+Project-wide shared tags are not candidate scope. Shared tags are keyed by epoch
+or cell UUID, merge never copies or removes them, and they never decide pending
+membership, selection, preview or acceptance. `candidate_scope_revision` therefore
+omits them (it keeps predicate annotation witnesses: a candidate or origin whose
+predicate reads tags still changes scope when those tags change). `context()`
+captures a separate `shared_annotation_witness` instead: natively the shared scope
+generation `shared_epoch:shared_generation` (the `annotation_generation` format,
+read without loading tag records), otherwise the compact revision projection. It
+never snapshots every annotation record. Only reads whose result depends on shared
+tags check it: tree tag coverage (below). Tag-filtered reads stay fenced inside
+each response by the opening/closing read generation, which includes the shared
+scope; across requests, tree pages are fenced by their membership revision and
+list selection by exact cell counts. Tag-filtered epoch-page continuation is not
+fenced across requests by shared tags, matching Main pages under
+`protocol-state-v4`; the renderer re-reads tag-filtered pages once per confirmed
+tag receipt. The queue revision likewise omits the shared generation (it keeps
+the protocol curation generation), so another author's tag or an external import
+neither re-prepares the combined review nor blocks `merge-all`. The public
+context advertises `protocol.query_revision_contract =
+'workbench-candidate-scope-v2'` only when no candidate/origin predicate reads
+tags; a renderer may then keep page authority across tag receipts. Exports keep
+their own shared-annotation snapshot witness, unchanged. Pending membership is candidate minus baseline minus current main.
 Source eligibility and exact frozen fingerprints constrain reads and acceptance;
 labels and current metadata do not substitute for historical witnesses. Counts mean
 epochs or distinct cells, never interchangeable totals.
@@ -192,17 +215,22 @@ shared tag; tag names and authors may differ. It does not imply scientific revie
 approval, incoming selection or main membership. A merged epoch is removed from
 pending scope; merge alone never creates tags.
 
-The read reuses the private shared-annotation snapshot already captured by
-`context`, builds a request-local UUID index only when branch coverage is requested,
-and applies it to exact bucket membership. No per-epoch queries or extra snapshot
-read is added. The existing response-end scope check rejects changed annotation
-witnesses. Private snapshot records are never part of the public context payload.
+Coverage is built lazily, only when branch coverage is requested (the app's
+counts-only tree pages never request it): one request-local index of tagged epoch
+and cell targets read for the candidate's pending epochs and their cells, in
+bounded batches, never a project-wide snapshot (custom adapters without targeted
+reads keep the full snapshot). The shared witness is compared with the value
+`context` captured before and after building the index; a change raises
+`WorkbenchConflict`, and the response-end read generation still rejects a later
+change in the same response. No annotation records are part of the public context.
 Frontend saved-tag badges require matching current candidate scope and complete
 validated counts; partial coverage and unavailable/retained reads remain distinct.
 Badges use neutral styling. Green/blue branch switches describe the separate
 ephemeral incoming selection command, never shared-tag coverage.
-Executable cases: `test_workspace_workbench.WorkbenchTests` coverage tests and
-`workspace-app/src/treeTagCoverageWorkflow.test.js`.
+Executable cases: `test_workspace_workbench.WorkbenchTests` coverage and shared-tag
+scope tests, `test_workspace_workbench_pending` (another author's tag keeps queue,
+scope and tokens), `workspace-app/src/treeTagCoverageWorkflow.test.js` and
+`workspace-app/src/workbenchTagScope.test.js`.
 
 ## Response-local native attestation
 

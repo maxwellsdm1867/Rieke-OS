@@ -1,60 +1,108 @@
-.protocol-infographic{container-type:inline-size;border:1px solid var(--border);border-radius:9px;margin:0 0 20px;background:var(--surface);min-width:0}
-.protocol-infographic>header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:13px 22px;font-size:12px;border-bottom:1px solid var(--border);background:var(--surface-subtle);border-radius:9px 9px 0 0}
-.protocol-infographic>header>span{font-weight:650;color:var(--accent)}
+/* Protocol Overview card. Shares the project Overview's visual language
+   (Overview.css): hero metric row, cells by type beside recording dates and a
+   footer inventory strip. Colors come only from themes.css tokens. */
+.protocol-infographic{container-type:inline-size;border:1px solid var(--border);border-radius:10px;margin:0 0 20px;background:var(--surface);min-width:0;overflow:hidden}
 .protocol-infographic small{color:var(--ink-muted);font-size:11px}
-.pi-cohort-intro{padding:17px 22px 6px}
-.pi-cohort-intro>p{font-size:11px;font-weight:400;color:var(--ink-secondary)}
-.pi-cohort-intro>small{display:block;line-height:1.6;margin-top:3px}
-.pi-cohort-summary{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,.3fr);border-top:1px solid var(--border);border-bottom:1px solid var(--border);align-items:stretch}
-.pi-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--surface)}
-.pi-metrics>div{min-width:0;padding:17px 22px;display:grid;grid-template-rows:auto 40px auto;align-content:start;border-right:1px solid var(--border)}
+
+/* Header: scope as a quiet status pill, its meaning as one muted line. */
+.protocol-infographic>header{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;padding:12px 24px;font-size:12px;border-bottom:1px solid var(--border);background:var(--surface)}
+.pi-scope{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);white-space:nowrap}
+.pi-scope-note{color:var(--ink-muted);font-size:12px;min-width:0}
+.protocol-infographic>header>small{margin-left:auto}
+
+/* Hero metric row (matches .ov-metric-ribbon). */
+.pi-cohort-summary{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,.3fr);border-bottom:1px solid var(--border);align-items:stretch;background:linear-gradient(115deg,var(--surface-subtle),var(--surface))}
+.pi-cohort-summary:not(:has(.pi-pending-review)){grid-template-columns:minmax(0,1fr)}
+.pi-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:22px 0}
+.pi-metrics>div{min-width:0;padding:0 24px;display:grid;grid-template-rows:32px 54px auto;align-content:start;border-right:1px solid var(--border)}
 .pi-metrics>div:last-child{border-right:0}
-.pi-metrics>div>span{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-secondary);min-height:28px}
-.pi-metrics>div>strong{align-self:baseline;display:block;font-size:24px;line-height:40px;font-weight:600;letter-spacing:-.5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.pi-metrics>div>small{display:block;line-height:1.6;margin-top:3px}
-.pi-context-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);align-items:stretch}
-.pi-dates{padding:20px 22px;min-width:0}
-.pi-dates h3{font-size:12px;margin:0 0 12px;color:var(--ink-secondary)}
-.pi-date-list{display:grid;grid-template-columns:minmax(0,1fr) max-content max-content;column-gap:14px}
-.pi-date-list>div{display:grid;grid-column:1/-1;grid-template-columns:subgrid;align-items:baseline;font-size:12px;margin:9px 0}
-.pi-date-list>div>span{overflow-wrap:anywhere}
-.pi-date-list strong{font-size:12px;font-weight:550;font-variant-numeric:tabular-nums;text-align:right}
-.pi-date-list small{font-variant-numeric:tabular-nums;text-align:right}
-.pi-dates>p{font-size:11px;color:var(--ink-muted)}
-.pi-source-size{display:flex;align-items:baseline;gap:7px 12px;flex-wrap:wrap;border-top:1px solid var(--border-subtle);padding-top:13px;margin-top:17px;font-size:11px;color:var(--ink-muted)}
-.pi-source-size>span{display:inline-flex;align-items:center;gap:7px}
-.pi-source-size>strong{font-size:13px;font-weight:550;color:var(--ink-secondary)}
-.pi-source-size>small:last-child{flex-basis:100%;font-size:10px}
-.pi-review-context{padding:20px 22px;border-left:1px solid var(--border);display:flex;flex-direction:column;gap:16px;min-width:0}
+.pi-metrics>div>span{display:flex;align-items:flex-start;gap:7px;font-size:12px;line-height:1.4;color:var(--ink-secondary)}
+.pi-metrics>div>span>svg{flex-shrink:0}
+.pi-metrics>div>strong{display:flex;align-items:baseline;height:54px;line-height:1;font-size:36px;font-weight:600;letter-spacing:-1.3px;color:var(--ink-secondary);font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
+.pi-metrics>div>strong::before{content:"";display:inline-block;width:0;height:40px;flex-shrink:0}
+.pi-metrics>div:first-child>strong{font-size:44px;color:var(--accent)}
+.pi-metrics>div:last-child>strong{font-size:30px;letter-spacing:-.5px}
+.pi-metrics>div>small{display:block;line-height:1.5}
+
 .pi-pending-review{padding:14px 16px;border:1px solid var(--border);border-radius:7px;background:var(--surface);margin:12px;min-width:0}
 .pi-pending-review>div{display:flex;gap:8px;align-items:center;color:var(--ink-secondary)}
 .pi-pending-review h3{font-size:12px;margin:0}
 .pi-pending-review>strong{display:block;font-size:26px;font-weight:550;line-height:1.3;letter-spacing:-.5px;font-variant-numeric:tabular-nums;margin:7px 0}
 .pi-pending-review p,.pi-export-history p{font-size:11px;color:var(--ink-muted);line-height:1.6}
 .pi-pending-review>button{font-size:11px;white-space:normal;margin-top:10px}
-.pi-export-history{padding:14px 16px;background:var(--surface);border:1px solid var(--border-subtle);border-radius:7px}
-.pi-export-history>strong{display:block;font-size:11px;font-weight:550;color:var(--ink-secondary);margin-bottom:5px}
+
+.pi-cell-coverage{padding:10px 24px;font-size:12px;color:var(--ink-secondary);background:var(--surface-subtle);line-height:1.6;border-bottom:1px solid var(--border)}
+
+/* Two panels: cells by type and recording dates (matches .ov-acquisition-grid). */
+.pi-acquisition{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.pi-acquisition:not(:has(.pi-types)){grid-template-columns:minmax(0,1fr)}
+.pi-types,.pi-dates{padding:22px 24px;min-width:0}
+.pi-types{border-right:1px solid var(--border);padding-inline:16px}
+.pi-section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.pi-types .pi-section-title{padding-inline:8px}
+.pi-section-title h3{display:flex;align-items:center;gap:8px;font-size:14px;margin:0;color:var(--ink)}
+.pi-section-title>small,.pi-section-title>svg{color:var(--ink-muted)}
+.pi-dates>p{font-size:12px;color:var(--ink-muted);padding:0 8px}
+.pi-more-dates{display:block;padding:6px 8px 0}
+
+/* Date rows share tracks so count width cannot move a bar's origin or scale. */
+.pi-date-list{display:grid;grid-template-columns:7px minmax(0,1fr) minmax(30px,.65fr) max-content;column-gap:12px;padding-inline:8px}
+.pi-date-list>div{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center;padding:11px 0}
+.pi-date-dot{width:7px;height:7px;border:2px solid var(--accent);border-radius:50%;box-sizing:content-box;margin-left:-2px}
+.pi-date-identity{min-width:0}
+.pi-date-identity strong{display:block;font-size:12px;font-weight:600;color:var(--ink-secondary);overflow-wrap:anywhere}
+.pi-date-identity small{display:block;margin-top:4px;font-variant-numeric:tabular-nums}
+.pi-date-track{background:var(--surface-subtle);height:7px;border-radius:3px;overflow:hidden}
+.pi-date-track>i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.pi-date-count{font-size:12px;color:var(--ink-muted);white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}
+
+/* Footer inventory strip (matches .ov-inventory). */
+.pi-inventory{display:flex;align-items:center;flex-wrap:wrap;gap:10px 24px;padding:14px 24px;border-top:1px solid var(--border);font-size:12px;color:var(--ink-muted)}
+.pi-inventory>div{display:flex;align-items:baseline;gap:7px;min-width:0}
+.pi-inventory>div>svg{align-self:center;flex-shrink:0}
+.pi-inventory strong{color:var(--ink-secondary);font-weight:600;font-variant-numeric:tabular-nums}
+.pi-source-size{flex-wrap:wrap}
+.pi-export-history{margin-left:auto;min-width:0}
+.pi-export-history summary{font-size:12px;color:var(--ink-secondary);cursor:pointer}
+.pi-export-history details[open] p{margin-top:8px;max-width:420px}
+
+@container (max-width:950px){
+  .pi-acquisition{grid-template-columns:minmax(0,1fr)}
+  .pi-types{border-right:0;border-bottom:1px solid var(--border)}
+}
 @container (max-width:760px){
   .pi-cohort-summary{grid-template-columns:minmax(0,1fr)}
-  .pi-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .pi-metrics>div{padding:14px 16px}
+  .pi-metrics{grid-template-columns:repeat(2,minmax(0,1fr));padding:0}
+  .pi-metrics>div{padding:16px;grid-template-rows:28px 54px auto}
   .pi-metrics>div:nth-child(2){border-right:0}
   .pi-metrics>div:nth-child(n+3){border-top:1px solid var(--border)}
-  .pi-context-grid{grid-template-columns:minmax(0,1fr)}
-  .pi-review-context{border-left:0;border-top:1px solid var(--border);padding:16px}
-  .pi-dates{padding:16px}
-  .pi-cohort-intro{padding:16px 16px 6px}
+  .protocol-infographic>header,.pi-inventory{padding-inline:16px}
+  .pi-dates{padding:18px 16px}
+  .pi-types{padding:18px 8px}
+  .pi-export-history{margin-left:0;flex-basis:100%}
 }
 @container (max-width:470px){
-  .protocol-infographic>header{padding:12px 16px}
-  .pi-metrics>div>strong{font-size:21px}
-  .pi-date-list{column-gap:8px}
-  .pi-date-list>div{font-size:11px}
+  .protocol-infographic>header>small{margin-left:0}
+  .pi-metrics>div>strong{font-size:28px}
+  .pi-metrics>div:first-child>strong{font-size:34px}
+  .pi-metrics>div:last-child>strong{font-size:24px}
+  .pi-date-list{grid-template-columns:7px minmax(0,1fr) max-content}
+  .pi-date-track{display:none}
 }
 
-.pi-cell-coverage{padding:10px 22px;font-size:12px;color:var(--ink-secondary);background:var(--surface-subtle);line-height:1.6}
-
-.pi-cohort-summary:not(:has(.pi-pending-review)){grid-template-columns:minmax(0,1fr)}
-
-.pi-export-history summary{font-size:11px;color:var(--ink-secondary)}
-.pi-export-history details[open] p{margin-top:8px}
+/* Flat hero, one number size and readable field text. The accent color alone
+   marks the cell count; equal sizes keep all four values on one baseline. */
+.pi-cohort-summary{background:var(--surface)}
+.pi-metrics>div>span{font-size:13px}
+.pi-metrics>div>strong,.pi-metrics>div:first-child>strong,.pi-metrics>div:last-child>strong{font-size:36px;letter-spacing:-1px}
+.protocol-infographic small,.pi-metrics>div>small{font-size:12px}
+.protocol-infographic>header,.pi-scope-note{font-size:13px}
+.pi-scope{font-size:12px}
+.pi-section-title h3{font-size:15px}
+.pi-date-identity strong,.pi-date-count{font-size:13px}
+.pi-inventory,.pi-export-history summary{font-size:13px}
+@container (max-width:470px){
+  .pi-metrics>div>strong,.pi-metrics>div:first-child>strong,.pi-metrics>div:last-child>strong{font-size:28px}
+}
+/* The scope note continues the file-count phrase; drop the flex gap before its "·". */
+.pi-source-size>small:last-child{margin-left:-4px}

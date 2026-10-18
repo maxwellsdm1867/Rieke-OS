@@ -4,6 +4,10 @@ const invalid=()=>{throw new Error('The saved annotation response could not be v
 const record=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const text=value=>typeof value==='string'&&value.length>0;
 const revision=value=>Number.isSafeInteger(value)&&value>=0;
+const TIME_SOURCES=['recorded','audit_event','approximate'];
+// Per-tag added time is optional (older servers omit it) but never malformed.
+const tagTime=chip=>(chip.added_at===undefined||chip.added_at===null||(typeof chip.added_at==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(chip.added_at)&&Number.isFinite(Date.parse(chip.added_at))))
+  &&(chip.time_source===undefined||TIME_SOURCES.includes(chip.time_source));
 export const RECEIPT_LIMITS={targets:64,bytes:4*1024*1024};
 
 export function confirmAnnotationReceipt(result,request){
@@ -18,7 +22,7 @@ export function confirmAnnotationReceipt(result,request){
     for(const [author,version] of Object.entries(value.revisions))if(!text(author)||!revision(version)||version<1)invalid();
     const seen=new Set();
     for(const chip of value.tags){
-      if(!record(chip)||chip.target_kind!==kind||chip.target_uuid!==id||!text(chip.profile_uuid)||!text(chip.author_name)||!text(chip.tag)||!chip.tag.trim()||[...chip.tag].length>255||!revision(chip.revision)||chip.revision<1||chip.revision!==value.revisions[chip.profile_uuid])invalid();
+      if(!record(chip)||chip.target_kind!==kind||chip.target_uuid!==id||!text(chip.profile_uuid)||!text(chip.author_name)||!text(chip.tag)||!chip.tag.trim()||[...chip.tag].length>255||!revision(chip.revision)||chip.revision<1||chip.revision!==value.revisions[chip.profile_uuid]||!tagTime(chip))invalid();
       const key=JSON.stringify([chip.profile_uuid,chip.tag]);if(seen.has(key))invalid();seen.add(key);
     }
     targets.push({target_kind:kind,target_uuid:id,revisions:{...value.revisions},tags:value.tags.map(chip=>({...chip}))});
@@ -54,4 +58,8 @@ export function applyAnnotationReceipts(epoch,store){
   annotations.effective_tags=[...(annotations.cell_tags||[]),...(annotations.epoch_tags||[])];
   return {...epoch,annotations};
 }
+// Read tokens that omit project-wide shared tags: Main protocol-state-v4 and the
+// frozen Workbench candidate scope (advertised only when no predicate reads tags).
+export const STABLE_TAG_AUTHORITY_CONTRACTS=Object.freeze(['protocol-state-v4','workbench-candidate-scope-v2']);
+export function stableTagAuthority(protocol){return STABLE_TAG_AUTHORITY_CONTRACTS.includes(protocol?.query_revision_contract);}
 export function annotationFilterNeedsRefresh(filters={}){if(filters.metadata_predicate){try{const walk=node=>!!node?.field?.startsWith('annotations/')||!!node?.field?.startsWith('curation/')||!!node?.not&&walk(node.not)||(node?.all||node?.any||[]).some(walk);if(walk(JSON.parse(filters.metadata_predicate)))return true;}catch{return true;}}return ['tag','tagged','tag_predicate'].some(key=>Object.hasOwn(filters,key));}

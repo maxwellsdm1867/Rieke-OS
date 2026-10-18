@@ -1,3 +1,4 @@
+import {formatBytes} from '../byteSize.js';
 export const IMPORT_TERMINAL=new Set(['success','failed','failure','complete','completed','complete_with_warnings','duplicate','interrupted']);
 const labels={queued:'Queued',checking_duplicates:'Checking file contents',freezing_baselines:'Preserving current protocol datasets',validating:'Parsing and validating',refreshing_workspace:'Refreshing the main catalog',rerunning_protocols:'Checking saved protocol queries',complete:'Import complete',completed:'Import complete',success:'Import complete',complete_with_warnings:'Imported with follow-up warnings',duplicate:'Already imported · skipped',failed:'Import failed',failure:'Import failed',interrupted:'Import interrupted'};
 const finite=value=>typeof value==='number'&&Number.isFinite(value);
@@ -8,13 +9,7 @@ export function elapsedLabel(seconds){
   const value=Math.max(0,Math.floor(seconds));
   return value<60?`${value}s`:value<3600?`${Math.floor(value/60)}m ${value%60}s`:`${Math.floor(value/3600)}h ${Math.floor(value%3600/60)}m`;
 }
-export function byteLabel(bytes){
-  if(!finite(bytes))return '—';
-  if(bytes<1024)return `${Math.round(bytes)} B`;
-  if(bytes<1024**2)return `${(bytes/1024).toFixed(1)} KB`;
-  if(bytes<1024**3)return `${(bytes/1024**2).toFixed(1)} MB`;
-  return `${(bytes/1024**3).toFixed(2)} GB`;
-}
+export const byteLabel=bytes=>formatBytes(bytes);
 export function actualProgress(progress){
   if(!progress||!finite(progress.completed)||!finite(progress.total)||progress.completed<0||progress.total<=0||progress.completed>progress.total)return null;
   const unit=progress.unit || 'items';

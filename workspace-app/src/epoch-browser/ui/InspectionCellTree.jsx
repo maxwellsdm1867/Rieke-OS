@@ -1,3 +1,4 @@
+import {tagStore} from '../../annotations/tagStore.js';
 import {useWorkspaceRequest,useWorkspaceRequestScope} from '../../workspaceRequest.js';
 import {IncomingEpochSelect} from '../../incoming-workbench/ui/IncomingTreeSelection.jsx';
 import {TreeGroupTagButton,useTreeGroupTags} from '../../annotations/ui/TreeGroupTags.jsx';
@@ -22,6 +23,8 @@ import {inspectionNavigation,inspectionPageOffset,toggleInspectionBranch,restore
 function CellEpochPage({highlightedEpochs,cell,offset,restoreOffset,onFrontier,expected,onFault,revealEpoch,seen=[],source,revision,pageReads,focused,onFocus,targets,onSelect,disabled,navigationDisabled=disabled,onToggleInclusion,inclusionForEpoch,setTargets,onTagEpoch}){
   const pageSize=useWorkspaceRequestScope()?.pageSize??60;
   const page=useEpochBrowserPage(source,{cellUuid:cell.cell_uuid,offset},JSON.stringify([revision,source.queryRevision,source.treeRevision]),pageReads);
+  // Loaded rows carry author revisions: hints let selection tags write in one request.
+  useEffect(()=>{if(Array.isArray(page.data?.epochs))tagStore.hint(page.data.epochs);},[page.data]);
   const [expanded,setExpanded]=useState(false);
   const tail=useRef(null);
   let receipt=null,problem=null;
@@ -77,7 +80,11 @@ function CellBranch({cell,dateOpen,onSelectCell,onSelectGroupCell,onTagCell,sele
   const onFrontier=value=>rememberFrontier(cell.cell_uuid,value);
   const tags=props.source.readContext?incomingRowAnnotation(cell,'cell'):undefined;
   return <details className={tags?'cell-tree-cell has-shared-tags':'cell-tree-cell'} open={open} onToggle={event=>setOpen(event.currentTarget.open)}>
-    <summary className={selectedCell===cell.cell_uuid?'selected-cell':''} aria-label={datedCellLabel(cell,true)} aria-description={tags} title={[cell.identity_qualifier&&cell.cell_uuid,tags].filter(Boolean).join('\n')||undefined}><strong>{cell.label||cell.cell_label||'Unlabeled cell'}</strong>{cell.identity_qualifier&&<span> · {cell.identity_qualifier}</span>}{props.source.readContext&&!props.browseOnly&&<TreeGroupTagButton label="Tag This Cell" count={cell.epochs} disabled={props.disabled} onSelect={event=>onSelectGroupCell(cell,event)} onClick={event=>onTagCell(cell,event)}/>}</summary>
+    <summary className={selectedCell===cell.cell_uuid?'selected-cell':''} onClick={event=>{
+      // Clicking a cell targets the cell for tags (epochs target epochs); the row still opens/closes.
+      // Browsing never replaces an inspected epoch from another cell.
+      if(event.target.closest('button,input')||selectedCell===cell.cell_uuid)return;
+      if(!props.browseOnly||!props.focusedCell)onSelectCell?.(cell);else if(props.focusedCell===cell.cell_uuid)props.onTargetCell?.(cell);}} aria-label={datedCellLabel(cell,true)} aria-description={tags} title={[cell.identity_qualifier&&cell.cell_uuid,tags].filter(Boolean).join('\n')||undefined}><strong>{cell.label||cell.cell_label||'Unlabeled cell'}</strong>{cell.identity_qualifier&&<span> · {cell.identity_qualifier}</span>}{props.source.readContext&&!props.browseOnly&&<TreeGroupTagButton label="Tag This Cell" count={cell.epochs} disabled={props.disabled} onSelect={event=>onSelectGroupCell(cell,event)} onClick={event=>onTagCell(cell,event)}/>}</summary>
     {dateOpen&&open&&<CellEpochs key={props.source.readContext?.cohort_key?frozenPresentationScope(props.source.readContext,props.source.protocolId,props.source.query):JSON.stringify([props.source,props.revision,cell.cell_uuid,cell.epochs])} cell={cell} offset={offset} onFrontier={onFrontier} {...props}/>}
   </details>;
 }
@@ -203,8 +210,11 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
         const remove=explicit&&selection().ids.includes(target.uuid)?new Set(ids):null;
         selection().set(remove?selection().ids.filter(id=>!remove.has(id)):mergeEpochSelection(selection().ids,ids,props.source.readContext?.selection_manifests?Infinity:1000));
       }else{
-        anchor.current=target;
-        if(explicit||multiple||shift)selection().set(toggleEpochSelection(selection().ids,target.uuid,props.source.readContext?.selection_manifests?Infinity:1000));
+        const previous=anchor.current;anchor.current=target;
+        // Starting a ⌘/Ctrl selection keeps the epoch that was just clicked
+        // (Finder-style): click 1, ⌘-click 3 → {1,3}. Workbench highlight keeps its own rules.
+        const base=multiple&&!props.source.readContext&&!selection().ids.length&&previous?.uuid&&previous.explicit===explicit&&previous.uuid!==target.uuid?[previous.uuid]:selection().ids;
+        if(explicit||multiple||shift)selection().set(toggleEpochSelection(base,target.uuid,props.source.readContext?.selection_manifests?Infinity:1000));
       }
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setError(error.message);}
     finally{if(isCurrent())setSelecting(false);}

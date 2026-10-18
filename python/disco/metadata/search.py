@@ -13,6 +13,24 @@ def _json(value):
     return json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
 
 
+def _cell_rows(service):
+    """First registered row per cell, reused while the published rows are unchanged.
+
+    Refresh replaces the row mapping and publication. Each hit still checks every
+    cached row's live cell link; any mismatch rebuilds from all rows.
+    """
+    key = (id(service.rows), len(service.rows), getattr(service, '_explore_publication', None))
+    cached = getattr(service, '_search_cell_rows', None)
+    if (cached is None or cached[0] != key
+            or any(service.rows.get(row['epoch_uuid']) is not row or row['cell_uuid'] != identity
+                   for identity, row in cached[1])):
+        cells = {}
+        for row in service.rows.values():
+            cells.setdefault(row['cell_uuid'], row)
+        cached = service._search_cell_rows = (key, sorted(cells.items()))
+    return cached[1]
+
+
 def search_workspace(service, query, limit=20, *, field=None, operator='eq', value=None):
     if not isinstance(query, str) or len(query) > 512:
         raise ValueError('Search text must contain at most 512 characters')
@@ -36,10 +54,7 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
                 'query_excluded': row['source_sha256'] not in active}
 
     if field is None and len(query) >= 2:
-        cells = {}
-        for row in service.rows.values():
-            cells.setdefault(row['cell_uuid'], row)
-        for identity, row in sorted(cells.items()):
+        for identity, row in _cell_rows(service):
             identity_match = uuid_query and identity.lower().startswith(normalized)
             label_match = not uuid_query and normalized in f"{row['date']} {row['cell_label']} {row['cell_type']}".casefold()
             if identity_match or label_match:
@@ -170,6 +185,13 @@ def register_search_routes(app, service, db_lock):
         if 'field' in request.args and 'value' not in request.args and request.args.get('operator', 'eq') not in {'exists','missing','is_null'}:
             raise ValueError('Typed field searches require an explicit JSON value')
         value = json.loads(request.args['value']) if 'value' in request.args else None
-        with db_lock:
+        def respond():
             return jsonify(search_workspace(service, request.args.get('q', ''), int(request.args.get('limit', 20)),
                 field=request.args.get('field'), operator=request.args.get('operator', 'eq'), value=value))
+        # One schema attestation per response; scope generations stay live.
+        contract = app.extensions.get('read_contract')
+        with db_lock:
+            if contract is None:
+                return respond()
+            with contract():
+                return respond()

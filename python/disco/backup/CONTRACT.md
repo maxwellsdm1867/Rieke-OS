@@ -5,13 +5,28 @@ owned by `disco.recovery`; backup modules do not import that package. Detailed a
 [ledger](../../../docs/architecture/core-module-ledger.json) records
 `backup-scheduling` and `recovery-store-authority`.
 
-`disco.backup.backup_scheduler.BackupScheduler` owns coalescing, retry and shutdown
-flush. `request`, `status`, `flush`, and `close` are the caller interface. Capture
-runs under the supplied database lock; callers may already hold a reentrant lock.
-A failed flush propagates and leaves dirty work visible. Close cannot report a
-clean stop after failed flush. A capture only covers its initial sequence;
-a request during capture remains pending. Close does not join while a caller
-might hold the database lock. SQL commit success and backup success stay distinct.
+`disco.backup.backup_scheduler.BackupScheduler` runs the backup synchronously at
+each commit point and on shutdown flush; it has no timer, delay, quiet period or
+worker thread. `request`, `status`, `flush`, and `close` are the caller interface.
+Capture runs under the supplied database lock; callers may already hold a
+reentrant lock. `request` follows an already-committed edit, so its failure is
+recorded (status `degraded`, still pending) and logged rather than raised; the
+next request or flush retries. A failed flush propagates and leaves dirty work
+visible. Close cannot report a clean stop after failed flush. A capture only
+covers its initial sequence; a request during capture remains pending. SQL
+commit success and backup success stay distinct.
+
+Synchronous backup is affordable because the mirror is incremental: with a
+continuous change feed, `workspace_state_snapshot.recovery_delta` writes only
+the after-images and deletions of rows changed since the mirror's watermark,
+for every mirrored table including Workbench, binding, revision and preset
+tables. Two tables mirror a selection rather than all project rows and are
+reselected only when one of their inputs changed: current preset versions, and
+the explorer-revision dependency closure (recomputed from identity-only SQL
+reads and diffed against the mirrored identities). Sources changing, a broken
+feed or authority, or an unexpected key shape fall back to the full capture.
+The mirror format is unchanged, so existing mirrors, checkpoints and v1
+snapshots remain readable and continue with deltas.
 
 `disco.backup.recovery_generation.RecoveryGenerationAuthority` owns native clock,
 trigger/schema/instance continuity and exact typed key coverage. Missing coverage

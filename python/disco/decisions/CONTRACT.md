@@ -112,3 +112,30 @@ restricted by project and protocol, using the existing recipe validation and
 identity checks. At most eight protocol indexes are retained. Project-wide
 history and per-epoch readers retain their existing full-index semantics. The
 status set and signature confer no export/mutation authority.
+
+## Per-tag added times
+
+`shared_annotation_tag` (declared beside `shared_annotation`) holds one row per
+current target/author/tag: `tag_sha256` key, exact `tag`, `added_at` (UTC),
+`added_revision` and `time_source` (`recorded`, `audit_event`, `approximate`).
+`_apply_batch_locked` writes it in the same transaction as the unchanged `tags`
+JSON, so single edits, undo, group commands, external receipts and tag exchange
+all record times; removing a tag deletes its row and re-adding records the new
+commit time. Chips (`read_targets`, `for_epochs`, receipts, page rows) carry
+`added_at`/`time_source`; a missing row, a row whose `added_revision` exceeds the
+author revision, or an absent tag falls back to the row's `updated_at` marked
+`approximate`. Exports keep projecting their existing chip keys.
+
+`disco.decisions.tag_times.reconcile` runs at app bootstrap only when a project
+has annotations and no time rows (first migration, or after an offline app-state
+restore, which clears the project's time rows). It replays
+`shared_annotations_updated` before/after lists along a contiguous per-target
+revision chain ending in the current tags; other times use `updated_at` marked
+approximate. The table is not in generation triggers or recovery snapshots: its
+rows change only with a watched `shared_annotation` change (or at that bootstrap
+before generation authority starts), and readers revalidate rows against the
+current tags/revision. Tag-time filters (`annotations/{cell,epoch,effective}/tag_times`
+`contains {tag, after, before}`, half-open UTC window) live in
+`disco.navigation.tag_time_filter`; indexed filtering keeps opening/closing
+generation checks and otherwise defers to the canonical chip reader.
+Tests: `python/tests/test_workspace_tag_times.py`.

@@ -58,3 +58,40 @@ test('late QC family responses cannot overwrite latest intent and authority refr
   assert.equal(h.root.findAllByProps({className:'qc-trace-identity'}).length,0);
  }finally{pending?.resolve();await h.close();}
 });
+
+test('a tag-only change reloads the epoch detail but not samples, QC summaries or trial pages',async()=>{
+ const {h,Component}=await setup();
+ try{
+  await h.render(Component,{cellUuid:'cell-0',revision:0,structureRevision:0});
+  const start=h.fixture.requests.length;
+  await h.render(Component,{cellUuid:'cell-0',revision:1,structureRevision:0});
+  await h.waitFor(()=>h.fixture.requests.slice(start).some(r=>r.path.startsWith('/epochs/epoch-0')));
+  await h.waitFor(()=>h.root.findAllByProps({className:'qc-trace-identity'}).length>0);
+  const paths=h.fixture.requests.slice(start).map(r=>r.path.split('?')[0]);
+  assert.ok(paths.includes('/epochs/epoch-0'),'Epoch detail carries annotations and follows tag edits');
+  assert.deepEqual(paths.filter(path=>path.startsWith('/cells/')||path.includes('/trace')),[],paths.join(', '));
+  const before=h.fixture.requests.length;
+  await h.render(Component,{cellUuid:'cell-0',revision:2,structureRevision:1});
+  await h.waitFor(()=>h.fixture.requests.slice(before).some(r=>r.path.startsWith('/cells/cell-0/qc?')||r.path==='/cells/cell-0/qc'));
+ }finally{await h.close();}
+});
+
+test('a confirmed QC tag is shown from its write receipt with no rereads',async()=>{
+ const {h,Component}=await setup();const changes=[];
+ try{
+  await h.render(Component,{cellUuid:'cell-0',revision:0,structureRevision:0,annotationRevision:0,onAnnotationsChanged:(result,confirmed)=>changes.push(confirmed)});
+  const tags=h.root.findAllByType('button').find(node=>node.findAllByType('svg').length&&node.children.some(child=>child==='Tags'||child?.includes?.('Tags')));
+  await h.act(()=>tags.props.onClick());
+  const input=()=>h.root.findAllByType('input').find(node=>node.props['aria-label']?.startsWith('Tag ')&&!node.props['aria-label'].startsWith('Tag to add'));
+  await h.waitFor(()=>{try{return !!input()&&!input().props.disabled;}catch{return false;}});
+  const before=h.fixture.requests.length;
+  await h.act(()=>input().props.onChange({target:{value:'qc-tag'}}));
+  await h.act(()=>input().parent.props.onSubmit({preventDefault(){}}));
+  await h.waitFor(()=>changes.length===1);
+  await new Promise(resolve=>setTimeout(resolve,200));
+  assert.deepEqual(h.fixture.requests.slice(before).map(row=>row.method+' '+row.path.split('?')[0]),['POST /annotations']);
+  assert.equal(changes[0]?.version,1,'The confirmed receipt is passed to the app');
+  const text=JSON.stringify(h.root.findByProps({className:'page cell-qc'}).findAll(node=>typeof node.children?.[0]==='string').map(node=>node.children.join('')));
+  assert.match(text,/qc-tag/);
+ }finally{await h.close();}
+});

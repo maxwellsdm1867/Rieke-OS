@@ -69,6 +69,17 @@ class CellQC:
     def _params(self, row):
         return self.service.details[row['epoch_uuid']].get('parameters', {})
 
+    def _details(self, rows):
+        """Yield (row, detail) in row order; one bulk read when the mapping offers it."""
+        many = getattr(self.service.details, 'many', None)
+        if many is None:
+            for row in rows:
+                yield row, self.service.details[row['epoch_uuid']]
+            return
+        details = dict(many(row['epoch_uuid'] for row in rows))
+        for row in rows:
+            yield row, details[row['epoch_uuid']]
+
     def _metadata_values(self, row, detail, fields, seen):
         measurements = []
         metadata = detail.get('metadata', {})
@@ -96,11 +107,9 @@ class CellQC:
         cell = self.service.cells[str(uuid.UUID(cell_uuid))]
         observations, measured, compensation = [], [], []
         seen_resistance, seen_compensation = set(), set()
-        for index, row in enumerate(rows):
-            # The disk-backed mapping validates and deep-copies each lookup.
-            # Read once per epoch in this request, then discard the detail;
-            # no summary or metadata survives to a subsequent request.
-            detail = self.service.details[row['epoch_uuid']]
+        # Read each epoch's detail once in this request (one bulk read on the
+        # sealed index), then discard it; no summary survives to a later request.
+        for index, (row, detail) in enumerate(self._details(rows)):
             observations.append(self._temperature(row, index + 1, detail=detail))
             measured.extend(self._metadata_values(row, detail, RESISTANCE_FIELDS, seen_resistance))
             compensation.extend(self._metadata_values(row, detail, {'seriesResistanceCompensation'}, seen_compensation))
@@ -173,9 +182,9 @@ class CellQC:
         if type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 100:
             raise ValueError('QC epoch page requires nonnegative offset and limit 1–100')
         rows = [r for r in self.rows(cell_uuid) if family_id is None or family(r) == family_id]
-        values = [{**copy.deepcopy(row), 'parameters': copy.deepcopy(self._params(row)),
+        values = [{**copy.deepcopy(row), 'parameters': detail.get('parameters', {}),
             'source_filename': Path(self.service.manifests[row['source_sha256']]['source_path']).name}
-            for row in rows[offset:offset+limit]]
+            for row, detail in self._details(rows[offset:offset+limit])]
         return {'epochs': values, 'total': len(rows), 'offset': offset, 'limit': limit,
                 'has_more': offset + limit < len(rows)}
 
@@ -195,17 +204,23 @@ class CellQC:
             raise ValueError('QC requires a nonempty response with a positive sample rate explicitly recorded in Hz')
         return stream
 
-    def response(self, cell_uuid, epoch_uuid, stream_uuid=None):
+    def response(self, cell_uuid, epoch_uuid, stream_uuid=None, *, summary_only=False):
         identity = str(uuid.UUID(epoch_uuid))
         row = next((r for r in self.rows(cell_uuid) if r['epoch_uuid'] == identity), None)
         if row is None:
             raise ValueError('Epoch does not belong to this cell UUID')
         stream = self._response_stream(row, stream_uuid)
-        trace = self.service.trace(identity, stream['uuid'], 0, min(stream['sample_count'], 100000))
         parameters = self._params(row)
         timing = {name + '_ms': parameters.get(field) for name, field in
                   [('pre', 'preTime'), ('stim', 'stimTime'), ('tail', 'tailTime')]}
         pre, duration = timing['pre_ms'], timing['stim_ms']
+        count = min(stream['sample_count'], 100000)
+        if summary_only and number(pre) and pre >= 0 and number(duration) and duration > 0:
+            # Statistics use samples [0, stimulus end); callers that discard the
+            # samples need not read the tail. The recorded rate is checked again below.
+            end = math.floor((pre + duration) * stream['sample_rate'] / 1000 + 0.5)
+            count = min(count, max(end, 1))
+        trace = self.service.trace(identity, stream['uuid'], 0, count)
         statistics = {'status': 'unavailable', 'reason': 'Complete nonnegative preTime and positive stimTime are required.',
                       'units': trace['units'], 'pre': None, 'stim': None, 'delta_mean': None}
         if number(pre) and pre >= 0 and number(duration) and duration > 0:
@@ -219,7 +234,7 @@ class CellQC:
                 statistics['reason'] = 'The full stimulus window exceeds the bounded response preview; no partial-window mean is reported.'
         return {'epoch_uuid': identity, 'cell_uuid': row['cell_uuid'], 'trace': trace,
             'parameters': copy.deepcopy(parameters), 'timing': timing, 'statistics': statistics,
-            'partial_trace': trace['count'] < trace['total_samples'],
+            'partial_trace': trace['count'] < trace['total_samples'], 'summary_window_only': summary_only,
             'method': {'id': 'recorded_window_response_v1',
                 'label': 'Recorded response window mean and population SD',
                 'interpretation': 'Raw signal samples in the recorded response units; no spike detection, stimulus reconstruction, baseline correction or resting-Vm claim.',
@@ -435,7 +450,7 @@ class CellQC:
                         skipped.append({'epoch_uuid': row['epoch_uuid'], 'reason': '500,000-sample request budget reached.'})
                         continue
                     samples_used += cost
-                    result = self.response(cell_uuid, row['epoch_uuid'], stream['uuid'])
+                    result = self.response(cell_uuid, row['epoch_uuid'], stream['uuid'], summary_only=True)
                     if result['statistics']['status'] != 'available':
                         skipped.append({'epoch_uuid': row['epoch_uuid'], 'reason': result['statistics']['reason']})
                         continue
@@ -498,8 +513,9 @@ def register_qc_routes(app, service, db_lock):
         if not request.args.get('epoch_uuid'):
             raise ValueError('Choose an epoch to inspect its recorded response')
         with db_lock:
-            result = qc.response(cell_uuid, request.args['epoch_uuid'], request.args.get('stream_uuid'))
-            if request.args.get('summary_only') == 'true':
+            summary = request.args.get('summary_only') == 'true'
+            result = qc.response(cell_uuid, request.args['epoch_uuid'], request.args.get('stream_uuid'), summary_only=summary)
+            if summary:
                 result['trace'].pop('values', None)
                 result['trace']['values_omitted'] = True
             return jsonify(result)

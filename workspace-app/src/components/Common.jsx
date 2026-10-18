@@ -49,7 +49,7 @@ export function CellList({cells = [], onInspect,onQC}) {
               <thead><tr><th scope="col">Recorded type</th><th scope="col">Included epochs</th><th scope="col">Excluded epochs</th><th scope="col">Cell UUID</th><th scope="col" className="cell-tags-heading">Cell tags</th></tr></thead>
               <tbody><tr><td>{type}</td><td>{count(cell.included)}</td><td>{count(excluded)}</td><td className="mono">{uuid}</td><td className="cell-detail-tags">
                   {Array.isArray(cell.tags)&&cell.tags.length>0&&<div className="tags" aria-label="Cell tags">{cell.tags.map(tag=><Badge key={tag}>{tag}</Badge>)}</div>}
-                  {cell.annotations?.cell_tags?.length>0&&<div className="tags" aria-label="Shared cell tags"><span className="cell-tag-label">Shared</span>{cell.annotations.cell_tags.map(chip=><Badge key={`${chip.profile_uuid}:${chip.tag}`}>{chip.tag} · {chip.author_name} · cell</Badge>)}</div>}
+                  {cell.annotations?.cell_tags?.length>0&&<div className="tags" aria-label="Shared cell tags"><span className="cell-tag-label">Shared</span>{cell.annotations.cell_tags.map(chip=><span key={`${chip.profile_uuid}:${chip.tag}`} title={`${chip.tag} · cell tag · ${chip.author_name||'author not recorded'}`}><Badge>{chip.tag}</Badge></span>)}</div>}
                 </td></tr></tbody>
             </table>
             {onInspect&&<button className="primary" onClick={()=>onInspect(uuid)}>Inspect & tag epochs <ArrowRight size={16}/></button>}

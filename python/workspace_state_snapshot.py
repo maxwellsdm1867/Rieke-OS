@@ -70,6 +70,75 @@ def migrate_restore_tables(state):
         raise ValueError('Restore snapshot table set is unsupported')
 
 
+PENDING_UNION = "JSON_EXTRACT(recipe,'$.pending_union_provenance')"
+
+
+def revision_closure(connection, identity, roots, *, narrow=False):
+    """Exact explorer-revision dependency closure of ``roots``.
+
+    ``narrow`` reads only identities and the additive-union provenance (as raw
+    JSON, so a missing path and a JSON null keep their distinct meanings) for
+    incremental mirrors; full capture reads complete rows. Both follow the same
+    parent and union-origin edges and fail closed on a missing dependency.
+    """
+    columns = ('revision_uuid,parent_revision_uuid,' + PENDING_UNION + ' AS pending_union_provenance'
+               if narrow else '*')
+    rows, seen, pending = [], set(), set(roots)
+    while pending:
+        batch = sorted(pending - seen)[:250]
+        if not batch:
+            break
+        seen.update(batch)
+        pending.difference_update(batch)
+        selected = connection.query(f'SELECT {columns} FROM recording_workspace.`explorer_revision` WHERE project_uuid=%s'
+            + ' AND revision_uuid IN (' + ','.join(['%s'] * len(batch)) + ')',
+            args=(identity, *batch), as_dict=True).fetchall()
+        if {row['revision_uuid'] for row in selected} != set(batch):
+            raise ValueError('Saved Workbench revision dependency is unavailable')
+        rows.extend(selected)
+        for row in selected:
+            if row.get('parent_revision_uuid'):
+                pending.add(row['parent_revision_uuid'])
+            if narrow:
+                provenance = row['pending_union_provenance']
+                provenance = {} if provenance is None else _column_value(provenance, True)
+            else:
+                provenance = _column_value(row.get('recipe', {}), True).get('pending_union_provenance', {})
+            for origin in provenance.get('origins', []):
+                pending.add(origin['candidate_revision_uuid'])
+                pending.add(origin['baseline_revision_uuid'])
+    return rows
+
+
+def revision_root_rows(connection, identity, present):
+    """Only the columns ``revision_roots`` reads, in the shapes it reads them.
+
+    JSON sub-documents come back as raw JSON text: SQL NULL means the path is
+    absent (like ``dict.get``), JSON null stays None, as in the full rows.
+    """
+    def raw(value):
+        return None if value is None else _column_value(value, True)
+    tables = {}
+    if 'protocol_binding' in present:
+        tables['protocol_binding'] = connection.query('SELECT revision_uuid FROM recording_workspace.`protocol_binding` '
+            'WHERE project_uuid=%s', args=(identity,), as_dict=True).fetchall()
+    if 'protocol_suggestion' in present:
+        fields = ('baseline_revision_uuid', 'candidate_revision_uuid')
+        selected = connection.query('SELECT ' + ','.join(f"JSON_EXTRACT(summary,'$.{field}') AS `{field}`" for field in fields)
+            + ' FROM recording_workspace.`protocol_suggestion` WHERE project_uuid=%s', args=(identity,), as_dict=True).fetchall()
+        tables['protocol_suggestion'] = [{'summary': {field: raw(row[field]) for field in fields if row[field] is not None}}
+                                         for row in selected]
+    if 'workbench_draft' in present:
+        tables['workbench_draft'] = connection.query('SELECT candidate_revision_uuid FROM recording_workspace.`workbench_draft` '
+            'WHERE project_uuid=%s', args=(identity,), as_dict=True).fetchall()
+    if 'workbench_receipt' in present:
+        selected = connection.query("SELECT candidate_revision_uuid,JSON_EXTRACT(receipt,'$.binding') AS binding "
+            'FROM recording_workspace.`workbench_receipt` WHERE project_uuid=%s', args=(identity,), as_dict=True).fetchall()
+        tables['workbench_receipt'] = [{'candidate_revision_uuid': row['candidate_revision_uuid'],
+            'receipt': {} if row['binding'] is None else {'binding': raw(row['binding'])}} for row in selected]
+    return tables
+
+
 def capture(project_dir, connection, *, include_tables=True, ordered=True):
     root = Path(project_dir).resolve()
     project = json.loads((root/'project.json').read_text())
@@ -99,27 +168,7 @@ def capture(project_dir, connection, *, include_tables=True, ordered=True):
         if table == 'explorer_revision':
             # Fetch only the exact dependency closure, including immutable
             # candidate baselines and committed additive parent transitions.
-            roots = revision_roots(tables, protocols)
-            rows, seen, pending = [], set(), set(roots)
-            while pending:
-                batch = sorted(pending - seen)[:250]
-                if not batch:
-                    break
-                seen.update(batch)
-                pending.difference_update(batch)
-                selected = connection.query('SELECT * FROM recording_workspace.`explorer_revision` WHERE project_uuid=%s'
-                    + ' AND revision_uuid IN (' + ','.join(['%s'] * len(batch)) + ')',
-                    args=(identity, *batch), as_dict=True).fetchall()
-                if {row['revision_uuid'] for row in selected} != set(batch):
-                    raise ValueError('Saved Workbench revision dependency is unavailable')
-                rows.extend(selected)
-                for row in selected:
-                    if row.get('parent_revision_uuid'):
-                        pending.add(row['parent_revision_uuid'])
-                    recipe = _column_value(row.get('recipe', {}), True)
-                    for origin in recipe.get('pending_union_provenance', {}).get('origins', []):
-                        pending.add(origin['candidate_revision_uuid'])
-                        pending.add(origin['baseline_revision_uuid'])
+            rows = revision_closure(connection, identity, revision_roots(tables, protocols))
         else:
             rows = connection.query(f'SELECT * FROM recording_workspace.`{table}` WHERE project_uuid=%s' + restriction,
                                     args=arguments, as_dict=True).fetchall()
@@ -278,9 +327,10 @@ def save(project_dir, connection, *, day=None, service=None):
 
 
 def _save(project_dir, connection, *, day=None, service=None):
-    # A verified native change feed makes ordinary tag saves proportional to
-    # changed rows. The full capture remains the correctness fallback when the
-    # authority cannot prove coverage, including unsupported SQL providers.
+    # A verified native change feed makes every save proportional to changed
+    # rows: tags, curation and Workbench writes alike (recovery_delta). The full
+    # capture remains the correctness fallback when the authority cannot prove
+    # coverage, sources changed, or for unsupported SQL providers.
     from disco.backup.recovery_store import inspect as inspect_recovery, write as write_recovery
     root = Path(project_dir).resolve()
     if connection.in_transaction:
@@ -302,21 +352,22 @@ def _save(project_dir, connection, *, day=None, service=None):
                 state = capture(root, connection, include_tables=False)
                 keys = {table: list(names) for table, names in plan.primary_keys.items() if table in TABLES}
                 columns = {table: list(names) for table, names in plan.columns.items() if table in TABLES}
-                # These tables change which immutable recipes/versions belong
-                # in recovery. Reconcile them with a full pruned capture rather
-                # than adding unreferenced history to the current-state mirror.
-                full_tables = {'source', 'search_preset', 'search_preset_version',
-                               'protocol_binding', 'explorer_revision', 'dataset_revision',
-                               'protocol_suggestion', 'workbench_draft', 'workbench_decision', 'workbench_receipt'}
+                # Registered sources define restore compatibility; an import or
+                # source change is rare and is reconciled by a full capture.
                 incremental = (current is not None and plan.complete
                     and bool(current['header'].get('table_seals'))
                     and keys == current['header']['keys'] and columns == current['header']['columns']
-                    and state == current['header']['state']
-                    and not any(plan.keys.get(table) for table in full_tables))
+                    and all(state[name] == current['header']['state'].get(name)
+                            for name in ('format', 'version', 'source_sha256s', 'source_references'))
+                    and not plan.keys.get('source'))
                 changes = deleted = None
                 if incremental:
-                    changes, deleted = recovery_after_images(connection, identity, plan)
-                else:
+                    delta = recovery_delta(connection, identity, plan, state, current)
+                    if delta is None:
+                        incremental = False
+                    else:
+                        changes, deleted = delta
+                if not incremental:
                     state = capture(root, connection, ordered=False)
                 expected_header = {**state, 'tables': {table: [] for table in TABLES}}
                 if capture(root, connection, include_tables=False) != expected_header:
@@ -357,10 +408,10 @@ def recovery_schema(connection):
     return keys, columns
 
 
-def recovery_after_images(connection, identity, plan):
+def recovery_after_images(connection, identity, plan, keys=None):
     """Fetch only changed complete keys within the authority's SQL snapshot."""
     changes, deleted = {}, {}
-    for table, identities in plan.keys.items():
+    for table, identities in (plan.keys if keys is None else keys).items():
         if table not in TABLES or not identities:
             continue
         names = plan.primary_keys[table]
@@ -375,6 +426,78 @@ def recovery_after_images(connection, identity, plan):
             for row in rows:
                 changes[table].append({key: _column_value(value, key in plan.json_columns[table])
                     for key, value in dict(row).items()})
+    return changes, deleted
+
+
+# Tables whose mirror holds a selected subset rather than every project row.
+SELECTED_TABLES = ('explorer_revision', 'search_preset_version')
+REVISION_ROOT_TABLES = ('protocol_binding', 'protocol_suggestion', 'workbench_draft', 'workbench_receipt')
+
+
+def recovery_delta(connection, identity, plan, state, current):
+    """Changed after-images and deletions that make the mirror equal a full capture.
+
+    Ordinary tables mirror every project row, so the change feed's keys are the
+    whole delta. Two tables mirror a selection, recomputed only when an input
+    to that selection changed:
+
+    - ``search_preset_version`` keeps each preset's current version; any preset
+      whose preset or version rows changed is reselected from SQL.
+    - ``explorer_revision`` keeps the dependency closure of the revision roots.
+      The closure is recomputed from identity-only SQL reads and compared with
+      the mirrored identities; only added or changed revisions are read whole.
+
+    Returns None when an assumed key shape does not hold; the caller then makes
+    a full capture. Runs inside the recovery authority's locked SQL snapshot.
+    """
+    from disco.backup.recovery_store import mirrored_keys
+    direct = {table: identities for table, identities in plan.keys.items()
+              if table in TABLES and table not in SELECTED_TABLES and identities}
+    changes, deleted = recovery_after_images(connection, identity, plan, direct)
+    present = set(plan.primary_keys)
+    if 'search_preset_version' in present:
+        names = plan.primary_keys['search_preset_version']
+        if 'preset_uuid' not in names or 'preset_uuid' not in plan.primary_keys.get('search_preset', ()):
+            return None
+        presets = {key[plan.primary_keys[table].index('preset_uuid')]
+                   for table in ('search_preset', 'search_preset_version') for key in plan.keys.get(table, ())}
+        if presets:
+            position = names.index('preset_uuid')
+            removed = {tuple(key) for key in mirrored_keys(current['path'], 'search_preset_version', names, identity)
+                       if key[position] in presets}
+            removed.update(tuple(key) for key in plan.keys.get('search_preset_version', ()))
+            rows = []
+            ordered = sorted(presets)
+            for offset in range(0, len(ordered), 250):
+                batch = ordered[offset:offset+250]
+                rows.extend(connection.query('SELECT * FROM recording_workspace.`search_preset_version` WHERE project_uuid=%s '
+                    'AND preset_uuid IN (' + ','.join(['%s'] * len(batch)) + ') AND EXISTS (SELECT 1 FROM '
+                    'recording_workspace.search_preset AS current WHERE current.project_uuid=search_preset_version.project_uuid '
+                    'AND current.preset_uuid=search_preset_version.preset_uuid AND current.version=search_preset_version.version)',
+                    args=(identity, *batch), as_dict=True).fetchall())
+            deleted['search_preset_version'] = [list(key) for key in sorted(removed)]
+            changes['search_preset_version'] = [{key: _column_value(value, key in plan.json_columns['search_preset_version'])
+                for key, value in dict(row).items()} for row in rows]
+    if 'explorer_revision' in present and (
+            any(plan.keys.get(table) for table in (*REVISION_ROOT_TABLES, 'explorer_revision'))
+            or state['protocols'] != current['header']['state'].get('protocols')):
+        names = plan.primary_keys['explorer_revision']
+        if names != ['project_uuid', 'revision_uuid']:
+            return None
+        roots = revision_roots(revision_root_rows(connection, identity, present), state['protocols'])
+        closure = {row['revision_uuid'] for row in revision_closure(connection, identity, roots, narrow=True)}
+        mirrored = {key[1] for key in mirrored_keys(current['path'], 'explorer_revision', names, identity)}
+        changed = {key[1] for key in plan.keys.get('explorer_revision', ())}
+        fetch = (closure - mirrored) | (closure & changed)
+        removed = (mirrored - closure) | fetch
+        if fetch:
+            fetched, _ = recovery_after_images(connection, identity, plan,
+                {'explorer_revision': [(identity, revision) for revision in sorted(fetch)]})
+            if {row['revision_uuid'] for row in fetched['explorer_revision']} != fetch:
+                raise ValueError('Saved Workbench revision dependency is unavailable')
+            changes['explorer_revision'] = fetched['explorer_revision']
+        if removed:
+            deleted['explorer_revision'] = [[identity, revision] for revision in sorted(removed)]
     return changes, deleted
 
 
@@ -497,6 +620,10 @@ def _restore(project_dir, connection, snapshot):
                         'ON DUPLICATE KEY UPDATE '+','.join('`'+name+'`=VALUES(`'+name+'`)' for name in names), args=tuple(values))
                     verify_json_fields(connection.query, 'recording_workspace', table, row,
                                        sorted(json_columns[table]), primary_keys[table])
+            if 'shared_annotation_tag' in existing:
+                # Per-tag times are derived state outside the snapshot. Clear
+                # them so the next app start re-derives them for restored tags.
+                connection.query('DELETE FROM recording_workspace.`shared_annotation_tag` WHERE project_uuid=%s',args=(identity,))
             for path,data in files.items():
                 if data is None:path.unlink(missing_ok=True)
                 else:atomic_write(path,data)

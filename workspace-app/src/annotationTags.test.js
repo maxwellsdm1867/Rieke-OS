@@ -57,3 +57,15 @@ test('tag pills keep one color per text and merge authors without hiding distinc
   assert.equal(first[0].color,reordered[1].color);
   assert.match(first[0].title,/Alice, Bob/);
 });
+
+test('chip tooltip shows author and added time; approximate and pending states are explicit',async()=>{
+ const {annotationChipTitle,formatTagTime}=await import('./annotations/annotationTags.js');
+ const format=date=>date.toISOString();
+ const chip={tag:'good',author_name:'Ada',added_at:'2026-10-01T12:30:00Z',time_source:'recorded'};
+ assert.equal(annotationChipTitle(chip,'epoch',format),'good · epoch tag · Ada · added 2026-10-01T12:30:00.000Z');
+ assert.equal(annotationChipTitle({...chip,time_source:'approximate'},'cell',format),'good · inherited from cell · Ada · added about 2026-10-01T12:30:00.000Z (approximate)');
+ assert.equal(annotationChipTitle({tag:'new',author_name:'Ada',pending:true},'epoch',format),'new · epoch tag · Ada · saving…');
+ assert.equal(annotationChipTitle({tag:'old',author_name:''},'epoch',format),'old · epoch tag · author not recorded');
+ assert.equal(formatTagTime('not a time',format),'');
+ assert.ok(formatTagTime('2026-10-01T12:30:00Z').length>0);
+});

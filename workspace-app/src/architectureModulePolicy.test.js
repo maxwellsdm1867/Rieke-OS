@@ -6,6 +6,7 @@ import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
+import {guardPython} from './test-support/guardPython.js';
 import {analyze} from '../architectureImports.mjs';
 
 function fixture(){
@@ -24,7 +25,7 @@ function fixture(){
  const check=(options={})=>{
   write('docs/architecture/adopted-port-checks.json',catalog);
   const env={...process.env,...options.env};
-  const run=spawnSync('python3',['-B',fileURLToPath(new URL('../../tools/architecture_guard.py',import.meta.url)),'check','--root',root,'--language',options.language??'javascript','--node',process.execPath],{encoding:'utf8',env});
+  const run=spawnSync(guardPython(),['-B',fileURLToPath(new URL('../../tools/architecture_guard.py',import.meta.url)),'check','--root',root,'--language',options.language??'javascript','--node',process.execPath],{encoding:'utf8',env});
   assert.ifError(run.error);let result;try{result=JSON.parse(run.stdout);}catch{throw Error(run.stdout+run.stderr);}return {exit:run.status,result};
  };
  return {root,s,write,policy,catalog,check,close:()=>rmSync(root,{recursive:true,force:true})};

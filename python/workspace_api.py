@@ -184,15 +184,29 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 except (OSError, ValueError) as error:
                     service.manager_recovery(error)
     service.set_source_state_provider(data_stores.source_states)
+    annotation_provider = None
     if hasattr(service, 'set_annotation_provider'):
-        service.set_annotation_provider(lambda protocol_uuid, fingerprints:
-            store.read(protocol_uuid, list(fingerprints), fingerprints))
+        def annotation_provider(protocol_uuid, fingerprints):
+            return store.read(protocol_uuid, list(fingerprints), fingerprints)
+        service.set_annotation_provider(annotation_provider)
     page_curation_provider=service.curation_provider
     if shared_annotations is None and hasattr(service.dj,'Schema'):
         from disco.decisions.annotations import SharedAnnotations
         shared_annotations=SharedAnnotations(service)
     service.shared_annotations=shared_annotations
     app.extensions['shared_annotations']=shared_annotations
+    if shared_annotations is not None and hasattr(service.dj,'Schema') and hasattr(shared_annotations,'TagTime'):
+        # One-time per-tag time backfill from audit events, before generation
+        # bootstrap; later startups only probe for an existing time row.
+        # A failed backfill must not block opening the project: chips without a
+        # valid time row are reported as approximate and filters skip them.
+        from disco.decisions.tag_times import reconcile as reconcile_tag_times
+        with db_lock:
+            try:
+                app.extensions['tag_time_backfill']=reconcile_tag_times(shared_annotations)
+            except Exception as error:  # noqa: BLE001 - recorded, never silently passed
+                app.logger.exception('Per-tag time backfill failed')
+                app.extensions['tag_time_backfill']={'status':'failed','error':str(error)}
     # Declare the durable whole-group operation table before generation and
     # recovery bootstrap, outside any data transaction. Registration below
     # reuses this exact table rather than lazily introducing unwatched writes.
@@ -236,8 +250,28 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         revision = checksum({"query": {**result, "source_scope": {"revision": result["source_scope"]["revision"]}}, "curation": curation})
         return result, curation, revision
 
-    from workspace_protocol_state import ProtocolStateReader
+    from workspace_protocol_state import PROTOCOL_STATE_CONTRACT, ProtocolStateReader, same_protocol_state
     selected_state = ProtocolStateReader(service, store, shared_annotations, legacy_state)
+
+    def annotation_generation(token=None):
+        """Shared-tag witness for tag-dependent work; v4 revisions omit shared tags."""
+        if token is None:
+            tracker = getattr(store, 'state_generation', None)
+            token = tracker.token() if tracker is not None else None
+        return None if token is None else f'{token.shared_epoch}:{token.shared_generation}'
+
+    def annotation_dependent(query_filters):
+        if any(key in query_filters for key in ('tag', 'tagged', 'tag_predicate')):
+            return True
+        if 'metadata_predicate' not in query_filters:
+            return False
+        try:
+            def walk(node):
+                return isinstance(node, dict) and (str(node.get('field', '')).startswith(('annotations/', 'curation/'))
+                    or walk(node.get('not')) or any(walk(item) for item in node.get('all', []) + node.get('any', [])))
+            return walk(json.loads(query_filters['metadata_predicate']))
+        except (TypeError, ValueError, AttributeError):
+            return True
     app.extensions['protocol_state_reader'] = selected_state
 
     def prepare_annotations(*,reuse=False,progress=None):
@@ -255,6 +289,73 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if shared_annotations is not None:shared_annotations.state_generation=generation
         app.extensions['state_generation']=generation
         service._explore_state_generation=generation
+
+    def native_method(owner, cls, name):
+        method=getattr(owner,name,None)
+        return getattr(method,'__func__',method) is getattr(cls,name)
+
+    def annotation_catalog_generation(scope_revision):
+        """Witness for memoized annotation catalog fields; None means recompute.
+
+        Valid only for this app's store-backed curation reader and shared
+        annotations under one verified StateGenerationAuthority, whose SQL
+        triggers advance the shared scope and each protocol's curation scope in
+        the writing transaction. Publication, index generation and source scope
+        cover metadata, as for the registered predicate catalog. Replaced or
+        patched readers and unavailable authority always recompute.
+        """
+        from workspace_state_generation import StateGenerationAuthority
+        from disco.decisions.annotations import SharedAnnotations
+        from disco.navigation.tag_predicates import SHARED_FIELDS
+        tracker=getattr(service,'_explore_state_generation',None)
+        if type(tracker) is not StateGenerationAuthority:return None
+        provider=getattr(service,'annotation_provider',None)
+        shared=getattr(service,'shared_annotations',None)
+        if provider is not None and (provider is not annotation_provider or type(store) is not CurationStore
+                or getattr(store,'state_generation',None) is not tracker
+                or not all(native_method(store,CurationStore,name) for name in ('read','_rows','_state'))):
+            return None
+        if shared is not None and (shared is not shared_annotations or type(shared) is not SharedAnnotations
+                or getattr(shared,'state_generation',None) is not tracker
+                or not all(native_method(shared,SharedAnnotations,name)
+                           for name in ('catalog_fields','_membership_index','snapshot','_rows','_validated_tags'))):
+            return None
+        index=getattr(service,'disk_index',None)
+        typed=getattr(service,'typed_index',None)
+        publication=getattr(service,'_explore_publication',None)
+        if publication is None:
+            publication=service._explore_publication=str(uuid.uuid4())
+        # Each field depends on one scope: shared fields on the shared
+        # generation, a protocol tag field on that protocol's curation generation.
+        shared_token=tracker.token(None)
+        if shared_token is None:return None
+        common=(publication,scope_revision,shared_token.authority,shared_token.project_uuid,
+            (id(index),getattr(index,'generation',None)) if index is not None else None,
+            getattr(typed,'generation_token',None) if typed is not None else None,
+            (id(service.rows),len(service.rows)),(id(service._fingerprints),len(service._fingerprints)),
+            (id(service.cells),len(service.cells)),
+            tuple((key,entry['definition']['name']) for key,entry in sorted(service.protocols.items())))
+        fields={}
+        if shared is not None:
+            fields.update(dict.fromkeys(SHARED_FIELDS,(shared_token.shared_epoch,shared_token.shared_generation)))
+        for protocol in (sorted(service.protocols) if provider is not None else ()):
+            token=tracker.token(protocol)
+            if token is None or (token.authority,token.project_uuid)!=(shared_token.authority,shared_token.project_uuid):
+                return None
+            fields[f'curation/{protocol}/tags']=(token.protocol_uuid,token.protocol_epoch,token.protocol_generation)
+        return common,fields
+    service._annotation_catalog_generation=annotation_catalog_generation
+
+    def read_contract():
+        """Attest the native schema once at each end of a complete read response.
+
+        Scope generations still read live for every token; a closing attestation
+        failure discards the response. Unsupported trackers keep fresh tokens.
+        """
+        from workspace_state_generation import StateGenerationAuthority
+        tracker=getattr(store,'state_generation',None)
+        return tracker.response_contract() if type(tracker) is StateGenerationAuthority else contextlib.nullcontext()
+    app.extensions['read_contract']=read_contract
 
     def state(protocol_uuid):
         return selected_state.materialized_state(protocol_uuid)
@@ -296,7 +397,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             'propagation_required': bool(affected),
             'source_scope_revision': result['source_scope']['revision']}
         payload["query_revision"] = revision
-        if revision.startswith('protocol-state-v3:'):payload['query_revision_contract']='protocol-state-v3'
+        if revision.startswith(PROTOCOL_STATE_CONTRACT+':'):
+            payload['query_revision_contract']=PROTOCOL_STATE_CONTRACT
+            payload['annotation_generation']=annotation_generation()
         payload["expected_query_revision"] = revision
         payload["binding"] = compact_binding(result.get('dataset_binding'))
         payload["expected_binding_version"] = result.get('dataset_binding', {}).get('version', 0)
@@ -392,14 +495,15 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 'excluded_sources':sorted({row['source_sha256'] for row in affected}),
                 'propagation_required':bool(affected),'source_scope_revision':scope['revision']},
             'query_revision':context['query_revision'],'expected_query_revision':context['query_revision'],
-            'query_revision_contract':'protocol-state-v3','expected_binding_version':context['binding_version']}
+            'query_revision_contract':PROTOCOL_STATE_CONTRACT,'expected_binding_version':context['binding_version'],
+            'annotation_generation':annotation_generation(context['generation'])}
         if shared_annotations:
             summary=shared_annotations.summary(rows)
             counts.update({key:summary[key] for key in ('shared_tagged_cells','shared_tagged_epochs')})
             payload['annotation_summary']={key:summary[key] for key in ('tags','total_tags','truncated')}
             if not overview_context:add_cell_annotations(cells)
         after=selected_state.native_context(protocol_uuid)
-        if after is None or after['query_revision']!=context['query_revision']:
+        if not same_protocol_state(after,context):
             raise StaleWorkspace('Saved decisions changed while reading this protocol. Refresh and retry.')
         if shared_receipt is not None and shared_annotations.state_generation.token()!=shared_receipt:
             raise StaleWorkspace('Shared annotations changed while reading this protocol. Refresh and retry.')
@@ -408,9 +512,76 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 'view':result.get('effective_view',definition.get('view',{}))}
         return payload
 
+    overview_memo={}
+
+    def overview_witness():
+        """Generation key for the derived project overview, or None to rebuild.
+
+        Native SQL triggers advance every protocol's curation scope and the
+        shared-tag scope; binding headers, export headers and source scope are
+        read live. Published metadata is identified by the index generation,
+        publication and object identities that refresh replaces; small project,
+        source and cell descriptors are compared by content. Event and export
+        lists are always read live and never memoized.
+        """
+        from workspace_state_generation import StateGenerationAuthority
+        from disco.metadata.disk_index import DiskMetadataIndex
+        tracker=getattr(store,'state_generation',None)
+        if (type(tracker) is not StateGenerationAuthority or type(store) is not CurationStore
+                or getattr(store.export_signature,'__func__',None) is not CurationStore.export_signature
+                or getattr(store.export_memberships,'__func__',None) is not CurationStore.export_memberships
+                or not selected_state._native_contract()):
+            return None
+        if shared_annotations is not None and getattr(shared_annotations,'state_generation',None) is not tracker:
+            return None
+        index=getattr(service,'disk_index',None)
+        if not isinstance(index,DiskMetadataIndex):return None
+        index._check()
+        header_provider=getattr(service,'binding_header_provider',None)
+        protocols=[]
+        for identity,entry in sorted(service.protocols.items()):
+            token=tracker.token(identity)
+            if token is None:return None
+            header=header_provider(identity) if header_provider else None
+            protocols.append((identity,id(entry),id(entry['definition']),id(entry['result']),
+                token.protocol_epoch,token.protocol_generation,
+                (header['revision_uuid'],header['version']) if header is not None else None))
+        shared=tracker.token()
+        if shared is None:return None
+        publication=getattr(service,'_explore_publication',None)
+        if publication is None:
+            publication=service._explore_publication=str(uuid.uuid4())
+        try:
+            descriptors=checksum({'project':service.project,'sources':service.sources,'cells':service.cells,
+                'catalog':{key:value for key,value in service.config.items() if key!='connection'},
+                'source_scope':service.source_scope()})
+        except (TypeError,ValueError):
+            return None
+        return (publication,(id(index),index.generation),(id(service.rows),len(service.rows)),
+            (id(service._fingerprints),len(service._fingerprints)),id(service.protocols),tuple(protocols),
+            (shared.authority,shared.shared_epoch,shared.shared_generation),descriptors,store.export_signature())
+
+    app.extensions['overview_memo']=overview_memo
+    app.extensions['overview_memo_witness']=overview_witness
+
     def native_overview():
-        """Refresh project counts using exact decision projections, not tags."""
+        """Project counts from exact decision projections, memoized per generation."""
         if not service.protocols:return None
+        witness=overview_witness()
+        if witness is not None and overview_memo.get('key')==witness:
+            payload=copy.deepcopy(overview_memo['payload'])
+        else:
+            payload=build_native_overview()
+            if payload is None:return None
+            if witness is not None and overview_witness()==witness:
+                overview_memo.update(key=witness,payload=copy.deepcopy(payload))
+        payload['events']=service.events(25)
+        payload['exports']=store.list_dataset_revisions()
+        if witness is not None and overview_witness()!=witness:
+            raise StaleWorkspace('Saved decisions changed while reading this project. Refresh and retry.')
+        return payload
+
+    def build_native_overview():
         export_memberships=store.export_memberships()
         protocols=[];proofs={};covered=set();not_approved=set()
         for identity,entry in service.protocols.items():
@@ -448,8 +619,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         payload={'active_source_counts':{'cells':len({row['cell_uuid'] for row in active_rows}),
                 'epochs':len(active_rows),'sources':len(active)},'source_scope':scope,
             'project':service.project,'catalog':{key:value for key,value in service.config.items() if key!='connection'},
-            'counts':counts,'protocols':protocols,'cells':cells,'sources':service.sources,
-            'events':service.events(25),'exports':store.list_dataset_revisions()}
+            'counts':counts,'protocols':protocols,'cells':cells,'sources':service.sources}
         add_cell_annotations(cells)
         if shared_annotations:
             summary=shared_annotations.summary(rows)
@@ -457,7 +627,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             payload['annotation_summary']={key:summary[key] for key in ('tags','total_tags','truncated')}
         for identity,proof in proofs.items():
             after=selected_state.native_context(identity)
-            if after is None or after['query_revision']!=proof['context']['query_revision']:
+            if not same_protocol_state(after,proof['context']):
                 raise StaleWorkspace('Saved decisions changed while reading this project. Refresh and retry.')
         return payload
 
@@ -784,14 +954,22 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise ValueError('Project presentation accepts no parameters')
         return jsonify(load_overview(project_dir, expected_uuid=service.project['project_uuid']))
 
+    saved_overview = {}
+
     def overview_response(payload):
-        from disco.projects.presentation_cache import save_overview
-        save_overview(project_dir, payload)
+        # The display cache is rewritten only when its projection changes.
+        from disco.projects.presentation_cache import save_overview, display_overview
+        try:
+            display = display_overview(payload)
+        except (ValueError, TypeError, KeyError, AttributeError):
+            display = None
+        if display is None or display != saved_overview.get('display'):
+            saved_overview['display'] = display if save_overview(project_dir, payload) else None
         return jsonify(payload)
 
     @app.get("/api/overview")
     def overview():
-        with db_lock:
+        with db_lock, read_contract():
             native=native_overview()
             if native is not None:return overview_response(native)
             payload = copy.deepcopy(service.overview())
@@ -862,14 +1040,15 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 members=proof['members']
                 exported,signature=store.protocol_export_status(protocol_uuid,members)
                 rig_token=recording_rig_token(members)
+                # The summary shows tag counts; v4 revisions omit shared tags.
                 etag=checksum({'projection':'protocol-overview-v2','query':context['query_revision'],'recording_rigs':rig_token,
-                               'exports':signature,'filters':query_filters})
+                               'exports':signature,'filters':query_filters,'annotations':annotation_generation(context['generation'])})
                 unchanged=request.headers.get('If-None-Match')=='"'+etag+'"'
                 payload=None if unchanged else native_protocol_summary(protocol_uuid,query_filters,
                     cross_protocols=False,exported_ids=exported)
                 after=selected_state.native_context(protocol_uuid)
                 _,after_signature=store.protocol_export_status(protocol_uuid,())
-                if (after is None or after['query_revision']!=context['query_revision'] or after_signature!=signature or recording_rig_token(members)!=rig_token):
+                if (not same_protocol_state(after,context) or after_signature!=signature or recording_rig_token(members)!=rig_token):
                     raise StaleWorkspace('Protocol summary changed while reading. Refresh and retry.')
                 response=app.response_class(status=304) if unchanged else jsonify(payload)
                 response.set_etag(etag)
@@ -902,11 +1081,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 payload={key:payload[key] for key in allowed if key in payload}
                 payload['binding']=compact_binding(binding)
                 payload.update(query_revision=before[0],expected_query_revision=before[0],expected_binding_version=before[1])
-                if before[0].startswith('protocol-state-v3:'):payload['query_revision_contract']='protocol-state-v3'
+                if before[0].startswith(PROTOCOL_STATE_CONTRACT+':'):payload['query_revision_contract']=PROTOCOL_STATE_CONTRACT
                 if native is None and selected_state.read_selected(protocol_uuid,[])[1:]!=before:
                     raise StaleWorkspace('Protocol changed while opening this view. Refresh and retry.')
                 return jsonify(payload)
-        with db_lock:
+        with db_lock, read_contract():
             query_filters=filters()
             from disco.metadata.explore_queries import generation
             context={'protocol_uuid':protocol_uuid,'filters':query_filters}
@@ -994,7 +1173,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 row["export_count"] = export_counts[row["epoch_uuid"]]
             page["query_revision"] = revision
             page['expected_binding_version']=binding_version
-            if revision.startswith('protocol-state-v3:'):page['query_revision_contract']='protocol-state-v3'
+            if revision.startswith(PROTOCOL_STATE_CONTRACT+':'):page['query_revision_contract']=PROTOCOL_STATE_CONTRACT
             if page_generation is not None and tracker.token(protocol_uuid)!=page_generation:
                 raise StaleWorkspace('Saved annotations changed while reading this page. Refresh and retry.')
             if shared_receipt is not None and (not native.accepts_shared(shared_receipt) if native is not None
@@ -1044,7 +1223,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def explorer_predicate_fields():
         if request.args:
             raise ValueError('Predicate fields describe the whole main catalog')
-        with db_lock, data_stores.registration_locks():
+        with db_lock, data_stores.registration_locks(), read_contract():
             return jsonify(service.predicate_fields())
 
     @app.post('/api/explore/preview')
@@ -1330,7 +1509,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     @app.get("/api/epochs/<epoch_uuid>")
     def epoch(epoch_uuid):
-        with db_lock:
+        with db_lock, read_contract():
             row = copy.deepcopy(service.epoch(epoch_uuid))
             protocol_uuid = request.args.get("protocol_uuid")
             if protocol_uuid:
@@ -1640,6 +1819,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             query_filters = service.validate_metadata_filters(body.get("filters", {}), protocol_uuid)
             if not isinstance(query_filters, dict):
                 raise ValueError("Export filters must be an object")
+            if (revision.startswith(PROTOCOL_STATE_CONTRACT+':') and annotation_dependent(query_filters)
+                    and body.get('annotation_generation') != annotation_generation()):
+                # Tag-filtered membership must match the previewed tags exactly.
+                raise StaleWorkspace("Tags changed since this export was previewed. Refresh before exporting.")
             split_order = body.get("split_order", result.get("dataset_binding", {}).get("splits", "date, cell, block"))
             if not isinstance(split_order, str):
                 raise ValueError("Tree split order must be text")
@@ -2143,16 +2326,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             save_app_state(project_dir, service.dj.conn(), service=service)
             if service._loaded:
                 prepare_annotations(reuse=True)
-        # The mirror captures the whole app state in this process under the
-        # database lock, so it waits for 3 s without any request (at most 60 s
-        # after the first write) instead of competing with foreground work;
-        # close still flushes it.
+        # The mirror is incremental (only rows changed since its watermark), so
+        # each committed write updates it synchronously at its commit point;
+        # there is no timer or background capture competing with requests.
         scheduler=BackupScheduler(lambda:save_app_state(project_dir,service.dj.conn(),service=service),
-            db_lock,delay=3.0,max_delay=60.0,logger=app.logger)
-        @app.before_request
-        def backup_waits_for_quiet():
-            # Any request, including trace reads, postpones the coalesced mirror.
-            scheduler.activity()
+            db_lock,logger=app.logger)
         app.extensions['backup_scheduler']=scheduler
         if shared_annotations is not None:shared_annotations.on_commit=scheduler.request
 

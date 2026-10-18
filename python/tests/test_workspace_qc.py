@@ -177,6 +177,22 @@ class CellQCTests(unittest.TestCase):
         self.assertTrue(response.get_json()['trace']['values_omitted'])
         self.assertFalse(self.case.events.rows)
 
+    def test_summary_reads_only_through_stimulus_end_with_identical_statistics(self):
+        full = self.qc.response(self.cell, self.ids[0])
+        self.service.trace.reset_mock()
+        summary = self.qc.response(self.cell, self.ids[0], summary_only=True)
+        # preTime 10 ms + stimTime 20 ms at 10 kHz ends at sample 300 of 1000.
+        self.assertEqual(self.service.trace.call_args.args[2:], (0, 300))
+        self.assertEqual(summary['statistics'], full['statistics'])
+        self.service.trace.reset_mock()
+        response = self.case.client.get(self.base + '/response', query_string={'epoch_uuid': self.ids[0], 'summary_only': 'true'})
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(self.service.trace.call_args.args[2:], (0, 300))
+        self.service.details[self.ids[0]]['parameters']['stimTime'] = 12000.
+        self.streams[self.ids[0]]['sample_count'] = 120000
+        self.assertEqual(self.qc.response(self.cell, self.ids[0], summary_only=True)['statistics']['status'], 'unavailable',
+                         'A stimulus window beyond the bounded preview still yields no partial mean')
+
     def test_partial_stimulus_window_never_yields_partial_mean_or_resting_vm(self):
         self.streams[self.ids[0]]['sample_count'] = 120000
         self.service.details[self.ids[0]]['parameters']['stimTime'] = 12000.
