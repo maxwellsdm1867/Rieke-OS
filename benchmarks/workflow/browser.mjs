@@ -44,7 +44,8 @@ export function readiness(spec){
   const pending=()=>{a.frames=0;a.signature=null;return false;};
   const visible=el=>!!el&&el.getBoundingClientRect().width>0&&el.getBoundingClientRect().height>0&&getComputedStyle(el).visibility!=='hidden';
   const requests=w.requests.filter(r=>r.action_id===a.action_id);
-  const aborted=r=>spec.allowAborted&&r.status===undefined&&/AbortError/.test(r.error||'');
+  // A superseded read may be cancelled before headers or while its body is consumed.
+  const aborted=r=>spec.allowAborted&&/AbortError/.test(r.error||'')&&(r.status===undefined||r.status<400);
   if(requests.some(r=>!aborted(r)&&(r.error||r.status>=400)))throw Error('Action API request failed: '+JSON.stringify(requests.filter(r=>!aborted(r)&&(r.error||r.status>=400)).map(r=>({url:r.url,status:r.status,error:r.error}))));
   // A combined response is transport evidence for the same first page, not a
   // synthetic /epochs request. Keep this helper inside the serialized browser gate.
@@ -291,7 +292,7 @@ export async function run(config){
           const tailStarted=performance.now(),tailTimeout=Number(config.tail_timeout_ms||180000);
           await page.waitForFunction(action_id=>window.__workflow.completed[action_id].captured_requests.every(r=>r.end!==undefined||r.error),action_id,{timeout:tailTimeout});
           const result=await page.evaluate(snapshotAction,action_id);
-          if(config.suite==='app'){const cancelled=r=>r.status===undefined&&/AbortError/.test(r.error||'');result.aborted=result.requests.filter(cancelled);result.requests=result.requests.filter(r=>!cancelled(r));}
+          if(config.suite==='app'){const cancelled=r=>/AbortError/.test(r.error||'')&&(r.status===undefined||r.status<400);result.aborted=result.requests.filter(cancelled);result.requests=result.requests.filter(r=>!cancelled(r));}
           result.tail={wait_ms:performance.now()-tailStarted,timeout_ms:tailTimeout,included_in_headline:false};
           assertFinalizedRequests(result);
           if(config.suite==='app'){

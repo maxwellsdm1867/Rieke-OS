@@ -669,6 +669,9 @@ test('app cancellations are tolerated only when allowed; other failures still fa
   assert.equal(readiness({selector:'button',text:'Undo',allowAborted:true}),false);
   assert.equal(readiness({selector:'button',text:'Undo',allowAborted:true}),true);
   w.active={action_id:'current',intent:0,frames:0};
+  w.requests.push({action_id:'current',method:'GET',url:'/api/p/epochs',status:200,error:'AbortError: signal is aborted'});
+  assert.equal(readiness({selector:'button',text:'Undo',allowAborted:true}),false,'body-consumption cancellation is still a cancellation');
+  w.active={action_id:'current',intent:0,frames:0};
   w.requests.push({action_id:'current',method:'GET',url:'/api/overview',status:500,end:3});
   assert.throws(()=>readiness({selector:'button',text:'Undo',allowAborted:true}),/Action API request failed/);
 });
