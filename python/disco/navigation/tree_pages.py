@@ -276,8 +276,13 @@ def selection_revision(service, protocol, predicate, filters, order, rows, bindi
 def _group_buckets(current, depth, order, structural_path, values, *, counts_only):
     field = order[depth]
     cache_key = (field, id(current), counts_only)
-    if isinstance(values, _NavigationValues) and cache_key in values.group_cache:
-        return values.group_cache[cache_key][1]
+    if isinstance(values, _NavigationValues):
+        if cache_key in values.group_cache:
+            return values.group_cache[cache_key][1]
+        # Full-summary groupings carry the same buckets and rows; a counts-only
+        # reader (branch selection) reuses them instead of regrouping the scope.
+        if counts_only and (field, id(current), False) in values.group_cache:
+            return values.group_cache[(field, id(current), False)][1]
     buckets = {}
     for row in current:
         present, value = structural_path.datum(values[row['epoch_uuid']], field)
@@ -468,7 +473,7 @@ class TreePages:
             identities, _ = service._epoch_page_identities(protocol, filters)
             rows = [service.rows[identity] for identity in identities]
         else:
-            rows = service._tree_rows(protocol, filters)
+            rows = service._navigation_rows(protocol, filters)
         shared_definitions = None
         if index is not None:
             # Registered definitions remain valid for empty or excluded scopes;

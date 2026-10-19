@@ -207,9 +207,20 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             rig_source_index = {source['source_sha256']: source for source in rig_source_owner}
         return rig_source_index
 
+    member_sources = {}
+
     def recording_rig_token(members):
+        # The member->source set is cached per immutable proof tuple and the
+        # published rows object; source rig metadata is read live (O(sources)).
+        cached = member_sources.get('value')
+        if cached is not None and cached[0] is members and cached[1] is service.rows:
+            identities = cached[2]
+        else:
+            identities = sorted({service.rows[identity]['source_sha256'] for identity in members})
+            from workspace_service import publication_serial
+            if isinstance(members, tuple) and publication_serial(service) is not None:
+                member_sources['value'] = (members, service.rows, identities)
         sources = recording_sources()
-        identities = sorted({service.rows[identity]['source_sha256'] for identity in members})
         return [(identity, recorded_source_rig(sources.get(identity, {}))) for identity in identities]
     store = store or CurationStore(service.dj, service.project["project_uuid"])
     storage = ManagedStorage(project_dir, service.project['project_uuid'], Path(__file__).resolve().parents[1])
@@ -501,13 +512,17 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         return payload
 
     def native_protocol_summary(protocol_uuid, query_filters, *, overview_context=False, export_memberships=None,
-                                cross_protocols=True, exported_ids=None):
-        """Protocol UI summary without loading whole-dataset saved tag JSON."""
+                                cross_protocols=True, exported_ids=None, tag_counts=True):
+        """Protocol UI summary without loading whole-dataset saved tag JSON.
+
+        ``tag_counts=False`` (incremental overview) omits shared-tag counts, which
+        the caller derives separately under the shared-tag generation.
+        """
         from workspace_service import validate_filters
         query_filters=validate_filters(query_filters)
         context=selected_state.native_context(protocol_uuid)
         if context is None:return None
-        result=service.query_result(protocol_uuid)
+        result=service.query_view(protocol_uuid)
         identities=[row['uuid'] for row in result['epochs']]
         selected,shared_receipt=service._epoch_page_identities(protocol_uuid,query_filters)
         selected_set=set(selected)
@@ -527,7 +542,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         else:
             exported=exported_ids
         memberships=({key:set(identities if key==protocol_uuid else
-            [member['uuid'] for member in service.query_result(key)['epochs']]) for key in service.protocols}
+            [member['uuid'] for member in service.query_view(key)['epochs']]) for key in service.protocols}
             if not overview_context and cross_protocols else {})
         bins={}
         duration=0
@@ -569,7 +584,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             'query_revision':context['query_revision'],'expected_query_revision':context['query_revision'],
             'query_revision_contract':PROTOCOL_STATE_CONTRACT,'expected_binding_version':context['binding_version'],
             'annotation_generation':annotation_generation(context['generation'])}
-        if shared_annotations:
+        if shared_annotations and tag_counts:
             summary=shared_annotations.summary(rows)
             counts.update({key:summary[key] for key in ('shared_tagged_cells','shared_tagged_epochs')})
             payload['annotation_summary']={key:summary[key] for key in ('tags','total_tags','truncated')}
@@ -581,21 +596,14 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise StaleWorkspace('Shared annotations changed while reading this protocol. Refresh and retry.')
         if overview_context:
             return payload,{'ids':ids,'approved':approved,'context':context,
+                'cells':frozenset(row['cell_uuid'] for row in rows),
                 'view':result.get('effective_view',definition.get('view',{}))}
         return payload
 
     overview_memo={}
 
-    def overview_witness():
-        """Generation key for the derived project overview, or None to rebuild.
-
-        Native SQL triggers advance every protocol's curation scope and the
-        shared-tag scope; binding headers, export headers and source scope are
-        read live. Published metadata is identified by the index generation,
-        publication and object identities that refresh replaces; small project,
-        source and cell descriptors are compared by content. Event and export
-        lists are always read live and never memoized.
-        """
+    def overview_guard():
+        """The verified native tracker when overview memos may apply, else None."""
         from workspace_state_generation import StateGenerationAuthority
         from disco.metadata.disk_index import DiskMetadataIndex
         tracker=getattr(store,'state_generation',None)
@@ -609,6 +617,21 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         index=getattr(service,'disk_index',None)
         if not isinstance(index,DiskMetadataIndex):return None
         index._check()
+        return tracker
+
+    def overview_witness():
+        """Generation key for the derived project overview, or None to rebuild.
+
+        Native SQL triggers advance every protocol's curation scope and the
+        shared-tag scope; binding headers, export headers and source scope are
+        read live. Published metadata is identified by the index generation,
+        publication and object identities that refresh replaces; small project,
+        source and cell descriptors are compared by content. Event and export
+        lists are always read live and never memoized.
+        """
+        tracker=overview_guard()
+        if tracker is None:return None
+        index=service.disk_index
         header_provider=getattr(service,'binding_header_provider',None)
         protocols=[]
         for identity,entry in sorted(service.protocols.items()):
@@ -636,9 +659,190 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     app.extensions['overview_memo']=overview_memo
     app.extensions['overview_memo_witness']=overview_witness
 
+    overview_parts={}
+    app.extensions['overview_parts']=overview_parts
+
+    def overview_part_keys():
+        """Per-component generation keys for a frozen publication, or None.
+
+        The publication serial proves rows, cells, protocols and fingerprints;
+        each protocol's own curation token and binding header key its summary;
+        the shared-tag token keys tag counts; the export signature keys export
+        counts. A write therefore recomputes only the components it advanced.
+        """
+        from workspace_service import publication_serial
+        serial=publication_serial(service)
+        if serial is None:return None
+        tracker=overview_guard()
+        if tracker is None:return None
+        index=service.disk_index
+        header_provider=getattr(service,'binding_header_provider',None)
+        try:
+            descriptors=checksum({'project':service.project,'sources':service.sources,
+                'catalog':{key:value for key,value in service.config.items() if key!='connection'}})
+        except (TypeError,ValueError):
+            return None
+        scope=service.source_scope()
+        base=(serial,index.generation,descriptors,scope['revision'])
+        exports=store.export_signature()
+        protocols={}
+        for identity in service.protocols:  # Published protocol order, as the full overview.
+            token=tracker.token(identity)
+            if token is None:return None
+            header=header_provider(identity) if header_provider else None
+            protocols[identity]=(base,token.protocol_epoch,token.protocol_generation,
+                (header['revision_uuid'],header['version']) if header is not None else None,exports)
+        shared=tracker.token()
+        if shared is None:return None
+        return {'base':base,'scope':scope,'exports':(base,exports),'protocols':protocols,
+                'shared':(shared.authority,shared.shared_epoch,shared.shared_generation)}
+
+    def overview_base(keys):
+        cached=overview_parts.get('base')
+        if cached is not None and cached[0]==keys['base']:return cached[1]
+        bins={};duration=0
+        for row in service.rows.values():
+            duration+=row['duration_seconds']
+            cell=bins.setdefault(row['cell_uuid'],{'ids':set(),'duration_seconds':0,'groups':set(),'sources':set()})
+            cell['ids'].add(row['epoch_uuid']);cell['duration_seconds']+=row['duration_seconds']
+            cell['groups'].add(row['group_label']);cell['sources'].add(row['source_sha256'])
+        scope=keys['scope'];active=set(scope['active_source_revisions'])
+        active_rows=[row for row in service.rows.values() if row['source_sha256'] in active]
+        cells={identity:{'static':{**service.cells[identity],**recording_rig_summary(group['sources'],recording_sources())},
+                         'ids':frozenset(group['ids']),'duration_seconds':group['duration_seconds'],
+                         'group_labels':sorted(group['groups'],key=str)} for identity,group in bins.items()}
+        order=sorted(cells,key=lambda key:(cells[key]['static']['cell_type'] or '',cells[key]['static']['date'],
+                                            cells[key]['static']['label']))
+        base={'cells':cells,'order':order,'duration_seconds':duration,'epochs':len(service.rows),
+              'active_source_counts':{'cells':len({row['cell_uuid'] for row in active_rows}),
+                                      'epochs':len(active_rows),'sources':len(active)}}
+        overview_parts['base']=(keys['base'],base)
+        return base
+
+    def overview_protocol(identity,key,export_memberships):
+        cached=overview_parts.setdefault('protocols',{}).get(identity)
+        if cached is not None and cached[0]==key:return cached[1]
+        summary=native_protocol_summary(identity,{},overview_context=True,export_memberships=export_memberships(),
+                                        tag_counts=False)
+        if summary is None:return None
+        payload,proof=summary
+        entry=service.protocols[identity];definition=entry['definition']
+        value={'entry':{'protocol_uuid':identity,'name':definition['name'],
+                'acquisition_protocol':entry['result']['protocol_name'],'counts':payload['counts'],
+                'query':payload['effective_query'],'starter_query':definition['query'],
+                'binding':payload['binding'],'view':proof['view'],'query_revision':payload['query_revision']},
+               'ids':frozenset(proof['ids']),'not_approved':frozenset(proof['ids']-proof['approved']),
+               'cells':proof['cells']}
+        overview_parts['protocols'][identity]=(key,value)
+        return value
+
+    def incremental_overview():
+        """Overview assembled from separately keyed components (frozen publications)."""
+        keys=overview_part_keys()
+        if keys is None:return None
+        base=overview_base(keys)
+        memberships={}
+        def export_memberships():
+            if 'value' not in memberships:memberships['value']=store.export_memberships()
+            return memberships['value']
+        overview_parts['protocols']={identity:value for identity,value in overview_parts.get('protocols',{}).items()
+                                     if identity in keys['protocols']}
+        protocols={}
+        for identity,key in keys['protocols'].items():
+            value=overview_protocol(identity,key,export_memberships)
+            if value is None:return None
+            protocols[identity]=value
+        approval_key=(keys['base'],tuple(keys['protocols'][identity][1:4] for identity in sorted(protocols)))
+        cached=overview_parts.get('approval')
+        if cached is None or cached[0]!=approval_key:
+            covered=frozenset().union(*(value['ids'] for value in protocols.values()))
+            blocked=frozenset().union(*(value['not_approved'] for value in protocols.values()))
+            approved=covered-blocked
+            per_cell={identity:(len(cell['ids'] & approved),
+                                [key for key,value in protocols.items() if cell['ids'] & value['ids']])
+                      for identity,cell in base['cells'].items()}
+            cached=overview_parts['approval']=(approval_key,{'approved':approved,'per_cell':per_cell})
+        approval=cached[1]
+        cached=overview_parts.get('exports')
+        if cached is None or cached[0]!=keys['exports']:
+            exported=frozenset(export_memberships())&service.rows.keys()
+            cached=overview_parts['exports']=(keys['exports'],{'exported':exported,
+                'per_cell':{identity:len(cell['ids'] & exported) for identity,cell in base['cells'].items()}})
+        exports=cached[1]
+        assembled_key=(approval_key,keys['exports'],keys['shared'],tuple(keys['protocols'].items()))
+        cached=overview_parts.get('assembled')
+        if cached is not None and cached[0]==assembled_key:
+            payload={**cached[1],'events':service.events(25),'exports':store.list_dataset_revisions()}
+            if overview_part_keys()!=keys:
+                raise StaleWorkspace('Saved decisions changed while reading this project. Refresh and retry.')
+            return payload
+        tags=None
+        if shared_annotations:
+            tag_key=(keys['base'],keys['shared'],tuple(sorted((identity,keys['protocols'][identity][1:4]) for identity in protocols)))
+            cached=overview_parts.get('tags')
+            if cached is None or cached[0]!=tag_key:
+                scope_token=('overview-project-rows',keys['base'][0])
+                summary=shared_annotations.summary(lambda:list(service.rows.values()),scope_token=scope_token)
+                targets=shared_annotations.tagged_targets()
+                per_protocol={}
+                if targets is not None:
+                    tagged_cells=targets.get('cell',set())&base['cells'].keys()
+                    tagged=set(targets.get('epoch',set()))&service.rows.keys()
+                    for cell in tagged_cells:tagged|=base['cells'][cell]['ids']
+                    for identity,value in protocols.items():
+                        per_protocol[identity]={'shared_tagged_cells':len(tagged_cells & value['cells']),
+                                                'shared_tagged_epochs':len(value['ids'] & tagged)}
+                else:
+                    for identity,value in protocols.items():
+                        own=shared_annotations.summary([service.rows[key] for key in value['ids']])
+                        per_protocol[identity]={key:own[key] for key in ('shared_tagged_cells','shared_tagged_epochs')}
+                annotations={}
+                cell_ids=base['order']
+                for start in range(0,len(cell_ids),1000):
+                    records=shared_annotations.read_targets('cell',cell_ids[start:start+1000])
+                    for identity in cell_ids[start:start+1000]:
+                        annotations[identity]={'cell_tags':records[identity]['tags'],'revisions':records[identity]['revisions']}
+                cached=overview_parts['tags']=(tag_key,{'summary':summary,'per_protocol':per_protocol,'cells':annotations})
+            tags=cached[1]
+        protocol_list=[]
+        for identity,value in protocols.items():
+            entry={**value['entry'],'counts':{**value['entry']['counts'],**(tags['per_protocol'][identity] if tags else {})}}
+            protocol_list.append(copy.deepcopy(entry))
+        cells=[]
+        for identity in base['order']:
+            cell=base['cells'][identity];reviewed,members_of=approval['per_cell'][identity]
+            item={**cell['static'],'epochs':len(cell['ids']),'duration_seconds':cell['duration_seconds'],
+                  'included':len(cell['ids']),'reviewed':reviewed,'unreviewed':len(cell['ids'])-reviewed,
+                  'exported':exports['per_cell'][identity],'protocol_uuids':list(members_of),
+                  'group_labels':list(cell['group_labels'])}
+            if tags is not None:item['annotations']=tags['cells'][identity]
+            cells.append(item)
+        approved=approval['approved'];exported=exports['exported']
+        counts={'cells':len(cells),'epochs':base['epochs'],'reviewed':len(approved),'included':base['epochs'],
+            'duration_seconds':base['duration_seconds'],'protocols':len(protocol_list),'sources':len(service.sources),
+            'exported':len(exported),'approved':len(approved),'unreviewed':base['epochs']-len(approved)}
+        payload={'active_source_counts':dict(base['active_source_counts']),'source_scope':copy.deepcopy(keys['scope']),
+            'project':copy.deepcopy(service.project),
+            'catalog':copy.deepcopy({key:value for key,value in service.config.items() if key!='connection'}),
+            'counts':counts,'protocols':protocol_list,'cells':cells,'sources':copy.deepcopy(service.sources)}
+        if tags is not None:
+            counts.update({key:tags['summary'][key] for key in ('shared_tagged_cells','shared_tagged_epochs')})
+            payload['annotation_summary']=copy.deepcopy({key:tags['summary'][key] for key in ('tags','total_tags','truncated')})
+        # The assembled payload is shared read-only by later identical requests
+        # (serialization and the presentation cache only read it).
+        overview_parts['assembled']=(assembled_key,payload)
+        payload={**payload}
+        payload['events']=service.events(25)
+        payload['exports']=store.list_dataset_revisions()
+        if overview_part_keys()!=keys:
+            raise StaleWorkspace('Saved decisions changed while reading this project. Refresh and retry.')
+        return payload
+
     def native_overview():
         """Project counts from exact decision projections, memoized per generation."""
         if not service.protocols:return None
+        incremental=incremental_overview()
+        if incremental is not None:return incremental
         witness=overview_witness()
         if witness is not None and overview_memo.get('key')==witness:
             payload=copy.deepcopy(overview_memo['payload'])
@@ -1104,6 +1308,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             with data_stores.registration_locks(identities):
                 return jsonify(data_stores.recording_sizes(identities))
 
+    protocol_overview_memo={}
+    app.extensions['protocol_overview_memo']=protocol_overview_memo
+
     @app.get('/api/protocols/<protocol_uuid>/overview')
     def protocol_overview(protocol_uuid):
         """Cohort-only summary, conditionally reused after exact freshness checks.
@@ -1130,12 +1337,20 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 etag=checksum({'projection':'protocol-overview-v2','query':context['query_revision'],'recording_rigs':rig_token,
                                'exports':signature,'filters':query_filters,'annotations':annotation_generation(context['generation'])})
                 unchanged=request.headers.get('If-None-Match')=='"'+etag+'"'
-                payload=None if unchanged else native_protocol_summary(protocol_uuid,query_filters,
-                    cross_protocols=False,exported_ids=exported)
+                # The ETag names every input of this payload (protocol revision,
+                # shared-tag generation, exports, rigs, filters): reuse it per tag.
+                memo=protocol_overview_memo.get(protocol_uuid)
+                payload=(None if unchanged else memo[1] if memo is not None and memo[0]==etag else
+                         native_protocol_summary(protocol_uuid,query_filters,cross_protocols=False,exported_ids=exported))
                 after=selected_state.native_context(protocol_uuid)
                 _,after_signature=store.protocol_export_status(protocol_uuid,())
                 if (not same_protocol_state(after,context) or after_signature!=signature or recording_rig_token(members)!=rig_token):
                     raise StaleWorkspace('Protocol summary changed while reading. Refresh and retry.')
+                if payload is not None:
+                    protocol_overview_memo.pop(protocol_uuid,None)
+                    protocol_overview_memo[protocol_uuid]=(etag,payload)
+                    while len(protocol_overview_memo)>8:
+                        protocol_overview_memo.pop(next(iter(protocol_overview_memo)))
                 response=app.response_class(status=304) if unchanged else jsonify(payload)
                 response.set_etag(etag)
             else:

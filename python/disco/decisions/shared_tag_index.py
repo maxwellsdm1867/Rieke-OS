@@ -56,6 +56,9 @@ class SharedTagIndex:
         self.generation,self.changes,self.records,self.validate=generation,changes,records,validate
         self.token=None;self.folder=None;self.connection=None
         self.scopes={kind:None for kind in ('filter','summary','catalog')};self.scope_revisions=dict.fromkeys(self.scopes,0)
+        # Optional caller-proven scope identities (for example an immutable
+        # publication serial) let large unchanged scopes skip re-materialization.
+        self.scope_tokens=dict.fromkeys(self.scopes)
         self.summary_cache=None;self.catalog_cache={}
         self.shared_vocabulary=None
         self.tag_ids=OrderedDict()
@@ -213,9 +216,12 @@ class SharedTagIndex:
             # transaction retains the previous complete index after a failure.
             self.tag_ids.clear();raise
 
-    def _scope(self,rows,kind='filter'):
-        identities=tuple((row['epoch_uuid'],row['cell_uuid']) for row in rows)
-        if identities==self.scopes[kind]:return
+    def _scope(self,rows,kind='filter',token=None):
+        if token is not None and self.connection is not None and token==self.scope_tokens[kind]:return
+        identities=tuple((row['epoch_uuid'],row['cell_uuid']) for row in (rows() if callable(rows) else rows))
+        if identities==self.scopes[kind]:
+            self.scope_tokens[kind]=token
+            return
         if len({key for key,_ in identities})!=len(identities):
             raise ValueError('Expected unique epoch identities in the tag-filter scope')
         db=self._open();table=kind+'_scope'
@@ -228,6 +234,7 @@ class SharedTagIndex:
         # provenance. Separate scopes keep pagination from discarding aggregate
         # work for the overview or project field catalog.
         self.scopes[kind]=identities if len(identities)<=SCOPE_CACHE_ROWS else None
+        self.scope_tokens[kind]=token
         self.scope_revisions[kind]+=1
         if kind=='summary':self.summary_cache=None
         if kind=='catalog':self.catalog_cache={}
@@ -277,9 +284,14 @@ class SharedTagIndex:
                 del self.match_cache[key];self.match_cache_bytes-=size
 
     @_serialized
-    def summary(self,rows):
-        """Exact overview counts/top vocabulary, with no per-epoch chip copies."""
-        self._scope(rows,'summary');key=(self.token,self.scope_revisions['summary'])
+    def summary(self,rows,*,scope_token=None):
+        """Exact overview counts/top vocabulary, with no per-epoch chip copies.
+
+        ``scope_token`` is an optional caller-proven identity of ``rows`` (it must
+        change whenever the rows could differ); an equal token reuses the
+        materialized scope without reading ``rows`` (which may be a callable).
+        """
+        self._scope(rows,'summary',scope_token);key=(self.token,self.scope_revisions['summary'])
         if self.summary_cache is not None and self.summary_cache[0]==key:
             self._check_generation();return copy.deepcopy(self.summary_cache[1])
         db=self.connection
@@ -296,6 +308,17 @@ class SharedTagIndex:
             'tags':[{'tag':tag,'epoch_count':epochs,'cell_count':cells} for tag,epochs,cells in counts],
             'total_tags':total,'truncated':total>12}
         self._check_generation();self.summary_cache=(key,copy.deepcopy(result))
+        return result
+
+    @_serialized
+    def tagged_targets(self):
+        """Current targets with at least one shared tag: {'cell': set, 'epoch': set}."""
+        db=self._open()
+        result={'cell':set(),'epoch':set()}
+        for kind,target in db.execute('SELECT DISTINCT r.kind,r.target FROM records r WHERE EXISTS '
+                                      '(SELECT 1 FROM tag_memberships m WHERE m.record_id=r.record_id)'):
+            result.setdefault(kind,set()).add(target)
+        self._check_generation()
         return result
 
     def _clear_summary(self):
@@ -572,6 +595,6 @@ class SharedTagIndex:
     def close(self):
         if self.connection is not None:self.connection.close();self.connection=None
         if self.folder is not None:self.folder.cleanup();self.folder=None
-        self.token=None;self.scopes=dict.fromkeys(self.scopes);self.tag_ids.clear();self.match_cache.clear();self.match_cache_bytes=0
+        self.token=None;self.scopes=dict.fromkeys(self.scopes);self.scope_tokens=dict.fromkeys(self.scopes);self.tag_ids.clear();self.match_cache.clear();self.match_cache_bytes=0
         self.summary_cache=None;self.catalog_cache={}
         self.shared_vocabulary=None

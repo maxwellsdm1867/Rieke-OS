@@ -1474,7 +1474,11 @@ class WorkspaceService:
         if header is None and protocol['definition'].get('initial_revision_uuid'):
             raise ValueError('Pinned protocol creation was interrupted. Retry creating it from the same saved selection and name.')
         members = (binding['recipe']['epochs'] if binding else protocol['result']['epochs'])
-        signature = None if header_provider and header is not None else tuple(member['uuid'] for member in members)
+        # A frozen publication's serial proves unbound membership and every
+        # fingerprint, so hits need no per-member comparison.
+        serial = publication_serial(self)
+        signature = (None if (header_provider and header is not None) or serial is not None
+                     else tuple(member['uuid'] for member in members))
         key = (protocol_uuid, header and header['version'], header and header.get('revision_uuid'), tuple(sorted(ordinary.items())))
         from disco.metadata.disk_index import DiskMetadataIndex
         index = getattr(self, 'disk_index', None)
@@ -1483,7 +1487,8 @@ class WorkspaceService:
         overhead = 16 * 1024
         if isinstance(index, DiskMetadataIndex):
             index._check()
-            generation = (id(index),index.generation,id(self.rows),id(self.protocols),id(self._fingerprints))
+            generation = (('publication', serial, index.generation) if serial is not None else
+                          (id(index),index.generation,id(self.rows),id(self.protocols),id(self._fingerprints)))
             previous = getattr(cache_owner, '_epoch_page_cache', None)
             if overhead < EPOCH_PAGE_CACHE_BYTES:
                 if previous is None or previous[0] != generation:
@@ -1492,8 +1497,9 @@ class WorkspaceService:
             else:
                 cache_owner._epoch_page_cache = None
         entry = cache.get(key) if cache is not None else None
-        if (entry is not None and (signature is None or signature == entry[0])
-                and all(self._fingerprints.get(identity)==fingerprint for identity,fingerprint in entry[3].items())):
+        if (entry is not None and (serial is not None or (
+                (signature is None or signature == entry[0])
+                and all(self._fingerprints.get(identity)==fingerprint for identity,fingerprint in entry[3].items())))):
             cache.pop(key)
             cache[key] = entry
             identities = entry[1]
@@ -1576,7 +1582,7 @@ class WorkspaceService:
         else:
             known = (self._tree_fields(protocol_uuid)[0]['fields'] if filters else
                      self._registered_tree_fields()[0]['fields'] if binding or protocol_uuid is None else None)
-            rows = self._tree_rows(protocol_uuid, filters)
+            rows = self._navigation_rows(protocol_uuid, filters)
             index = getattr(self, 'disk_index', None)
             if index:
                 ids = [row['epoch_uuid'] for row in rows]
@@ -1618,9 +1624,26 @@ class WorkspaceService:
         return {'fields':[{key:copy.deepcopy(field[key]) for key in names if key in field}
             for field in catalog['fields']]}
 
-    def _tree_rows(self, protocol_uuid, filters=None):
+    def _navigation_rows(self, protocol_uuid, filters=None):
+        """Scope rows for navigation/explore readers, which never read curation.
+
+        A replaced ``_tree_rows`` policy stays authoritative and is called with
+        its original signature.
+        """
+        if getattr(self._tree_rows, '__func__', None) is WorkspaceService._tree_rows:
+            return self._tree_rows(protocol_uuid, filters, curation=False)
+        return self._tree_rows(protocol_uuid, filters)
+
+    def _tree_rows(self, protocol_uuid, filters=None, *, curation=True):
         if protocol_uuid is not None:
-            return self.filtered_rows(protocol_uuid, filters)
+            if curation or getattr(self.filtered_rows, '__func__', None) is not WorkspaceService.filtered_rows:
+                return self.filtered_rows(protocol_uuid, filters)
+            # Navigation/explore scopes never read curation state: borrow the
+            # published rows of the cached member view (no recipe copy, no
+            # whole-protocol curation read or per-member decoration).
+            filters = validate_filters(filters)
+            result = self.query_view(protocol_uuid)
+            return self._filter_rows([self.rows[member['uuid']] for member in result['epochs']], filters, protocol_uuid)
         self._ready()
         filters = validate_filters(filters)
         active = set(self.source_scope()['active_source_revisions'])
