@@ -1,8 +1,8 @@
-"""Previews return results without scoped statistics; fields are summarized on demand.
+"""Previews return results without scoped statistics; one summary job follows.
 
-A summary-only preview that asks for catalog statistics answers immediately
-with the result and a pointer to the per-field summary job; the job's facet for
-a field reproduces the counts the inline catalog used to report.
+A summary-only preview answers immediately without scoped statistics, whatever
+catalog_summary says; the summary job for the result set reproduces the counts
+the inline catalog used to report.
 """
 import unittest
 from pathlib import Path
@@ -42,24 +42,23 @@ class PreviewStatisticsTests(unittest.TestCase):
             requested = self.preview(catalog_summary=True)
             plain = self.preview(catalog_summary=False)
         self.assertEqual(requested['catalog_summary'], False)
-        self.assertEqual(requested['catalog_statistics'], {'inline': False, 'per_field': {
-            'method': 'POST', 'path': '/api/explore/summaries',
-            'body': {'predicate': requested['predicate'], 'summary_fields': ['<field id>']}}})
-        self.assertEqual({key: value for key, value in requested.items() if key != 'catalog_statistics'}, plain)
+        self.assertEqual(requested, plain)
         self.assertEqual(requested['matched_count'], len(self.service.rows))
 
-    def test_per_field_summary_reproduces_previous_inline_counts(self):
+    def test_result_set_summary_reproduces_previous_inline_counts(self):
         ids = sorted(self.service.rows)
         inline = {field['id']: field for field in self.index.catalog(ids=ids, known_fields=self.index.catalog()['fields'])['fields']}
+        fields = [field for field, statistics in inline.items()
+                  if not field.startswith('joint/') and statistics['distinct_count'] <= 60]
+        response = self.client.post('/api/explore/summaries', json={'predicate': {'all': []}, 'summary_fields': fields},
+                                    headers=self.fixture.headers)
+        self.assertEqual(response.status_code, 202, response.get_json())
+        self.join()
+        result = self.jobs.poll(response.get_json()['request_id'])['result']
+        self.assertEqual(result['matched_count'], len(ids))
         checked = 0
-        for field, statistics in inline.items():
-            if field.startswith('joint/') or statistics['distinct_count'] > 60:
-                continue
-            response = self.client.post('/api/explore/summaries', json={'predicate': {'all': []}, 'summary_fields': [field]},
-                                        headers=self.fixture.headers)
-            self.assertEqual(response.status_code, 202, response.get_json())
-            self.join()
-            facet = self.jobs.poll(response.get_json()['request_id'])['result']['summaries'][field]
+        for field in fields:
+            statistics, facet = inline[field], result['summaries'][field]
             with self.subTest(field=field):
                 self.assertEqual(facet['missing_count'], statistics['missing_count'])
                 self.assertEqual(facet['present_count'], statistics['count'] - statistics['missing_count'])

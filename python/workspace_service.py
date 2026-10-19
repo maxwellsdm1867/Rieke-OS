@@ -1390,11 +1390,10 @@ class WorkspaceService:
         with elapsed("workspace_service", "explore_preview"):
             if type(include_catalog_summary) is not bool or (include_tree and not include_catalog_summary):
                 raise ValueError('A rendered tree requires catalog summaries; include_catalog_summary must be boolean')
-            # Results never wait on scoped per-field statistics. A summary-only
-            # request that asks for them gets the result immediately and fetches
-            # each field's statistics later through POST /explore/summaries.
-            statistics_requested = include_catalog_summary and not include_tree
-            if statistics_requested:
+            # Results never wait on scoped statistics. A summary-only request
+            # gets the result immediately; the client then submits one
+            # POST /explore/summaries job for the result set.
+            if not include_tree:
                 include_catalog_summary = False
             scope = self.source_scope()
             self._ready()
@@ -1434,10 +1433,6 @@ class WorkspaceService:
             from disco.navigation.tree_pages import selection_revision
             return {'predicate': validated, 'splits': splits, 'tree': tree, 'catalog': scoped_catalog,
                     **({'catalog_summary': False} if not include_catalog_summary else {}),
-                    **({'catalog_statistics': {'inline': False, 'per_field': {
-                        'method': 'POST', 'path': '/api/explore/summaries',
-                        'body': {'predicate': validated, 'summary_fields': ['<field id>']}}}}
-                       if statistics_requested else {}),
                     'tree_revision': selection_revision(self, None, validated, {}, order, rows, annotation_scope=annotation_scope),
                     'total_source': total_source, 'total_catalog': len(self.rows), 'matched_count': len(rows),
                     'source_scope': scope, 'source_revisions': scope['active_source_revisions'],
