@@ -214,3 +214,57 @@ Not done: lighter per-connection attestation (each request still attests twice);
 protocol reads remain linear in protocol size (witness), so the 50k fixture (7k-member
 protocols) does not meet the 10-12 ms targets; UUID-prefix search still copies every
 protocol's query result.
+
+## Freshness, refresh scoping and navigation scopes (2026-10-18)
+
+Stack: `claude/protocol-state-freshness` (B6, #99) → `claude/refresh-scoping` (B7,
+#100) → `claude/navigation-scope-cache` (B9). Harnesses are run unchanged against
+base `a7aca9b` and each head (`--source-root`); SQL is the test doubles; machine
+load average 70–180, so timings are diagnostic and the counts are the evidence.
+
+**B6 — publication serial instead of content witnesses.** Refresh publishes
+deep-frozen `rows`/`cells`/`protocols`/`_fingerprints`; every assignment advances a
+process-monotonic publication serial. `native_context` proves a cached protocol
+proof from (serial, binding header, source scope, index generation) and retains a
+digest plus member set only (no rows, no 64 MiB cliff). `query_view` shares one
+read-only query result per (serial, binding revision, version). Read-path schema
+attestation is cached by (connection epoch, DDL counters, InnoDB table ids); each
+GET holds one lazily opened response lease; mutations keep full attestation.
+
+| `native_context` warm, one protocol of N | 20k | 50k | 200k |
+| --- | --- | --- | --- |
+| base | 207 ms, 20.5 MB marshalled | 979 ms (proof never admitted) | 3,989 ms (never admitted) |
+| B6 | 0.044 ms, 0 bytes, 0 rebuilds | 0.042 ms | 0.039 ms |
+
+Routes at 50k (7 protocols): epoch detail in protocol 32.7 → 1.7 ms and protocol
+browse 40.3 → 2.7 ms (14.8 MB marshalled → 0, query copies 1 → 0); first overview
+after a write 10.8 → 1.3 s; plain epoch detail attestations 2 → 0.
+
+**B7 — pre-write refresh scoped to source witnesses.** Approve, explorer save,
+masks and export run `verify_sources()` (registration checksum + recording/metadata
+stat signatures per source, O(sources)); any difference runs the complete refresh.
+An unchanged refresh keeps the published objects and serial (SQL validation and
+all-source stat checks still run). Unchanged "Check for updates" persists nothing.
+
+| `tools/benchmark_refresh_scoping.py` | 4.5k | 49.5k |
+| --- | --- | --- |
+| approve pre-write, base (`refresh`) | 44 ms, 5 projections decoded, rows replaced | 661 ms, 5 decoded, replaced |
+| approve pre-write, B7 (`verify_sources`) | 0.6 ms, 0 decoded, rows kept | 0.66 ms, 0 decoded, kept |
+| warm refresh base → B7 | 45 → 8.8 ms | 640 → 79 ms (SQL double remains) |
+
+**B9 — one navigation scope per tree.** Every split column is projected once per
+scope, so depth/anchor left the key and branch selection reuses the cached scope.
+Frozen publications key scopes on the serial: hits compare no fingerprint
+dictionaries. Tag/annotation-filtered scopes are cached under their context's
+verified annotation generation. Tree pages read the index's shared definitions view
+(#93); search labels UUID hits from the service's shared `query_members` set.
+
+| `tools/benchmark_membership_scaling.py` (2,000-member tree) | 20k project | 200k project |
+| --- | --- | --- |
+| select branch, base → B9 | 2.38 → 0.05 ms | 2.36 → 0.05 ms |
+| warm root fingerprint visits (frozen publication), base → B9 | 2,000 → 0 | 2,000 → 0 |
+| warm root / expand / next leaf, B9 | 0.24 / 0.11 / 0.09 ms | 0.24 / 0.11 / 0.09 ms |
+
+Caveat: the harness's in-place "unrelated fingerprint edit" becomes a republication
+under frozen maps and rebuilds the scope once (base: 0 builds). In production every
+fingerprint change is a refresh republication, which already cleared the cache.

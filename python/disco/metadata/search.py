@@ -31,6 +31,28 @@ def _cell_rows(service):
     return cached[1]
 
 
+def _epoch_prefix_hits(service, prefix, limit):
+    """First ``limit`` epochs by UUID with this lowercase prefix plus the exact total.
+
+    Native generations answer with one range probe on the sealed index's unique
+    epoch_uuid index, not a sort of every row. Rows still come from the published
+    mapping; a missing method, a mismatched row count, non-lowercase identities
+    or an identity the mapping lacks returns None and the caller scans instead.
+    """
+    index = getattr(service, 'disk_index', None)
+    probe = getattr(index, 'epoch_prefix', None)
+    if probe is None or getattr(index, '_epoch_count', None) != len(service.rows):
+        return None
+    found = probe(prefix, limit)
+    if found is None:
+        return None
+    identities, total = found
+    rows = [(identity, service.rows.get(identity)) for identity in identities]
+    if any(row is None or row.get('epoch_uuid') != identity for identity, row in rows):
+        return None
+    return rows, total
+
+
 def search_workspace(service, query, limit=20, *, field=None, operator='eq', value=None):
     if not isinstance(query, str) or len(query) > 512:
         raise ValueError('Search text must contain at most 512 characters')
@@ -42,6 +64,7 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
     active = set(scope['active_source_revisions'])
     sources = {source['source_sha256']: source for source in service.sources}
     results = []
+    unlisted = 0  # Counted prefix matches beyond the materialized rows.
     normalized = query.casefold()
     uuid_query = bool(re.fullmatch(r'[0-9a-fA-F-]{8,36}', query))
 
@@ -62,21 +85,36 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
                     'detail': f"{row['date']} · {row['cell_type']}", **context(row)})
         # Numeric ordinals are local to their recording/cell, never global IDs.
         if uuid_query:
-            for identity, row in sorted(service.rows.items()):
-                if identity.lower().startswith(normalized):
-                    results.append({'kind': 'epoch', 'id': identity, 'epoch_uuid': identity,
-                        'label': f"Epoch {row.get('epoch_number', '')} · {row['cell_label']}",
-                        'detail': f"{row['date']} · {row['protocol_name'].rsplit('.', 1)[-1]}", **context(row)})
+            # Matches beyond the first ``limit`` are counted, never materialized.
+            probed = _epoch_prefix_hits(service, normalized, limit)
+            if probed is None:
+                epoch_rows = [(identity, row) for identity, row in sorted(service.rows.items())
+                              if identity.lower().startswith(normalized)]
+            else:
+                epoch_rows, epoch_total = probed
+                unlisted = epoch_total - len(epoch_rows)
+            for identity, row in epoch_rows:
+                results.append({'kind': 'epoch', 'id': identity, 'epoch_uuid': identity,
+                    'label': f"Epoch {row.get('epoch_number', '')} · {row['cell_label']}",
+                    'detail': f"{row['date']} · {row['protocol_name'].rsplit('.', 1)[-1]}", **context(row)})
         # Exact UUID wins over prefixes; ambiguity is shown as separate rows.
+        # An exact epoch UUID sorts first among its prefix matches.
         exact = [item for item in results if item['id'].lower() == normalized]
         if exact:
             results = exact
+            unlisted = 0
         if uuid_query:
             memberships = {}
-            for protocol_id, workspace in service.protocols.items():
-                members = {item['uuid'] for item in service.query_result(protocol_id)['epochs']}
-                for item in results[:limit]:
-                    if item['kind'] == 'epoch' and item['epoch_uuid'] in members:
+            shown = [item for item in results[:limit] if item['kind'] == 'epoch']
+            # The service's shared read-only member set (one per publication and
+            # binding revision/version); None keeps the query_result path.
+            reader = getattr(service, 'query_members', None) if shown else None
+            for protocol_id, workspace in (service.protocols.items() if shown else ()):
+                members = reader(protocol_id) if reader is not None else None
+                if members is None:
+                    members = {item['uuid'] for item in service.query_result(protocol_id)['epochs']}
+                for item in shown:
+                    if item['epoch_uuid'] in members:
                         memberships.setdefault(item['epoch_uuid'], []).append({'protocol_uuid': protocol_id,
                             'name': workspace['definition']['name']})
             for item in results:
@@ -84,8 +122,8 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
                     item['protocols'] = memberships.get(item['epoch_uuid'], [])
                     item['protocol_uuid'] = item['protocols'][0]['protocol_uuid'] if item['protocols'] else None
             if not query.isdigit():
-                return {'query': query, 'results': results[:limit], 'total': len(results), 'limit': limit,
-                        'identity_ambiguous': len(results) > 1, 'scope': 'registered_project_sources',
+                return {'query': query, 'results': results[:limit], 'total': len(results) + unlisted, 'limit': limit,
+                        'identity_ambiguous': len(results) + unlisted > 1, 'scope': 'registered_project_sources',
                         'source_scope_revision': scope['revision']}
     if not query and field is None:
         return {'query': query, 'results': [], 'total': 0, 'limit': limit}
@@ -169,7 +207,7 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
             results.append({'kind': 'value', 'id': identity + ':' + encoded, 'label': f'{label} = {encoded}',
                 'detail': f"{choice['count']} matching epochs · {identity}", 'field_id': identity,
                 'predicate': {'field': identity, 'operator': 'eq', 'value': current}, 'count': choice['count']})
-    return {'query': query, 'results': results[:limit], 'total': len(results), 'limit': limit,
+    return {'query': query, 'results': results[:limit], 'total': len(results) + unlisted, 'limit': limit,
             'value_examples_only': examples_only, 'scope': 'project_identities_and_active_metadata',
             'source_scope_revision': scope['revision']}
 

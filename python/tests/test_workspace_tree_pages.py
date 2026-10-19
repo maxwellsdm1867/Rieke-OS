@@ -289,7 +289,9 @@ class TreePageTests(unittest.TestCase):
         self.service.disk_index=Index()
         with patch.object(self.service,'_tree_fields',side_effect=AssertionError('No full in-memory catalog')):
             root=self.pager.page({'splits':'cell,parameters/value'})
-            self.assertEqual(self.service.disk_index.calls[-1][1],['cell'])
+            # Every split column is projected once per scope (never other fields),
+            # so deeper pages reuse it instead of re-reading per depth.
+            self.assertEqual(self.service.disk_index.calls[-1][1],['cell','parameters/value'])
             leaf_groups=self.pager.page({'splits':'cell,parameters/value','path':root['branches'][0]['path'],'revision':root['revision']})
             self.assertEqual(self.service.disk_index.calls[-1][1],['cell','parameters/value'])
             self.assertEqual(leaf_groups['total'],9)

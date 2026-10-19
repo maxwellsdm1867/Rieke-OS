@@ -341,4 +341,27 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
                            'python/tests/test_workspace_refresh_cache.py',
                            'python/tests/test_workspace_slow_read_memos.py',
                            'python/tests/test_workspace_projection_contract.py',
-                           'python/tests/test_workspace_explore_queries.py')})}
+                           'python/tests/test_workspace_explore_queries.py')},
+             {'id': 'navigation-scope-cache-compatibility-2026-10-18',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 '160c0f63e502f4201f44038d2d9d417b606f008550742bd5cea7510b164d1b95',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to claude/refresh-scoping (receipt '
+                           'refresh-scoping-compatibility-2026-10-18), workspace_service only adds '
+                           'query_members (a read-only member set shared per cached query view) and stops '
+                           'counting the explore publication token as a published read-model attribute. '
+                           'Projection keys, codecs, decoded values, membership, index generation and cache '
+                           'authority are unchanged; all other ordered owners and the resolver are '
+                           'byte-identical.',
+              'evidence': ('git:claude/refresh-scoping',
+                           'python/tests/test_workspace_search.py',
+                           'python/tests/test_workspace_slow_read_memos.py',
+                           'python/tests/test_workspace_projection_contract.py')})}

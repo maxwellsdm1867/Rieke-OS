@@ -537,5 +537,37 @@ class PublicationCacheTests(unittest.TestCase):
         self.assertEqual(self.service._explore_publication, before)
 
 
+class NativeSummaryReadTests(unittest.TestCase):
+    """Index-only summaries stream the matched scope instead of one read per epoch."""
+    def test_native_summary_streams_values_in_bounded_reads(self):
+        import tempfile
+        from pathlib import Path
+        from disco.metadata.disk_index import DiskMetadataIndex
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        service = api_fixture.FixtureService(temp.name)
+        template = service.rows[service.ids[0]]
+        for n in range(600):
+            identity = f'00000000-0000-4000-8000-{n:012d}'
+            service.rows[identity] = {**template, 'epoch_uuid': identity, 'start_time': f'09/24/2026 13:{n // 60:02d}:{n % 60:02d}:000000'}
+            service.details[identity] = copy.deepcopy(service.details[service.ids[0]])
+            service.details[identity]['parameters']['example'] = n % 7
+            service._fingerprints[identity] = 'b' * 64
+        context = {'protocol_uuid': None, 'filters': {}, 'scope': {}, 'predicate': {'all': []},
+                   'summary_fields': ['parameters/example']}
+        expected = queries._native_summaries(service, context, lambda: False)
+        index = DiskMetadataIndex.build(Path(temp.name) / 'summary.sqlite', service.rows, service.details,
+                                        service.sources, 'summary-generation', service.project['project_uuid'])
+        self.addCleanup(index.close)
+        service.disk_index, service.details = index, index.details
+        service._registered_tree_cache = None
+        service._registered_tree_fields()
+        with patch.object(index, '_connect', wraps=index._connect) as connect:
+            result = queries._native_summaries(service, context, lambda: False)
+        self.assertEqual(result, expected)
+        self.assertEqual(result['matched_count'], 602)
+        self.assertLessEqual(connect.call_count, 4, connect.call_count)
+
+
 if __name__ == '__main__':
     unittest.main()

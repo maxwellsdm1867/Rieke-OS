@@ -1,8 +1,13 @@
+import copy
+from pathlib import Path
 import tempfile
 import threading
 import unittest
+import uuid
+from unittest.mock import patch
 
 from disco.metadata.search import register_search_routes, search_workspace
+from workspace_service import WorkspaceService
 try:
     from .test_workspace_api import FixtureService
 except ImportError:
@@ -105,6 +110,91 @@ class WorkspaceSearchTests(unittest.TestCase):
         self.assertTrue(result['identity_ambiguous'])
         self.assertEqual(result['total'], 2)
         self.assertEqual(len(result['results']), 1)
+
+    def _shared_prefix_epochs(self, count=30):
+        template = self.service.rows[self.service.ids[0]]
+        for n in range(count):
+            identity = f'abcdef01-0000-4000-8000-{n:012d}'
+            self.service.rows[identity] = {**template, 'epoch_uuid': identity, 'epoch_number': n + 2}
+            self.service.details[identity] = copy.deepcopy(self.service.details[self.service.ids[0]])
+            self.service._fingerprints[identity] = 'b' * 64
+
+    def _bind_second_protocol(self, members):
+        from disco.decisions.explorer import ExplorerHistory
+        class Bindings:
+            def __init__(self, rows, protocol=None): self.rows, self.protocol = rows, protocol
+            def __and__(self, restriction): return Bindings(self.rows, restriction['protocol_uuid'])
+            def to_dicts(self): return [dict(row) for row in self.rows if row['protocol_uuid'] == self.protocol]
+        bound = str(uuid.uuid4())
+        entry = copy.deepcopy(self.service.protocols[self.service.protocol_id])
+        entry['definition'].update(protocol_uuid=bound, name='Bound protocol')
+        entry['result'].update(protocol_uuid=bound, epochs=[])
+        self.service.protocols[bound] = entry
+        recipe = dict(revision_uuid=str(uuid.uuid4()), name='Frozen', epochs=[dict(uuid=key, metadata_hash='b' * 64) for key in members],
+                      source_revisions=['a' * 64], predicate={'all': []}, splits='cell', tree_view={'fields': ['cell']})
+        history = ExplorerHistory(None, self.service.project['project_uuid'], event_table=Bindings([]), revision_table=Bindings([]),
+            binding_table=Bindings([dict(project_uuid=self.service.project['project_uuid'], protocol_uuid=bound,
+                                         revision_uuid=recipe['revision_uuid'], version=1)]))
+        history._recipe_cache = {recipe['revision_uuid']: recipe}
+        self.service.set_binding_provider(history.protocol_binding, header_provider=history.protocol_binding_header)
+        return bound, history
+
+    def test_native_uuid_prefix_is_an_index_probe_with_cached_protocol_members(self):
+        from disco.metadata.disk_index import DiskMetadataIndex
+        self._shared_prefix_epochs()
+        bound, history = self._bind_second_protocol([self.service.ids[1], 'abcdef01-0000-4000-8000-000000000003'])
+        queries = [(self.service.ids[0], 20), (self.service.ids[1].upper(), 20), (self.service.ids[1][:13], 20),
+                   ('abcdef01', 5), ('ABCDEF01-0000-4000-8000-00000000000', 4), ('abcdef01-0000-4000-8000-000000000003', 20),
+                   (self.service.cell_ids[0], 20), ('ffffffff', 20)]
+        expected = {query: search_workspace(self.service, query, limit) for query, limit in queries}
+        self.assertEqual((expected['abcdef01']['total'], len(expected['abcdef01']['results'])), (30, 5))
+        index = DiskMetadataIndex.build(Path(self.temp.name) / 'search.sqlite', self.service.rows, self.service.details,
+                                        self.service.sources, 'search-generation', self.service.project['project_uuid'])
+        self.addCleanup(index.close)
+        self.service.disk_index = index
+
+        # Publish the read model as refresh does (deep-frozen, publication serial).
+        from workspace_service import FrozenDict, publish_frozen
+        service = self.service
+        service.rows = publish_frozen(service.rows, rows=True)
+        service.cells, service.protocols, service._fingerprints = (publish_frozen(service.cells),
+            publish_frozen(service.protocols), publish_frozen(service._fingerprints))
+        published = {'rows': service.rows}
+        original_items = FrozenDict.items
+
+        def guarded(mapping):
+            if mapping is published['rows']:
+                raise AssertionError('UUID search sorted every published row')
+            return original_items(mapping)
+        copies = []
+        original_query = WorkspaceService.query_result
+        with patch.object(FrozenDict, 'items', guarded), \
+                patch.object(WorkspaceService, 'query_result', autospec=True,
+                             side_effect=lambda *args: copies.append(args[1]) or original_query(*args)):
+            for query, limit in queries:  # Warm the shared member sets once.
+                self.assertEqual(search_workspace(service, query, limit), expected[query], query)
+            self.assertEqual(copies, [bound], 'One frozen recipe read per binding revision')
+            for _ in range(2):
+                for query, limit in queries:
+                    self.assertEqual(search_workspace(service, query, limit), expected[query], query)
+            self.assertEqual(copies, [bound], 'Copied a protocol result to label hits')
+        labelled = search_workspace(service, 'abcdef01-0000-4000-8000-000000000003')['results'][0]
+        self.assertEqual(labelled['protocols'], [{'protocol_uuid': bound, 'name': 'Bound protocol'}])
+        # A new binding revision relabels; a republished unbound result does too.
+        replacement = dict(history._recipe_cache[history.Binding.rows[0]['revision_uuid']],
+                           revision_uuid=str(uuid.uuid4()), epochs=[])
+        history._recipe_cache[replacement['revision_uuid']] = replacement
+        history.Binding.rows[0].update(revision_uuid=replacement['revision_uuid'], version=2)
+        self.assertEqual(search_workspace(service, 'abcdef01-0000-4000-8000-000000000003')['results'][0]['protocols'], [])
+        entry = service.protocols[service.protocol_id]
+        service.protocols = publish_frozen({**service.protocols,
+            service.protocol_id: {**entry, 'result': {**entry['result'], 'epochs': []}}})
+        self.assertIsNone(search_workspace(service, service.ids[0])['results'][0]['protocol_uuid'])
+        # A row mapping that disagrees with the sealed index never uses the probe.
+        service.rows = published['rows'] = publish_frozen(
+            {key: row for key, row in service.rows.items() if key != 'abcdef01-0000-4000-8000-000000000004'}, rows=True)
+        with patch.object(FrozenDict, 'items', guarded), self.assertRaises(AssertionError):
+            search_workspace(service, 'abcdef01')
 
     def test_route_json_value_and_option_validation(self):
         from flask import Flask, jsonify

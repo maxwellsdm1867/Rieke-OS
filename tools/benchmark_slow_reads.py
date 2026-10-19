@@ -241,6 +241,11 @@ def run(source_root, epochs, protocols, repeats):
         main = fx.protocols[0]
         endpoints = {
             'search.keystroke': '/api/search?q=con',
+            # UUID lookups: exact, a narrow prefix (<=256 epochs) and a prefix
+            # every epoch shares (exact total over the whole project).
+            'search.uuid_exact': f'/api/search?q={fx.epoch}',
+            'search.uuid_prefix': f'/api/search?q={fx.epoch[:-2]}',
+            'search.uuid_prefix_all': f'/api/search?q={fx.epoch[:18]}',
             'explore.predicate_fields': '/api/explore/predicate-fields',
             'overview': '/api/overview',
             'epoch.detail': f'/api/epochs/{fx.epoch}',

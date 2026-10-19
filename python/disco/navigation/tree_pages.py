@@ -16,7 +16,7 @@ from disco.workbench.recipes import SPLIT_FIELDS, checksum, parse_splits
 from disco.navigation.tree import (field_value_order, joint_definition, joint_value,
                             value_key, protocol_family)
 from disco.navigation.predicates import validate as validate_predicate, matches
-from workspace_service import validate_filters, WorkspaceService, _frozen_navigation_owner
+from workspace_service import validate_filters, WorkspaceService, _frozen_navigation_owner, publication_serial
 from disco.decisions.explorer import ExplorerHistory
 from disco.operation_timing import elapsed
 
@@ -310,9 +310,13 @@ class TreePages:
     def _scope(self, body):
         """Reuse navigation projections only for a checked immutable index.
 
-        Annotation membership is live and intentionally bypasses this cache.
         Source eligibility and frozen protocol binding are part of every key.
         Keeping this on the service also shares it with matching-epoch reads.
+        A frozen publication (``publication_serial``) proves rows, fingerprints
+        and protocol membership by its serial, so hits compare no dictionaries.
+        Annotation-dependent scopes (tag filters, annotation predicates) are
+        cached only for a frozen publication under the verified annotation
+        generation tokens of their context, checked unchanged across the build.
         """
         service = self.service
         service._ready()
@@ -320,10 +324,22 @@ class TreePages:
         from disco.navigation.tag_predicates import referenced_fields
         index = getattr(service, 'disk_index', None)
         filters = validate_filters(body.get('filters'))
-        if (not isinstance(index, DiskMetadataIndex)
-                or any(field in filters for field in ('tag', 'tagged', 'tag_predicate', 'metadata_predicate'))
-                or referenced_fields(body.get('predicate', {'all': []}))):
+        if not isinstance(index, DiskMetadataIndex):
             return self._build_scope(body)
+        serial = publication_serial(service)
+        annotation_token = None
+        if (any(field in filters for field in ('tag', 'tagged', 'tag_predicate', 'metadata_predicate'))
+                or referenced_fields(body.get('predicate', {'all': []}))):
+            if serial is None:
+                return self._build_scope(body)
+            from disco.metadata.explore_queries import generation as annotation_generation, StaleQuery
+            context = {'protocol_uuid': _uuid(body['protocol_uuid']) if body.get('protocol_uuid') else None,
+                       'filters': filters, 'predicate': body.get('predicate', {'all': []})}
+            try:
+                annotation_token = checksum(annotation_generation(service, context))
+            except StaleQuery:
+                return self._build_scope(body)
+            annotation_context = context
         index._check()  # A cache hit must still refuse changed/corrupt index bytes.
         structural = _structural_scope(body)
         if not _structural_contract(service, frozen_protocol=body.get('protocol_uuid')):
@@ -341,14 +357,16 @@ class TreePages:
         # place without replacing service.protocols. Frozen binding headers are
         # immutable; other scopes compare their exact UUID sequence on each hit.
         membership = (tuple(member['uuid'] for member in service.protocols[protocol]['result']['epochs'])
-                      if protocol and binding is None else None)
-        generation = (id(index), index.generation, id(service.rows),
-                      id(service._fingerprints), id(service.protocols))
+                      if protocol and binding is None and serial is None else None)
+        # A frozen publication's serial is a complete witness (never reused);
+        # unfrozen read models keep identities plus content comparisons below.
+        generation = (('publication', serial, index.generation) if serial is not None else
+                      (id(index), index.generation, id(service.rows), id(service._fingerprints), id(service.protocols)))
         cached = getattr(cache_owner, '_tree_page_scope_cache', None)
         if cached is None or cached[0] != generation:
             cached = cache_owner._tree_page_scope_cache = (generation, {}, None)
         cache, source_fingerprints = cached[1:]
-        if protocol is None and (source_fingerprints is None or source_fingerprints != service._fingerprints):
+        if serial is None and protocol is None and (source_fingerprints is None or source_fingerprints != service._fingerprints):
             # The published fingerprint dictionary is also used by reconciliation
             # and test adapters. Detect in-place edits, not only refresh swaps.
             # Invalidate source entries only; protocols still check their complete
@@ -367,16 +385,15 @@ class TreePages:
             'source_scope': service.source_scope()['revision'] if protocol is None else None,
             'predicate': body.get('predicate'), 'filters': filters,
             'splits': body.get('splits', 'date,cell,block'),
-            'depth': None if structural else len(body.get('path', [])),
-            'anchor': False if structural else bool(body.get('anchor_uuid'))}), membership)
+            'annotations': annotation_token}), membership)
         if key in cache:
             entry = cache.pop(key)
-            if protocol is None or all(service._fingerprints.get(identity) == fingerprint
+            if protocol is None or serial is not None or all(service._fingerprints.get(identity) == fingerprint
                     for identity, fingerprint in entry[3].items()):
                 cache[key] = entry
                 return entry[0]
         fingerprints = None
-        if protocol is not None:
+        if protocol is not None and serial is None:
             # Watch the complete cohort, including members hidden by filters:
             # their metadata can change whether they belong in this projection.
             # A native frozen header identifies an immutable recipe; only a cold
@@ -387,6 +404,14 @@ class TreePages:
                        service.protocols[protocol]['result']['epochs'])
             fingerprints = {member['uuid']: service._fingerprints[member['uuid']] for member in members}
         result = self._build_scope(body)
+        if annotation_token is not None:
+            from disco.metadata.explore_queries import generation as annotation_generation, StaleQuery
+            try:
+                unchanged = checksum(annotation_generation(service, annotation_context)) == annotation_token
+            except StaleQuery:
+                unchanged = False
+            if not unchanged or publication_serial(service) != serial:
+                return result  # Annotations changed during the build: serve, never retain.
         rows, _, values, _, _, _ = result
         # Bound retained row references plus projected values across all scopes.
         # An oversize projection may serve this request but is never retained.
@@ -413,7 +438,7 @@ class TreePages:
             _retain_scope_cache(cache_owner, generation, cache, source_fingerprints)
         return result
 
-    def _build_scope(self, body, *, all_fields=False):
+    def _build_scope(self, body):
         service = self.service
         service._ready()
         protocol = body.get('protocol_uuid')
@@ -444,10 +469,15 @@ class TreePages:
             rows = [service.rows[identity] for identity in identities]
         else:
             rows = service._tree_rows(protocol, filters)
+        shared_definitions = None
         if index is not None:
             # Registered definitions remain valid for empty or excluded scopes;
             # paged navigation needs no repeated per-field scope summaries.
-            catalog = index.catalog()
+            # The generation's shared read-only definitions view avoids a
+            # per-request catalog deep copy; other adapters keep catalog().
+            reader = getattr(index, 'catalog_definitions', None)
+            shared_definitions = reader() if reader is not None else None
+            catalog = {'fields': list(shared_definitions.values())} if shared_definitions is not None else index.catalog()
             values = None
         else:
             catalog, values = service._tree_fields(protocol, filters)
@@ -462,7 +492,8 @@ class TreePages:
                 allowed = set(identities)
                 rows = [row for row in rows if row['epoch_uuid'] in allowed]
         catalog = {**catalog, 'protocol_family':protocol_family(rows)}
-        definitions = {field['id']: field for field in catalog['fields']}
+        definitions = (dict(shared_definitions) if shared_definitions is not None
+                       else {field['id']: field for field in catalog['fields']})
         splits = body.get('splits', 'date,cell,block')
         order = parse_splits(splits, definitions)
         for field in order:
@@ -471,7 +502,9 @@ class TreePages:
         if structural:
             values = _NavigationValues(service.rows, order, scope_size=len(rows))
         elif index is not None:
-            requested = order if all_fields or body.get('anchor_uuid') else order[:len(body.get('path', []))+1]
+            # Project every split column once per scope, so one cached scope
+            # serves every depth, anchor and branch selection of this tree.
+            requested = order
             columns = set()
             for field in requested:
                 columns.update(definitions[field].get('components') or [field])
@@ -665,7 +698,9 @@ class TreePages:
                 raise ValueError('Tree selection requires a current revision')
             if not self._canonical_reader():
                 return self._selection_pages(body, expected_count)
-            rows, _, values, definitions, order, revision = self._build_scope(body, all_fields=True)
+            # Every split column is projected once per scope, so the cached
+            # navigation scope (shared with pages) serves branch selection.
+            rows, _, values, definitions, order, revision = self._scope(body)
             if revision != expected:
                 raise StaleTreePage('Tree selection revision changed')
             structural_path = TreePath(order, definitions, path)
@@ -742,7 +777,8 @@ def witnessed_tree_page(pager, body):
     service = pager.service
     from disco.metadata.disk_index import DiskMetadataIndex
     index = getattr(service, 'disk_index', None)
-    recorded = {'date', 'cell', 'cell type', 'group', 'block', 'protocol', 'source'}
+    # Recorded (non-annotation) split names come from the one split registry.
+    recorded = set(SPLIT_FIELDS)
     eligible = (isinstance(body, dict) and isinstance(body.get('protocol_uuid'), str)
                 and body.get('filters', {}) == {} and 'predicate' not in body
                 and isinstance(body.get('splits'), str) and body['splits']
@@ -752,7 +788,8 @@ def witnessed_tree_page(pager, body):
                 and isinstance(index, DiskMetadataIndex) and _structural_contract(service))
     if not eligible:
         return ordinary()
-    definitions = {field['id']: field for field in index.catalog()['fields']}
+    reader = getattr(index, 'catalog_definitions', None)
+    definitions = reader() if reader is not None else {field['id']: field for field in index.catalog()['fields']}
     if any(field not in definitions or definitions[field].get('annotation_scope')
            or definitions[field].get('components') for field in body['splits'].split(',')):
         return ordinary()

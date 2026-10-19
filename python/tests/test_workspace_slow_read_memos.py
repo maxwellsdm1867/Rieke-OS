@@ -466,6 +466,63 @@ class RouteRefreshScopingTests(MemoFixture):
         self.assertFalse(previews.call_args.kwargs.get('include_tree',True))
 
 
+class NavigationScopeCacheTests(MemoFixture):
+    def setUp(self):
+        super().setUp()
+        ProtocolContextFastPathTests.publish(self)
+        from disco.navigation.tree_pages import TreePages
+        self.pager=TreePages(self.service)
+
+    def builds(self):
+        from disco.navigation.tree_pages import TreePages
+        return patch.object(TreePages,'_build_scope',autospec=True,side_effect=TreePages._build_scope)
+
+    def test_pages_at_every_depth_anchor_and_selection_share_one_scope(self):
+        body={'protocol_uuid':self.protocol,'splits':'cell,parameters/example'}
+        with self.builds() as builds:
+            root=self.pager.page(body)
+            branch=root['branches'][0]
+            child=self.pager.page({**body,'path':branch['path'],'revision':root['revision']})
+            self.pager.page({**body,'anchor_uuid':self.ids[0]})
+            chosen=self.pager.selection({**body,'path':branch['path'],'revision':root['revision']},branch['count'])
+        self.assertEqual(builds.call_count,1)
+        self.assertEqual(len(chosen['epoch_uuids']),branch['count'])
+        self.assertEqual(child['revision'],root['revision'])
+
+    def test_frozen_hits_compare_no_fingerprint_dictionaries(self):
+        from workspace_service import FrozenDict
+        body={'splits':'cell,parameters/example'}
+        self.pager.page(body)
+        compared=[]
+        original=FrozenDict.__eq__
+        def eq(left,right):
+            if left is self.service._fingerprints or right is self.service._fingerprints:compared.append(1)
+            return original(left,right)
+        with patch.object(FrozenDict,'__eq__',eq),patch.object(FrozenDict,'__ne__',lambda a,b:not eq(a,b)), \
+             self.builds() as builds:
+            self.pager.page(body)
+        self.assertEqual((builds.call_count,compared),(0,[]))
+
+    def test_tag_filtered_scope_is_cached_under_its_annotation_generation(self):
+        body={'protocol_uuid':self.protocol,'splits':'cell','filters':{'tag':'chosen'}}
+        with self.builds() as builds:
+            first=self.pager.page(body);self.pager.page(body)
+        self.assertEqual(builds.call_count,1)
+        self.fixture.edit('epoch',self.ids[0],['chosen'])
+        with self.builds() as builds:
+            changed=self.pager.page(body)
+        self.assertEqual(builds.call_count,1)
+        self.assertEqual((first['count'],changed['count']),(0,1))
+        self.assertNotEqual(first['revision'],changed['revision'])
+
+    def test_unfrozen_read_model_never_caches_annotation_scopes(self):
+        self.service.rows=dict(self.service.rows)
+        body={'protocol_uuid':self.protocol,'splits':'cell','filters':{'tag':'chosen'}}
+        with self.builds() as builds:
+            self.pager.page(body);self.pager.page(body)
+        self.assertEqual(builds.call_count,2)
+
+
 class OverviewMemoTests(MemoFixture):
     def overview(self):
         return self.get('/api/overview')
