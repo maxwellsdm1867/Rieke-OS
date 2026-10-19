@@ -77,6 +77,22 @@ def _protocol_locks(service,protocols):
 
 
 MEMO_ENTRIES=4
+DELTA_MAX_RECORDS=1000
+
+
+def _shared_token(witness):
+    """The shared scope token in a witness (every shared/time field carries it)."""
+    return next((token for field,token in witness[1] if field in SHARED_FIELDS or field in TIME_FIELDS),None)
+
+
+def _shared_values(cell,epoch):
+    """Shared field arrays for one epoch from its cell and direct records."""
+    effective=cell+epoch
+    return {'annotations/cell/tags':sorted({tag for r in cell for tag in r['tags']}),
+            'annotations/epoch/tags':sorted({tag for r in epoch for tag in r['tags']}),
+            'annotations/effective/tags':sorted({tag for r in effective for tag in r['tags']}),
+            'annotations/authors':sorted({r['author_name'] for r in effective if r['tags']}),
+            'annotations/author_uuids':sorted({r['profile_uuid'] for r in effective if r['tags']})}
 
 
 _PLAIN=frozenset('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_./:-')
@@ -135,6 +151,7 @@ class _Entry:
     """One generation's tag states, evidence and lazily inverted values."""
     def __init__(self,states,evidence):
         self.states,self.evidence=states,evidence;self._groups={};self._plain={}
+        self.publication=None;self.shared=None;self.shared_token=None
 
     def groups(self,field):
         """Epochs grouped by exact tag array; untagged epochs are implicit."""
@@ -235,9 +252,12 @@ class TagPredicates:
     def _entry(self,fields):
         """States/evidence for these fields, memoized per verified generation.
 
-        A hit performs only witness token reads. Entries are stored only when the
-        witness is unchanged after the build; an unavailable witness always
-        recomputes, exactly as before.
+        A hit performs only witness token reads. After a shared tag write, the
+        previous entry for these fields is patched from the shared change feed
+        when that feed proves the complete set of changed records; otherwise
+        the entry is rebuilt. Entries are stored only when the witness is
+        unchanged after the build; an unavailable witness always recomputes,
+        exactly as before.
         """
         fields=frozenset(fields)
         witness=self._witness(fields)
@@ -245,11 +265,83 @@ class TagPredicates:
         if witness is not None and memo is not None and witness in memo:
             memo[witness]=memo.pop(witness)  # Most recently used last.
             return memo[witness]
-        entry=self._build(fields,self._derived(witness[0] if witness else None))
+        tracker=getattr(self.service,'_explore_state_generation',None)
+        token=tracker.token(None) if witness is not None and tracker is not None else None
+        entry=self._delta(fields,witness,memo,tracker) if witness is not None else None
+        if entry is None:
+            entry=self._build(fields,self._derived(witness[0] if witness else None))
         if witness is not None and self._witness(fields)==witness:
+            shared=_shared_token(witness)
+            entry.shared_token=token if token is not None and shared==(token.shared_epoch,token.shared_generation) else None
             if memo is None:memo=self.service._tag_predicate_memo={}
             memo[witness]=entry
             while len(memo)>MEMO_ENTRIES:memo.pop(next(iter(memo)))
+        return entry
+
+    def _delta(self,fields,witness,memo,tracker):
+        """Patch the latest entry for `fields` from the shared change feed, or None.
+
+        Only when the publication, every protocol token and the field set are
+        unchanged, the previous entry carries the exact shared token it was
+        built at, and the feed returns every changed record up to the current
+        witness. Changed records are re-read and validated by key.
+        """
+        shared_fields=fields & SHARED_FIELDS.keys()
+        store=getattr(self.service,'shared_annotations',None)
+        if not shared_fields or not memo or tracker is None or store is None:return None
+        reader=getattr(store,'_index_records',None);validate=getattr(store,'_index_record_tags',None)
+        if reader is None or validate is None:return None
+        common,tokens=witness
+        current=_shared_token(witness)
+        previous=None
+        for key,candidate in reversed(memo.items()):
+            if (key[0]==common and len(key[1])==len(tokens) and {name for name,_ in key[1]}=={name for name,_ in tokens}
+                    and all(value==dict(key[1])[name] for name,value in tokens if name.startswith(PREFIX))
+                    and getattr(candidate,'shared_token',None) is not None and getattr(candidate,'shared',None) is not None):
+                previous=candidate;break
+        if previous is None:return None
+        change=tracker.shared_changes(previous.shared_token)
+        if change is None:return None
+        rows,after=change
+        if after is None or (after.shared_epoch,after.shared_generation)!=current:return None
+        keys={}
+        for row in rows:
+            if row['target_kind'] in ('cell','epoch'):
+                keys[(row['target_kind'],row['target_uuid'],row['profile_uuid'])]=row
+        if len(keys)>DELTA_MAX_RECORDS:return None
+        fresh={}
+        if keys:
+            for row in reader([{'target_kind':kind,'target_uuid':target,'profile_uuid':profile} for kind,target,profile in keys]):
+                key=(row['target_kind'],row['target_uuid'],row['profile_uuid'])
+                if key not in keys:raise ValueError('Shared tag change read returned an unrequested record')
+                validate(row)
+                fresh[key]={name:copy.deepcopy(row[name]) for name in ('target_kind','target_uuid','profile_uuid','author_name','revision','tags')}
+        old=previous.shared;records={(r['target_kind'],r['target_uuid'],r['profile_uuid']):r for r in old['records']}
+        for key in keys:
+            if key in fresh:records[key]=fresh[key]
+            else:records.pop(key,None)
+        ordered=[records[key] for key in sorted(records)]
+        snapshot={**{name:value for name,value in old.items() if name not in ('records','revision')},
+                  'revision':checksum({'project_uuid':old['project_uuid'],'records':ordered}),'records':ordered}
+        derived=previous.publication
+        cell_records={};epoch_records={}
+        for row in ordered:
+            (cell_records if row['target_kind']=='cell' else epoch_records).setdefault(row['target_uuid'],[]).append(row)
+        rows_=self.service.rows;affected=set()
+        for kind,target,_ in keys:
+            if kind=='epoch':
+                if target in rows_:affected.add(target)
+            else:affected.update(derived.cell_epochs(target))
+        states={field:(dict(values) if field in shared_fields else values) for field,values in previous.states.items()}
+        for epoch in affected:
+            values=_shared_values(cell_records.get(rows_[epoch]['cell_uuid'],[]),epoch_records.get(epoch,[]))
+            for field in shared_fields:
+                if values[field]:states[field][epoch]=values[field]
+                else:states[field].pop(epoch,None)
+        evidence={**previous.evidence,'shared':snapshot}
+        evidence['revision']=derived.shared_revision([(p['protocol_uuid'],p['revision']) for p in evidence['protocols']],
+            snapshot['revision'],evidence['fields'])
+        entry=_Entry(states,evidence);entry.publication=derived;entry.shared=snapshot
         return entry
 
     def snapshot(self,fields):
@@ -301,13 +393,7 @@ class TagPredicates:
             for field in shared_fields: states[field]={}
             if shared_fields:
                 rows=self.service.rows
-                def values_for(cell,epoch):
-                    effective=cell+epoch
-                    return {'annotations/cell/tags':sorted({tag for r in cell for tag in r['tags']}),
-                            'annotations/epoch/tags':sorted({tag for r in epoch for tag in r['tags']}),
-                            'annotations/effective/tags':sorted({tag for r in effective for tag in r['tags']}),
-                            'annotations/authors':sorted({r['author_name'] for r in effective if r['tags']}),
-                            'annotations/author_uuids':sorted({r['profile_uuid'] for r in effective if r['tags']})}
+                values_for=_shared_values
                 # Only epochs with direct records or a recorded cell can carry a
                 # non-empty value; every other epoch is the empty array. Epochs
                 # that share a cell and have no direct record share one value.
@@ -327,6 +413,7 @@ class TagPredicates:
             evidence['revision']=derived.shared_revision([(p['protocol_uuid'],p['revision']) for p in protocols],
                 snapshot['revision'],sorted(shared_fields|time_fields))
         entry=_Entry(states,evidence);entry.publication=derived
+        entry.shared=evidence.get('shared')
         return entry
 
     def catalog_fields(self,ids,only=None):

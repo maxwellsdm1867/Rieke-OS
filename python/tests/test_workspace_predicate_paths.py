@@ -4,6 +4,7 @@ Results must equal the unmemoized reference exactly; work must not grow with
 project epochs on a warm request. The SQL doubles and the production
 StateGenerationAuthority come from the slow-read memo fixture.
 """
+import copy
 import cProfile
 import pstats
 import threading
@@ -268,6 +269,77 @@ class GenerationMemoTests(MemoFixture):
             TagPredicates(self.service).match(self.shared_predicate, self.ids)
         self.assertFalse(getattr(self.service, '_tag_predicate_memo', None))
         self.assertEqual(TagPredicates(self.service).match(self.shared_predicate, self.ids)[1], [self.ids[1]])
+
+
+class SharedChangeFeedTests(MemoFixture):
+    """After a shared write, tag states are patched from the change feed."""
+    def setUp(self):
+        super().setUp()
+        self.history = {}
+
+        def feed(after, limit=10000):
+            current = self.tracker.token()
+            before = self.history.get(after.shared_generation) if after is not None else None
+            if current is None or before is None:
+                return None
+            now = {self.key(row): row for row in self.fixture.records.to_dicts()}
+            changed = {key for key in before.keys() | now.keys() if before.get(key) != now.get(key)}
+            return [{'target_kind': kind, 'target_uuid': target, 'profile_uuid': profile,
+                     'last_generation': current.shared_generation, 'deleted': int(key not in now)}
+                    for key in sorted(changed) for kind, target, profile in [key]], current
+        self.tracker.shared_changes = feed
+
+    @staticmethod
+    def key(row):
+        return (row['target_kind'], row['target_uuid'], row['profile_uuid'])
+
+    def remember(self):
+        token = self.tracker.token()
+        self.history[token.shared_generation] = {self.key(row): copy.deepcopy(row) for row in self.fixture.records.to_dicts()}
+
+    def preview(self, predicate):
+        response = self.client.post('/api/explore/preview', json={'predicate': predicate, 'splits': 'cell'},
+                                    headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        return response.get_json()
+
+    def test_write_patches_states_from_feed_and_matches_reference(self):
+        cell = self.service.rows[self.ids[0]]['cell_uuid']
+        predicate = {'any': [{'field': 'annotations/effective/tags', 'operator': 'contains', 'value': 'drift'},
+                             {'field': 'annotations/authors', 'operator': 'exists'}]}
+        edits = [('epoch', self.ids[0], ['drift'], []), ('cell', cell, ['good'], []),
+                 ('epoch', self.ids[0], [], ['drift']), ('epoch', self.ids[1], ['drift', 'other'], [])]
+        self.fixture.edit('epoch', self.ids[1], ['seed'])
+        self.remember()
+        self.preview(predicate)
+        revisions = {}
+        for kind, target, add, remove in edits:
+            revision = revisions.get(target, 1 if target == self.ids[1] else 0)
+            self.fixture.edit(kind, target, add, remove, revision=revision)
+            revisions[target] = revision + 1
+            with self.subTest(edit=(kind, add, remove)):
+                with patch.object(TagPredicates, '_build', side_effect=AssertionError('rebuilt instead of patching')):
+                    patched = self.preview(predicate)
+                    fields = TagPredicates(self.service).snapshot({'annotations/effective/tags', 'annotations/authors'})
+                with self.unmemoized():
+                    self.assertEqual(patched, self.preview(predicate))
+                    self.assertEqual(fields, TagPredicates(self.service).snapshot({'annotations/effective/tags', 'annotations/authors'}))
+            self.remember()
+
+    def test_unprovable_feed_rebuilds(self):
+        predicate = {'field': 'annotations/epoch/tags', 'operator': 'contains', 'value': 'drift'}
+        self.preview(predicate)  # No remembered generation: the feed cannot prove changes.
+        self.fixture.edit('epoch', self.ids[0], ['drift'])
+        builds = []
+        original = TagPredicates._build
+
+        def counted(instance, fields, derived):
+            builds.append(fields)
+            return original(instance, fields, derived)
+        with patch.object(TagPredicates, '_build', counted):
+            result = self.preview(predicate)
+        self.assertEqual(len(builds), 1)
+        self.assertEqual(result['matched_count'], 1)
 
 
 class TagTimeWithoutTimeTableTests(MemoFixture):
