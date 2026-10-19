@@ -491,40 +491,46 @@ class ExplorerHistory:
         table = self.Membership
         if table is None or header.get('storage') != DELTA_STORAGE:
             return
-        chain = self._chain(header['revision_uuid'])
-        lineage = chain[-1]
+        lineage = header['lineage_uuid']  # Sealed in the delta: no chain walk for the common case.
         restriction = {'project_uuid': self.project_uuid, 'lineage_uuid': lineage}
-        indexed = (table & restriction).proj('added_revision_uuid', 'removed_revision_uuid').to_dicts()
-        if not indexed and header['delta']['removed'] and not header['delta']['added']:
-            return
-        recorded = {row['added_revision_uuid'] for row in indexed} | {row['removed_revision_uuid'] for row in indexed}
+
+        def recorded(**fields):  # One bounded existence probe, never the lineage's rows.
+            return bool((table & {**restriction, **fields}).proj().fetch(as_dict=True, limit=1))
+        revision = header['revision_uuid']
+        if recorded(added_revision_uuid=lineage):
+            # Indexed lineage: earlier links were recorded when they were bound.
+            if recorded(added_revision_uuid=revision) or recorded(removed_revision_uuid=revision):
+                return  # Rebinding an already recorded revision (e.g. after an undo).
+            links = [revision]
+        elif header['delta']['removed'] and not header['delta']['added']:
+            return  # A removal on an unindexed lineage leaves it unindexed: O(removed).
+        else:
+            links = list(reversed(self._chain(revision)))  # One-time backfill of the whole chain.
         pending, marks = {}, []
-        for revision in reversed(chain):
-            if indexed and revision in recorded:
-                continue
-            link = self.header(revision)
+        for link_uuid in links:
+            link = self.header(link_uuid)
             if link.get('storage') != DELTA_STORAGE:
-                for key, value in self.members(revision).items():  # One-time lineage backfill.
-                    pending[key] = {**restriction, 'epoch_uuid': key, 'added_revision_uuid': revision,
+                for key, value in self.members(link_uuid).items():
+                    pending[key] = {**restriction, 'epoch_uuid': key, 'added_revision_uuid': link_uuid,
                                     'metadata_hash': value, 'removed_revision_uuid': None}
                 continue
             for row in link['delta']['added']:
-                pending[row['uuid']] = {**restriction, 'epoch_uuid': row['uuid'], 'added_revision_uuid': revision,
+                pending[row['uuid']] = {**restriction, 'epoch_uuid': row['uuid'], 'added_revision_uuid': link_uuid,
                                         'metadata_hash': row['metadata_hash'], 'removed_revision_uuid': None}
             for key in link['delta']['removed']:
                 if key in pending:
-                    pending[key]['removed_revision_uuid'] = revision
+                    pending[key]['removed_revision_uuid'] = link_uuid
                 else:
-                    marks.append((key, revision))
+                    marks.append((key, link_uuid))
         if pending:
             table.insert(list(pending.values()))
         if marks:
-            chain_set = set(chain)
+            chain_set = set(self._chain(revision))
             current = {row['epoch_uuid']: row for row in (table & restriction & [
                 {'epoch_uuid': key} for key, _ in marks]).to_dicts()
                 if row['added_revision_uuid'] in chain_set and row['removed_revision_uuid'] is None}
-            for key, revision in marks:
-                table.update1({**current[key], 'removed_revision_uuid': revision})
+            for key, link_uuid in marks:
+                table.update1({**current[key], 'removed_revision_uuid': link_uuid})
 
     def retire_delta(self, revision_uuid):
         """Remove an undone delta's rows from its lineage: one DELETE, caller's transaction."""
