@@ -321,7 +321,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         revision = checksum({"query": {**result, "source_scope": {"revision": result["source_scope"]["revision"]}}, "curation": curation})
         return result, curation, revision
 
-    from workspace_protocol_state import PROTOCOL_STATE_CONTRACT, ProtocolStateReader, same_protocol_state
+    from workspace_protocol_state import PROTOCOL_STATE_CONTRACT, ProtocolStateReader, same_protocol_state, native_state_contract
     selected_state = ProtocolStateReader(service, store, shared_annotations, legacy_state)
 
     def annotation_generation(token=None):
@@ -497,8 +497,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             'propagation_required': bool(affected),
             'source_scope_revision': result['source_scope']['revision']}
         payload["query_revision"] = revision
-        if revision.startswith(PROTOCOL_STATE_CONTRACT+':'):
-            payload['query_revision_contract']=PROTOCOL_STATE_CONTRACT
+        if native_state_contract(revision):
+            payload['query_revision_contract']=native_state_contract(revision)
             payload['annotation_generation']=annotation_generation()
         payload["expected_query_revision"] = revision
         payload["binding"] = compact_binding(result.get('dataset_binding'))
@@ -599,7 +599,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 'excluded_sources':sorted({row['source_sha256'] for row in affected}),
                 'propagation_required':bool(affected),'source_scope_revision':scope['revision']},
             'query_revision':context['query_revision'],'expected_query_revision':context['query_revision'],
-            'query_revision_contract':PROTOCOL_STATE_CONTRACT,'expected_binding_version':context['binding_version'],
+            'query_revision_contract':context['query_revision_contract'],'expected_binding_version':context['binding_version'],
             'annotation_generation':annotation_generation(context['generation'])}
         if shared_annotations and tag_counts:
             summary=shared_annotations.summary(rows)
@@ -1364,7 +1364,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if proof is None:context=None
             etag=None
             if context is not None:
-                members=proof['members']
+                from workspace_protocol_state import proof_members
+                members=proof_members(proof)
                 exported,signature=store.protocol_export_status(protocol_uuid,members)
                 rig_token=recording_rig_token(members)
                 # The summary shows tag counts; v4 revisions omit shared tags.
@@ -1416,7 +1417,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 payload={key:payload[key] for key in allowed if key in payload}
                 payload['binding']=compact_binding(binding)
                 payload.update(query_revision=before[0],expected_query_revision=before[0],expected_binding_version=before[1])
-                if before[0].startswith(PROTOCOL_STATE_CONTRACT+':'):payload['query_revision_contract']=PROTOCOL_STATE_CONTRACT
+                if native_state_contract(before[0]):payload['query_revision_contract']=native_state_contract(before[0])
                 if native is None and selected_state.read_selected(protocol_uuid,[])[1:]!=before:
                     raise StaleWorkspace('Protocol changed while opening this view. Refresh and retry.')
                 return jsonify(payload)
@@ -1508,7 +1509,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 row["export_count"] = export_counts[row["epoch_uuid"]]
             page["query_revision"] = revision
             page['expected_binding_version']=binding_version
-            if revision.startswith(PROTOCOL_STATE_CONTRACT+':'):page['query_revision_contract']=PROTOCOL_STATE_CONTRACT
+            if native_state_contract(revision):page['query_revision_contract']=native_state_contract(revision)
             if page_generation is not None and tracker.token(protocol_uuid)!=page_generation:
                 raise StaleWorkspace('Saved annotations changed while reading this page. Refresh and retry.')
             if shared_receipt is not None and (not native.accepts_shared(shared_receipt) if native is not None
@@ -2182,7 +2183,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             query_filters = service.validate_metadata_filters(body.get("filters", {}), protocol_uuid)
             if not isinstance(query_filters, dict):
                 raise ValueError("Export filters must be an object")
-            if (revision.startswith(PROTOCOL_STATE_CONTRACT+':') and annotation_dependent(query_filters)
+            if (native_state_contract(revision) and annotation_dependent(query_filters)
                     and body.get('annotation_generation') != annotation_generation()):
                 # Tag-filtered membership must match the previewed tags exactly.
                 raise StaleWorkspace("Tags changed since this export was previewed. Refresh before exporting.")

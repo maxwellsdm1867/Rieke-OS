@@ -800,5 +800,84 @@ class PredicateContractRefusalTests(MemoFixture):
         self.assertEqual(response.status_code,200,response.get_json())
 
 
+class ProtocolStateV5Tests(MemoFixture):
+    """Bound mains on a frozen publication: identity-based protocol-state-v5."""
+    def setUp(self):
+        super().setUp()
+        ProtocolContextFastPathTests.publish(self)
+
+    def bind(self):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        created=history.create(preview,self.service.sources,'catalog.json','fixture')
+        current=history.protocol_binding_header(self.protocol)
+        history.bind(created['revision_uuid'],self.protocol,current['version'] if current else 0,'fixture',{},2)
+        return created
+
+    def test_unbound_stays_v4_and_bound_uses_v5_without_a_metadata_digest(self):
+        unbound=self.reader.native_context(self.protocol)
+        self.assertEqual(unbound['query_revision_contract'],'protocol-state-v4')
+        self.bind()
+        with patch.object(self.reader,'_metadata',side_effect=AssertionError('v5 computed a metadata digest')):
+            bound=self.reader.native_context(self.protocol,self.ids[:1])
+            again=self.reader.native_context(self.protocol,self.ids[:1])
+        self.assertTrue(bound['query_revision'].startswith('protocol-state-v5:'))
+        self.assertEqual(bound['query_revision_contract'],'protocol-state-v5')
+        self.assertEqual(bound,again)
+        page=self.get(self.case.base+'/epochs?limit=5')
+        self.assertEqual(page['query_revision_contract'],'protocol-state-v5')
+        self.assertEqual(page['query_revision'],bound['query_revision'])
+
+    def test_v5_bare_revision_reads_no_members_and_prefers_revision_headers(self):
+        from disco.decisions.explorer import ExplorerHistory
+        created=self.bind()
+        self.reader.native_cache.clear()
+        bare=self.reader.native_context(self.protocol)
+        entry=self.reader.native_cache[self.protocol]
+        self.assertIsNone(entry['members'])  # A bare revision read never builds the member set.
+        self.reader.native_context(self.protocol,self.ids[:1])
+        self.assertIsNotNone(entry['members'])
+        # A history with sealed revision headers/members is read through them.
+        self.reader.native_cache.clear()
+        seal=self.case.explorer_history._recipe_cache[created['revision_uuid']]['content_sha256']
+        calls=[]
+        with patch.object(ExplorerHistory,'header',create=True,side_effect=lambda revision:calls.append('header') or
+                          {'content_sha256':seal,'source_revisions':['a'*64]}), \
+             patch.object(ExplorerHistory,'members',create=True,side_effect=lambda revision:calls.append('members') or list(self.ids)):
+            self.case.explorer_history._recipe_cache.clear()
+            context=self.reader.native_context(self.protocol,self.ids[:1])
+        self.assertEqual(calls,['header','members'])
+        self.assertEqual(context['query_revision'],self.reader.native_context(self.protocol)['query_revision'])
+        self.assertEqual(bare['query_revision'],context['query_revision'])
+
+    def test_v5_changes_with_each_named_input(self):
+        self.bind()
+        seen={self.reader.native_context(self.protocol)['query_revision']}
+        def changed(mutate):
+            mutate()
+            revision=self.reader.native_context(self.protocol)['query_revision']
+            self.assertNotIn(revision,seen);seen.add(revision)
+        changed(lambda:self.save_curation(review_state='approved'))       # curation generation
+        changed(lambda:self.bind())                                        # binding revision/version/seal
+        changed(lambda:setattr(self.service,'cells',self.service.cells))   # publication token
+        changed(lambda:self.service.set_source_state_provider(lambda:{'a'*64:{'query_excluded':True}}))  # source scope
+        # Shared-tag writes do not retire the curation authority (as in v4).
+        before=self.reader.native_context(self.protocol)['query_revision']
+        self.fixture.edit('epoch',self.ids[0],['shared'])
+        self.assertEqual(self.reader.native_context(self.protocol)['query_revision'],before)
+
+    def test_v5_refuses_outside_members_and_locked_assertion_uses_the_key(self):
+        self.bind()
+        with self.assertRaisesRegex(ValueError,'outside'):
+            self.reader.native_context(self.protocol,['00000000-0000-4000-8000-000000000123'])
+        context=self.reader.native_context(self.protocol)
+        from disco.decisions.curation import RevisionConflict
+        self.tracker.assert_current_locked=lambda expected:None
+        self.assertEqual(self.reader.assert_context_locked(self.protocol,context),context['query_revision'])
+        self.service.cells=self.service.cells  # Republish: the key no longer matches.
+        with self.assertRaises(RevisionConflict):
+            self.reader.assert_context_locked(self.protocol,context)
+
+
 if __name__=='__main__':
     unittest.main()
