@@ -78,7 +78,7 @@ def admitted_index(service):
     return Index()
 
 
-def build(source, output, epochs, protocol_epochs=None):
+def build(source, output, epochs, protocol_epochs=None, suite='core'):
     protocol_epochs = epochs if protocol_epochs is None else protocol_epochs
     if not 200 <= protocol_epochs <= epochs:
         raise ValueError("protocol_epochs must be 200..epochs")
@@ -228,10 +228,32 @@ def build(source, output, epochs, protocol_epochs=None):
 
     case.app.before_request_funcs.setdefault(None, []).insert(0, track_request)
     case.app.teardown_request_funcs.setdefault(None, []).append(finish_request)
+    if suite == 'app':
+        # The full App tags through SharedAnnotations, which requires a stored
+        # UUID author. Workbench actors keep the patched fixture identity.
+        tag_author = shared.default_profile
+        with shared.lock(), shared.dj.conn().transaction:
+            shared._ensure_profiles([{'profile_uuid': tag_author['profile_uuid'], 'display_name': tag_author['display_name']}], 'benchmark')
+        listed = {'profiles': [{'profile_uuid': tag_author['profile_uuid'], 'display_name': tag_author['display_name']}],
+                  'selected_profile_uuid': tag_author['profile_uuid']}
+    else:
+        listed = {'profiles': [{'profile_uuid': 'actor-one', 'display_name': 'Owned fixture'}], 'selected_profile_uuid': 'actor-one'}
+
     def profiles():
         if request.path == '/api/annotation-profiles':
-            return jsonify({'profiles': [{'profile_uuid': 'actor-one', 'display_name': 'Owned fixture'}], 'selected_profile_uuid': 'actor-one'})
+            return jsonify(listed)
     case.app.before_request_funcs.setdefault(None, []).insert(0, profiles)
+
+    def registry():
+        # Launcher inventory double for the full-App suite; the core shell never reads it.
+        if request.path == '/api/projects' and request.method == 'GET':
+            return jsonify({'current_project_uuid': service.project['project_uuid'], 'launcher': False,
+                            'managed_root': str(output), 'projects': [{
+                                'uuid': service.project['project_uuid'], 'name': 'Owned benchmark project',
+                                'path': str(Path(case.temp.name)), 'available': True, 'current': True,
+                                'database_kind': 'owned-fixture'}]})
+    if suite == 'app':
+        case.app.before_request_funcs.setdefault(None, []).insert(0, registry)
     meta = {'project': service.project['project_uuid'], 'protocol': service.protocol_id,
             'candidate': case.suggestion_rows.rows[0]['summary']['candidate_revision_uuid'],
             'epochs': epochs, 'protocol_epochs': protocol_epochs, 'ambient_count': epochs - protocol_epochs,
@@ -245,7 +267,7 @@ def build(source, output, epochs, protocol_epochs=None):
             'million_trace_expected': {'epoch_uuid': uid(incoming_start + 1), 'stream_uuid': stream, 'start': 0, 'count': 1000000, 'sample_rate': 10000, 'units': 'pA', 'values_first': 0, 'values_last': 999999, 'ramp': True, 'source_sha256': fixture.source_sha},
             'trace_streams': copy.deepcopy(service.rows[uid(0)]['streams']),
             'trace_stream': stream, 'trace_samples': 10000, 'trace_rate_hz': 10000,
-            'qualifying_scale': epochs == 1_000_000, 'fixture': 'workflow-owned-v4',
+            'qualifying_scale': epochs == 1_000_000, 'fixture': 'workflow-owned-v4', 'suite': suite,
             'admissions': ['transactional SQL doubles', 'synthetic metadata index catalog/projection; production predicate evaluator', 'source verification double'],
             'trace': 'three owned synthetic H5 ramps; real lazy reads',
             'owned_h5_path': str(tracefile.resolve()), 'native_qualification': False}
@@ -258,6 +280,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--epochs', type=int, default=1_000_000)
     parser.add_argument('--protocol-epochs', type=int, help='Active protocol scope including incoming; default is entire project')
+    parser.add_argument('--suite', choices=('core', 'app'), default='core', help='app adds the launcher inventory double and a stored tag author')
     args = parser.parse_args()
     if args.epochs < 200 or args.epochs > 1_000_000: parser.error('epochs must be 200..1000000')
     if args.protocol_epochs is not None and not 200 <= args.protocol_epochs <= args.epochs:
@@ -267,7 +290,7 @@ def main():
     cleanup = {'server_closed': False, 'fixture_closed': False, 'instrumentation_restored': False,
                'heap_closed': True}
     try:
-        fixture, app, meta = build(args.source_root.resolve(), args.output.resolve(), args.epochs, args.protocol_epochs)
+        fixture, app, meta = build(args.source_root.resolve(), args.output.resolve(), args.epochs, args.protocol_epochs, args.suite)
         # Exercise the same explicit dedicated-worker startup policy as desktop.
         # Older source revisions have no process-heap owner and keep their policy.
         if (args.source_root.resolve() / 'python/workspace_process_heap.py').is_file():

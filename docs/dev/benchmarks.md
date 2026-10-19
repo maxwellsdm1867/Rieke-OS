@@ -57,7 +57,8 @@ and receipt keys; current runners use the metadata package paths. Neither lookup
 imports historical code or rewrites an existing receipt.
 
 The core receipt schema is unchanged. Registry suite version 1.0.7 added the separate everyday-million and
-workflow-million tracks and 1.0.8 adds the diagnostic route-million track; core cases and sampling are unchanged, but
+workflow-million tracks 1.0.8 adds the diagnostic route-million track and 1.0.9 the diagnostic
+workflow-app track; core cases and sampling are unchanged, but
 the registry edit intentionally changes the core suite fingerprint. Retain older
 receipts as historical evidence and establish a matched current-suite baseline.
 A test relocation changes path keys
@@ -266,6 +267,36 @@ cleanup cannot qualify. Comparisons check ordinary action medians and trace
 endpoints using provisional review thresholds; retain improvements as well as
 regressions. Dirty-source runs remain development diagnostics; repeat the final
 committed source before delivery.
+
+### Full-App decoupling variants (diagnostic `--suite app`)
+
+`tools/benchmark_workflow.py run --suite app` uses the same runner, owned server,
+production build, raf-aligned click observer, two-frame readiness gate and
+request correlation as the fixed core. The browser loads the real product
+bootstrap (`src/main.jsx`), so the App's own change wiring
+(`useWorkspaceChanges`, typed events where a source has them, the merge-undo
+controller, focus/visibility listeners and retained tab panels) decides what
+each action re-reads. Only the launcher project inventory and a stored tag author
+are owned doubles, added by `server.py --suite app`. The core server and its
+fifteen variants are unchanged.
+
+Per sample, after untimed setup (open the protocol's Inspect tab and focus epoch
+2, which has no streams), the suite measures:
+
+- `curation.toggle` ×3: the focused row's include toggle, with exact `aria-pressed` state and a completed `POST …/curation`
+- `epoch.step`: Next epoch after those curation writes, and again after `tag.add` (adding an epoch tag); readiness is the focused row label and the epoch counter
+- `view.tab_return`: Overview, then back to Inspect, with nothing changed
+- `focus.return`: a synthetic hidden→visible `visibilitychange`, `blur` and `focus` while Edit Tree shows an explicit Cell 1 path; `path_kept` is recorded but does not gate readiness
+- `workbench.merge_all`: the Overview "Hold to merge all" gesture (the one-second hold is inside the elapsed time) through the merge receipt toast
+- `workbench.undo`: through "Merge undone"
+
+Every action reports elapsed time, in-action requests and bytes (from
+`Content-Length`), cancelled reads (`AbortError`, recorded and not counted as
+failures), and requests started within a fixed 1.5 s quiet window after
+readiness. Periodic App pollers are listed by path and counted separately in
+`trailing_foreground_counts`. `--smoke` uses 2,000 epochs. The track has its own
+registry entry (`workflow-app`, fixture `workflow-owned-v4+app-v1`); receipts
+compare only with the same suite, and it is not part of the required CI families.
 
 ## Harness compatibility before expensive comparisons
 

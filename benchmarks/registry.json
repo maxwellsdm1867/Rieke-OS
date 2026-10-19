@@ -1,7 +1,7 @@
 {
   "format": "rieke-benchmark-registry",
   "version": 1,
-  "suite_version": "1.0.8",
+  "suite_version": "1.0.9",
   "fixture_version": "native-truth-v1+mounted-workflow-500-v1",
   "samples": 4,
   "method": {
@@ -329,6 +329,78 @@
       ],
       "scope": "Owned browser production components and real Flask route composition over actual million metadata epochs. Transactional SQL, metadata index admission/projection and source verification are explicit fixture doubles. Ordinary action latency and instrumented module evidence are separate. Broader scenario variants, native desktop/compositor and storage qualification remain explicitly unmeasured.",
       "fixture_version": "workflow-owned-v4",
+      "default_protocol_epochs": 1000000,
+      "ci_protocol_epochs": 20000
+    },
+    "workflow-app": {
+      "version": "1.0.0",
+      "runner": "tools/benchmark_workflow.py --suite app",
+      "epochs": 1000000,
+      "samples": 3,
+      "smoke_epochs": 2000,
+      "max_startup_seconds": 600,
+      "max_browser_seconds": 7200,
+      "max_rss_bytes": 6442450944,
+      "comparison": {
+        "relative": 0.25,
+        "absolute_ms": 5.0
+      },
+      "cases": [
+        {
+          "id": "curation.toggle",
+          "variants": [
+            "focused-1",
+            "focused-2",
+            "focused-3"
+          ],
+          "trace": false
+        },
+        {
+          "id": "epoch.step",
+          "variants": [
+            "after-curation",
+            "after-tag"
+          ],
+          "trace": false
+        },
+        {
+          "id": "tag.add",
+          "variants": [
+            "focused-epoch"
+          ],
+          "trace": false
+        },
+        {
+          "id": "view.tab_return",
+          "variants": [
+            "inspect-unchanged"
+          ],
+          "trace": false
+        },
+        {
+          "id": "focus.return",
+          "variants": [
+            "edit-tree-open-path"
+          ],
+          "trace": false
+        },
+        {
+          "id": "workbench.merge_all",
+          "variants": [
+            "overview-hold"
+          ],
+          "trace": false
+        },
+        {
+          "id": "workbench.undo",
+          "variants": [
+            "toast"
+          ],
+          "trace": false
+        }
+      ],
+      "scope": "Real product bootstrap (src/main.jsx) and App change wiring in an owned production browser over the owned million-epoch workflow fixture; launcher inventory is an owned double. Click-to-correct elapsed time plus in-action and fixed-window trailing request counts and bytes. No measured action reads a waveform. Same SQL/index/source-verification doubles as workflow-million; not native, compositor or release qualification. Diagnostic: not part of the required CI families.",
+      "fixture_version": "workflow-owned-v4+app-v1",
       "default_protocol_epochs": 1000000,
       "ci_protocol_epochs": 20000
     },

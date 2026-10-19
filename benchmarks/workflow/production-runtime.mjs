@@ -15,7 +15,7 @@ export function runtimeOption(runtime='production',profile=false){
  return runtime;
 }
 
-export async function buildWorkflowProduction(source,meta,output){
+export async function buildWorkflowProduction(source,meta,output,entrySource=fixtureSource(meta)){
  const workspace=path.join(source,'workspace-app'),require=createRequire(path.join(workspace,'package.json'));
  const {build}=await import(pathToFileURL(require.resolve('vite')));
  const {default:react}=await import(pathToFileURL(path.join(workspace,'node_modules/@vitejs/plugin-react/dist/index.js')));
@@ -24,7 +24,7 @@ export async function buildWorkflowProduction(source,meta,output){
  try{
  await fs.symlink(path.join(workspace,'src'),path.join(root,'src'),'dir');
  await fs.symlink(await fs.realpath(path.join(workspace,'node_modules')),path.join(root,'node_modules'),'dir');
- const fixture=fixtureSource(meta),fixtureHash=sha(fixture);
+ const fixture=entrySource,fixtureHash=sha(fixture);
  await fs.writeFile(path.join(root,'fixture.jsx'),fixture);
  const reactVersion=JSON.parse(await fs.readFile(path.join(workspace,'node_modules/react/package.json'),'utf8')).version;
  await fs.writeFile(path.join(root,'attestation.js'),`import React from 'react';\nwindow.__workflowProduction={mode:import.meta.env.MODE,production:import.meta.env.PROD,react:React.version,developmentOwnerCounter:'recentlyCreatedOwnerStacks' in React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE,fixture_sha256:${JSON.stringify(fixtureHash)}};\n`);

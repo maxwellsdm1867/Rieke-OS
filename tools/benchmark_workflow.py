@@ -26,7 +26,8 @@ ROOT = Path(__file__).resolve().parents[1]
 FORMAT = 'disco-workflow-v1'
 BROWSER_FORMAT = 'disco-workflow-browser-v1'
 PRODUCTION_RUNTIME = 'vite-proxy-react-production-v1'
-PROVENANCE_KEYS = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','module_timing','fixture','runtime','production_build')
+PROVENANCE_KEYS = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','module_timing','fixture','runtime','production_build','suite')
+SUITES = {'core': 'workflow-million', 'app': 'workflow-app'}
 
 
 def validate_runtime(runtime, profile):
@@ -346,8 +347,10 @@ def compare_metrics(baseline, candidate, policy):
     return {'status':'review_required' if findings else 'passed','review_required':findings,'metrics':rows}
 
 
-def config():
-    return json.loads((ROOT/'benchmarks/registry.json').read_text())['stress_tracks']['workflow-million']
+def config(suite='core'):
+    if suite not in SUITES:
+        raise ValueError('Unknown workflow suite')
+    return json.loads((ROOT/'benchmarks/registry.json').read_text())['stress_tracks'][SUITES[suite]]
 
 
 def harness():
@@ -448,6 +451,14 @@ def metrics(browser, requests, cfg):
             'profile_total_ms':statistics.median(s['total_ms'] for s in profile_samples) if profile_samples else None,
             'modules':{key:statistics.median(p.get(key,0) for p in profiles) for key in sorted(keys)},
             'request_counts':[len(s['requests']) for s in ordinary],
+            **({'request_bytes':[sum(r.get('bytes') or 0 for r in s['requests']) for s in ordinary],
+                'aborted_counts':[len(s.get('aborted',[])) for s in ordinary],
+                'trailing_request_counts':[len(s['trailing']['requests']) for s in ordinary],
+                'trailing_foreground_counts':[sum(1 for r in s['trailing']['requests'] if r['url'].split('?')[0] not in s['trailing']['background_paths']) for s in ordinary],
+                'trailing_bytes':[sum(r.get('bytes') or 0 for r in s['trailing']['requests']) for s in ordinary],
+                'request_paths':sorted({r['method']+' '+r['url'].split('?')[0] for s in ordinary for r in s['requests']+s['trailing']['requests']}),
+                'path_kept':[s['correctness'].get('path_kept') for s in ordinary] if any('path_kept' in s['correctness'] for s in ordinary) else None}
+               if all('trailing' in s for s in ordinary) else {}),
             'ordinary_samples_ms':[s['total_ms'] for s in ordinary],
             'profile_samples_ms':[s['total_ms'] for s in profile_samples],
             'module_timings':{key:{'median_call_ms':statistics.median(times),'calls':len(times)}
@@ -557,19 +568,19 @@ def stop_owned(child, identities):
     return not remaining
 
 
-def run(source_root, output, *, smoke=False, browser_executable=None, protocol_epochs=None, profile=False, module_timing=False, runtime='production'):
+def run(source_root, output, *, smoke=False, browser_executable=None, protocol_epochs=None, profile=False, module_timing=False, runtime='production', suite='core'):
     validate_runtime(runtime, profile)
-    cfg = config()
+    cfg = config(suite)
     source_root,output = source_root.resolve(),output.resolve()
     output.mkdir(parents=True,exist_ok=False)
-    epochs,samples = (1000,1) if smoke else (cfg['epochs'],cfg['samples'])
+    epochs,samples = (cfg.get('smoke_epochs',1000),1) if smoke else (cfg['epochs'],cfg['samples'])
     protocol_epochs = epochs if protocol_epochs is None else protocol_epochs
     if type(protocol_epochs) is not int or not 200 <= protocol_epochs <= epochs:
         raise ValueError('Protocol epochs must be 200..project epochs')
     receipt = {'format':FORMAT,'status':'running','runtime':runtime,'production_build':None,'source_root':str(source_root),
                'source_start':query_bench.source(source_root),'harness_start':harness(),
                'environment':query_bench.environment(),'config':cfg,'epochs':epochs,
-               'samples':samples,'protocol_epochs':protocol_epochs,'profile':profile,'module_timing':module_timing,'smoke':smoke,'cleanup':{},'metrics':{},'limitations':[]}
+               'samples':samples,'protocol_epochs':protocol_epochs,'profile':profile,'module_timing':module_timing,'smoke':smoke,'suite':suite,'cleanup':{},'metrics':{},'limitations':[]}
     query_bench.write(output/'receipt.json',receipt)
     server=browser=None
     started = time.monotonic()
@@ -577,7 +588,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
     server_ids,browser_ids = {},{}
     try:
         server,stream,deadline = execute_owned([sys.executable,'-B',str(ROOT/'benchmarks/workflow/server.py'),
-            '--source-root',str(source_root),'--output',str(output/'server'),'--epochs',str(epochs),'--protocol-epochs',str(protocol_epochs)],
+            '--source-root',str(source_root),'--output',str(output/'server'),'--epochs',str(epochs),'--protocol-epochs',str(protocol_epochs)]+(['--suite',suite] if suite != 'core' else []),
             output/'server.log',cfg['max_startup_seconds'],cfg['max_rss_bytes'],server_ids)
         streams.append(stream)
         meta_path = output/'server/server.json'
@@ -593,7 +604,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
         receipt['fixture'] = metadata
         command = ['node',str(ROOT/'benchmarks/workflow/browser.mjs'),'--source-root',str(source_root),
                    '--server-json',str(meta_path),'--output',str(output/'browser'),'--samples',str(samples),
-                   '--profile',str(profile).lower(),'--module-timing',str(module_timing).lower(),'--runtime',runtime]
+                   '--profile',str(profile).lower(),'--module-timing',str(module_timing).lower(),'--runtime',runtime,'--suite',suite]
         if smoke:
             # Small-fixture compatibility checks must expose stale UI contracts
             # before the million-row lane, not consume its ten-minute action waits.
@@ -613,6 +624,8 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
                 break
             time.sleep(.25)
         browser_result = json.loads((output/'browser/browser.json').read_text())
+        if browser_result.get('suite', 'core') != suite:
+            raise ValueError('Browser suite differs from request')
         if browser_result.get('runtime') != runtime:
             raise ValueError('Browser runtime differs from request')
         if runtime == 'production':
@@ -686,7 +699,7 @@ def load_receipt(path, *, diagnostic=False):
         raise ValueError('Development workflow is diagnostic-only; production runtime required for qualification')
     if receipt.get('format') != FORMAT or receipt.get('status') != allowed_status or receipt.get('smoke') is not False:
         raise ValueError('Missing/failed/diagnostic workflow receipt')
-    if receipt.get('config') != config() or receipt.get('harness_start') != harness():
+    if receipt.get('config') != config(receipt.get('suite', 'core')) or receipt.get('harness_start') != harness():
         raise ValueError('Different workflow suite; rerun both sources with this harness')
     for boundary in ('source_start','source_end'):
         query_bench.validate_source(receipt.get(boundary))
@@ -708,7 +721,7 @@ def load_receipt(path, *, diagnostic=False):
     provenance = path.parent/'provenance.json'
     keys = PROVENANCE_KEYS
     if (query_bench.sha(provenance.read_bytes()) != receipt.get('provenance_sha256')
-            or json.loads(provenance.read_text()) != {key:receipt[key] for key in keys}):
+            or json.loads(provenance.read_text()) != {key:receipt[key] for key in keys if key in receipt}):
         raise ValueError('Provenance evidence changed')
     required = {'browser/browser.json','server/requests.jsonl','server/server.json','server/cleanup.json'}
     if not required.issubset(receipt.get('evidence_sha256',{})):
@@ -745,6 +758,8 @@ def load_receipt(path, *, diagnostic=False):
 
 def compare(baseline_path, candidate_path, output):
     baseline,candidate = load_receipt(baseline_path),load_receipt(candidate_path)
+    if baseline.get('suite', 'core') != candidate.get('suite', 'core'):
+        raise ValueError('Incomparable workflow suite')
     for key in ('config','harness_start','environment','browser_environment','epochs','protocol_epochs'):
         if baseline[key] != candidate[key]:
             raise ValueError(f'Incomparable workflow {key}')
@@ -776,6 +791,7 @@ def main():
     command.add_argument('--runtime',choices=('production','development'),default='production',help='Production qualifies; explicit development is diagnostic-only')
     command.add_argument('--profile',action='store_true',help='Collect optional module diagnostics after ordinary samples; excluded from regression gate')
     command.add_argument('--module-timing',action='store_true',help='Collect built-in module elapsed timers during ordinary requests')
+    command.add_argument('--suite',choices=tuple(SUITES),default='core',help='core: fixed fifteen-variant shell; app: full-App decoupling variants')
     comparison = commands.add_parser('compare')
     comparison.add_argument('baseline',type=Path)
     comparison.add_argument('candidate',type=Path)
@@ -791,7 +807,7 @@ def main():
             import tempfile
             with (Path(tempfile.gettempdir())/'disco-everyday-million.lock').open('a') as lock:
                 fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-                print(run(args.source_root,args.output,smoke=args.smoke,browser_executable=args.browser_executable,protocol_epochs=args.protocol_epochs,profile=args.profile,module_timing=args.module_timing,runtime=args.runtime))
+                print(run(args.source_root,args.output,smoke=args.smoke,browser_executable=args.browser_executable,protocol_epochs=args.protocol_epochs,profile=args.profile,module_timing=args.module_timing,runtime=args.runtime,suite=args.suite))
         elif args.command == 'compare':
             result = compare(args.baseline,args.candidate,args.output)
             print(json.dumps({'status':result['status'],'review_required':result['review_required']}))
