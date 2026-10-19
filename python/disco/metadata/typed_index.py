@@ -60,6 +60,9 @@ class Budget:
         self.max_seconds = max_seconds
         self.min_free = min_free_gib * 1024**3
         self.max_rss = max_rss_gib * 1024**3
+        # The budget bounds this build's own growth of the process's peak
+        # resident memory, not memory the app already held when it started.
+        self.baseline = _rss_bytes()
         self.reason = None
         self.last = 0
         self.cancelled = cancelled
@@ -73,7 +76,7 @@ class Budget:
             self.reason = 'build cancelled'
         elif now-self.started > self.max_seconds:
             self.reason = 'phase time budget exceeded'
-        elif usage > self.max_rss:
+        elif usage - self.baseline > self.max_rss:
             self.reason = 'RSS budget exceeded'
         elif shutil.disk_usage(self.directory).free < self.min_free:
             self.reason = 'free disk reserve reached'
