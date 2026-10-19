@@ -248,3 +248,19 @@ list. Annotation predicates and anything else outside that contract use the
 exact path. Results that freeze membership (run, revisions, exports, baseline
 diffs) keep the exact membership. Coverage:
 `python/tests/test_workspace_counted_preview.py`.
+
+## Query runs and inspection pages
+
+Over a frozen publication with the typed index, a metadata predicate's query
+run (`POST /api/explore/run` with `catalog_summary: false`) records its counts
+without listing matches: the matched count (exact per-value sums for
+single-field predicates, otherwise one typed `COUNT`), the distinct cell count
+and the version-2 tree revision. Inspection pages (`POST /api/explore/epochs`)
+first check the revision, then read one typed window ordered by the inspection
+chronology `chronology_rank` (date, time of day of `start_time`, UUID: exactly
+`tree_pages._chronology`), with the total, anchor position (a count of earlier
+matches) and the cell list (per-cell counts in order of first appearance)
+computed in SQL. Results equal the exact scope reader; annotation predicates,
+unfrozen adapters and replaced policies use the exact path. A run does not
+freeze membership; revisions and exports keep exact membership. Coverage:
+`python/tests/test_workspace_query_run.py`.

@@ -26,7 +26,32 @@ def register_matching_epoch_routes(app, service, db_lock, registration_locks, re
             cell = str(uuid.UUID(cell))
         include_cells = body.get('include_cells',False)
         if type(include_cells) is not bool:raise ValueError('include_cells must be boolean')
+        def page_response(selected, offset, total, revision, anchor_index, cells):
+            keys = ('epoch_uuid','cell_uuid','cell_label','cell_type','date','start_time','block_uuid','epoch_number','protocol_name','duration_seconds','streams')
+            include_cells = cells is not None
+            shared=getattr(service,'shared_annotations',None)
+            annotations=shared.for_epochs(selected) if shared else {}
+            if shared and include_cells:
+                cell_ids=list(cells)
+                for start in range(0,len(cell_ids),1000):
+                    records=shared.read_targets('cell',cell_ids[start:start+1000])
+                    for key,record in records.items():
+                        cells[key]['annotations']={'cell_tags':record['tags'],'revisions':record['revisions']}
+            return jsonify(epochs=[{**{key:row.get(key) for key in keys},**({'annotations':annotations[row['epoch_uuid']]} if shared else {})} for row in selected],
+                           offset=offset,limit=limit,total=total,has_more=offset+limit<total,
+                           revision=revision,anchor_index=anchor_index,anchor_uuid=anchor,
+                           **({'cells':list(cells.values())} if include_cells else {}))
+
         with db_lock, registration_locks():
+            counted = getattr(service, 'counted_epoch_page', None)
+            plan = counted(body['predicate'], body['splits'], expected, offset=offset, limit=limit, anchor_uuid=anchor,
+                           cell_uuid=cell, include_cells=include_cells) if counted is not None else None
+            if plan is not None:
+                # One typed window; no match list is built.
+                if plan.get('stale'):
+                    return jsonify(error='Predicate results changed. Refresh the preview before inspecting or exporting.'), 409
+                return page_response(plan['rows'], plan['offset'], plan['total'], plan['revision'], plan['anchor_index'],
+                                     {item['cell_uuid']: item for item in plan['cells']} if include_cells else None)
             rows, _, _, _, _, revision = TreePages(service)._scope({'predicate':body['predicate'],'splits':body['splits']})
             if expected != revision:
                 return jsonify(error='Predicate results changed. Refresh the preview before inspecting or exporting.'), 409
@@ -45,17 +70,6 @@ def register_matching_epoch_routes(app, service, db_lock, registration_locks, re
                 if anchor_index is None:
                     raise ValueError('Epoch is outside this predicate')
                 offset = anchor_index // limit * limit
-            keys = ('epoch_uuid','cell_uuid','cell_label','cell_type','date','start_time','block_uuid','epoch_number','protocol_name','duration_seconds','streams')
-            selected=rows[offset:offset+limit]
-            shared=getattr(service,'shared_annotations',None)
-            annotations=shared.for_epochs(selected) if shared else {}
-            if shared and include_cells:
-                cell_ids=list(cells)
-                for start in range(0,len(cell_ids),1000):
-                    records=shared.read_targets('cell',cell_ids[start:start+1000])
-                    for key,record in records.items():
-                        cells[key]['annotations']={'cell_tags':record['tags'],'revisions':record['revisions']}
-            return jsonify(epochs=[{**{key:row.get(key) for key in keys},**({'annotations':annotations[row['epoch_uuid']]} if shared else {})} for row in selected],
-                           offset=offset,limit=limit,total=len(rows),has_more=offset+limit<len(rows),
-                           revision=revision,anchor_index=anchor_index,anchor_uuid=anchor,
-                           **({'cells':list(cells.values())} if include_cells else {}))
+            return page_response(rows[offset:offset+limit], offset, len(rows), revision, anchor_index,
+                                 cells if include_cells else None)
+

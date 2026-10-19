@@ -1926,11 +1926,14 @@ class WorkspaceService:
         serial = publication_serial(self)
         with typed_reader(self) as reader:
             validated = reader._validate(predicate)
-            matched = reader.count(validated, sources)
+            matched = reader.single_field_count(validated) if sources is None else None
+            if matched is None:
+                matched = reader.count(validated, sources)
             cached = getattr(self, '_eligible_count', None)
             key = (serial, scope['revision'])
             if cached is None or cached[0] != key:
-                cached = self._eligible_count = (key, reader.count(None, sources))
+                # Without an excluded source every published epoch is eligible.
+                cached = self._eligible_count = (key, len(self.rows) if sources is None else reader.count(None, sources))
         registered = self.disk_index.catalog()
         fields = [{key: field[key] for key in ('id', 'label', 'category', 'path', 'components') if key in field}
                   for field in registered['fields']]
@@ -1946,6 +1949,78 @@ class WorkspaceService:
                 'total_source': cached[1], 'total_catalog': len(self.rows), 'matched_count': matched,
                 'source_scope': scope, 'source_revisions': scope['active_source_revisions'],
                 'metadata_fingerprint_version': 2}
+
+    def _typed_query_context(self, predicate, splits):
+        """(validated, typed scope, order, revision) for a counted typed read, or None."""
+        from disco.navigation.tag_predicates import referenced_fields
+        from disco.navigation.tree_pages import predicate_publication, selection_revision
+        if (referenced_fields(predicate) or getattr(self, 'typed_index', None) is None
+                or predicate_publication(self) is None):
+            return None
+        scope = self.source_scope()
+        sources = {'sources': list(scope['active_source_revisions'])} if scope['excluded_source_revisions'] else None
+        definitions = {field['id']: field for field in self.disk_index.catalog()['fields']}
+        order = parse_splits(splits, definitions)
+        return scope, sources, order
+
+    def counted_epoch_page(self, predicate, splits, expected_revision, *, offset=0, limit=60, anchor_uuid=None,
+                           cell_uuid=None, include_cells=False):
+        """One inspection page of a predicate's matches from the typed index, or None.
+
+        Same rows, order (date, start-time of day, UUID), totals, anchor and
+        cell list as the exact scope reader, without listing every match. Only
+        for frozen publications and metadata predicates; None means use the
+        exact path. The revision is the frozen-publication tree revision.
+        """
+        from disco.metadata.explore_queries import typed_reader
+        from disco.navigation.tree_pages import selection_revision
+        self._ready()
+        context = self._typed_query_context(predicate, splits)
+        if context is None:
+            return None
+        scope, sources, order = context
+        serial = publication_serial(self)
+        with typed_reader(self) as reader:
+            validated = reader._validate(predicate)
+            revision = selection_revision(self, None, validated, {}, order, None)
+            if revision != expected_revision:
+                return {'stale': True, 'revision': revision}
+            narrowed = {**(sources or {}), 'cell': cell_uuid} if cell_uuid is not None else sources
+            cells = reader.chronology_cells(validated, sources) if include_cells else None
+            anchor_index = None
+            if anchor_uuid is not None:
+                anchor_index = reader.chronology_position(anchor_uuid, validated, narrowed)
+                if anchor_index is None:
+                    raise ValueError('Epoch is outside this predicate')
+                offset = anchor_index // limit * limit
+            total = (reader.single_field_count(validated) if narrowed is None else None)
+            if total is None:
+                total = reader.count(validated, narrowed)
+            identities = reader.chronology_page(validated, narrowed, offset, limit)
+        if publication_serial(self) != serial:
+            return None
+        rows = [self.rows[key] for key in identities]
+        cell_list = None
+        if cells is not None:
+            cell_list = []
+            for cell, amount, first in cells:
+                row = self.rows[first]
+                cell_list.append({'cell_uuid': cell, 'label': row['cell_label'], 'date': row['date'],
+                                  'cell_type': row.get('cell_type'), 'epochs': amount})
+        return {'rows': rows, 'total': total, 'offset': offset, 'anchor_index': anchor_index, 'cells': cell_list,
+                'revision': revision}
+
+    def run_summary(self, predicate, splits):
+        """Counted run result: the counted preview plus its distinct cell count, or None."""
+        preview = self._counted_preview(predicate, splits)
+        if preview is None:
+            return None
+        from disco.metadata.explore_queries import typed_reader
+        serial = publication_serial(self)
+        _, sources, _ = self._typed_query_context(predicate, splits)
+        with typed_reader(self) as reader:
+            preview['cell_count'] = reader.distinct_cells(reader._validate(predicate), sources)
+        return preview if publication_serial(self) == serial else None
 
     def _render_tree(self, rows, catalog, values, splits):
         definitions = {field['id']: field for field in catalog['fields']}

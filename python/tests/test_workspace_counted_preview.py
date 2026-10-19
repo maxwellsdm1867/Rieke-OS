@@ -102,5 +102,53 @@ class CountedPreviewTests(unittest.TestCase):
         self.assertEqual(result['matched_count'], len(self.service.rows))
 
 
+class SingleFieldCountTests(CountedPreviewTests):
+    """Value-count sums equal the typed SQL count and the native match."""
+    def test_single_field_counts_equal_sql_and_native_counts(self):
+        from disco.metadata.explore_queries import typed_reader
+        cell = self.service.rows[self.service.ids[0]]['cell_uuid']
+        cases = []
+        for field, values in (('parameters/example', [1, 2, 7]), ('parameters/optional', [None, 1]),
+                              ('cell type', [self.service.rows[self.service.ids[0]].get('cell_type') or 'x', 'nope']),
+                              ('cell', [cell])):
+            for operator in ('exists', 'missing', 'is_null'):
+                cases.append({'field': field, 'operator': operator})
+            for value in values:
+                cases += [{'field': field, 'operator': op, 'value': value} for op in ('eq', 'ne')]
+            cases += [{'field': field, 'operator': op, 'value': values} for op in ('in', 'not_in')]
+            cases.append({'not': {'field': field, 'operator': 'eq', 'value': values[0]}})
+            cases.append({'any': [{'field': field, 'operator': 'missing'}, {'field': field, 'operator': 'eq', 'value': values[-1]}]})
+        for op, value in (('gt', 1), ('gte', 2), ('lt', 5), ('lte', 0)):
+            cases.append({'field': 'parameters/example', 'operator': op, 'value': value})
+        cases.append({'all': [{'field': 'parameters/example', 'operator': 'gte', 'value': 1},
+                              {'field': 'parameters/example', 'operator': 'lt', 'value': 3}]})
+        checked = 0
+        with typed_reader(self.service) as reader:
+            for predicate in cases:
+                try:
+                    validated = reader._validate(predicate)
+                except ValueError:
+                    continue
+                with self.subTest(predicate=predicate):
+                    native = len(self.index.match(validated)[1])
+                    self.assertEqual(reader.single_field_count(validated), reader.count(validated))
+                    self.assertEqual(reader.count(validated), native)
+                    checked += 1
+            two = reader._validate({'all': [{'field': 'cell', 'operator': 'eq', 'value': cell},
+                                            {'field': 'parameters/example', 'operator': 'exists'}]})
+            self.assertIsNone(reader.single_field_count(two))
+            self.assertIsNone(reader.single_field_count(reader._validate({'field': 'parameters/example', 'operator': 'exists'}),
+                                                        max_values=0))
+        self.assertGreater(checked, 20)
+
+    def test_counted_preview_uses_value_counts_without_sql_count(self):
+        from disco.metadata.typed_index import TypedMetadataIndex
+        predicate = {'field': 'parameters/example', 'operator': 'ne', 'value': 1}
+        exact = self.preview(predicate, focused_uuid=self.service.ids[0])
+        with patch.object(TypedMetadataIndex, 'count', side_effect=AssertionError('SQL count')):
+            counted = self.preview(predicate)
+        self.assertEqual(counted['matched_count'], exact['matched_count'])
+
+
 if __name__ == '__main__':
     unittest.main()
