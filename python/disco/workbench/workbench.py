@@ -316,8 +316,13 @@ class ProtocolWorkbench:
         publication = getattr(service, '_explore_publication', None)
 
         def compute(items):
-            changed = {key for key, value in items if fingerprints.get(key) != value}
-            inactive = {key for key, value in items if key in rows and rows[key]['source_sha256'] not in active}
+            # One pass: ``items`` may be a one-shot iterator over a member view.
+            changed, inactive = set(), set()
+            for key, value in items:
+                if fingerprints.get(key) != value:
+                    changed.add(key)
+                if key in rows and rows[key]['source_sha256'] not in active:
+                    inactive.add(key)
             return changed, inactive
 
         def valid(entry):

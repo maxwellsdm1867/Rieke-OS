@@ -294,6 +294,19 @@ class DeltaRevisionTests(_Workbench):
                          set(history.members(pruned['revision_uuid'])))
         history.verify_membership(pruned['revision_uuid'])
 
+    def test_main_from_an_excluded_recording_blocks_merging_on_delta_reads(self):
+        first, _ = self.more_import()
+        merged = self.post_merge()
+        self.assertEqual(merged.status_code, 200, merged.get_json())
+        # Exclude a recording main now contains: main itself is blocked.
+        source = self.case.service.rows[first]['source_sha256']
+        self.case.data_store_states.insert1(dict(project_uuid=self.case.service.project['project_uuid'],
+            source_sha256=source, query_excluded=True, archived=False, frozen=False, version=1, updated_at=None,
+            actor='actor-one', server_actor='actor-one', reason='test'))
+        queue = self.queue()
+        self.assertIn('excluded from queries', queue['main_blocked_reason'])
+        self.assertEqual(queue['pending_epoch_count'], 0)
+
     def tamper(self, revision, change):
         history = self.case.explorer_history
         row = next(row for row in self.case.explorer_revisions.rows if row['revision_uuid'] == revision)
