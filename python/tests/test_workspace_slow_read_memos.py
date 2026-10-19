@@ -710,5 +710,34 @@ class ProtocolOverviewMemoTests(MemoFixture):
         self.assertEqual(changed.get_json()['counts']['reviewed'],first.get_json()['counts']['reviewed']+1)
 
 
+class LargeProtocolReadMemoTests(MemoFixture):
+    """Per-request protocol reads reuse aggregates of the same frozen view."""
+    def setUp(self):
+        super().setUp()
+        ProtocolContextFastPathTests.publish(self)
+
+    def test_browse_and_cell_counts_reuse_aggregates_until_republication(self):
+        first=self.service.protocol_browse(self.protocol)
+        memo=self.service.__dict__['_browse_aggregates']
+        self.assertEqual(self.service.protocol_browse(self.protocol),first)
+        self.assertIs(self.service.__dict__['_browse_aggregates'],memo)
+        self.service.cells=self.service.cells  # Republish.
+        self.service.protocol_browse(self.protocol)
+        self.assertIsNot(self.service.__dict__['_browse_aggregates'],memo)
+        page=self.service.epoch_page(self.protocol,include_cells=True)
+        counts=self.service.__dict__['_page_cell_counts']
+        self.assertEqual(self.service.epoch_page(self.protocol,include_cells=True)['cells'],page['cells'])
+        self.assertIs(self.service.__dict__['_page_cell_counts'],counts)
+
+    def test_unchanged_overview_reuses_its_encoded_response(self):
+        first=self.client.get('/api/overview')
+        with patch('disco.projects.presentation_cache.display_overview',side_effect=AssertionError('re-encoded')):
+            second=self.client.get('/api/overview')
+        self.assertEqual(second.get_data(),first.get_data())
+        self.save_curation(review_state='approved')
+        third=self.client.get('/api/overview')
+        self.assertNotEqual(third.get_data(),first.get_data())
+
+
 if __name__=='__main__':
     unittest.main()

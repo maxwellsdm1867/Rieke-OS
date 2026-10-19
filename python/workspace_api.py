@@ -231,6 +231,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     service.set_binding_provider(explorer_history.protocol_binding,
         header_provider=explorer_history.protocol_binding_header)
     store.binding_provider = explorer_history.protocol_binding
+    # Writes check only the binding version: never hydrate the frozen recipe.
+    store.binding_header_provider = explorer_history.protocol_binding_header
     data_stores = data_stores or DataStores(service, store, explorer_history)
     app.extensions["data_stores"] = data_stores
     if hasattr(service.dj, 'Schema'):
@@ -1246,7 +1248,24 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     saved_overview = {}
 
+    overview_bytes = {}
+
     def overview_response(payload):
+        # An incremental overview shares its assembled cells list until any
+        # component changes; with identical live events/exports, the encoded
+        # response (and display projection) are identical too.
+        cached = overview_bytes.get('value')
+        if (cached is not None and payload.get('cells') is cached[0]
+                and payload.get('events') == cached[1] and payload.get('exports') == cached[2]):
+            return app.response_class(cached[3], mimetype=app.json.mimetype)
+        response = _overview_response(payload)
+        if isinstance(payload.get('cells'), list) and overview_parts.get('assembled') is not None \
+                and payload['cells'] is overview_parts['assembled'][1].get('cells'):
+            overview_bytes['value'] = (payload['cells'], copy.deepcopy(payload.get('events')),
+                                       copy.deepcopy(payload.get('exports')), response.get_data())
+        return response
+
+    def _overview_response(payload):
         # The display cache is rewritten only when its projection changes.
         from disco.projects.presentation_cache import save_overview, display_overview
         try:

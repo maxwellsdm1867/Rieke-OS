@@ -87,12 +87,12 @@ class _NavigationValues(Mapping):
     # before lazy grouping fills it. Group buckets retain only borrowed rows.
     # Large scopes (1M members) need their root grouping cached or every page
     # regroups the scope; the reservation still counts toward scope admission.
-    grouping_budget = 32 * 1024 * 1024
+    grouping_budget = 48 * 1024 * 1024
 
     def __init__(self, rows, fields, *, scope_size=None):
         self.rows, self.fields = rows, tuple(fields)
         self.grouping_budget = min(self.grouping_budget, max(16 * 1024,
-            (len(rows) if scope_size is None else scope_size) * 64))
+            (len(rows) if scope_size is None else scope_size) * 40))
         self.group_cache, self.group_bytes, self.summary = {}, 0, None
 
     def __sizeof__(self):
@@ -106,8 +106,10 @@ class _NavigationValues(Mapping):
         # them. The per-entry allowance covers the cache slot/value tuple/cost.
         for bucket in buckets:
             bucket['summary'] = {'count': len(bucket['rows'])} if counts_only else _summary(bucket['rows'])
+        # ``current`` is borrowed: the scope's row list or a parent bucket's list,
+        # each already charged where it is owned.
         cost = (256 + sys.getsizeof(key) + sys.getsizeof(key[1])
-                + sys.getsizeof(buckets) + sys.getsizeof(current)
+                + sys.getsizeof(buckets)
                 + sum(sys.getsizeof(bucket) + sys.getsizeof(bucket['rows'])
                       + sys.getsizeof(bucket['summary'])
                       + sum(sys.getsizeof(value) for value in bucket['summary'].values())

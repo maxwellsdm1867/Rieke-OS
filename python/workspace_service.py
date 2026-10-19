@@ -1411,18 +1411,33 @@ class WorkspaceService:
             return None
         result = self.query_view(protocol_uuid)
         definition = self.protocols[_uuid(protocol_uuid)]['definition']
-        rows = [self.rows[member['uuid']] for member in result['epochs']]
         scope = self.source_scope()
-        excluded = set(scope['excluded_source_revisions'])
-        affected = [row for row in rows if row['source_sha256'] in excluded]
+        # The aggregates depend only on the (frozen) member view and the source
+        # scope: reuse them for the same view object and scope revision.
+        serial = publication_serial(self)
+        memo = self.__dict__.get('_browse_aggregates')
+        if (serial is not None and memo is not None and memo[0] is result
+                and memo[1] == scope['revision'] and memo[2] == serial):
+            aggregates = memo[3]
+        else:
+            rows = [self.rows[member['uuid']] for member in result['epochs']]
+            excluded = set(scope['excluded_source_revisions'])
+            affected = [row for row in rows if row['source_sha256'] in excluded]
+            aggregates = {'cell_types': sorted({row['cell_type'] for row in rows if row.get('cell_type')}),
+                          'groups': sorted({row['group_label'] for row in rows}, key=str),
+                          'excluded_epoch_count': len(affected),
+                          'excluded_sources': sorted({row['source_sha256'] for row in affected})}
+            if serial is not None:
+                self.__dict__['_browse_aggregates'] = (result, scope['revision'], serial, aggregates)
         return {'definition': copy.deepcopy(definition), 'starter_query': copy.deepcopy(definition['query']),
                 'effective_query': copy.deepcopy(result.get('effective_query', definition['query'])),
                 'binding': copy.deepcopy(result.get('dataset_binding')),
-                'selection_options': {'cell_types': sorted({row['cell_type'] for row in rows if row.get('cell_type')})},
-                'groups': sorted({row['group_label'] for row in rows}, key=str),
-                'source_eligibility': {'excluded_epoch_count': len(affected),
-                    'excluded_sources': sorted({row['source_sha256'] for row in affected}),
-                    'propagation_required': bool(affected), 'source_scope_revision': scope['revision']}}
+                'selection_options': {'cell_types': list(aggregates['cell_types'])},
+                'groups': list(aggregates['groups']),
+                'source_eligibility': {'excluded_epoch_count': aggregates['excluded_epoch_count'],
+                    'excluded_sources': list(aggregates['excluded_sources']),
+                    'propagation_required': bool(aggregates['excluded_epoch_count']),
+                    'source_scope_revision': scope['revision']}}
 
     def epoch_page(self, protocol_uuid, filters=None, offset=0, limit=100, anchor_uuid=None, *, include_curation=True, include_cells=False):
         with elapsed("workspace_service", "epoch_page"):
@@ -1447,10 +1462,19 @@ class WorkspaceService:
                     **({'_shared_annotation_generation':shared_generation} if shared_generation is not None else {}),
                     **({'anchor_index': anchor_index, 'anchor_uuid': identity} if anchor_index is not None else {})}
             if include_cells:
-                counts={}
-                for identity in identities:
-                    cell=self.rows[identity]['cell_uuid']
-                    counts[cell]=counts.get(cell,0)+1
+                # Cell counts depend only on the identity tuple, which the
+                # serial-keyed page cache returns as the same object.
+                memo = self.__dict__.get('_page_cell_counts')
+                serial = publication_serial(self)
+                if serial is not None and memo is not None and memo[0] is identities and memo[1] == serial:
+                    counts = memo[2]
+                else:
+                    counts={}
+                    for identity in identities:
+                        cell=self.rows[identity]['cell_uuid']
+                        counts[cell]=counts.get(cell,0)+1
+                    if publication_serial(self) is not None:
+                        self.__dict__['_page_cell_counts'] = (identities, publication_serial(self), counts)
                 result['cells']=sorted(({**self.cells[cell],'epochs':count} for cell,count in counts.items()),
                     key=lambda row:(row['cell_type'] or '',row['date'],row['label']))
             return result
