@@ -49,7 +49,7 @@ def legacy_predicate_catalog(catalog, values):
                 buckets.append({'value': copy.deepcopy(value), 'type': value_type, 'count': 1})
         field.update(types=sorted(types), choices=buckets[:predicates.MAX_CHOICES],
                      choices_truncated=len(buckets)>predicates.MAX_CHOICES)
-    result.update(operators=list(predicates.OPERATORS), predicate_version=1,
+    result.update(operators=list(predicates.OPERATORS), predicate_version=2,
                   limits={'max_depth': predicates.MAX_DEPTH, 'max_nodes': predicates.MAX_NODES, 'max_choices': predicates.MAX_CHOICES})
     return result
 

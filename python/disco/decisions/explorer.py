@@ -13,6 +13,9 @@ from workspace_authored_json import write_row
 from disco.workbench.recipes import checksum, member_map
 from disco.operation_timing import elapsed
 
+# Mirrors disco.navigation.predicates.PREDICATE_VERSION (v2: built-in null = not recorded).
+PREDICATE_CONTRACT_VERSION = 2
+
 ACTION = 'explorer_revision_created'
 
 
@@ -175,7 +178,7 @@ class ExplorerHistory:
             outputs={'revision_uuid': identity, 'epoch_count': len(epochs)})
         recipe = {'format': 'recording-explorer-revision', 'version': 1, **summary,
                   'project_uuid': self.project_uuid, 'catalog_ref': str(catalog_ref),
-                  'predicate_version': 1, 'predicate': copy.deepcopy(preview['predicate']),
+                  'predicate_version': PREDICATE_CONTRACT_VERSION, 'predicate': copy.deepcopy(preview['predicate']),
                   'predicate_sha256': checksum(preview['predicate']),
                   'metadata_fingerprint_version': preview['metadata_fingerprint_version'],
                   'source_revisions': sorted(preview.get('source_revisions', {source['source_sha256'] for source in sources})),

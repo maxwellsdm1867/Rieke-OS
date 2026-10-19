@@ -263,7 +263,9 @@ def catalog(rows, details, known_fields=None, *, sources=()):
     for row in rows:
         identity = row['epoch_uuid']
         datum = details[identity]
-        current = {key: row.get(path) for key, (_, _, path) in BASE_FIELDS.items()}
+        # Predicate contract v2: a built-in recorded as None is "not recorded"
+        # (missing), exactly as the tree shows it; recorded dynamic nulls remain values.
+        current = {key: row[path] for key, (_, _, path) in BASE_FIELDS.items() if row.get(path) is not None}
         metadata_sources = [('Parameters', ('parameters',), datum.get('parameters', {})),
                    ('Conditions', ('properties',), datum.get('properties', {}))]
         for level in ('cell', 'group', 'block'):

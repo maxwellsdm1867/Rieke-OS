@@ -228,6 +228,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     explorer_history = explorer_history or ExplorerHistory(service.dj, service.project['project_uuid'])
     app.extensions['explorer_history'] = explorer_history
     protocol_suggestions = protocol_suggestions or ProtocolSuggestions(service, explorer_history)
+    if type(protocol_suggestions) is ProtocolSuggestions:
+        from disco.navigation.predicates import reinterpretation_required as _suggestion_contract_check
+        protocol_suggestions.reinterpretation_required = _suggestion_contract_check
     app.extensions['protocol_suggestions'] = protocol_suggestions
     service.set_binding_provider(explorer_history.protocol_binding,
         header_provider=explorer_history.protocol_binding_header)
@@ -246,6 +249,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 except (OSError, ValueError) as error:
                     service.manager_recovery(error)
     service.set_source_state_provider(data_stores.source_states)
+    # Old-contract saved selections are skipped (visible reason), never re-run
+    # under predicate contract v2, by eligibility propagation and suggestions.
+    from disco.navigation.predicates import reinterpretation_required as _reinterpretation_required
+    data_stores.reinterpretation_required = _reinterpretation_required
     annotation_provider = None
     if hasattr(service, 'set_annotation_provider'):
         def annotation_provider(protocol_uuid, fingerprints):
@@ -407,6 +414,13 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             fields[f'curation/{protocol}/tags']=(token.protocol_uuid,token.protocol_epoch,token.protocol_generation)
         return common,fields
     service._annotation_catalog_generation=annotation_catalog_generation
+
+    def refuse_reinterpretation(recipe):
+        """Refuse silently re-running a saved predicate whose meaning changed (v1 → v2)."""
+        from disco.navigation.predicates import reinterpretation_required
+        if recipe is not None and reinterpretation_required(recipe.get('predicate', {}), recipe.get('predicate_version', 1)):
+            raise StaleWorkspace('This saved selection was made when built-in values recorded as empty counted as '
+                                 'recorded. Re-run its search to create a new revision; it is never reinterpreted.')
 
     def refresh_service():
         """Route-level refresh. A failure leaves the service not ready (manager
@@ -1603,7 +1617,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def search_preset_store():
         if 'search_presets' not in app.extensions:
             from disco.navigation.search_presets import SearchPresets
-            app.extensions['search_presets'] = SearchPresets(store)
+            from disco.navigation.predicates import reinterpretation_required
+            app.extensions['search_presets'] = SearchPresets(store, superseded=reinterpretation_required)
         return app.extensions['search_presets']
 
     @app.post('/api/search-presets/resolve')
@@ -2058,6 +2073,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             binding = explorer_history.protocol_binding(protocol_uuid)
             if binding:
                 recipe = binding['recipe']
+                refuse_reinterpretation(recipe)
                 # Membership first, without a tree. An unchanged rerun (same
                 # members, fingerprints and sources) persists no revision.
                 summary = service.explore_preview(recipe['predicate'], recipe['splits'], include_tree=False,
@@ -2245,9 +2261,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     candidate_revision_uuid=scope['candidate_revision_uuid'], accept_operation_uuid=scope.get('accept_operation_uuid'),
                     export_scope=scope, export_intent={'name': recipe['options']['name'], 'format': recipe['destination']},
                     source_export_uuid=dataset_uuid, review_required=True)
+            snapshot_contract = recipe.get('query_snapshot', {}).get('predicate_contract_version', 1)
             if scope and scope.get('kind') == 'explorer_candidate':
                 from disco.workbench.candidate_exports import candidate_scope_uuid
                 saved = explorer_history.get(scope['revision_uuid'])['recipe']
+                refuse_reinterpretation({'predicate': saved['predicate'], 'predicate_version': snapshot_contract})
                 expected_scope = candidate_scope_uuid(service.project['project_uuid'], scope['revision_uuid'])
                 if (recipe['protocol_uuid'] != expected_scope or scope.get('export_only_scope_uuid') != expected_scope
                         or saved['content_sha256'] != scope.get('candidate_recipe_sha256')
@@ -2260,6 +2278,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     export_intent={'name': recipe['options']['name'], 'format':recipe['destination']},
                     source_export_uuid=dataset_uuid, review_required=True)
             definition = service.protocol(recipe["protocol_uuid"])["definition"]
+            if recipe.get('query', {}).get('kind') == 'source_predicate':
+                # The frozen export records its predicate contract explicitly.
+                refuse_reinterpretation({'predicate': recipe['query'].get('predicate', {}),
+                                         'predicate_version': snapshot_contract})
             effective = service.query_result(recipe["protocol_uuid"]).get("effective_query", definition["query"])
             if checksum(effective) != recipe["query_sha256"]:
                 raise StaleWorkspace("This protocol's query definition changed. The saved export retains its original query; it cannot be silently replaced.")

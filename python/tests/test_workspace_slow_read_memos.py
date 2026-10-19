@@ -699,5 +699,64 @@ class SourcePreverificationRouteTests(MemoFixture):
         self.assertEqual(done,[1])
 
 
+class PredicateContractRefusalTests(MemoFixture):
+    def bind(self, predicate, version):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview(predicate,'cell',include_tree=False,include_catalog_summary=False)
+        created=history.create(preview,self.service.sources,'catalog.json','fixture')
+        history.bind(created['revision_uuid'],self.protocol,0,'fixture',{},2)
+        recipe=history.get(created['revision_uuid'])['recipe']
+        history._recipe_cache[created['revision_uuid']]={**recipe,'predicate_version':version}
+        return created
+
+    def test_old_contract_saved_selection_is_refused_not_reinterpreted(self):
+        self.bind({'not':{'field':'cell type','operator':'missing'}},1)
+        with patch.object(self.service,'refresh',return_value={}):
+            response=self.client.post(self.case.base+'/refresh',json={'filters':{}},headers=self.case.headers)
+        self.assertEqual(response.status_code,409,response.get_json())
+        self.assertIn('Re-run its search',response.get_json()['error'])
+
+    def test_suggestions_and_propagation_skip_old_contract_selections_visibly(self):
+        affected={'not':{'field':'cell type','operator':'missing'}}
+        created=self.bind(affected,1)
+        suggestions=self.app.extensions.get('protocol_suggestions') or self.case.protocol_suggestions
+        from disco.navigation.predicates import reinterpretation_required
+        suggestions.reinterpretation_required=reinterpretation_required
+        recipe=self.case.explorer_history._recipe_cache[created['revision_uuid']]
+        with patch.object(self.service,'explore_preview',side_effect=AssertionError('re-ran an old-contract predicate')):
+            result=suggestions.rerun([{'protocol_uuid':self.protocol,'recipe':recipe,'revision_uuid':created['revision_uuid'],
+                'binding_version':1,'protocol_name':'Fixture'}],'a'*64,'fixture.h5','fixture')
+            plan=self.case.data_stores.propagation_preview()
+        self.assertEqual(result['counts']['skipped_count'],1)
+        self.assertEqual(result['warnings'][0]['code'],'predicate_contract_rerun_required')
+        self.assertIn("old 'missing' meaning",result['warnings'][0]['message'])
+        self.assertEqual([item['protocol_uuid'] for item in plan['skipped_protocols']],[self.protocol])
+        self.assertNotIn(self.protocol,[item['protocol_uuid'] for item in plan['protocols']])
+
+    def test_export_snapshots_record_their_predicate_contract(self):
+        from disco.workbench.recipes import capture_query
+        self.bind({'all':[]},2)
+        result=self.service.query_result(self.protocol)
+        snapshot=capture_query(self.service.protocols[self.protocol]['definition'],result,'catalog.json')
+        self.assertEqual(snapshot['predicate_contract_version'],2)
+
+    def test_export_reuse_refuses_an_old_contract_frozen_predicate(self):
+        record={'recipe':{'protocol_uuid':self.protocol,'options':{},'query_snapshot':{},
+            'query':{'version':2,'kind':'source_predicate','predicate':{'field':'group label','operator':'ne','value':'x'}}}}
+        with patch.object(self.store,'get_dataset_revision',return_value=record):
+            refused=self.client.get('/api/exports/'+'0'*8+'-0000-4000-8000-000000000000/reuse')
+        self.assertEqual(refused.status_code,409,refused.get_json())
+        record['recipe']['query_snapshot']={'predicate_contract_version':2}
+        with patch.object(self.store,'get_dataset_revision',return_value=record):
+            allowed=self.client.get('/api/exports/'+'0'*8+'-0000-4000-8000-000000000000/reuse')
+        self.assertNotEqual(allowed.status_code,409,allowed.get_json())
+
+    def test_unaffected_old_contract_selection_still_checks_for_updates(self):
+        self.bind({'all':[]},1)
+        with patch.object(self.service,'refresh',return_value={}):
+            response=self.client.post(self.case.base+'/refresh',json={'filters':{}},headers=self.case.headers)
+        self.assertEqual(response.status_code,200,response.get_json())
+
+
 if __name__=='__main__':
     unittest.main()

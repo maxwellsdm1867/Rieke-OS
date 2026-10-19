@@ -117,7 +117,9 @@ class NullableTreeTests(unittest.TestCase):
                     joint = self.assert_public_parity(service,
                         joint_id(['cell type', 'parameters/value']), protocol)
                     parts = [child['value'] for child in joint['children']]
-                    self.assertTrue(any(value[0] == {'present': True, 'value': None} for value in parts))
+                    # Built-in nulls are "not recorded" inside joint keys too (predicate contract v2).
+                    self.assertTrue(any(value[0] == {'present': False} for value in parts))
+                    self.assertFalse(any(value[0] == {'present': True, 'value': None} for value in parts))
                     self.assertTrue(any(value[1] == {'present': True, 'value': None} for value in parts))
                     self.assertTrue(any(value[1] == {'present': False} for value in parts))
 
@@ -133,3 +135,40 @@ class NullableTreeTests(unittest.TestCase):
         dynamic = TreePath(['parameters/value'], {'parameters/value': {}})
         self.assertNotEqual(dynamic.key({}, 'parameters/value'),
                             dynamic.key({'parameters/value': None}, 'parameters/value'))
+
+    def test_predicates_count_builtin_nulls_exactly_as_the_tree_does(self):
+        # Predicate contract v2: a built-in recorded as None is "not recorded".
+        for indexed in (False, True):
+            for field in ('cell type', 'group label', 'block time'):
+                with self.subTest(indexed=indexed, field=field):
+                    service = self.fixture(indexed)
+                    full = service.tree(None, splits=field)
+                    missing = sum(child['count'] for child in full['children'] if child['missing'])
+                    recorded = {child['value']: child['count'] for child in full['children'] if not child['missing']}
+                    def count(node):
+                        return len(service.match_predicate(node)[1])
+                    self.assertEqual(count({'field': field, 'operator': 'missing'}), missing)
+                    self.assertEqual(count({'field': field, 'operator': 'exists'}), sum(recorded.values()))
+                    self.assertEqual(count({'field': field, 'operator': 'is_null'}), 0)
+                    value = next(iter(recorded))
+                    self.assertEqual(count({'field': field, 'operator': 'ne', 'value': value}),
+                                     sum(amount for key, amount in recorded.items() if key != value))
+                    self.assertEqual(count({'not': {'field': field, 'operator': 'exists'}}), missing)
+
+    def test_reinterpretation_detection_is_limited_to_changed_builtin_leaves(self):
+        from disco.navigation.predicates import reinterpretation_required, PREDICATE_VERSION, BUILT_IN_FIELDS
+        from disco.navigation.tree import BASE_FIELDS
+        self.assertEqual(PREDICATE_VERSION, 2)
+        self.assertEqual(BUILT_IN_FIELDS, set(BASE_FIELDS))
+        changed = [{'field': 'cell type', 'operator': 'missing'}, {'field': 'cell type', 'operator': 'exists'},
+                   {'field': 'group label', 'operator': 'ne', 'value': 'x'},
+                   {'field': 'block time', 'operator': 'is_null'}, {'field': 'cell type', 'operator': 'eq', 'value': None},
+                   {'any': [{'field': 'parameters/x', 'operator': 'eq', 'value': 1},
+                            {'not': {'field': 'cell type', 'operator': 'not_in', 'value': ['a']}}]}]
+        unchanged = [{'all': []}, {'field': 'cell type', 'operator': 'eq', 'value': 'ON'},
+                     {'field': 'parameters/value', 'operator': 'missing'}, {'field': 'cell', 'operator': 'in', 'value': ['a']}]
+        for node in changed:
+            self.assertTrue(reinterpretation_required(node, 1), node)
+            self.assertFalse(reinterpretation_required(node, 2), node)
+        for node in unchanged:
+            self.assertFalse(reinterpretation_required(node, 1), node)

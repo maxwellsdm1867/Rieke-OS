@@ -394,7 +394,7 @@ class TypedMetadataIndex(_TypedQueries):
             observed = self.validation_representatives.get(str(self.fields[field['id']]), {})
             field['types'] = sorted(key for key in observed if not key.startswith('array_element:'))
         return {'fields': fields, 'operators': list(predicates.OPERATORS),
-                'predicate_version': 1, 'generation_token': self.generation_token,
+                'predicate_version': 2, 'generation_token': self.generation_token,
                 'limits': {'max_depth': predicates.MAX_DEPTH, 'max_nodes': predicates.MAX_NODES,
                            'max_choices': predicates.MAX_CHOICES}}
     def _validate(self,predicate):

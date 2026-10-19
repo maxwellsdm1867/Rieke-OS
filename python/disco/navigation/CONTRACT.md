@@ -19,7 +19,17 @@ and choices. Unknown fields and unsupported operators fail closed. Grouping uses
 opaque escaped field names and exact typed ordering; it does not select membership
 or read waveforms. Scalar built-in groupings treat both `None` and absence as
 the legacy missing branch; dynamic explicit null and joint component presence
-remain distinct. Saved methods and layouts retain optimistic versions and do
+remain distinct. Predicate contract version 2 applies the same meaning to
+predicates, the typed index and joint keys: a built-in field (`BASE_FIELDS`)
+recorded as `None` is absent, so `missing`/`exists`/`ne`/`not_in`/`is_null` count it
+exactly as the tree's "Not recorded" branch; recorded dynamic nulls stay values.
+Stored version-1 work whose result could differ (`reinterpretation_required`) is
+never reinterpreted: saved selections refuse "Check for updates" and export reuse
+until their search is re-run; import suggestions and source-eligibility propagation
+skip them with the visible reason "Saved selection uses the old 'missing' meaning;
+re-run it."; old-contract search-preset runs are reported as superseded instead of
+current. Frozen export snapshots of source predicates record
+`predicate_contract_version`; reuse refuses an older affected contract. The change rebuilds disposable metadata indexes once. Saved methods and layouts retain optimistic versions and do
 not replace immutable applied-query, source or native revision authority.
 
 Tree pages retain captured WorkspaceService/ExplorerHistory method identity,
