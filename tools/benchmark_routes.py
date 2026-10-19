@@ -108,6 +108,55 @@ def run_profile(source_root, output, name, profile, cfg, cases=''):
     return record
 
 
+def merge_groups(groups):
+    """One profile result from disjoint case-group workers, in group order."""
+    results = {name: record['result'] for name, record in groups.items()}
+    cases, owner = {}, {}
+    for name, result in results.items():
+        for case, data in result.get('cases', {}).items():
+            if case in cases:
+                raise ValueError(f'Case {case} measured by both {owner[case]} and {name}')
+            cases[case], owner[case] = data, name
+    first = next(iter(results.values()))
+    predicate_counts = {}
+    for result in results.values():
+        predicate_counts.update(result.get('predicate_counts', {}))
+    return {'format': first.get('format'), 'grouped': True, 'case_groups': list(groups),
+            'status': 'passed' if all(r.get('status') == 'passed' for r in results.values()) else 'failed',
+            'epochs': first.get('epochs'), 'protocol_epochs': first.get('protocol_epochs'), 'samples': first.get('samples'),
+            'cases': cases, 'case_group_of': owner, 'predicate_counts': predicate_counts,
+            'notes': sorted({note for r in results.values() for note in r.get('notes', [])}),
+            'failed_cases': [case for r in results.values() for case in r.get('failed_cases', [])],
+            'h5_open_attempts': [item for r in results.values() for item in r.get('h5_open_attempts', [])],
+            'typed_index': {name: r.get('typed_index') for name, r in results.items()},
+            'publication': {name: r.get('publication') for name, r in results.items()},
+            'peak_rss_bytes_by_group': {name: r.get('peak_rss_bytes') for name, r in results.items()}}
+
+
+def run_grouped(source_root, output, name, profile, cfg):
+    """Each case group in its own worker (fresh fixture), each with its own peak RSS.
+
+    Used where one process holding every case exceeds the RSS cap. Base and
+    candidate share the registry grouping, so merged results stay comparable.
+    """
+    groups = {}
+    for group, prefixes in cfg['case_groups'].items():
+        print(f'{name}: group {group}', flush=True)
+        groups[group] = run_profile(source_root, output, f'{name}--{group}', profile, cfg, ','.join(prefixes))
+    record = {'profile': profile, 'groups': groups,
+              'peak_rss_bytes': max(g['peak_rss_bytes'] for g in groups.values()),
+              'wall_seconds': sum(g['wall_seconds'] for g in groups.values()),
+              'load_before': next(iter(groups.values())).get('load_before'),
+              'load_after': list(groups.values())[-1].get('load_after'),
+              'load_one_samples': [v for g in groups.values() for v in g.get('load_one_samples', [])]}
+    errors = [f'{group}: {g["error"]}' for group, g in groups.items() if g.get('error')]
+    if errors:
+        record['error'] = '; '.join(errors)
+    else:
+        record['result'] = merge_groups(groups)
+    return record
+
+
 def run(source_root, output, profiles=None, cases=''):
     cfg = config()
     source_root, output = source_root.resolve(), output.resolve()
@@ -124,7 +173,11 @@ def run(source_root, output, profiles=None, cases=''):
     try:
         for name in names:
             print(f'{name}: running {cfg["profiles"][name]}', flush=True)
-            record = run_profile(source_root, output, name, cfg['profiles'][name], cfg, cases)
+            profile = cfg['profiles'][name]
+            if profile.get('grouped') and not cases:
+                record = run_grouped(source_root, output, name, profile, cfg)
+            else:
+                record = run_profile(source_root, output, name, profile, cfg, cases)
             receipt['profiles'][name] = record
             query_bench.write(output/'receipt.json', receipt)
             status = record.get('result', {}).get('status')
@@ -158,7 +211,8 @@ def report(receipt, path):
                   f"Worker {result.get('status', record.get('error'))}; wall {record.get('wall_seconds', 0):.0f} s; "
                   f"peak RSS {record.get('peak_rss_bytes', 0) / 2**30:.2f} GiB; load before {load.get('one', 'n/a')}, "
                   f"after {(record.get('load_after') or {}).get('one', 'n/a')}.", '',
-                  *([f"Typed sidecar: {result['typed_index'].get('status')}.", ''] if result.get('typed_index') else []),
+                  *([f"Case groups (separate workers): " + ', '.join(f"{g} {(part.get('peak_rss_bytes') or 0) / 2**30:.2f} GiB / {part.get('wall_seconds', 0):.0f} s" for g, part in record['groups'].items()), ''] if record.get('groups') else []),
+                  *([f"Typed sidecar: {result['typed_index'].get('status')}.", ''] if result.get('typed_index') and 'status' in result['typed_index'] else []),
                   *(['Notes: ' + '; '.join(result['notes']), ''] if result.get('notes') else []),
                   '| Case | Cold ms | Warm median ms | Bytes | Attest | SQLite stmts | Deep copies | Rows evaluated | Status |',
                   '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |']
@@ -184,9 +238,14 @@ def load_receipt(path, *, allow_dirty=True):
     if receipt['source_start'] != receipt['source_end']:
         raise ValueError(f'{path}: source changed during measurement')
     for name, record in receipt['profiles'].items():
-        raw = path.parent/f'{name}.json'
-        if query_bench.sha(raw.read_bytes()) != record.get('sha256') or json.loads(raw.read_text()) != record.get('result'):
-            raise ValueError(f'{path}: raw {name} evidence changed')
+        parts = ({f'{name}--{group}': part for group, part in record['groups'].items()}
+                 if 'groups' in record else {name: record})
+        for label, part in parts.items():
+            raw = path.parent/f'{label}.json'
+            if query_bench.sha(raw.read_bytes()) != part.get('sha256') or json.loads(raw.read_text()) != part.get('result'):
+                raise ValueError(f'{path}: raw {label} evidence changed')
+        if 'groups' in record and merge_groups(record['groups']) != record.get('result'):
+            raise ValueError(f'{path}: merged {name} result differs from its group evidence')
     return receipt
 
 

@@ -94,6 +94,34 @@ class RouteComparisonTests(unittest.TestCase):
         self.assertTrue(set(self.cfg['expected_by_contract']) <= {'ne_cell_type', 'exists_cell_type', 'missing_cell_type', 'missing_recorded'})
 
 
+class CaseGroupTests(unittest.TestCase):
+    def group(self, cases, **extra):
+        return {'result': {'format': 'f', 'status': 'passed', 'epochs': 1, 'protocol_epochs': 1, 'samples': 3,
+                           'cases': {name: case(1.0) for name in cases}, **extra}}
+
+    def test_groups_merge_in_order_and_keep_each_peak(self):
+        merged = routes.merge_groups({'explore': self.group(['explore.page.x'], predicate_counts={'x': 1}, peak_rss_bytes=5),
+                                      'reads': self.group(['epoch.detail'], peak_rss_bytes=7)})
+        self.assertEqual(list(merged['cases']), ['explore.page.x', 'epoch.detail'])
+        self.assertEqual(merged['case_group_of'], {'explore.page.x': 'explore', 'epoch.detail': 'reads'})
+        self.assertEqual(merged['predicate_counts'], {'x': 1})
+        self.assertEqual(merged['peak_rss_bytes_by_group'], {'explore': 5, 'reads': 7})
+        self.assertEqual(merged['status'], 'passed')
+
+    def test_overlapping_or_failed_groups_cannot_pass(self):
+        with self.assertRaisesRegex(ValueError, 'both'):
+            routes.merge_groups({'a': self.group(['epoch.detail']), 'b': self.group(['epoch.detail'])})
+        failed = self.group(['tree.root']); failed['result']['status'] = 'failed'
+        self.assertEqual(routes.merge_groups({'a': self.group(['epoch.detail']), 'b': failed})['status'], 'failed')
+
+    def test_registry_groups_are_disjoint_prefixes_and_million_profile_is_grouped(self):
+        cfg = routes.config()
+        prefixes = [p for group in cfg['case_groups'].values() for p in group]
+        self.assertEqual(len(prefixes), len(set(prefixes)))
+        self.assertTrue(cfg['profiles']['1m-protocol-1m']['grouped'])
+        self.assertTrue(cfg['profiles']['smoke-grouped']['grouped'])
+
+
 class StressLockTests(unittest.TestCase):
     def test_waits_reports_holder_times_out_and_records_itself(self):
         import fcntl

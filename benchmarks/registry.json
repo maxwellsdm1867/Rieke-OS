@@ -405,7 +405,7 @@
       "ci_protocol_epochs": 20000
     },
     "route-million": {
-      "version": "1.3.0",
+      "version": "1.4.0",
       "runner": "tools/benchmark_routes.py",
       "fixture_version": "route-owned-v4",
       "samples": 3,
@@ -414,7 +414,8 @@
       "profiles": {
         "1m-protocol-1m": {
           "epochs": 1000000,
-          "protocol_epochs": 1000000
+          "protocol_epochs": 1000000,
+          "grouped": true
         },
         "1m-protocol-20k": {
           "epochs": 1000000,
@@ -427,6 +428,11 @@
         "smoke": {
           "epochs": 2000,
           "protocol_epochs": 2000
+        },
+        "smoke-grouped": {
+          "epochs": 2000,
+          "protocol_epochs": 2000,
+          "grouped": true
         }
       },
       "default_profiles": [
@@ -434,6 +440,24 @@
         "1m-protocol-20k",
         "100k-protocol-100k"
       ],
+      "case_groups": {
+        "explore": [
+          "explore.",
+          "search."
+        ],
+        "workbench": [
+          "workbench."
+        ],
+        "reads_decisions": [
+          "epoch.",
+          "protocol.",
+          "overview",
+          "tree.",
+          "curation.",
+          "approve.",
+          "tag."
+        ]
+      },
       "comparison": {
         "relative": 0.25,
         "absolute_ms": 5.0,
