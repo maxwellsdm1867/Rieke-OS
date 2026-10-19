@@ -259,8 +259,40 @@ def _chronology(row):
     return row['date'], row['start_time'][11:], row['epoch_uuid']
 
 
+def predicate_publication(service, filters=None):
+    """Membership-free identity of a project-scope predicate tree, or None.
+
+    Available only when the published read model is frozen (publication serial),
+    the canonical native index and membership policies are in place, and no
+    shared-tag filter contributes membership. Equal identities, predicates,
+    filters, splits, source scope and annotation evidence then prove equal
+    membership; otherwise callers hash the exact members.
+    """
+    from disco.metadata.disk_index import DiskMetadataIndex
+    serial = publication_serial(service)
+    index = getattr(service, 'disk_index', None)
+    if serial is None or type(index) is not DiskMetadataIndex or not _structural_contract(service):
+        return None
+    if any(key in (filters or {}) for key in ('tag', 'tagged', 'tag_predicate')):
+        return None
+    typed = getattr(service, 'typed_index', None)
+    return {'serial': serial, 'index': index.generation,
+            'typed': getattr(typed, 'generation_token', None) if typed is not None else None}
+
+
 def selection_revision(service, protocol, predicate, filters, order, rows, binding=None, annotation_scope=None):
-    """Shared explorer-summary/page identity, independent of page offset/path."""
+    """Shared explorer-summary/page identity, independent of page offset/path.
+
+    A project-scope tree over a frozen publication is identified by that
+    publication instead of hashing every member (`rows` is then unused).
+    """
+    if protocol is None:
+        identity = predicate_publication(service, filters)
+        if identity is not None:
+            return checksum({'version':2, 'project_uuid':service.project['project_uuid'], 'protocol_uuid':None,
+                'predicate':predicate, 'filters':filters or {}, 'splits':order,
+                **({'annotation_scope_revision':annotation_scope['revision']} if annotation_scope else {}),
+                'source_scope_revision':service.source_scope()['revision'], 'publication':identity})
     if protocol is not None and binding is None:
         binding = service.binding(protocol)
     return checksum({'version':1, 'project_uuid':service.project['project_uuid'],

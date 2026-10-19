@@ -1553,7 +1553,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     raise ValueError(key + ' must be a UUID string')
                 body[key] = str(uuid.UUID(body[key]))
         with db_lock, data_stores.registration_locks(), annotation_locks(service, body['predicate']):
-            preview = service.explore_preview(body['predicate'], body['splits'], include_tree=not body.get('summary_only', False), include_catalog_summary=body.get('catalog_summary', True))
+            # A plain summary-only preview needs no membership: it is counted.
+            membership = not body.get('summary_only', False) or 'baseline_revision_uuid' in body or 'focused_uuid' in body
+            preview = service.explore_preview(body['predicate'], body['splits'], include_tree=not body.get('summary_only', False),
+                include_catalog_summary=body.get('catalog_summary', True), include_membership=membership)
             if 'baseline_revision_uuid' in body:
                 baseline = explorer_history.get(body['baseline_revision_uuid'])['recipe']
                 before = {item['uuid']: item['metadata_hash'] for item in baseline['epochs']}

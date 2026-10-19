@@ -1756,10 +1756,15 @@ class WorkspaceService:
             from disco.metadata.explore_queries import explore_page
             return explore_page(self, predicate, **options)
 
-    def explore_preview(self, predicate, splits='date,protocol,cell', *, include_tree=True, include_catalog_summary=True):
+    def explore_preview(self, predicate, splits='date,protocol,cell', *, include_tree=True, include_catalog_summary=True,
+                        include_membership=True):
         with elapsed("workspace_service", "explore_preview"):
             if type(include_catalog_summary) is not bool or (include_tree and not include_catalog_summary):
                 raise ValueError('A rendered tree requires catalog summaries; include_catalog_summary must be boolean')
+            if not (include_tree or include_catalog_summary or include_membership):
+                counted = self._counted_preview(predicate, splits)
+                if counted is not None:
+                    return counted
             scope = self.source_scope()
             eligible = [row['epoch_uuid'] for row in self._tree_rows(None)]
             validated, identities, annotation_scope = self.match_predicate(predicate, eligible)
@@ -1803,6 +1808,47 @@ class WorkspaceService:
                     'metadata_fingerprint_version': 2,
                     **({'annotation_scope': annotation_scope} if annotation_scope else {}),
                     'membership': [{'uuid': key, 'metadata_hash': self._fingerprints[key]} for key in sorted(identities)]}
+
+    def _counted_preview(self, predicate, splits):
+        """Summary-only preview counted on the typed index, or None.
+
+        No IDs are collected and no membership is hashed: the count is one
+        typed COUNT over the active sources, and the revision is the frozen
+        publication identity (see tree_pages.predicate_publication). Results
+        that freeze membership (run, save, export) keep the exact path.
+        """
+        from disco.navigation.tag_predicates import referenced_fields
+        from disco.navigation.tree_pages import predicate_publication, selection_revision
+        from disco.metadata.explore_queries import typed_reader
+        if (referenced_fields(predicate) or getattr(self, 'typed_index', None) is None
+                or predicate_publication(self) is None):
+            return None
+        self._ready()
+        scope = self.source_scope()
+        sources = {'sources': list(scope['active_source_revisions'])}
+        serial = publication_serial(self)
+        with typed_reader(self) as reader:
+            validated = reader._validate(predicate)
+            matched = reader.count(validated, sources)
+            cached = getattr(self, '_eligible_count', None)
+            key = (serial, scope['revision'])
+            if cached is None or cached[0] != key:
+                cached = self._eligible_count = (key, reader.count(None, sources))
+        registered = self.disk_index.catalog()
+        fields = [{key: field[key] for key in ('id', 'label', 'category', 'path', 'components') if key in field}
+                  for field in registered['fields']]
+        definitions = {field['id']: field for field in fields}
+        order = parse_splits(splits, definitions)
+        from disco.navigation.tree import joint_definition
+        fields.extend(joint_definition(field, definitions) for field in order if field not in definitions)
+        if publication_serial(self) != serial:
+            return None
+        return {'predicate': validated, 'splits': splits, 'tree': {'count': matched, 'split_order': order},
+                'catalog': {'fields': fields, 'total': matched, 'summary_available': False}, 'catalog_summary': False,
+                'tree_revision': selection_revision(self, None, validated, {}, order, None),
+                'total_source': cached[1], 'total_catalog': len(self.rows), 'matched_count': matched,
+                'source_scope': scope, 'source_revisions': scope['active_source_revisions'],
+                'metadata_fingerprint_version': 2}
 
     def _render_tree(self, rows, catalog, values, splits):
         definitions = {field['id']: field for field in catalog['fields']}
