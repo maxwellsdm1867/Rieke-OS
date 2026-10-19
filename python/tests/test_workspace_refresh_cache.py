@@ -702,3 +702,29 @@ class RefreshCacheTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.service.verify_sources()
         self.assertFalse(self.service._loaded)
+
+    def test_preverified_source_skips_the_locked_hash_until_its_stat_changes(self):
+        manifest = self.service.manifests[self.records[0]['source_sha256']]
+        self.service._source_signatures = {}  # Process restart: trust is memory-only.
+        self.assertEqual(self.service.preverify_sources(), 2)
+        self.assertEqual(self.service.preverify_sources(), 0)
+        with patch('workspace_service.digest', side_effect=AssertionError('hashed under the lock')):
+            path, _ = self.service._verified_source(manifest)
+        self.assertEqual(str(path), str(Path(manifest['source_path']).resolve()))
+        source = Path(manifest['source_path'])
+        os.utime(source, ns=(source.stat().st_atime_ns, source.stat().st_mtime_ns + 10**9))
+        self.service._source_signatures = {}
+        with patch('workspace_service.digest', side_effect=AssertionError('re-hashed after a stat change')):
+            with self.assertRaisesRegex(AssertionError, 'stat change'):
+                self.service._verified_source(manifest)
+        restarted = WorkspaceService(self.folder)
+        self.assertNotIn('_preverified_sources', restarted.__dict__)
+
+    def test_preverification_never_trusts_changed_bytes(self):
+        manifest = self.service.manifests[self.records[0]['source_sha256']]
+        source = Path(manifest['source_path'])
+        data = bytearray(source.read_bytes()); data[-1] ^= 1; source.write_bytes(bytes(data))
+        self.service._source_signatures = {}
+        self.assertEqual(self.service.preverify_sources([manifest['source_sha256']]), 0)
+        with self.assertRaisesRegex(ValueError, 'checksum changed'):
+            self.service._verified_source(manifest)
