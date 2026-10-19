@@ -4,7 +4,7 @@
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
     "src/App.jsx": {
-      "fingerprint": "15b29ba1389c60f48230b3887fef5729821d17be1d050c35819956d8c6a95be5",
+      "fingerprint": "649ca44e3b5a5bf5d9d5294ab8cf4c9baacda1108c176b5a94619fb06b56ae90",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -48,7 +48,7 @@
         }
       ],
       "lifetime": "mixed-project-and-retained-composition",
-      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes. Independent review on 2026-10-15 confirmed project setup closes only after successful project activation; pending, refused and migration paths retain context. Callback return values changed; lifecycle hooks, dependencies and scientific owners are unchanged. Six actual App composition regression cases cover both setup callbacks. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Overview source-merge review (2026-10-16): the Overview card hold reuses the App source-merge owner; App adds presentation-only state that hides the exact project/protocol/candidate/recording card after a verified receipt until the existing structure refresh returns, plus a captured origin so a hold on the still-current same-protocol Overview does not push a duplicate route. No effect sites, dependencies, consent or recovery owners changed. Checkpoint size review (2026-10-16): disk checkpoints now prune unreachable cumulative candidates (keeping the current candidate and any draft that needs recovery or still offers export) and drop the oldest back/forward view snapshots only above 1.5 MiB, never the current route, protocol latest views or recovery sessions. Live sessions are not mutated; no effect sites, dependencies, consent or recovery owners changed. 2026-10-16 (pending card): Overview renders ProtocolSuggestion in queue mode (pendingProtocol) instead of the latest per-recording suggestion; merge_all routes to the same sourceMerge owner (startAll) with the same owner token, origin fence and recovery. persist uses flushBeforeSubmission (views-only failure is a quiet notice). A ref-held mergeUndo controller (no new effect sites) receives verified receipts from sourceMerged and Workbench onMerged; MergeUndoToast is mounted once in main-shell, filtered by current project. Effect sites unchanged. 2026-10-16 import review sync: both ImportSuggestions callers receive the existing workbenchSummary resource instead of suggestions/approved history; the dialog hold reaches the same mergeIncoming merge_all -> sourceMerge.startAll owner and announceMerge toast. Effect sites unchanged. Request-decoupling review (2026-10-17): passes structureRevision to CellQC only; effect sites unchanged. Tag decoupling review (2026-10-17): TreeBranchReadOwner, Cell QC live reads and Search epoch/preset reads follow readOwnerRevision, which ignores confirmed epoch-tag receipts; Cell QC passes confirmed receipts to changed(). Effect sites unchanged. Tag channel review (2026-10-17): confirmed epoch-tag receipts no longer change app state; overview summaries key on revision plus the confirmed tag generation read at render. Effect sites unchanged. Workbench tag-scope review (2026-10-17): Protocol forwards reviewRevision (default revision) to IncomingWorkbench only; no effect or lifetime changed. F2 typed-change-events review (2026-10-18): typed clocks routed: Protocol receives its own protocol/review/membership clocks; merge, undo, source merge and apply emit membership for one protocol; Workbench summary follows structure plus membership; project summaries follow dataRevision; overview cache gets the last typed change.",
+      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes. Independent review on 2026-10-15 confirmed project setup closes only after successful project activation; pending, refused and migration paths retain context. Callback return values changed; lifecycle hooks, dependencies and scientific owners are unchanged. Six actual App composition regression cases cover both setup callbacks. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Overview source-merge review (2026-10-16): the Overview card hold reuses the App source-merge owner; App adds presentation-only state that hides the exact project/protocol/candidate/recording card after a verified receipt until the existing structure refresh returns, plus a captured origin so a hold on the still-current same-protocol Overview does not push a duplicate route. No effect sites, dependencies, consent or recovery owners changed. Checkpoint size review (2026-10-16): disk checkpoints now prune unreachable cumulative candidates (keeping the current candidate and any draft that needs recovery or still offers export) and drop the oldest back/forward view snapshots only above 1.5 MiB, never the current route, protocol latest views or recovery sessions. Live sessions are not mutated; no effect sites, dependencies, consent or recovery owners changed. 2026-10-16 (pending card): Overview renders ProtocolSuggestion in queue mode (pendingProtocol) instead of the latest per-recording suggestion; merge_all routes to the same sourceMerge owner (startAll) with the same owner token, origin fence and recovery. persist uses flushBeforeSubmission (views-only failure is a quiet notice). A ref-held mergeUndo controller (no new effect sites) receives verified receipts from sourceMerged and Workbench onMerged; MergeUndoToast is mounted once in main-shell, filtered by current project. Effect sites unchanged. 2026-10-16 import review sync: both ImportSuggestions callers receive the existing workbenchSummary resource instead of suggestions/approved history; the dialog hold reaches the same mergeIncoming merge_all -> sourceMerge.startAll owner and announceMerge toast. Effect sites unchanged. Request-decoupling review (2026-10-17): passes structureRevision to CellQC only; effect sites unchanged. Tag decoupling review (2026-10-17): TreeBranchReadOwner, Cell QC live reads and Search epoch/preset reads follow readOwnerRevision, which ignores confirmed epoch-tag receipts; Cell QC passes confirmed receipts to changed(). Effect sites unchanged. Tag channel review (2026-10-17): confirmed epoch-tag receipts no longer change app state; overview summaries key on revision plus the confirmed tag generation read at render. Effect sites unchanged. Workbench tag-scope review (2026-10-17): Protocol forwards reviewRevision (default revision) to IncomingWorkbench only; no effect or lifetime changed. F2 typed-change-events review (2026-10-18): typed clocks routed: Protocol receives its own protocol/review/membership clocks; merge, undo, source merge and apply emit membership for one protocol; Workbench summary follows structure plus membership; project summaries follow dataRevision; overview cache gets the last typed change. F2 curation receipt channel review (2026-10-18): Protocol gets a per-protocol curation summary counter; curation receipts applied in place re-key no pages or trees.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -65,7 +65,8 @@
         "src/cellQCNavigationLifecycle.test.js",
         "src/workbenchTagScope.test.js",
         "src/appLifecycleImports.test.js",
-        "src/workspaceChangesLedger.test.js"
+        "src/workspaceChangesLedger.test.js",
+        "src/epoch-browser/curationReceipts.test.js"
       ]
     },
     "src/annotations/annotationProfile.js": {
@@ -809,6 +810,16 @@
         "src/desktopLifecycle.test.js"
       ]
     },
+    "src/epoch-browser/curationReceipts.js": {
+      "fingerprint": "3d4f6ca189d8605c227283bd206aa726d95f227f1cfaf89b3a413165ac1076db",
+      "sites": [],
+      "lifetime": "module-store-subscription",
+      "reason": "F2 curation receipt channel review (2026-10-18): module-level store of this renderer's own confirmed main-protocol curation receipts: chained query revisions and post-write rows with listeners; bounded rows; no React effects; a foreign page token retires the chain so stale views still 409; never authority for other actors or frozen contexts.",
+      "tests": [
+        "src/epoch-browser/curationReceipts.test.js",
+        "src/workspaceChangesLedger.test.js"
+      ]
+    },
     "src/epoch-browser/curationSelection.js": {
       "fingerprint": "ce077f0b81acd9593ef2dc2f9a75be2bffa71a4607ed5afd0ffa3cb8ed5702f8",
       "sites": [],
@@ -820,13 +831,15 @@
       ]
     },
     "src/epoch-browser/epochBrowserSource.js": {
-      "fingerprint": "6c6ee282218b314a80e4ed592d7e45bc8050b85d345345bb523a4f02c9f271be",
+      "fingerprint": "ba7487b993e9e0bc36f53bdb8244b64d23a5a894eded844a59020740de2fc70e",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. F2 curation receipt channel review (2026-10-18): main protocol page revisions compare through the own-receipt chain.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/workspaceChangesLedger.test.js",
+        "src/epoch-browser/curationReceipts.test.js"
       ]
     },
     "src/epoch-browser/epochListScroll.js": {
@@ -1065,7 +1078,7 @@
       ]
     },
     "src/epoch-browser/ui/Inspector.jsx": {
-      "fingerprint": "37a182e44858d4812ac07e634c53a32a156a8463df697122b830ba160554d476",
+      "fingerprint": "c0adf45908ecd7de446565437bf6034bfafa6400f415d03806afc7afb6463e10",
       "sites": [
         {
           "owner": "InspectorContent",
@@ -1091,6 +1104,11 @@
           "owner": "InspectorContent",
           "kind": "useLayoutEffect",
           "fingerprint": "8986c0bd8ea1e3ba0853ca7cae9428ba0f6b9d379d3c1d97818d4b60abc913ed"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useEffect",
+          "fingerprint": "c21cbd69e0799dad1614a8005832977e5d248570dcccbe6055852292dfe56a67"
         },
         {
           "owner": "InspectorContent",
@@ -1194,7 +1212,7 @@
         }
       ],
       "lifetime": "focused-display-and-fresh-curation",
-      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal. Independently reviewed initial selected-manifest acquisition withholds only the parent page offer; same-selected renewal keeps its own inert trace and strict capability validation is unchanged. Frozen sidebar presentation keys include owner, cohort, focus, cell selection and structure revision, excluding Live metadata and annotation-dependent or unproven selected scopes. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Tag decoupling review (2026-10-17): v4 contract enables kept receipt authority; the all-cell key follows kept authority; neighbour prefetch uses wholeTracePrefetchPath. Effect sites unchanged. Tag channel review (2026-10-17): useAnnotationReceipts takes revision, v4 contract and filters only. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): group receipts and confirmed receipts within the selection limit are reported on the tag channel. Effect sites unchanged. Edit Tree tagging review (2026-10-17): any confirmed receipt within the selection limit is forwarded on the tag channel (the store holds it; navigation identity no longer gates it). Effect sites unchanged. Cell-row review (2026-10-17): list props add focusedCell and onTargetCell, which only set the cell tag target (no read, no focus change). Workbench tag-scope review (2026-10-17): page authority is stable for the advertised workbench-candidate-scope-v2 token as for protocol-state-v4; the frozen tag summary overlays tag-store receipts on the retained page (memo only). Effect sites unchanged. F1 review (2026-10-18): trace revision and neighbor/next-stream warming follow structureRevision, not the display clock; effect census unchanged. F2 typed-change-events review (2026-10-18): a resolved off-page anchor page is offered once to the identical offset read (no second page GET); effect census unchanged in kind.",
+      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal. Independently reviewed initial selected-manifest acquisition withholds only the parent page offer; same-selected renewal keeps its own inert trace and strict capability validation is unchanged. Frozen sidebar presentation keys include owner, cohort, focus, cell selection and structure revision, excluding Live metadata and annotation-dependent or unproven selected scopes. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Tag decoupling review (2026-10-17): v4 contract enables kept receipt authority; the all-cell key follows kept authority; neighbour prefetch uses wholeTracePrefetchPath. Effect sites unchanged. Tag channel review (2026-10-17): useAnnotationReceipts takes revision, v4 contract and filters only. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): group receipts and confirmed receipts within the selection limit are reported on the tag channel. Effect sites unchanged. Edit Tree tagging review (2026-10-17): any confirmed receipt within the selection limit is forwarded on the tag channel (the store holds it; navigation identity no longer gates it). Effect sites unchanged. Cell-row review (2026-10-17): list props add focusedCell and onTargetCell, which only set the cell tag target (no read, no focus change). Workbench tag-scope review (2026-10-17): page authority is stable for the advertised workbench-candidate-scope-v2 token as for protocol-state-v4; the frozen tag summary overlays tag-store receipts on the retained page (memo only). Effect sites unchanged. F1 review (2026-10-18): trace revision and neighbor/next-stream warming follow structureRevision, not the display clock; effect census unchanged. F2 typed-change-events review (2026-10-18): a resolved off-page anchor page is offered once to the identical offset read (no second page GET); effect census unchanged in kind. F2 curation receipt channel review (2026-10-18): curation writes send the chained token and apply PR #91 receipts in place (rows, focused epoch) unless filters depend on curation/tags; a page outside the chain retires it; new effect observes page tokens.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
@@ -1213,7 +1231,8 @@
         "src/treeGroupAnnotationWorkflow.test.js",
         "src/workbenchTagScope.test.js",
         "src/traces/traceCacheIdentity.test.js",
-        "src/workspaceChangesLedger.test.js"
+        "src/workspaceChangesLedger.test.js",
+        "src/epoch-browser/curationReceipts.test.js"
       ]
     },
     "src/epoch-browser/ui/InspectorActions.jsx": {
@@ -2804,12 +2823,12 @@
       ]
     },
     "src/protocol-overview/useOverviewResource.js": {
-      "fingerprint": "8ec69d1613297a6dd79e9cfbaa62388105ee78448650c55e56cebfed92b7917a",
+      "fingerprint": "b2dda0ec6d43f609d9351aca3691468b1ae23d0736c8917305beda9fb26d5718",
       "sites": [
         {
           "owner": "useOverviewCache",
           "kind": "useLayoutEffect",
-          "fingerprint": "18e73c47d88b934d01810c0db6c4c85af035978cb3359638cb260c1f6af18ae7"
+          "fingerprint": "47f17a865f4dfc4a3b7ec116147ca4e6413d157eac7d8eaa3008ecb90e87a8d8"
         },
         {
           "owner": "useOverviewCache",
@@ -2828,13 +2847,14 @@
         }
       ],
       "lifetime": "project-cache-and-active-demand",
-      "reason": "Hidden demand releases reads. Deferred reload remains stale; only committed visibility authorizes old reload closures. F2 typed-change-events review (2026-10-18): typed membership/curation invalidates only that protocol's summaries and /overview; structure keeps the full invalidate+prefetch.",
+      "reason": "Hidden demand releases reads. Deferred reload remains stale; only committed visibility authorizes old reload closures. F2 typed-change-events review (2026-10-18): typed membership/curation invalidates only that protocol's summaries and /overview; structure keeps the full invalidate+prefetch. F2 curation receipt channel review (2026-10-18): applied curation receipts invalidate that protocol's summaries only.",
       "tests": [
         "src/protocol-overview/overviewCache.test.js",
         "src/protocol-overview/overviewDemand.test.js",
         "src/protocolBrowseEntry.test.js",
         "src/traces/retainedReadLifecycle.test.js",
-        "src/workspaceChangesLedger.test.js"
+        "src/workspaceChangesLedger.test.js",
+        "src/epoch-browser/curationReceipts.test.js"
       ]
     },
     "src/protocol-tree-layout/treeLayoutPersistence.js": {
@@ -4008,7 +4028,7 @@
       ]
     },
     "src/useWorkspaceChanges.js": {
-      "fingerprint": "644c1724c0594e2cdc82294426cf19d631099ee4611cd667a8ed7b74a76a916a",
+      "fingerprint": "97a4572192b004d292365cf3ccba4c404d7fe50f46688f1c213ce4f5ed05aa97",
       "sites": [
         {
           "owner": "useSummaryRevision",
@@ -4017,7 +4037,7 @@
         }
       ],
       "lifetime": "project-navigation-and-undo-owner",
-      "reason": "Project global undo, canonical revision publication and history listener live outside Activity. Route return keeps history identity; local Explorer undo separately checks active view tokens. Restored history does not restore scientific consent. Tag decoupling review (2026-10-17): adds readOwnerRevision, unchanged for confirmed epoch-only annotation receipts. Effect sites unchanged. Tag channel review (2026-10-17): confirmed epoch-only annotation receipts return the previous state (no App render); readOwnerRevision and annotationChange removed. Effect sites unchanged. Annotation events marked tagChannel (group receipts) also leave the clock unchanged. Effect sites unchanged. Edit Tree tagging review (2026-10-17): confirmed cell receipts also travel on the tag channel (cell tags overlay every epoch row of that cell). Effect sites unchanged. Workbench tag-scope review (2026-10-17): adds reviewRevision, which skips every confirmed tag receipt (epoch or cell) and tag-channel events; curation, structure and receipt-less tag events still tick it. No effects. F2 typed-change-events review (2026-10-18): additive typed kinds (membership/curation per protocol, structure) with a pure reducer; untyped events unchanged.",
+      "reason": "Project global undo, canonical revision publication and history listener live outside Activity. Route return keeps history identity; local Explorer undo separately checks active view tokens. Restored history does not restore scientific consent. Tag decoupling review (2026-10-17): adds readOwnerRevision, unchanged for confirmed epoch-only annotation receipts. Effect sites unchanged. Tag channel review (2026-10-17): confirmed epoch-only annotation receipts return the previous state (no App render); readOwnerRevision and annotationChange removed. Effect sites unchanged. Annotation events marked tagChannel (group receipts) also leave the clock unchanged. Effect sites unchanged. Edit Tree tagging review (2026-10-17): confirmed cell receipts also travel on the tag channel (cell tags overlay every epoch row of that cell). Effect sites unchanged. Workbench tag-scope review (2026-10-17): adds reviewRevision, which skips every confirmed tag receipt (epoch or cell) and tag-channel events; curation, structure and receipt-less tag events still tick it. No effects. F2 typed-change-events review (2026-10-18): additive typed kinds (membership/curation per protocol, structure) with a pure reducer; untyped events unchanged. F2 curation receipt channel review (2026-10-18): curation with receipt:true advances only the protocol summary and content counters.",
       "tests": [
         "src/workspace-navigation/workspaceNavigation.test.js",
         "src/retainedControls.test.js",
@@ -4025,7 +4045,8 @@
         "src/annotationReceiptWorkflow.test.js",
         "src/treeGroupAnnotationWorkflow.test.js",
         "src/workbenchTagScope.test.js",
-        "src/workspaceChangesLedger.test.js"
+        "src/workspaceChangesLedger.test.js",
+        "src/epoch-browser/curationReceipts.test.js"
       ]
     },
     "src/workspace-navigation/useWorkspaceNavigation.js": {

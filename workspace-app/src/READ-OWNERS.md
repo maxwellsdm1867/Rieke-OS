@@ -56,7 +56,9 @@ protocol's clock (`protocolRevision`, `protocolReviewRevision`; membership also
 project summaries; `{kind:'structure'}` advances every clock. /projects, /jobs,
 /metadata/status and suggestions follow structure only; the Workbench summary
 follows structure plus membership; the overview cache invalidates one protocol's
-summaries (mounted ones re-read). Untyped events keep the original behavior:
+summaries (mounted ones re-read). A curation receipt applied in place
+(`receipt:true`, see [curation receipts](epoch-browser/AGENTS.md#curation-receipts-applied-in-place))
+advances only that protocol's summary counter. Untyped events keep the original behavior:
 annotation/curation without a protocol increments display revision only;
 other events increment structure too. Only version-1 confirmed annotation deltas
 propagate. Hidden summaries defer display revision until visible, while structure
