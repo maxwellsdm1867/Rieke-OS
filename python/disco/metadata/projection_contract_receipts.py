@@ -269,7 +269,7 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
               'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
                                  'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
                                  '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
-                                 'b073e81a0f8fdaac5971ef48865179b57c8265cdfb4595aa8274b93c1839416f',
+                                 '84fbd200489e5ee89ec4ee85cd17c705c81c22e2c44455c7483bfd7b22ea3e89',
                                  '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
               'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
@@ -282,7 +282,8 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
                            'writes still receive the plain projections), counts every read-model assignment '
                            'with a monotonic publication serial, adds the read-only query_view memo over '
                            'query_result, and raises typed WorkspaceNotReady/LockBusy (RuntimeError '
-                           'subclasses). Projection keys, codecs, decoded values, membership, source '
+                           'subclasses). Refresh publication freezes rows in place, releasing each plain row '
+                           'as it is frozen. Projection keys, codecs, decoded values, membership, source '
                            'validation, index generation and cache authority are unchanged; all other '
                            'ordered owners and the resolver are byte-identical.',
               'evidence': ('git:a7aca9b',

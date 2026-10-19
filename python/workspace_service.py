@@ -130,31 +130,40 @@ def _freeze_flat(value):
     return freeze(value)
 
 
-def _freeze_rows(rows):
-    """Freeze row mappings with one C-level copy per flat value."""
-    frozen = {}
+def _freeze_rows(rows, *, in_place=False):
+    """Freeze row mappings with one C-level copy per flat value.
+
+    ``in_place`` replaces each plain row in the caller's (owned) dict as it is
+    frozen, so the plain row is released immediately: publication never holds
+    two copies of every row. Only the top-level map is copied (references).
+    """
+    if any(type(row) not in (dict, FrozenDict) for row in rows.values()):
+        raise Unfreezable('Published row is not a plain mapping')
+    target = rows if in_place else {}
     leaves = _IMMUTABLE_LEAVES
     for key, row in rows.items():
         if type(row) is FrozenDict:
-            frozen[key] = row
-            continue
-        if type(row) is not dict:
-            raise Unfreezable('Published row is not a plain mapping')
-        nested = [name for name, value in row.items() if type(value) not in leaves]
-        if not nested:
-            frozen[key] = FrozenDict(row)
+            frozen = row
         else:
-            copy_ = dict(row)
-            for name in nested:
-                copy_[name] = _freeze_flat(row[name])
-            frozen[key] = FrozenDict(copy_)
-    return FrozenDict(frozen)
+            nested = [name for name, value in row.items() if type(value) not in leaves]
+            if not nested:
+                frozen = FrozenDict(row)
+            else:
+                copy_ = dict(row)
+                for name in nested:
+                    copy_[name] = _freeze_flat(row[name])
+                frozen = FrozenDict(copy_)
+        target[key] = frozen  # Assigning an existing key keeps iteration valid.
+    return FrozenDict(target)
 
 
-def publish_frozen(value, *, rows=False):
-    """Freeze a read-model map for publication; None when it cannot be proven."""
+def publish_frozen(value, *, rows=False, in_place=False):
+    """Freeze a read-model map for publication; None when it cannot be proven.
+
+    ``in_place`` (rows only) is for a caller that owns ``value`` and discards it.
+    """
     try:
-        return _freeze_rows(value) if rows else freeze(value)
+        return _freeze_rows(value, in_place=in_place) if rows else freeze(value)
     except Unfreezable:
         return None
 
@@ -933,6 +942,10 @@ class WorkspaceService:
                 projection_store.write(key, projection)
             except OSError as error:
                 metrics.setdefault('cache_warnings', []).append('Source projection cache could not be saved: ' + str(error))
+        # Release written projections so publication can free each plain row
+        # as it is frozen in place (no second full copy of the rows).
+        pending_projections.clear()
+        projection = snapshot = None
         if projection_store:
             if disk_index is None:
                 self.last_refresh = {'status':'indexing', 'started_at':dt.datetime.now(dt.timezone.utc).isoformat()}
@@ -956,7 +969,7 @@ class WorkspaceService:
         # Publish deep-frozen maps so the publication serial is a complete
         # freshness proof. Unfreezable content keeps the content-comparing path.
         freeze_started = time.perf_counter()
-        frozen = (publish_frozen(rows, rows=True), publish_frozen(cells), publish_frozen(protocols),
+        frozen = (publish_frozen(rows, rows=True, in_place=True), publish_frozen(cells), publish_frozen(protocols),
                   publish_frozen(fingerprints))
         if all(value is not None for value in frozen):
             rows, cells, protocols, fingerprints = frozen
