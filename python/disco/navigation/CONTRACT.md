@@ -178,3 +178,52 @@ Cell-level tree branches carry optional recorded `cell_type` from the existing
 representative rows. Paged branches and ancestors forward this display metadata.
 No new lookup, scope scan, summary request or membership authority is introduced.
 Other grouping levels do not gain cell identity metadata.
+
+## Search predicate paths
+
+Predicate meaning is unchanged; these are cost rules for the same results.
+
+- **Tag states per generation.** `TagPredicates` keeps tag states and evidence
+  per verified state generation, keyed by the predicate-catalog witness
+  (`service._annotation_catalog_generation`: StateGenerationAuthority tokens for
+  the shared scope and each referenced protocol's curation scope, native reader
+  identities, publication, index/typed generations, source scope and row/cell
+  identities). Tag-time fields use the shared token: their time rows are written
+  in the same transaction as their tags. A hit reads only those tokens. A memo is
+  stored only when the witness is unchanged after the build; an unavailable or
+  replaced reader/authority recomputes exactly as before. Callers receive
+  read-only state lookups and an independent deep copy of the evidence.
+- **Per-value leaves.** A tag leaf is evaluated once per distinct saved tag array
+  (plus once for the empty array), not once per epoch; set algebra combines them
+  over the eligible universe. Shared states are built only for epochs with a
+  direct record or a recorded cell. Evidence revisions stay byte-identical; the
+  publication keeps the cell-link hash state so a shared write does not re-sort
+  every epoch link.
+- **Tag times.** With a time table, matches come from the per-tag time rows (cached
+  per shared token). Without one, chips are read from scoped annotation records
+  (approximate update time), never by hydrating every epoch.
+- **Whole-catalog scope.** `WorkspaceService` keeps the unfiltered active-source
+  rows in tree order per publication and source scope. Its ID tuple proves a scope
+  is the whole eligible catalog: the typed reader then selects by source instead
+  of admitting each identity, the native index matches without a scratch scope,
+  and sparse tag results are ordered by the tree key instead of scanning every
+  ID. A replaced `_filter_rows` policy still decides eligibility itself.
+- **Catalog fields and summaries.** Annotation catalog fields and native summary
+  buckets for tag fields come from the generation's distinct tag arrays (counts
+  and first occurrence in scope order), with output identical to the shared
+  index and the per-epoch construction. Protocol tag states read only saved
+  decisions (`CurationStore.saved_states`); an absent epoch has the default
+  state. Text whose JSON spelling could differ between Python and SQLite is
+  answered by the shared index itself.
+- **Shared writes.** The latest entry for a field set is patched from the shared
+  change feed when the publication, protocol tokens and fields are unchanged,
+  the entry carries the exact shared token it was built at, and the feed
+  returns every changed record up to the current witness (at most 1000).
+  Changed records are re-read by key and validated; affected epochs are
+  recomputed and the evidence revision is rebuilt. Otherwise the entry is
+  rebuilt; a witness that changes during the patch stores nothing.
+- **Summary polls.** A pending poll is a status read and never waits behind the
+  worker (which fences before and after calculating); it fences early only when
+  the database lock is free. Ready results are always fenced.
+
+Coverage: `python/tests/test_workspace_predicate_paths.py`.

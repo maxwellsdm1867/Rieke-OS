@@ -206,6 +206,22 @@ class CurationStore:
         rows = self._rows(protocol_uuid, ids)
         return {key: self._state(rows.get(key), fingerprints[key]) for key in ids}
 
+    def saved_states(self, protocol_uuid, fingerprints):
+        """read() restricted to epochs with a saved decision, without per-epoch defaults.
+
+        An epoch absent from the result has exactly read()'s default state. One
+        project/protocol-keyed read; cost follows saved decisions, not the cohort.
+        """
+        protocol_uuid = _uuid(protocol_uuid)
+        relation = self.Curation & {"project_uuid": self.project_uuid, "protocol_uuid": protocol_uuid}
+        result = {}
+        for row in relation.to_dicts():
+            key = row['epoch_uuid']
+            fingerprint = fingerprints.get(key)
+            if fingerprint is not None:
+                result[key] = self._state(row, _fingerprint(fingerprint))
+        return result
+
     def summary_decisions(self, protocol_uuid, epoch_ids, fingerprints):
         """Only decisions that differ from default summary counts; no tag JSON.
 
