@@ -271,3 +271,31 @@ test('the predicate editor keeps tag-name autocomplete: the one request allowed 
   assert.match(h.text(),/bright/);assert.match(h.text(),/branch-stim/);
  }finally{await h.close();}
 });
+
+test('recorded-value choices: none on the current registry, and a legacy catalog with 1,000 counted values opens with no request and a bounded render',async()=>{
+ const h=await harness();
+ try{
+  const condition=(field,valueType,operator='eq')=>({kind:'group',id:'g',mode:'all',negated:false,children:[{kind:'condition',id:'c',field,operator,valueType,valueText:'',negated:false}]});
+  // Current service: /explore/field-registry carries no recorded choices, so the editor has no value list.
+  await h.render(h.PredicateDialog,{draft:condition('parameters/field1','number'),catalog:{data:registry,supportsSummaries:true,reload(){}},projectId:'P1',protocolId:'A',onClose(){},onSearch(){}});await h.settle();
+  assert.equal(h.root.findAllByProps({className:'pb-recorded-values'}).length,0,'no recorded-value dropdown from the current field registry');
+  // Legacy service (no field-registry route): /explore/predicate-fields brings choices with counts once, with the catalog.
+  const choices=Array.from({length:1000},(_,i)=>({value:`v${String(i).padStart(4,'0')}`,type:'string',count:i+1}));
+  const legacy={fields:[{id:'parameters/name',label:'Name',category:'Parameters',path:'parameters.name',types:['string'],operators:['eq','ne','contains'],choices},
+   {id:'parameters/level',label:'Level',category:'Parameters',path:'parameters.level',types:['number'],operators:['eq'],choices:choices.map((choice,i)=>({value:i,type:'number',count:choice.count}))}]};
+  const start=h.requests.length;
+  await h.render(h.PredicateDialog,{key:'legacy-number',draft:condition('parameters/level','number'),catalog:{data:legacy,supportsSummaries:false,reload(){}},projectId:'P1',protocolId:'A',onClose(){},onSearch(){}});await h.settle();
+  const select=h.root.findByProps({className:'pb-recorded-values'});
+  assert.equal(select.findAllByType('option').length,101,'the select renders at most 100 recorded values');
+  assert.match(JSON.stringify(select.findAllByType('option')[1].children),/1 epoch/);
+  await h.render(h.PredicateDialog,{key:'legacy-text',draft:condition('parameters/name','string'),catalog:{data:legacy,supportsSummaries:false,reload(){}},projectId:'P1',protocolId:'A',onClose(){},onSearch(){}});await h.settle();
+  const value=()=>h.root.findByProps({'aria-label':'Condition value'});
+  const opened=performance.now();await h.act(()=>value().props.onFocus());const openMs=performance.now()-opened;
+  const typed=performance.now();await h.act(()=>value().props.onChange({target:{value:'v09'}}));const typeMs=performance.now()-typed;
+  await h.settle(250);
+  assert.deepEqual(h.requests.slice(start).map(item=>item.path),[],'opening or typing in the value list sends no request');
+  assert.ok(h.root.findAllByProps({role:'option'}).length<=30,'suggestions are bounded');
+  console.log(`recorded-values legacy 1,000: open ${openMs.toFixed(1)} ms, type ${typeMs.toFixed(1)} ms (react-test-renderer commit)`);
+  assert.ok(openMs<1000&&typeMs<1000);
+ }finally{await h.close();}
+});
