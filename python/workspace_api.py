@@ -1810,6 +1810,12 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             result, curation, revision = state(protocol_uuid)
             if body.get("query_revision") != revision:
                 raise StaleWorkspace("The query or curation changed. Refresh before exporting.")
+            bound = explorer_history.protocol_binding_header(protocol_uuid)
+            if bound and callable(getattr(explorer_history, 'verify_membership', None)):
+                # Membership becomes scientific truth here: re-hash it in full
+                # against the bound revision's sealed multiset hash and index.
+                explorer_history.verify_membership(bound['revision_uuid'],
+                    [(row['uuid'], row['metadata_hash']) for row in result['epochs']])
             require_protocol_compatibility(service, protocol_uuid, [row['uuid'] for row in result['epochs']])
             archived = set(result['source_scope']['excluded_source_revisions'])
             if any(service.rows[row['uuid']]['source_sha256'] in archived for row in result['epochs']):

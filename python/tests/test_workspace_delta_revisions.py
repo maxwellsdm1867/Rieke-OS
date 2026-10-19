@@ -8,6 +8,7 @@ import contextlib
 import hashlib
 import json
 import os
+import types
 import unittest
 import uuid
 from unittest.mock import patch
@@ -109,6 +110,25 @@ class DeltaRevisionFixture(_Workbench):
                               deepcopies=deepcopies['calls'])
 
 
+def _measure_prune(self):
+    """Prune the newest recording from the bound main as a data-store deletion does."""
+    from disco.projects.datastore_deletion import DataStoreDeletion
+    service = self.case.service
+    removed = {key for key, row in service.rows.items() if row['source_sha256'] == self.fixture.source_sha}
+    merged = DeltaRevisionTests.post_merge(self)  # Put the recording into main first.
+    self.assertEqual(merged.status_code, 200, merged.get_json())
+    deletion = DataStoreDeletion(types.SimpleNamespace(service=service, dj=service.dj,
+        project_uuid=service.project['project_uuid'], explorer_history=self.case.explorer_history))
+
+    def prune():
+        with self.case.connection.transaction:
+            deletion._prune_bindings(deletion._bindings(removed), removed, self.fixture.source_sha)
+    return self.measure(prune)[1]
+
+
+DeltaRevisionFixture.measure_prune = _measure_prune
+
+
 class DeltaRevisionTests(_Workbench):
     def post_merge(self):
         queue = self.queue()
@@ -140,11 +160,11 @@ class DeltaRevisionTests(_Workbench):
             self.assertEqual(response.get_json()['accepted_epoch_count'], 1)  # The new recording only.
             response, undo = fixture.measure(lambda: fixture.undo(response.get_json()))
             self.assertEqual(response.status_code, 200, response.get_json())
-            results[size] = dict(merge=merge, undo=undo)
+            results[size] = dict(merge=merge, undo=undo, prune=fixture.measure_prune())
         print('Merge cost by main size:', json.dumps(results, sort_keys=True))
         baseline = results[sizes[0]]
         for size in sizes[1:]:
-            for step in ('merge', 'undo'):
+            for step in ('merge', 'undo', 'prune'):
                 measured, expected = results[size][step], baseline[step]
                 self.assertEqual(measured['sql_rows_written'], expected['sql_rows_written'], (size, step))
                 self.assertEqual(measured['deepcopies'], expected['deepcopies'], (size, step))
@@ -215,6 +235,64 @@ class DeltaRevisionTests(_Workbench):
         # main' = main + accepted keeps main's query and seen recordings, so the
         # pool is the old pool minus the accepted epochs; undo reuses main's pool.
         self.assertEqual(queries.call_count, 0)
+
+    def export(self):
+        revision = self.case.client.get(self.case.base).get_json()['query_revision']
+        return self.case.client.post(self.case.base + '/exports', json={'query_revision': revision,
+            'review_policy': 'include_unreviewed'}, headers=self.case.headers)
+
+    def test_tampered_old_member_row_refuses_export_and_app_state_capture(self):
+        from workspace_state_snapshot import verify_lineage_state
+        self.more_import()
+        merged = self.post_merge()
+        self.assertEqual(merged.status_code, 200, merged.get_json())
+        head = self.case.explorer_history.protocol_binding_header(self.protocol)['revision_uuid']
+
+        def tables():
+            return dict(explorer_revision=copy.deepcopy(self.case.explorer_revisions.rows),
+                        protocol_binding=copy.deepcopy(self.case.protocol_bindings.rows),
+                        protocol_membership=copy.deepcopy(self.membership.rows))
+        verify_lineage_state(tables())  # The intact lineage verifies in full.
+        exported = self.export()
+        self.assertEqual(exported.status_code, 201, exported.get_json())
+        root_row = next(row for row in self.membership.rows if row['added_revision_uuid'] != head)
+        saved, root_row['metadata_hash'] = root_row['metadata_hash'], 'f' * 64
+        datasets = len(self.case.datasets.rows)
+        refused = self.export()
+        self.assertEqual(refused.status_code, 400, refused.get_json())
+        self.assertIn('integrity', refused.get_json()['error'])
+        self.assertEqual(len(self.case.datasets.rows), datasets)
+        with self.assertRaisesRegex(ValueError, 'integrity'):
+            verify_lineage_state(tables())  # Capture and restore run this check.
+        root_row['metadata_hash'] = saved
+        dropped = self.membership.rows.pop()
+        with self.assertRaisesRegex(ValueError, 'integrity'):
+            verify_lineage_state(tables())
+        self.membership.rows.append(dropped)
+
+    def test_datastore_prune_writes_a_removed_delta(self):
+        first, _ = self.more_import()
+        merged = self.post_merge()
+        self.assertEqual(merged.status_code, 200, merged.get_json())
+        history = self.case.explorer_history
+        head = history.protocol_binding_header(self.protocol)
+        from disco.projects.datastore_deletion import DataStoreDeletion
+        deletion = DataStoreDeletion(types.SimpleNamespace(service=self.case.service, dj=self.case.service.dj,
+            project_uuid=self.case.service.project['project_uuid'], explorer_history=history))
+        source = self.case.service.rows[first]['source_sha256']
+        bindings = deletion._bindings({first})
+        self.assertEqual([row['protocol_uuid'] for row in bindings], [self.protocol])
+        with self.case.connection.transaction:
+            deletion._prune_bindings(bindings, {first}, source)
+        pruned = history.protocol_binding_header(self.protocol)
+        header = history.header(pruned['revision_uuid'])
+        self.assertEqual((header['storage'], header['parent_revision_uuid'], header['delta']),
+                         ('membership-delta-v1', head['revision_uuid'], {'added': [], 'removed': [first]}))
+        self.assertNotIn(first, history.members(pruned['revision_uuid']))
+        self.assertNotIn(source, header['source_revisions'])
+        self.assertEqual(set(history.verify_lineage(pruned['revision_uuid'])),
+                         set(history.members(pruned['revision_uuid'])))
+        history.verify_membership(pruned['revision_uuid'])
 
     def tamper(self, revision, change):
         history = self.case.explorer_history

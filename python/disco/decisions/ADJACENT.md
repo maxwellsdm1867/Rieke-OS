@@ -109,13 +109,21 @@ sorted membership (for a delta, materialized from the verified chain).
 `bind` reads headers only.
 
 Lineage index: `protocol_membership(project_uuid, lineage_uuid, epoch_uuid,
-added_revision_uuid -> metadata_hash)`. Binding a delta inserts its added rows
-in the bind transaction (the first delta bound on a lineage backfills the
-root's rows once, O(root)). A revision's indexed membership is the rows whose
-adding revision lies on its chain. `retire_delta` removes an undone delta's rows
-with one DELETE inside the caller's binding transaction. `verify_lineage`
-re-hashes the indexed membership against the sealed multiset hash (O(members),
-for exports, app-state capture/restore and first use). The table is registered
+added_revision_uuid -> metadata_hash, removed_revision_uuid)`. Binding a delta
+inserts its added rows and marks its removed members in the bind transaction
+(the first additive delta bound on a lineage backfills the chain once,
+O(root); a removal on an unindexed lineage leaves it unindexed). A revision's
+indexed membership is the rows added on its chain and not removed on it.
+`retire_delta` removes an undone delta's rows with one DELETE inside the
+caller's binding transaction. `verify_lineage` re-hashes the indexed
+membership against the sealed multiset hash, and `verify_membership` re-hashes
+a membership about to be used (and the index) against it. Both are O(members)
+and run where membership becomes scientific truth: protocol export
+materialization re-hashes the exported bound membership, and app-state capture
+and restore re-hash every indexed lineage a binding uses
+(`workspace_state_snapshot.verify_lineage_state`); any mismatch refuses.
+Data-store deletion prunes a bound revision as a removed delta (O(removed)
+membership probes and one delta row) when the canonical reader is in use. The table is registered
 append-only in the recovery state (`workspace_state_snapshot.TABLES`,
 `recovery_generation.TABLE_NAMES`, ordinal 19); compact/expand queries never
 re-query a delta or a root that a delta builds on, because the chain seals that
