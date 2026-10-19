@@ -1825,7 +1825,9 @@ class WorkspaceService:
             return None
         self._ready()
         scope = self.source_scope()
-        sources = {'sources': list(scope['active_source_revisions'])}
+        # With no excluded source every typed epoch is eligible: count the whole
+        # typed table instead of joining each epoch to its source.
+        sources = {'sources': list(scope['active_source_revisions'])} if scope['excluded_source_revisions'] else None
         serial = publication_serial(self)
         with typed_reader(self) as reader:
             validated = reader._validate(predicate)

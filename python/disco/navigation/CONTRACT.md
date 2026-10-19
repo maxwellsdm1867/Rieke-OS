@@ -193,7 +193,7 @@ membership hash. Protocol trees are unchanged.
 
 `POST /api/explore/preview` with `summary_only: true`, `catalog_summary: false`
 and no `baseline_revision_uuid`/`focused_uuid` is counted: one typed `COUNT`
-over the active sources (the eligible total is memoized per publication and
+over the active sources (the whole typed table when no source is excluded; the eligible total is memoized per publication and
 source scope) and the version-2 revision, with no ID collection or membership
 list. Annotation predicates and anything else outside that contract use the
 exact path. Results that freeze membership (run, revisions, exports, baseline

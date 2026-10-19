@@ -63,6 +63,17 @@ class CountedPreviewTests(unittest.TestCase):
                 self.assertEqual(page['revision'], counted['tree_revision'])
                 self.assertEqual(page['total_epochs'], counted['matched_count'])
 
+    def test_excluded_sources_are_counted_by_source(self):
+        excluded = self.service.rows[self.service.ids[0]]['source_sha256']
+        with patch.object(self.service, 'source_state_provider',
+                          lambda: {excluded: {'archived': False, 'query_excluded': True, 'version': 1}}):
+            for predicate in self.predicates():
+                with self.subTest(predicate=predicate):
+                    exact = self.preview(predicate, focused_uuid=self.service.ids[0])
+                    counted = self.preview(predicate)
+                    self.assertEqual((counted['matched_count'], counted['total_source'], counted['tree_revision']),
+                                     (exact['matched_count'], exact['total_source'], exact['tree_revision']))
+
     def test_published_maps_refuse_mutation_and_a_publish_moves_the_revision(self):
         predicate = {'all': []}
         before = self.preview(predicate)
