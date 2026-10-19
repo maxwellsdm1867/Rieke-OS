@@ -248,6 +248,45 @@ def compare(baseline_path, candidate_path, output):
     return result
 
 
+def acquire_lock(lock, timeout=None, *, poll=2.0, report_every=30.0, out=sys.stderr):
+    """Wait for the shared stress lock instead of failing at once.
+
+    Other runners still take it non-blocking and fail fast; this one polls,
+    logs who holds it, and records itself as holder once acquired. The holder
+    line is advisory: the flock is the only exclusion.
+    """
+    import fcntl
+    started = time.monotonic()
+    last = None
+    while True:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            break
+        except BlockingIOError:
+            waited = time.monotonic() - started
+            if timeout is not None and waited >= timeout:
+                raise TimeoutError(f'Stress lock still held after {waited:.0f} s: {lock_holder(lock)}')
+            if last is None or time.monotonic() - last >= report_every:
+                print(f'waiting for stress lock held by {lock_holder(lock)} ({waited:.0f} s)', file=out, flush=True)
+                last = time.monotonic()
+            time.sleep(poll)
+    lock.seek(0)
+    lock.truncate()
+    lock.write(f'pid={os.getpid()} since={datetime.datetime.now(datetime.timezone.utc).isoformat()} '
+               f'cmd={" ".join(sys.argv)[:300]}\n')
+    lock.flush()
+    return time.monotonic() - started
+
+
+def lock_holder(lock):
+    try:
+        lock.seek(0)
+        text = lock.read().strip()
+    except OSError:
+        text = ''
+    return text or 'an unrecorded process (runners that do not write holder lines)'
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
@@ -261,6 +300,9 @@ def main():
     pair.add_argument('--source-root', type=Path, default=ROOT)
     pair.add_argument('--output', type=Path, required=True)
     pair.add_argument('--profile', action='append')
+    for sub in (run_parser, pair):
+        sub.add_argument('--lock-timeout', type=float, default=None,
+                         help='Seconds to wait for the shared stress lock (default: wait indefinitely)')
     comparison = commands.add_parser('compare')
     comparison.add_argument('baseline', type=Path)
     comparison.add_argument('candidate', type=Path)
@@ -271,17 +313,20 @@ def main():
         return 1
     try:
         if args.command in ('run', 'pair'):
-            import fcntl
             import tempfile
             # Shares the stress-track lock: never overlap million-row workers.
-            with (Path(tempfile.gettempdir())/'disco-everyday-million.lock').open('a') as lock:
-                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                if args.command == 'run':
-                    print(run(args.source_root, args.output, args.profile, args.cases))
-                    return 0
-                args.output.mkdir(parents=True, exist_ok=False)
-                base = run(args.baseline_source, args.output/'baseline', args.profile)
-                cand = run(args.source_root, args.output/'candidate', args.profile)
+            with (Path(tempfile.gettempdir())/'disco-everyday-million.lock').open('a+') as lock:
+                acquire_lock(lock, args.lock_timeout)
+                try:
+                    if args.command == 'run':
+                        print(run(args.source_root, args.output, args.profile, args.cases))
+                        return 0
+                    args.output.mkdir(parents=True, exist_ok=False)
+                    base = run(args.baseline_source, args.output/'baseline', args.profile)
+                    cand = run(args.source_root, args.output/'candidate', args.profile)
+                finally:
+                    lock.seek(0)
+                    lock.truncate()  # Holder line is cleared before the flock is released.
             result = compare(base, cand, args.output/'comparison.json')
         else:
             result = compare(args.baseline, args.candidate, args.output)

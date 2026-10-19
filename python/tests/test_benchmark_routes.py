@@ -94,5 +94,24 @@ class RouteComparisonTests(unittest.TestCase):
         self.assertTrue(set(self.cfg['expected_by_contract']) <= {'ne_cell_type', 'exists_cell_type', 'missing_cell_type', 'missing_recorded'})
 
 
+class StressLockTests(unittest.TestCase):
+    def test_waits_reports_holder_times_out_and_records_itself(self):
+        import fcntl
+        import io
+        with tempfile.TemporaryDirectory(prefix='route-lock-test-') as folder:
+            path = Path(folder) / 'stress.lock'
+            holder = path.open('a+')
+            fcntl.flock(holder, fcntl.LOCK_EX)
+            holder.write('pid=1 cmd=other benchmark\n'); holder.flush()
+            waiter, log = path.open('a+'), io.StringIO()
+            with self.assertRaisesRegex(TimeoutError, 'other benchmark'):
+                routes.acquire_lock(waiter, 0.3, poll=0.05, report_every=0.1, out=log)
+            self.assertIn('waiting for stress lock held by pid=1 cmd=other benchmark', log.getvalue())
+            fcntl.flock(holder, fcntl.LOCK_UN); holder.close()
+            routes.acquire_lock(waiter, 1, poll=0.05, out=log)
+            self.assertIn(f'pid={__import__("os").getpid()}', path.read_text())
+            waiter.close()
+
+
 if __name__ == '__main__':
     unittest.main()

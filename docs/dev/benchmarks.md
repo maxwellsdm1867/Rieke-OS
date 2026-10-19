@@ -555,6 +555,18 @@ scan linearly, so write latencies overstate native costs; use counts for writes.
 This is synthetic route evidence, not native MySQL, HTTP transport, renderer or
 release qualification, and it is not part of the required CI families.
 
+`run` and `pair` wait for the shared stress lock instead of failing: they log
+`waiting for stress lock held by …` every 30 seconds, record their own
+pid/start/command in the lock file while they hold it (clearing it on exit), and
+accept `--lock-timeout SECONDS`. The flock remains the only exclusion; the
+other runners still take it without waiting.
+
+At one million epochs the typed sidecar build exceeds its in-app RSS budget
+unless the measured source includes #110 (`claude/typed-index-budget`). Build
+1M candidate trees with #110 merged. A base that lacks it measures the untyped
+explore fallback at 1M; say so beside any 1M base comparison rather than
+treating the typed-path difference as the candidate's own gain.
+
 ## What the first slice measures
 
 Six real SQLite operation cases reuse `tools/metadata_qualification` CoreAdapter
