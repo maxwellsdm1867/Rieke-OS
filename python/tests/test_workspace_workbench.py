@@ -652,11 +652,10 @@ class WorkbenchTests(unittest.TestCase):
             self.assertFalse(page.get_json()['epochs'][0]['review_decision']['reviewed'])
             tree = self.case.client.post(self.root + '/tree/page', json={'candidate_scope_revision': token, 'splits': 'cell'}, headers=self.case.headers)
             self.assertEqual(tree.status_code, 200, tree.get_json())
-            summary = self.case.client.post(self.root + '/summary', json={'candidate_scope_revision': token,
-                'filters': {'cell_uuid': self.added}}, headers=self.case.headers)
-            self.assertEqual(summary.status_code, 200, summary.get_json())
-            self.assertEqual(summary.get_json()['matched_count'], 0)
-            self.assertFalse(summary.get_json()['distributions_available'])
+            # The candidate count-preview route was removed with query-building previews.
+            removed = self.case.client.post(self.root + '/summary', json={'candidate_scope_revision': token},
+                                            headers=self.case.headers)
+            self.assertIn(removed.status_code, (404, 405))
             for path in ('/epochs', '/tree', '/tree-fields', '/epochs/' + self.added, '/epochs/' + self.added + '/trace'):
                 self.assertEqual(self.case.client.get(self.root + path).status_code, 409, path)
             outside = self.case.client.get(self.root + '/epochs/' + self.fixture.before_ids[0], query_string={'candidate_scope_revision': token})
@@ -778,25 +777,6 @@ class WorkbenchTests(unittest.TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertNotIn('windows', response.get_json())
         self.assertEqual(len(calls), 2)
-
-    def test_candidate_summary_echoes_generation_and_rejects_a_changed_filter_authority(self):
-        context = self.get_context()
-        body = dict(candidate_scope_revision=context['candidate_scope_revision'], filters={'cell_uuid': self.added})
-        response = self.case.client.post(self.root + '/summary', json=body, headers=self.case.headers)
-        self.assertEqual(response.status_code, 200, response.get_json())
-        self.assertEqual(response.get_json()['filters'], body['filters'])
-        self.assertTrue(response.get_json()['generation'])
-        witness = ['before']
-        original = type(self.case.service).filtered_rows
-        def mutate_during_calculation(scoped, *args, **kwargs):
-            rows = original(scoped, *args, **kwargs)
-            witness[0] = 'after'
-            return rows
-        with patch('disco.metadata.explore_queries.generation', side_effect=lambda *args: {'annotation': witness[0]}), \
-                patch.object(type(self.case.service), 'filtered_rows', mutate_during_calculation):
-            response = self.case.client.post(self.root + '/summary', json=body, headers=self.case.headers)
-        self.assertEqual(response.status_code, 409, response.get_json())
-        self.assertNotIn('counts', response.get_json())
 
     def coverage_annotations(self):
         from disco.decisions.annotations import SharedAnnotations
@@ -1007,16 +987,11 @@ class WorkbenchTests(unittest.TestCase):
             self.assertEqual(page.status_code, 200, page.get_json())
             self.assertEqual(page.get_json()['total'], count)
             self.assertTrue(all(row['epoch_uuid'] == self.added for row in page.get_json()['epochs']))
-            summary = self.case.client.post(self.root + '/summary', json=dict(candidate_scope_revision=token, filters=filters), headers=self.case.headers)
-            self.assertEqual(summary.status_code, 200, summary.get_json())
-            self.assertEqual(summary.get_json()['matched_count'], count)
-            self.assertEqual(json.loads(summary.get_json()['filters']['metadata_predicate']), predicate)
-            self.assertEqual(summary.get_json()['candidate_scope_revision'], token)
             tree = self.case.client.post(self.root + '/tree/page', json=dict(candidate_scope_revision=token, filters=filters, splits='cell'), headers=self.case.headers)
             self.assertEqual(tree.status_code, 200, tree.get_json())
             self.assertEqual(tree.get_json()['total_epochs'], count)
         foreign = {'field': 'curation/00000000-0000-4000-8000-000000000000/tags', 'operator': 'contains', 'value': 'QC'}
-        response = self.case.client.post(self.root + '/summary', json=dict(candidate_scope_revision=token, filters={'metadata_predicate': json.dumps(foreign)}), headers=self.case.headers)
+        response = self.case.client.get(self.root + '/epochs', query_string=dict(candidate_scope_revision=token, metadata_predicate=json.dumps(foreign)))
         self.assertEqual(response.status_code, 400, response.get_json())
 
     def test_draft_cas_atomic_validation_actor_isolation_and_epoch_fingerprint_invalidation(self):

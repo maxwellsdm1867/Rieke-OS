@@ -375,6 +375,9 @@ class SummaryJobs:
         if (not isinstance(fields, list) or any(not isinstance(field, str) for field in fields)
                 or len(set(fields)) != len(fields)):
             raise ValueError('summary_fields must be an array of unique field IDs')
+        if not fields:
+            # Counts come with every result; a job summarizes requested fields.
+            raise ValueError('Choose at least one summary field')
         context['summary_fields'] = list(fields)
         catalog = field_registry(self.service)
         if set(fields) - {field['id'] for field in catalog['fields']}:

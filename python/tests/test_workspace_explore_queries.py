@@ -59,7 +59,7 @@ class RequestedSummaryTests(unittest.TestCase):
             'version': 1, 'bound_at': datetime.datetime(2026, 10, 1)})
         self.jobs.autostart = False
         with patch.object(self.jobs, '_calculate', return_value={'matched_count': 0, 'summaries': {}}), patch('disco.metadata.explore_queries.typed_scope', return_value=(None, None)):
-            response = self.submit(protocol_uuid=self.service.protocol_id, summary_fields=[])
+            response = self.submit(protocol_uuid=self.service.protocol_id, summary_fields=['parameters/example'])
             self.assertEqual(response.status_code, 202, response.get_json())
             ack = response.get_json()
             self.jobs.drive_worker()

@@ -282,3 +282,15 @@ refresh receipt. Queries use the native index. `/api/health` and
 `/api/metadata/status` report `typed_index: {"status": "available"}` or
 `{"status": "unavailable", "reason": ...}`. A later refresh retries the build.
 Coverage: `python/tests/test_workspace_typed_index_budget.py`.
+
+## Results carry no inline statistics
+
+`POST /api/explore/preview`, `/api/explore/run` and `/api/explore/revisions`
+with `summary_only: true` never compute scoped per-field statistics: they answer
+with registered field identities and `catalog_summary: false`. The
+`catalog_summary` flag is a deprecated boolean that no longer changes a
+summary-only response (clients may drop it); rendered trees
+(`summary_only: false`) still require it. After a query finishes, one
+`POST /api/explore/summaries` job summarizes the fields the view shows; a job
+must request at least one field. Coverage:
+`python/tests/test_workspace_preview_removal.py`.

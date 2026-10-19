@@ -1240,7 +1240,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                 from workspace_state_generation import StateGenerationAuthority
                 tracker = getattr(service, '_explore_state_generation', None)
                 readonly = request.method == 'GET' or request.endpoint in {
-                    'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary', 'workbench_selection_summary', 'workbench_tree_selection', 'workbench_list_selection', 'workbench_selection_manifest'}
+                    'workbench_preview', 'workbench_tree_page', 'workbench_selection_summary', 'workbench_tree_selection', 'workbench_list_selection', 'workbench_selection_manifest'}
                 contract = (tracker.response_contract() if readonly and type(tracker) is StateGenerationAuthority
                             else contextlib.nullcontext())
                 with contract:
@@ -1733,17 +1733,6 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                 cells[identity] = cell
             return jsonify(finish(context, dict(epoch_uuids=ids, counts=dict(epochs=len(ids), cells=len(cells)),
                 cells=[cells[key] for key in sorted(cells)])))
-
-    @app.post(candidate + '/summary')
-    def workbench_candidate_summary(protocol, revision):
-        value = body({'candidate_scope_revision'}, {'filters', 'selection_token'})
-        filters = validate_filters(value.get('filters'))
-        with guarded(protocol, revision, filters) as owner:
-            context = checked(protocol, revision, owner, value['candidate_scope_revision'], filters)
-            scoped = manager.frozen_service(context)
-            counts = scoped._counts(scoped.filtered_rows(protocol, filters))
-            return jsonify(finish(context, dict(counts=counts, matched_count=counts['epochs'],
-                filters=filters, filters_sha256=checksum(filters), distributions_available=False)))
 
     from disco.workbench.workbench_exports import register_workbench_export_routes
     register_workbench_export_routes(app, manager, app.extensions['curation_store'], db_lock, guarded, actor, body)
