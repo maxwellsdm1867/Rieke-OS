@@ -701,7 +701,14 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         from workspace_updates import release_metadata
         return jsonify(status="ready", project_uuid=service.project["project_uuid"],
                        app_release=release_metadata()['version'], project_path=str(project_dir),
-                       backup=backup_status())
+                       backup=backup_status(), typed_index=typed_index_status())
+
+    def typed_index_status():
+        """Whether the typed metadata sidecar serves reads; the fallback is the native index."""
+        if getattr(service, 'typed_index', None) is not None:
+            return {'status': 'available'}
+        refresh = getattr(service, 'last_successful_refresh', None) or {}
+        return {'status': 'unavailable', 'reason': refresh.get('typed_metadata_index_error') or 'not built'}
 
     def backup_status():
         scheduler=app.extensions.get('backup_scheduler')
@@ -716,7 +723,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         return jsonify(status='ready' if service._loaded else 'needs_refresh',
                        last_refresh=getattr(service, 'last_successful_refresh', None),
                        latest_attempt=getattr(service, 'last_refresh', None),
-                       annotation_preparation=getattr(service,'annotation_preparation',None))
+                       annotation_preparation=getattr(service,'annotation_preparation',None),
+                       typed_index=typed_index_status())
 
     @app.get('/api/metadata/fields')
     def metadata_fields():

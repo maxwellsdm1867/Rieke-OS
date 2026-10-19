@@ -237,3 +237,20 @@ before any recovery attempt. No signature is rewritten on an old reader and no
 source or scientific metadata check is relaxed. The publication-cache examples
 cover identical seal bytes with changed file metadata, invalid-seal rebuild and
 unchanged rejection of a changed native generation.
+
+## Typed sidecar memory budget and fallback
+
+The typed sidecar builder budgets its **own** memory: the process peak resident
+size may grow by at most `max_rss_gib` (1 GiB by default) during the build,
+measured from the peak when the build starts. Memory the app already held for
+the published generation does not count, so a large project can build its
+sidecar. Time, free-disk and cancellation budgets are unchanged.
+
+The sidecar only accelerates reads of a verified native generation. When it
+cannot be prepared (budget refusal, verification or I/O failure), refresh still
+publishes the native generation with `typed_index` absent and reports
+`typed_metadata_index: "unavailable"` and `typed_metadata_index_error` in the
+refresh receipt. Queries use the native index. `/api/health` and
+`/api/metadata/status` report `typed_index: {"status": "available"}` or
+`{"status": "unavailable", "reason": ...}`. A later refresh retries the build.
+Coverage: `python/tests/test_workspace_typed_index_budget.py`.

@@ -459,18 +459,21 @@ class PublicationCacheTests(unittest.TestCase):
         self.assertIsNone(self.service._tree_page_scope_cache)
         self.assertNotEqual(before, self.service._explore_publication)
 
-    def test_typed_build_failure_does_not_publish_or_discard_prior_generation(self):
-        owner, rows, token = self.service.typed_index, self.service.rows, self.service._explore_publication
-        cache = self.service._tree_page_scope_cache = object()
+    def test_typed_build_failure_publishes_native_generation_without_typed_reads(self):
+        # The typed sidecar only accelerates reads; refresh never fails for it.
+        token = self.service._explore_publication
         with patch('disco.metadata.typed_lifecycle.prepare', side_effect=RuntimeError('typed build interrupted')):
-            with self.assertRaisesRegex(RuntimeError, 'typed build interrupted'):
-                self.service.refresh()
-        self.assertIs(self.service.typed_index, owner)
-        self.assertIs(self.service.rows, rows)
-        self.assertIs(self.service._tree_page_scope_cache, cache)
-        self.assertEqual(self.service._explore_publication, token)
+            result = self.service.refresh()
+        self.assertEqual(result['typed_metadata_index'], 'unavailable')
+        self.assertEqual(result['typed_metadata_index_error'], 'RuntimeError: typed build interrupted')
+        self.assertIsNone(self.service.typed_index)
+        self.assertTrue(self.service._loaded)
+        self.assertNotEqual(self.service._explore_publication, token)
+        page = self.service.explore_page({'all': []})
+        self.assertEqual(len(page['rows']), len(self.service.rows))
         self.service.refresh()
-        self.assertEqual(self.service.last_refresh['typed_metadata_index'], 'reused')
+        self.assertIn(self.service.last_refresh['typed_metadata_index'], ('reopened', 'built'))
+        self.service.typed_index._check()
 
     def test_refresh_reopens_changed_typed_seal_with_full_verification(self):
         from pathlib import Path
