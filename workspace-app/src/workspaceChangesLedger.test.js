@@ -103,3 +103,61 @@ test('undone merges are named instead of reported as accepted',()=>{
  assert.equal(isMergeUndone(Object.assign(Error('x'),{status:500,data:{code:'workbench_merge_undone'}})),false);
  assert.match(MERGE_UNDONE_MESSAGE,/undone/);
 });
+
+// PR #91 receipt shape: post-write curation for every requested epoch, the
+// query revision the next write must send, and the echoed binding version.
+function serveCurationReceipts(h,{receipts=true}={}){
+ const state={generation:0,included:new Map(),stale:0};
+ const base=h.fixture.respond;
+ h.fixture.respond=async(url,options,fallback)=>{
+  const path=url.pathname.replace(/^\/api/,''),body=options.body?JSON.parse(options.body):null;
+  if(path==='/protocols/protocol-A/curation/read'){
+   if(body.query_revision!==`query-${state.generation}`){state.stale++;throw Object.assign(Error('The inspected query or dataset binding changed. Refresh before saving.'),{status:409});}
+   return {protocol_uuid:'protocol-A',query_revision:body.query_revision,expected_binding_version:body.expected_binding_version,epochs:body.epoch_uuids.map(id=>({epoch_uuid:id,cell_uuid:'cell-0',curation_revision:state.generation}))};
+  }
+  if(path==='/protocols/protocol-A/curation'){
+   if(body.query_revision!==`query-${state.generation}`){state.stale++;throw Object.assign(Error('stale'),{status:409});}
+   for(const id of body.epoch_uuids)if('included' in body.changes)state.included.set(id,body.changes.included);
+   state.generation++;h.fixture.generation=state.generation;
+   if(!receipts)return {curation:{},event_uuid:null};
+   return {curation:Object.fromEntries(body.epoch_uuids.map(id=>[id,{included:state.included.get(id)??true,tags:[],review_state:'unreviewed',revision:state.generation,metadata_fingerprint:'f',approval_stale:false}])),
+    event_uuid:null,query_revision:`query-${state.generation}`,expected_binding_version:body.expected_binding_version,curation_revisions:Object.fromEntries(body.epoch_uuids.map(id=>[id,state.generation]))};
+  }
+  return base?base(url,options,fallback):fallback();
+ };
+ return state;
+}
+async function openInspect(h){
+ h.fixture.route={page:'protocol',protocol:'protocol-A',key:'route-1',inspection:{epoch_uuid:'epoch-0'}};serve(h);
+ await step(h,()=>h.mount(),800);
+ await step(h,()=>tab(h,'Inspect').props.onClick(),800);
+ await h.waitFor(()=>!!h.viewer?.treePane?.listProps&&!h.viewer.treePane.listProps.disabled);
+ const date=h.root.findAllByType('details').find(node=>node.props.className==='cell-tree-date');
+ await h.act(()=>date.props.onToggle({currentTarget:{open:true}}));
+ const cell=h.root.findAllByType('details').find(node=>node.props.className==='cell-tree-cell');
+ await h.act(()=>cell.props.onToggle({currentTarget:{open:true}}));
+ await h.settle(500);
+}
+test('an inclusion toggle applies its curation receipt in place: 1 write, 0 page/tree reloads, chained revision',async()=>{
+ const h=await createWorkflowHarness({total:40,liveMetadata:false});
+ try{
+  await openInspect(h);const state=serveCurationReceipts(h);
+  const row={epoch_uuid:'epoch-3',cell_uuid:'cell-0'};
+  for(const included of [false,true,false]){
+   await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);
+   const sent=await step(h,()=>h.viewer.treePane.listProps.onToggleInclusion({...row,curation:{included:!included}},included),600);
+   assert.deepEqual(sent.filter(line=>line.startsWith('POST')),['POST /protocols/protocol-A/curation/read','POST /protocols/protocol-A/curation'],sent.join('\n'));
+   assert.deepEqual(sent.filter(line=>line.startsWith('GET')),[],'no page, tree, detail or summary reloads: '+sent.join('\n'));
+   assert.equal(h.viewer.treePane.listProps.inclusionForEpoch({...row,curation:{included:true,tags:[]}}).curation.included,included,'row shows the receipt state');
+  }
+  assert.equal(state.stale,0,'each next write sent the chained query revision');
+ }finally{await h.close();}
+});
+test('without a receipt the toggle keeps the reload path',async()=>{
+ const h=await createWorkflowHarness({total:40,liveMetadata:false});
+ try{
+  await openInspect(h);serveCurationReceipts(h,{receipts:false});
+  const sent=await step(h,()=>h.viewer.treePane.listProps.onToggleInclusion({epoch_uuid:'epoch-3',cell_uuid:'cell-0',curation:{included:true}},false),800);
+  assert.ok(sent.some(line=>line.startsWith('GET /protocols/protocol-A/epochs?')),sent.join('\n'));
+ }finally{await h.close();}
+});

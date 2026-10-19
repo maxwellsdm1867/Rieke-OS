@@ -14,7 +14,7 @@ export function useOverviewCache(scope,revision,structureRevision=revision,chang
   // A typed membership/curation change for one protocol invalidates only that
   // protocol's summaries and the project summary. Mounted entries re-read via
   // their changed descriptor; other visited summaries stay until visited.
-  const protocolId=(change?.kind==='membership'||change?.kind==='curation')&&change.seq!==typed.current?change.protocolId:null;
+  const protocolId=['membership','curation','curation-receipt'].includes(change?.kind)&&change.seq!==typed.current?change.protocolId:null;
   typed.current=change?.seq??null;
   if(protocolId&&!structural){cache.invalidate(entry=>entry.path==='/overview'||entry.path.startsWith(`/protocols/${protocolId}/`)||entry.path.startsWith(`/protocols/${protocolId}?`));return;}
   // Imports/structure changes refresh visited summaries in the background.

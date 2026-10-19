@@ -1,3 +1,4 @@
+import {curationReceipts} from './curationReceipts.js';
 import {frozenReadPath,frozenReadQuery} from './frozenReadContext.js';
 // Membership stays source-specific; the browser above this adapter is shared.
 export function epochPageRequest(source,{offset=0,cellUuid=null,anchorUuid=null,includeCells=false}={}){
@@ -20,8 +21,11 @@ export function epochPageRequest(source,{offset=0,cellUuid=null,anchorUuid=null,
 export function epochPageRevision(source,page){
   const protocol=source.kind==='protocol';
   if(!protocol&&source.kind!=='predicate')throw new Error('Unknown epoch browser source');
+  // Main protocol pages compare through this renderer's own curation receipt
+  // chain (curationReceipts): a page read after our write equals the shown one.
+  const chained=protocol&&!source.readContext,same=value=>chained?curationReceipts.canonical(source.protocolId,value):value;
   const actual=protocol?page?.query_revision:page?.revision;
   const expected=protocol?source.queryRevision:source.treeRevision;
-  if(typeof actual!=='string'||!actual||((expected!==undefined&&expected!==null)&&actual!==expected))throw new Error('Epoch query changed. Refresh and select again.');
-  return actual;
+  if(typeof actual!=='string'||!actual||((expected!==undefined&&expected!==null)&&same(actual)!==same(expected)))throw new Error('Epoch query changed. Refresh and select again.');
+  return same(actual);
 }

@@ -9,7 +9,7 @@ const confirmedReceipt=event=>event?.kind==='annotations'&&event.confirmed?.vers
 const confirmedEpochReceipt=event=>confirmedReceipt(event)&&event.confirmed.targets.every(target=>['epoch','cell'].includes(target.target_kind));
 const protocolOf=event=>typeof event?.protocolId==='string'&&event.protocolId?event.protocolId:null;
 
-export const INITIAL_WORKSPACE_CHANGES=Object.freeze({revision:0,structureRevision:0,reviewRevision:0,contentRevision:0,membershipRevision:0,protocols:Object.freeze({}),members:Object.freeze({}),last:null});
+export const INITIAL_WORKSPACE_CHANGES=Object.freeze({revision:0,structureRevision:0,reviewRevision:0,contentRevision:0,membershipRevision:0,protocols:Object.freeze({}),members:Object.freeze({}),summaries:Object.freeze({}),last:null});
 
 // Typed change kinds (additive; untyped events keep the original clocks):
 //  {kind:'membership', protocolId}  merge-all/undo/finish/accept/apply for one
@@ -17,6 +17,8 @@ export const INITIAL_WORKSPACE_CHANGES=Object.freeze({revision:0,structureRevisi
 //    membership counters. Global display, structure and review clocks stay.
 //  {kind:'curation', protocolId}    curation receipts for one protocol: that
 //    protocol's clock and the content counter only.
+//    With receipt:true (applied in place) it advances only that protocol's
+//    summary counter and the content counter.
 //  {kind:'structure'}               imports, sources, bindings: every clock.
 // Confirmed tag receipts and tag-channel events stay off these clocks. These are
 // local integer clocks, never receipts, scientific readiness or write authority;
@@ -25,6 +27,11 @@ export function applyWorkspaceChange(previous,event){
   const tagChannel=event?.kind==='annotations'&&event.tagChannel===true;
   if(confirmedEpochReceipt(event)||tagChannel)return previous;
   const protocolId=protocolOf(event),seq=(previous.last?.seq||0)+1;
+  // A curation receipt applied in place re-keys no page or tree: only that
+  // protocol's summaries (and project summaries via contentRevision) refresh.
+  if(event?.kind==='curation'&&event.receipt===true&&protocolId)
+    return {...previous,summaries:{...previous.summaries,[protocolId]:(previous.summaries[protocolId]||0)+1},
+      contentRevision:previous.contentRevision+1,last:{seq,kind:'curation-receipt',protocolId}};
   if((event?.kind==='membership'||event?.kind==='curation')&&protocolId){
     const membership=event.kind==='membership';
     return {...previous,protocols:{...previous.protocols,[protocolId]:(previous.protocols[protocolId]||0)+1},
@@ -52,10 +59,11 @@ export function useWorkspaceChanges(){
   const protocolReviewRevision=useCallback(protocolId=>protocolClock(state.reviewRevision,state,protocolId),[state]);
   // Membership of one protocol (binding/query descriptor), never curation.
   const protocolMembershipRevision=useCallback(protocolId=>state.members[protocolId]||0,[state]);
+  const protocolSummaryRevision=useCallback(protocolId=>state.summaries[protocolId]||0,[state]);
   return {...state,
     // Project-wide readers whose content follows protocol membership/curation.
     dataRevision:state.revision+state.contentRevision,
-    protocolRevision,protocolReviewRevision,protocolMembershipRevision,changed};
+    protocolRevision,protocolReviewRevision,protocolMembershipRevision,protocolSummaryRevision,changed};
 }
 
 // A hidden summary keeps its last successful display revision until it is
