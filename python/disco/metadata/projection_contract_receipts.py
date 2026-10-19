@@ -269,7 +269,7 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
               'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
                                  'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
                                  '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
-                                 'be1e3e9bfbf4e78282fc73f2e9c4896a869ca245ae921b2d35e747688326350a',
+                                 '7c74323efc8f47659a5a272d809b35d5e66b62014141cdc489fe4b7c39aa5da3',
                                  '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
               'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
@@ -280,7 +280,8 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
                            'workspace_service only keeps unfiltered active-source eligibility per publication and '
                            'source scope (WorkspaceService._eligible), selects a whole-catalog predicate scope by '
                            'source in _match_metadata_predicate, and passes the cached universe and tree order to '
-                           'tag predicates from match_predicate and explore_preview. Projection keys, codecs, '
+                           'tag predicates from match_predicate and explore_preview, and passes that tuple to '
+                           'annotation catalog fields in _with_annotation_fields. Projection keys, codecs, '
                            'membership, source validation and cache authority are unchanged; all other ordered '
                            'owners and the resolver are byte-identical.',
               'evidence': ('git:57417aaa89a043feee0934183d28b7788d4b73c1',

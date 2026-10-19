@@ -198,6 +198,20 @@ Predicate meaning is unchanged; these are cost rules for the same results.
   of admitting each identity, the native index matches without a scratch scope,
   and sparse tag results are ordered by the tree key instead of scanning every
   ID. A replaced `_filter_rows` policy still decides eligibility itself.
+- **Catalog fields and summaries.** Annotation catalog fields and native summary
+  buckets for tag fields come from the generation's distinct tag arrays (counts
+  and first occurrence in scope order), with output identical to the shared
+  index and the per-epoch construction. Protocol tag states read only saved
+  decisions (`CurationStore.saved_states`); an absent epoch has the default
+  state. Text whose JSON spelling could differ between Python and SQLite is
+  answered by the shared index itself.
+- **Shared writes.** The latest entry for a field set is patched from the shared
+  change feed when the publication, protocol tokens and fields are unchanged,
+  the entry carries the exact shared token it was built at, and the feed
+  returns every changed record up to the current witness (at most 1000).
+  Changed records are re-read by key and validated; affected epochs are
+  recomputed and the evidence revision is rebuilt. Otherwise the entry is
+  rebuilt; a witness that changes during the patch stores nothing.
 - **Summary polls.** A pending poll is a status read and never waits behind the
   worker (which fences before and after calculating); it fences early only when
   the database lock is free. Ready results are always fenced.
