@@ -5,10 +5,6 @@ import {Search,Users,Activity,Clock3,X} from 'lucide-react';
 import PredicateBuilder from './PredicateBuilder.jsx';
 import {compilePredicate,newGroup} from './predicateState.js';
 import {useRequestedSummaries} from '../../requested-summaries/useRequestedSummaries.js';
-import {fieldsWithSummaries,requestedSummaryFields} from '../../requested-summaries/requestedSummaries.js';
-import SummaryStatus from '../../summary-jobs/ui/SummaryStatus.jsx';
-import SummaryPreferences from '../../summary-jobs/ui/SummaryPreferences.jsx';
-import {useProtocolSummaryPreferences} from '../../summary-jobs/useProtocolSummaryPreferences.js';
 import {useProjectPreference} from '../../project-preferences/useProjectPreference.js';
 import {api,number,time} from '../../api.js';
 import {candidatePreviewReceipt} from '../../epoch-browser/frozenReadContext.js';
@@ -33,13 +29,11 @@ export default function PredicateDialog({draft:initialDraft,catalog,onSearch,onC
   const liveContext=useRef(previewContext);liveContext.current=previewContext;
   const astKey=compiled.predicate?predicateIdentity(compiled.predicate):'';
   useEffect(()=>{if(!readContext)return;serial.current++;request.current?.abort();setPreviewBusy(false);setPreview(null);setPreviewPredicate(null);},[previewContext,astKey]);
-  const preferences=useProtocolSummaryPreferences(projectId,protocolId,'filter');
-  const requested=requestedSummaryFields({registry:catalog.data?.fields||[],predicate:draft,preferences:preferences.value});
   const [previewPredicate,setPreviewPredicate]=useState(null);
   const countPreview=useRequestedSummaries({...readContext,predicate:previewPredicate,summary_fields:[],generation:catalog.data?.generation},{enabled:!!readContext&&!readContext.root&&!!previewPredicate&&!!catalog.data?.generation});
-  const summaries=useRequestedSummaries({...readContext,predicate:compiled.predicate,summary_fields:requested.fields,generation:catalog.data?.generation},
-    {enabled:!!catalog.supportsSummaries&&!!catalog.data?.generation&&!!compiled.predicate&&requested.fields.length>0});
-  const fields=fieldsWithSummaries(catalog.data?.fields||[],summaries);
+  // Editing a predicate requests no statistics; fields come from the registry.
+  // Result statistics are a separate job after a query runs (MetadataExplorer).
+  const fields=catalog.data?.fields||[];
   useRetainedModal(dialog);
   useEffect(()=>()=>request.current?.abort(),[]);
   async function previewMatches(){
@@ -73,8 +67,7 @@ export default function PredicateDialog({draft:initialDraft,catalog,onSearch,onC
     <header><h2 id="predicate-dialog-title"><Search size={18}/> {title}</h2><button className="icon-button" aria-label="Close predicate editor" onClick={onClose}><X size={17}/></button></header>
     <div className="predicate-dialog-body"><StableContent data={catalog.data} loading={catalog.loading} error={catalog.error} retry={catalog.reload} scope={`${projectId||''}:${protocolId||''}`} label="Refreshing search fields">
       {catalog.data&&<><PredicateBuilder pinnedProtocols={pinnedProtocols} draft={draft} fields={fields} disabled={busy||previewBusy||catalog.loading} onChange={setDraft}/>
-      {catalog.supportsSummaries&&<SummaryStatus state={{...summaries,retry:()=>{catalog.reload();summaries.retry();}}}/>}
-      <SummaryPreferences fields={catalog.data.fields||[]} preferences={preferences}/></>}
+</>}
     </StableContent>
       {(compiled.error||error)&&<p role="alert" className="mx-validation">{error||compiled.error}</p>}
       <div className="predicate-preview" aria-label="Predicate preview"><div>{readContext?<><strong>Frozen protocol subset</strong><span>{readContext.root&&previewMatchesDraft?`${number(preview.run.epoch_count)} matching epochs`:countPreview.status==='ready'&&countMatchesDraft?`${number(countPreview.result.matched_count)} matching epochs`:countPreview.status==='pending'?'Checking…':'Preview counts unavailable'}</span>{countPreview.error&&<small role="alert">{countPreview.error}</small>}{countPreview.status==='pending'&&<button onClick={countPreview.cancel}>Cancel preview</button>}</>:preview?<><strong>{previewMatchesDraft?'Last matching result':'Previous search result'}</strong><span><Users size={14}/><b>{number(preview.run.cell_count)}</b> cells <Activity size={14}/><b>{number(preview.run.epoch_count)}</b> epochs</span><small><Clock3 size={12}/> Last run {time(preview.run.ran_at)}{!previewMatchesDraft?' · Conditions have changed':''}</small></>:<span>Preview the matching cells and epochs.</span>}</div><button disabled={busy||previewBusy||catalog.loading||!catalog.data||!!compiled.error} onClick={previewMatches}><Search size={14}/>{previewBusy?'Checking…':'Preview matches'}</button></div>

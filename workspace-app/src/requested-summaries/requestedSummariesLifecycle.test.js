@@ -138,58 +138,89 @@ test('tree chooser summaries retain exact scope, reject late results and retire 
  }finally{await h.close();}
 });
 
-test('mounted predicate editor requests active typed fields without blocking edits or substituting invalid drafts',async()=>{
+test('editing a predicate sends no summary requests and edits stay unblocked',async()=>{
  const h=await harness();
  try{
   const draft={kind:'group',id:'g',mode:'all',negated:false,children:[{kind:'condition',id:'c',field:'parameters/field150',operator:'eq',valueType:'number',valueText:'1',negated:false}]};
-  h.memory.set(summaryPreferenceKey('P1','A','filter'),JSON.stringify({version:1,fields:['parameters/field149','missing-pref']}));
+  h.memory.set(summaryPreferenceKey('P1','A','filter'),JSON.stringify({version:1,fields:['parameters/field149']}));
   await h.render(h.PredicateDialog,{draft,catalog:{data:registry,supportsSummaries:true,reload(){}},projectId:'P1',protocolId:'A',onClose(){},onSearch(){}});await h.settle();
-  assert.equal(h.root.findByType('fieldset').props.disabled,false);assert.match(h.text(),/pending/);
-  let submits=h.requests.filter(item=>item.path==='/explore/summaries');assert.deepEqual(submits.at(-1).body.summary_fields,['parameters/field150','parameters/field149']);assert.equal(submits.at(-1).body.protocol_uuid,undefined);
   const value=()=>h.root.findByProps({'aria-label':'Condition value'});
-  await h.act(()=>value().props.onChange({target:{value:'2'}}));submits=h.requests.filter(item=>item.path==='/explore/summaries');assert.equal(submits.at(-1).body.predicate.all[0].value,2);assert.equal(h.root.findByType('fieldset').props.disabled,false);
-  const count=submits.length;await h.act(()=>value().props.onChange({target:{value:'-'}}));assert.equal(h.requests.filter(item=>item.path==='/explore/summaries').length,count);assert.match(h.text(),/complete numeric value/);assert.equal(h.root.findByType('fieldset').props.disabled,false);
+  for(const text of ['2','23','-','4'])await h.act(()=>value().props.onChange({target:{value:text}}));
+  await h.settle(350);
+  assert.equal(h.requests.filter(item=>item.path.startsWith('/explore/summaries')).length,0,'editing requests no statistics');
+  assert.equal(h.root.findByType('fieldset').props.disabled,false);assert.doesNotMatch(h.text(),/Metadata summaries|Preferred summaries/);
  }finally{await h.close();}
 });
 
-
-test('explicit predicate preview preserves exact cell/epoch counts without computing the full catalog',async()=>{
+test('explicit predicate preview shows exact counts without statistics',async()=>{
  const h=await harness();
  try{
   const draft={kind:'group',id:'g',mode:'all',negated:false,children:[{kind:'condition',id:'c',field:'parameters/field150',operator:'eq',valueType:'number',valueText:'1',negated:false}]};
-  h.respond=(path)=>path==='/explore/run'?{last_run:{cell_count:2,epoch_count:17,ran_at:'2026-10-01T12:00:00Z'}}:path==='/explore/summaries'?{status:'pending',request_id:'preview-facet',generation}:{status:'cancelled',generation};
-  h.memory.set(summaryPreferenceKey('P1','A','filter'),JSON.stringify({version:1,fields:['parameters/field149']}));
+  h.respond=(path)=>path==='/explore/run'?{last_run:{cell_count:2,epoch_count:17,ran_at:'2026-10-01T12:00:00Z'}}:{status:'cancelled',generation};
   await h.render(h.PredicateDialog,{draft,catalog:{data:registry,supportsSummaries:true,reload(){}},projectId:'P1',protocolId:'A',onClose(){},onSearch(){}});
   await h.act(()=>h.button('Preview matches').props.onClick());
   assert.deepEqual(h.requests.find(item=>item.path==='/explore/run').body,{predicate:{all:[{field:'parameters/field150',operator:'eq',value:1}]},splits:'',catalog_summary:false});
-  assert.deepEqual(h.requests.filter(item=>item.path==='/explore/summaries').at(-1).body.summary_fields,['parameters/field150','parameters/field149']);
+  assert.equal(h.requests.filter(item=>item.path.startsWith('/explore/summaries')).length,0);
   const counts=h.root.findByProps({className:'predicate-preview'}).findAllByType('b').map(node=>node.children.join(''));
   assert.deepEqual(counts,['2','17']);assert.equal(h.requests.some(item=>item.path.includes('/tree-fields')),false);
  }finally{await h.close();}
 });
 
-test('advanced explorer catalog is explicit and scope/layout changes immediately resume lightweight previews',async()=>{
+test('running a query sends no catalog statistics in previews and exactly one summary job after results',async()=>{
  const h=await harness({explorerShell:true});
  try{
-  const predicate={all:[]},preview={catalog_summary:false,matched_count:17,tree_revision:'T',catalog:{fields:definitions},tree:{count:17,levels:[],split_order:['date']}};
+  const predicate={all:[]},preview={catalog_summary:false,matched_count:17,tree_revision:'T',catalog:{fields:definitions.map(({id,label,category,path})=>({id,label,category,path}))},tree:{count:17,levels:[],split_order:['date']}};
   const applied={revision_uuid:'R',recipe:{predicate,splits:'date'},preview,previewGeneration:0,previewRevision:0};
   const props={projectId:'P1',initialProtocolId:'A',session:{applied,step:'tree',resultsFromDraft:false,splits:'date',filterSplits:'date'}};
-  h.respond=(path)=>path==='/explore/field-registry'?registry:path==='/explore/preview'?preview:path.startsWith('/search-presets')?{presets:[]}:path.startsWith('/explore/revisions')?{revisions:[]}:{status:'cancelled',generation};
-  await h.render(h.MetadataExplorer,props);await h.settle();
+  const summaryRegistry={...registry,summary_available:true};
+  h.respond=(path)=>{
+   if(path==='/explore/field-registry')return summaryRegistry;
+   if(path==='/explore/preview')return preview;
+   if(path.startsWith('/search-presets'))return {presets:[]};
+   if(path.startsWith('/explore/revisions'))return {revisions:[]};
+   if(path==='/explore/summaries')return {status:'ready',request_id:'result-job',generation,result:{matched_count:17,summaries:{date:{values:[{value:'2026-01-01',type:'string',count:17}],missing_count:0,present_count:17,values_truncated:false}}}};
+   if(path.endsWith('/cancel'))return {status:'cancelled',generation};
+   return {status:'cancelled',generation};
+  };
+  await h.render(h.MetadataExplorer,props);await h.settle();await h.settle(50);
   const builder=()=>h.root.findByType('explorer-viewer').props.builder;
-  assert.equal(builder().projectId,'P1');assert.equal(builder().protocolId,'A');assert.deepEqual(builder().summaryContext,{predicate});
-  assert.equal(h.requests.some(item=>item.path==='/explore/preview'&&item.body.catalog_summary),false);
-  await h.act(()=>builder().onFullCatalog());await h.settle();
-  assert.equal(h.requests.filter(item=>item.path==='/explore/preview').at(-1).body.catalog_summary,true);
-  let start=h.requests.length;await h.act(()=>builder().onChange(['date','parameters/field150']));await h.settle();
-  assert.ok(h.requests.slice(start).some(item=>item.path==='/explore/preview'));
+  const jobs=()=>h.requests.filter(item=>item.path==='/explore/summaries');
+  assert.ok(h.requests.filter(item=>item.path==='/explore/preview').every(item=>item.body.catalog_summary===false),'previews never ask for statistics');
+  assert.equal(jobs().length,1,'one summary job for the shown result set');
+  assert.deepEqual(jobs()[0].body.predicate,predicate);
+  assert.deepEqual(jobs()[0].body.summary_fields,definitions.map(field=>field.id));
+  assert.equal(builder().summaryEnabled,false,'the builder renders the result job instead of starting its own');
+  assert.equal(builder().catalogData.fields.find(field=>field.id==='date').distinct_count,1);
+  assert.equal(builder().onFullCatalog,undefined);
+  let start=h.requests.length;await h.act(()=>builder().onChange(['date','parameters/field150']));await h.settle();await h.settle(50);
   assert.ok(h.requests.slice(start).filter(item=>item.path==='/explore/preview').every(item=>item.body.catalog_summary===false));
-  await h.act(()=>builder().onFullCatalog());await h.settle();start=h.requests.length;
-  await h.render(h.MetadataExplorer,{...props,revision:1});await h.settle();
-  assert.ok(h.requests.slice(start).some(item=>item.path==='/explore/preview'));
-  assert.ok(h.requests.slice(start).filter(item=>item.path==='/explore/preview').every(item=>item.body.catalog_summary===false));
-  start=h.requests.length;await h.render(h.MetadataExplorer,props);await h.settle();
-  assert.ok(h.requests.slice(start).filter(item=>item.path==='/explore/preview').every(item=>item.body.catalog_summary===false));
+  assert.equal(jobs().length,1,'a layout change of the same query reuses the result statistics');
+ }finally{await h.close();}
+});
+
+test('a changed query cancels the running result summary and summarizes the new results once',async()=>{
+ const h=await harness({explorerShell:true});
+ try{
+  const predicate={all:[]},preview={catalog_summary:false,matched_count:17,tree_revision:'T',catalog:{fields:definitions.map(({id,label,category,path})=>({id,label,category,path}))},tree:{count:17,levels:[],split_order:['date']}};
+  const applied={revision_uuid:'R',recipe:{predicate,splits:'date'},preview,previewGeneration:0,previewRevision:0};
+  const props={projectId:'P1',initialProtocolId:'A',session:{applied,step:'tree',resultsFromDraft:false,splits:'date',filterSplits:'date'}};
+  let job=0;
+  h.respond=(path)=>{
+   if(path==='/explore/field-registry')return {...registry,summary_available:true};
+   if(path==='/explore/preview')return preview;
+   if(path.startsWith('/search-presets'))return {presets:[]};
+   if(path.startsWith('/explore/revisions'))return {revisions:[]};
+   if(path==='/explore/summaries')return {status:'pending',request_id:`job-${++job}`,generation};
+   if(path.endsWith('/cancel'))return {status:'cancelled',generation};
+   return {status:'pending',request_id:path.split('/').at(-1),generation};
+  };
+  await h.render(h.MetadataExplorer,props);await h.settle();await h.settle(50);
+  const jobs=()=>h.requests.filter(item=>item.path==='/explore/summaries');
+  assert.equal(jobs().length,1);
+  await h.act(()=>h.root.findByType('explorer-viewer').props.onViewFilters({tag:'scoped'}));await h.settle();await h.settle(50);
+  assert.ok(h.requests.some(item=>item.path==='/explore/summaries/job-1/cancel'),'the old query job is cancelled');
+  assert.equal(jobs().length,2,'one job for the new result set');
+  assert.notDeepEqual(jobs()[1].body.predicate,predicate);
  }finally{await h.close();}
 });
 test('field registry ignores fallback-path churn on current services and keeps completed fields while refreshing',async()=>{

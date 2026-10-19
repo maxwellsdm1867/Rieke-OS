@@ -1199,8 +1199,7 @@
           "file": "workspace-app/src/typed-query/ui/PredicateDialog.jsx",
           "deny": [],
           "require": [
-            "workspace-app/src/requested-summaries/useRequestedSummaries.js",
-            "workspace-app/src/requested-summaries/requestedSummaries.js"
+            "workspace-app/src/requested-summaries/useRequestedSummaries.js"
           ]
         }
       ],

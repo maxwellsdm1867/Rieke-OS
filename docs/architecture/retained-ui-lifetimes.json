@@ -2063,7 +2063,7 @@
       ]
     },
     "src/metadata-explorer/ui/MetadataExplorer.jsx": {
-      "fingerprint": "87b0105793c70a381a51cfd456e34c087bb7c861b49cfe68508c7ba1fa74ce3d",
+      "fingerprint": "6436f6a319fdb62994bee28dcb1fb0f7bd853eaab4b7b6f9b76b92e4ff3d1d4d",
       "sites": [
         {
           "owner": "MetadataExplorer",
@@ -2074,11 +2074,6 @@
           "owner": "MetadataExplorer",
           "kind": "useEffect",
           "fingerprint": "e6906362d9537651bb0ce12f4e7c13827f9affb476b4e953ec2b6b68216e73b6"
-        },
-        {
-          "owner": "MetadataExplorer",
-          "kind": "useEffect",
-          "fingerprint": "125cb4bb2f9017cc35726215bc592122b379b0b4331b8bac4c0d6cd6f4a6a8b2"
         },
         {
           "owner": "MetadataExplorer",
@@ -2098,7 +2093,7 @@
         {
           "owner": "MetadataExplorer",
           "kind": "useEffect",
-          "fingerprint": "e0bcc6051c5b3d729a9634749ec49f8ac2b59f2d5d64758623eb8dcc3a066134"
+          "fingerprint": "dfe58970f42b07af0e05ca1a82b896c4c663931930847977ff0399fddf5188ce"
         },
         {
           "owner": "MetadataExplorer",
@@ -2113,7 +2108,7 @@
         {
           "owner": "MetadataExplorer",
           "kind": "useEffect",
-          "fingerprint": "30f52ace7f9e7471538d2bc818172e2fce4d79acab6bd8e344458c4eabcf00f4"
+          "fingerprint": "4ea30947775ad2f866278e9472ca0a38b04501704f44a78604d5f462a89c8120"
         },
         {
           "owner": "MetadataExplorer",
@@ -2132,7 +2127,7 @@
         }
       ],
       "lifetime": "semantic-presentation + hydration-witness + active-local-undo",
-      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged. Tag decoupling review (2026-10-17): tag saves report kind annotations (not an untyped structural change) with the confirmed receipt; focused epoch and presets follow annotationRevision. Effect sites unchanged.",
+      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged. Tag decoupling review (2026-10-17): tag saves report kind annotations (not an untyped structural change) with the confirmed receipt; focused epoch and presets follow annotationRevision. Effect sites unchanged. Summary-after-query review (2026-10-18): previews/runs/revisions always send catalog_summary:false and the explicit full-catalog key/effect is removed; one requested-summaries job is keyed to the shown result set (starts after that predicate's results load, survives same-query tree reloads, retires on predicate/filter/generation change) and decorates the builder fields. One effect site removed; hook-owned job lifetime unchanged.",
       "tests": [
         "src/retainedControls.test.js",
         "src/requested-summaries/requestedSummariesLifecycle.test.js",
@@ -3205,16 +3200,6 @@
         "src/presentationSessionsIntegration.test.js"
       ]
     },
-    "src/summary-jobs/ui/SummaryPreferences.jsx": {
-      "fingerprint": "e11c5087e26a36a9b06794f02ec2eb13232928e431c7840a6b0299798ac5620f",
-      "sites": [],
-      "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
-      "tests": [
-        "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
-      ]
-    },
     "src/summary-jobs/ui/SummaryStatus.jsx": {
       "fingerprint": "f20498f8a358ce0af0bc63010303bfb80bc6b921dce576d3bfedeb9e848a482a",
       "sites": [],
@@ -3784,7 +3769,7 @@
       ]
     },
     "src/typed-query/ui/PredicateDialog.jsx": {
-      "fingerprint": "47d9823f25b07f147848860432fe80de21d80a5e9a1e921ea8de3b6fd7b782b6",
+      "fingerprint": "031f98626bae7ed8c99f11600090d85881073c8cf23cf6978b39e685e0bfcda7",
       "sites": [
         {
           "owner": "PredicateDialog",
@@ -3798,7 +3783,7 @@
         }
       ],
       "lifetime": "authored-presentation-versus-consent",
-      "reason": "Names and authored predicates are checkpointed separately. Mixed-protocol review, propagation preview and candidate count/summary consent always refresh under current scope. Reconnect or restart must never revive confirmation, leases or destructive intent. Predicate modal is active-view owned.",
+      "reason": "Names and authored predicates are checkpointed separately. Mixed-protocol review, propagation preview and candidate count/summary consent always refresh under current scope. Reconnect or restart must never revive confirmation, leases or destructive intent. Predicate modal is active-view owned. Summary-after-query review (2026-10-18): predicate editing requests no field statistics (field-summary hook, status and preferred-summary controls removed); explicit preview counts are unchanged. Effect sites unchanged.",
       "tests": [
         "src/authoredDrafts.test.js",
         "src/semanticPresentationControls.test.js",

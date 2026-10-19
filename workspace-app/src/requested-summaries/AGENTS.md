@@ -11,7 +11,8 @@ and keys, requested-field selection, typed result decoration, request identity,
 registry witness comparison and `createSummaryController`. Joint grouping and
 predicate identity remain shared dependencies. [useRequestedSummaries.js](useRequestedSummaries.js)
 exports the real React hook; [summaryApi.js](summaryApi.js) exports the concrete
-submit/poll/cancel adapter over shared api. TreeBuilder, PredicateDialog and the
+submit/poll/cancel adapter over shared api. TreeBuilder, MetadataExplorer (one job per shown result set),
+PredicateDialog (explicit preview counts only, no field statistics) and the
 protocol preference hook remain callers. Preferences storage/UI, field registry,
 scientific membership and server computation retain their own owners.
 
