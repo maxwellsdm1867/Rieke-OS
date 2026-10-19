@@ -264,3 +264,27 @@ before any recovery attempt. No signature is rewritten on an old reader and no
 source or scientific metadata check is relaxed. The publication-cache examples
 cover identical seal bytes with changed file metadata, invalid-seal rebuild and
 unchanged rejection of a changed native generation.
+
+## Preview statistics are per field and on demand
+
+`POST /api/explore/preview`, `/api/explore/run` and `/api/explore/revisions` with
+`summary_only: true` never compute scoped per-field statistics. A request with
+`catalog_summary: true` (the default) answers exactly like `catalog_summary:
+false` (registered field identities, `catalog_summary: false`, exact counts,
+membership revision and annotation evidence) plus:
+
+```json
+"catalog_statistics": {"inline": false, "per_field": {"method": "POST",
+  "path": "/api/explore/summaries",
+  "body": {"predicate": <validated predicate>, "summary_fields": ["<field id>"]}}}
+```
+
+A field's statistics are requested when the user opens that field: submit
+`POST /api/explore/summaries` with the validated predicate and that one field,
+then poll `GET /api/explore/summaries/<request_id>`. The job keeps its
+generation fences; a stale result is refused, never served. Rendered trees
+(`summary_only: false`) keep their inline catalog. Measured on a sealed 1M
+index (load average 13–24), one field over a scattered subset took about
+1–5 ms for 1k epochs, 45–90 ms for 20k, 160–370 ms for 100k and 0.5–1.9 s for
+1M; all 17 fields took 0.3–1.2 s for 20k and about 30 s for 1M, so statistics
+are computed per field, not for every field after a query.
