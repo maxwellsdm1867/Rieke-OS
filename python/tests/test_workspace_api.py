@@ -506,6 +506,26 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(len(self.curation.rows), len(excluded))
         self.assertEqual(self.mask(), mask)
 
+    def test_curation_write_checks_binding_version_from_header_without_recipe_copy(self):
+        from unittest.mock import Mock
+        self.assertEqual(self.store.binding_header_provider, self.explorer_history.protocol_binding_header)
+        header = Mock(wraps=self.explorer_history.protocol_binding_header)
+        hydrate = Mock(side_effect=AssertionError('curation write hydrated the frozen binding recipe'))
+        with patch.object(self.store, 'binding_header_provider', header), \
+             patch.object(self.store, 'binding_provider', hydrate):
+            response = self.client.post(self.base + '/curation', json={
+                **self.curation_body({'tags_add': ['keep']}), 'expected_binding_version': 0}, headers=self.headers)
+            self.assertEqual(response.status_code, 200, response.get_json())
+            header.assert_called_with(self.service.protocol_id)
+            hydrate.assert_not_called()
+            # The version check itself is unchanged: a different header version is refused.
+            header.side_effect = lambda protocol: {'version': 3}
+            stale = self.client.post(self.base + '/curation', json={
+                **self.curation_body({'included': False}), 'expected_revisions': {key: 1 for key in self.service.ids},
+                'expected_binding_version': 0}, headers=self.headers)
+            self.assertEqual(stale.status_code, 409, stale.get_json())
+        self.assertTrue(all(row['included'] for row in self.curation.rows))
+
     def test_curation_post_receipt_is_exact_and_chains_the_next_write(self):
         first, second = self.service.ids
         prior = self.curation_body({'tags_add': ['keep']}, ids=[first])

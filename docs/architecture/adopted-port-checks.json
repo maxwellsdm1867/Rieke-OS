@@ -5469,7 +5469,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "a04c10271aad14c96dc985e83bc10fdf703858accfef7775ee81d8affcd54c3a",
+                "file_sha256": "3594a68887e0f64b23901036558343de9366135e2cb9ef25852e1d90c88839ce",
                 "contract_id": null
               }
             ]
@@ -5643,7 +5643,7 @@
       },
       {
         "file": "python/tests/test_workspace_api.py",
-        "file_sha256": "00a37e01d0f5236edc4a4e39d3e40c7553bd333cc1ac778503cbe497f0849ef4",
+        "file_sha256": "ab78b40cf9350e7365b96342c4aded3130c2451a2141fc5aa6acffe0d3d77462",
         "reason": "Inject owned in-memory workspace/curation table fixtures during CurationStore construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Added display-cache HTTP coverage; existing CurationStore fixture injection AST and targets are unchanged. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch regression additions retain existing reviewed mocks and observer syntax. Binary64 integration tests were added; the existing curation mock AST, origin and target are unchanged, with its exact selector relocated after review. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md.",
         "sites": [
           {
@@ -5904,7 +5904,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "a04c10271aad14c96dc985e83bc10fdf703858accfef7775ee81d8affcd54c3a",
+                "file_sha256": "3594a68887e0f64b23901036558343de9366135e2cb9ef25852e1d90c88839ce",
                 "contract_id": null
               }
             ]
@@ -5937,7 +5937,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "a04c10271aad14c96dc985e83bc10fdf703858accfef7775ee81d8affcd54c3a",
+                "file_sha256": "3594a68887e0f64b23901036558343de9366135e2cb9ef25852e1d90c88839ce",
                 "contract_id": null
               }
             ]
@@ -6526,7 +6526,7 @@
               {
                 "module": "tests.test_workspace_api",
                 "file": "python/tests/test_workspace_api.py",
-                "file_sha256": "00a37e01d0f5236edc4a4e39d3e40c7553bd333cc1ac778503cbe497f0849ef4",
+                "file_sha256": "ab78b40cf9350e7365b96342c4aded3130c2451a2141fc5aa6acffe0d3d77462",
                 "contract_id": null
               }
             ]

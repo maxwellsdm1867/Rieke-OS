@@ -170,6 +170,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     service.set_binding_provider(explorer_history.protocol_binding,
         header_provider=explorer_history.protocol_binding_header)
     store.binding_provider = explorer_history.protocol_binding
+    # Curation writes compare only the binding version: read the header row,
+    # never hydrate and copy the frozen membership recipe (O(protocol)).
+    store.binding_header_provider = explorer_history.protocol_binding_header
     data_stores = data_stores or DataStores(service, store, explorer_history)
     app.extensions["data_stores"] = data_stores
     if hasattr(service.dj, 'Schema'):
@@ -285,7 +288,6 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         from workspace_state_generation import bootstrap
         generation=bootstrap(service.dj.conn(),service.project['project_uuid'])
         store.state_generation=generation
-        store.binding_header_provider=explorer_history.protocol_binding_header
         if shared_annotations is not None:shared_annotations.state_generation=generation
         app.extensions['state_generation']=generation
         service._explore_state_generation=generation
