@@ -187,7 +187,7 @@ def field_registry(service):
     if before != generation(service):
         raise StaleQuery('Metadata generation changed while reading field definitions')
     return {'fields': fields, 'tree_fields': tree_fields, 'operators': list(OPERATORS),
-            'predicate_version': 1, 'generation': before, 'source_scope': service.source_scope(),
+            'predicate_version': 2, 'generation': before, 'source_scope': service.source_scope(),
             'summary_available': False}
 
 
