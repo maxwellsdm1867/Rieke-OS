@@ -449,22 +449,31 @@ class NavigationRefreshLifetimeTests(unittest.TestCase):
         self.addCleanup(self.fixture.doCleanups)
         self.service = self.fixture.service
 
-    def test_successful_publication_releases_previous_navigation_generation(self):
+    def test_unchanged_publication_keeps_navigation_generation_warm(self):
         TreePages(self.service).page({'splits':'date,cell,block'})
         cache = self.service._tree_page_scope_cache
-        values = next(iter(cache[1].values()))[0][2]
-        old_values = weakref.ref(values)
-        del values, cache
         old_rows = self.service.rows
         previous_index = self.service.disk_index
         result = self.service.refresh()
         self.assertEqual(result['metadata_index'], 'reused')
+        self.assertEqual(result['published_read_model'], 'reused')
         self.assertTrue(result['discovery_indexes_preserved'])
         self.assertEqual(self.service.disk_index.generation, previous_index.generation)
-        self.assertEqual(self.service.disk_index.path, previous_index.path)
+        # Same verified inputs and index: the published objects (and therefore
+        # their navigation projections) remain current and stay warm.
+        self.assertIs(self.service._tree_page_scope_cache, cache)
+        self.assertIs(self.service.rows, old_rows)
+        with patch.object(TreePages, '_build_scope', side_effect=AssertionError('warm scope rebuilt')):
+            TreePages(self.service).page({'splits':'date,cell,block'})
+
+    def test_republished_rows_release_previous_navigation_generation(self):
+        TreePages(self.service).page({'splits':'date,cell,block'})
+        old_values = weakref.ref(next(iter(self.service._tree_page_scope_cache[1].values()))[0][2])
+        self.service._published_generation = None  # Force a complete republication.
+        result = self.service.refresh()
+        self.assertEqual(result['metadata_index'], 'reused')
         self.assertTrue(self.service._tree_page_scope_cache is None,
-                        'Verified unchanged-index publication must release navigation cache')
-        self.assertIsNot(self.service.rows,old_rows)
+                        'Republished rows must release the navigation cache')
         gc.collect()
         self.assertIsNone(old_values())
 

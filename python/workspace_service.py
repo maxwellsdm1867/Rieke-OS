@@ -854,50 +854,66 @@ class WorkspaceService:
                     pass  # An absent/invalid disposable index is rebuilt below.
             metrics['metadata_index_seconds'] = time.perf_counter() - index_started
             metrics['metadata_index_generation'] = generation
-        for source, metadata_path, key in prepared:
-            manifest, identity = source['manifest'], source['source_sha256']
-            cached = old_cache.get(identity)
-            # Even when one new source requires a new generation, unchanged
-            # sources can retain lazy detail views from the previous index.
-            reusable_index = disk_index or (previous_index if projection_store and cached is not None and cached['key'] == key else None)
-            if reusable_index is not None:
-                projection = reusable_index.source_projection(identity, lazy_details=True)
-                metrics['source_cache_hits'] += 1
-            else:
-                disk_projection = projection_store.read(key) if projection_store else None
-                if disk_projection is not None:
-                    projection = disk_projection
-                    metrics['source_cache_hits'] += 1
-                elif not projection_store and cached is not None and cached['key'] == key:
-                    projection = cached['projection']
+        # Unchanged published generation: every source key (DB record incl.
+        # manifest, metadata and recording stat signatures, projection contract)
+        # and the sealed index generation equal the last successful publication.
+        # The published frozen rows ARE that projection; skip decoding them.
+        # SQL protocol validation and the all-source final stat checks still run.
+        reuse_published = (projection_store is not None and disk_index is not None and disk_index is previous_index
+            and getattr(self, '_published_generation', None) == generation
+            and getattr(self, 'manager_error', None) is None
+            and publication_serial(self) is not None
+            and {key: entry['key'] for key, entry in old_cache.items()} == {key: entry['key'] for key, entry in next_cache.items()})
+        if reuse_published:
+            rows, cells, fingerprints = self.rows, self.cells, self._fingerprints
+            sources, manifests, details = self.sources, self.manifests, self.details
+            metrics['source_cache_hits'] += len(prepared)
+            metrics['published_read_model'] = 'reused'
+        else:
+            for source, metadata_path, key in prepared:
+                manifest, identity = source['manifest'], source['source_sha256']
+                cached = old_cache.get(identity)
+                # Even when one new source requires a new generation, unchanged
+                # sources can retain lazy detail views from the previous index.
+                reusable_index = disk_index or (previous_index if projection_store and cached is not None and cached['key'] == key else None)
+                if reusable_index is not None:
+                    projection = reusable_index.source_projection(identity, lazy_details=True)
                     metrics['source_cache_hits'] += 1
                 else:
-                    rebuild_started = time.perf_counter()
-                    document = json.loads(metadata_path.read_text())
-                    if document['uuid'] != source['experiment_uuid']:
-                        raise ValueError('Imported experiment identity disagrees with catalog')
-                    path, signature = self._verified_source(manifest, verified_signatures)
-                    projection = self._read_source_metadata(source, document, path, signature)
-                    if projection_store:
-                        pending_projections.append((key, projection))
+                    disk_projection = projection_store.read(key) if projection_store else None
+                    if disk_projection is not None:
+                        projection = disk_projection
+                        metrics['source_cache_hits'] += 1
+                    elif not projection_store and cached is not None and cached['key'] == key:
+                        projection = cached['projection']
+                        metrics['source_cache_hits'] += 1
                     else:
-                        projection = copy.deepcopy(projection)
-                    metrics['source_cache_rebuilt'] += 1
-                    metrics['timing_ms']['source_rebuild'] += (time.perf_counter() - rebuild_started) * 1000
-            if rows.keys() & projection['rows'].keys():
-                raise ValueError('Duplicate epoch UUID across source recordings')
-            snapshot = projection if projection_store else copy.deepcopy(projection)
-            rows.update(snapshot['rows'])
-            # Retain lazy details and dispatch by the independently validated
-            # source owner, without probing every preceding source mapping.
-            detail_maps[identity] = snapshot['details']
-            cells.update(snapshot['cells'])
-            fingerprints.update(snapshot['fingerprints'])
-            sources.append(snapshot['source'])
-            manifests[identity] = copy.deepcopy(manifest)
-            next_cache[identity] = {'key':key,'disk':True} if projection_store else {'key':key,'projection':projection}
-        details = _SourceDetails(rows, detail_maps)
-        number_block_epochs(rows)
+                        rebuild_started = time.perf_counter()
+                        document = json.loads(metadata_path.read_text())
+                        if document['uuid'] != source['experiment_uuid']:
+                            raise ValueError('Imported experiment identity disagrees with catalog')
+                        path, signature = self._verified_source(manifest, verified_signatures)
+                        projection = self._read_source_metadata(source, document, path, signature)
+                        if projection_store:
+                            pending_projections.append((key, projection))
+                        else:
+                            projection = copy.deepcopy(projection)
+                        metrics['source_cache_rebuilt'] += 1
+                        metrics['timing_ms']['source_rebuild'] += (time.perf_counter() - rebuild_started) * 1000
+                if rows.keys() & projection['rows'].keys():
+                    raise ValueError('Duplicate epoch UUID across source recordings')
+                snapshot = projection if projection_store else copy.deepcopy(projection)
+                rows.update(snapshot['rows'])
+                # Retain lazy details and dispatch by the independently validated
+                # source owner, without probing every preceding source mapping.
+                detail_maps[identity] = snapshot['details']
+                cells.update(snapshot['cells'])
+                fingerprints.update(snapshot['fingerprints'])
+                sources.append(snapshot['source'])
+                manifests[identity] = copy.deepcopy(manifest)
+                next_cache[identity] = {'key':key,'disk':True} if projection_store else {'key':key,'projection':projection}
+            details = _SourceDetails(rows, detail_maps)
+            number_block_epochs(rows)
         query_started = time.perf_counter()
         protocols = {}
         for file in sorted((self.project_dir / 'protocols').glob('*.protocol.json')):
@@ -973,6 +989,36 @@ class WorkspaceService:
                 if self._input_signature(path) != signature:
                     raise ValueError('Recorded input changed while building typed metadata index')
         metrics['discovery_indexes_preserved'] = preserve_indexes
+        if reuse_published:
+            # Keep the previous published objects and publication serial so
+            # identity-keyed caches stay warm. Only a changed SQL protocol result
+            # is republished (which advances the serial).
+            if protocols != self.protocols:
+                frozen_protocols = publish_frozen(protocols)
+                self.protocols = frozen_protocols if frozen_protocols is not None else protocols
+                self._tree_page_scope_cache = None
+                self._tree_catalog_cache = {}
+                self._explore_publication = str(uuid.uuid4())
+                metrics['published_read_model'] = 'protocols-republished'
+            if typed_index is not getattr(self, 'typed_index', None):
+                # A reopened/rebuilt typed generation is always published; its
+                # token changes the explore publication like any republication.
+                self.typed_index = typed_index
+                self._explore_publication = str(uuid.uuid4())
+                metrics['published_read_model'] = 'typed-republished'
+                if typed_index is not None:
+                    try:
+                        metrics['cache_cleanup'] = {'typed_metadata': typed_index.publish()}
+                    except (OSError, ValueError) as error:
+                        metrics.setdefault('cache_warnings', []).append('Derived cache cleanup was deferred: ' + str(error))
+            self.project, self.config, self.dj, self.Event = project, config, dj, Event
+            self._source_metadata_cache = next_cache
+            self._source_signatures = verified_signatures
+            self._metadata_digests = verified_metadata
+            self._loaded = True
+            self.manager_error = None
+            if projection_leases is not None:projection_leases.close()
+            return {'sources': len(sources), 'epochs': len(rows), 'protocols': len(protocols)}
         # Publish deep-frozen maps so the publication serial is a complete
         # freshness proof. Unfreezable content keeps the content-comparing path.
         freeze_started = time.perf_counter()
@@ -1000,6 +1046,7 @@ class WorkspaceService:
             self._registered_predicate_cache = None
         elif registered_cache is not None:
             self._registered_tree_cache = ((id(rows), len(rows), id(self.details), len(self.details)), registered_cache[1])
+        self._published_generation = generation
         self._loaded = True
         self.manager_error = None
         if projection_store and disk_index is not None:
@@ -1011,6 +1058,36 @@ class WorkspaceService:
                 metrics.setdefault('cache_warnings',[]).append('Derived cache cleanup was deferred: '+str(error))
         if projection_leases is not None:projection_leases.close()
         return {'sources': len(sources), 'epochs': len(rows), 'protocols': len(protocols)}
+
+    def verify_sources(self):
+        """Pre-write source recheck without decoding or republishing the read model.
+
+        Compares every registered source's database record (including its
+        manifest) and the stat signatures of its recording and imported metadata
+        with the witnesses of the last successful refresh: O(sources), not
+        O(epochs). Any difference, or an unready/unfrozen read model, runs the
+        complete refresh (which revalidates or fails closed). Returns whether the
+        published read model was kept.
+        """
+        cache = getattr(self, '_source_metadata_cache', None)
+        if (not self._loaded or publication_serial(self) is None or not cache
+                or getattr(self, 'manager_error', None) is not None):
+            self.refresh()
+            return False
+        _, Source, _, _ = workspace_tables(self.dj)
+        records = {row['source_sha256']: row for row in (Source & {'project_uuid': self.project['project_uuid']}).to_dicts()}
+        try:
+            current = records.keys() == cache.keys() and all(
+                checksum(record) == cache[identity]['key'][0]
+                and self._input_signature(Path(record['manifest']['metadata_path']).resolve()) == cache[identity]['key'][1]
+                and self._input_signature(Path(record['manifest']['source_path']).resolve()) == cache[identity]['key'][3]
+                for identity, record in records.items())
+        except (OSError, ValueError, KeyError, TypeError):
+            current = False
+        if not current:
+            self.refresh()
+            return False
+        return True
 
     def _ready(self):
         if not self._loaded:

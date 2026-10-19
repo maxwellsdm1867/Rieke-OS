@@ -451,13 +451,16 @@ class PublicationCacheTests(unittest.TestCase):
         self.addCleanup(self.fixture.doCleanups)
         self.service = self.fixture.service
 
-    def test_unchanged_refresh_discards_tree_scope_after_verified_publication(self):
+    def test_unchanged_refresh_keeps_verified_publication_and_tree_scope(self):
+        # Unchanged verified inputs keep the published objects and token, so
+        # caches derived from them stay current (refresh scoping, B7).
         cache = self.service._tree_page_scope_cache = object()
         before = self.service._explore_publication
         result = self.service.refresh()
         self.assertTrue(result['discovery_indexes_preserved'])
-        self.assertIsNone(self.service._tree_page_scope_cache)
-        self.assertNotEqual(before, self.service._explore_publication)
+        self.assertEqual(result['published_read_model'], 'reused')
+        self.assertIs(self.service._tree_page_scope_cache, cache)
+        self.assertEqual(before, self.service._explore_publication)
 
     def test_typed_build_failure_publishes_native_generation_without_typed_reads(self):
         # The typed sidecar only accelerates reads; refresh never fails for it.

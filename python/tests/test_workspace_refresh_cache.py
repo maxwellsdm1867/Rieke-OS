@@ -353,7 +353,7 @@ class RefreshCacheTests(unittest.TestCase):
                        lambda: self.service.protocols[self.protocol]['result']['epochs'].pop()):
             with self.assertRaises(TypeError):
                 mutate()
-        self.service.refresh()
+        self.service.cells = self.service.cells  # Any republication advances the serial.
         self.assertGreater(publication_serial(self.service), first)
 
     def test_public_read_model_mutation_does_not_poison_private_cache(self):
@@ -644,3 +644,61 @@ class RefreshCacheTests(unittest.TestCase):
         self.assertEqual(self.evaluator.call_count, initial_queries + 1)
         self.assertEqual(self._projection_semantics(rebuilt), expected)
         self.assertEqual(self._scientific_file_snapshot(), scientific)
+
+    def test_unchanged_refresh_keeps_published_objects_and_serial(self):
+        from disco.metadata.disk_index import DiskMetadataIndex
+        from workspace_service import publication_serial
+        before = (self.service.rows, self.service.protocols, publication_serial(self.service),
+                  self.service._explore_publication)
+        queries = self.evaluator.call_count
+        with patch.object(DiskMetadataIndex, 'source_projection', side_effect=AssertionError('No projection decode')), \
+             patch.object(self.service, '_read_source_metadata', side_effect=AssertionError('No H5 walk')):
+            result = self.service.refresh()
+        self.assertEqual(result['published_read_model'], 'reused')
+        self.assertEqual(self.evaluator.call_count, queries + 1)  # SQL validation still runs.
+        self.assertIs(self.service.rows, before[0])
+        self.assertIs(self.service.protocols, before[1])
+        self.assertEqual((publication_serial(self.service), self.service._explore_publication), before[2:])
+        self.assertTrue(self.service._loaded)
+
+    def test_changed_sql_result_republishes_only_protocols(self):
+        from workspace_service import publication_serial
+        rows, serial = self.service.rows, publication_serial(self.service)
+        original = self.evaluator.side_effect
+        self.evaluator.side_effect = lambda *args, **kwargs: {**original(*args, **kwargs), 'extra': 'changed'}
+        result = self.service.refresh()
+        self.assertEqual(result['published_read_model'], 'protocols-republished')
+        self.assertIs(self.service.rows, rows)
+        self.assertGreater(publication_serial(self.service), serial)
+        self.assertEqual(self.service.protocols[self.protocol]['result']['extra'], 'changed')
+
+    def test_reused_publication_still_rechecks_every_input_before_completing(self):
+        original = self.evaluator.side_effect
+        metadata = Path(self.records[1]['manifest']['metadata_path'])
+        def touching(*args, **kwargs):
+            os.utime(metadata, ns=(metadata.stat().st_atime_ns, metadata.stat().st_mtime_ns + 10**9))
+            return original(*args, **kwargs)
+        self.evaluator.side_effect = touching
+        with self.assertRaisesRegex(ValueError, 'changed'):
+            self.service.refresh()
+        self.assertFalse(self.service._loaded)
+
+    def test_verify_sources_keeps_the_read_model_until_a_witness_changes(self):
+        from workspace_service import publication_serial
+        rows, serial, queries = self.service.rows, publication_serial(self.service), self.evaluator.call_count
+        self.assertTrue(self.service.verify_sources())
+        self.assertEqual(self.evaluator.call_count, queries)  # No refresh, no SQL rerun.
+        self.assertIs(self.service.rows, rows)
+        self.assertEqual(publication_serial(self.service), serial)
+        source = Path(self.records[0]['manifest']['source_path'])
+        os.utime(source, ns=(source.stat().st_atime_ns, source.stat().st_mtime_ns + 10**9))
+        self.assertFalse(self.service.verify_sources())  # Stat change: complete refresh.
+        self.assertEqual(self.evaluator.call_count, queries + 1)
+        self.assertTrue(self.service.verify_sources())
+        self.sources.rows[1]['manifest'] = {**self.sources.rows[1]['manifest'], 'validated_at': '2026-10-01T00:00:00+00:00'}
+        self.assertFalse(self.service.verify_sources())  # Registration change: complete refresh.
+        self.assertEqual(self.evaluator.call_count, queries + 2)
+        Path(self.records[0]['manifest']['source_path']).write_bytes(b'tampered')
+        with self.assertRaises(ValueError):
+            self.service.verify_sources()
+        self.assertFalse(self.service._loaded)
