@@ -1506,7 +1506,15 @@ class WorkspaceService:
         else:
             if cache is not None:
                 cache.pop(key,None)
-            if header_provider and header is not None:
+            if serial is not None and (header is None or header_provider):
+                # Frozen publication: the shared read-only query view already
+                # holds the bound (or original) membership; no recipe copy.
+                view = self.query_view(protocol_uuid)
+                members = view['epochs']
+                bound = view.get('dataset_binding')
+                key = (protocol_uuid, bound and bound['version'], bound and bound.get('revision_uuid'), tuple(sorted(ordinary.items())))
+                binding = None
+            elif header_provider and header is not None:
                 # Re-read the binding together with its recipe on a cold scope.
                 # A concurrent bind may have changed since the header lookup.
                 binding = self.binding(protocol_uuid)
@@ -1519,7 +1527,16 @@ class WorkspaceService:
                 raise ValueError('Bound dataset contains unavailable epochs; explicit reconciliation is required')
             rows = self._filter_rows([self.rows[identity] for identity in signature], ordinary)
             identities = tuple(row['epoch_uuid'] for row in rows)
-            if cache is not None:
+            if cache is not None and serial is not None:
+                # The serial proves membership and fingerprints: retain only the
+                # ordered identity tuple (its strings are the published keys).
+                size = sys.getsizeof(identities)
+                if size + overhead <= EPOCH_PAGE_CACHE_BYTES:
+                    cache.pop(key,None)
+                    cache[key] = (None,identities,size,None)
+                    while len(cache) > 8 or overhead + sum(item[2] for item in cache.values()) > EPOCH_PAGE_CACHE_BYTES:
+                        cache.pop(next(iter(cache)))
+            elif cache is not None:
                 # Only UUID tuples are retained. Conservatively count their
                 # strings twice even if borrowed/shared, keeping admission cheap.
                 size = sum(sys.getsizeof(values) + sum(sys.getsizeof(value) for value in values)

@@ -542,6 +542,19 @@ class NavigationScopeCacheTests(MemoFixture):
             self.service._epoch_page_identities(self.protocol)
         self.assertEqual(visits,[])
 
+    def test_frozen_epoch_page_cache_keeps_only_identities_and_reads_no_recipe(self):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        created=history.create(preview,self.service.sources,'catalog.json','fixture')
+        history.bind(created['revision_uuid'],self.protocol,0,'fixture',{},2)
+        self.service._epoch_page_cache=None
+        self.service.query_view(self.protocol)  # The shared view's own one-time binding read.
+        first=self.service._epoch_page_identities(self.protocol)
+        entry=next(iter(self.service._epoch_page_cache[1].values()))
+        self.assertIsNone(entry[0]);self.assertIsNone(entry[3])
+        with patch.object(self.service,'binding',side_effect=AssertionError('page read the binding recipe')):
+            self.assertEqual(self.service._epoch_page_identities(self.protocol),first)
+
     def test_unfrozen_read_model_never_caches_annotation_scopes(self):
         self.service.rows=dict(self.service.rows)
         body={'protocol_uuid':self.protocol,'splits':'cell','filters':{'tag':'chosen'}}

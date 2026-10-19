@@ -85,7 +85,9 @@ class _NavigationValues(Mapping):
     columns = {'date': 'date', 'cell': 'cell_uuid', 'block': 'block_uuid'}
     # Charge this reservation to the scope admission budget up front, even
     # before lazy grouping fills it. Group buckets retain only borrowed rows.
-    grouping_budget = 4 * 1024 * 1024
+    # Large scopes (1M members) need their root grouping cached or every page
+    # regroups the scope; the reservation still counts toward scope admission.
+    grouping_budget = 32 * 1024 * 1024
 
     def __init__(self, rows, fields, *, scope_size=None):
         self.rows, self.fields = rows, tuple(fields)
