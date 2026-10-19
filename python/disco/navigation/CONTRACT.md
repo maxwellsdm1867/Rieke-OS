@@ -227,3 +227,24 @@ Predicate meaning is unchanged; these are cost rules for the same results.
   the database lock is free. Ready results are always fenced.
 
 Coverage: `python/tests/test_workspace_predicate_paths.py`.
+
+## Counted previews and publication revisions
+
+A project-scope predicate tree over a frozen publication (`publication_serial`:
+rows, cells, protocols and fingerprints are deep-frozen and every republish
+advances the serial) is identified by version-2 `selection_revision`:
+predicate, filters, splits, annotation evidence, source scope and the
+publication identity (serial, native index generation, typed generation). No
+member is hashed. Frozen maps refuse in-place mutation, so an unchanged
+identity proves unchanged membership. Shared-tag filters, replaced membership
+policies, non-canonical indexes and unfrozen adapters keep the version-1
+membership hash. Protocol trees are unchanged.
+
+`POST /api/explore/preview` with `summary_only: true`, `catalog_summary: false`
+and no `baseline_revision_uuid`/`focused_uuid` is counted: one typed `COUNT`
+over the active sources (the whole typed table when no source is excluded; the eligible total is memoized per publication and
+source scope) and the version-2 revision, with no ID collection or membership
+list. Annotation predicates and anything else outside that contract use the
+exact path. Results that freeze membership (run, revisions, exports, baseline
+diffs) keep the exact membership. Coverage:
+`python/tests/test_workspace_counted_preview.py`.
