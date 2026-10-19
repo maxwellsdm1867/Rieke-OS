@@ -29,7 +29,8 @@ with the service job on 2026-10-01. No Python/API files are changed here.
 - Tree choosers outside the explorer request their active axes and predicate
   fields only while a chooser is open. Complete registry discovery, raw details,
   export and reconstruction remain available regardless of summary selection.
-- Result reads send `catalog_summary:false`; there is no full-catalog mode.
+- Result reads send no `catalog_summary` flag (a deprecated no-op server-side
+  since backend #117); there is no full-catalog mode.
   Per-protocol summary preferences were removed (2026-10-19).
 - Protocol Inspector summaries use the protocol's frozen dataset plus existing
   filters.
@@ -71,7 +72,7 @@ pass without a running HTTP service. No native timing or package build ran here.
 ## Current workflow versus legacy diagnostics
 
 For current-workflow comparisons, apply this same frontend patch to both backend
-arms. Measure explicit filter preview with `catalog_summary:false`, count receipt,
+arms. Measure the query run (no inline statistics), count receipt,
 active/pinned exact typed summaries, and relevant tree splitters separately from
 rendered completion. Keep the exact scientific predicate, native membership,
 source/frozen protocol context and field requests equal between arms.
@@ -91,7 +92,7 @@ under the same authoritative scope rather than use epoch facet bucket counts.
 This commit does **not** consume `/explore/page`. Ordinary search still invokes
 `/explore/run` or `/explore/preview` before mounting MatchingEpochs. Those legacy
 operations can materialize full membership/exact count even with
-`summary_only:true,catalog_summary:false`. MatchingEpochs then uses
+`summary_only:true`. MatchingEpochs then uses
 `useEpochBrowserPage` / `/explore/epochs` with `tree_revision`, offset/anchor,
 exact total, and cell aggregates; its tree/selection/export contracts remain
 unchanged. Inspector's existing protocol cell/row APIs are unchanged as well.

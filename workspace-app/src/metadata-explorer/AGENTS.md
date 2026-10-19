@@ -22,9 +22,9 @@ A focused UUID requires an explicit matching membership result. Pending, invalid
 Typed-query editors, project preset storage, export execution, summary execution, cached reads and scientific membership remain their existing owners. This folder consumes those public entries without creating authority.
 
 Building a query sends no request (no preview, count or statistics). Result reads
-(run, result-tree preview, revisions) send `catalog_summary: false` because the
-server otherwise defaults to inline statistics, and there is no explicit
-full-catalog mode. Once a query's results are shown (results or tree step), the
+(run, result-tree preview, revisions) send no `catalog_summary` flag: the server
+(backend #117) never computes inline statistics for summary-only reads, and there
+is no explicit full-catalog mode. Once a query's results are shown (results or tree step), the
 explorer submits one requested-summaries job for that result set over the
 registered tree fields and passes the decorated fields to the tree builder
 (`summaryEnabled: false`, so the builder starts no job of its own). The job stays

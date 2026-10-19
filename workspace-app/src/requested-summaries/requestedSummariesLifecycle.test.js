@@ -160,14 +160,14 @@ test('running a query sends no catalog statistics in previews and exactly one su
   await h.render(h.MetadataExplorer,props);await h.settle();await h.settle(50);
   const builder=()=>h.root.findByType('explorer-viewer').props.builder;
   const jobs=()=>h.requests.filter(item=>item.path==='/explore/summaries');
-  assert.ok(h.requests.filter(item=>item.path==='/explore/preview').every(item=>item.body.catalog_summary===false),'previews never ask for statistics');
+  assert.ok(h.requests.filter(item=>item.path==='/explore/preview').every(item=>!Object.hasOwn(item.body,'catalog_summary')),'previews never ask for statistics');
   assert.equal(jobs().length,1,'one summary job for the shown result set');
   assert.deepEqual(jobs()[0].body.predicate,predicate);
   assert.deepEqual(jobs()[0].body.summary_fields,definitions.map(field=>field.id));
   assert.equal(builder().summaryEnabled,false,'the builder renders the result job instead of starting its own');
   assert.equal(builder().catalogData.fields.find(field=>field.id==='date').distinct_count,1);
   let start=h.requests.length;await h.act(()=>builder().onChange(['date','parameters/field150']));await h.settle();await h.settle(50);
-  assert.ok(h.requests.slice(start).filter(item=>item.path==='/explore/preview').every(item=>item.body.catalog_summary===false));
+  assert.ok(h.requests.slice(start).filter(item=>item.path==='/explore/preview').every(item=>!Object.hasOwn(item.body,'catalog_summary')));
   assert.equal(jobs().length,1,'a layout change of the same query reuses the result statistics');
  }finally{await h.close();}
 });
@@ -251,7 +251,7 @@ test('building then running a query: editing sends nothing, running sends the ru
   await h.act(()=>h.button('View matching epochs').props.onClick());await h.settle();await h.settle(50);
   const after=h.requests.slice(running).map(item=>item.path);
   assert.deepEqual(after.filter(path=>path.startsWith('/explore/')),['/explore/run','/explore/summaries'],'the run, then exactly one summary job');
-  assert.equal(h.requests.slice(running).find(item=>item.path==='/explore/run').body.catalog_summary,false);
+  assert.equal(Object.hasOwn(h.requests.slice(running).find(item=>item.path==='/explore/run').body,'catalog_summary'),false,'the deprecated catalog_summary flag is not sent');
  }finally{await h.close();}
 });
 

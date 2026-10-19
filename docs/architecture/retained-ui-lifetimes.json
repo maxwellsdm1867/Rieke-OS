@@ -2063,7 +2063,7 @@
       ]
     },
     "src/metadata-explorer/ui/MetadataExplorer.jsx": {
-      "fingerprint": "4f1ffc537ed65591fea757d583cb74f3f413adfa8918eb7e051bcdc5929bd1b5",
+      "fingerprint": "2806aff02e3d7f4d3bf8a2d98665729763f6f26fc1ddd8c66b4865a6f17d6a84",
       "sites": [
         {
           "owner": "MetadataExplorer",
@@ -2093,7 +2093,7 @@
         {
           "owner": "MetadataExplorer",
           "kind": "useEffect",
-          "fingerprint": "dfe58970f42b07af0e05ca1a82b896c4c663931930847977ff0399fddf5188ce"
+          "fingerprint": "1b3b4e61dfc9531e19d4849aa2c5502064dcc4c7a40a520aa0771b10d57c3512"
         },
         {
           "owner": "MetadataExplorer",
@@ -2108,7 +2108,7 @@
         {
           "owner": "MetadataExplorer",
           "kind": "useEffect",
-          "fingerprint": "4ea30947775ad2f866278e9472ca0a38b04501704f44a78604d5f462a89c8120"
+          "fingerprint": "15a1abcf9695b2809311225c9fb54ac51daa5752e74788b7b8fe961c30864d30"
         },
         {
           "owner": "MetadataExplorer",
@@ -2127,7 +2127,7 @@
         }
       ],
       "lifetime": "semantic-presentation + hydration-witness + active-local-undo",
-      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged. Tag decoupling review (2026-10-17): tag saves report kind annotations (not an untyped structural change) with the confirmed receipt; focused epoch and presets follow annotationRevision. Effect sites unchanged. Summary-after-query review (2026-10-18): previews/runs/revisions always send catalog_summary:false and the explicit full-catalog key/effect is removed; one requested-summaries job is keyed to the shown result set (starts after that predicate's results load, survives same-query tree reloads, retires on predicate/filter/generation change) and decorates the builder fields. One effect site removed; hook-owned job lifetime unchanged. Preview removal (2026-10-19): PredicateDialog no longer receives previous-run preview props; result reads and the after-query summary job are unchanged.",
+      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged. Tag decoupling review (2026-10-17): tag saves report kind annotations (not an untyped structural change) with the confirmed receipt; focused epoch and presets follow annotationRevision. Effect sites unchanged. Summary-after-query review (2026-10-18): previews/runs/revisions always send catalog_summary:false and the explicit full-catalog key/effect is removed; one requested-summaries job is keyed to the shown result set (starts after that predicate's results load, survives same-query tree reloads, retires on predicate/filter/generation change) and decorates the builder fields. One effect site removed; hook-owned job lifetime unchanged. Preview removal (2026-10-19): PredicateDialog no longer receives previous-run preview props; result reads and the after-query summary job are unchanged. catalog_summary removal (2026-10-19, requires backend #117): result preview/run/revision bodies no longer send the deprecated catalog_summary flag; effect dependencies, abort and publication fences unchanged.",
       "tests": [
         "src/retainedControls.test.js",
         "src/requested-summaries/requestedSummariesLifecycle.test.js",
