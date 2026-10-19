@@ -3716,7 +3716,7 @@
       ]
     },
     "src/typed-query/ui/PredicateBuilder.jsx": {
-      "fingerprint": "8abf33de1100e00c30bc71bb06beb5aecb3b67ebf41144ced90a36da7429799a",
+      "fingerprint": "24670f89faabae2eb760c61967d72ec34f48a0a01e4a0b908b955690760d307b",
       "sites": [
         {
           "owner": "FieldPicker",
@@ -3745,7 +3745,7 @@
         }
       ],
       "lifetime": "semantic-chooser-state + active-global-handlers",
-      "reason": "Search/category resets chooser limit/active choice; explicit open/position and keyboard-choice keys control focus/scroll. Global outside/position listeners and popover render only while retained owner is active; cleanup still runs independently.",
+      "reason": "Search/category resets chooser limit/active choice; explicit open/position and keyboard-choice keys control focus/scroll. Global outside/position listeners and popover render only while retained owner is active; cleanup still runs independently. Preview cleanup (2026-10-19): the field picker no longer renders distinct-value counts/examples (only the removed dialog summaries supplied them); effect sites unchanged.",
       "tests": [
         "src/useSemanticReset.test.js",
         "src/semanticPresentationControls.test.js"

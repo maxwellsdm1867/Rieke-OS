@@ -31,7 +31,7 @@ async function harness({explorerShell=false}={}){
  await server.ssrLoadModule('/src/App.jsx');
  let root,probe;
  function Probe({kind,request,revision,enabled=true,fallbackPath='/explore/predicate-fields'}){
-  const summary=useRequestedSummaries(request||{predicate:{all:[]},summary_fields:[]},{enabled:kind==='summary'&&enabled});
+  const summary=useRequestedSummaries(request||{predicate:{all:[]},summary_fields:['date']},{enabled:kind==='summary'&&enabled});
   const fields=useFieldRegistry(revision,fallbackPath);
   probe={summary,fields};return React.createElement('probe',{status:summary.status});
  }

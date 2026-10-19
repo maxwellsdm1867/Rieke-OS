@@ -121,10 +121,9 @@ I/O, the service/frontend boundary needs these compatible receipts:
    range selection, cell traversal, and restored-focus behavior must retain exact
    semantics. Either support bounded server offset/anchor seeking or provide a
    compatible cursor/rank adapter; a next-only cursor is insufficient by itself.
-4. **Independent exact count:** `summary_fields:[]` is confirmed to produce
-   `matched_count` asynchronously without distributions. Rows must remain usable
-   while the count is pending/cancelled/stale/failed; total-dependent controls must
-   wait for a same-context exact count rather than substituting zero.
+4. **Exact count:** counts come with the query run/result read; count-only summary
+   jobs (`summary_fields` empty) were removed (backend #117). Total-dependent
+   controls must wait for a same-context exact count rather than substituting zero.
 5. **Revision and action compatibility:** define a service-issued authority usable
    by existing row/cell/tree readers without preliminary full membership
    materialization. If this is a new read token, version it and explicitly adapt
