@@ -561,6 +561,21 @@ pid/start/command in the lock file while they hold it (clearing it on exit), and
 accept `--lock-timeout SECONDS`. The flock remains the only exclusion; the
 other runners still take it without waiting.
 
+Profiles marked `grouped` (1M/1M and `smoke-grouped`) run the registry
+`case_groups` (explore/search, workbench, reads and decisions) in separate
+worker processes with fresh fixtures, so each group stays under the 6 GiB cap
+and reports its own peak RSS; base and candidate share the grouping.
+
+Scaling evidence: run `--profile 10k-protocol-10k --profile 200k-protocol-200k
+--profile 200k-protocol-10k`, then `tools/benchmark_routes.py scaling RECEIPT
+--output scaling.json`. It reports per case the warm median and key counts at
+both sizes, the 200k/10k ratio, the inferred class from the ratio exponent (≈1×
+flat, ≈20× linear) and the project-only ratio (200k project, same 10k protocol).
+Everyday clicks are expected flat; whole-project search predicates and
+exports (`scaling.linear_allowed`) may be linear. A flat-expected case that
+grows in time or counts, or with project size alone, is flagged, as is any
+superlinear case; the command exits 2 when anything is flagged.
+
 At one million epochs the typed sidecar build exceeds its in-app RSS budget
 unless the measured source includes #110 (`claude/typed-index-budget`). Build
 1M candidate trees with #110 merged. A base that lacks it measures the untyped

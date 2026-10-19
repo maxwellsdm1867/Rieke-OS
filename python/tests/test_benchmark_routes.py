@@ -122,6 +122,48 @@ class CaseGroupTests(unittest.TestCase):
         self.assertTrue(cfg['profiles']['smoke-grouped']['grouped'])
 
 
+class ScalingTests(unittest.TestCase):
+    def receipt(self, cases):
+        cfg = routes.config()
+        profiles = {}
+        for name, epochs, protocol, scale in (('10k-protocol-10k', 10000, 10000, 1), ('200k-protocol-200k', 200000, 200000, 20),
+                                              ('200k-protocol-10k', 200000, 10000, None)):
+            built = {}
+            for case_name, (ms, counts, project_ms) in cases.items():
+                value = ms if scale == 1 else (ms * scale if scale else project_ms)
+                built[case_name] = {'status': 'passed', 'median_ms': value,
+                                    'counts': {k: v * (scale or 1) if isinstance(v, int) and scale != 1 and k == 'sqlite.execute' else v
+                                               for k, v in counts.items()}}
+            profiles[name] = {'profile': {'epochs': epochs, 'protocol_epochs': protocol}, 'result': {'cases': built}}
+        return {'config': cfg, 'profiles': profiles, 'source_start': {'commit': 'a' * 40, 'status': ''}}
+
+    def test_flat_expectation_flags_linear_growth_and_project_dependence(self):
+        receipt = self.receipt({'epoch.detail': (10.0, {}, 10.0), 'explore.page.eq': (10.0, {}, 10.0),
+                                'overview': (10.0, {}, 150.0)})
+        receipt['profiles']['200k-protocol-200k']['result']['cases']['epoch.detail']['median_ms'] = 10.5
+        receipt['profiles']['200k-protocol-200k']['result']['cases']['overview']['median_ms'] = 11.0
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'receipt.json'
+            path.write_text(json.dumps(receipt))
+            result = routes.scaling(path, '10k-protocol-10k', '200k-protocol-200k', '200k-protocol-10k', Path(folder) / 'scaling.json')
+            rows = {row['case']: row for row in result['rows']}
+            self.assertEqual(rows['epoch.detail']['inferred'], 'flat')
+            self.assertEqual(rows['explore.page.eq']['inferred'], 'linear')
+            self.assertEqual(rows['explore.page.eq']['expected'], 'linear-allowed')
+            self.assertEqual(result['flagged'], ['overview'])  # flat in size, but grows with the project
+            self.assertIn('project-size dependent', rows['overview']['flags'][0])
+            self.assertTrue((Path(folder) / 'scaling.md').read_text().startswith('# Route scaling'))
+
+    def test_small_times_under_floor_are_flat(self):
+        receipt = self.receipt({'tree.root': (0.5, {}, 0.5)})
+        receipt['profiles']['200k-protocol-200k']['result']['cases']['tree.root']['median_ms'] = 4.0
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'receipt.json'
+            path.write_text(json.dumps(receipt))
+            result = routes.scaling(path, '10k-protocol-10k', '200k-protocol-200k', None, Path(folder) / 's.json')
+            self.assertEqual(result['flagged'], [])
+
+
 class StressLockTests(unittest.TestCase):
     def test_waits_reports_holder_times_out_and_records_itself(self):
         import fcntl

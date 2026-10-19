@@ -348,6 +348,106 @@ def lock_holder(lock):
     return text or 'an unrecorded process (runners that do not write holder lines)'
 
 
+SCALING_COUNTS = ('sqlite.execute', 'copy.deepcopy', 'predicate.matches', 'sql_double.read', 'generation.scope_read',
+                  'protocol_state.metadata', 'service.query_result')
+
+
+def expected_class(case, cfg):
+    """Everyday clicks must be flat; whole-project search predicates and exports may be linear."""
+    for prefix in cfg['scaling']['linear_allowed']:
+        if case.startswith(prefix):
+            return 'linear-allowed'
+    return 'flat'
+
+
+def infer(small, large, size_ratio, floor_ms):
+    import math
+    if small is None or large is None:
+        return None, None
+    if large <= floor_ms:
+        return (large / small if small else None), 'flat'
+    if not small:
+        return None, 'superlinear'
+    ratio = large / small
+    exponent = math.log(ratio) / math.log(size_ratio) if ratio > 0 else 0.0
+    kind = ('flat' if exponent < 0.25 else 'sublinear' if exponent < 0.75 else
+            'linear' if exponent < 1.3 else 'superlinear')
+    return ratio, kind
+
+
+def scaling(receipt_path, small, large, project, output):
+    """Per-case growth between two project sizes (and project-only growth at a fixed protocol)."""
+    receipt = json.loads(Path(receipt_path).read_text())
+    cfg = receipt['config']
+    profiles = receipt['profiles']
+    for name in (small, large) + ((project,) if project else ()):
+        if name not in profiles or 'result' not in profiles[name]:
+            raise ValueError(f'Receipt lacks profile {name}')
+    size = lambda name: profiles[name]['profile']['epochs']
+    size_ratio = size(large) / size(small)
+    floor = cfg['scaling']['flat_floor_ms']
+    rows, flagged = [], []
+    small_cases, large_cases = profiles[small]['result']['cases'], profiles[large]['result']['cases']
+    project_cases = profiles[project]['result']['cases'] if project else {}
+    for case, a in small_cases.items():
+        b = large_cases.get(case)
+        if b is None or a.get('status') != 'passed' or b.get('status') != 'passed':
+            rows.append({'case': case, 'status': 'missing or failed at one size'}); flagged.append(case); continue
+        expected = expected_class(case, cfg)
+        ratio, kind = infer(a.get('median_ms'), b.get('median_ms'), size_ratio, floor)
+        counts = {}
+        for name in SCALING_COUNTS:
+            x, y = a.get('counts', {}).get(name, 0), b.get('counts', {}).get(name, 0)
+            if x or y:
+                counts[name] = {'small': x, 'large': y, 'ratio': (y / x) if x else None,
+                                'kind': infer(x, y, size_ratio, 0)[1] if x else ('flat' if not y else 'appears')}
+        row = {'case': case, 'expected': expected, 'small_ms': a.get('median_ms'), 'large_ms': b.get('median_ms'),
+               'ratio': ratio, 'inferred': kind, 'counts': counts}
+        if project_cases.get(case, {}).get('status') == 'passed':
+            p = project_cases[case]
+            row['project_only_ms'] = p.get('median_ms')
+            row['project_ratio'], row['project_inferred'] = infer(a.get('median_ms'), p.get('median_ms'),
+                                                                   size(project) / size(small), floor)
+        reasons = []
+        if expected == 'flat' and kind not in ('flat', None):
+            reasons.append(f'time {kind}')
+        if expected == 'flat' and any(c['kind'] in ('linear', 'superlinear', 'sublinear') and c['large'] > 50
+                                      for c in counts.values()):
+            reasons.append('counts grow: ' + ', '.join(n for n, c in counts.items()
+                                                       if c['kind'] in ('linear', 'superlinear', 'sublinear') and c['large'] > 50))
+        if expected == 'linear-allowed' and kind == 'superlinear':
+            reasons.append('time superlinear')
+        if row.get('project_inferred') not in (None, 'flat') and expected == 'flat':
+            reasons.append(f"project-size dependent ({row['project_inferred']})")
+        row['flags'] = reasons
+        if reasons:
+            flagged.append(case)
+        rows.append(row)
+    result = {'format': FORMAT + '-scaling', 'source': receipt['source_start']['commit'],
+              'dirty': bool(receipt['source_start']['status']), 'small': small, 'large': large, 'project': project,
+              'size_ratio': size_ratio, 'flat_floor_ms': floor, 'flagged': flagged, 'rows': rows,
+              'load': {name: {k: profiles[name].get(k) for k in ('load_before', 'load_after')} for name in profiles}}
+    output = Path(output)
+    output.write_text(json.dumps(result, indent=2) + '\n')
+    fmt = lambda v: '' if v is None else (f'{v:.1f}' if isinstance(v, float) else str(v))
+    lines = [f"# Route scaling: {small} → {large} ({size_ratio:.0f}× epochs)" + (f", project-only {project}" if project else ''), '',
+             f"Source `{result['source'][:12]}`{' (dirty)' if result['dirty'] else ''}. Times are warm medians; "
+             f"anything at or under {floor} ms at the large size counts as flat. ≈1× flat, ≈{size_ratio:.0f}× linear.", '',
+             f"Flagged: {len(flagged)} case(s).", '',
+             '| Case | Expected | ms small | ms large | ratio | inferred | project-only ms (ratio) | key counts small→large | flags |',
+             '| --- | --- | ---: | ---: | ---: | --- | --- | --- | --- |']
+    for row in rows:
+        if 'expected' not in row:
+            lines.append(f"| {row['case']} | | | | | | | | {row['status']} |"); continue
+        counts = '; '.join(f"{n} {c['small']}→{c['large']}" for n, c in row['counts'].items())
+        project_text = (f"{fmt(row.get('project_only_ms'))} ({fmt(row.get('project_ratio'))}×)"
+                        if 'project_only_ms' in row else '')
+        lines.append(f"| {row['case']} | {row['expected']} | {fmt(row['small_ms'])} | {fmt(row['large_ms'])} | "
+                     f"{fmt(row['ratio'])} | {row['inferred']} | {project_text} | {counts} | {'; '.join(row['flags'])} |")
+    output.with_suffix('.md').write_text('\n'.join(lines) + '\n')
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
@@ -364,6 +464,12 @@ def main():
     for sub in (run_parser, pair):
         sub.add_argument('--lock-timeout', type=float, default=None,
                          help='Seconds to wait for the shared stress lock (default: wait indefinitely)')
+    scale = commands.add_parser('scaling', help='Per-case growth between two sizes in one run receipt')
+    scale.add_argument('receipt', type=Path)
+    scale.add_argument('--small', default='10k-protocol-10k')
+    scale.add_argument('--large', default='200k-protocol-200k')
+    scale.add_argument('--project', default='200k-protocol-10k', help="Same protocol as --small in a larger project; '' to skip")
+    scale.add_argument('--output', type=Path, required=True, help='JSON path; a .md report is written beside it')
     comparison = commands.add_parser('compare')
     comparison.add_argument('baseline', type=Path)
     comparison.add_argument('candidate', type=Path)
@@ -389,6 +495,10 @@ def main():
                     lock.seek(0)
                     lock.truncate()  # Holder line is cleared before the flock is released.
             result = compare(base, cand, args.output/'comparison.json')
+        elif args.command == 'scaling':
+            result = scaling(args.receipt, args.small, args.large, args.project or None, args.output)
+            print(json.dumps({'flagged': result['flagged'], 'report': str(args.output.with_suffix('.md'))}))
+            return 2 if result['flagged'] else 0
         else:
             result = compare(args.baseline, args.candidate, args.output)
         print(json.dumps({'status': result['status'], 'review_required': result['review_required'],
