@@ -1831,11 +1831,14 @@ class WorkspaceService:
         serial = publication_serial(self)
         with typed_reader(self) as reader:
             validated = reader._validate(predicate)
-            matched = reader.count(validated, sources)
+            matched = reader.single_field_count(validated) if sources is None else None
+            if matched is None:
+                matched = reader.count(validated, sources)
             cached = getattr(self, '_eligible_count', None)
             key = (serial, scope['revision'])
             if cached is None or cached[0] != key:
-                cached = self._eligible_count = (key, reader.count(None, sources))
+                # Without an excluded source every published epoch is eligible.
+                cached = self._eligible_count = (key, len(self.rows) if sources is None else reader.count(None, sources))
         registered = self.disk_index.catalog()
         fields = [{key: field[key] for key in ('id', 'label', 'category', 'path', 'components') if key in field}
                   for field in registered['fields']]
