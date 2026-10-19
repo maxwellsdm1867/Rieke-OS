@@ -536,9 +536,10 @@ class ProtocolWorkbench:
             from disco.navigation.tag_predicates import referenced_fields
             predicates = [self.discovery(row['summary']['candidate_revision_uuid'])['predicate']
                 for row in self.original_records(protocol)]
-            binding = self.history.protocol_binding(protocol)
+            # Main's predicate from its verified header: never copy main's members.
+            binding = self.history.protocol_binding_header(protocol)
             if binding:
-                predicates.append(binding['recipe']['predicate'])
+                predicates.append(self.discovery(binding['revision_uuid'])['predicate'])
             fields = set().union(*(referenced_fields(predicate) for predicate in predicates))
             protocols = {protocol} | {field.split('/')[1] for field in fields if field.startswith('curation/')}
             for origin in [None, *sorted(protocols)]:
