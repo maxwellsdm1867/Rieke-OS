@@ -1196,10 +1196,11 @@
         },
         {
           "language": "javascript",
-          "file": "workspace-app/src/typed-query/ui/PredicateDialog.jsx",
+          "file": "workspace-app/src/metadata-explorer/ui/MetadataExplorer.jsx",
           "deny": [],
           "require": [
-            "workspace-app/src/requested-summaries/useRequestedSummaries.js"
+            "workspace-app/src/requested-summaries/useRequestedSummaries.js",
+            "workspace-app/src/requested-summaries/requestedSummaries.js"
           ]
         }
       ],
@@ -1357,16 +1358,7 @@
             "lucide-react",
             "workspace-app/src/typed-query/ui/PredicateBuilder.jsx",
             "workspace-app/src/typed-query/ui/predicateState.js",
-            "workspace-app/src/requested-summaries/useRequestedSummaries.js",
-            "workspace-app/src/requested-summaries/requestedSummaries.js",
-            "workspace-app/src/summary-jobs/ui/SummaryStatus.jsx",
-            "workspace-app/src/summary-jobs/ui/SummaryPreferences.jsx",
-            "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
             "workspace-app/src/project-preferences/useProjectPreference.js",
-            "workspace-app/src/api.js",
-            "workspace-app/src/epoch-browser/frozenReadContext.js",
-            "workspace-app/src/typed-query/predicateIdentity.js",
-            "workspace-app/src/project-preferences/searchPresets.js",
             "workspace-app/src/components/StableContent.jsx",
             "workspace-app/src/typed-query/ui/PredicateDialog.css",
             "workspace-app/src/retainedWorkspaceViews.js",
@@ -1418,10 +1410,8 @@
             "workspace-app/src/api.js",
             "workspace-app/src/summary-jobs/useFieldRegistry.js",
             "workspace-app/src/requested-summaries/useRequestedSummaries.js",
-            "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
             "workspace-app/src/requested-summaries/requestedSummaries.js",
             "workspace-app/src/summary-jobs/ui/SummaryStatus.jsx",
-            "workspace-app/src/summary-jobs/ui/SummaryPreferences.jsx",
             "workspace-app/src/typed-query/ui/TreeBuilder.css",
             "workspace-app/src/ordering.js",
             "workspace-app/src/pointerDrag.js",
@@ -3677,9 +3667,6 @@
           {
             "path": "workspace-app/src/requested-summaries/requestedSummaries.js",
             "exports": [
-              "SUMMARY_PREFERENCES_VERSION",
-              "summaryPreferenceKey",
-              "summaryPreferences",
               "predicateSummaryFields",
               "requestedSummaryFields",
               "summaryRequestKey",

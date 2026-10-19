@@ -303,7 +303,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
       ];
   return <div className={`inspector metadata-explorer predicate-explorer ${focused?'explorer-inspecting':step==='tree'?'tree-design':''}`}>
     {presetDialog&&<QueryPresetDialog {...presetDialog} onClose={()=>setPresetDialog(null)} onSaved={savedQueryPreset} onRefresh={projectPresets.reload}/>}
-    {editorOpen&&<PredicateDialog title={step==='filter'?'Search predicate':'Change search criteria'} submitLabel={step==='filter'?'View matching epochs':'Update matching epochs'} previousRun={activePreset?.last_run??resultPreview?.last_run} previousPredicate={activePreset?.last_run?activePreset.predicate:baseResultPredicate} protocols={protocols} projectId={projectId} protocolId={initialProtocolId} draft={draft} catalog={catalog} onSearch={applyPopupSearch} onClose={()=>setEditorOpen(false)}/>}
+    {editorOpen&&<PredicateDialog title={step==='filter'?'Search predicate':'Change search criteria'} submitLabel={step==='filter'?'View matching epochs':'Update matching epochs'} protocols={protocols} projectId={projectId} protocolId={initialProtocolId} draft={draft} catalog={catalog} onSearch={applyPopupSearch} onClose={()=>setEditorOpen(false)}/>}
     {step==='filter'?(<header className="mx-heading"><div><div className="eyebrow">SOURCE RECORDINGS</div><h1>{focused?'Inspect selected epoch':step==='results'?'Epoch browser':step==='tree'?'Tree view · advanced':'Search presets'}</h1></div>
       <div className="mx-header-actions">
         {step==='tree'&&<button disabled={busy} onClick={showEpochResults}><ArrowLeft size={15}/> Back to epochs</button>}

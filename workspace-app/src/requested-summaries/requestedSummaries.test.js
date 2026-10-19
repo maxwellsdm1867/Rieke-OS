@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSummaryController,fieldsWithSummaries,requestedSummaryFields,summaryPreferences,summaryPreferenceKey} from './requestedSummaries.js';
+import {createSummaryController,fieldsWithSummaries,requestedSummaryFields} from './requestedSummaries.js';
 import {jointId} from '../typed-query/jointGrouping.js';
 const generation={metadata:'M',source:'S',annotation:'A',publication:'P'};
 const request={predicate:{all:[]},summary_fields:['number'],generation};
@@ -15,22 +15,13 @@ function harness(){
 const pending=id=>({request_id:id,status:'pending',generation});
 const ready=id=>({request_id:id,status:'ready',generation,result:{matched_count:0,summaries:{number:{values:[],present_count:0,missing_count:0,values_truncated:false}}}});
 
-test('active axes, nested predicates and explicit preferences request exact IDs without a whitelist',()=>{
+test('active axes and nested predicates request exact IDs without a whitelist',()=>{
  const registry=Array.from({length:201},(_,i)=>({id:`parameters/new${i}`}));
  const axes=[jointId(['parameters/new150','parameters/new200']),'parameters/absent'];
- const preferences={version:1,fields:['parameters/new199','parameters/absent']};
  const predicate={not:{any:[{field:'parameters/new150'},{all:[{field:'parameters/new198'}]}]}};
- assert.deepEqual(requestedSummaryFields({registry,axes,predicate,preferences}),{fields:['parameters/new150','parameters/new200','parameters/new198','parameters/new199'],unavailable:['parameters/absent']});
+ assert.deepEqual(requestedSummaryFields({registry,axes,predicate}),{fields:['parameters/new150','parameters/new200','parameters/new198'],unavailable:['parameters/absent']});
  assert.equal(requestedSummaryFields({registry,all:true}).fields.length,201);
  assert.deepEqual(axes,[jointId(['parameters/new150','parameters/new200']),'parameters/absent']);
- assert.deepEqual(preferences.fields,['parameters/new199','parameters/absent']);
-});
-test('preferences are a new versioned protocol/view schema; layouts are never inferred preferences',()=>{
- assert.deepEqual(summaryPreferences({split_order:['history1']}),{version:1,fields:[]});
- assert.deepEqual(summaryPreferences({version:2,fields:['history1']}),{version:1,fields:[]});
- assert.deepEqual(summaryPreferences({version:1,fields:['history1','history1','missing',null]}),{version:1,fields:['history1','missing']});
- const keys=[summaryPreferenceKey('project-A','protocol-A','tree'),summaryPreferenceKey('project-B','protocol-A','tree'),summaryPreferenceKey('project-A','protocol-B','tree'),summaryPreferenceKey('project-A','protocol-A','filter')];
- assert.equal(new Set(keys).size,4);
 });
 test('missing summaries and pending/stale data never become zero counts or recorded choices',()=>{
  const fields=[{id:'number'},{id:'missing'}];

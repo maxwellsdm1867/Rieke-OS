@@ -4545,7 +4545,7 @@
       "implementation_commits": [],
       "source_observed_at": "df40a19efbb13237cab2b7ff1bb4750313118854",
       "purpose": "Persist user view choices without treating layout as query authority or inferred summary preference.",
-      "owner": "createTreeLayoutSaver/useProtocolTreeLayout and useProtocolSummaryPreferences; appearance is separate app preference owner.",
+      "owner": "createTreeLayoutSaver/useProtocolTreeLayout; appearance is separate app preference owner.",
       "status": "implemented",
       "interface": {
         "inputs": "Protocol ID, saved split order/version, optional initial recipe order; project/protocol/view preference key and requested summary field IDs. Optional enabled=false defers the first saved-layout read until Inspect/Export demand; default remains enabled.",
@@ -4573,7 +4573,6 @@
       "source_paths": [
         "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
         "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js",
-        "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
         "workspace-app/src/requested-summaries/requestedSummaries.js"
       ],
       "verification": {
@@ -4621,7 +4620,6 @@
       "source_pointers": [
         "workspace-app/src/treeLayoutPersistence.js",
         "workspace-app/src/useProtocolTreeLayout.js",
-        "workspace-app/src/useProtocolSummaryPreferences.js",
         "workspace-app/src/requestedSummaries.js"
       ],
       "existing_tests": [

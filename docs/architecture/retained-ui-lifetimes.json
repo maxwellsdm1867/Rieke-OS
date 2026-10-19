@@ -851,10 +851,10 @@
       ]
     },
     "src/epoch-browser/frozenReadContext.js": {
-      "fingerprint": "75d519a67d20df515b6b8587d5e1b46b103cb71ba29a8f4a0918f7289e7d693e",
+      "fingerprint": "833cf597ecf09a4b02d1ba0b9942983b49e0b6b24b224187fd6f1983d3dc6888",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Preview removal (2026-10-19): deleted candidatePreviewReceipt (only the removed predicate preview used it). No effect sites.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -2063,7 +2063,7 @@
       ]
     },
     "src/metadata-explorer/ui/MetadataExplorer.jsx": {
-      "fingerprint": "6436f6a319fdb62994bee28dcb1fb0f7bd853eaab4b7b6f9b76b92e4ff3d1d4d",
+      "fingerprint": "4f1ffc537ed65591fea757d583cb74f3f413adfa8918eb7e051bcdc5929bd1b5",
       "sites": [
         {
           "owner": "MetadataExplorer",
@@ -2127,7 +2127,7 @@
         }
       ],
       "lifetime": "semantic-presentation + hydration-witness + active-local-undo",
-      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged. Tag decoupling review (2026-10-17): tag saves report kind annotations (not an untyped structural change) with the confirmed receipt; focused epoch and presets follow annotationRevision. Effect sites unchanged. Summary-after-query review (2026-10-18): previews/runs/revisions always send catalog_summary:false and the explicit full-catalog key/effect is removed; one requested-summaries job is keyed to the shown result set (starts after that predicate's results load, survives same-query tree reloads, retires on predicate/filter/generation change) and decorates the builder fields. One effect site removed; hook-owned job lifetime unchanged.",
+      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged. Tag decoupling review (2026-10-17): tag saves report kind annotations (not an untyped structural change) with the confirmed receipt; focused epoch and presets follow annotationRevision. Effect sites unchanged. Summary-after-query review (2026-10-18): previews/runs/revisions always send catalog_summary:false and the explicit full-catalog key/effect is removed; one requested-summaries job is keyed to the shown result set (starts after that predicate's results load, survives same-query tree reloads, retires on predicate/filter/generation change) and decorates the builder fields. One effect site removed; hook-owned job lifetime unchanged. Preview removal (2026-10-19): PredicateDialog no longer receives previous-run preview props; result reads and the after-query summary job are unchanged.",
       "tests": [
         "src/retainedControls.test.js",
         "src/requested-summaries/requestedSummariesLifecycle.test.js",
@@ -3038,10 +3038,10 @@
       ]
     },
     "src/requested-summaries/requestedSummaries.js": {
-      "fingerprint": "dc67e1964f4509d4c0530dd8b103222ec621cc289c0e6361da382756f3ef0fe7",
+      "fingerprint": "02aaaaa4c01490cc5ed39e70143b7fc0be099d1c339fa23459570e5e1c78dec8",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. F4 review (2026-10-18): submit no longer receives the run abort signal so a retired run always sees the receipt and cancels the server job; the run controller aborts polls only. No effect sites.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. F4 review (2026-10-18): submit no longer receives the run abort signal so a retired run always sees the receipt and cancels the server job; the run controller aborts polls only. No effect sites. Preview removal (2026-10-19): deleted summary-preference schema/keys; requested fields are active axes plus predicate fields. No effect sites.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"
@@ -3225,23 +3225,6 @@
         "src/requested-summaries/requestedSummariesLifecycle.test.js",
         "src/traces/retainedReadLifecycle.test.js",
         "src/treeBuilderOverviewLifecycle.test.js"
-      ]
-    },
-    "src/summary-jobs/useProtocolSummaryPreferences.js": {
-      "fingerprint": "378f02fcd439c9630e798908cc76cc130c6a0f32feb2f2c57ccf9e08bb1833e1",
-      "sites": [
-        {
-          "owner": "useProtocolSummaryPreferences",
-          "kind": "useEffect",
-          "fingerprint": "b89a6297ad8f92f79b55ab301ccb7052626161f7d2197c52b62404a3359c0f98"
-        }
-      ],
-      "lifetime": "existing-preference-owner",
-      "reason": "Preferences already write through their named owner (server/localStorage/draft saver). Reconnect reads canonical preferences; completed retained tree-layout hydration avoids replacing an edited order. Flush failures remain visible and protected.",
-      "tests": [
-        "src/project-preferences/projectPreferences.test.js",
-        "src/protocol-tree-layout/useProtocolTreeLayout.test.js",
-        "src/protocol-tree-layout/treeLayoutPersistence.test.js"
       ]
     },
     "src/traces/readWholeTrace.js": {
@@ -3769,13 +3752,8 @@
       ]
     },
     "src/typed-query/ui/PredicateDialog.jsx": {
-      "fingerprint": "031f98626bae7ed8c99f11600090d85881073c8cf23cf6978b39e685e0bfcda7",
+      "fingerprint": "8f6cc4b70a0885d588c1da3f3a9ef1d1933719b024120e9cd03c5f959cf252e0",
       "sites": [
-        {
-          "owner": "PredicateDialog",
-          "kind": "useEffect",
-          "fingerprint": "9084b27c1979971462d558d082f67b06d7670359efd7888826a778c6cd0fb28f"
-        },
         {
           "owner": "PredicateDialog",
           "kind": "useEffect",
@@ -3783,7 +3761,7 @@
         }
       ],
       "lifetime": "authored-presentation-versus-consent",
-      "reason": "Names and authored predicates are checkpointed separately. Mixed-protocol review, propagation preview and candidate count/summary consent always refresh under current scope. Reconnect or restart must never revive confirmation, leases or destructive intent. Predicate modal is active-view owned. Summary-after-query review (2026-10-18): predicate editing requests no field statistics (field-summary hook, status and preferred-summary controls removed); explicit preview counts are unchanged. Effect sites unchanged.",
+      "reason": "Names and authored predicates are checkpointed separately. Mixed-protocol review, propagation preview and candidate count/summary consent always refresh under current scope. Reconnect or restart must never revive confirmation, leases or destructive intent. Predicate modal is active-view owned. Summary-after-query review (2026-10-18): predicate editing requests no field statistics (field-summary hook, status and preferred-summary controls removed); explicit preview counts are unchanged. Effect sites unchanged. Preview removal (2026-10-19): the dialog sends no request while a query is built (preview button, candidate/global preview reads, count-preview summary job and their reset effect removed). Remaining effects: retained modal and unmount abort of the explicit search.",
       "tests": [
         "src/authoredDrafts.test.js",
         "src/semanticPresentationControls.test.js",
@@ -3838,7 +3816,7 @@
       ]
     },
     "src/typed-query/ui/TreeBuilder.jsx": {
-      "fingerprint": "bf8cde8aa38c205a84f94d60650dfd128b6429846f1a9d22922f103f8f1d0694",
+      "fingerprint": "10bcb7d046e42087337f363d6d78371b5cfd0bdd3101dc6d5b9cee6238e0e2ae",
       "sites": [
         {
           "owner": "TreeBuilder",
@@ -3867,7 +3845,7 @@
         }
       ],
       "lifetime": "semantic-order-and-chooser + active-global-handlers",
-      "reason": "External value key resets local order; search/category/order keys reset chooser limit/active option; keyboard identity controls scrolling. Active retained owner gates global listeners and popover. Drag cleanup and catalog/summary authority keep ordinary lifetimes.",
+      "reason": "External value key resets local order; search/category/order keys reset chooser limit/active option; keyboard identity controls scrolling. Active retained owner gates global listeners and popover. Drag cleanup and catalog/summary authority keep ordinary lifetimes. Preview removal (2026-10-19): summary preferences no longer feed requested chooser fields (axes plus predicate fields only); the unused full-catalog callback prop is removed. Effect sites unchanged.",
       "tests": [
         "src/useSemanticReset.test.js",
         "src/semanticPresentationControls.test.js",

@@ -4,7 +4,6 @@ import React from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
 import {createServer} from '../test-support/isolatedVite.js';
 import {fileURLToPath} from 'node:url';
-import {summaryPreferenceKey} from './requestedSummaries.js';
 const generation={metadata:'M',source:'S',annotation:'A',publication:'P'};
 const definitions=[{id:'date',label:'Date',category:'Recording',types:['string'],operators:['eq'],path:'date'},...Array.from({length:151},(_,i)=>({id:`parameters/field${i}`,label:`Field ${i}`,category:'Parameters',path:`parameters.field${i}`,types:['number'],operators:['eq','gt']}))];
 const registry={fields:definitions,tree_fields:definitions,generation,summary_available:false};
@@ -22,23 +21,21 @@ async function harness({explorerShell=false}={}){
   return {status:'pending',request_id:path.split('/').at(-1),generation};
  };
  globalThis.fetch=async(url,options)=>{const path=url.replace(/^\/api/,'');requests.push({path,options,body:options.body?JSON.parse(options.body):undefined});const response=await respond(path,options);return new Response(JSON.stringify(response?.data??response),{status:response?.httpStatus??200});};
- const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},optimizeDeps:{noDiscovery:true,entries:[]},appType:'custom',logLevel:'silent',esbuild:{jsx:'automatic'},plugins:[{name:'summary-test-portals',enforce:'pre',resolveId(id,importer){if(explorerShell&&id==='../../epoch-browser/ui/MatchingEpochs.jsx'&&importer?.endsWith('/metadata-explorer/ui/MetadataExplorer.jsx'))return '\0summary-explorer-viewer';if(['../project-preferences/useProjectPreference.js','../../project-preferences/useProjectPreference.js'].includes(id)&&(importer?.endsWith('/typed-query/ui/PredicateDialog.jsx')||explorerShell&&importer?.endsWith('/metadata-explorer/ui/MetadataExplorer.jsx')))return '\0summary-project-preference';if(id==='virtual:summary-portals')return '\0summary-portals';},transform(source,id){if(id.endsWith('/TreeBuilder.jsx'))return source.replace("from 'react-dom'","from 'virtual:summary-portals'");},load(id){if(id==='\0summary-explorer-viewer')return 'import React from "react";export default props=>React.createElement("explorer-viewer",props);';if(id==='\0summary-project-preference')return 'export const useProjectPreference=()=>({value:{},update:async()=>{}});';if(id==='\0summary-portals')return 'export const createPortal=children=>children;';}}]});
+ const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},optimizeDeps:{noDiscovery:true,entries:[]},appType:'custom',logLevel:'silent',esbuild:{jsx:'automatic'},plugins:[{name:'summary-test-portals',enforce:'pre',resolveId(id,importer){if(explorerShell&&id==='../../epoch-browser/ui/MatchingEpochs.jsx'&&importer?.endsWith('/metadata-explorer/ui/MetadataExplorer.jsx'))return '\0summary-explorer-viewer';if(['../project-preferences/useProjectPreference.js','../../project-preferences/useProjectPreference.js'].includes(id)&&(importer?.endsWith('/typed-query/ui/PredicateDialog.jsx')||explorerShell&&importer?.endsWith('/metadata-explorer/ui/MetadataExplorer.jsx')))return '\0summary-project-preference';if(id==='virtual:summary-portals')return '\0summary-portals';},transform(source,id){if(id.endsWith('/TreeBuilder.jsx')||id.endsWith('/PredicateValueInput.jsx'))return source.replace("from 'react-dom'","from 'virtual:summary-portals'");},load(id){if(id==='\0summary-explorer-viewer')return 'import React from "react";export default props=>React.createElement("explorer-viewer",props);';if(id==='\0summary-project-preference')return 'export const useProjectPreference=(project,field)=>({value:field==="recent_searches"?[]:{},update:async()=>{}});';if(id==='\0summary-portals')return 'export const createPortal=children=>children;';}}]});
  const {default:TreeBuilder}=await server.ssrLoadModule('/src/typed-query/ui/TreeBuilder.jsx');
  const {useRequestedSummaries}=await server.ssrLoadModule('/src/requested-summaries/useRequestedSummaries.js');
  const {useFieldRegistry}=await server.ssrLoadModule('/src/summary-jobs/useFieldRegistry.js');
- const {useProtocolSummaryPreferences}=await server.ssrLoadModule('/src/summary-jobs/useProtocolSummaryPreferences.js');
  const {default:PredicateDialog}=await server.ssrLoadModule('/src/typed-query/ui/PredicateDialog.jsx');
  // Compile the explorer/App source too; the mounted tree exercises the shared builder.
  const {default:MetadataExplorer}=await server.ssrLoadModule('/src/metadata-explorer/ui/MetadataExplorer.jsx');
  await server.ssrLoadModule('/src/App.jsx');
  let root,probe;
- function Probe({kind,request,revision,project,protocol,view,enabled=true,fallbackPath='/explore/predicate-fields'}){
+ function Probe({kind,request,revision,enabled=true,fallbackPath='/explore/predicate-fields'}){
   const summary=useRequestedSummaries(request||{predicate:{all:[]},summary_fields:[]},{enabled:kind==='summary'&&enabled});
   const fields=useFieldRegistry(revision,fallbackPath);
-  const preferences=useProtocolSummaryPreferences(project,protocol,view);
-  probe={summary,fields,preferences};return React.createElement('probe',{status:summary.status});
+  probe={summary,fields};return React.createElement('probe',{status:summary.status});
  }
- const h={requests,memory,TreeBuilder,PredicateDialog,MetadataExplorer,Probe,set respond(value){respond=value;},get probe(){return probe;},get root(){return root.root;},async render(Component,props){await act(async()=>{const element=React.createElement(Component,props);if(root)root.update(element);else root=TestRenderer.create(element,{createNodeMock:()=>({showModal(){},close(){},focus(){},getBoundingClientRect:()=>({left:50,top:100,bottom:120,width:300}),contains:()=>false})});});},async act(callback){await act(callback);},async settle(ms=0){await act(async()=>{if(ms)await new Promise(resolve=>setTimeout(resolve,ms));for(let i=0;i<12;i++)await Promise.resolve();});},async close(){await act(()=>root?.unmount());await server.close();Object.assign(globalThis,old);},button(label){return root.root.findAllByType('button').find(node=>node.children.some(child=>typeof child==='string'&&child.includes(label)));},text(){return JSON.stringify(root.toJSON());}};
+ const h={requests,memory,TreeBuilder,PredicateDialog,MetadataExplorer,Probe,set respond(value){respond=value;},get probe(){return probe;},get root(){return root.root;},async render(Component,props){await act(async()=>{const element=React.createElement(Component,props);if(root)root.update(element);else root=TestRenderer.create(element,{createNodeMock:()=>({showModal(){},close(){},focus(){},closest:()=>null,getBoundingClientRect:()=>({left:50,top:100,bottom:120,width:300}),contains:()=>false})});});},async act(callback){await act(callback);},async settle(ms=0){await act(async()=>{if(ms)await new Promise(resolve=>setTimeout(resolve,ms));for(let i=0;i<12;i++)await Promise.resolve();});},async close(){await act(()=>root?.unmount());await server.close();Object.assign(globalThis,old);},button(label){return root.root.findAllByType('button').find(node=>node.children.some(child=>typeof child==='string'&&child.includes(label)));},text(){return JSON.stringify(root.toJSON());}};
  return h;
 }
 
@@ -64,15 +61,6 @@ test('mounted registry falls back only when new route is absent; service failure
   const start=h.requests.length;h.respond=()=>({httpStatus:500,data:{error:'Publication failed'}});await h.render(h.Probe,{kind:'registry',revision:2});assert.equal(h.probe.fields.data,null);assert.match(h.probe.fields.error,/Publication failed/);assert.equal(h.requests.slice(start).length,1);
  }finally{await h.close();}
 });
-test('mounted protocol/view preferences retain missing pinned fields and isolate project switches',async()=>{
- const h=await harness();
- try{
-  await h.render(h.Probe,{kind:'preferences',project:'P1',protocol:'A',view:'tree'});await h.act(()=>h.probe.preferences.update(['parameters/field150','history1']));
-  assert.deepEqual(JSON.parse(h.memory.get(summaryPreferenceKey('P1','A','tree'))),{version:1,fields:['parameters/field150','history1']});
-  for(const context of [{project:'P2',protocol:'A',view:'tree'},{project:'P1',protocol:'B',view:'tree'},{project:'P1',protocol:'A',view:'filter'}]){await h.render(h.Probe,{kind:'preferences',...context});assert.deepEqual(h.probe.preferences.value.fields,[]);}
-  await h.render(h.Probe,{kind:'preferences',project:'P1',protocol:'A',view:'tree'});assert.deepEqual(h.probe.preferences.value.fields,['parameters/field150','history1']);
- }finally{await h.close();}
-});
 test('mounted tree defers summaries until chooser open and remains editable with bounded field discovery',async()=>{
  const h=await harness(),changes=[];
  try{
@@ -80,7 +68,7 @@ test('mounted tree defers summaries until chooser open and remains editable with
   await h.render(h.TreeBuilder,props);await h.settle();
   assert.equal(h.requests.some(item=>item.path==='/explore/summaries'),false,'axis cards use registry labels without background summary work');
   assert.equal(h.requests.some(item=>item.path.includes('/tree-fields')),false);
-  assert.doesNotMatch(h.text(),/Metadata summaries|Advanced layout suggestions|Preferred summaries/);assert.match(h.text(),/history1/);assert.equal(changes.length,0);assert.deepEqual(axes,['date','parameters/field150','history1']);
+  assert.doesNotMatch(h.text(),/Metadata summaries|Advanced layout suggestions/);assert.match(h.text(),/history1/);assert.equal(changes.length,0);assert.deepEqual(axes,['date','parameters/field150','history1']);
   assert.equal(h.button('Add a split').props.disabled,false);
   assert.equal(h.button('Summarize all metadata fields'),undefined);
   const before=h.requests.length;await h.act(()=>h.button('Add a split').props.onClick());
@@ -93,7 +81,6 @@ test('mounted tree defers summaries until chooser open and remains editable with
 test('tree chooser summaries retain exact scope, reject late results and retire when both choosers close',async()=>{
  const h=await harness(),pending=[],changes=[];
  try{
-  h.memory.set(summaryPreferenceKey('P1','A','tree'),JSON.stringify({version:1,fields:['parameters/field149']}));
   h.respond=path=>{
    if(path==='/explore/field-registry')return registry;
    if(path.endsWith('/cancel'))return {status:'cancelled',generation};
@@ -101,7 +88,8 @@ test('tree chooser summaries retain exact scope, reject late results and retire 
    throw Error(`Unexpected summary request ${path}`);
   };
   const props={projectId:'P1',protocolId:'A',value:['date'],onChange:value=>changes.push(value),preview:{count:7},loading:false};
-  const scope=cell=>({...props,summaryContext:{predicate:{all:[]},protocol_uuid:'A',filters:{cell_uuid:cell}}});
+  // The scoped predicate names field149, so open choosers summarize it with the axes.
+  const scope=cell=>({...props,summaryContext:{predicate:{all:[{field:'parameters/field149',operator:'exists'}]},protocol_uuid:'A',filters:{cell_uuid:cell}}});
   const submits=()=>h.requests.filter(item=>item.path==='/explore/summaries');
   const ready=(id,count)=>({status:'ready',request_id:id,generation,result:{matched_count:7,summaries:{'parameters/field149':{
    values:Array.from({length:count},(_,value)=>({value,type:'number',count:1})),missing_count:0,present_count:7,values_truncated:false}}}});
@@ -138,31 +126,18 @@ test('tree chooser summaries retain exact scope, reject late results and retire 
  }finally{await h.close();}
 });
 
-test('editing a predicate sends no summary requests and edits stay unblocked',async()=>{
+test('editing a predicate sends no request of any kind and edits stay unblocked',async()=>{
  const h=await harness();
  try{
   const draft={kind:'group',id:'g',mode:'all',negated:false,children:[{kind:'condition',id:'c',field:'parameters/field150',operator:'eq',valueType:'number',valueText:'1',negated:false}]};
-  h.memory.set(summaryPreferenceKey('P1','A','filter'),JSON.stringify({version:1,fields:['parameters/field149']}));
   await h.render(h.PredicateDialog,{draft,catalog:{data:registry,supportsSummaries:true,reload(){}},projectId:'P1',protocolId:'A',onClose(){},onSearch(){}});await h.settle();
   const value=()=>h.root.findByProps({'aria-label':'Condition value'});
+  const before=h.requests.length;
   for(const text of ['2','23','-','4'])await h.act(()=>value().props.onChange({target:{value:text}}));
   await h.settle(350);
-  assert.equal(h.requests.filter(item=>item.path.startsWith('/explore/summaries')).length,0,'editing requests no statistics');
-  assert.equal(h.root.findByType('fieldset').props.disabled,false);assert.doesNotMatch(h.text(),/Metadata summaries|Preferred summaries/);
- }finally{await h.close();}
-});
-
-test('explicit predicate preview shows exact counts without statistics',async()=>{
- const h=await harness();
- try{
-  const draft={kind:'group',id:'g',mode:'all',negated:false,children:[{kind:'condition',id:'c',field:'parameters/field150',operator:'eq',valueType:'number',valueText:'1',negated:false}]};
-  h.respond=(path)=>path==='/explore/run'?{last_run:{cell_count:2,epoch_count:17,ran_at:'2026-10-01T12:00:00Z'}}:{status:'cancelled',generation};
-  await h.render(h.PredicateDialog,{draft,catalog:{data:registry,supportsSummaries:true,reload(){}},projectId:'P1',protocolId:'A',onClose(){},onSearch(){}});
-  await h.act(()=>h.button('Preview matches').props.onClick());
-  assert.deepEqual(h.requests.find(item=>item.path==='/explore/run').body,{predicate:{all:[{field:'parameters/field150',operator:'eq',value:1}]},splits:'',catalog_summary:false});
-  assert.equal(h.requests.filter(item=>item.path.startsWith('/explore/summaries')).length,0);
-  const counts=h.root.findByProps({className:'predicate-preview'}).findAllByType('b').map(node=>node.children.join(''));
-  assert.deepEqual(counts,['2','17']);assert.equal(h.requests.some(item=>item.path.includes('/tree-fields')),false);
+  assert.deepEqual(h.requests.slice(before).map(item=>item.path),[],'editing a predicate sends no request of any kind');
+  assert.equal(h.button('Preview matches'),undefined,'no preview while building a query');
+  assert.equal(h.root.findByType('fieldset').props.disabled,false);assert.doesNotMatch(h.text(),/Metadata summaries/);
  }finally{await h.close();}
 });
 
@@ -191,7 +166,6 @@ test('running a query sends no catalog statistics in previews and exactly one su
   assert.deepEqual(jobs()[0].body.summary_fields,definitions.map(field=>field.id));
   assert.equal(builder().summaryEnabled,false,'the builder renders the result job instead of starting its own');
   assert.equal(builder().catalogData.fields.find(field=>field.id==='date').distinct_count,1);
-  assert.equal(builder().onFullCatalog,undefined);
   let start=h.requests.length;await h.act(()=>builder().onChange(['date','parameters/field150']));await h.settle();await h.settle(50);
   assert.ok(h.requests.slice(start).filter(item=>item.path==='/explore/preview').every(item=>item.body.catalog_summary===false));
   assert.equal(jobs().length,1,'a layout change of the same query reuses the result statistics');
@@ -250,5 +224,50 @@ test('legacy field catalogs still follow the fallback path',async()=>{
   assert.equal(h.requests.length,start,'a completed legacy catalog is not refetched');
   await h.render(h.Probe,{kind:'registry',revision:1,fallbackPath:'/protocols/A/tree-fields?splits=date,cell'});await h.settle();
   assert.equal(h.probe.fields.data.fields.length,2);assert.ok(h.requests.slice(start).some(item=>item.path==='/protocols/A/tree-fields?splits=date,cell'));
+ }finally{await h.close();}
+});
+
+test('building then running a query: editing sends nothing, running sends the run and exactly one summary job',async()=>{
+ const h=await harness({explorerShell:true});
+ try{
+  const result={matched_count:4,catalog_summary:false,last_run:{cell_count:1,epoch_count:4,ran_at:'2026-10-19T00:00:00Z'},catalog:{fields:definitions.map(({id,label,category,path})=>({id,label,category,path}))},tree:{count:4,levels:[],split_order:['date','cell']}};
+  h.respond=(path)=>{
+   if(path==='/explore/field-registry')return {...registry,summary_available:true};
+   if(path==='/explore/run')return result;
+   if(path.startsWith('/search-presets'))return {presets:[]};
+   if(path.startsWith('/explore/revisions'))return {revisions:[]};
+   if(path==='/explore/summaries')return {status:'ready',request_id:'after-run',generation,result:{matched_count:4,summaries:{}}};
+   throw Error(`Unexpected ${path}`);
+  };
+  await h.render(h.MetadataExplorer,{projectId:'P1',initialProtocolId:'A',initialPredicate:{all:[{field:'parameters/field1',operator:'gt',value:1}]}});await h.settle();await h.settle(50);
+  const editing=h.requests.length;
+  const logic=()=>h.root.findByProps({'aria-label':'Root group logic'});
+  for(const next of ['any','all','any','all'])await h.act(()=>logic().props.onChange({target:{value:next}}));
+  const value=()=>h.root.findByProps({'aria-label':'Condition value'});
+  for(const text of ['2','25','250'])await h.act(()=>value().props.onChange({target:{value:text}}));
+  await h.settle(350);
+  assert.deepEqual(h.requests.slice(editing).map(item=>item.path),[],'editing a predicate sends no request of any kind');
+  const running=h.requests.length;
+  await h.act(()=>h.button('View matching epochs').props.onClick());await h.settle();await h.settle(50);
+  const after=h.requests.slice(running).map(item=>item.path);
+  assert.deepEqual(after.filter(path=>path.startsWith('/explore/')),['/explore/run','/explore/summaries'],'the run, then exactly one summary job');
+  assert.equal(h.requests.slice(running).find(item=>item.path==='/explore/run').body.catalog_summary,false);
+ }finally{await h.close();}
+});
+
+test('the predicate editor keeps tag-name autocomplete: the one request allowed while editing',async()=>{
+ const h=await harness();
+ try{
+  const tagField={id:'annotations/epoch/tags',label:'Epoch tags',category:'Annotations',path:'annotations.epoch.tags',types:['string'],operators:['contains']};
+  const draft={kind:'group',id:'g',mode:'all',negated:false,children:[{kind:'condition',id:'c',field:'annotations/epoch/tags',operator:'contains',valueType:'string',valueText:'',negated:false}]};
+  h.respond=path=>path.startsWith('/annotation-tags')?{tags:[{tag:'bright',count:3},{tag:'branch-stim',count:1}],has_more:false}:(()=>{throw Error(`Unexpected ${path}`);})();
+  await h.render(h.PredicateDialog,{draft,catalog:{data:{...registry,fields:[...definitions,tagField]},supportsSummaries:true,reload(){}},projectId:'P1',protocolId:'A',onClose(){},onSearch(){}});await h.settle();
+  const start=h.requests.length,value=()=>h.root.findByProps({'aria-label':'Condition value'});
+  await h.act(()=>value().props.onFocus());
+  await h.act(()=>value().props.onChange({target:{value:'br'}}));await h.settle(250);
+  const reads=h.requests.slice(start).map(item=>item.path);
+  assert.ok(reads.length>0&&reads.every(path=>path.startsWith('/annotation-tags?q=')),`only tag-name autocomplete reads: ${reads}`);
+  assert.ok(reads.includes('/annotation-tags?q=br&limit=100'));
+  assert.match(h.text(),/bright/);assert.match(h.text(),/branch-stim/);
  }finally{await h.close();}
 });

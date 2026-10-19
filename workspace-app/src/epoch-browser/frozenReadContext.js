@@ -1,4 +1,3 @@
-import {predicateIdentity} from '../typed-query/predicateIdentity.js';
 import {annotationFilterNeedsRefresh} from '../annotations/annotationReceipts.js';
 // Frozen candidate reads never fall back to a current protocol/global endpoint.
 export function frozenReadQuery(context,query=''){
@@ -13,14 +12,6 @@ export function frozenReadQuery(context,query=''){
 export function frozenReadPath(context,protocolId,suffix,query=''){
  const params=frozenReadQuery(context,query);
  return `${context?.root||`/protocols/${protocolId}`}${suffix}${params?'?'+params:''}`;
-}
-
-export function candidatePreviewReceipt(result,request){
- const normalized=filters=>Object.fromEntries(Object.entries(filters||{}).map(([key,value])=>[key,['metadata_predicate','tag_predicate'].includes(key)?JSON.parse(value):value]));
- if(result?.candidate_scope_revision!==request.candidate_scope_revision||predicateIdentity(normalized(result?.filters))!==predicateIdentity(normalized(request.filters)))throw Error('Candidate preview authority changed. Refresh before previewing again.');
- const count=result.matched_count??result.counts?.epochs;
- if(!Number.isSafeInteger(count)||count<0)throw Error('Candidate counts unavailable.');
- return count;
 }
 
 // Presentation continuity is never a read or write receipt. Without an explicit

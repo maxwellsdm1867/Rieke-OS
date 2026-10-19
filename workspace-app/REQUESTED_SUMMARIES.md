@@ -23,28 +23,16 @@ with the service job on 2026-10-01. No Python/API files are changed here.
 - Navigation and field editing remain usable while summaries run. Missing
   summaries and truncated distinct counts are unavailable, rather than zero.
   Recorded nulls, arrays, numeric values, and text retain their source types.
-- Normal tree/filter views request active axes/conditions and explicitly pinned
-  field summaries. The normal all-fields-summary action has been removed.
-  Complete registry discovery, raw details, export and reconstruction remain
-  available regardless of summary selection. Missing saved axes/preferences
-  remain intact.
-- Predicate-dialog **Preview matches** explicitly sends `catalog_summary:false`
-  to the existing `/explore/run` route. Its authoritative `last_run.cell_count`
-  and `epoch_count` remain the displayed preview counts; epoch facet buckets
-  never substitute for unique-cell counts.
-- Existing complete catalog/derived suggestions remain an explicit action under
-  the closed **Advanced layout suggestions** disclosure. Opening that disclosure
-  or browsing the chooser does not fetch distributions. Only its load button
-  computes the full catalog. Changes to the scope/layout/generation resume
-  lightweight previews before request effects run.
-- New preferences are local to this browser/device, under
-  `workspace.summary-preferences.v1:<JSON [project UUID, protocol UUID, view]>`,
-  with payload `{version:1,fields:[exact IDs]}`. Tree and filter views are distinct.
-  This is a new schema, not an assumed existing protocol field. Saved layouts
-  seed requests through active axes; they are never overwritten by preferences.
+- Building a query (the predicate dialog) sends no request: there is no
+  preview, count or statistics call. The user runs the query; results load,
+  then one summary job covers that result set (metadata explorer).
+- Tree choosers outside the explorer request their active axes and predicate
+  fields only while a chooser is open. Complete registry discovery, raw details,
+  export and reconstruction remain available regardless of summary selection.
+- Result reads send `catalog_summary:false`; there is no full-catalog mode.
+  Per-protocol summary preferences were removed (2026-10-19).
 - Protocol Inspector summaries use the protocol's frozen dataset plus existing
-  filters. Search/export target `initialProtocolId` supplies preference context
-  only; it does not narrow the search's scientific membership.
+  filters.
 - Older services fall back to the original field catalog only for missing routes
   (404/405). Validation/publication/server failures remain visible. Async summary
   controls stay unavailable with a legacy registry.
