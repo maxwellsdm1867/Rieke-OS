@@ -499,10 +499,19 @@ sealed `DiskMetadataIndex` and the typed sidecar that production refresh prepare
 after sealing (`typed_lifecycle.prepare`). Request bodies mirror the UI: tree pages
 send `counts_only`, explicit filters and 60-row pages; previews and runs send
 `catalog_summary: false`. Full-statistics tree roots, catalog-summary previews and
-the untyped explore-page fallback are separately named cases. The production `StateGenerationAuthority` runs with
-its leaf SQL replaced: schema attestation is a counted constant and generation
-rows are in-memory counters that the SQL doubles advance on every curation and
-shared-annotation write, standing in for the native triggers. No H5 file may be
+the untyped explore-page fallback are separately named cases. The service runs as the exact `WorkspaceService` class (the
+fixture subclass only overrode refresh and events, which stay counted doubles),
+and its read model is published the way refresh publishes it: deep-frozen maps
+via `publish_frozen` when the source revision has it, so publication-serial
+fast paths engage. The production `StateGenerationAuthority` runs with its leaf
+SQL replaced: schema attestation is a counted constant, and generation rows and
+the `app_annotation_changes` feed are in-memory doubles that SQL-double writes
+advance exactly as `trigger_manifest()` does (INSERT once, UPDATE twice, change
+rows upserted at the final generation), so `shared_changes` returns real deltas.
+The SQL double journals each transaction's own writes for rollback instead of
+deep-copying every table, and the route fixture skips the browser preparation
+reset snapshot; both previously doubled memory and write cost at a million
+epochs. No H5 file may be
 opened after fixture construction; traces are a separate path.
 
 ```sh

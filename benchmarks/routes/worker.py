@@ -58,6 +58,14 @@ def report(event, **values):
     print(json.dumps({'event': event, **values}), flush=True)
 
 
+def rss():
+    try:
+        import psutil
+        return psutil.Process().memory_info().rss
+    except Exception:
+        return None
+
+
 def write():
     args.output.write_text(json.dumps(result, indent=2, default=str) + '\n')
 
@@ -98,17 +106,81 @@ def count_profile(profile, source_python):
     return headline, functions[:60]
 
 
+JOURNAL = {'depth': [0], 'undo': None, 'restore': None}
+
+
+def install_journaled_transactions():
+    """Replace the SQL double's whole-database deep copy per transaction.
+
+    test_workspace_curation.Connection.transaction deep-copies every table on
+    entry so it can roll back; at a million epochs that copy (bindings, recipes)
+    dominates every write and doubles peak memory. This journal records only the
+    rows a transaction inserts or updates and undoes them in reverse on failure,
+    keeping the double's commit/rollback semantics. Process-local; the worker
+    owns its interpreter.
+    """
+    import contextlib
+    import copy
+    import test_workspace_curation as doubles
+    Table, Connection = doubles.Table, doubles.Connection
+    original_insert, original_update = Table.insert1, Table.update1
+
+    def insert1(self, row):
+        original_insert(self, row)
+        if JOURNAL['undo'] is not None:
+            rows = self.rows
+            JOURNAL['undo'].append(lambda: rows.pop())
+
+    def update1(self, row):
+        target = next((old for old in self.rows if all(row[k] == old[k] for k in self.keys)), None)
+        before = dict(target) if target is not None else None
+        original_update(self, row)
+        if JOURNAL['undo'] is not None and target is not None:
+            JOURNAL['undo'].append(lambda: (target.clear(), target.update(before)))
+    Table.insert1, Table.update1 = insert1, update1
+
+    @property
+    def transaction(self):
+        @contextlib.contextmanager
+        def journaled():
+            # Each nesting level rolls back exactly its own writes, as the
+            # double's per-level snapshot did; trigger effects follow the outer level.
+            outer = JOURNAL['undo'] is None
+            if outer:
+                JOURNAL['undo'] = []
+                saved = JOURNAL['restore'][0]() if JOURNAL['restore'] else None
+            mark = len(JOURNAL['undo'])
+            JOURNAL['depth'][0] += 1
+            try:
+                yield
+            except BaseException:
+                undo = JOURNAL['undo']
+                while len(undo) > mark:
+                    undo.pop()()
+                if outer and saved is not None:
+                    JOURNAL['restore'][1](saved)
+                raise
+            finally:
+                JOURNAL['depth'][0] -= 1
+                if outer:
+                    JOURNAL['undo'] = None
+        return journaled()
+    Connection.transaction = transaction
+
+
 def main():
     source = args.source_root.resolve()
     source_python = str(source / 'python') + os.sep
     sys.path[:0] = [str(ROOT / 'benchmarks/workflow')]
     folder = tempfile.mkdtemp(prefix='disco-route-million-')
     import server as workflow_fixture  # Harness-owned fixture; imports app code from --source-root.
+    sys.path[:0] = [str(source / 'python'), str(source / 'python/tests')]
+    install_journaled_transactions()
     build_started = time.perf_counter()
-    fixture, app, meta = workflow_fixture.build(source, Path(folder), args.epochs, args.protocol_epochs)
+    fixture, app, meta = workflow_fixture.build(source, Path(folder), args.epochs, args.protocol_epochs, retain_reset=False)
     case = fixture.case
     service = case.service
-    report('fixture_built', seconds=time.perf_counter() - build_started)
+    report('fixture_built', seconds=time.perf_counter() - build_started, rss=rss())
     import h5py
 
     def forbidden(*values, **kwargs):
@@ -164,34 +236,61 @@ def main():
     for name in ('_registered_tree_cache', '_registered_predicate_cache', '_predicate_catalog_cache'):
         if hasattr(service, name):
             setattr(service, name, None)
-    report('index_sealed', seconds=time.perf_counter() - seal_started, typed_index=result['typed_index'])
+    report('index_sealed', seconds=time.perf_counter() - seal_started, typed_index=result['typed_index'], rss=rss())
+
+    # Run the exact production service class (the fixture's subclass only
+    # overrides refresh/events) and publish the read model the way refresh does:
+    # deep-frozen maps when the source revision has publish_frozen, so
+    # publication-serial fast paths engage exactly as in production.
+    import workspace_service as service_module
+    fixture_class = type(service)
+    service.__class__ = service_module.WorkspaceService
+    counters_refresh = {'calls': 0}
+
+    def refresh_double():
+        # The fixture's refresh: nothing on disk to re-read. Counted, not timed.
+        counters_refresh['calls'] += 1
+        return {'epochs': len(service.rows)}
+    service.refresh = refresh_double
+    service.events = lambda limit=100: []
+    freeze = getattr(service_module, 'publish_frozen', None)
+    publication = {'service_class': 'WorkspaceService', 'fixture_class': fixture_class.__name__,
+                   'frozen': False, 'publish_frozen': freeze is not None}
+    if freeze is not None:
+        freeze_started = time.perf_counter()
+        # Freeze one map at a time and release the unfrozen original at once,
+        # so peak memory holds at most one duplicate map.
+        for name, as_rows in (('rows', True), ('cells', False), ('protocols', False), ('_fingerprints', False)):
+            frozen = freeze(getattr(service, name), rows=True) if as_rows else freeze(getattr(service, name))
+            if frozen is None:
+                break
+            setattr(service, name, frozen)
+            del frozen
+        else:
+            publication['frozen'] = True
+        publication['freeze_seconds'] = time.perf_counter() - freeze_started
+        serial_of = getattr(service_module, 'publication_serial', None)
+        publication['serial'] = serial_of(service) if serial_of else None
+    service._explore_publication = str(uuid.uuid4())
+    service._tree_page_scope_cache = None
+    result['publication'] = publication
+    import gc
+    gc.collect()
+    report('published', rss=rss(), **publication)
 
     counters = {'attest': 0, 'generation_sql': 0}
     generations = {}
     epochs_by_kind = {}
-    depth = [0]
-    # The SQL double tracks transaction depth so the tracker's transaction-bound
-    # mutation checks and autocommit-only response leases behave as natively.
-    sql = case.connection
-    plain = type(sql)
-    import contextlib
-
-    class TrackedConnection(plain):
-        @property
-        def transaction(self):
-            inner = plain.transaction.fget(self)
-
-            @contextlib.contextmanager
-            def tracked():
-                depth[0] += 1
-                try:
-                    with inner:
-                        yield
-                finally:
-                    depth[0] -= 1
-            return tracked()
-    sql.__class__ = TrackedConnection
-
+    # app_annotation_changes double: (kind, target, profile) -> (last_generation, deleted).
+    changes = {}
+    # Journaled transactions (installed before the fixture was built) track
+    # depth for the tracker's transaction-bound checks and roll trigger effects
+    # back with the writing transaction.
+    depth = JOURNAL['depth']
+    JOURNAL['restore'] = (lambda: (dict(generations), dict(changes)),
+                          lambda saved: (generations.clear(), generations.update(saved[0]),
+                                         changes.clear(), changes.update(saved[1])))
+    from types import SimpleNamespace
     class GenerationRows:
         """Leaf SQL of StateGenerationAuthority: generation rows and lock probes only."""
         _conn = SimpleNamespace(_sock=object())
@@ -207,6 +306,14 @@ def main():
                 key = (arguments[1], arguments[2])
                 rows = [{'scope_epoch': epochs_by_kind.setdefault(key, str(uuid.uuid4())),
                          'generation': generations.get(key, 0)}]
+            elif 'app_annotation_changes' in statement and 'last_generation>' in statement:
+                # The native change feed: rows whose last_generation is after the
+                # caller's shared generation, in generation order, bounded.
+                _, after, limit = arguments
+                rows = sorted(({'target_kind': kind, 'target_uuid': target, 'profile_uuid': profile,
+                                'last_generation': generation, 'deleted': deleted}
+                               for (kind, target, profile), (generation, deleted) in changes.items()
+                               if generation > after), key=lambda row: row['last_generation'])[:limit]
             return SimpleNamespace(fetchall=lambda: rows)
     tracker = StateGenerationAuthority(GenerationRows(), project)
     tracker.ready, tracker.reason = True, None
@@ -215,7 +322,6 @@ def main():
         counters['attest'] += 1
         return 'benchmark-authority'
     tracker._attest_contract = attest
-    tracker.shared_changes = lambda token, limit=10000: None
     shared = app.extensions.get('shared_annotations')
     case.store.state_generation = tracker
     if shared is not None:
@@ -227,20 +333,28 @@ def main():
     # Restricted views of a double share its row list, so dispatch on that list.
     # Only the SQL double class is wrapped, never a production class.
     shared = app.extensions.get('shared_annotations')
-    watched = {id(case.curation.rows): lambda row: ('protocol_curation', row['protocol_uuid'])}
+    # Mirrors workspace_state_generation.trigger_manifest(): INSERT advances the
+    # scope once, UPDATE twice (OLD then NEW); shared-annotation and profile
+    # writes also upsert the change feed at the final generation.
+    watched = {id(case.curation.rows): (lambda row: ('protocol_curation', row['protocol_uuid']), None)}
     if shared is not None:
-        watched[id(shared.Annotation.rows)] = lambda row: ('shared_annotations', project)
-        watched[id(shared.Profile.rows)] = lambda row: ('shared_annotations', project)
+        watched[id(shared.Annotation.rows)] = (lambda row: ('shared_annotations', project),
+                                               lambda row: (row['target_kind'], row['target_uuid'], row['profile_uuid']))
+        watched[id(shared.Profile.rows)] = (lambda row: ('shared_annotations', project),
+                                            lambda row: ('profile', row['profile_uuid'], row['profile_uuid']))
     table_class = type(case.curation)
     for method in ('insert1', 'update1'):
         original = getattr(table_class, method)
 
-        def triggered_write(self, row, _original=original):
+        def triggered_write(self, row, _original=original, _steps=1 if method == 'insert1' else 2):
             value = _original(self, row)
-            kind_of = watched.get(id(self.rows))
-            if kind_of is not None:
-                key = kind_of(row)
-                generations[key] = generations.get(key, 0) + 1
+            trigger = watched.get(id(self.rows))
+            if trigger is not None:
+                scope_of, change_of = trigger
+                key = scope_of(row)
+                generations[key] = generations.get(key, 0) + _steps
+                if change_of is not None:
+                    changes[change_of(row)] = (generations[key], 0)
             return value
         setattr(table_class, method, triggered_write)
     if shared is not None and hasattr(shared, '_index_records'):
@@ -644,6 +758,7 @@ def main():
     measure('workbench.queue_after_undo', undo_state and (lambda phase: (merge_all(merge_state(phase)), undo_last(), None)[2]),
             lambda s: call('get', f'{root_path}?limit=20'), cold=False)
 
+    result['refresh_calls'] = counters_refresh['calls']
     result['index_closed'] = True
     try:
         index.close()

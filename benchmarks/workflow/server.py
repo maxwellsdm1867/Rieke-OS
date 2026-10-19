@@ -78,7 +78,7 @@ def admitted_index(service):
     return Index()
 
 
-def build(source, output, epochs, protocol_epochs=None, suite='core'):
+def build(source, output, epochs, protocol_epochs=None, suite='core', retain_reset=True):
     protocol_epochs = epochs if protocol_epochs is None else protocol_epochs
     if not 200 <= protocol_epochs <= epochs:
         raise ValueError("protocol_epochs must be 200..epochs")
@@ -119,12 +119,19 @@ def build(source, output, epochs, protocol_epochs=None, suite='core'):
     service.cell_ids = [uid(2_000_000 + i) for i in range((epochs + 99) // 100)]
     tracefile = (output / 'trace-fixture.h5').resolve()
     stream = uid(5_000_000)
+    # Equal values share one string object (block, label, group) so a million
+    # rows do not hold millions of duplicate strings; values are unchanged.
+    group_uuid = uid(4_000_000)
+    blocks, labels = {}, {}
+
     def add(start, stop, sha):
         for i in range(start, stop):
-            cell, block = service.cell_ids[i // 100], uid(3_000_000 + i // 20)
+            cell = service.cell_ids[i // 100]
+            block = blocks.get(i // 20) or blocks.setdefault(i // 20, uid(3_000_000 + i // 20))
+            label = labels.get(i // 100) or labels.setdefault(i // 100, f'Cell {i // 100}')
             row = {**original, 'epoch_uuid': uid(i), 'cell_uuid': cell, 'block_uuid': block,
-                   'cell_label': f'Cell {i // 100}', 'epoch_number': i % 20 + 1,
-                   'source_sha256': sha, 'streams': [], 'group_uuid': uid(4_000_000),
+                   'cell_label': label, 'epoch_number': i % 20 + 1,
+                   'source_sha256': sha, 'streams': [], 'group_uuid': group_uuid,
                    'protocol_name': 'ambient' if main_count <= i < incoming_start else 'example'}
             if i in (0, incoming_start, incoming_start + 1):
                 row['streams'] = [{'uuid': stream, 'kind': 'responses', 'sample_count': 10000 if i == 0 else 300000 if i == incoming_start else 1000000,
@@ -182,6 +189,8 @@ def build(source, output, epochs, protocol_epochs=None, suite='core'):
                 abort(409, 'Other owned fixture requests are still active')
             active['resetting'] = True
         try:
+            if not reset_state:
+                abort(409, 'This owned fixture was built without a preparation reset snapshot')
             for table, expected in reset_state['protected']:
                 if table.rows != expected:
                     abort(409, 'Main/source/annotation authority changed; refusing reset')
@@ -204,11 +213,14 @@ def build(source, output, epochs, protocol_epochs=None, suite='core'):
     fixture.run_import(mutate)
     for item in fixture.preflight.patches: item.stop()
     case.sources.insert1({'project_uuid': service.project['project_uuid'], 'source_sha256': 'a' * 64})
-    reset_state['tables'] = [(table, copy.deepcopy(table.rows)) for table in case.connection.tables]
-    protected = [case.protocol_bindings, case.curation, case.sources, case.data_store_states, annotations]
-    reset_state['protected'] = [(table, rows) for table, rows in reset_state['tables'] if any(table is protected_table for protected_table in protected)]
-    reset_state['sources'] = copy.deepcopy(service.sources)
-    reset_state['fingerprints'] = dict(service._fingerprints)
+    if retain_reset:
+        # Only the browser preparation reset needs this full post-import copy;
+        # route measurements skip it (it duplicates every table at 1M epochs).
+        reset_state['tables'] = [(table, copy.deepcopy(table.rows)) for table in case.connection.tables]
+        protected = [case.protocol_bindings, case.curation, case.sources, case.data_store_states, annotations]
+        reset_state['protected'] = [(table, rows) for table, rows in reset_state['tables'] if any(table is protected_table for protected_table in protected)]
+        reset_state['sources'] = copy.deepcopy(service.sources)
+        reset_state['fingerprints'] = dict(service._fingerprints)
 
     def track_request():
         g.workflow_counted = False
