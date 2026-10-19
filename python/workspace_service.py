@@ -643,6 +643,49 @@ class WorkspaceService:
             self._registered_predicate_cache = None
         return cached[1]
 
+    def preverify_sources(self, identities=None):
+        """Hash registered recordings outside any database lock (memory only).
+
+        For each source whose current stat signature is not yet verified, the
+        whole-file SHA-256 is computed and kept only if it equals the registered
+        identity and the stat signature (path, device, inode, size, mtime, ctime)
+        is identical before and after hashing. ``_verified_source`` accepts such a
+        result only when a fresh stat taken under its caller's lock still equals
+        that signature. Nothing is persisted; a restart starts unverified.
+        Returns the number of sources newly verified.
+        """
+        manifests = getattr(self, 'manifests', None) or {}
+        pending = self.__dict__.setdefault('_preverified_sources', {})
+        verified = 0
+        for identity in (list(manifests) if identities is None else list(identities)):
+            manifest = manifests.get(identity)
+            if manifest is None or manifest.get('source_sha256') != identity:
+                continue
+            try:
+                path = Path(manifest['source_path']).resolve()
+                stat = path.stat()
+                signature = (str(path), stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+                if (getattr(self, '_source_signatures', {}).get(identity) == signature
+                        or pending.get(identity) == signature or stat.st_size != manifest['source_size']):
+                    continue
+                if digest(path) != identity:
+                    continue  # Never trusted; the locked path refuses it with its own error.
+                after = path.stat()
+                if signature == (str(path), after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns):
+                    pending[identity] = signature
+                    verified += 1
+            except (OSError, KeyError, TypeError, ValueError):
+                continue
+        return verified
+
+    def preverify_epoch_source(self, epoch_uuid):
+        """Outside-lock first-access hash for the source owning one epoch, if needed."""
+        try:
+            row = getattr(self, 'rows', {}).get(_uuid(epoch_uuid))
+        except (TypeError, ValueError, AttributeError):
+            return 0
+        return self.preverify_sources([row['source_sha256']]) if row is not None and self._loaded else 0
+
     def _verified_source(self, manifest, signature_cache=None):
         signatures = self._source_signatures if signature_cache is None else signature_cache
         path = Path(manifest['source_path']).resolve()
@@ -651,6 +694,10 @@ class WorkspaceService:
         expected = manifest['source_sha256']
         if stat.st_size != manifest['source_size']:
             raise ValueError('Source recording size changed; import a new revision')
+        if signatures.get(expected) != signature and self.__dict__.get('_preverified_sources', {}).get(expected) == signature:
+            # Hashed outside the lock with an identical stat before/after; this
+            # fresh stat (taken under the caller's lock) still matches it.
+            signatures[expected] = signature
         if signatures.get(expected) != signature:
             if digest(path) != expected:
                 raise ValueError('Source recording checksum changed; refusing trace access')

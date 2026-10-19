@@ -188,6 +188,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 raise ValueError('Another app or state recovery owns this project; close it before opening') from None
         app.extensions['app_state_session_lock'] = session_lock
     db_lock = _ReadLeaseLock(threading.RLock(), lambda: read_contract())
+    app.extensions['workspace_db_lock'] = db_lock  # Ownership checks only (tests, diagnostics).
     importing = threading.Lock()
     from workspace_import_progress import ProgressReporter, read_jobs, recover_jobs, progress_for, load_json
     owner_run_id = str(uuid.uuid4())
@@ -1861,9 +1862,22 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 row['annotations']['cell_epoch_count']=service.cell_epoch_count(row['cell_uuid'])
             return jsonify(row)
 
+    def prewarm_source_signatures():
+        """Hash every registered recording in a background thread, off db_lock."""
+        if not hasattr(service, 'preverify_sources'):
+            return None
+        worker = threading.Thread(target=lambda: service.preverify_sources(), name='disco-source-prewarm', daemon=True)
+        worker.start()
+        return worker
+    app.extensions['prewarm_source_signatures'] = prewarm_source_signatures
+
     @app.get("/api/epochs/<epoch_uuid>/trace")
     def trace(epoch_uuid):
         stream = request.args["stream_uuid"]
+        if hasattr(service, 'preverify_epoch_source'):
+            # A first access after start-up hashes the whole recording here,
+            # outside db_lock; the locked read re-checks its stat signature.
+            service.preverify_epoch_source(epoch_uuid)
         start, count = int(request.args.get("start", 0)), int(request.args.get("count", 20000))
         if 'chunks' in request.args:
             if (request.args.keys() - {'stream_uuid', 'start', 'count', 'chunks'} or

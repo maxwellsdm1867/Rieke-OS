@@ -874,6 +874,9 @@ def main(argv=None):
                 application = create_app(project, retinanalysis, desktop_session_lock=session_lock, on_created=capture)
                 from workspace_process_heap import install as install_project_heap
                 install_project_heap(application)
+                prewarm = application.extensions.get('prewarm_source_signatures')
+                if prewarm is not None:
+                    prewarm()  # Background, memory-only first-access hashing off db_lock.
                 return application
 
             def cleanup_failed_project():
