@@ -5293,6 +5293,7 @@
             "path": "python/disco/workbench/diff.py",
             "module": "disco.workbench.diff",
             "exports": [
+              "summarize_additions",
               "summarize_diff"
             ]
           },
@@ -5396,7 +5397,7 @@
       {
         "file": "python/disco/navigation/tree_pages.py",
         "file_sha256": "15f0c384e9b7c22488afb03d9c1c935a0c533f56897d286e97b0a74376ec881a",
-        "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Protocol-local cache follow-up: captured method targets and fallback checks are unchanged; fingerprint dependencies and grouping reservations are cohort-scoped. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Source/protocol cache retention review: exact method captures and observer targets remain unchanged; one shared bounded cache retains both navigation modes with original freshness checks.",
+        "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Protocol-local cache follow-up: captured method targets and fallback checks are unchanged; fingerprint dependencies and grouping reservations are cohort-scoped. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Source/protocol cache retention review: exact method captures and observer targets remain unchanged; one shared bounded cache retains both navigation modes with original freshness checks. Delta revision review (2026-10-18): captured ExplorerHistory targets unchanged; owner explorer bytes add membership-delta revisions (header/members/create_delta, lineage index); get/protocol_binding keep their contracts.",
         "sites": [
           {
             "selector": "Call:2",
@@ -5418,7 +5419,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "c67f6a0a8b67f97d44cb6a85bd7dda691f3c76027318503ccc18e7ac2e4dbfc1",
+                "file_sha256": "49900c194bd1399ec32aa97518e67afa000c8bd7ab83963915a561b09f5deb6a",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5569,7 +5570,7 @@
               {
                 "module": "workspace_state_snapshot",
                 "file": "python/workspace_state_snapshot.py",
-                "file_sha256": "51be76e9378f5c9640c00f043978a583425c6a981e1ae7a21f06d57551f0a108",
+                "file_sha256": "e2e952059b6cb104f3b04b9b353f84fc4ced653320b2a9ff8adbc0bc5a83170c",
                 "contract_id": null
               }
             ]
@@ -5752,8 +5753,8 @@
       },
       {
         "file": "python/tests/test_workspace_curation.py",
-        "file_sha256": "41d40b23c34bc749fa880e1c061fd71e0f943390854fa479b36899d8bb5c16ed",
-        "reason": "Inject owned in-memory workspace table fixtures during curation construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Workbench context reads (2026-10-18): the table double gains a multi-row insert defined after all reviewed sites; reviewed syntax and targets are unchanged.",
+        "file_sha256": "2310a987421bfa86a5f69e615d169c59c5f87a269669db419d872c9960557d47",
+        "reason": "Inject owned in-memory workspace table fixtures during curation construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Workbench context reads (2026-10-18): the table double gains a multi-row insert defined after all reviewed sites; reviewed syntax and targets are unchanged. Delta revision review (2026-10-18): the double gains delete_quick after all reviewed sites.",
         "sites": [
           {
             "selector": "Call:48",
@@ -5801,7 +5802,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "c67f6a0a8b67f97d44cb6a85bd7dda691f3c76027318503ccc18e7ac2e4dbfc1",
+                "file_sha256": "49900c194bd1399ec32aa97518e67afa000c8bd7ab83963915a561b09f5deb6a",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -6794,7 +6795,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "c67f6a0a8b67f97d44cb6a85bd7dda691f3c76027318503ccc18e7ac2e4dbfc1",
+                "file_sha256": "49900c194bd1399ec32aa97518e67afa000c8bd7ab83963915a561b09f5deb6a",
                 "contract_id": "backend-decisions"
               }
             ]

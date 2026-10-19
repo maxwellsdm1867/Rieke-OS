@@ -418,5 +418,20 @@ def _insert(self, rows):
 Table.insert = _insert  # Defined after the reviewed call sites above.
 
 
+def _delete_quick(self):
+    """Delete the restricted rows, as DataJoint's ``delete_quick``."""
+    doomed = {id(row) for row in self.rows if all(_matches(row, restriction) for restriction in self.restrictions)}
+    self.rows[:] = [row for row in self.rows if id(row) not in doomed]
+
+
+def _matches(row, restriction):
+    if isinstance(restriction, list):
+        return any(_matches(row, item) for item in restriction)
+    return all(row.get(key) == value for key, value in restriction.items())
+
+
+Table.delete_quick = _delete_quick
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -24,8 +24,10 @@ LEGACY_TABLES = ('annotation_profile', 'shared_annotation', 'curation', 'protoco
           'data_store_state', 'protocol_tree_layout', 'search_preset', 'search_preset_version',
           'protocol_binding', 'explorer_revision', 'dataset_revision', 'search_query_last_run')
 WORKBENCH_TABLES = LEGACY_TABLES + ('protocol_suggestion', 'workbench_draft', 'workbench_decision', 'workbench_receipt')
+GROUP_TABLES = WORKBENCH_TABLES + ('annotation_group_receipt',)
 # Append only: compact recovery row IDs use this tuple's stable ordinal.
-TABLES = WORKBENCH_TABLES + ('annotation_group_receipt',)
+# protocol_membership indexes bound delta-revision lineages (explorer).
+TABLES = GROUP_TABLES + ('protocol_membership',)
 FORMAT = 'rieke-app-state'
 
 
@@ -64,7 +66,7 @@ def restore_table_order(tables):
 def migrate_restore_tables(state):
     """Append absent optional state without changing prior reviewed contents."""
     known = set(state.get('tables', {}))
-    if known in (set(LEGACY_TABLES), set(WORKBENCH_TABLES)):
+    if known in (set(LEGACY_TABLES), set(WORKBENCH_TABLES), set(GROUP_TABLES)):
         state['tables'].update({table: [] for table in TABLES if table not in known})
     elif known != set(TABLES):
         raise ValueError('Restore snapshot table set is unsupported')
@@ -232,8 +234,13 @@ def compact_queries(state, service):
     """
     if any(state['tables'].get(table) for table in ('protocol_suggestion', 'workbench_draft', 'workbench_receipt')):
         return  # Requery/remapping would invalidate saved candidate scopes and receipts.
+    # A delta revision's chain seals its parent's exact identity and content,
+    # so neither deltas nor any lineage root they build on are re-queried.
+    lineage = {row['recipe'].get('lineage_uuid') for row in state['tables'].get('explorer_revision', [])
+               if row['recipe'].get('storage')}
     for row in state['tables'].get('explorer_revision', []):
-        if row['recipe'].get('membership_kind') == 'additive_union':
+        if (row['recipe'].get('membership_kind') == 'additive_union' or row['recipe'].get('storage')
+                or row['revision_uuid'] in lineage):
             continue
         recipe = row['recipe']
         try:

@@ -26,6 +26,10 @@ class WorkbenchTests(unittest.TestCase):
             Table(('project_uuid', 'operation_uuid')))
         self.case.connection.tables.extend(self.tables)
         self.manager._tables = self.tables
+        # Lineage membership index of bound delta revisions (rolled back with SQL).
+        self.membership = Table(('project_uuid', 'lineage_uuid', 'epoch_uuid', 'added_revision_uuid'))
+        self.case.connection.tables.append(self.membership)
+        self.case.explorer_history._membership = self.membership
         verified = patch.object(self.case.service, '_verified_source', return_value=(fixture.source, None))
         verified.start()
         self.addCleanup(verified.stop)
@@ -308,6 +312,9 @@ class WorkbenchTests(unittest.TestCase):
         row = next(row for row in self.case.explorer_revisions.rows if row['revision_uuid'] == self.revision)
         original_recipe = copy.deepcopy(row['recipe'])
         row['recipe']['epochs'][0]['metadata_hash'] = 'f' * 64
+        # A verified seal is reused within a process; tampering is refused by
+        # the first verification of that revision (here a cold process).
+        self.cold_revisions()
         tampered = self.list_selection(context)
         self.assertIn(tampered.status_code, (400, 409), tampered.get_json())
         self.assertNotIn('epoch_uuids', tampered.get_json())
@@ -350,12 +357,23 @@ class WorkbenchTests(unittest.TestCase):
         self.assertNotIn('bootstrap', response.get_json())
         self.assertNotIn('protocol', response.get_json())
 
+    def cold_revisions(self):
+        """Forget verified seals and views, as a new process starts."""
+        history = self.manager.history
+        history._headers.clear(), history._member_views.clear(), history._recipe_cache.clear()
+        self.manager._checks.clear(), self.manager._profiles.clear()
+
     def test_context_rechecks_warmed_main_recipe_storage(self):
         context = self.manager.context(self.protocol, self.revision, 'actor-one')
         self.manager.history.protocol_binding(self.protocol)
         row = next(row for row in self.case.explorer_revisions.rows if row['revision_uuid'] == context['main_revision_uuid'])
         original = copy.deepcopy(row['recipe'])
         row['recipe']['epochs'][0]['metadata_hash'] = 'f' * 64
+        # The verified root seal is reused in this process (sealed, insert-only);
+        # the first verification after a restart refuses the tampered root.
+        self.assertEqual(self.manager.context(self.protocol, self.revision, 'actor-one')['candidate_scope_revision'],
+                         context['candidate_scope_revision'])
+        self.cold_revisions()
         with self.assertRaisesRegex(ValueError, 'integrity'):
             self.manager.context(self.protocol, self.revision, 'actor-one')
         row['recipe'] = original
@@ -385,11 +403,30 @@ class WorkbenchTests(unittest.TestCase):
         self.manager.history.protocol_binding(self.protocol)
         rows = self.case.explorer_revisions.rows
         row = next(row for row in rows if row['revision_uuid'] == expected['main_revision_uuid'])
+        self.assertEqual(row['recipe']['storage'], 'membership-delta-v1')
         original = copy.deepcopy(row['recipe'])
-        row['recipe']['epochs'][0]['metadata_hash'] = 'f' * 64
+        row['recipe']['delta']['added'][0]['metadata_hash'] = 'f' * 64
+        self.cold_revisions()
+        with self.assertRaisesRegex(ValueError, 'integrity'):
+            self.manager.context(self.protocol, self.revision, 'actor-one')
+        # Resealing the tampered row alone still breaks the multiset chain.
+        from disco.workbench.recipes import checksum
+        resealed = {key: value for key, value in row['recipe'].items() if key != 'content_sha256'}
+        row['recipe'] = {**resealed, 'content_sha256': checksum(resealed)}
+        self.cold_revisions()
         with self.assertRaisesRegex(ValueError, 'integrity'):
             self.manager.context(self.protocol, self.revision, 'actor-one')
         row['recipe'] = original
+        self.cold_revisions()
+        # The indexed lineage rows verify against the sealed multiset hash.
+        self.assertEqual(set(self.manager.history.verify_lineage(expected['main_revision_uuid'])),
+                         set(expected['previous']))
+        member = next(item for item in self.membership.rows
+                      if item['added_revision_uuid'] == expected['main_revision_uuid'])
+        saved_hash, member['metadata_hash'] = member['metadata_hash'], 'f' * 64
+        with self.assertRaisesRegex(ValueError, 'integrity'):
+            self.manager.history.verify_lineage(expected['main_revision_uuid'])
+        member['metadata_hash'] = saved_hash
         rows.remove(row)
         with self.assertRaisesRegex(KeyError, 'Explorer revision not found'):
             self.manager.context(self.protocol, self.revision, 'actor-one')
@@ -431,7 +468,7 @@ class WorkbenchTests(unittest.TestCase):
             actual = self.manager.context(self.protocol, self.revision, 'actor-one')
         self.assertEqual(actual['candidate_scope_revision'], expected['candidate_scope_revision'])
         self.assertEqual(nested[0]['actor'], 'actor-two')
-        actual['candidate']['epochs'].clear()
+        actual['candidate'].clear()  # Canonical contexts hold recipe headers; members are shared views.
         self.assertEqual(self.manager.context(self.protocol, self.revision, 'actor-one')['candidate_scope_revision'], expected['candidate_scope_revision'])
 
     def test_tree_selection_matches_complete_pages_with_one_closing_check(self):

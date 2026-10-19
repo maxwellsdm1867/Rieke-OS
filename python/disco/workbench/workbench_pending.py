@@ -35,11 +35,25 @@ def prepare_pool_candidate(manager, protocol, actor):
     table = manager.suggestions.Table
     rows = (table & dict(project_uuid=manager.project, suggestion_uuid=suggestion_uuid)).to_dicts()
     created = not rows
+    delta_reads = manager._delta_reads()
+    previous_count = len(state['members'])
     if rows:
         summary = rows[0]['summary']
-        recipe = manager.history.get(summary['candidate_revision_uuid'])['recipe']
+        revision = summary['candidate_revision_uuid']
+        recipe = manager.history.header(revision) if delta_reads else manager.history.get(revision)['recipe']
+    elif delta_reads:
+        # The combined review is main plus a sealed delta of the pool: O(pool).
+        fields = dict(total_source=len(manager.service.rows), source_scope=state['scope'],
+            source_revisions=sorted(set(main['source_revisions'])
+                                    | {manager.service.rows[key]['source_sha256'] for key in pool}),
+            pending_union_provenance=dict(kind='pending_pool', content_sha256=content, origins=[]))
+        if state['annotation']:
+            fields['annotation_scope'] = state['annotation']
+        record = manager.history.create_delta(main['revision_uuid'], pool, [], actor, name='Accumulated incoming',
+                                              fields=fields, _in_transaction=True)
+        recipe = record['recipe']
     else:
-        union = {row['uuid']: row['metadata_hash'] for row in main['epochs']}
+        union = dict(state['members'].items())
         union.update(pool)
         preview = dict(predicate=main['predicate'], splits=main['splits'],
             membership=[dict(uuid=key, metadata_hash=union[key]) for key in sorted(union)], matched_count=len(union),
@@ -51,6 +65,7 @@ def prepare_pool_candidate(manager, protocol, actor):
         record = manager.history.create(preview, manager.service.sources, manager.service.project_dir / 'catalog.json',
             actor, name='Accumulated incoming', parent_revision_uuid=main['revision_uuid'], _in_transaction=True)
         recipe = record['recipe']
+    if not rows:
         timestamp = now()
         summary = dict(kind='workbench_pending_union', suggestion_uuid=suggestion_uuid, protocol_uuid=protocol,
             protocol_name=manager.service.protocols[protocol]['definition']['name'], created_at=timestamp,
@@ -59,7 +74,7 @@ def prepare_pool_candidate(manager, protocol, actor):
             source_sha256='', source_scope_revision=state['scope']['revision'],
             diff_counts=dict(added=len(pool), removed=0, changed=0),
             incoming_cell_uuids={key: manager.service.rows[key]['cell_uuid'] for key in pool},
-            previous_count=len(main['epochs']), next_count=len(union))
+            previous_count=previous_count, next_count=previous_count + len(pool))
         table.insert1(dict(project_uuid=manager.project, suggestion_uuid=suggestion_uuid, protocol_uuid=protocol,
             created_at=dt.datetime.fromisoformat(timestamp).astimezone(dt.timezone.utc).replace(tzinfo=None),
             summary=summary))
@@ -227,7 +242,7 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
                     expected_candidate_scope_revision=context['candidate_scope_revision'],
                     expected_draft_version=context['draft_version'], mode='all', operation_uuid=operation,
                     **{key: preview[key] for key in ('preview_sha256', 'expected_binding_version', 'expected_query_revision')}),
-                    merge_all=True)
+                    merge_all=True, context=context)
                 return jsonify(manager.public_merge_receipt(receipt))
 
     manager.cumulative_pending_browse = True
