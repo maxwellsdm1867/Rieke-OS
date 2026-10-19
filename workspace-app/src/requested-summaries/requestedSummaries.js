@@ -57,6 +57,9 @@ export function registryMatchesSummaryGeneration(registry,context){
 
 // The controller consumes a small adapter so lifecycle tests need no API/server.
 // Local sequence fencing remains necessary even when AbortSignal is ignored.
+// Submissions are never aborted: the server may already have created the job,
+// and only its receipt lets a retired run cancel it. The run's controller
+// aborts polls only.
 export function createSummaryController({adapter,onState,pollMs=250,schedule=setTimeout,unschedule=clearTimeout}){
   let serial=0,active=null,disposed=false;
   const publish=(run,state)=>{if(!disposed&&active===run&&!run.stopped)onState({...state,key:run.key});};
@@ -99,7 +102,7 @@ export function createSummaryController({adapter,onState,pollMs=250,schedule=set
     start(request){
       release(active);const run={serial:++serial,key:summaryRequestKey(request),request,controller:new AbortController(),stopped:false};active=run;
       publish(run,{status:'pending',result:null,error:null});
-      execute(run,()=>adapter.submit(request,run.controller.signal));return run.key;
+      execute(run,()=>adapter.submit(request));return run.key;
     },
     cancel(){if(active&&!active.stopped){publish(active,{status:'cancelled',result:null,error:null});release(active);}},
     dispose(){disposed=true;release(active);active=null;},

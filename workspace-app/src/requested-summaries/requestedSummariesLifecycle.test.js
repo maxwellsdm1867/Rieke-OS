@@ -32,9 +32,9 @@ async function harness({explorerShell=false}={}){
  const {default:MetadataExplorer}=await server.ssrLoadModule('/src/metadata-explorer/ui/MetadataExplorer.jsx');
  await server.ssrLoadModule('/src/App.jsx');
  let root,probe;
- function Probe({kind,request,revision,project,protocol,view,enabled=true}){
+ function Probe({kind,request,revision,project,protocol,view,enabled=true,fallbackPath='/explore/predicate-fields'}){
   const summary=useRequestedSummaries(request||{predicate:{all:[]},summary_fields:[]},{enabled:kind==='summary'&&enabled});
-  const fields=useFieldRegistry(revision,'/explore/predicate-fields');
+  const fields=useFieldRegistry(revision,fallbackPath);
   const preferences=useProtocolSummaryPreferences(project,protocol,view);
   probe={summary,fields,preferences};return React.createElement('probe',{status:summary.status});
  }
@@ -114,25 +114,25 @@ test('tree chooser summaries retain exact scope, reject late results and retire 
   await h.act(()=>h.root.findByProps({'aria-label':'Find a split field'}).props.onChange({target:{value:'Field 149'}}));
   await h.act(()=>pending[0].resolve(ready('A',2)));assert.match(h.text(),/2 values/);
   await h.render(h.TreeBuilder,scope('cell-B'));assert.equal(submits().length,2);
-  assert.equal(submits()[0].options.signal.aborted,true);assert.doesNotMatch(h.text(),/2 values/);
+  assert.equal(submits()[0].options.signal,undefined,'submits are never aborted');assert.doesNotMatch(h.text(),/2 values/);
   assert.deepEqual(submits()[1].body.filters,{cell_uuid:'cell-B'});
   await h.render(h.TreeBuilder,scope('cell-C'));assert.equal(submits().length,3);
-  assert.equal(submits()[1].options.signal.aborted,true);
+  assert.equal(submits()[1].options.signal,undefined);
   await h.act(()=>pending[2].resolve(ready('C',3)));assert.match(h.text(),/3 values/);
   await h.act(()=>pending[1].resolve(ready('late-B',9)));assert.match(h.text(),/3 values/);assert.doesNotMatch(h.text(),/9 values/);
   await h.act(closeSplit);
   await h.act(()=>h.button('Add a split').props.onClick());assert.equal(submits().length,4);
   await h.act(()=>toggleCombined(true));await h.act(closeSplit);
-  assert.equal(submits()[3].options.signal.aborted,false,'an open combined chooser retains the active request');
-  await h.act(()=>toggleCombined(false));assert.equal(submits()[3].options.signal.aborted,true);
   await h.act(()=>pending[3].resolve({status:'pending',request_id:'closed-chooser',generation}));await h.settle();
+  assert.equal(h.requests.some(item=>item.path==='/explore/summaries/closed-chooser/cancel'),false,'an open combined chooser retains the active request');
+  await h.act(()=>toggleCombined(false));await h.settle();
   assert.ok(h.requests.some(item=>item.path==='/explore/summaries/closed-chooser/cancel'));
   await h.render(h.TreeBuilder,scope('cell-D'));
   await h.act(()=>h.root.findByProps({'aria-label':'Remove Recording date grouping'}).props.onClick());
   assert.deepEqual(changes,[[]]);assert.equal(submits().length,4,'closed scope and axis changes do not restart summaries');
   await h.act(()=>toggleCombined(true));assert.equal(submits().length,5);
   assert.deepEqual(submits()[4].body.summary_fields,['parameters/field149']);assert.deepEqual(submits()[4].body.filters,{cell_uuid:'cell-D'});
-  await h.act(()=>toggleCombined(false));assert.equal(submits()[4].options.signal.aborted,true);
+  await h.act(()=>toggleCombined(false));assert.equal(submits()[4].options.signal,undefined);
   await h.act(()=>pending[4].resolve({status:'pending',request_id:'closed-combined',generation}));await h.settle();
   assert.ok(h.requests.some(item=>item.path==='/explore/summaries/closed-combined/cancel'));
  }finally{await h.close();}
@@ -190,5 +190,34 @@ test('advanced explorer catalog is explicit and scope/layout changes immediately
   assert.ok(h.requests.slice(start).filter(item=>item.path==='/explore/preview').every(item=>item.body.catalog_summary===false));
   start=h.requests.length;await h.render(h.MetadataExplorer,props);await h.settle();
   assert.ok(h.requests.slice(start).filter(item=>item.path==='/explore/preview').every(item=>item.body.catalog_summary===false));
+ }finally{await h.close();}
+});
+test('field registry ignores fallback-path churn on current services and keeps completed fields while refreshing',async()=>{
+ const h=await harness(),held=[];
+ try{
+  h.respond=path=>{if(path==='/explore/field-registry')return registry;throw Error(`Unexpected ${path}`);};
+  const reads=()=>h.requests.filter(item=>item.path==='/explore/field-registry').length;
+  await h.render(h.Probe,{kind:'registry',revision:1,fallbackPath:'/protocols/A/tree-fields?splits=date'});await h.settle();
+  assert.equal(reads(),1);assert.equal(h.probe.fields.supportsSummaries,true);
+  await h.render(h.Probe,{kind:'registry',revision:1,fallbackPath:'/protocols/A/tree-fields?splits=date,cell'});await h.settle();
+  assert.equal(reads(),1,'split changes do not refetch the registry route');
+  h.respond=()=>{const work=deferred();held.push(work);return work.promise;};
+  await h.render(h.Probe,{kind:'registry',revision:2,fallbackPath:'/protocols/A/tree-fields?splits=date,cell'});await h.settle();
+  assert.equal(reads(),2);assert.equal(h.probe.fields.loading,true);assert.equal(h.probe.fields.data.fields.length,152,'completed fields stay visible while refreshing');
+  await h.act(()=>held.at(-1).resolve({...registry,fields:definitions.slice(0,3)}));await h.settle();
+  assert.equal(h.probe.fields.loading,false);assert.equal(h.probe.fields.data.fields.length,3);
+ }finally{await h.close();}
+});
+test('legacy field catalogs still follow the fallback path',async()=>{
+ const h=await harness();
+ try{
+  h.respond=path=>path==='/explore/field-registry'?{httpStatus:404,data:{error:'Not found'}}:{fields:definitions.slice(0,path.includes('cell')?2:1)};
+  await h.render(h.Probe,{kind:'registry',revision:1,fallbackPath:'/protocols/A/tree-fields?splits=date'});await h.settle();
+  assert.equal(h.probe.fields.supportsSummaries,false);assert.equal(h.probe.fields.data.fields.length,1);
+  const start=h.requests.length;
+  await h.render(h.Probe,{kind:'registry',revision:1,fallbackPath:'/protocols/A/tree-fields?splits=date'});await h.settle();
+  assert.equal(h.requests.length,start,'a completed legacy catalog is not refetched');
+  await h.render(h.Probe,{kind:'registry',revision:1,fallbackPath:'/protocols/A/tree-fields?splits=date,cell'});await h.settle();
+  assert.equal(h.probe.fields.data.fields.length,2);assert.ok(h.requests.slice(start).some(item=>item.path==='/protocols/A/tree-fields?splits=date,cell'));
  }finally{await h.close();}
 });

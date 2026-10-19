@@ -26,7 +26,9 @@ results. Poll delay defaults to 250 milliseconds.
 
 `createSummaryController({adapter,onState,pollMs,schedule,unschedule})` returns
 `start(request)`, `cancel()` and `dispose()`. One run owns its AbortController and
-timer. Replacement/disposal refuses publication even when transport ignores
+timer; the controller aborts polls only. Submissions are never aborted, because
+the server may already have created the job and only its receipt allows
+cancelling it. Replacement/disposal refuses publication even when transport ignores
 abort; pending receipts arriving after retirement are cancelled best effort.
 Cancellation is not server rollback. The hook hides old-scope statistics during
 render, before effect cleanup, and explicit retry starts a new run. Summary
@@ -47,7 +49,8 @@ late receipt cancellation, exact generation and typed decorations.
 [requestedSummariesLifecycle.test.js](requestedSummariesLifecycle.test.js)
 mounts the actual hook, TreeBuilder and PredicateDialog through real api fetch
 serialization; it checks rapid scope changes, late jobs, preferences and field
-eligibility. These existing public examples are kept with all original assertions.
+eligibility. These existing public examples keep their original assertions, except that
+submit-signal `aborted` checks became receipt-cancellation checks (2026-10-18).
 
 From `workspace-app`, with `RIEKE_TEST_DOM_MODULE` unset:
 

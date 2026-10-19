@@ -246,7 +246,7 @@
         }
       ],
       "lifetime": "semantic-presentation + reconnecting-annotation-authority",
-      "reason": "Epoch identity resets composer-local presentation; query identity resets suggestion keyboard choice. Existing request generation/scope effects still retire and reconnect mutation authority. Deferred focus requests retain their existing handled-intent refs; authored-value bindings now owned by persistence agent. Tag channel review (2026-10-17): single-target tags begin in tagStore synchronously (pending chip in the click frame), write serially per target/author with the last confirmed revision, confirm in place or roll back and restore the draft; bulk receipts are ingested. Editor subscribes urgently to the store. Effect sites unchanged. The composer draft clears inside startTransition so a large draft owner never delays the chip commit; failures restore the draft. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): multi-selection is optimistic (beginMany, confirm/fail, draft restore); group saves call tagStore.changed(); a single-target editor showing an epoch not verified since the last receipt-less change reads its annotations once and ingests them (effect keyed on that read). Tag display/autocomplete review (2026-10-17): chips show the tag name only (author in the tooltip); suggestions come from the local vocabulary (load effect once per project, server query only when incomplete); inline completion selects the completed suffix in a layout effect after render. Ghost completion replaces selected-text completion: the value stays as typed, a grey overlay shows the remainder of the best match, Tab/→ at the end accepts it; the vocabulary loads on first focus (no layout effect for completion). Selection tagging review (2026-10-17): selection tags are optimistic without locking the editor; one write uses the best known revisions (confirmed, page hint, else 0), and only a 409 reads exact revisions and retries once, refusing if the selection changed. Per-tag time review (2026-10-17): chip tooltip text now comes from annotationChipTitle (author, added time, saving…); effect sites and fingerprints unchanged.",
+      "reason": "Epoch identity resets composer-local presentation; query identity resets suggestion keyboard choice. Existing request generation/scope effects still retire and reconnect mutation authority. Deferred focus requests retain their existing handled-intent refs; authored-value bindings now owned by persistence agent. Tag channel review (2026-10-17): single-target tags begin in tagStore synchronously (pending chip in the click frame), write serially per target/author with the last confirmed revision, confirm in place or roll back and restore the draft; bulk receipts are ingested. Editor subscribes urgently to the store. Effect sites unchanged. The composer draft clears inside startTransition so a large draft owner never delays the chip commit; failures restore the draft. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): multi-selection is optimistic (beginMany, confirm/fail, draft restore); group saves call tagStore.changed(); a single-target editor showing an epoch not verified since the last receipt-less change reads its annotations once and ingests them (effect keyed on that read). Tag display/autocomplete review (2026-10-17): chips show the tag name only (author in the tooltip); suggestions come from the local vocabulary (load effect once per project, server query only when incomplete); inline completion selects the completed suffix in a layout effect after render. Ghost completion replaces selected-text completion: the value stays as typed, a grey overlay shows the remainder of the best match, Tab/\u2192 at the end accepts it; the vocabulary loads on first focus (no layout effect for completion). Selection tagging review (2026-10-17): selection tags are optimistic without locking the editor; one write uses the best known revisions (confirmed, page hint, else 0), and only a 409 reads exact revisions and retries once, refusing if the selection changed. Per-tag time review (2026-10-17): chip tooltip text now comes from annotationChipTitle (author, added time, saving\u2026); effect sites and fingerprints unchanged.",
       "tests": [
         "src/retainedControls.test.js",
         "src/annotationReceiptWorkflow.test.js",
@@ -1043,7 +1043,7 @@
         }
       ],
       "lifetime": "fresh-page-focus",
-      "reason": "Focus carries the original row and its validated page; explicit selection retains revision authority. Selection tagging review (2026-10-17): loaded rows feed tagStore revision hints in an effect keyed on the page data; ⌘/Ctrl selection keeps the just-clicked epoch (Finder-style) outside Workbench highlight. Cell-row review (2026-10-17): clicking a cell row (browse or edit tree, not its buttons, not the already selected cell) runs the existing bounded selectCell, so the tag panel targets the cell; epoch focus clears it. Browse refinement: in browse lists a cell click targets the cell only when the inspected epoch is in it (no read) or nothing is inspected; it never replaces an inspected epoch from another cell.",
+      "reason": "Focus carries the original row and its validated page; explicit selection retains revision authority. Selection tagging review (2026-10-17): loaded rows feed tagStore revision hints in an effect keyed on the page data; \u2318/Ctrl selection keeps the just-clicked epoch (Finder-style) outside Workbench highlight. Cell-row review (2026-10-17): clicking a cell row (browse or edit tree, not its buttons, not the already selected cell) runs the existing bounded selectCell, so the tag panel targets the cell; epoch focus clears it. Browse refinement: in browse lists a cell click targets the cell only when the inspected epoch is in it (no read) or nothing is inspected; it never replaces an inspected epoch from another cell.",
       "tests": [
         "src/epoch-browser/inspectionCellTree.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
@@ -3043,10 +3043,10 @@
       ]
     },
     "src/requested-summaries/requestedSummaries.js": {
-      "fingerprint": "da2d82dec2c622d2070d08935dbe99b987646f4e2f02b2aabb169bedf7f3b9f8",
+      "fingerprint": "dc67e1964f4509d4c0530dd8b103222ec621cc289c0e6361da382756f3ef0fe7",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. F4 review (2026-10-18): submit no longer receives the run abort signal so a retired run always sees the receipt and cancels the server job; the run controller aborts polls only. No effect sites.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"
@@ -3226,16 +3226,16 @@
       ]
     },
     "src/summary-jobs/useFieldRegistry.js": {
-      "fingerprint": "f3a90ad6b7db4ae70fcc9f2a0546dae527ecf3b8fd3772555640cba846f76184",
+      "fingerprint": "12117a65dcd21033a861238c02e0a50296cb40f9b08dc7b0c47da693ef65bdde",
       "sites": [
         {
           "owner": "useFieldRegistry",
           "kind": "useEffect",
-          "fingerprint": "61830b24b662bcd10ccb293780480f5597f27a453a52d59918c980434b2d67bc"
+          "fingerprint": "e8507f12d6de62618c3d8c00e37d269a6fcfa165291be4a482269ea25ef51ae1"
         }
       ],
       "lifetime": "bounded-resource-lifetime",
-      "reason": "Registry/fallback reads follow visibility, abort on hide and retain completed same-key presentation.",
+      "reason": "Registry/fallback reads follow visibility, abort on hide and retain completed same-key presentation. F4 review (2026-10-18): fallbackPath joins the read identity only after a legacy service answered through it; completed-key skip also requires the current state to be that key; same-identity refresh keeps the last completed fields with loading=true, errors and identity changes clear them. Abort/cleanup unchanged.",
       "tests": [
         "src/requested-summaries/requestedSummariesLifecycle.test.js",
         "src/traces/retainedReadLifecycle.test.js",
