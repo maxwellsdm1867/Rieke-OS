@@ -360,6 +360,9 @@ class SummaryJobs:
         self._run()
 
     def _calculate(self, job, reader, predicate, scope, native):
+        if 'compute' in job:
+            # Server-owned exact counts for a query result (see submit_counts).
+            return job['compute'](job['cancel'].is_set)
         context = job['context']
         if reader is not None and not native:
             reader.set_cancel_callback(job['cancel'].is_set)
@@ -403,6 +406,37 @@ class SummaryJobs:
                 self.worker = threading.Thread(target=self._run, daemon=True, name='metadata-summaries')
                 self.worker.start()
             return acknowledgement
+
+    def submit_counts(self, context, compute):
+        """Queue server-owned exact counts for a query result; returns the request ID.
+
+        `compute(cancelled)` returns a JSON-safe result. The job carries the same
+        generation fence as requested summaries: a stale result is refused.
+        """
+        context = {**context, 'summary_fields': []}
+        current = generation(self.service, context)
+        with self.lock:
+            while len(self.jobs) >= MAX_JOBS:
+                terminal = next((key for key, job in self.jobs.items() if job['status'] != 'pending' and not job.get('running')), None)
+                if terminal is None:
+                    raise SummaryCapacity('Too many pending summaries; cancel one before retrying')
+                del self.jobs[terminal]
+            request_id = str(uuid.uuid4())
+            self.jobs[request_id] = {'request_id': request_id, 'status': 'pending', 'generation': current,
+                                     'summary_fields': [], 'context': context, 'cancel': threading.Event(),
+                                     'running': False, 'compute': compute}
+            if self.autostart and (self.worker is None or not self.worker.is_alive()):
+                self.worker = threading.Thread(target=self._run, daemon=True, name='metadata-summaries')
+                self.worker.start()
+            return request_id
+
+    def job_result(self, request_id):
+        """Server-side read of a counts job: (status, result or None); never waits."""
+        with self.lock:
+            job = self.jobs.get(request_id)
+            if job is None:
+                return 'missing', None
+            return job['status'], job.get('result')
 
     def _fence(self, job):
         with self.db_lock, self.registration_locks():
@@ -555,6 +589,7 @@ def explore_page(service, predicate, *, scope=None, protocol_uuid=None, filters=
 def register_explore_query_routes(app, service, db_lock, registration_locks, read_request):
     from flask import jsonify, request
     jobs = SummaryJobs(service, db_lock, registration_locks)
+    service._summary_jobs = jobs
     app.extensions['metadata_summary_jobs'] = jobs
 
     @app.get('/api/explore/field-registry')

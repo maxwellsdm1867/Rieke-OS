@@ -1904,7 +1904,7 @@ class WorkspaceService:
                     **({'annotation_scope': annotation_scope} if annotation_scope else {}),
                     'membership': [{'uuid': key, 'metadata_hash': self._fingerprints[key]} for key in sorted(identities)]}
 
-    def _counted_preview(self, predicate, splits):
+    def _counted_preview(self, predicate, splits, *, defer_counts=False):
         """Summary-only preview counted on the typed index, or None.
 
         No IDs are collected and no membership is hashed: the count is one
@@ -1927,7 +1927,7 @@ class WorkspaceService:
         with typed_reader(self) as reader:
             validated = reader._validate(predicate)
             matched = reader.single_field_count(validated) if sources is None else None
-            if matched is None:
+            if matched is None and not defer_counts:
                 matched = reader.count(validated, sources)
             cached = getattr(self, '_eligible_count', None)
             key = (serial, scope['revision'])
@@ -1963,17 +1963,67 @@ class WorkspaceService:
         order = parse_splits(splits, definitions)
         return scope, sources, order
 
+    def _result_counts(self, reader, validated, sources, revision):
+        """Exact total and ordered cell list of a query result, or a pending counts job.
+
+        A single-field predicate (no excluded source) is answered from the sealed
+        aggregates at once. Anything else is counted once per (revision,
+        predicate) by a server-owned job on the summary worker, with the same
+        generation fence; until it is ready the counts are pending.
+        Returns {'total', 'cells', 'job'}: total/cells are None while pending.
+        """
+        from disco.workbench.recipes import checksum
+        memo = getattr(self, '_result_counts_memo', None)
+        if memo is None:
+            memo = self._result_counts_memo = {}
+        key = (revision, checksum(validated))
+        entry = memo.get(key)
+        if entry is not None and 'aggregate' in entry:
+            return entry['aggregate']
+        cells = reader.single_field_cells(validated) if sources is None else None
+        if cells is not None:
+            result = {'total': sum(amount for _, amount, _ in cells), 'cells': cells, 'job': None}
+            memo[key] = {'aggregate': result}
+            while len(memo) > 32:
+                memo.pop(next(iter(memo)))
+            return result
+        jobs = getattr(self, '_summary_jobs', None)
+        if jobs is None:
+            return {'total': reader.count(validated, sources), 'cells': reader.chronology_cells(validated, sources), 'job': None}
+        status, result = jobs.job_result(entry['request_id']) if entry else ('missing', None)
+        if status == 'ready' and 'cells' in entry['holder']:
+            return {'total': result['matched_count'], 'cells': entry['holder']['cells'],
+                    'job': {'status': 'ready', 'request_id': entry['request_id']}}
+        if status != 'pending':
+            from disco.metadata.explore_queries import typed_reader
+            holder = {}
+
+            def compute(cancelled, validated=validated, sources=sources, holder=holder):
+                with typed_reader(self) as counter:
+                    total = counter.count(validated, sources)
+                    counted = counter.chronology_cells(validated, sources)
+                holder['cells'] = counted
+                return {'matched_count': total, 'cell_count': len(counted)}
+            context = {'predicate': validated, 'scope': {}, 'protocol_uuid': None, 'filters': {}}
+            entry = memo[key] = {'request_id': jobs.submit_counts(context, compute), 'holder': holder}
+            while len(memo) > 32:
+                memo.pop(next(iter(memo)))
+        return {'total': None, 'cells': None, 'job': {'status': 'pending', 'request_id': entry['request_id']}}
+
     def counted_epoch_page(self, predicate, splits, expected_revision, *, offset=0, limit=60, anchor_uuid=None,
                            cell_uuid=None, include_cells=False):
         """One inspection page of a predicate's matches from the typed index, or None.
 
         Same rows, order (date, start-time of day, UUID), totals, anchor and
-        cell list as the exact scope reader, without listing every match. Only
-        for frozen publications and metadata predicates; None means use the
-        exact path. The revision is the frozen-publication tree revision.
+        cell list as the exact scope reader, without listing every match.
+        Single-field totals and cell lists come from sealed aggregates; other
+        predicates' totals and cell lists come from a counts job and are
+        reported pending (None) until it is ready. Pages are keyset seeks from
+        the previous page's last inspection rank. None means use the exact path.
         """
         from disco.metadata.explore_queries import typed_reader
         from disco.navigation.tree_pages import selection_revision
+        from disco.workbench.recipes import checksum
         self._ready()
         context = self._typed_query_context(predicate, splits)
         if context is None:
@@ -1986,40 +2036,69 @@ class WorkspaceService:
             if revision != expected_revision:
                 return {'stale': True, 'revision': revision}
             narrowed = {**(sources or {}), 'cell': cell_uuid} if cell_uuid is not None else sources
-            cells = reader.chronology_cells(validated, sources) if include_cells else None
+            counts = self._result_counts(reader, validated, sources, revision)
+            cells = counts['cells']
+            if cell_uuid is None:
+                total = counts['total']
+            else:
+                total = None if cells is None else next((amount for cell, amount, _ in cells if cell == cell_uuid), 0)
+            memo = getattr(self, '_epoch_page_memo', None)
+            if memo is None:
+                memo = self._epoch_page_memo = {}
+            key = (revision, checksum(validated), cell_uuid)
+            ranks = memo.pop(key, None) or {0: 0}
+            memo[key] = ranks
+            while len(memo) > 32:
+                memo.pop(next(iter(memo)))
             anchor_index = None
             if anchor_uuid is not None:
                 anchor_index = reader.chronology_position(anchor_uuid, validated, narrowed)
                 if anchor_index is None:
                     raise ValueError('Epoch is outside this predicate')
                 offset = anchor_index // limit * limit
-            total = (reader.single_field_count(validated) if narrowed is None else None)
-            if total is None:
-                total = reader.count(validated, narrowed)
-            identities = reader.chronology_page(validated, narrowed, offset, limit)
+            # Dense results walk the chronology index; sparse ones gather their
+            # matches first. Either way the window seeks from a known rank.
+            dense = total is None or total * 20 >= len(self.rows)
+            window = reader.chronology_page(validated, narrowed, offset, limit + 1, after_rank=ranks.get(offset), local=dense)
+            more = len(window) > limit
+            window = window[:limit]
+            if window:
+                ranks[offset + len(window)] = window[-1][1]
+                while len(ranks) > 4096:
+                    ranks.pop(next(iter(ranks)))
         if publication_serial(self) != serial:
             return None
-        rows = [self.rows[key] for key in identities]
-        cell_list = None
-        if cells is not None:
-            cell_list = []
+        listed = None
+        if include_cells and cells is not None:
+            listed = []
             for cell, amount, first in cells:
                 row = self.rows[first]
-                cell_list.append({'cell_uuid': cell, 'label': row['cell_label'], 'date': row['date'],
-                                  'cell_type': row.get('cell_type'), 'epochs': amount})
-        return {'rows': rows, 'total': total, 'offset': offset, 'anchor_index': anchor_index, 'cells': cell_list,
-                'revision': revision}
+                listed.append({'cell_uuid': cell, 'label': row['cell_label'], 'date': row['date'],
+                               'cell_type': row.get('cell_type'), 'epochs': amount})
+        return {'rows': [self.rows[key] for key, _ in window], 'total': total, 'has_more': more, 'offset': offset,
+                'anchor_index': anchor_index, 'cells': listed, 'cells_pending': include_cells and cells is None,
+                'counts': counts['job'], 'revision': revision}
 
     def run_summary(self, predicate, splits):
-        """Counted run result: the counted preview plus its distinct cell count, or None."""
-        preview = self._counted_preview(predicate, splits)
+        """Counted run result, or None for the exact path.
+
+        Single-field predicates carry their exact count and distinct-cell count
+        at once. Other predicates return matched_count/cell_count None with a
+        pending counts job (`counts`); the job's result carries both.
+        """
+        preview = self._counted_preview(predicate, splits, defer_counts=True)
         if preview is None:
             return None
         from disco.metadata.explore_queries import typed_reader
         serial = publication_serial(self)
         _, sources, _ = self._typed_query_context(predicate, splits)
         with typed_reader(self) as reader:
-            preview['cell_count'] = reader.distinct_cells(reader._validate(predicate), sources)
+            validated = reader._validate(predicate)
+            counts = self._result_counts(reader, validated, sources, preview['tree_revision'])
+        preview['matched_count'] = preview['tree']['count'] = preview['catalog']['total'] = counts['total']
+        preview['cell_count'] = None if counts['cells'] is None else len(counts['cells'])
+        if counts['job'] is not None:
+            preview['counts'] = counts['job']
         return preview if publication_serial(self) == serial else None
 
     def _render_tree(self, rows, catalog, values, splits):
