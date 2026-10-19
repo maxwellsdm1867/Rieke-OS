@@ -665,9 +665,63 @@ def main():
             measure(f'explore.page_untyped_fallback.{label}', same(None), fallback)
     else:
         result['skipped']['explore.page_untyped_fallback.*'] = 'No typed index: explore.page.* already measure the fallback'
-    for label in ('eq_cell_type', 'protocol_tag', 'and_or'):
+    # The predicate result path as the UI drives it: run the query, read the
+    # first and a later results page (matching epochs at the run's revision),
+    # page the native cursor, then one async summary job for the result set.
+    result_labels = ('eq_cell_type', 'exists_cell_type', 'ne_cell_type', 'range_contrast', 'and_or',
+                     'protocol_tag', 'shared_tag')
+    for label in result_labels:
+        def run_counts(responses, state, _label=label):
+            body = responses[0].get_json()
+            counts.setdefault(_label, {})['run'] = {key: body.get(key) for key in ('matched_count',) if key in body}
         measure(f'explore.run.{label}', same(None), lambda s, p=predicates[label]: call('post', '/api/explore/run',
-                {'predicate': p, 'splits': 'cell', 'catalog_summary': False}))
+                {'predicate': p, 'splits': 'cell', 'catalog_summary': False}), oracle=run_counts)
+
+        def run_revision(phase, p=predicates[label]):
+            return call('post', '/api/explore/run', {'predicate': p, 'splits': 'cell', 'catalog_summary': False}).get_json()['tree_revision']
+
+        def results_page(offset, _label=label):
+            def check(responses, state):
+                body = responses[0].get_json()
+                counts.setdefault(_label, {})[f'results_{offset}'] = {'total': body.get('total'), 'rows': len(body.get('epochs', []))}
+            return check
+        for name, offset in (('results_first', 0), ('results_next', 60)):
+            measure(f'explore.{name}.{label}', run_revision, lambda s, p=predicates[label], o=offset: call(
+                'post', '/api/explore/epochs', {'predicate': p, 'splits': 'cell', 'revision': s, 'limit': 60,
+                                                'offset': o, 'include_cells': True}), oracle=results_page(offset))
+
+        def first_cursor(phase, p=predicates[label]):
+            return call('post', '/api/explore/page', {'predicate': p, 'protocol_uuid': protocol, 'limit': 60}).get_json().get('cursor')
+
+        def next_page(s, p=predicates[label]):
+            if not s:
+                raise AssertionError('first page returned no continuation cursor')
+            return call('post', '/api/explore/page', {'predicate': p, 'protocol_uuid': protocol, 'limit': 60, 'cursor': s})
+        if label not in ('protocol_tag', 'shared_tag'):  # Sparse tags fit on one page at every size.
+            measure(f'explore.page_next.{label}', first_cursor, next_page)
+    summary_fields = ['cell type', 'cell', 'date', 'protocol', 'parameters/example', 'parameters/contrast',
+                      'parameters/spotSize', 'parameters/optional']
+    for label in ('eq_cell', 'range_contrast', 'exists_cell_type'):
+        def result_summary(state, p=predicates[label]):
+            submitted = call('post', '/api/explore/summaries', {'predicate': p, 'summary_fields': summary_fields},
+                             expected=(200, 202))
+            identity = submitted.get_json().get('request_id')
+            replies = [submitted]
+            deadline = time.monotonic() + 900
+            while identity:
+                poll = call('get', f'/api/explore/summaries/{identity}')
+                replies.append(poll)
+                if poll.get_json().get('status') not in ('queued', 'running', 'pending'):
+                    break
+                if time.monotonic() > deadline:
+                    raise TimeoutError('summary job did not finish')
+                time.sleep(0.01)
+            if replies[-1].get_json().get('status') != 'ready':
+                raise AssertionError(f"summary job ended {replies[-1].get_json().get('status')}")
+            return replies
+        job = measure(f'explore.result_summary.{label}', same(None), result_summary, cold=False)
+        if job:
+            job['counts_variable'] = 'Poll count depends on job timing; counts are not compared.'
 
     def summaries(state):
         submitted = call('post', '/api/explore/summaries', {'predicate': predicates['range_contrast'],

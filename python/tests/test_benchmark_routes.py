@@ -123,45 +123,60 @@ class CaseGroupTests(unittest.TestCase):
 
 
 class ScalingTests(unittest.TestCase):
-    def receipt(self, cases):
-        cfg = routes.config()
+    PROFILES = (('10k-protocol-10k', 10000, 10000), ('200k-protocol-200k', 200000, 200000), ('200k-protocol-10k', 200000, 10000))
+
+    def receipt(self, cases, load=3.0):
+        """cases: name -> {profile name: (median_ms, counts)}"""
         profiles = {}
-        for name, epochs, protocol, scale in (('10k-protocol-10k', 10000, 10000, 1), ('200k-protocol-200k', 200000, 200000, 20),
-                                              ('200k-protocol-10k', 200000, 10000, None)):
-            built = {}
-            for case_name, (ms, counts, project_ms) in cases.items():
-                value = ms if scale == 1 else (ms * scale if scale else project_ms)
-                built[case_name] = {'status': 'passed', 'median_ms': value,
-                                    'counts': {k: v * (scale or 1) if isinstance(v, int) and scale != 1 and k == 'sqlite.execute' else v
-                                               for k, v in counts.items()}}
-            profiles[name] = {'profile': {'epochs': epochs, 'protocol_epochs': protocol}, 'result': {'cases': built}}
-        return {'config': cfg, 'profiles': profiles, 'source_start': {'commit': 'a' * 40, 'status': ''}}
+        for name, epochs, protocol in self.PROFILES:
+            built = {case: {'status': 'passed', 'median_ms': values[name][0], 'counts': values[name][1], 'bytes': [1000] * 3}
+                     for case, values in cases.items()}
+            profiles[name] = {'profile': {'epochs': epochs, 'protocol_epochs': protocol}, 'load_before': {'one': load},
+                              'load_after': {'one': load}, 'load_one_samples': [load],
+                              'result': {'cases': built, 'typed_index': {'status': 'built'}, 'publication': {'frozen': True}}}
+        return {'config': routes.config(), 'profiles': profiles, 'source_start': {'commit': 'a' * 40, 'status': ''}}
 
-    def test_flat_expectation_flags_linear_growth_and_project_dependence(self):
-        receipt = self.receipt({'epoch.detail': (10.0, {}, 10.0), 'explore.page.eq': (10.0, {}, 10.0),
-                                'overview': (10.0, {}, 150.0)})
-        receipt['profiles']['200k-protocol-200k']['result']['cases']['epoch.detail']['median_ms'] = 10.5
-        receipt['profiles']['200k-protocol-200k']['result']['cases']['overview']['median_ms'] = 11.0
+    def scale(self, receipt, project='200k-protocol-10k'):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / 'receipt.json'
             path.write_text(json.dumps(receipt))
-            result = routes.scaling(path, '10k-protocol-10k', '200k-protocol-200k', '200k-protocol-10k', Path(folder) / 'scaling.json')
-            rows = {row['case']: row for row in result['rows']}
-            self.assertEqual(rows['epoch.detail']['inferred'], 'flat')
-            self.assertEqual(rows['explore.page.eq']['inferred'], 'linear')
-            self.assertEqual(rows['explore.page.eq']['expected'], 'linear-allowed')
-            self.assertEqual(result['flagged'], ['overview'])  # flat in size, but grows with the project
-            self.assertIn('project-size dependent', rows['overview']['flags'][0])
+            result = routes.scaling(path, '10k-protocol-10k', '200k-protocol-200k', project, Path(folder) / 'scaling.json')
             self.assertTrue((Path(folder) / 'scaling.md').read_text().startswith('# Route scaling'))
+            return result, {row['case']: row for row in result['rows']}
 
-    def test_small_times_under_floor_are_flat(self):
-        receipt = self.receipt({'tree.root': (0.5, {}, 0.5)})
-        receipt['profiles']['200k-protocol-200k']['result']['cases']['tree.root']['median_ms'] = 4.0
-        with tempfile.TemporaryDirectory() as folder:
-            path = Path(folder) / 'receipt.json'
-            path.write_text(json.dumps(receipt))
-            result = routes.scaling(path, '10k-protocol-10k', '200k-protocol-200k', None, Path(folder) / 's.json')
-            self.assertEqual(result['flagged'], [])
+    def test_counts_decide_and_timing_is_diagnostic_under_load(self):
+        flat = {'sqlite.execute': 2}
+        cases = {
+            'epoch.detail': {'10k-protocol-10k': (1.0, flat), '200k-protocol-200k': (40.0, flat), '200k-protocol-10k': (1.0, flat)},
+            'overview': {'10k-protocol-10k': (5.0, {'sqlite.execute': 100}), '200k-protocol-200k': (5.0, {'sqlite.execute': 2000}),
+                         '200k-protocol-10k': (5.0, {'sqlite.execute': 100})},
+            'tree.root': {'10k-protocol-10k': (1.0, {'copy.deepcopy': 30}), '200k-protocol-200k': (1.0, {'copy.deepcopy': 30}),
+                          '200k-protocol-10k': (1.0, {'copy.deepcopy': 600})},
+            'explore.preview.eq': {'10k-protocol-10k': (5.0, {'sqlite.execute': 100}), '200k-protocol-200k': (100.0, {'sqlite.execute': 2000}),
+                                   '200k-protocol-10k': (5.0, {'sqlite.execute': 100})},
+            'explore.run.eq': {'10k-protocol-10k': (5.0, {'sqlite.execute': 100}), '200k-protocol-200k': (100.0, {'sqlite.execute': 2000}),
+                               '200k-protocol-10k': (5.0, {'sqlite.execute': 100})},
+        }
+        result, rows = self.scale(self.receipt(cases, load=40.0))
+        self.assertTrue(result['timing_diagnostic'])
+        self.assertEqual(rows['epoch.detail']['verdict'], 'flat')  # 40× slower, but counts flat: not flagged.
+        self.assertEqual(rows['overview']['verdict'], 'linear')
+        self.assertEqual(rows['explore.preview.eq']['expected'], 'linear-allowed')
+        self.assertEqual(rows['explore.run.eq']['expected'], 'flat')  # query results must stay flat
+        self.assertEqual(sorted(result['flagged']), ['explore.run.eq', 'overview', 'tree.root'])
+        self.assertIn('grows with project size', rows['tree.root']['flags'][0])
+        self.assertEqual(result['timing_notes'], [])
+
+    def test_quiet_timing_notes_and_informational_summary_job(self):
+        flat = {'sqlite.execute': 2}
+        cases = {'epoch.detail': {n: ((40.0 if n == '200k-protocol-200k' else 1.0), flat) for n, _, _ in self.PROFILES},
+                 'explore.result_summary.eq': {n: (1.0, {'sqlite.execute': 100 if n != '200k-protocol-200k' else 2000})
+                                               for n, _, _ in self.PROFILES}}
+        result, rows = self.scale(self.receipt(cases, load=3.0))
+        self.assertFalse(result['timing_diagnostic'])
+        self.assertEqual(result['timing_notes'], ['epoch.detail'])
+        self.assertEqual(rows['explore.result_summary.eq']['expected'], 'linear-informational')
+        self.assertEqual(result['flagged'], [])
 
 
 class StressLockTests(unittest.TestCase):

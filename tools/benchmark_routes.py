@@ -349,34 +349,59 @@ def lock_holder(lock):
 
 
 SCALING_COUNTS = ('sqlite.execute', 'copy.deepcopy', 'predicate.matches', 'sql_double.read', 'generation.scope_read',
-                  'protocol_state.metadata', 'service.query_result')
+                  'protocol_state.metadata', 'protocol_state.materialized_state', 'service.query_result',
+                  'service.refresh', 'tree_pages.build_scope', 'marshal.dumps')
+ORDER = ('flat', 'sublinear', 'linear', 'superlinear')
 
 
 def expected_class(case, cfg):
-    """Everyday clicks must be flat; whole-project search predicates and exports may be linear."""
+    """Everyday clicks must be flat; whole-project search predicates and exports may be linear.
+
+    Query results (run, first and later pages, cursor pages) must be flat; the
+    async result summary job is linear by design and informational.
+    """
+    for prefix in cfg['scaling'].get('flat_prefixes', []):
+        if case.startswith(prefix):
+            return 'flat'
+    for prefix in cfg['scaling'].get('informational_prefixes', []):
+        if case.startswith(prefix):
+            return 'linear-informational'
     for prefix in cfg['scaling']['linear_allowed']:
         if case.startswith(prefix):
             return 'linear-allowed'
     return 'flat'
 
 
-def infer(small, large, size_ratio, floor_ms):
+def growth(small, large, size_ratio, floor=0.0):
+    """Ratio and class of a quantity between two sizes; at or under floor is flat."""
     import math
     if small is None or large is None:
         return None, None
-    if large <= floor_ms:
+    if large <= floor:
         return (large / small if small else None), 'flat'
     if not small:
-        return None, 'superlinear'
+        return None, 'superlinear'  # Appears only at the larger size.
     ratio = large / small
     exponent = math.log(ratio) / math.log(size_ratio) if ratio > 0 else 0.0
-    kind = ('flat' if exponent < 0.25 else 'sublinear' if exponent < 0.75 else
-            'linear' if exponent < 1.3 else 'superlinear')
-    return ratio, kind
+    return ratio, ('flat' if exponent < 0.25 else 'sublinear' if exponent < 0.75 else
+                   'linear' if exponent < 1.3 else 'superlinear')
+
+
+def peak_load(record):
+    values = [v for v in record.get('load_one_samples', []) if v is not None]
+    for key in ('load_before', 'load_after'):
+        if (record.get(key) or {}).get('one') is not None:
+            values.append(record[key]['one'])
+    return max(values) if values else None
 
 
 def scaling(receipt_path, small, large, project, output):
-    """Per-case growth between two project sizes (and project-only growth at a fixed protocol)."""
+    """Per-case growth between two sizes, judged by load-independent counts.
+
+    Primary verdict: call/statement/copy counts and response bytes from the
+    counting pass. Warm-median timing ratios are shown beside them and are
+    diagnostic whenever either profile ran at a load average above the limit.
+    """
     receipt = json.loads(Path(receipt_path).read_text())
     cfg = receipt['config']
     profiles = receipt['profiles']
@@ -384,66 +409,95 @@ def scaling(receipt_path, small, large, project, output):
         if name not in profiles or 'result' not in profiles[name]:
             raise ValueError(f'Receipt lacks profile {name}')
     size = lambda name: profiles[name]['profile']['epochs']
-    size_ratio = size(large) / size(small)
-    floor = cfg['scaling']['flat_floor_ms']
-    rows, flagged = [], []
+    size_ratio, floor = size(large) / size(small), cfg['scaling']['flat_floor_ms']
+    count_floor, load_limit = cfg['scaling']['count_floor'], cfg['scaling']['timing_load_limit']
+    loads = {name: peak_load(profiles[name]) for name in profiles}
+    used = [loads[n] for n in (small, large, project) if n]
+    timing_diagnostic = any(v is None or v > load_limit for v in used)
     small_cases, large_cases = profiles[small]['result']['cases'], profiles[large]['result']['cases']
     project_cases = profiles[project]['result']['cases'] if project else {}
+    rows, flagged, timing_notes = [], [], []
+
+    def measures(a, b, ratio):
+        out = {}
+        for name in SCALING_COUNTS:
+            x, y = a.get('counts', {}).get(name, 0), b.get('counts', {}).get(name, 0)
+            if x or y:
+                kind = growth(x, y, ratio, count_floor)[1] if (x or y > count_floor) else 'flat'
+                out[name] = {'small': x, 'large': y, 'kind': kind}
+        bx, by = statistics.median(a.get('bytes') or [0]), statistics.median(b.get('bytes') or [0])
+        if bx or by:
+            out['bytes'] = {'small': bx, 'large': by, 'kind': growth(bx, by, ratio, 4096)[1]}
+        return out
+
+    def worst(values):
+        kinds = [v['kind'] for v in values.values() if v['kind'] in ORDER]
+        return max(kinds, key=ORDER.index) if kinds else 'flat'
+
     for case, a in small_cases.items():
         b = large_cases.get(case)
         if b is None or a.get('status') != 'passed' or b.get('status') != 'passed':
             rows.append({'case': case, 'status': 'missing or failed at one size'}); flagged.append(case); continue
         expected = expected_class(case, cfg)
-        ratio, kind = infer(a.get('median_ms'), b.get('median_ms'), size_ratio, floor)
-        counts = {}
-        for name in SCALING_COUNTS:
-            x, y = a.get('counts', {}).get(name, 0), b.get('counts', {}).get(name, 0)
-            if x or y:
-                counts[name] = {'small': x, 'large': y, 'ratio': (y / x) if x else None,
-                                'kind': infer(x, y, size_ratio, 0)[1] if x else ('flat' if not y else 'appears')}
-        row = {'case': case, 'expected': expected, 'small_ms': a.get('median_ms'), 'large_ms': b.get('median_ms'),
-               'ratio': ratio, 'inferred': kind, 'counts': counts}
-        if project_cases.get(case, {}).get('status') == 'passed':
-            p = project_cases[case]
-            row['project_only_ms'] = p.get('median_ms')
-            row['project_ratio'], row['project_inferred'] = infer(a.get('median_ms'), p.get('median_ms'),
-                                                                   size(project) / size(small), floor)
+        counted = measures(a, b, size_ratio)
+        if a.get('counts_variable'):
+            counted = {k: v for k, v in counted.items() if k == 'bytes'}
+        verdict = worst(counted)
+        time_ratio, time_kind = growth(a.get('median_ms'), b.get('median_ms'), size_ratio, floor)
+        row = {'case': case, 'expected': expected, 'verdict': verdict, 'counts': counted,
+               'small_ms': a.get('median_ms'), 'large_ms': b.get('median_ms'), 'time_ratio': time_ratio,
+               'time_kind': time_kind, 'timing_diagnostic': timing_diagnostic}
+        p = project_cases.get(case)
+        if p is not None and p.get('status') == 'passed':
+            project_counts = measures(a, p, size(project) / size(small))
+            row['project_verdict'] = worst(project_counts)
+            row['project_counts'] = {k: v for k, v in project_counts.items() if v['kind'] != 'flat'}
+            row['project_ms'] = p.get('median_ms')
         reasons = []
-        if expected == 'flat' and kind not in ('flat', None):
-            reasons.append(f'time {kind}')
-        if expected == 'flat' and any(c['kind'] in ('linear', 'superlinear', 'sublinear') and c['large'] > 50
-                                      for c in counts.values()):
-            reasons.append('counts grow: ' + ', '.join(n for n, c in counts.items()
-                                                       if c['kind'] in ('linear', 'superlinear', 'sublinear') and c['large'] > 50))
-        if expected == 'linear-allowed' and kind == 'superlinear':
-            reasons.append('time superlinear')
-        if row.get('project_inferred') not in (None, 'flat') and expected == 'flat':
-            reasons.append(f"project-size dependent ({row['project_inferred']})")
+        if expected == 'flat' and verdict != 'flat':
+            reasons.append('counts ' + verdict + ': ' + ', '.join(n for n, v in counted.items() if v['kind'] != 'flat'))
+        if expected in ('linear-allowed', 'linear-informational') and verdict == 'superlinear':
+            reasons.append('counts superlinear: ' + ', '.join(n for n, v in counted.items() if v['kind'] == 'superlinear'))
+        if expected == 'flat' and row.get('project_verdict') not in (None, 'flat'):
+            reasons.append('grows with project size: ' + ', '.join(row['project_counts']))
         row['flags'] = reasons
         if reasons:
             flagged.append(case)
+        if not timing_diagnostic and ((expected == 'flat' and time_kind not in ('flat', None))
+                                      or time_kind == 'superlinear'):
+            timing_notes.append(case)
         rows.append(row)
     result = {'format': FORMAT + '-scaling', 'source': receipt['source_start']['commit'],
               'dirty': bool(receipt['source_start']['status']), 'small': small, 'large': large, 'project': project,
-              'size_ratio': size_ratio, 'flat_floor_ms': floor, 'flagged': flagged, 'rows': rows,
-              'load': {name: {k: profiles[name].get(k) for k in ('load_before', 'load_after')} for name in profiles}}
+              'size_ratio': size_ratio, 'primary_signal': 'counts and response bytes (load-independent)',
+              'timing_load_limit': load_limit, 'peak_load': loads, 'timing_diagnostic': timing_diagnostic,
+              'fixture_paths': {n: {'typed_index': (profiles[n]['result'].get('typed_index') or {}).get('status'),
+                                    'frozen': (profiles[n]['result'].get('publication') or {}).get('frozen')}
+                                for n in (small, large) + ((project,) if project else ())},
+              'flagged': flagged, 'timing_notes': timing_notes, 'rows': rows}
     output = Path(output)
     output.write_text(json.dumps(result, indent=2) + '\n')
     fmt = lambda v: '' if v is None else (f'{v:.1f}' if isinstance(v, float) else str(v))
+    load_text = ', '.join(f'{n} {fmt(v)}' for n, v in loads.items())
     lines = [f"# Route scaling: {small} → {large} ({size_ratio:.0f}× epochs)" + (f", project-only {project}" if project else ''), '',
-             f"Source `{result['source'][:12]}`{' (dirty)' if result['dirty'] else ''}. Times are warm medians; "
-             f"anything at or under {floor} ms at the large size counts as flat. ≈1× flat, ≈{size_ratio:.0f}× linear.", '',
-             f"Flagged: {len(flagged)} case(s).", '',
-             '| Case | Expected | ms small | ms large | ratio | inferred | project-only ms (ratio) | key counts small→large | flags |',
-             '| --- | --- | ---: | ---: | ---: | --- | --- | --- | --- |']
+             f"Source `{result['source'][:12]}`{' (dirty)' if result['dirty'] else ''}. Verdicts use load-independent counts "
+             f"(statements, copies, evaluations, reads, response bytes); ≈1× flat, ≈{size_ratio:.0f}× linear.", '',
+             f"Peak load average: {load_text}. Timing is "
+             + ('**diagnostic only** (load above ' + str(load_limit) + ').' if timing_diagnostic else 'valid (load at or under ' + str(load_limit) + ').'), '',
+             'Fixture paths: ' + '; '.join(f"{n}: typed index {((profiles[n]['result'].get('typed_index') or {}).get('status'))}, "
+                                          f"frozen publication {((profiles[n]['result'].get('publication') or {}).get('frozen'))}"
+                                          for n in (small, large) + ((project,) if project else ())) + '.', '',
+             f"Flagged by counts: {len(flagged)} case(s)." + (f" Timing notes: {', '.join(timing_notes)}." if timing_notes else ''), '',
+             '| Case | Expected | Count verdict | Counts / bytes small→large | Project-only | ms small→large (ratio) | Flags |',
+             '| --- | --- | --- | --- | --- | --- | --- |']
     for row in rows:
         if 'expected' not in row:
-            lines.append(f"| {row['case']} | | | | | | | | {row['status']} |"); continue
-        counts = '; '.join(f"{n} {c['small']}→{c['large']}" for n, c in row['counts'].items())
-        project_text = (f"{fmt(row.get('project_only_ms'))} ({fmt(row.get('project_ratio'))}×)"
-                        if 'project_only_ms' in row else '')
-        lines.append(f"| {row['case']} | {row['expected']} | {fmt(row['small_ms'])} | {fmt(row['large_ms'])} | "
-                     f"{fmt(row['ratio'])} | {row['inferred']} | {project_text} | {counts} | {'; '.join(row['flags'])} |")
+            lines.append(f"| {row['case']} | | | | | | {row['status']} |"); continue
+        counts = '; '.join(f"{n} {fmt(v['small'])}→{fmt(v['large'])}" + ('' if v['kind'] == 'flat' else f" ({v['kind']})")
+                           for n, v in row['counts'].items())
+        project_text = row.get('project_verdict', '')
+        timing = f"{fmt(row['small_ms'])}→{fmt(row['large_ms'])} ({fmt(row['time_ratio'])}×)" + (' diag' if row['timing_diagnostic'] else '')
+        lines.append(f"| {row['case']} | {row['expected']} | {row['verdict']} | {counts} | {project_text} | {timing} | {'; '.join(row['flags'])} |")
     output.with_suffix('.md').write_text('\n'.join(lines) + '\n')
     return result
 
