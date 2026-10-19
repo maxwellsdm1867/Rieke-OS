@@ -405,9 +405,9 @@
       "ci_protocol_epochs": 20000
     },
     "route-million": {
-      "version": "1.2.0",
+      "version": "1.3.0",
       "runner": "tools/benchmark_routes.py",
-      "fixture_version": "route-owned-v3",
+      "fixture_version": "route-owned-v4",
       "samples": 3,
       "max_worker_seconds": 3600,
       "max_rss_bytes": 6442450944,

@@ -85,7 +85,7 @@ HEADLINE = {
     'disk_index.catalog': lambda f: f[0].endswith('disk_index.py') and f[2] == 'catalog',
     'generation.scope_read': lambda f: f[0].endswith('workspace_state_generation.py') and f[2] == '_scope',
     'sql_double.read': lambda f: f[0].endswith('test_workspace_curation.py') and f[2] == 'to_dicts',
-    'sql_double.write': lambda f: f[0].endswith('test_workspace_curation.py') and f[2] in ('insert1', 'update1'),
+    'sql_double.write': lambda f: f[0].endswith('test_workspace_curation.py') and f[2] in ('insert1', 'update1', 'insert'),
     'sql_double.transaction': lambda f: f[0].endswith('test_workspace_curation.py') and f[2] == 'transaction',
 }
 
@@ -138,6 +138,28 @@ def install_journaled_transactions():
         if JOURNAL['undo'] is not None and target is not None:
             JOURNAL['undo'].append(lambda: (target.clear(), target.update(before)))
     Table.insert1, Table.update1 = insert1, update1
+    if hasattr(Table, 'insert'):
+        # Multi-row INSERT/REPLACE (curation batch writes): undo restores the
+        # replaced rows' prior contents and drops appended rows.
+        original_batch = Table.insert
+
+        def insert(self, rows, replace=False):
+            rows = list(rows)
+            journal = JOURNAL['undo']
+            if journal is None:
+                return original_batch(self, rows, replace=replace)
+            keys = {tuple(row[k] for k in self.keys) for row in rows}
+            replaced = [(old, dict(old)) for old in self.rows if tuple(old[k] for k in self.keys) in keys]
+            table_rows, length = self.rows, len(self.rows)
+            value = original_batch(self, rows, replace=replace)
+
+            def undo():
+                del table_rows[length:]
+                for old, before in replaced:
+                    old.clear(); old.update(before)
+            journal.append(undo)
+            return value
+        Table.insert = insert
 
     @property
     def transaction(self):
@@ -227,7 +249,16 @@ def main():
         service.typed_index = None
         result['typed_index'] = {'status': 'unavailable in this source revision'}
     else:
-        service.typed_index, typed_status = prepare_typed(index, None)
+        try:
+            service.typed_index, typed_status = prepare_typed(index, None)
+        except RuntimeError as error:
+            if 'budget' not in str(error).lower():
+                raise
+            # Expected limitation of sources without #110 at a million epochs:
+            # the typed sidecar refuses its RSS budget and explore runs untyped.
+            service.typed_index, typed_status = None, 'refused: ' + str(error)
+            result['notes'].append('typed sidecar refused its RSS budget (source lacks #110); '
+                                   'explore cases measure the untyped fallback')
         result['typed_index'] = {'status': typed_status, 'seconds': time.perf_counter() - typed_started,
                                  'present': service.typed_index is not None}
     service._explore_publication = str(uuid.uuid4())
@@ -357,6 +388,25 @@ def main():
                     changes[change_of(row)] = (generations[key], 0)
             return value
         setattr(table_class, method, triggered_write)
+    if hasattr(table_class, 'insert'):
+        # One multi-row statement fires the row trigger once per row; a REPLACE
+        # of an existing key is an update of that row (OLD then NEW).
+        original_batch = table_class.insert
+
+        def triggered_insert(self, rows, replace=False, _original=original_batch):
+            rows = list(rows)
+            existing = {tuple(old[k] for k in self.keys) for old in self.rows} if replace else set()
+            value = _original(self, rows, replace=replace)
+            trigger = watched.get(id(self.rows))
+            if trigger is not None:
+                scope_of, change_of = trigger
+                for row in rows:
+                    key = scope_of(row)
+                    generations[key] = generations.get(key, 0) + (2 if tuple(row[k] for k in self.keys) in existing else 1)
+                    if change_of is not None:
+                        changes[change_of(row)] = (generations[key], 0)
+            return value
+        table_class.insert = triggered_insert
     if shared is not None and hasattr(shared, '_index_records'):
         # The production full scan pages raw SQL; the double has no SQL text
         # (same seam as tools/benchmark_slow_reads.py). Keyed reads stay native.

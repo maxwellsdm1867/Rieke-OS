@@ -158,6 +158,8 @@ def report(receipt, path):
                   f"Worker {result.get('status', record.get('error'))}; wall {record.get('wall_seconds', 0):.0f} s; "
                   f"peak RSS {record.get('peak_rss_bytes', 0) / 2**30:.2f} GiB; load before {load.get('one', 'n/a')}, "
                   f"after {(record.get('load_after') or {}).get('one', 'n/a')}.", '',
+                  *([f"Typed sidecar: {result['typed_index'].get('status')}.", ''] if result.get('typed_index') else []),
+                  *(['Notes: ' + '; '.join(result['notes']), ''] if result.get('notes') else []),
                   '| Case | Cold ms | Warm median ms | Bytes | Attest | SQLite stmts | Deep copies | Rows evaluated | Status |',
                   '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |']
         for case, data in result.get('cases', {}).items():
