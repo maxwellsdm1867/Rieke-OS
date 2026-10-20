@@ -17,6 +17,7 @@ import {Status} from '../../components/Common.jsx';
 import {incomingRowAnnotation} from '../../annotations/annotationTags.js';
 import './InspectionCellTree.css';
 import {useEpochBrowserPage} from '../useEpochBrowserPage.js';
+import CellsWindow from './CellsWindow.jsx';
 import {createEpochPageReads} from '../epochPageReads.js';
 import {inspectionNavigation,inspectionPageOffset,toggleInspectionBranch,restoreInspectionScroll} from '../inspectionNavigation.js';
 
@@ -222,16 +223,3 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
   return <div ref={treeElement} data-inspection-membership-ready={membershipReady} className="inspection-cell-tree" aria-label="All matching dates, cells and epochs" title={props.setHighlightedEpochs?"⌘/Ctrl-click to highlight epochs; Shift-click for a range":"⌘/Ctrl-click to select epochs; Shift-click for a range"}>{groupTags.dialog}{error&&<p role="alert">{error}</p>}{selecting&&<p role="status">Selecting epoch range…</p>}{!dates.length&&<p role="status">No epochs match the current filters.</p>}{dates.map(group=><DateBranch key={group.date} group={group} {...props} pageReads={pageReads} rememberFrontier={rememberFrontier} navigation={navigation} changeNavigation={changeNavigation} targets={targets} setTargets={setTargets} onTagEpoch={groupTags.openEpoch} onSelectGroupCell={selectGroupCell} onTagCell={(cell,event)=>selectCell(cell,event,true)} onFocus={onFocus} onSelectCell={selectCell} onSelect={select} disabled={disabled||selecting} navigationDisabled={navigationDisabled||selecting}/>)}{cellsMore&&<CellsWindow {...cellsMore}/>}</div>;
 }
 
-// A bounded cell list: the next window loads when its marker scrolls into view.
-function CellsWindow({loaded,total,loading=false,error=null,onMore}){
-  const marker=useRef(null),more=Number.isInteger(total)&&loaded<total;
-  useEffect(()=>{
-    if(!more||loading||error||typeof IntersectionObserver==='undefined'||!marker.current)return;
-    const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting))onMore();},{root:marker.current.closest('.tree-scroll'),rootMargin:'200px 0px'});
-    observer.observe(marker.current);return()=>observer.disconnect();
-  },[more,loading,error,loaded]);
-  return <div ref={marker} className="inspection-cells-window" role="status">
-    <span>{Number.isInteger(total)?`${loaded.toLocaleString()} of ${total.toLocaleString()} cells`:`${loaded.toLocaleString()} cells`}</span>
-    {error?<><span role="alert">{error}</span><button onClick={onMore}>Retry</button></>:more&&<button disabled={loading} onClick={onMore}>{loading?'Loading cells…':'Load more cells'}</button>}
-  </div>;
-}
