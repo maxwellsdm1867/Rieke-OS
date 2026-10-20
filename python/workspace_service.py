@@ -176,8 +176,9 @@ _PUBLICATIONS = __import__('itertools').count(1)
 # same published objects; with FrozenDict contents (which cannot be mutated in
 # place) an unchanged serial proves unchanged read-model content. Assignment is
 # intercepted in WorkspaceService.__setattr__ so reads stay plain attribute loads.
+# The explore publication token is not a proof map (it may be initialized lazily).
 PUBLISHED_ATTRIBUTES = frozenset(('rows', 'cells', 'protocols', '_fingerprints', 'details', 'disk_index',
-                                  'sources', 'manifests', '_explore_publication'))
+                                  'sources', 'manifests'))
 
 
 PUBLISHED_MAPS = ('rows', 'cells', 'protocols', '_fingerprints')
@@ -1238,6 +1239,30 @@ class WorkspaceService:
         if observed == key and publication_serial(self) == serial:
             cache[1][protocol_uuid] = (key, view)
         return view
+
+    def query_members(self, protocol_uuid):
+        """Read-only effective member UUID set of ``query_view``, or None.
+
+        Shared per cached query view (same publication serial, binding revision
+        and version), so a repeated read costs one binding-header read. None
+        when the view is not a cached frozen publication value (custom readers,
+        unfrozen read models): callers keep their ``query_result`` path.
+        """
+        if publication_serial(self) is None:
+            return None
+        view = self.query_view(protocol_uuid)
+        if type(view) is not FrozenDict:
+            return None
+        cache = getattr(self, '_query_member_sets', None)
+        if cache is None:
+            cache = self._query_member_sets = {}
+        protocol_uuid = _uuid(protocol_uuid)
+        entry = cache.get(protocol_uuid)
+        if entry is not None and entry[0] is view:  # Holds the view: identity cannot be reused.
+            return entry[1]
+        members = frozenset(member['uuid'] for member in view['epochs'])
+        cache[protocol_uuid] = (view, members)
+        return members
 
     def filtered_rows(self, protocol_uuid, filters=None):
         filters = validate_filters(filters)

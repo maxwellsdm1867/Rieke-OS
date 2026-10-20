@@ -136,9 +136,10 @@ probe on the unique `epoch_uuid` index: the first `limit` identities in UUID ord
 and the exact total. A generation holding non-lowercase identities returns None.
 UUID search uses it only when the index row count equals the published row
 mapping and every returned identity is present there; otherwise it keeps its
-case-insensitive scan. Search labels hits from per-protocol member sets cached by
-binding (revision, version) and row publication when the binding reader has its
-paired header reader; any other reader keeps the `query_result` path. Changing
+case-insensitive scan. Search labels hits from the service's shared read-only
+`query_members` set (one per publication serial and binding revision/version,
+backed by `query_view`); when the service cannot prove a frozen publication or a
+canonical binding reader it returns None and search keeps the `query_result` path. Changing
 `disk_index.py` changes the native generation recipe, so existing disposable
 indexes rebuild once.
 

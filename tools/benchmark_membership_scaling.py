@@ -58,6 +58,22 @@ def run(source, epochs):
         bindings.insert1({'project_uuid':service.project['project_uuid'],
                           'protocol_uuid':service.protocol_id, 'version':1, 'revision_uuid':'fixed-members'})
         service.set_binding_provider(history.protocol_binding, header_provider=history.protocol_binding_header)
+        # Trees that publish deep-frozen read models (publication serial) get the
+        # same publication production refresh performs; older trees stay plain.
+        import workspace_service as service_module
+        freeze = getattr(service_module, 'publish_frozen', None)
+        if freeze is not None:
+            service.rows = freeze(service.rows, rows=True)
+            service.cells, service.protocols = freeze(service.cells), freeze(service.protocols)
+            service._fingerprints = freeze(service._fingerprints)
+        result['frozen_publication'] = freeze is not None
+
+        def edit_fingerprint(key, value):
+            # Frozen maps change only by republication (as refresh does).
+            if freeze is not None:
+                service._fingerprints = freeze({**service._fingerprints, key: value})
+            else:
+                service._fingerprints[key] = value
         pager = TreePages(service)
         body = {'protocol_uuid':service.protocol_id, 'splits':'cell', 'counts_only':True, 'limit':60}
 
@@ -100,6 +116,27 @@ def run(source, epochs):
         measure('tree.warm_metadata_root', lambda:pager.page(metadata), check_metadata)
 
         # Separate instrumented pass: no instrumentation enters latency samples.
+        selection = {**body, 'path':root['branches'][0]['path'], 'revision':root['revision']}
+        selection.pop('counts_only'); selection.pop('limit')
+        measure('tree.select_branch', lambda:pager.selection(selection, 100), lambda answer:None)
+        with patch.object(pager, '_build_scope', wraps=pager._build_scope) as builds:
+            pager.page(branch); pager.page({**branch,'offset':60}); pager.selection(selection, 100)
+        result['warm_branch_select_scope_builds'] = builds.call_count
+        frozen_visits = {'count':0}
+        if freeze is not None:
+            frozen_type = type(service._fingerprints)
+            original = {name:getattr(frozen_type, name) for name in ('__getitem__','get','__eq__','__ne__')}
+            def counted(name):
+                def call(self, *args):
+                    if self is service._fingerprints or any(arg is service._fingerprints for arg in args):
+                        frozen_visits['count'] += len(self) if name in ('__eq__','__ne__') else 1
+                    return original[name](self, *args)
+                return call
+            pager.page(body)
+            with patch.multiple(frozen_type, **{name:counted(name) for name in original}), \
+                 patch.object(pager, '_build_scope', wraps=pager._build_scope) as builds:
+                check_root(pager.page(body))
+            result['frozen_warm_work'] = {'fingerprint_visits':frozen_visits['count'], 'scope_builds':builds.call_count}
         class Fingerprints(dict):
             visited = 0
             def __getitem__(self, key):
@@ -124,11 +161,13 @@ def run(source, epochs):
         cache = service._tree_page_scope_cache
         result['warm_work']['retained_scope_bytes'] = sum(entry[2] for entry in cache[1].values())
         result['warm_work']['project_fingerprint_snapshot_bytes'] = sys.getsizeof(cache[2]) if cache[2] is not None else 0
-        service._fingerprints[uid(epochs-1)] = 'c'*64
+        if freeze is not None:
+            service._fingerprints = freeze(dict(service._fingerprints))
+        edit_fingerprint(uid(epochs-1), 'c'*64)
         with patch.object(pager, '_build_scope', wraps=pager._build_scope) as builds:
             check_root(pager.page(body))
         result['unrelated_edit_scope_builds'] = builds.call_count
-        service._fingerprints[uid(0)] = 'd'*64
+        edit_fingerprint(uid(0), 'd'*64)
         try:
             pager.page({**body, 'revision':root['revision']})
         except StaleTreePage:

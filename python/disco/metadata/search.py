@@ -53,67 +53,6 @@ def _epoch_prefix_hits(service, prefix, limit):
     return rows, total
 
 
-def _binding_header(service):
-    """The header reader paired with the binding reader (``set_binding_provider``).
-
-    The pair contract makes a header's (revision, version) identify the frozen
-    recipe the reader returns. A reader installed without a header returns
-    False: callers then keep the full ``query_result`` path.
-    """
-    if getattr(service, 'binding_provider', None) is None:
-        return None
-    header = getattr(service, 'binding_header_provider', None)
-    return header if callable(header) else False
-
-
-def _protocol_members(service, protocol_id, header):
-    """Exact working membership of one protocol, cached per binding/publication.
-
-    Bound protocols key on the binding (revision, version) and the row
-    publication: a revision's frozen recipe is immutable. Unbound protocols key on
-    the publication and the very result/epoch-list objects (held, never reused)
-    plus the list length. A reader without a paired header returns None
-    (query_result path).
-    """
-    entry = service.protocols[protocol_id]
-    publication = getattr(service, '_explore_publication', None)
-    # Refresh replaces rows and publication together; bound sets were checked
-    # against these rows. Old protocol results are released on the next miss.
-    rows_key = (id(service.rows), len(service.rows), publication)
-    cache = getattr(service, '_search_protocol_members', None)
-    if cache is None or cache[0] != rows_key:
-        cache = service._search_protocol_members = (rows_key, {})
-    members = cache[1]
-    if header is False:
-        return None
-    binding = None if header is None else header(protocol_id)
-    if binding is not None:
-        key = ('bound', binding['revision_uuid'], binding['version'])
-        cached = members.get(protocol_id)
-        if cached is not None and cached[0] == key:
-            return cached[1]
-        recipe = service.binding(protocol_id)
-        if recipe is None or (recipe['revision_uuid'], recipe['version']) != key[1:]:
-            return None  # Changed between header and recipe reads.
-        identities = [member['uuid'] for member in recipe['recipe']['epochs']]
-        if any(identity not in service.rows for identity in identities):
-            raise ValueError('Bound dataset contains unavailable epochs; explicit reconciliation is required')
-    else:
-        if entry['definition'].get('initial_revision_uuid'):
-            return None  # query_result raises its interrupted-creation error.
-        result = entry['result']
-        epochs = result['epochs']
-        key = ('unbound', result, epochs, len(epochs))
-        cached = members.get(protocol_id)
-        if (cached is not None and cached[0][0] == 'unbound' and cached[0][1] is result
-                and cached[0][2] is epochs and cached[0][3] == len(epochs)):
-            return cached[1]
-        identities = [member['uuid'] for member in epochs]
-    value = frozenset(identities)
-    members[protocol_id] = (key, value)
-    return value
-
-
 def search_workspace(service, query, limit=20, *, field=None, operator='eq', value=None):
     if not isinstance(query, str) or len(query) > 512:
         raise ValueError('Search text must contain at most 512 characters')
@@ -167,9 +106,11 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
         if uuid_query:
             memberships = {}
             shown = [item for item in results[:limit] if item['kind'] == 'epoch']
-            header = _binding_header(service) if shown else None
+            # The service's shared read-only member set (one per publication and
+            # binding revision/version); None keeps the query_result path.
+            reader = getattr(service, 'query_members', None) if shown else None
             for protocol_id, workspace in (service.protocols.items() if shown else ()):
-                members = _protocol_members(service, protocol_id, header)
+                members = reader(protocol_id) if reader is not None else None
                 if members is None:
                     members = {item['uuid'] for item in service.query_result(protocol_id)['epochs']}
                 for item in shown:
