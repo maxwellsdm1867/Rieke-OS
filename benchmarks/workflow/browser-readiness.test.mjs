@@ -633,3 +633,60 @@ test('predispatch ownership replacement fails without erasing the replacement',a
  const replacement={action_id:'replacement'};clock.w.pending_action=replacement;
  clock.frame();await assert.rejects(pending,/ownership changed/);assert.equal(clock.w.pending_action,replacement);
 });
+
+// Full-App decoupling suite readiness: exact pressed state, exact endpoint
+// completion, focused row identity, cancellations and path evidence.
+test('app toggle needs exact pressed state and completed exact endpoint',t=>{
+  const label='Include epoch 2 in protocol exports';
+  const attributes={'aria-label':label,'aria-pressed':'true'},toggle=element('',attributes);
+  const w=setup(t,{button:[toggle]});
+  const spec={selector:'button',pressed:{label,value:false},requestDone:{method:'POST',path:'/curation'}};
+  assert.equal(readiness(spec),false);
+  attributes['aria-pressed']='false';
+  w.requests.push({action_id:'current',method:'POST',url:'/api/protocols/p/curation/read',status:200,end:1});
+  assert.equal(readiness(spec),false,'the batch read is not the write');
+  w.requests.push({action_id:'current',method:'POST',url:'/api/protocols/p/curation',status:200,end:2});
+  assert.equal(readiness(spec),false);
+  assert.equal(readiness(spec),true);
+  assert.deepEqual(w.completed.current.evidence.request_done,{method:'POST',path:'/curation',status:200});
+});
+
+test('app step requires the focused row label and no loading epoch',t=>{
+  const attributes={'aria-label':'Inspect epoch 2','aria-current':'true'},row=element('',attributes);
+  const selectors={'.epoch-navigation span':[element('Epoch 3 of 1,900 matching epochs')],'[aria-current="true"]':[row]};
+  setup(t,selectors);
+  const spec={selector:'.epoch-navigation span',text:'Epoch 3 of 1,900 matching epochs',focusedLabel:'Inspect epoch 3'};
+  assert.equal(readiness(spec),false);
+  attributes['aria-label']='Inspect epoch 3';
+  assert.equal(readiness(spec),false);
+  assert.equal(readiness(spec),true);
+});
+
+test('app cancellations are tolerated only when allowed; other failures still fail',t=>{
+  const w=setup(t,{button:[element('Undo')]});
+  w.requests.push({action_id:'current',method:'GET',url:'/api/overview',error:'AbortError: signal is aborted'});
+  assert.throws(()=>readiness({selector:'button',text:'Undo'}),/Action API request failed/);
+  assert.equal(readiness({selector:'button',text:'Undo',allowAborted:true}),false);
+  assert.equal(readiness({selector:'button',text:'Undo',allowAborted:true}),true);
+  w.active={action_id:'current',intent:0,frames:0};
+  w.requests.push({action_id:'current',method:'GET',url:'/api/p/epochs',status:200,error:'AbortError: signal is aborted'});
+  assert.equal(readiness({selector:'button',text:'Undo',allowAborted:true}),false,'body-consumption cancellation is still a cancellation');
+  w.active={action_id:'current',intent:0,frames:0};
+  w.requests.push({action_id:'current',method:'GET',url:'/api/overview',status:500,end:3});
+  assert.throws(()=>readiness({selector:'button',text:'Undo',allowAborted:true}),/Action API request failed/);
+});
+
+test('focus return records whether the open path was kept without gating on it',t=>{
+  const terminals=[element('',{'data-epoch-uuid':'a'}),element('',{'data-epoch-uuid':'b'})];
+  const w=setup(t,{'.tp-column .tp-branch':[element('Cell 1')],'.tp-terminal [data-epoch-uuid]':terminals});
+  const spec={selector:'.tp-column .tp-branch',settledPath:{selector:'.tp-terminal [data-epoch-uuid]',uuids:['x','y']}};
+  assert.equal(readiness(spec),false);
+  assert.equal(readiness(spec),true);
+  assert.equal(w.completed.current.evidence.path_kept,false);
+});
+
+test('suite option accepts only core and app',()=>{
+  assert.equal(options(['--source-root','s','--server-json','j','--output','o']).suite,'core');
+  assert.equal(options(['--source-root','s','--server-json','j','--output','o','--suite','app']).suite,'app');
+  assert.throws(()=>options(['--source-root','s','--server-json','j','--output','o','--suite','full']),/suite/);
+});
