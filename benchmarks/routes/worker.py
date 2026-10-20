@@ -371,6 +371,12 @@ def main():
         publication['serial'] = serial_of(service) if serial_of else None
     service._explore_publication = str(uuid.uuid4())
     service._tree_page_scope_cache = None
+    import disco.navigation.tag_predicates as tag_module
+    prepare_tags = getattr(tag_module, 'prepare_publication', None)
+    if prepare_tags is not None:
+        prepare_started = time.perf_counter()
+        prepare_tags(service)
+        publication['prepare_tag_seconds'] = time.perf_counter() - prepare_started
     result['publication'] = publication
     import gc
     gc.collect()

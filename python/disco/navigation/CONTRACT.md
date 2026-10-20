@@ -228,6 +228,16 @@ Predicate meaning is unchanged; these are cost rules for the same results.
 
 Coverage: `python/tests/test_workspace_predicate_paths.py`.
 
+Native refresh prepares the metadata-derived tag witnesses before exposing its
+new frozen publication: the exact fingerprint-universe digest, registered cell
+links hash prefix, cell membership and per-source cardinalities. Requests reuse
+these structures only while both captured immutable maps are the same objects;
+a mutable/custom publication keeps the conservative fallback. Canonical evidence
+bytes and live annotation-generation checks are unchanged. Mixed-query run totals
+use exact source cardinalities instead of constructing sorted eligible rows.
+Preparation is publication work, recorded separately from request timing by the
+route fixture; it is not a claim that import/startup became constant-time.
+
 ## Counted previews and publication revisions
 
 A project-scope predicate tree over a frozen publication (`publication_serial`:

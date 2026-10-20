@@ -1119,6 +1119,10 @@ class WorkspaceService:
         elif registered_cache is not None:
             self._registered_tree_cache = ((id(rows), len(rows), id(self.details), len(self.details)), registered_cache[1])
         self._published_generation = generation
+        from disco.navigation.tag_predicates import prepare_publication
+        prepare_started = time.perf_counter()
+        prepare_publication(self)
+        metrics['timing_ms']['prepare_tag_publication'] = (time.perf_counter() - prepare_started) * 1000
         self._loaded = True
         self.manager_error = None
         if projection_store and disk_index is not None:
@@ -1779,6 +1783,17 @@ class WorkspaceService:
         active = set(scope['active_source_revisions'])
         return self._filter_rows([row for row in self.rows.values() if row['source_sha256'] in active], filters)
 
+    def _eligible_total(self, scope):
+        """Exact active-source cardinality without constructing ordered rows."""
+        prepared = getattr(self, '_prepared_tag_publication', None)
+        if (getattr(self._filter_rows, '__func__', None) is WorkspaceService._filter_rows
+                and publication_serial(self) is not None):
+            if not scope['excluded_source_revisions']:
+                return len(self.rows)
+            if prepared is not None and prepared.rows is self.rows and prepared.source_counts is not None:
+                return sum(prepared.source_counts.get(source, 0) for source in scope['active_source_revisions'])
+        return len(self._eligible(scope)[1])
+
     def _eligible(self, scope=None):
         """Active-source rows and IDs in tree order, kept per publication and source scope.
 
@@ -2026,7 +2041,7 @@ class WorkspaceService:
         matched = len(entry['ids'])
         result = {'preview': {'predicate': validated, 'splits': splits, 'tree': {'count': matched, 'split_order': order},
                             'catalog': {'fields': fields, 'total': matched, 'summary_available': False}, 'catalog_summary': False,
-                            'tree_revision': revision, 'total_source': len(self._eligible(scope)[1]),
+                            'tree_revision': revision, 'total_source': self._eligible_total(scope),
                             'total_catalog': len(self.rows), 'matched_count': matched, 'source_scope': scope,
                             'source_revisions': scope['active_source_revisions'], 'metadata_fingerprint_version': 2,
                             **({'annotation_scope': annotation_scope} if annotation_scope else {})},
@@ -2384,7 +2399,7 @@ class WorkspaceService:
             total = counts['total']
             preview = {'predicate': validated, 'splits': splits, 'tree': {'count': total, 'split_order': order},
                        'catalog': {'fields': fields, 'total': total, 'summary_available': False}, 'catalog_summary': False,
-                       'tree_revision': revision, 'total_source': len(self._eligible(scope)[1]),
+                       'tree_revision': revision, 'total_source': self._eligible_total(scope),
                        'total_catalog': len(self.rows), 'matched_count': total, 'source_scope': scope,
                        'source_revisions': scope['active_source_revisions'], 'metadata_fingerprint_version': 2,
                        **({'annotation_scope': annotation_scope} if annotation_scope else {}),

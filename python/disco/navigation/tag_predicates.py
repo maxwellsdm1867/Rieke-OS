@@ -109,23 +109,38 @@ def _canonical_strings(value):
 
 
 class _Publication:
-    """Structures derived from one metadata publication, built on first use."""
+    """Structures derived from one captured metadata publication."""
     def __init__(self,service):
-        self.service=service;self._universe=None;self._cells=None;self._links_hash=None
+        self.rows,self.fingerprints=service.rows,service._fingerprints
+        self._universe=None;self._cells=None;self._links_hash=None;self.source_counts=None
 
     def universe(self):
-        if self._universe is None:self._universe=checksum(sorted(self.service._fingerprints))
+        if self._universe is None:self._universe=checksum(sorted(self.fingerprints))
         return self._universe
 
     def cell_epochs(self,cell):
         if self._cells is None:
             cells={}
-            for key,row in self.service.rows.items():cells.setdefault(row['cell_uuid'],[]).append(key)
+            for key,row in self.rows.items():cells.setdefault(row['cell_uuid'],[]).append(key)
             self._cells=cells
         return self._cells.get(cell,())
 
     def cell_links(self):
-        return sorted((key,row['cell_uuid']) for key,row in self.service.rows.items())
+        return sorted((key,row['cell_uuid']) for key,row in self.rows.items())
+
+    def prepare(self):
+        """Do publication-sized work before the read model becomes available."""
+        self.universe()
+        cells={};sources={}
+        for key,row in self.rows.items():
+            cells.setdefault(row['cell_uuid'],[]).append(key)
+            source=row['source_sha256'];sources[source]=sources.get(source,0)+1
+        self._cells,self.source_counts=cells,sources
+        # Keep the exact historical JSON/hash bytes used in saved evidence.
+        links=_canonical_strings(self.cell_links())
+        if links is not None:
+            self._links_hash=hashlib.sha256(('{"protocols":[],"registered_cell_links":'+links).encode())
+        return self
 
     def shared_revision(self,protocols,shared_revision,fields):
         """checksum() of the shared evidence identity, byte for byte.
@@ -145,6 +160,23 @@ class _Publication:
         state=self._links_hash.copy()
         state.update((',"shared_fields":'+names+',"shared_revision":'+revision+'}').encode())
         return state.hexdigest()
+
+
+def prepare_publication(service):
+    """Prepare immutable metadata-derived tag witnesses during publication.
+
+    Tags and their SQL generations are deliberately absent: only the frozen
+    row/cell links, fingerprint universe and source cardinalities are retained.
+    Mutable/custom publications keep their existing uncached fallback.
+    """
+    from workspace_service import publication_serial
+    if publication_serial(service) is None:
+        return None
+    current=getattr(service,'_prepared_tag_publication',None)
+    if current is None or current.rows is not service.rows or current.fingerprints is not service._fingerprints:
+        current=_Publication(service).prepare()
+        service._prepared_tag_publication=current
+    return current
 
 
 class _Entry:
@@ -246,7 +278,10 @@ class TagPredicates:
         current=getattr(self.service,'_tag_predicate_publication',None)
         if common is None:return _Publication(self.service)
         if current is None or current[0]!=common:
-            current=self.service._tag_predicate_publication=(common,_Publication(self.service))
+            prepared=getattr(self.service,'_prepared_tag_publication',None)
+            if prepared is None or prepared.rows is not self.service.rows or prepared.fingerprints is not self.service._fingerprints:
+                prepared=_Publication(self.service)
+            current=self.service._tag_predicate_publication=(common,prepared)
         return current[1]
 
     def _entry(self,fields):
