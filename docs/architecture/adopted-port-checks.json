@@ -5547,7 +5547,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "5737054e6c6142922ec2e945dedff8514f450844f89b6ec4a5a869f9ce132241",
+                "file_sha256": "ab54775d0a294e9ea9a3af505cf9a92abbc82fae105436e7db5e78767da8b9ef",
                 "contract_id": null
               }
             ]
@@ -5982,7 +5982,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "5737054e6c6142922ec2e945dedff8514f450844f89b6ec4a5a869f9ce132241",
+                "file_sha256": "ab54775d0a294e9ea9a3af505cf9a92abbc82fae105436e7db5e78767da8b9ef",
                 "contract_id": null
               }
             ]
@@ -6015,7 +6015,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "5737054e6c6142922ec2e945dedff8514f450844f89b6ec4a5a869f9ce132241",
+                "file_sha256": "ab54775d0a294e9ea9a3af505cf9a92abbc82fae105436e7db5e78767da8b9ef",
                 "contract_id": null
               }
             ]
