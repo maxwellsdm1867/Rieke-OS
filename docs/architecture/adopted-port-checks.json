@@ -575,6 +575,17 @@
             "workspace_sqlite",
             "disco.decisions.external_tags"
           ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/workbench/workbench_exports.py",
+          "require": [
+            "workspace_export_artifacts"
+          ],
+          "deny": [
+            "workspace_sqlite",
+            "disco.decisions.external_tags"
+          ]
         }
       ],
       "tests": {
@@ -3100,20 +3111,17 @@
           "allow": [
             "__future__",
             "copy",
-            "disco.decisions.external_tags",
             "disco.navigation.tree",
             "disco.projects.storage",
             "disco.workbench.candidate_exports",
             "disco.workbench.recipes",
             "disco.workbench.workbench",
             "flask",
-            "pathlib",
             "recording_workspace",
             "uuid",
-            "workspace_linked_sqlite",
+            "workspace_export_artifacts",
             "workspace_matlab",
-            "workspace_protocol_identity",
-            "workspace_sqlite"
+            "workspace_protocol_identity"
           ]
         },
         {
@@ -5539,7 +5547,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "4271ee06f9d77af6e5e196ab1da0b0ade629268d68b51dd1286e6de3aec8b412",
+                "file_sha256": "5737054e6c6142922ec2e945dedff8514f450844f89b6ec4a5a869f9ce132241",
                 "contract_id": null
               }
             ]
@@ -5932,7 +5940,7 @@
       },
       {
         "file": "python/tests/test_workspace_export_boundary.py",
-        "file_sha256": "02962ae30f72d5becf68f43c9027ae8c1cf212d5e577efeb74df0e313944a795",
+        "file_sha256": "4741b686bb197c90f9308a8b78f8423c48272faa5def33206664490db227cd26",
         "reason": "Select protocol/candidate owner in one existing fixture, inject serializer/report faults or alternate artifact paths, and assert publication/failure boundaries. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md. Binary64 transport review: existing observer and captured method syntax, origins and targets are unchanged; admitted batch route responses now negotiate exact finite binary64 after the same closing guards, with optional fixed-name elapsed timing. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Workbench latency review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; workspace_api owner bytes only lengthen the coalesced recovery-mirror delay so it runs between bursts of activity (close still flushes). Backup quiet-period review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only let any request postpone the coalesced recovery mirror (activity), bounded at 60 s, so its in-process capture does not compete with foreground trace reads. Tag decoupling review (2026-10-17): owner sources gain protocol-state-v4 (shared tags excluded from curation authority; full-token read fences), the tag-filtered export witness and external-receipt scan revision; reviewed targets unchanged. Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Incremental recovery review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only replace the coalesced recovery-mirror timer and its before_request quiet-period hook with a synchronous incremental backup at each commit point (only changed rows are written). Typed sidecar budget review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged; owner bytes budget the typed build's own peak-memory growth, keep refresh publishing the native generation when the sidecar cannot be prepared, and report typed index availability in health. See python/disco/metadata/CONTRACT.md#typed-sidecar-memory-budget-and-fallback. Project runtime-state review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged; owner bytes add a creation-time import-worker check, an interrupted-job acknowledge route, server-record PID release and a lock-guarded library staging sweep at activation. See python/disco/projects/CONTRACT.md#project-runtime-state-and-per-project-recovery.",
         "sites": [
           {
@@ -5952,7 +5960,7 @@
               {
                 "module": "disco.workbench.candidate_exports",
                 "file": "python/disco/workbench/candidate_exports.py",
-                "file_sha256": "5c6476c70506f5df1f0c67b9c77ebb8d69eb5eb19eaad8ac4514b98b21fe64eb",
+                "file_sha256": "4b851c05235c0660128928e684740d30763520d3c86ebf0dd244af4c99ce46d8",
                 "contract_id": "backend-workbench"
               }
             ]
@@ -5974,7 +5982,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "4271ee06f9d77af6e5e196ab1da0b0ade629268d68b51dd1286e6de3aec8b412",
+                "file_sha256": "5737054e6c6142922ec2e945dedff8514f450844f89b6ec4a5a869f9ce132241",
                 "contract_id": null
               }
             ]
@@ -6001,13 +6009,13 @@
               {
                 "module": "disco.workbench.candidate_exports",
                 "file": "python/disco/workbench/candidate_exports.py",
-                "file_sha256": "5c6476c70506f5df1f0c67b9c77ebb8d69eb5eb19eaad8ac4514b98b21fe64eb",
+                "file_sha256": "4b851c05235c0660128928e684740d30763520d3c86ebf0dd244af4c99ce46d8",
                 "contract_id": "backend-workbench"
               },
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "4271ee06f9d77af6e5e196ab1da0b0ade629268d68b51dd1286e6de3aec8b412",
+                "file_sha256": "5737054e6c6142922ec2e945dedff8514f450844f89b6ec4a5a869f9ce132241",
                 "contract_id": null
               }
             ]
@@ -6743,7 +6751,7 @@
               {
                 "module": "disco.workbench.workbench_exports",
                 "file": "python/disco/workbench/workbench_exports.py",
-                "file_sha256": "a1787d1c4a3c413f9f0cf63a5ac2f8505c5cec8a9c69789a8af1f1a4ab3b61c7",
+                "file_sha256": "f02e4a4aa40df8357be93f1850a5b2c4e5d56ca70aea9302edc481d9d4e9d2e8",
                 "contract_id": "backend-workbench"
               },
               {
@@ -6778,7 +6786,7 @@
               {
                 "module": "disco.workbench.workbench_exports",
                 "file": "python/disco/workbench/workbench_exports.py",
-                "file_sha256": "a1787d1c4a3c413f9f0cf63a5ac2f8505c5cec8a9c69789a8af1f1a4ab3b61c7",
+                "file_sha256": "f02e4a4aa40df8357be93f1850a5b2c4e5d56ca70aea9302edc481d9d4e9d2e8",
                 "contract_id": "backend-workbench"
               }
             ]

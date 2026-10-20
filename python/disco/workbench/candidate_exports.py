@@ -14,7 +14,7 @@ import uuid
 from recording_workspace import digest, now, write_json
 from disco.workbench.recipes import checksum, member_map, prepare_export, save_snapshot, seal
 from disco.projects.storage import managed_directory
-from workspace_export_artifacts import materialize_export_format
+from workspace_export_artifacts import stage_export
 
 FORMATS = {'reference-json','wheeler-sqlite','matlab-mat','linked-sqlite'}
 
@@ -108,10 +108,7 @@ def _export_candidate_locked(service, store, history, revision_uuid, *, format,
     from workspace_export_folder import prepare_export_root
     prepare_export_root(service.project_dir)
     output=managed_directory(service.project_dir,'exports')/recipe['export_uuid']
-    output.mkdir(parents=True,exist_ok=False)
-    artifact=output/'recordings.json'
-    try:
-        save_snapshot(output/'recipe.json',recipe)
+    def build_package():
         records=[]
         for key in sorted(saved,key=lambda identity:(service.rows[identity]['date'],service.rows[identity]['start_time'][11:],identity)):
             epoch=service.epoch(key)
@@ -120,21 +117,14 @@ def _export_candidate_locked(service, store, history, revision_uuid, *, format,
         if shared:
             annotations=shared.for_epochs([service.rows[record['epoch_uuid']] for record in records])
             for record in records:record['annotations']=annotations[record['epoch_uuid']]
-        package={'format':'recording-reference-package','version':1,'recipe':recipe,'epochs':records,
+        return {'format':'recording-reference-package','version':1,'recipe':recipe,'epochs':records,
             'sources':[{'source_sha256':source['source_sha256'],'source_path':source['source_path']}
                 for source in service.sources if source['source_sha256'] in candidate['source_revisions']],
             'export_scope':scope,'waveforms':'references-only; original H5 files must remain accessible'}
-        if format == 'linked-sqlite':
-            from workspace_linked_sqlite import prepare_linked_package
-            package = prepare_linked_package(package, service.manifests, service.project_dir,
-                                             grouping_sources=service.sources)
-        else:
-            write_json(artifact,package)
-        def matlab_writer(recipe, output_dir, *, epoch_records):
-            from workspace_matlab import build_matlab_export
-            return build_matlab_export(service,recipe,output_dir,epoch_records=epoch_records)
-        artifact=materialize_export_format(package,output,format=format,
-            matlab_writer=matlab_writer,write_json=write_json)
+    def matlab_writer(recipe, output_dir, *, epoch_records):
+        from workspace_matlab import build_matlab_export
+        return build_matlab_export(service,recipe,output_dir,epoch_records=epoch_records)
+    def publish(artifact):
         from disco.navigation.tag_predicates import annotation_locks
         with annotation_locks(service,candidate['predicate'],extra_protocols=[scope_uuid]):
             if candidate.get('annotation_scope'):
@@ -144,15 +134,12 @@ def _export_candidate_locked(service, store, history, revision_uuid, *, format,
                     raise StaleCandidateExport('Queried tags changed while preparing the export; rerun the saved search')
             for source_sha in sorted(used_sources):
                 service._verified_source(service.manifests[source_sha])
-            result=store.record_dataset_revision(recipe,actor=actor,expected_revisions={key:0 for key in saved},
+            return store.record_dataset_revision(recipe,actor=actor,expected_revisions={key:0 for key in saved},
                 artifact_path=str(artifact),artifact_sha256=digest(artifact))
-    except Exception as error:
-        try:
-            write_json(output/'failure.json',{'at':now(),'status':'failed','error':str(error),
-                'artifact_published':False,'export_scope':scope})
-        except OSError:
-            pass  # Preserve the original failure; SQL publication did not succeed.
-        raise
+    result=stage_export(output,recipe,format=format,build_package=build_package,publish=publish,
+        matlab_writer=matlab_writer,write_json=write_json,save_snapshot=save_snapshot,now=now,
+        linked_sources=(service.manifests,service.project_dir,service.sources),
+        failure_fields={'export_scope':scope})
     return {**result,'name':name,'format':format,'export_scope':scope,
             'download_url':'/api/exports/'+result['dataset_uuid']+'/download'}
 

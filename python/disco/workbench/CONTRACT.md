@@ -156,14 +156,25 @@ rolls back because an export fails. Filesystem artifacts stage separately from t
 native dataset/audit/receipt transaction; preserve failure reporting and publication
 order instead of claiming cross-resource atomicity.
 
-[workspace_export_artifacts.py](../../workspace_export_artifacts.py) stays flat as
-the adopted lazy format materialization seam. It already hides writer selection
-behind a caller-frozen package and caller-bound adapters, while callers retain locks,
-validation, staging, failure cleanup and publication. It returns an artifact Path,
-not an export-success receipt. Adapter exceptions propagate and partly staged files
-remain caller-owned. Its existing MATLAB/SQLite imports stay lazy; the workbench
-export tail remains separate. This wave neither universalizes that helper nor runs
-its adapters. See the existing [P05 contract](../../../docs/architecture/0.1.8-export-materialization-design.md).
+[workspace_export_artifacts.py](../../workspace_export_artifacts.py) stays flat and
+is the single owner of export staging for all three exports (protocol route,
+saved candidate, incoming workbench). `stage_export(output, recipe, *, format,
+build_package, publish, matlab_writer, write_json, save_snapshot, now,
+linked_sources=None, failure_fields=None)` creates the fresh folder outside its
+catch, then writes `recipe.json`, the reference JSON (or prepares the linked
+package), materializes the format through `materialize_export_format` and returns
+`publish(artifact)`. Any failure after the folder exists writes one `failure.json`
+shape (`at`, `status`, `error`, `artifact_published: false`, plus caller
+`failure_fields` such as `export_scope`) and re-raises the original error; an
+OSError while writing the marker never replaces it. Callers no longer own staging
+or the failure marker. They keep locks, validation, frozen membership and package
+contents (`build_package`), freshness/source/annotation rechecks and publication
+(`publish`: dataset revision, audit and receipts). Partly staged files are left in
+place for diagnosis; the helper does no cleanup, hashing or SQL itself. Format
+adapters and their imports stay lazy. See the existing
+[P05 contract](../../../docs/architecture/0.1.8-export-materialization-design.md)
+for the original format tail; the 2026-10-18 consolidation (user-approved) moved
+staging and the failure marker into this owner.
 
 ## Why these entries remain separate
 

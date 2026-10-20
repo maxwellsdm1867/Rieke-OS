@@ -302,6 +302,46 @@ class ExportBoundaryTests(unittest.TestCase):
             self.assertEqual(response.get_json()['error'], 'non-OS report fault')
             self.assert_unpublished(fixture, before)
 
+    def test_protocol_candidate_and_incoming_exports_write_one_failure_marker_shape(self):
+        from test_workspace_workbench_exports import IncomingExportTests
+        markers = {}
+        def fail(package, path):
+            Path(path).write_text('partial')
+            raise ValueError('injected writer fault')
+        for kind in ('protocol', 'candidate'):
+            with self.caller(kind) as (fixture, owner, request, outputs, before), \
+                 patch('workspace_sqlite.build_sqlite_export', side_effect=fail):
+                self.assertEqual(request('wheeler-sqlite').status_code, 400)
+                root, = outputs()
+                markers[kind] = json.loads((root / 'failure.json').read_text())
+                self.assert_unpublished(fixture, before)
+        incoming = IncomingExportTests('run')
+        incoming.setUp()
+        try:
+            export_root = incoming.case.service.project_dir / 'exports'
+            old = set(export_root.iterdir()) if export_root.exists() else set()
+            with patch('workspace_sqlite.build_sqlite_export', side_effect=fail):
+                response = incoming.case.client.post(incoming.root + '/exports',
+                    json=incoming.standalone_request('wheeler-sqlite'), headers=incoming.case.headers)
+            self.assertEqual(response.status_code, 400, response.get_json())
+            root, = set(export_root.iterdir()) - old
+            markers['incoming'] = json.loads((root / 'failure.json').read_text())
+            self.assertFalse(incoming.case.datasets.rows)
+        finally:
+            incoming.doCleanups()
+        caller_fields = {'protocol': set(), 'candidate': {'export_scope'},
+                         'incoming': {'export_scope', 'acceptance_retained'}}
+        for kind, marker in markers.items():
+            with self.subTest(kind=kind):
+                common = {key: value for key, value in marker.items() if key not in caller_fields[kind]}
+                self.assertEqual(set(marker) - set(common), caller_fields[kind])
+                self.assertEqual(set(common), {'at', 'status', 'error', 'artifact_published'})
+                self.assertEqual({key: common[key] for key in ('status', 'error', 'artifact_published')},
+                                 {'status': 'failed', 'error': 'injected writer fault', 'artifact_published': False})
+        self.assertEqual(markers['candidate']['export_scope']['kind'], 'explorer_candidate')
+        self.assertEqual(markers['incoming']['export_scope']['kind'], 'workbench_incoming')
+        self.assertFalse(markers['incoming']['acceptance_retained'])
+
     def test_unsupported_format_never_stages_or_publishes(self):
         for kind in ('protocol', 'candidate'):
             with self.subTest(kind=kind), self.caller(kind) as (fixture, owner, request, outputs, before):
