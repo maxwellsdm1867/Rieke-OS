@@ -18,7 +18,12 @@ for(const [name,path] of [['Overview','/overview'],['ProtocolInfographic','/prot
  const root=renderer.root;
  assert(root.findAllByType('strong').some(x=>x.children.join('')==='2'),'headline shows full count');
  assert(root.findAllByType('p').some(x=>x.children.join('').includes('loaded cells')));
- const more=root.findAllByType('button').find(x=>x.children.includes('Load more cells'));assert(more);
+ await act(()=>renderer.update(React.createElement(View,{data,presentationOnly:true})));
+ let more=root.findAllByType('button').find(x=>x.children.includes('Load more cells'));assert(more);assert.equal(more.props.disabled,true);
+ await act(()=>more.props.onClick());assert.equal(calls.length,0,'saved/error presentation cannot start a window request');
+ await act(()=>renderer.update(React.createElement(View,{data})));
+ more=root.findAllByType('button').find(x=>x.children.includes('Load more cells'));
+
  await act(()=>more.props.onClick());assert.equal(calls.length,1);assert.equal(calls[0].p,`${path}?cells_limit=200&cells_after=1`);
  assert.equal(root.findAllByProps({className:'cell-row'}).length,2);
  assert(!root.findAllByType('button').some(x=>x.children.includes('Load more cells')));

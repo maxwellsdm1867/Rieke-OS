@@ -15,8 +15,8 @@ const durationLabel=value=>validRecordedDuration(value)?duration(value):'Unavail
 
 // Visual language follows the project Overview: a hero metric row, cells by type
 // beside recording dates, and a footer inventory strip.
-export default function ProtocolInfographic({data,revision,overviewCache,onFilter,onInspect,onQC,pendingReviewCells=null,onWorkbench}){
-  const cellList=useOverviewCells(data,`/protocols/${data.definition?.protocol_uuid}/overview`,revision);
+export default function ProtocolInfographic({data,revision,overviewCache,onFilter,onInspect,onQC,pendingReviewCells=null,onWorkbench,presentationOnly=false}){
+  const cellList=useOverviewCells(data,`/protocols/${data.definition?.protocol_uuid}/overview`,revision,{enabled:!presentationOnly});
   const cellsData=cellList.cells;
   const counts=data.counts||{},hasCellSummary=Array.isArray(cellsData),omitted=hasCellSummary?cellsData.filter(cell=>!(cell?.cell_uuid||cell?.uuid)).length:0,completeCellSummary=hasCellSummary&&!omitted&&!cellList.partial,types=aggregateCellTypes(cellsData),cells=types.flatMap(type=>type.cells),model=overviewModel({cells}),total=Number.isSafeInteger(data.cells_total)?data.cells_total:completeCellSummary?cells.length:null;
   // The caller supplies the unfiltered protocol DTO. Retain a truthful fallback
