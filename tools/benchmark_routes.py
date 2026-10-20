@@ -348,7 +348,7 @@ def lock_holder(lock):
     return text or 'an unrecorded process (runners that do not write holder lines)'
 
 
-SCALING_COUNTS = ('sqlite.execute', 'copy.deepcopy', 'predicate.matches', 'sql_double.read', 'generation.scope_read',
+SCALING_COUNTS = ('sqlite.vm_steps', 'sqlite.execute', 'copy.deepcopy', 'predicate.matches', 'sql_double.read', 'generation.scope_read',
                   'protocol_state.metadata', 'protocol_state.materialized_state', 'service.query_result',
                   'service.refresh', 'tree_pages.build_scope', 'marshal.dumps')
 ORDER = ('flat', 'sublinear', 'linear', 'superlinear')
@@ -423,7 +423,8 @@ def scaling(receipt_path, small, large, project, output):
         for name in SCALING_COUNTS:
             x, y = a.get('counts', {}).get(name, 0), b.get('counts', {}).get(name, 0)
             if x or y:
-                kind = growth(x, y, ratio, count_floor)[1] if (x or y > count_floor) else 'flat'
+                floor = cfg['scaling'].get('vm_step_floor', count_floor) if name == 'sqlite.vm_steps' else count_floor
+                kind = growth(x, y, ratio, floor)[1] if (x or y > floor) else 'flat'
                 out[name] = {'small': x, 'large': y, 'kind': kind}
         bx, by = statistics.median(a.get('bytes') or [0]), statistics.median(b.get('bytes') or [0])
         if bx or by:

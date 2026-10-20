@@ -571,8 +571,11 @@ Scaling evidence: run `--profile 10k-protocol-10k --profile 200k-protocol-200k
 --output scaling.json`. It reports per case the warm median and key counts at
 both sizes, the 200k/10k ratio, the inferred class from the ratio exponent (≈1×
 flat, ≈20× linear) and the project-only ratio (200k project, same 10k protocol).
-Everyday clicks are expected flat; whole-project search predicates and
-exports (`scaling.linear_allowed`) may be linear. A flat-expected case that
+The counting pass also records `sqlite.vm_steps` (SQLite virtual-machine steps
+via a progress handler, a load-independent proxy for rows scanned and sorted),
+so work done inside one SQL statement is visible. Everyday clicks are expected
+flat; whole-project search predicates and exports (`scaling.linear_allowed`)
+may be linear. A flat-expected case that
 grows in time or counts, or with project size alone, is flagged, as is any
 superlinear case; the command exits 2 when anything is flagged.
 

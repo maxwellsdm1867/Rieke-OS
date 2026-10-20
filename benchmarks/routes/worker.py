@@ -107,6 +107,65 @@ def count_profile(profile, source_python):
 
 
 JOURNAL = {'depth': [0], 'undo': None, 'restore': None}
+# SQLite work proxy: virtual-machine steps executed by every connection during
+# the counting pass only (progress handler every SQLITE_STEP instructions).
+# Load-independent: it grows with rows scanned/sorted, not with CPU contention.
+SQLITE_STEP = 1000
+SQLITE = {'connections': [], 'steps': 0, 'active': False}
+
+
+def install_sqlite_counter():
+    """Count SQLite VM steps during the counting pass without displacing the app's
+    own progress handler (typed reads use one for cancellation): the app handler
+    is chained and still decides whether to interrupt."""
+    import sqlite3
+    import weakref
+    original = sqlite3.connect
+    native = sqlite3.Connection.set_progress_handler
+
+    class Counted(sqlite3.Connection):
+        _app_handler, _app_n = None, 0
+
+        def set_progress_handler(self, handler, n):
+            self._app_handler, self._app_n = handler, n
+            self._install()
+
+        def _install(self):
+            handler, n = self._app_handler, self._app_n
+            if not SQLITE['active']:
+                return native(self, handler, n)
+            step = n if handler is not None and n > 0 else SQLITE_STEP
+
+            def combined():
+                SQLITE['steps'] += step
+                return handler() if handler is not None else 0
+            return native(self, combined, step)
+
+    def connect(*args, **kwargs):
+        if 'factory' in kwargs or len(args) > 5:
+            return original(*args, **kwargs)  # Caller-chosen factory: not counted.
+        connection = original(*args, factory=Counted, **kwargs)
+        SQLITE['connections'].append(weakref.ref(connection))
+        if SQLITE['active']:
+            connection._install()
+        return connection
+    sqlite3.connect = connect
+
+
+def sqlite_counting(active):
+    SQLITE['active'] = active
+    live = []
+    for ref in SQLITE['connections']:
+        connection = ref()
+        if connection is None:
+            continue
+        live.append(ref)
+        try:
+            connection._install()
+        except Exception as error:  # Closed connection: nothing to count.
+            SQLITE['errors'] = SQLITE.get('errors', 0) + 1
+            SQLITE['last_error'] = repr(error)[:200]
+    SQLITE['connections'] = live
 
 
 def install_journaled_transactions():
@@ -198,6 +257,7 @@ def main():
     import server as workflow_fixture  # Harness-owned fixture; imports app code from --source-root.
     sys.path[:0] = [str(source / 'python'), str(source / 'python/tests')]
     install_journaled_transactions()
+    install_sqlite_counter()
     build_started = time.perf_counter()
     fixture, app, meta = workflow_fixture.build(source, Path(folder), args.epochs, args.protocol_epochs, retain_reset=False)
     case = fixture.case
@@ -508,15 +568,22 @@ def main():
                 record['response_sha256'] = hashlib.sha256(b''.join(r.get_data() for r in responses)).hexdigest()
             state = prepare('count')
             profile = cProfile.Profile()
+            SQLITE['steps'] = 0
+            sqlite_counting(True)
             profile.enable()
             try:
                 responses = request(state)
             finally:
                 profile.disable()
+                sqlite_counting(False)
+            sqlite_steps = SQLITE['steps']
             responses = responses if isinstance(responses, list) else [responses]
             if oracle:
                 oracle(responses, state)
             record['counts'], record['functions'] = count_profile(profile, source_python)
+            record['counts']['sqlite.vm_steps'] = sqlite_steps
+            record['sqlite_counter'] = {'connections': len(SQLITE['connections']), 'errors': SQLITE.get('errors', 0),
+                                        'last_error': SQLITE.get('last_error')}
             record['median_ms'] = round(statistics.median(record['samples_ms']), 3)
             record['status'] = 'passed'
         except Exception as error:
