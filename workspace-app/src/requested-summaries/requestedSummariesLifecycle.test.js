@@ -299,3 +299,39 @@ test('recorded-value choices: none on the current registry, and a legacy catalog
   assert.ok(openMs<1000&&typeMs<1000);
  }finally{await h.close();}
 });
+
+test('a multi-field run shows results at once, polls its one counts job and fills exact counts; a new run cancels it',async()=>{
+ const h=await harness({explorerShell:true});
+ try{
+  let polls=0,ready=false;const cancels=[];
+  const pendingRun=job=>({matched_count:null,catalog_summary:false,last_run:{cell_count:null,epoch_count:null,ran_at:'2026-10-19T00:00:00Z'},catalog:{fields:[]},tree:{count:null,levels:[],split_order:['date','cell']},tree_revision:`T-${job}`,counts:{status:'pending',request_id:job}});
+  let job='counts-A';
+  h.respond=(path)=>{
+   if(path==='/explore/field-registry')return {...registry,summary_available:true};
+   if(path==='/explore/run'||path==='/explore/preview')return pendingRun(job);
+   if(path.startsWith('/search-presets'))return {presets:[]};
+   if(path.startsWith('/explore/revisions'))return {revisions:[]};
+   if(path==='/explore/summaries')return {status:'pending',request_id:'stats',generation};
+   if(path==='/explore/summaries/stats')return {status:'pending',request_id:'stats',generation};
+   if(path.endsWith('/cancel')){cancels.push(path.split('/').at(-2));return {status:'cancelled'};}
+   const id=path.split('/').at(-1);polls++;
+   return ready?{request_id:id,status:'ready',result:{matched_count:8,cell_count:3}}:{request_id:id,status:'pending'};
+  };
+  await h.render(h.MetadataExplorer,{projectId:'P1',initialProtocolId:'A',initialPredicate:{all:[{field:'parameters/field1',operator:'gt',value:1},{field:'date',operator:'eq',value:'2026-09-29'}]}});await h.settle();await h.settle(50);
+  await h.act(()=>h.button('View matching epochs').props.onClick());await h.settle();await h.settle(50);
+  const viewer=()=>h.root.findByType('explorer-viewer');
+  assert.equal(viewer().props.preview.matched_count,null,'results render before exact counts');
+  assert.match(h.text(),/Counting matching epochs and cells/);
+  const countReads=()=>h.requests.filter(item=>item.path.startsWith('/explore/summaries/counts-')&&!item.path.endsWith('/cancel'));
+  assert.ok(countReads().length>=1);
+  assert.ok(countReads().every(item=>item.path==='/explore/summaries/counts-A'),'one counts job for the run');
+  // Changing the query (a view filter) while counting cancels that job and polls the new one.
+  job='counts-B';
+  await h.act(()=>viewer().props.onViewFilters({tag:'scoped'}));await h.settle();await h.settle(50);
+  assert.deepEqual(cancels.filter(id=>id.startsWith('counts-')),['counts-A'],'the previous counts job is cancelled');
+  ready=true;await h.settle(400);
+  assert.equal(viewer().props.preview.matched_count,8);assert.equal(viewer().props.preview.last_run.cell_count,3);
+  assert.doesNotMatch(h.text(),/Counting matching epochs and cells/);
+  assert.ok(countReads().every(item=>['/explore/summaries/counts-A','/explore/summaries/counts-B'].includes(item.path)));
+ }finally{await h.close();}
+});

@@ -29,3 +29,14 @@ test('protocol and predicate revisions retain their source-specific receipt cont
  for(const page of [{revision:'explorer-B'},{query_revision:'explorer-A'},{}])assert.throws(()=>epochPageRevision(predicate,page),/query changed/);
  assert.equal(epochPageRevision({kind:'protocol'},{query_revision:'observed'}),'observed');
 });
+
+test('predicate pages bound the cell list when asked: cells_limit and cells_after',async()=>{
+  const {epochPageRequest}=await import('./epochBrowserSource.js');
+  const source={kind:'predicate',predicate:{all:[]},splits:'date,cell',treeRevision:'R'};
+  assert.equal(epochPageRequest(source,{includeCells:true}).options.body.cells_limit,undefined,'old behaviour without a limit');
+  const first=epochPageRequest(source,{includeCells:true,cellsLimit:200}).options.body;
+  assert.deepEqual([first.cells_limit,first.cells_after],[200,undefined]);
+  const next=epochPageRequest(source,{includeCells:true,cellsLimit:200,cellsAfter:200}).options.body;
+  assert.deepEqual([next.cells_limit,next.cells_after],[200,200]);
+  assert.equal(epochPageRequest(source,{cellsLimit:200}).options.body.cells_limit,undefined,'no cell window without include_cells');
+});

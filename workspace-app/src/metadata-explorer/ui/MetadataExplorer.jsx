@@ -18,6 +18,8 @@ import SummaryStatus from '../../summary-jobs/ui/SummaryStatus.jsx';
 import {useRequestedSummaries} from '../../requested-summaries/useRequestedSummaries.js';
 import {fieldsWithSummaries} from '../../requested-summaries/requestedSummaries.js';
 import MatchingEpochs from '../../epoch-browser/ui/MatchingEpochs.jsx';
+import {pendingCountsRequest,withQueryCounts} from '../../epoch-browser/queryCounts.js';
+import {useQueryCounts} from '../../epoch-browser/useQueryCounts.js';
 import InspectorActions from '../../epoch-browser/ui/InspectorActions.jsx';
 import {explorerFocusState} from '../explorerScope.js';
 import {snapshotExplorerState} from '../../workspace-navigation/workspaceNavigation.js';
@@ -194,7 +196,11 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
   const hasViewFilter=!!tagFilterLabel(viewFilters);
   const filteredKey=predicateIdentity({predicate:resultPredicate,splits:resultSplits,revision:viewRevision,generation});
   const currentFilteredPreview=filteredPreview.key===filteredKey?filteredPreview.data:null;
-  const resultPreview=hasViewFilter?currentFilteredPreview:baseResultPreview;
+  const shownResult=hasViewFilter?currentFilteredPreview:baseResultPreview;
+  // Multi-field runs show their rows at once with null totals; exact counts
+  // follow from one counts job, polled here and cancelled when the query changes.
+  const countsJob=useQueryCounts(pendingCountsRequest(shownResult));
+  const resultPreview=useMemo(()=>withQueryCounts(shownResult,countsJob),[shownResult,countsJob.status,countsJob.result]);
   const resultLoading=hasViewFilter?filteredPreview.loading||!currentFilteredPreview&&!filteredPreview.error:(resultsFromDraft?draftPreview.loading:tree.loading);
   const resultError=hasViewFilter&&filteredPreview.key===filteredKey?filteredPreview.error:(resultsFromDraft?draftPreview.error:tree.error);
   // Statistics are not part of building or previewing a query. Once a query's
@@ -212,7 +218,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
   const availableTree=hasViewFilter?{data:currentFilteredPreview,loading:resultLoading,error:resultError}:tree;
   // Definitions and bounded tree navigation remain usable while summaries run.
   // Complete derived suggestions are an explicit full-catalog operation.
-  const displayTree=availableTree;
+  const displayTree=availableTree.data&&availableTree.data===shownResult?{...availableTree,data:resultPreview}:availableTree;
 
   useEffect(()=>{const node=layoutRef.current;if(!node)return;const observer=new ResizeObserver(entries=>setLayoutWidth(entries[0].contentRect.width));observer.observe(node);return()=>observer.disconnect();},[step,focused,initialCandidateLoading,!!displayTree.data,displayTree.loading,!!displayTree.error]);
   useEffect(()=>{
@@ -324,6 +330,8 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
     {step!=='filter'&&shortcutPreferences.error&&<div className="mx-operation-error" role="alert">{shortcutPreferences.error}<button onClick={()=>shortcutPreferences.update(previous=>previous).catch(()=>{})}>Retry shortcut save</button></div>}
     {annotationHold&&<div className="mx-operation-error" role="status"><span>Annotations changed. The current epoch page and selection are retained; refresh results before exporting or applying this query.</span><button disabled={busy||resultLoading} onClick={refreshResults}><RefreshCw size={14}/> Refresh results</button></div>}
     {notice&&<div className="mx-recorded-notice" role="status"><Check size={14}/><span>{notice}</span><button onClick={()=>setNotice('')} aria-label="Dismiss revision notice"><X size={14}/></button></div>}
+    {step!=='filter'&&countsJob.status==='pending'&&<p className="mx-counting" role="status">Counting matching epochs and cells…</p>}
+    {step!=='filter'&&['failed','stale','cancelled'].includes(countsJob.status)&&<div className="mx-operation-error" role="alert">Exact counts are unavailable. {countsJob.error}<button onClick={refreshResults}>Count again</button></div>}
     {destination&&exportCandidate&&<ExportSelectionDialog directOnly={!!incomingReview} candidate={exportCandidate} projectId={projectId} protocols={protocols} initialProtocolId={initialProtocolId} defaultName={name} defaultFormat={initialExportIntent?.format} disabled={!!annotationHold||busy||resultLoading||!!resultError} onClose={()=>{setDestination(null);onChange?.();}} onApplied={onProtocolApplied} onChanged={()=>onChange?.()}/>}
     {initialCandidateLoading?<div className="mx-candidate-loading" role="status"><LoaderCircle size={18}/> Loading saved candidate…</div>:initialRevisionId&&!applied&&!departedInitial?<div className="mx-candidate-loading"><span>The saved candidate could not be loaded.</span><button onClick={()=>setInitialCandidateRetry(value=>value+1)}>Retry</button></div>:step==='filter'&&!focused?<SearchPresets entries={presets} fields={catalog.data?.fields||[]} history={history} projectPresets={projectPresets} onProjectPin={pinProjectPreset} onImportRecipe={importQueryRecipe} onProjectPage={setPresetOffset} busy={busy||catalog.loading||shortcutPreferences.loading} error={presetError||shortcutPreferences.error||catalog.error} onRun={usePreset} onEdit={item=>usePreset(item,'edit')} onPin={item=>usePreset(item,'pin')}/>:step==='results'?<div className="mx-results-workflow">
 
@@ -337,7 +345,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
         predicate={resultPredicate} splits={resultSplits} preview={resultPreview} session={matchingNavigation} onSession={setMatchingNavigation}
         onAnnotationsChanged={annotationsChanged} onTagFilter={predicate=>changeViewFilters({tag_predicate:JSON.stringify(predicate)})} onRefresh={refreshResults}
         inclusionForEpoch={epoch=>searchEpochInclusion(epoch,excludedEpochs)} onToggleInclusion={toggleInclusion}
-        builder={{projectId,protocolId:initialProtocolId,summaryEnabled:false,summaryContext:{predicate:resultPredicate},onAnnotationsChanged:annotationsChanged,actionsDisabled:busy||!!annotationHold,revision:`${viewRevision}:${generation}`,catalogData:{...displayTree.data.catalog,fields:registryFields.length?summarizedFields:displayTree.data.catalog.fields},value:splits.split(',').filter(Boolean),onChange:changeSplits,preview:pagedInfo&&pagedInfo.split_order?.join(',')===splits?{...displayTree.data.tree,...pagedInfo,count:displayTree.data.matched_count}:displayTree.data.tree,loading:displayTree.loading||pagedStatus.loading,error:displayTree.error||pagedStatus.error}}
+        builder={{projectId,protocolId:initialProtocolId,summaryEnabled:false,summaryContext:{predicate:resultPredicate},onAnnotationsChanged:annotationsChanged,actionsDisabled:busy||!!annotationHold,revision:`${viewRevision}:${generation}`,catalogData:{...displayTree.data.catalog,fields:registryFields.length?summarizedFields:displayTree.data.catalog.fields},value:splits.split(',').filter(Boolean),onChange:changeSplits,preview:{...(pagedInfo&&pagedInfo.split_order?.join(',')===splits?{...displayTree.data.tree,...pagedInfo,count:displayTree.data.matched_count}:displayTree.data.tree),counting:countsJob.status==='pending'},loading:displayTree.loading||pagedStatus.loading,error:displayTree.error||pagedStatus.error}}
         columnTree={{onBrowse:showEpochResults,predicate:resultPredicate,...treePreviewScope(displayTree.data),revision:`${viewRevision}:${generation}`,initialNavigation:treeNavigation,onNavigationChange:setTreeNavigation,onRefreshPreview:()=>setGeneration(value=>value+1),onMetadata:setPagedInfo,onStatus:setPagedStatus}}/>}</Status>
 
     </>}

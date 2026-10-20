@@ -232,7 +232,7 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
     </>}</div>
     <div className={`tb-preview-status ${error?'tb-error-status':''}`} role="status">
       {showPending?<LoaderCircle size={13} className="spin"/>:error?<X size={13}/>:<Check size={13}/>}
-      <span>{showPending?'Updating tree…':error?'Tree could not be updated. Your data is unchanged.':(preview?.count ?? catalog.data?.total)==null?'Matching epoch count unavailable':`${number(preview?.count ?? catalog.data?.total)} matching epochs · tree preview`}</span>
+      <span>{showPending?'Updating tree…':error?'Tree could not be updated. Your data is unchanged.':(preview?.count ?? catalog.data?.total)==null?(preview?.counting?'Counting matching epochs…':'Matching epoch count unavailable'):`${number(preview?.count ?? catalog.data?.total)} matching epochs · tree preview`}</span>
     </div>
     {requested.unavailable.length>0&&<p className="tb-note">Saved fields unavailable in this registry: {requested.unavailable.join(', ')}. The layout is retained.</p>}
     {open&&position&&retainedActive&&createPortal(<div ref={popup} className="tb-popup" role="dialog" aria-label="Add a split" style={{left:position.left,top:position.top,width:position.width,maxHeight:position.height}}

@@ -31,3 +31,11 @@ test('manual focus starts a fresh intent and missing anchors do not guess an ind
  assert.equal(epochIntentAt(0,0),null);
  assert.equal(epochIntentAt(900,20).index,19);
 });
+
+test('with pending counts, navigation follows has_more instead of an unknown total',async()=>{
+  const {advanceEpochIntent}=await import('./epochNavigationIntent.js');
+  const page={offset:0,total:null,has_more:true,epochs:[{epoch_uuid:'a'},{epoch_uuid:'b'}]};
+  assert.deepEqual(advanceEpochIntent({page,focused:'b',direction:1,pageSize:2}),{index:2,total:null,offset:2});
+  assert.equal(advanceEpochIntent({page:{...page,has_more:false},focused:'b',direction:1,pageSize:2}),null);
+  assert.deepEqual(advanceEpochIntent({page,focused:'b',direction:-1,pageSize:2}),{index:0,total:null,offset:0});
+});
