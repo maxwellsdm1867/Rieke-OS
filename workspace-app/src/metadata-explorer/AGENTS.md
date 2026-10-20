@@ -31,7 +31,10 @@ registered tree fields and passes the decorated fields to the tree builder
 while the same query only reloads its tree (layout, focus); a changed predicate,
 view filter or registry generation retires it, and a new job starts only after
 the new results load. `Result statistics` status shows pending/cancel/retry.
-Ledger tests: `requested-summaries/requestedSummariesLifecycle.test.js` (running a
+Multi-field runs show their results at once; the explorer polls the run's one
+counts job (`epoch-browser/useQueryCounts.js`), shows "Counting matching epochs and
+cells…", fills exact totals when it is ready and cancels it when the query
+changes. Ledger tests: `requested-summaries/requestedSummariesLifecycle.test.js` (running a
 query sends exactly one job; a changed query cancels and resubmits once).
 
 ## Factoring decision

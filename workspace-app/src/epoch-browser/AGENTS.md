@@ -41,11 +41,27 @@ view. Public entries and styles:
 - `inspectionNavigation.js`
 - `inspectionScope.js`
 - `inspectorInteraction.js`
+- `queryCounts.js`
 - `useEpochBrowserPage.js`
+- `useQueryCounts.js`
 
 ## Contract and authority
 
 Keep UUIDs, source-specific query revisions, predicate values, frozen candidate identity and branch scope exact. Invalid frozen context must refuse rather than fall back globally. Curation submission checks current selection and receipt authority; browsing or restored focus never grants consent. Page requests remain bounded and preserve anchor versus offset behavior. Preserve loading/error states, abort cleanup and stale-result fences.
+
+Pending counts and the bounded cell list (requires backend #118/#119): a
+multi-field query run or page may answer with null totals, `cells_pending: true`
+and `counts: {status: "pending", request_id}`. `queryCounts.js` reads that job and
+fills only the null totals from its exact ready result; nothing invents a count.
+`useQueryCounts.js` polls the one job through the summary poll route and cancels
+it when the query changes (hiding a view does not cancel). While pending,
+MatchingEpochs shows the first page's rows and "counting…" in place of totals and
+the cell list; navigation follows `has_more`. When ready, the first page is read
+again with exact totals and cells. Predicate pages request the cell list in
+windows of 200 (`cells_limit`), show `cells_total`, and load the next window
+(`cells_after: cells_next`) when its marker scrolls into view. Single-field
+queries keep instant totals and start no counts job. Ledger tests:
+`pendingQueryCounts.test.js`, `queryCounts.test.js`.
 
 Tree selection and tree-ancestor cache owners remain separate; trace samples and shared epoch cache lifetime remain with traces/shared resources. Metadata display does not attest provenance or terminal scientific membership.
 

@@ -1,6 +1,8 @@
 import {frozenReadPath,frozenReadQuery} from './frozenReadContext.js';
 // Membership stays source-specific; the browser above this adapter is shared.
-export function epochPageRequest(source,{offset=0,cellUuid=null,anchorUuid=null,includeCells=false}={}){
+// Predicate pages may bound the cell list: cellsLimit cells per window, starting
+// after cellsAfter cells already received (the previous response's cells_next).
+export function epochPageRequest(source,{offset=0,cellUuid=null,anchorUuid=null,includeCells=false,cellsLimit=null,cellsAfter=null}={}){
   if(source.kind==='protocol'){
     const query=new URLSearchParams(source.query);
     if(cellUuid)query.set('cell_uuid',cellUuid);
@@ -12,7 +14,8 @@ export function epochPageRequest(source,{offset=0,cellUuid=null,anchorUuid=null,
   if(source.kind!=='predicate')throw new Error('Unknown epoch browser source');
   return {path:'/explore/epochs',options:{method:'POST',body:{predicate:source.predicate,splits:source.splits,
     revision:source.treeRevision,limit:source.pageSize??60,...(anchorUuid?{anchor_uuid:anchorUuid}:{offset}),
-    ...(cellUuid?{cell_uuid:cellUuid}:{}),...(includeCells?{include_cells:true}:{})}}};
+    ...(cellUuid?{cell_uuid:cellUuid}:{}),...(includeCells?{include_cells:true}:{}),
+    ...(includeCells&&cellsLimit?{cells_limit:cellsLimit,...(cellsAfter?{cells_after:cellsAfter}:{})}:{})}}};
 }
 
 // Protocol pages carry the authoritative query/curation receipt; predicate

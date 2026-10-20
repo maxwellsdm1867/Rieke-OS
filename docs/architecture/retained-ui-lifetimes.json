@@ -811,10 +811,10 @@
       ]
     },
     "src/epoch-browser/epochBrowserSource.js": {
-      "fingerprint": "6c6ee282218b314a80e4ed592d7e45bc8050b85d345345bb523a4f02c9f271be",
+      "fingerprint": "dd208623c2b18b012567a68523f19cc4391803d7fa149b1068baa9e3765c3a03",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Pending counts and cell windows (2026-10-19, requires backend #118/#119): predicate page requests may carry cells_limit/cells_after for a bounded cell list. No effect sites.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"
@@ -831,10 +831,10 @@
       ]
     },
     "src/epoch-browser/epochNavigationIntent.js": {
-      "fingerprint": "1bce7b83836d39105cf21372dd9ff3c6c7de7d9cc952683d5447bade9ee163db",
+      "fingerprint": "2dd9023245b05ad290db7312a743560d0a3af087ff581dcf590d64e68c453fa1",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Pending counts and cell windows (2026-10-19, requires backend #118/#119): with a null (pending) total, navigation follows the page's has_more. No effect sites.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"
@@ -901,6 +901,16 @@
         "src/inspectionTreeLifecycle.test.js"
       ]
     },
+    "src/epoch-browser/queryCounts.js": {
+      "fingerprint": "7f15a211ddc1f87a08a15c4d6f29c7a06206c3d2ed8c107f37675073f2f3a1ed",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "Pending counts and cell windows (2026-10-19, requires backend #118/#119): pure reading of a pending counts job and merging of its exact ready result into null totals. No effect sites.",
+      "tests": [
+        "src/epoch-browser/queryCounts.test.js",
+        "src/pendingQueryCounts.test.js"
+      ]
+    },
     "src/epoch-browser/ui/EpochAnalysisInclusion.jsx": {
       "fingerprint": "26a2955d3fe0eb2131f8a466b05ad76f73b254db865d5b710b6444c6f7bfdacc",
       "sites": [],
@@ -912,10 +922,10 @@
       ]
     },
     "src/epoch-browser/ui/EpochBrowserChrome.jsx": {
-      "fingerprint": "c23ee9fabc3844ca1a2e35af4afd2d4cf7bf8cf8657242bce6741885023bc6e2",
+      "fingerprint": "cf8b8bb4c50ec2421079de11a4107522cdf7fb7cf35682f4f15885ae3b790653",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Pending counts and cell windows (2026-10-19, requires backend #118/#119): EpochNavigation shows 'counting matching epochs\u2026' for a null total. No effect sites.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"
@@ -962,10 +972,10 @@
       ]
     },
     "src/epoch-browser/ui/EpochTreePane.jsx": {
-      "fingerprint": "8e8224f2ede0294a1fdfcf807db865b402fd385a3f0c4af49ae4ffcd0af00460",
+      "fingerprint": "57c2fba2f851af349fb1a6b28cf04669dcfc750b0d3ffe519bcbe5b972481884",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Pending counts and cell windows (2026-10-19, requires backend #118/#119): optional pendingList replaces the cell tree while cells are being counted. No effect sites.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"
@@ -984,7 +994,7 @@
       ]
     },
     "src/epoch-browser/ui/InspectionCellTree.jsx": {
-      "fingerprint": "56da04415df11c4126370bd5476e2289dff2c162c249c1df4e66c6730bf4aad3",
+      "fingerprint": "90c6c26606a67ba2efab296102c0aa5e890b5337d7a019eb9b48e2c91163d37d",
       "sites": [
         {
           "owner": "CellEpochPage",
@@ -1040,10 +1050,15 @@
           "owner": "InspectionCellTree",
           "kind": "useLayoutEffect",
           "fingerprint": "4108e93b615897d01c73257e6668b9309c319cf70ba1e83d953766700f9faaca"
+        },
+        {
+          "owner": "CellsWindow",
+          "kind": "useEffect",
+          "fingerprint": "c5537a1f892b4b2b80d04fa33c3145d038aceffca246f9ed210112f2072210c3"
         }
       ],
       "lifetime": "fresh-page-focus",
-      "reason": "Focus carries the original row and its validated page; explicit selection retains revision authority. Selection tagging review (2026-10-17): loaded rows feed tagStore revision hints in an effect keyed on the page data; \u2318/Ctrl selection keeps the just-clicked epoch (Finder-style) outside Workbench highlight. Cell-row review (2026-10-17): clicking a cell row (browse or edit tree, not its buttons, not the already selected cell) runs the existing bounded selectCell, so the tag panel targets the cell; epoch focus clears it. Browse refinement: in browse lists a cell click targets the cell only when the inspected epoch is in it (no read) or nothing is inspected; it never replaces an inspected epoch from another cell.",
+      "reason": "Focus carries the original row and its validated page; explicit selection retains revision authority. Selection tagging review (2026-10-17): loaded rows feed tagStore revision hints in an effect keyed on the page data; \u2318/Ctrl selection keeps the just-clicked epoch (Finder-style) outside Workbench highlight. Cell-row review (2026-10-17): clicking a cell row (browse or edit tree, not its buttons, not the already selected cell) runs the existing bounded selectCell, so the tag panel targets the cell; epoch focus clears it. Browse refinement: in browse lists a cell click targets the cell only when the inspected epoch is in it (no read) or nothing is inspected; it never replaces an inspected epoch from another cell. Pending counts and cell windows (2026-10-19, requires backend #118/#119): adds CellsWindow: an IntersectionObserver on the end marker requests the next cell window (disconnected on change/unmount); no request is made by the tree itself.",
       "tests": [
         "src/epoch-browser/inspectionCellTree.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
@@ -1222,7 +1237,7 @@
       ]
     },
     "src/epoch-browser/ui/MatchingEpochs.jsx": {
-      "fingerprint": "2427fb8f85247f4e6df59d3f1a0e7536b702014ce6e247281a7da683ec054ef4",
+      "fingerprint": "26e48a1637469328eb9488ef4ececa653b6817839dcd3a969ee05c6be3b5573d",
       "sites": [
         {
           "owner": "MatchingEpochsContent",
@@ -1232,7 +1247,7 @@
         {
           "owner": "MatchingEpochsContent",
           "kind": "useEffect",
-          "fingerprint": "29a7d98acaf6f9561d3551cf29c3b05ace2c0a30f687bec73a4863b0c3d09b80"
+          "fingerprint": "f44124126192a8c592901bbd02be332193e7e2ccfc451b55dff4f4b0be09ad99"
         },
         {
           "owner": "MatchingEpochsContent",
@@ -1241,7 +1256,7 @@
         }
       ],
       "lifetime": "session-publication-and-current-data",
-      "reason": "Known stream descriptors are independent of optional live values; current result and annotation authority remain required. Tag decoupling review (2026-10-17): confirmed receipts apply in place without epoch reload or detail-revision bump; prefetch uses wholeTracePrefetchPath. Effect sites unchanged. Tag channel review (2026-10-17): detail overlays tagStore through a deferred subscription; no private receipt state. Effect sites unchanged. Cell-row review (2026-10-17): list props add focusedCell and onTargetCell, which only set the cell tag target (no read, no focus change).",
+      "reason": "Known stream descriptors are independent of optional live values; current result and annotation authority remain required. Tag decoupling review (2026-10-17): confirmed receipts apply in place without epoch reload or detail-revision bump; prefetch uses wholeTracePrefetchPath. Effect sites unchanged. Tag channel review (2026-10-17): detail overlays tagStore through a deferred subscription; no private receipt state. Effect sites unchanged. Cell-row review (2026-10-17): list props add focusedCell and onTargetCell, which only set the cell tag target (no read, no focus change). Pending counts and cell windows (2026-10-19, requires backend #118/#119): first page requests 200-cell windows and re-reads once counts are ready (page revision includes the ready counts job); a page naming a counts job the preview does not own is polled via useQueryCounts; more cells load through an explicit scoped request fenced by query/counts scope.",
       "tests": [
         "src/authoredDrafts.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
@@ -1327,6 +1342,22 @@
         "src/incomingReviewDecision.test.js",
         "src/pagedTreeLifecycle.test.js",
         "src/retainedWorkspaceViews.test.js"
+      ]
+    },
+    "src/epoch-browser/useQueryCounts.js": {
+      "fingerprint": "ba71ec142f64af0022ebf67257952bc2edcc606acf3a56be59517811161a7aa2",
+      "sites": [
+        {
+          "owner": "useQueryCounts",
+          "kind": "useEffect",
+          "fingerprint": "12a4b792b73f218929e13065d5db207e625d71a9e8413c19405e183d30c9be4d"
+        }
+      ],
+      "lifetime": "bounded-resource-lifetime",
+      "reason": "Pending counts and cell windows (2026-10-19, requires backend #118/#119): one effect keyed to the counts job id polls the summary route with an AbortController and timer cleared on cleanup; a changed job id cancels the previous still-pending job; hiding a retained view stops polling without cancelling (the job is shared with result pages).",
+      "tests": [
+        "src/pendingQueryCounts.test.js",
+        "src/requested-summaries/requestedSummariesLifecycle.test.js"
       ]
     },
     "src/epochSelection.js": {
@@ -2063,7 +2094,7 @@
       ]
     },
     "src/metadata-explorer/ui/MetadataExplorer.jsx": {
-      "fingerprint": "2806aff02e3d7f4d3bf8a2d98665729763f6f26fc1ddd8c66b4865a6f17d6a84",
+      "fingerprint": "e610edc89c9eea152ec1a1b7e535e145b6d7dae64072dc6017eefa95e354a484",
       "sites": [
         {
           "owner": "MetadataExplorer",
@@ -2127,7 +2158,7 @@
         }
       ],
       "lifetime": "semantic-presentation + hydration-witness + active-local-undo",
-      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged. Tag decoupling review (2026-10-17): tag saves report kind annotations (not an untyped structural change) with the confirmed receipt; focused epoch and presets follow annotationRevision. Effect sites unchanged. Summary-after-query review (2026-10-18): previews/runs/revisions always send catalog_summary:false and the explicit full-catalog key/effect is removed; one requested-summaries job is keyed to the shown result set (starts after that predicate's results load, survives same-query tree reloads, retires on predicate/filter/generation change) and decorates the builder fields. One effect site removed; hook-owned job lifetime unchanged. Preview removal (2026-10-19): PredicateDialog no longer receives previous-run preview props; result reads and the after-query summary job are unchanged. catalog_summary removal (2026-10-19, requires backend #117): result preview/run/revision bodies no longer send the deprecated catalog_summary flag; effect dependencies, abort and publication fences unchanged.",
+      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged. Tag decoupling review (2026-10-17): tag saves report kind annotations (not an untyped structural change) with the confirmed receipt; focused epoch and presets follow annotationRevision. Effect sites unchanged. Summary-after-query review (2026-10-18): previews/runs/revisions always send catalog_summary:false and the explicit full-catalog key/effect is removed; one requested-summaries job is keyed to the shown result set (starts after that predicate's results load, survives same-query tree reloads, retires on predicate/filter/generation change) and decorates the builder fields. One effect site removed; hook-owned job lifetime unchanged. Preview removal (2026-10-19): PredicateDialog no longer receives previous-run preview props; result reads and the after-query summary job are unchanged. catalog_summary removal (2026-10-19, requires backend #117): result preview/run/revision bodies no longer send the deprecated catalog_summary flag; effect dependencies, abort and publication fences unchanged. Pending counts and cell windows (2026-10-19, requires backend #118/#119): the shown result's counts job is polled with useQueryCounts and merged into the displayed preview; a changed query cancels the previous job. Effect sites unchanged.",
       "tests": [
         "src/retainedControls.test.js",
         "src/requested-summaries/requestedSummariesLifecycle.test.js",
@@ -3816,7 +3847,7 @@
       ]
     },
     "src/typed-query/ui/TreeBuilder.jsx": {
-      "fingerprint": "10bcb7d046e42087337f363d6d78371b5cfd0bdd3101dc6d5b9cee6238e0e2ae",
+      "fingerprint": "4045f9c8c776031036b8e53b6167ff5244ec8acf8cc65c51d118a1d7825fc3e1",
       "sites": [
         {
           "owner": "TreeBuilder",
@@ -3845,7 +3876,7 @@
         }
       ],
       "lifetime": "semantic-order-and-chooser + active-global-handlers",
-      "reason": "External value key resets local order; search/category/order keys reset chooser limit/active option; keyboard identity controls scrolling. Active retained owner gates global listeners and popover. Drag cleanup and catalog/summary authority keep ordinary lifetimes. Preview removal (2026-10-19): summary preferences no longer feed requested chooser fields (axes plus predicate fields only); the unused full-catalog callback prop is removed. Effect sites unchanged.",
+      "reason": "External value key resets local order; search/category/order keys reset chooser limit/active option; keyboard identity controls scrolling. Active retained owner gates global listeners and popover. Drag cleanup and catalog/summary authority keep ordinary lifetimes. Preview removal (2026-10-19): summary preferences no longer feed requested chooser fields (axes plus predicate fields only); the unused full-catalog callback prop is removed. Effect sites unchanged. Pending counts and cell windows (2026-10-19, requires backend #118/#119): preview status reads 'Counting matching epochs\u2026' while counts are pending. Effect sites unchanged.",
       "tests": [
         "src/useSemanticReset.test.js",
         "src/semanticPresentationControls.test.js",
