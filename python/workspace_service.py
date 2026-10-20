@@ -565,7 +565,8 @@ class WorkspaceService:
         missing = [key for key in definitions if key not in cached]
         built = {}
         if missing:
-            ids = [row['epoch_uuid'] for row in self._tree_rows(None)]
+            # The cached eligible tuple lets tag fields reuse its universe and order.
+            ids = self._eligible()[1]
             built = {field['id']: field for field in TagPredicates(self).catalog_fields(ids, only=set(missing))}
             if built.keys() != set(missing):
                 raise ValueError('Annotation catalog fields changed while loading')
@@ -581,14 +582,26 @@ class WorkspaceService:
         index = getattr(self, 'disk_index', None)
         typed = getattr(self, 'typed_index', None)
         from disco.metadata.disk_index import DiskMetadataIndex
+        # The cached eligible ID tuple proves the scope is every active-source
+        # epoch of this publication: select by source instead of admitting
+        # each identity into a scratch table (B9), then keep eligible order.
+        cached = getattr(self, '_eligible_cache', None)
+        whole = cached is not None and ids is cached[1][1]
         if typed is not None and type(index) is DiskMetadataIndex and isinstance(ids, (list, tuple)):
             from disco.metadata.explore_queries import typed_reader
             with typed_reader(self) as reader:
                 validated = reader._validate(predicate)
-                matched = set(reader.iter_membership(validated, {'epoch_ids': iter(ids)}))
+                scope = ({'sources': list(cached[1][2]['active_source_revisions'])} if whole
+                         else {'epoch_ids': iter(ids)})
+                matched = set(reader.iter_membership(validated, scope))
             # The native contract keeps first-occurrence order and deduplicates IDs.
-            return validated, [identity for identity in dict.fromkeys(ids) if identity in matched]
+            return validated, [identity for identity in (ids if whole else dict.fromkeys(ids)) if identity in matched]
         if index:
+            if (whole and type(index) is DiskMetadataIndex and not cached[1][2]['excluded_source_revisions']
+                    and len(ids) == len(self.rows)):
+                validated, found = index.match(predicate)
+                matched = set(found)
+                return validated, [identity for identity in ids if identity in matched]
             return index.match(predicate, ids=ids)
         catalog, values = predicate_scope(*self._registered_tree_fields())
         validated = validate_predicate(predicate, catalog, values)
@@ -598,9 +611,20 @@ class WorkspaceService:
         """Return validated predicate, exact IDs and optional tag provenance."""
         self._ready()
         from disco.navigation.tag_predicates import TagPredicates
-        eligible = [row['epoch_uuid'] for row in self._tree_rows(None)] if ids is None else list(ids)
-        if set(eligible) - self.rows.keys():
-            raise ValueError('Predicate scope contains unavailable epochs')
+        if ids is None:
+            # Drawn from the published rows by construction; no membership recheck.
+            _, eligible, _, universe = self._eligible()
+            rows = self.rows
+            # Eligible order is exactly this unique tree key, so a sparse match is
+            # ordered by sorting it instead of scanning every eligible ID.
+            order = lambda found: sorted(found, key=lambda key: (rows[key]['date'], rows[key]['start_time'], key))
+            if getattr(self._filter_rows, '__func__', None) is not WorkspaceService._filter_rows:
+                order = None
+            return TagPredicates(self).match(predicate, eligible, universe=universe, order=order)
+        else:
+            eligible = list(ids)
+            if set(eligible) - self.rows.keys():
+                raise ValueError('Predicate scope contains unavailable epochs')
         return TagPredicates(self).match(predicate, eligible)
 
     def set_source_state_provider(self, provider):
@@ -1734,8 +1758,37 @@ class WorkspaceService:
             return self._filter_rows([self.rows[member['uuid']] for member in result['epochs']], filters, protocol_uuid)
         self._ready()
         filters = validate_filters(filters)
-        active = set(self.source_scope()['active_source_revisions'])
+        scope = self.source_scope()
+        if not filters:
+            return list(self._eligible(scope)[0])
+        active = set(scope['active_source_revisions'])
         return self._filter_rows([row for row in self.rows.values() if row['source_sha256'] in active], filters)
+
+    def _eligible(self, scope=None):
+        """Active-source rows and IDs in tree order, kept per publication and source scope.
+
+        Exactly the unfiltered `_tree_rows(None)` result. The tuple of IDs is also
+        the proof object that a predicate scope is the whole eligible catalog.
+        """
+        scope = scope or self.source_scope()
+        active = set(scope['active_source_revisions'])
+        # A replaced filter policy keeps deciding unfiltered eligibility itself.
+        if getattr(self._filter_rows, '__func__', None) is not WorkspaceService._filter_rows:
+            rows = tuple(self._filter_rows([row for row in self.rows.values() if row['source_sha256'] in active], {}))
+            ids = tuple(row['epoch_uuid'] for row in rows)
+            return rows, ids, scope, frozenset(ids)
+        publication = getattr(self, '_explore_publication', None)
+        key = (publication, id(self.rows), len(self.rows), scope['revision'])
+        cached = getattr(self, '_eligible_cache', None)
+        if publication is not None and cached is not None and cached[0] == key:
+            return cached[1]
+        rows = tuple(sorted((row for row in self.rows.values() if row['source_sha256'] in active),
+                            key=lambda row: (row['date'], row['start_time'], row['epoch_uuid'])))
+        ids = tuple(row['epoch_uuid'] for row in rows)
+        value = (rows, ids, scope, frozenset(ids))
+        if publication is not None:
+            self._eligible_cache = (key, value)
+        return value
 
     def validate_tree_splits(self, protocol_uuid, splits):
         fields = self.tree_fields(protocol_uuid)['fields']
@@ -1802,8 +1855,9 @@ class WorkspaceService:
             if type(include_catalog_summary) is not bool or (include_tree and not include_catalog_summary):
                 raise ValueError('A rendered tree requires catalog summaries; include_catalog_summary must be boolean')
             scope = self.source_scope()
-            eligible = [row['epoch_uuid'] for row in self._tree_rows(None)]
-            validated, identities, annotation_scope = self.match_predicate(predicate, eligible)
+            self._ready()
+            eligible = self._eligible(scope)[1]
+            validated, identities, annotation_scope = self.match_predicate(predicate)
             index = getattr(self, 'disk_index', None)
             if not include_catalog_summary:
                 # Search-result navigation needs field identities, exact frozen

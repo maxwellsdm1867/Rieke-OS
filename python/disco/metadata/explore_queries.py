@@ -191,18 +191,29 @@ def field_registry(service):
             'summary_available': False}
 
 
+def _whole_catalog(service, context):
+    from workspace_service import WorkspaceService
+    return (context['protocol_uuid'] is None and not context['filters'] and not context['scope']
+            and getattr(service._tree_rows, '__func__', None) is WorkspaceService._tree_rows)
+
+
 def _native_rows(service, context):
     rows = service._navigation_rows(context['protocol_uuid'], context['filters'])
     return [row for row in rows if all(row.get(key) == value for key, value in context['scope'].items())]
 
 
 def _native_summaries(service, context, cancelled):
-    rows = _native_rows(service, context)
-    _, identities, _ = service.match_predicate(context['predicate'], (row['epoch_uuid'] for row in rows))
+    if _whole_catalog(service, context):
+        _, identities, _ = service.match_predicate(context['predicate'])
+    else:
+        rows = _native_rows(service, context)
+        _, identities, _ = service.match_predicate(context['predicate'], (row['epoch_uuid'] for row in rows))
     catalog, values = predicate_scope(*service._registered_tree_fields())
     definitions = {field['id'] for field in catalog['fields']}
     annotation_fields = {field for field in context['summary_fields'] if field.startswith(('annotations/', 'curation/'))}
-    annotations = TagPredicates(service).snapshot(annotation_fields)[0] if annotation_fields else {}
+    tags = TagPredicates(service)
+    entry = tags._entry(annotation_fields) if annotation_fields else None
+    annotations = entry.states if entry is not None else {}
     summaries, seen = {}, {}
     for field in context['summary_fields']:
         if field not in definitions and field not in annotations:
@@ -210,6 +221,20 @@ def _native_summaries(service, context, cancelled):
         summaries[field] = {'values': [], 'present_count': 0,
             'missing_count': len(identities), 'values_truncated': False}
         seen[field] = {}
+    if entry is not None and summaries:
+        # Every matched epoch has an annotation array (empty when untagged).
+        # Buckets come from the generation's distinct arrays in first-match
+        # order instead of one lookup per matched epoch.
+        universe = set(identities)
+        positions = {identity: position for position, identity in enumerate(identities)}
+        for field in annotations.keys() & summaries.keys():
+            if cancelled():
+                raise InterruptedError('Summary cancelled')
+            buckets = entry.buckets(field, identities, universe, positions.__getitem__)
+            summary = summaries[field]
+            summary.update(present_count=len(identities), missing_count=0, values_truncated=len(buckets) > 60,
+                           values=[{'value': copy.deepcopy(value), 'type': kind(value), 'count': amount}
+                                   for value, amount in buckets[:60]])
     metadata_fields = definitions.intersection(summaries) - annotations.keys()
     # The disk mapping has a small row LRU. Walking the entire identity scope
     # once per field evicts every row before its next use. Borrow one full native
@@ -221,7 +246,7 @@ def _native_summaries(service, context, cancelled):
             and len(set(identities)) == len(identities)):
         stream = StreamingValueView(values.base.subset(identities), allowed=values.allowed,
                                     combinations=values.combinations).items()
-    for identity in identities if summaries else ():
+    for identity in identities if metadata_fields else ():
         if cancelled():
             raise InterruptedError('Summary cancelled')
         if stream is not None:
@@ -234,7 +259,7 @@ def _native_summaries(service, context, cancelled):
             if cancelled():
                 raise InterruptedError('Summary cancelled')
             if field in annotations:
-                value = annotations[field].get(identity, [])
+                continue
             elif field in current:
                 value = current[field]
             else:
@@ -432,7 +457,11 @@ class SummaryJobs:
     def poll(self, request_id):
         with self.lock:
             job = self.jobs[str(uuid.UUID(request_id))]
-        if job['status'] in ('pending', 'ready'):
+        status = job['status']
+        # Ready results are always fenced. A pending job is fenced by its worker
+        # before and after calculation, so a poll is a status read and never
+        # waits behind that worker; it fences early only when the lock is free.
+        if status in ('pending', 'ready') and self.db_lock.acquire(blocking=status == 'ready'):
             try:
                 self._fence(job)
             except Exception as error:
@@ -440,6 +469,8 @@ class SummaryJobs:
                     job['cancel'].set()
                     job.pop('result', None)
                     job.update(status='stale', error=str(error))
+            finally:
+                self.db_lock.release()
         with self.lock:
             return self._payload(job)
 
@@ -492,15 +523,24 @@ def explore_page(service, predicate, *, scope=None, protocol_uuid=None, filters=
                 combined, typed = typed_scope(service, context)
                 result = reader.page(combined, typed, limit=limit, cursor=rank)
             else:
-                rows = _native_rows(service, context)
-                _, identities, _ = service.match_predicate(predicate, (row['epoch_uuid'] for row in rows))
-                members = set(identities)
-                rows = sorted((row for row in rows if row['epoch_uuid'] in members),
-                              key=lambda row: (row['date'], row['start_time'][11:], row['epoch_uuid']))
-                membership = checksum(rows)
+                if _whole_catalog(service, context):
+                    # The unfiltered project scope is the service's cached eligible
+                    # catalog; match it directly instead of re-listing every row.
+                    _, identities, _ = service.match_predicate(predicate)
+                    rows = [service.rows[key] for key in identities]
+                else:
+                    rows = _native_rows(service, context)
+                    _, identities, _ = service.match_predicate(predicate, (row['epoch_uuid'] for row in rows))
+                    members = set(identities)
+                    rows = [row for row in rows if row['epoch_uuid'] in members]
+                rows.sort(key=lambda row: (row['date'], row['start_time'][11:], row['epoch_uuid']))
+                offset = rank or 0
+                # The membership witness binds continuations; a single complete
+                # page without a cursor has nothing to bind.
+                if token is not None or offset + limit < len(rows):
+                    membership = checksum(rows)
                 if token is not None and token.get('membership') != membership:
                     raise StaleQuery('Authoritative filtered membership changed during paging')
-                offset = rank or 0
                 result = {'rows': copy.deepcopy(rows[offset:offset+limit]),
                           'cursor': offset+limit if offset+limit < len(rows) else None}
         if before != generation(service, context):
