@@ -28,6 +28,176 @@ TREE_CACHE_MAX_SCOPES = 8
 EPOCH_PAGE_CACHE_BYTES = 64 * 1024 * 1024
 
 
+class WorkspaceNotReady(RuntimeError):
+    """Validation did not complete; reads stay refused until a refresh succeeds."""
+    code = 'workspace_not_ready'
+
+
+class LockBusy(RuntimeError):
+    """Another exclusive workspace operation holds the lock; retry later."""
+    code = 'lock_busy'
+
+
+def _immutable(name):
+    def refuse(self, *args, **kwargs):
+        raise TypeError(f'Published workspace read model is immutable ({type(self).__name__}.{name}); republish instead')
+    return refuse
+
+
+class FrozenDict(dict):
+    """Deep-frozen published mapping; only ``freeze`` constructs trusted values.
+
+    Copies (``copy``, ``deepcopy``, ``dict(...)``, ``{**value}``) are ordinary
+    mutable dicts. JSON, equality and ``isinstance(value, dict)`` are unchanged.
+    """
+    __slots__ = ()
+    for _name in ('__setitem__', '__delitem__', 'clear', 'pop', 'popitem', 'setdefault', 'update', '__ior__'):
+        locals()[_name] = _immutable(_name)
+    del _name
+
+    def __copy__(self):
+        return dict(self)
+
+    def __deepcopy__(self, memo):
+        return {copy.deepcopy(key, memo): copy.deepcopy(value, memo) for key, value in dict.items(self)}
+
+    def __reduce__(self):
+        return (dict, (dict(self),))
+
+
+class FrozenList(list):
+    __slots__ = ()
+    for _name in ('__setitem__', '__delitem__', 'append', 'extend', 'insert', 'pop', 'remove', 'clear',
+                  'sort', 'reverse', '__iadd__', '__imul__'):
+        locals()[_name] = _immutable(_name)
+    del _name
+
+    def __copy__(self):
+        return list(self)
+
+    def __deepcopy__(self, memo):
+        return [copy.deepcopy(value, memo) for value in list.__iter__(self)]
+
+    def __reduce__(self):
+        return (list, (list(self),))
+
+
+class Unfreezable(TypeError):
+    pass
+
+
+_IMMUTABLE_LEAVES = (str, int, float, bool, type(None), bytes, dt.date, dt.time, dt.timedelta)
+
+
+def freeze(value):
+    """Return a deep-frozen copy of a JSON-like value (dict/list/tuple/scalars).
+
+    Already frozen subtrees are reused. Unknown leaf types raise Unfreezable so
+    a caller can keep the exact (content-comparing) path instead.
+    """
+    kind = type(value)
+    if kind is FrozenDict or kind is FrozenList or kind in _IMMUTABLE_LEAVES or isinstance(value, Path):
+        return value
+    if kind is dict:
+        return FrozenDict({key if type(key) is str else freeze(key): freeze(item) for key, item in value.items()})
+    if kind is list:
+        return FrozenList([freeze(item) for item in value])
+    if kind is tuple:
+        return tuple(freeze(item) for item in value)
+    if kind is frozenset:
+        return frozenset(freeze(item) for item in value)
+    raise Unfreezable(f'Cannot freeze published value of type {kind.__name__}')
+
+
+def _freeze_flat(value):
+    """Fast path for the common flat dict/list-of-flat-dicts shapes."""
+    kind = type(value)
+    if kind in _IMMUTABLE_LEAVES:
+        return value
+    if kind is list:
+        items = []
+        for item in value:
+            if type(item) is dict:
+                for leaf in item.values():
+                    if type(leaf) not in _IMMUTABLE_LEAVES:
+                        items.append(freeze(item))
+                        break
+                else:
+                    items.append(FrozenDict(item))
+            else:
+                items.append(_freeze_flat(item) if type(item) in (list, dict) else freeze(item))
+        return FrozenList(items)
+    return freeze(value)
+
+
+def _freeze_rows(rows, *, in_place=False):
+    """Freeze row mappings with one C-level copy per flat value.
+
+    ``in_place`` replaces each plain row in the caller's (owned) dict as it is
+    frozen, so the plain row is released immediately: publication never holds
+    two copies of every row. Only the top-level map is copied (references).
+    """
+    if any(type(row) not in (dict, FrozenDict) for row in rows.values()):
+        raise Unfreezable('Published row is not a plain mapping')
+    target = rows if in_place else {}
+    leaves = _IMMUTABLE_LEAVES
+    for key, row in rows.items():
+        if type(row) is FrozenDict:
+            frozen = row
+        else:
+            nested = [name for name, value in row.items() if type(value) not in leaves]
+            if not nested:
+                frozen = FrozenDict(row)
+            else:
+                copy_ = dict(row)
+                for name in nested:
+                    copy_[name] = _freeze_flat(row[name])
+                frozen = FrozenDict(copy_)
+        target[key] = frozen  # Assigning an existing key keeps iteration valid.
+    return FrozenDict(target)
+
+
+def publish_frozen(value, *, rows=False, in_place=False):
+    """Freeze a read-model map for publication; None when it cannot be proven.
+
+    ``in_place`` (rows only) is for a caller that owns ``value`` and discards it.
+    """
+    try:
+        return _freeze_rows(value, in_place=in_place) if rows else freeze(value)
+    except Unfreezable:
+        return None
+
+
+_PUBLICATIONS = __import__('itertools').count(1)
+
+
+# Read-model attributes whose every assignment advances the publication serial.
+# The serial is process-monotonic and never reused, so equal serials prove the
+# same published objects; with FrozenDict contents (which cannot be mutated in
+# place) an unchanged serial proves unchanged read-model content. Assignment is
+# intercepted in WorkspaceService.__setattr__ so reads stay plain attribute loads.
+PUBLISHED_ATTRIBUTES = frozenset(('rows', 'cells', 'protocols', '_fingerprints', 'details', 'disk_index',
+                                  'sources', 'manifests', '_explore_publication'))
+
+
+PUBLISHED_MAPS = ('rows', 'cells', 'protocols', '_fingerprints')
+
+
+def publication_serial(service):
+    """Monotonic serial of the current read-model publication, or None.
+
+    None unless every proof map (rows, cells, protocols, fingerprints) is a
+    deep-frozen FrozenDict. Callers must then fall back to comparing contents.
+    """
+    serial = getattr(service, '_publication_serial', None)
+    if serial is None:
+        return None
+    for name in PUBLISHED_MAPS:
+        if type(service.__dict__.get(name)) is not FrozenDict:
+            return None
+    return serial
+
+
 class _FrozenProtocolBinding:
     """Owned frozen read input; unrelated protocols retain the caller's policy."""
     def __init__(self, protocol, binding, fallback, *, read_scope_revision=None):
@@ -79,7 +249,7 @@ def _readonly_binding_reader(service, protocol):
 def _protocol_summary_can_share(service, filters):
     """Reuse only pure canonical reads within this one summary response."""
     return (getattr(service, 'curation_provider', False) is None
-        and all(type(getattr(service, name, None)) is dict for name in ('rows', 'cells', 'protocols'))
+        and all(type(getattr(service, name, None)) in (dict, FrozenDict) for name in ('rows', 'cells', 'protocols'))
         and (filters is None or (type(filters) is dict and not set(filters) - {
             'epoch_uuid', 'cell_uuid', 'cell_type', 'group_label'}))
         and all(getattr(getattr(service, name, None), '__func__', getattr(service, name, None)) is method
@@ -95,7 +265,7 @@ def _summarize_cells(service, rows, *, current_protocol=None, current_query=None
         bins.setdefault(row['cell_uuid'], []).append(row)
     result = []
     memberships = {key: {member['uuid'] for member in (
-        current_query if current_query is not None and key == current_protocol else service.query_result(key))['epochs']}
+        current_query if current_query is not None and key == current_protocol else service.query_view(key))['epochs']}
         for key in service.protocols} if cross_protocols else {}
     for identity, items in bins.items():
         epoch_ids = {row['epoch_uuid'] for row in items}
@@ -313,6 +483,18 @@ from disco.operation_timing import elapsed
 
 
 class WorkspaceService:
+    def __setattr__(self, name, value):
+        # Every assignment of a published read-model attribute advances the
+        # process-monotonic publication serial (see publication_serial()).
+        object.__setattr__(self, name, value)
+        if name in PUBLISHED_ATTRIBUTES:
+            object.__setattr__(self, '_publication_serial', next(_PUBLICATIONS))
+
+    def __delattr__(self, name):
+        object.__delattr__(self, name)
+        if name in PUBLISHED_ATTRIBUTES:
+            object.__setattr__(self, '_publication_serial', next(_PUBLICATIONS))
+
     def __init__(self, project_dir, curation_provider=None):
         self.project_dir = Path(project_dir).resolve()
         if (self.project_dir / '.portable-restore.pending').exists():
@@ -760,6 +942,10 @@ class WorkspaceService:
                 projection_store.write(key, projection)
             except OSError as error:
                 metrics.setdefault('cache_warnings', []).append('Source projection cache could not be saved: ' + str(error))
+        # Release written projections so publication can free each plain row
+        # as it is frozen in place (no second full copy of the rows).
+        pending_projections.clear()
+        projection = snapshot = None
         if projection_store:
             if disk_index is None:
                 self.last_refresh = {'status':'indexing', 'started_at':dt.datetime.now(dt.timezone.utc).isoformat()}
@@ -787,6 +973,14 @@ class WorkspaceService:
                 if self._input_signature(path) != signature:
                     raise ValueError('Recorded input changed while building typed metadata index')
         metrics['discovery_indexes_preserved'] = preserve_indexes
+        # Publish deep-frozen maps so the publication serial is a complete
+        # freshness proof. Unfreezable content keeps the content-comparing path.
+        freeze_started = time.perf_counter()
+        frozen = (publish_frozen(rows, rows=True, in_place=True), publish_frozen(cells), publish_frozen(protocols),
+                  publish_frozen(fingerprints))
+        if all(value is not None for value in frozen):
+            rows, cells, protocols, fingerprints = frozen
+        metrics['timing_ms']['publish_freeze'] = (time.perf_counter() - freeze_started) * 1000
         self.project, self.config, self.dj, self.Event = project, config, dj, Event
         self.rows, self.details, self.cells, self.sources = rows, disk_index.details if disk_index else details, cells, sources
         # Published rows/details changed even when the verified index was reused.
@@ -820,7 +1014,7 @@ class WorkspaceService:
 
     def _ready(self):
         if not self._loaded:
-            raise RuntimeError('Workspace validation did not complete; refresh required')
+            raise WorkspaceNotReady('Workspace validation did not complete; refresh required')
 
     def cell_rows(self, cell_uuid):
         """Registered cell rows, independent of protocol or source exclusions.
@@ -855,7 +1049,7 @@ class WorkspaceService:
         return {}
 
     def fingerprints(self, protocol_uuid):
-        result = self.query_result(protocol_uuid)
+        result = self.query_view(protocol_uuid)
         return {member['uuid']: self._fingerprints[member['uuid']] for member in result['epochs']}
 
     @staticmethod
@@ -918,9 +1112,59 @@ class WorkspaceService:
                         if self._fingerprints[member['uuid']] != member['metadata_hash']]})
             return original
 
+    def query_view(self, protocol_uuid):
+        """Read-only effective query result shared by every reader of one publication.
+
+        Equivalent to ``query_result`` but returns a deep-frozen value cached per
+        (publication serial, protocol, binding revision, binding version); a hit
+        costs one binding-header read and no copy. Custom service readers,
+        non-canonical binding providers and unfrozen read models return the
+        ordinary fresh ``query_result`` copy instead.
+        """
+        serial = publication_serial(self)
+        provider = getattr(self, 'binding_provider', None)
+        header_provider = getattr(self, 'binding_header_provider', None)
+        if (serial is None or getattr(self.query_result, '__func__', None) is not WorkspaceService.query_result
+                or getattr(self.binding, '__func__', None) is not _CANONICAL_BINDING_READ):
+            return self.query_result(protocol_uuid)
+        if provider is not None:
+            from disco.decisions.explorer import is_canonical_binding_reader, ExplorerHistory
+            owner = getattr(provider, '__self__', None)
+            if (not is_canonical_binding_reader(provider) or type(owner) is not ExplorerHistory
+                    or getattr(header_provider, '__self__', None) is not owner
+                    or getattr(header_provider, '__func__', None) is not ExplorerHistory.protocol_binding_header):
+                return self.query_result(protocol_uuid)
+        self._ready()
+        protocol_uuid = _uuid(protocol_uuid)
+        header = header_provider(protocol_uuid) if provider is not None else None
+        if header is None:
+            entry = self.protocols[protocol_uuid]
+            if entry['definition'].get('initial_revision_uuid'):
+                return self.query_result(protocol_uuid)  # Raises the interrupted-creation error.
+            return entry['result']
+        key = (serial, protocol_uuid, header.get('revision_uuid') if header else None,
+               header.get('version') if header else None)
+        cache = getattr(self, '_query_view_cache', None)
+        if cache is None or cache[0] != serial:
+            cache = self._query_view_cache = (serial, {})
+        hit = cache[1].get(protocol_uuid)
+        if hit is not None and hit[0] == key:
+            return hit[1]
+        result = self.query_result(protocol_uuid)
+        binding = result.get('dataset_binding')
+        observed = (serial, protocol_uuid, binding.get('revision_uuid') if binding else None,
+                    binding.get('version') if binding else None)
+        try:
+            view = freeze(result)
+        except Unfreezable:
+            return result
+        if observed == key and publication_serial(self) == serial:
+            cache[1][protocol_uuid] = (key, view)
+        return view
+
     def filtered_rows(self, protocol_uuid, filters=None):
         filters = validate_filters(filters)
-        result = self.query_result(protocol_uuid)
+        result = self.query_view(protocol_uuid)
         curation = self._curation(protocol_uuid)
         rows = [self._decorate(self.rows[member['uuid']], curation) for member in result['epochs']]
         return self._filter_rows(rows, filters, protocol_uuid)
@@ -1011,7 +1255,7 @@ class WorkspaceService:
         for key, value in self.protocols.items():
             definition = value['definition']
             members = self.filtered_rows(key)
-            query = self.query_result(key)
+            query = self.query_view(key)
             protocols.append({'protocol_uuid': key, 'name': definition['name'],
                 'acquisition_protocol': value['result']['protocol_name'], 'counts': self._counts(members),
                 'query': query.get('effective_query', definition['query']), 'starter_query': definition['query'],
@@ -1031,7 +1275,7 @@ class WorkspaceService:
         shared = _protocol_summary_can_share(self, filters)
         if shared:
             filters = validate_filters(filters)
-            query = self.query_result(protocol_uuid)
+            query = self.query_view(protocol_uuid)
             all_rows = self._filter_rows([
                 self._decorate(self.rows[member['uuid']], {}) for member in query['epochs']
             ], {}, protocol_uuid)
@@ -1039,7 +1283,7 @@ class WorkspaceService:
         else:
             rows = self.filtered_rows(protocol_uuid, filters)
             all_rows = self.filtered_rows(protocol_uuid)
-            query = self.query_result(protocol_uuid)
+            query = self.query_view(protocol_uuid)
         definition = self.protocols[_uuid(protocol_uuid)]['definition']
         return {'definition': definition, 'starter_query': definition['query'],
                 'effective_query': query.get('effective_query', definition['query']),
@@ -1063,7 +1307,7 @@ class WorkspaceService:
                 for name, method in _PROTOCOL_BROWSE_READS.items())
                 or not _readonly_binding_reader(self, protocol_uuid)):
             return None
-        result = self.query_result(protocol_uuid)
+        result = self.query_view(protocol_uuid)
         definition = self.protocols[_uuid(protocol_uuid)]['definition']
         rows = [self.rows[member['uuid']] for member in result['epochs']]
         scope = self.source_scope()
@@ -1476,7 +1720,7 @@ class WorkspaceService:
         with elapsed("workspace_service", "epoch"):
             self._ready()
             identity = _uuid(epoch_uuid)
-            if protocol_uuid and identity not in {m['uuid'] for m in self.query_result(protocol_uuid)['epochs']}:
+            if protocol_uuid and identity not in {m['uuid'] for m in self.query_view(protocol_uuid)['epochs']}:
                 raise ValueError('Epoch is outside this protocol query')
             row = self.rows[identity]
             manifest = self.manifests[row['source_sha256']]

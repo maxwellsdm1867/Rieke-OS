@@ -22,6 +22,11 @@ from disco.workbench.recipes import checksum
 from disco.projects.storage import managed_directory
 
 
+class DeletionBusy(RuntimeError):
+    """An import or protocol update holds a deletion lock; retryable (HTTP 409)."""
+    code = 'lock_busy'
+
+
 def managed_recording(root, locator):
     root = Path(root).resolve()
     path = Path(locator)
@@ -119,7 +124,7 @@ class DataStoreDeletion:
     def _locks(self):
         # Match the import guard, then project eligibility, then protocol guards.
         if self.connection.query("SELECT GET_LOCK('recording_workspace_import', 30)").fetchone()[0] != 1:
-            raise RuntimeError('An import is still writing this project')
+            raise DeletionBusy('An import is still writing this project')
         try:
             from disco.projects.recording_registry import recording_lock
             with self.stores.registration_locks(), recording_lock(self.root):
@@ -227,7 +232,7 @@ class DataStoreDeletion:
                 for binding in bindings:
                     lock = hashlib.sha256((self.project + binding['protocol_uuid']).encode()).hexdigest()
                     if self.connection.query(f"SELECT GET_LOCK('{lock}', 10)").fetchone()[0] != 1:
-                        raise RuntimeError('Another pinned protocol update is running')
+                        raise DeletionBusy('Another pinned protocol update is running')
                     held.callback(self.connection.query, f"SELECT RELEASE_LOCK('{lock}')")
                 path = managed_recording(self.root, record['manifest']['source_path'])
                 operation = str(uuid.uuid4())

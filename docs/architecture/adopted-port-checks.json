@@ -5506,7 +5506,7 @@
       {
         "file": "python/lifecycle_diagnostic.py",
         "file_sha256": "88ab25a0b97bdd65dab7b3fba42b58ce30165a47be3c07d43efef186cd5c42a3",
-        "reason": "Opt-in observer registration ASTs, fixed module/function targets and observer source are unchanged versus main5aaf0be. WorkspaceService now admits source fingerprints only after exact or bounded converter proof; its source owner witnesses are refreshed. See docs/dev/h5-json-precision-2026-10-09.md. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Dedicated process heap lifecycle: reviewed syntax and targets remain unchanged; owner bytes add explicit refresh and shutdown collector ownership. Recording-rig DTO extension preserves reviewed observer targets and ASTs; combined owner bytes require validation. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md. Binary64 transport review: existing observer and captured method syntax, origins and targets are unchanged; admitted batch route responses now negotiate exact finite binary64 after the same closing guards, with optional fixed-name elapsed timing. See docs/architecture/trace-worker-execution.md. Native trace reader review: reviewed syntax, categories, origins, targets and owner identities remain exact; only trace sample-reading implementation changes. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Foreground trace QoS review: reviewed source, selectors, syntax, categories, origins and targets are unchanged; only WorkspaceService owner bytes add two default-false scheduling keywords and their exact conditional forwarding. Strict whole-file AST equivalence after those four edits is documented in docs/dev/foreground-trace-qos-projection-compatibility-2026-10-15.md. Metadata digest cache review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; WorkspaceService owner bytes only reuse a verified import metadata digest while its file signature is unchanged, mirroring the recording signature cache (projection compatibility receipt metadata-digest-signature-cache-projection-compatibility-2026-10-16). Workbench latency review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; workspace_api owner bytes only lengthen the coalesced recovery-mirror delay so it runs between bursts of activity (close still flushes). Backup quiet-period review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only let any request postpone the coalesced recovery mirror (activity), bounded at 60 s, so its in-process capture does not compete with foreground trace reads. Tag decoupling review (2026-10-17): owner sources gain protocol-state-v4 (shared tags excluded from curation authority; full-token read fences), the tag-filtered export witness and external-receipt scan revision; reviewed targets unchanged. Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Incremental recovery review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only replace the coalesced recovery-mirror timer and its before_request quiet-period hook with a synchronous incremental backup at each commit point (only changed rows are written). Typed sidecar budget review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged; owner bytes budget the typed build's own peak-memory growth, keep refresh publishing the native generation when the sidecar cannot be prepared, and report typed index availability in health. See python/disco/metadata/CONTRACT.md#typed-sidecar-memory-budget-and-fallback. Project runtime-state review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged; owner bytes add a creation-time import-worker check, an interrupted-job acknowledge route, server-record PID release and a lock-guarded library staging sweep at activation. See python/disco/projects/CONTRACT.md#project-runtime-state-and-per-project-recovery.",
+        "reason": "Opt-in observer registration ASTs, fixed module/function targets and observer source are unchanged versus main5aaf0be. WorkspaceService now admits source fingerprints only after exact or bounded converter proof; its source owner witnesses are refreshed. See docs/dev/h5-json-precision-2026-10-09.md. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Dedicated process heap lifecycle: reviewed syntax and targets remain unchanged; owner bytes add explicit refresh and shutdown collector ownership. Recording-rig DTO extension preserves reviewed observer targets and ASTs; combined owner bytes require validation. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md. Binary64 transport review: existing observer and captured method syntax, origins and targets are unchanged; admitted batch route responses now negotiate exact finite binary64 after the same closing guards, with optional fixed-name elapsed timing. See docs/architecture/trace-worker-execution.md. Native trace reader review: reviewed syntax, categories, origins, targets and owner identities remain exact; only trace sample-reading implementation changes. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Foreground trace QoS review: reviewed source, selectors, syntax, categories, origins and targets are unchanged; only WorkspaceService owner bytes add two default-false scheduling keywords and their exact conditional forwarding. Strict whole-file AST equivalence after those four edits is documented in docs/dev/foreground-trace-qos-projection-compatibility-2026-10-15.md. Metadata digest cache review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; WorkspaceService owner bytes only reuse a verified import metadata digest while its file signature is unchanged, mirroring the recording signature cache (projection compatibility receipt metadata-digest-signature-cache-projection-compatibility-2026-10-16). Workbench latency review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; workspace_api owner bytes only lengthen the coalesced recovery-mirror delay so it runs between bursts of activity (close still flushes). Backup quiet-period review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only let any request postpone the coalesced recovery mirror (activity), bounded at 60 s, so its in-process capture does not compete with foreground trace reads. Tag decoupling review (2026-10-17): owner sources gain protocol-state-v4 (shared tags excluded from curation authority; full-token read fences), the tag-filtered export witness and external-receipt scan revision; reviewed targets unchanged. Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Incremental recovery review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only replace the coalesced recovery-mirror timer and its before_request quiet-period hook with a synchronous incremental backup at each commit point (only changed rows are written). Typed sidecar budget review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged; owner bytes budget the typed build's own peak-memory growth, keep refresh publishing the native generation when the sidecar cannot be prepared, and report typed index availability in health. See python/disco/metadata/CONTRACT.md#typed-sidecar-memory-budget-and-fallback. Project runtime-state review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged; owner bytes add a creation-time import-worker check, an interrupted-job acknowledge route, server-record PID release and a lock-guarded library staging sweep at activation. See python/disco/projects/CONTRACT.md#project-runtime-state-and-per-project-recovery. tocol-state freshness review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged (selectors re-aligned by line diff and exact AST digest only); owner bytes publish deep-frozen read-model maps with a monotonic publication serial, key protocol proofs on it (digest + member set, no marshal witness or row snapshot), add a read-only query view, cache read-path schema attestation by DDL counters/table ids with one lazy GET response lease, and add typed not-ready/lock-busy errors. See docs/dev/request-decoupling-audit.md.",
         "sites": [
           {
             "selector": "Name:56",
@@ -5547,7 +5547,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "ab54775d0a294e9ea9a3af505cf9a92abbc82fae105436e7db5e78767da8b9ef",
+                "file_sha256": "8eb6f8c71b07feb8081c0b4ac612dae7ccddeb901652eee2a02e6e4b0602f3e0",
                 "contract_id": null
               }
             ]
@@ -5569,7 +5569,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
@@ -5591,7 +5591,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
@@ -5613,7 +5613,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
@@ -5940,8 +5940,8 @@
       },
       {
         "file": "python/tests/test_workspace_export_boundary.py",
-        "file_sha256": "4741b686bb197c90f9308a8b78f8423c48272faa5def33206664490db227cd26",
-        "reason": "Select protocol/candidate owner in one existing fixture, inject serializer/report faults or alternate artifact paths, and assert publication/failure boundaries. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md. Binary64 transport review: existing observer and captured method syntax, origins and targets are unchanged; admitted batch route responses now negotiate exact finite binary64 after the same closing guards, with optional fixed-name elapsed timing. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Workbench latency review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; workspace_api owner bytes only lengthen the coalesced recovery-mirror delay so it runs between bursts of activity (close still flushes). Backup quiet-period review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only let any request postpone the coalesced recovery mirror (activity), bounded at 60 s, so its in-process capture does not compete with foreground trace reads. Tag decoupling review (2026-10-17): owner sources gain protocol-state-v4 (shared tags excluded from curation authority; full-token read fences), the tag-filtered export witness and external-receipt scan revision; reviewed targets unchanged. Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Incremental recovery review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only replace the coalesced recovery-mirror timer and its before_request quiet-period hook with a synchronous incremental backup at each commit point (only changed rows are written). Typed sidecar budget review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged; owner bytes budget the typed build's own peak-memory growth, keep refresh publishing the native generation when the sidecar cannot be prepared, and report typed index availability in health. See python/disco/metadata/CONTRACT.md#typed-sidecar-memory-budget-and-fallback. Project runtime-state review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged; owner bytes add a creation-time import-worker check, an interrupted-job acknowledge route, server-record PID release and a lock-guarded library staging sweep at activation. See python/disco/projects/CONTRACT.md#project-runtime-state-and-per-project-recovery.",
+        "file_sha256": "91e363a0f2e0ee82aabfe20b46a48347ffe80fbb289d1b3fedb999fd58ee709d",
+        "reason": "Select protocol/candidate owner in one existing fixture, inject serializer/report faults or alternate artifact paths, and assert publication/failure boundaries. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md. Binary64 transport review: existing observer and captured method syntax, origins and targets are unchanged; admitted batch route responses now negotiate exact finite binary64 after the same closing guards, with optional fixed-name elapsed timing. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Workbench latency review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; workspace_api owner bytes only lengthen the coalesced recovery-mirror delay so it runs between bursts of activity (close still flushes). Backup quiet-period review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only let any request postpone the coalesced recovery mirror (activity), bounded at 60 s, so its in-process capture does not compete with foreground trace reads. Tag decoupling review (2026-10-17): owner sources gain protocol-state-v4 (shared tags excluded from curation authority; full-token read fences), the tag-filtered export witness and external-receipt scan revision; reviewed targets unchanged. Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Incremental recovery review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes only replace the coalesced recovery-mirror timer and its before_request quiet-period hook with a synchronous incremental backup at each commit point (only changed rows are written). Typed sidecar budget review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged; owner bytes budget the typed build's own peak-memory growth, keep refresh publishing the native generation when the sidecar cannot be prepared, and report typed index availability in health. See python/disco/metadata/CONTRACT.md#typed-sidecar-memory-budget-and-fallback. Project runtime-state review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged; owner bytes add a creation-time import-worker check, an interrupted-job acknowledge route, server-record PID release and a lock-guarded library staging sweep at activation. See python/disco/projects/CONTRACT.md#project-runtime-state-and-per-project-recovery. tocol-state freshness review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged (selectors re-aligned by line diff and exact AST digest only); owner bytes publish deep-frozen read-model maps with a monotonic publication serial, key protocol proofs on it (digest + member set, no marshal witness or row snapshot), add a read-only query view, cache read-path schema attestation by DDL counters/table ids with one lazy GET response lease, and add typed not-ready/lock-busy errors. See docs/dev/request-decoupling-audit.md.",
         "sites": [
           {
             "selector": "Assign:7",
@@ -5982,7 +5982,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "ab54775d0a294e9ea9a3af505cf9a92abbc82fae105436e7db5e78767da8b9ef",
+                "file_sha256": "8eb6f8c71b07feb8081c0b4ac612dae7ccddeb901652eee2a02e6e4b0602f3e0",
                 "contract_id": null
               }
             ]
@@ -6015,7 +6015,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "ab54775d0a294e9ea9a3af505cf9a92abbc82fae105436e7db5e78767da8b9ef",
+                "file_sha256": "8eb6f8c71b07feb8081c0b4ac612dae7ccddeb901652eee2a02e6e4b0602f3e0",
                 "contract_id": null
               }
             ]
@@ -6214,8 +6214,8 @@
       },
       {
         "file": "python/tests/test_workspace_refresh_cache.py",
-        "file_sha256": "347a06862c242e0a704598a6c1bdd72e6c84444cc3b625da27a3c369f55a1fa6",
-        "reason": "Inject service dependencies/discovery failures and bounded budgets; use original tree/predicate discovery as equality oracle for cache reuse/invalidation. Added numeric-policy regression cases shift selectors only: each existing reviewed call AST was matched unchanged within the same test method. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Projection compatibility tests are appended; original reviewed sites and AST selectors remain unchanged. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Dedicated process heap lifecycle: reviewed syntax and targets remain unchanged; owner bytes add explicit refresh and shutdown collector ownership. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md. Native trace reader review: reviewed syntax, categories, origins, targets and owner identities remain exact; only trace sample-reading implementation changes. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Foreground trace QoS review: reviewed source, selectors, syntax, categories, origins and targets are unchanged; only WorkspaceService owner bytes add two default-false scheduling keywords and their exact conditional forwarding. Strict whole-file AST equivalence after those four edits is documented in docs/dev/foreground-trace-qos-projection-compatibility-2026-10-15.md. Metadata digest cache review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; WorkspaceService owner bytes only reuse a verified import metadata digest while its file signature is unchanged, mirroring the recording signature cache (projection compatibility receipt metadata-digest-signature-cache-projection-compatibility-2026-10-16). Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Typed sidecar budget review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged; owner bytes budget the typed build's own peak-memory growth, keep refresh publishing the native generation when the sidecar cannot be prepared, and report typed index availability in health. See python/disco/metadata/CONTRACT.md#typed-sidecar-memory-budget-and-fallback.",
+        "file_sha256": "7fe64a1d812ef58ef333edd23201f872988fc88bfbe94fd638ad3693b896c7f2",
+        "reason": "Inject service dependencies/discovery failures and bounded budgets; use original tree/predicate discovery as equality oracle for cache reuse/invalidation. Added numeric-policy regression cases shift selectors only: each existing reviewed call AST was matched unchanged within the same test method. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Projection compatibility tests are appended; original reviewed sites and AST selectors remain unchanged. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Dedicated process heap lifecycle: reviewed syntax and targets remain unchanged; owner bytes add explicit refresh and shutdown collector ownership. Bounded trace batch review: reviewed syntax and targets remain unchanged; owner bytes add at most five exact windows under one source/publication witness, fresh outer candidate admission, and custom-reader refusal. See docs/architecture/trace-worker-execution.md. Native trace reader review: reviewed syntax, categories, origins, targets and owner identities remain exact; only trace sample-reading implementation changes. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Prepared display review: reviewed syntax, categories, origins, targets and owner identities remain exact; only reviewed trace sample and bounded display lookup implementations change. See docs/architecture/trace-worker-execution.md. Foreground trace QoS review: reviewed source, selectors, syntax, categories, origins and targets are unchanged; only WorkspaceService owner bytes add two default-false scheduling keywords and their exact conditional forwarding. Strict whole-file AST equivalence after those four edits is documented in docs/dev/foreground-trace-qos-projection-compatibility-2026-10-15.md. Metadata digest cache review (2026-10-16): reviewed syntax, categories, origins and targets are unchanged; WorkspaceService owner bytes only reuse a verified import metadata digest while its file signature is unchanged, mirroring the recording signature cache (projection compatibility receipt metadata-digest-signature-cache-projection-compatibility-2026-10-16). Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Typed sidecar budget review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged; owner bytes budget the typed build's own peak-memory growth, keep refresh publishing the native generation when the sidecar cannot be prepared, and report typed index availability in health. See python/disco/metadata/CONTRACT.md#typed-sidecar-memory-budget-and-fallback. Protocol-state freshness review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged (selectors re-aligned by line diff and exact AST digest only); owner bytes publish deep-frozen read-model maps with a monotonic publication serial, key protocol proofs on it (digest + member set, no marshal witness or row snapshot), add a read-only query view, cache read-path schema attestation by DDL counters/table ids with one lazy GET response lease, and add typed not-ready/lock-busy errors. See docs/dev/request-decoupling-audit.md.",
         "sites": [
           {
             "selector": "Name:40",
@@ -6234,7 +6234,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
@@ -6256,7 +6256,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
@@ -6278,13 +6278,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Attribute:607",
+            "selector": "Attribute:635",
             "ast_sha256": "dc9c0cc8ab7aa121cba2c0d78ae6c9c073d8b2a77a5c3b179433b66e7d87f236",
             "category": "test-oracle-call",
             "origins": [
@@ -6311,13 +6311,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Attribute:615",
+            "selector": "Attribute:643",
             "ast_sha256": "9b66d8b81a7b15352c762eb8b15859183009e5c548da4cd1150e527c832c7ef5",
             "category": "test-oracle-call",
             "origins": [
@@ -6344,13 +6344,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:986",
+            "selector": "Name:1024",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -6366,13 +6366,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:1015",
+            "selector": "Name:1053",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -6388,13 +6388,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:1085",
+            "selector": "Name:1123",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -6410,13 +6410,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:1088",
+            "selector": "Name:1126",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -6432,13 +6432,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:1110",
+            "selector": "Name:1148",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -6454,13 +6454,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:1113",
+            "selector": "Name:1151",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -6476,13 +6476,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Attribute:714",
+            "selector": "Attribute:742",
             "ast_sha256": "dc9c0cc8ab7aa121cba2c0d78ae6c9c073d8b2a77a5c3b179433b66e7d87f236",
             "category": "test-oracle-call",
             "origins": [
@@ -6509,13 +6509,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:1164",
+            "selector": "Name:1202",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -6531,29 +6531,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
-                "contract_id": null
-              }
-            ]
-          },
-          {
-            "selector": "Name:1166",
-            "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
-            "category": "test-module-object",
-            "origins": [
-              [
-                "module",
-                "workspace_service"
-              ]
-            ],
-            "targets": [
-              "workspace_service"
-            ],
-            "owners": [
-              {
-                "module": "workspace_service",
-                "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
@@ -6575,7 +6553,29 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:1242",
+            "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7",
                 "contract_id": null
               }
             ]
@@ -6795,8 +6795,8 @@
       },
       {
         "file": "python/workspace_protocol_state.py",
-        "file_sha256": "6b1e7ac6a197527a81b9e74fc0710984da05a82e4ef45a861f271fda082320c3",
-        "reason": "Capture exact decision-store/shared-annotation/history methods for structural identity checks and fallback oracle; preserve all response/transaction proof behavior. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Tag decoupling review (2026-10-17): owner sources gain protocol-state-v4 (shared tags excluded from curation authority; full-token read fences), the tag-filtered export witness and external-receipt scan revision; reviewed targets unchanged. Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md.",
+        "file_sha256": "34e4963cecaa2c64ceaed5fcf5609462595e03d2b87c615f9d382ff29115c099",
+        "reason": "Capture exact decision-store/shared-annotation/history methods for structural identity checks and fallback oracle; preserve all response/transaction proof behavior. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Tag decoupling review (2026-10-17): owner sources gain protocol-state-v4 (shared tags excluded from curation authority; full-token read fences), the tag-filtered export witness and external-receipt scan revision; reviewed targets unchanged. Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Protocol-state freshness review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged (selectors re-aligned by line diff and exact AST digest only); owner bytes publish deep-frozen read-model maps with a monotonic publication serial, key protocol proofs on it (digest + member set, no marshal witness or row snapshot), add a read-only query view, cache read-path schema attestation by DDL counters/table ids with one lazy GET response lease, and add typed not-ready/lock-busy errors. See docs/dev/request-decoupling-audit.md.",
         "sites": [
           {
             "selector": "Call:1",

@@ -94,7 +94,8 @@ def create_pinned_protocol(service, history, record, name, protocol_id, actor):
     connection = service.dj.conn()
     lock = hashlib.sha256((project_uuid + identity).encode()).hexdigest()
     if connection.query(f"SELECT GET_LOCK('{lock}', 10)").fetchone()[0] != 1:
-        raise RuntimeError('Another pinned protocol creation is running')
+        from workspace_service import LockBusy
+        raise LockBusy('Another pinned protocol creation is running')
     created_file = False
     try:
         if path.is_symlink():
@@ -133,10 +134,17 @@ def create_pinned_protocol(service, history, record, name, protocol_id, actor):
     protocol_id = protocol_ids[0] if len(protocol_ids) == 1 else protocol_ids
     base = [row for row in service.rows.values() if row['protocol_name'] in protocol_ids]
     cells = {row['cell_uuid'] for row in base}
-    service.protocols[identity] = {'definition': copy.deepcopy(definition), 'file': path,
+    entry = {'definition': copy.deepcopy(definition), 'file': path,
         'result': {'project_uuid': project_uuid, 'protocol_uuid': identity, 'protocol_name': ' + '.join(protocol_ids),
             'source_revisions': sorted({row['source_sha256'] for row in base}),
             'epochs': [{'uuid': row['epoch_uuid'], 'metadata_hash': row['metadata_hash']} for row in base],
             'cells': [{'uuid': cell, 'label': service.cells[cell]['label'], 'type': service.cells[cell]['cell_type']} for cell in sorted(cells)]}}
+    from workspace_service import FrozenDict, publish_frozen
+    if type(service.protocols) is FrozenDict:
+        # Published maps are immutable: republish (advancing the publication serial).
+        frozen = publish_frozen({**service.protocols, identity: entry})
+        service.protocols = frozen if frozen is not None else {**service.protocols, identity: entry}
+    else:
+        service.protocols[identity] = entry
     return {'protocol_uuid': identity, 'name': name, 'protocol_id': protocol_id,
             'revision_uuid': record['revision_uuid'], 'created': existing is None, **summary}

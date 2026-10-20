@@ -6,6 +6,11 @@ metadata's disposable assets. Its schema/trigger/connection incarnation proof,
 response_contract scope and assert_current_locked transaction checks remain exact.
 Read witnesses cannot cross threads, sockets, connections or autocommit response
 lifetimes; failed authority checks break continuity even if counters later match.
+Read paths reuse the last complete attestation only while (connection epoch, global
+DDL command counters, InnoDB table ids) are unchanged; any change, reconnect or
+failure runs the complete attestation again, and transaction/mutation checks always
+run it. Every GET/HEAD response holds one lazily opened response contract (through
+the workspace lock); responses that read no native token never attest.
 Keeping the named file avoids a misleading metadata-only authority or a one-file
 folder. The existing [state generation tests](../../tests/test_workspace_state_generation.py)
 remain central/native and are not executed by the metadata standard-library lane.
@@ -15,6 +20,11 @@ Its proof spans exact WorkspaceService, CurationStore, SharedAnnotations and nat
 binding-reader identities; unsupported/custom policies fall back to the full-state
 oracle. It preserves exact metadata types/order, membership, binding and generation,
 response-end attestation and locked mutation assertions. It owns no transaction.
+When WorkspaceService publishes deep-frozen read-model maps, a cached proof is keyed
+by the monotonic publication serial, binding header, source scope and index
+generation and retains only a digest and member set (no rows); unfrozen maps keep
+the exact content comparison. `DISCO_PROTOCOL_STATE_VERIFY=1` re-derives the digest
+on every key hit as a debug assertion.
 Moving it into metadata or decisions without that distinction would hide its
 cross-owner proof rather than simplify callers. The finite-path proposal for
 `disco/decisions/protocol_state.py` is explicitly replaced by this KEEP decision.
