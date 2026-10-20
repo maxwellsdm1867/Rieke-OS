@@ -2,18 +2,32 @@ import {clampWindow,MAX_TRACE_SAMPLES} from './traces/ui/traceGeometry.js';
 import {createSharedReads} from './resourceRequest.js';
 
 export const EPOCH_CACHE_LIMITS={entries:128,bytes:32*1024*1024,ttlMs:30000};
+// Complete decoded canonical streams, separate from JSON response snapshots.
+// Bytes count the binary64 samples (8 per value); arrays are never copied in.
+export const WHOLE_TRACE_LIMITS={entries:6,bytes:24*1024*1024};
 export function cacheableEpochPath(path){return typeof path==='string'&&/^\/epochs\/[^/?]+(?:\/trace)?(?:\?[^#]*)?$/.test(path);}
+const tracePath=path=>path.split('?')[0].endsWith('/trace');
+const metadataEpoch=path=>{const match=/^\/epochs\/([^/?]+)(?:\?|$)/.exec(path);if(!match)return null;try{return decodeURIComponent(match[1]);}catch{return null;}};
 const PREFETCH_RESERVATION_BYTES=1024*1024;
 const abortError=()=>Object.assign(new Error('Request cancelled'),{name:'AbortError'});
 // A cache hit is a short-lived response snapshot, keyed by exact scope and data revision.
-export function createResourceCache({entries=EPOCH_CACHE_LIMITS.entries,bytes=EPOCH_CACHE_LIMITS.bytes,ttlMs=EPOCH_CACHE_LIMITS.ttlMs,now=()=>Date.now()}={}){
-  const values=new Map(),reads=new WeakMap();let used=0,generation=0,reserved=0,reservations=0,demand=0;
+export function createResourceCache({entries=EPOCH_CACHE_LIMITS.entries,bytes=EPOCH_CACHE_LIMITS.bytes,ttlMs=EPOCH_CACHE_LIMITS.ttlMs,now=()=>Date.now(),wholeTraces:wholeLimits=WHOLE_TRACE_LIMITS}={}){
+  const values=new Map(),reads=new WeakMap(),whole=new Map(),wholeReads=createSharedReads((_key,{run,signal})=>run(signal),{deferAbort:true});
+  // generation retires every in-flight put; metadataGeneration only retires
+  // metadata (epoch detail carries annotations), so a tag receipt never drops
+  // unrelated trace samples or in-flight trace prefetch.
+  let used=0,generation=0,metadataGeneration=0,reserved=0,reservations=0,demand=0,wholeUsed=0;
   const key=(path,revision)=>JSON.stringify([path,revision]);
   function remove(id){const value=values.get(id);if(value){used-=value.size;values.delete(id);}}
   function peek(path,revision){const value=values.get(key(path,revision));return value&&now()-value.at<ttlMs?value.data:undefined;}
   function get(path,revision){const id=key(path,revision),value=values.get(id);if(!value)return undefined;if(now()-value.at>=ttlMs){remove(id);return undefined;}value.speculative=false;values.delete(id);values.set(id,value);return value.data;}
-  function put(path,revision,data,token=generation,{speculative=false}={}){
-    if(token!==generation||!cacheableEpochPath(path))return false;
+  // One admission token for every caller; trace samples and decoded streams
+  // compare only its first (global) part, metadata compares both parts.
+  function token(){return `${generation}:${metadataGeneration}`;}
+  const globalPart=admission=>String(admission).split(':')[0];
+  function admits(path,admission){return path&&tracePath(path)?globalPart(admission)===String(generation):String(admission)===token();}
+  function put(path,revision,data,admission=token(),{speculative=false}={}){
+    if(!cacheableEpochPath(path)||!admits(path,admission))return false;
     let size;try{size=JSON.stringify(data).length*2;}catch{return false;}
     if(size>bytes)return false;
     if(speculative&&(size>PREFETCH_RESERVATION_BYTES||used+size>bytes*.75||values.size+1>Math.floor(entries*.75)))return false;
@@ -21,21 +35,39 @@ export function createResourceCache({entries=EPOCH_CACHE_LIMITS.entries,bytes=EP
     while(values.size>entries||used>bytes)remove(values.keys().next().value);
     return true;
   }
+  function removeWhole(id){const value=whole.get(id);if(value){wholeUsed-=value.size;whole.delete(id);}}
   function invalidate(path,{related=false}={}){
     // A single scalar generation avoids an unbounded per-URL tombstone map.
     generation++;
     const base=path?.split('?')[0];
     for(const [id,value] of values)if(!path||value.path===path||related&&(value.path.split('?')[0]===base||value.path.startsWith(`${base}/`)))remove(id);
+    const epochUuid=path?metadataEpoch(path):null;
+    for(const [id,value] of whole)if(!path||related&&epochUuid!==null&&value.epochUuid===epochUuid)removeWhole(id);
   }
+  // Tags live in epoch detail only: evict those metadata snapshots and refuse
+  // their late puts. Trace samples and trace prefetch are unaffected.
   function invalidateAnnotations(receipt){
-    generation++;
+    metadataGeneration++;
     const all=receipt.targets.some(target=>target.target_kind==='cell');
     const ids=new Set(receipt.targets.filter(target=>target.target_kind==='epoch').map(target=>target.target_uuid));
     for(const [id,value] of values){
-      const match=/^\/epochs\/([^/?]+)(?:\?|$)/.exec(value.path);
-      if(match&&(all||ids.has(decodeURIComponent(match[1]))))remove(id);
+      const epochUuid=metadataEpoch(value.path);
+      if(epochUuid!==null&&(all||ids.has(epochUuid)))remove(id);
     }
   }
+  // Whole decoded streams: exact identity key, byte-bounded LRU, no TTL (the
+  // identity includes source hash, rate, units, count and the trace revision).
+  function getWholeTrace(id){const value=whole.get(id);if(!value)return undefined;whole.delete(id);whole.set(id,value);return value.data;}
+  function peekWholeTrace(id){return whole.get(id)?.data;}
+  function putWholeTrace(id,epochUuid,data,admission=token()){
+    if(globalPart(admission)!==String(generation)||!data||typeof data.values?.length!=='number')return false;
+    const size=data.values.length*8;
+    if(size>Math.floor(wholeLimits.bytes/2))return false;
+    removeWhole(id);whole.set(id,{data,epochUuid,size});wholeUsed+=size;
+    while(whole.size>wholeLimits.entries||wholeUsed>wholeLimits.bytes)removeWhole(whole.keys().next().value);
+    return true;
+  }
+  function pendingWholeTrace(id,run,{signal}={}){return wholeReads.load(JSON.stringify([id,generation]),id,{signal,run});}
   function reservePrefetch(protectedPaths=new Set(),revision=0){
     for(const [id,value] of values)if(now()-value.at>=ttlMs)remove(id);
     const fits=()=>used+reserved+PREFETCH_RESERVATION_BYTES<=bytes*.75&&values.size+reservations+1<=Math.floor(entries*.75);
@@ -46,11 +78,13 @@ export function createResourceCache({entries=EPOCH_CACHE_LIMITS.entries,bytes=EP
     return()=>{if(!released){released=true;reserved-=PREFETCH_RESERVATION_BYTES;reservations--;}};
   }
   function beginDemand(){demand++;let done=false;return()=>{if(!done){done=true;demand--;}};}
-  function pendingRequest(path,{request,revision,signal,token=generation,speculative=false}){
+  function pendingRequest(path,{request,revision,signal,token:admission=token(),speculative=false}){
     let pool=reads.get(request);if(!pool){pool=createSharedReads(request,{deferAbort:true});reads.set(request,pool);}
-    return pool.load(JSON.stringify([path,revision,token]),path,{signal,background:speculative});
+    // Trace reads join across tag receipts; metadata reads never do.
+    return pool.load(JSON.stringify([path,revision,tracePath(path)?globalPart(admission):String(admission)]),path,{signal,background:speculative});
   }
-  return {get,peek,put,reservePrefetch,prefetchPending:()=>reservations>0,beginDemand,hasDemand:()=>demand>0,invalidate,invalidateAnnotations,pendingRequest,token:()=>generation,stats:()=>({entries:values.size,bytes:used})};
+  return {get,peek,put,reservePrefetch,prefetchPending:()=>reservations>0,beginDemand,hasDemand:()=>demand>0,invalidate,invalidateAnnotations,pendingRequest,token,traceToken:()=>generation,
+    getWholeTrace,peekWholeTrace,putWholeTrace,pendingWholeTrace,stats:()=>({entries:values.size,bytes:used,wholeTraces:whole.size,wholeTraceBytes:wholeUsed})};
 }
 export const epochResourceCache=createResourceCache(EPOCH_CACHE_LIMITS);
 export async function cachedResourceRequest(path,{request,revision=0,signal,cache=epochResourceCache,speculative=false}={}){
@@ -121,8 +155,9 @@ function prefetchWindows(paths,{request,revision=0,delayMs=180,cache=epochResour
     const query=new URLSearchParams(path.split('?')[1]),count=Number(query.get('count'));
     return query.get('start')==='0'&&!!query.get('stream_uuid')&&Number.isSafeInteger(count)&&count>0&&count<=MAX_TRACE_SAMPLES;
   }).slice(0,progressive?60:5);
-  const protectedPaths=new Set(selected),controller=new AbortController(),token=cache.token();let cursor=0,full=false;
-  const current=()=>!controller.signal.aborted&&cache.token()===token&&!full;
+  // Only global invalidation retires warming; tag receipts evict metadata alone.
+  const protectedPaths=new Set(selected),controller=new AbortController(),token=cache.traceToken();let cursor=0,full=false;
+  const current=()=>!controller.signal.aborted&&cache.traceToken()===token&&!full;
   const wait=()=>new Promise(resolve=>{const finish=()=>{clearTimeout(timer);controller.signal.removeEventListener('abort',finish);resolve();};const timer=setTimeout(finish,8);controller.signal.addEventListener('abort',finish,{once:true});});
   async function read(path){
     while(current()){

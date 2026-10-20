@@ -7,7 +7,13 @@ export function normalizeTraceViewPreference(value){
     return {kind:'whole',start:0,count:200};
   const selected=value.responseSelection;
   const validSelection=['epoch_uuid','stream_uuid'].every(key=>typeof selected?.[key]==='string'&&selected[key].length>0&&selected[key].length<=128&&selected[key].trim()===selected[key]);
-  return {kind:value.kind,start:value.start,count:value.count,...(Number.isFinite(value.amplitude?.min)&&Number.isFinite(value.amplitude?.max)&&value.amplitude.min<value.amplitude.max?{amplitude:{min:value.amplitude.min,max:value.amplitude.max}}:{}),
+  // A response range is kept only with the units and device it was chosen on;
+  // older records without them cannot be matched and are dropped.
+  const label=item=>item===null||typeof item==='string'&&item.length<=128;
+  const amplitude=value.amplitude;
+  const validAmplitude=Number.isFinite(amplitude?.min)&&Number.isFinite(amplitude?.max)&&amplitude.min<amplitude.max&&
+    Object.hasOwn(amplitude,'units')&&label(amplitude.units)&&Object.hasOwn(amplitude,'device')&&label(amplitude.device);
+  return {kind:value.kind,start:value.start,count:value.count,...(validAmplitude?{amplitude:{min:amplitude.min,max:amplitude.max,units:amplitude.units,device:amplitude.device}}:{}),
     ...(validSelection?{responseSelection:{epoch_uuid:selected.epoch_uuid,stream_uuid:selected.stream_uuid}}:{})};
 }
 

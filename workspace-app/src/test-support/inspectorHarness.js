@@ -28,7 +28,7 @@ export async function createInspectorHarness({liveMetadata=true}={}){
         const fixture=globalThis[${JSON.stringify(key)}];
         export const api=(...args)=>fixture.api(...args);
         export {resolveCurationTargets,number,humanize} from '/src/api.js';
-        export const useEpochPrefetch=()=>{};
+        export const useEpochPrefetch=()=>{},useWholeTraceWarm=()=>{};
         export const useResource=(path,revision,delayMs=0)=>{fixture.resources.push({path,revision,delayMs});return fixture.resource?.(path,revision)||({path,loading:false,error:null,reload:()=>{},data:path?.includes('/epochs?')?{offset:0,total:1,epochs:[fixture.epoch],cells:fixture.protocol.cells||[],query_revision:fixture.protocol.query_revision,expected_binding_version:fixture.protocol.expected_binding_version??0,...fixture.page}:path?.includes('/epochs/')?fixture.epoch:{fields:[]}});};
         export const useEpochResource=path=>({path,loading:false,error:null,reload:()=>{},data:path?fixture.epoch:null});`;
       if(id==='\0inspector-loading')return 'export const NavigationLoadingProvider=({children})=>children;';

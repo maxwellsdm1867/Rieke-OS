@@ -433,8 +433,13 @@
       ]
     },
     "src/api.js": {
-      "fingerprint": "18b59d117a1ecb430b3ff84e9e9ec608189ebd43614f5d5d31c5517e4e3d5dc2",
+      "fingerprint": "b0e9c6b709b24de81714c10a6496504d6d3ff2e3fd84f2ebcdfc9a043d6d3d78",
       "sites": [
+        {
+          "owner": "useWholeTraceWarm",
+          "kind": "useEffect",
+          "fingerprint": "974c8dcf2145e8a7b6d4337b4a6872a34854d46a249891a4dba6c21aa33df1ab"
+        },
         {
           "owner": "useResource",
           "kind": "useEffect",
@@ -447,14 +452,16 @@
         }
       ],
       "lifetime": "reconnecting-read-owner",
-      "reason": "Binary dispatch retains request ownership. Hidden read demand cancels while commands continue; offers retire and reload waits for activation. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md.",
+      "reason": "Binary dispatch retains request ownership. Hidden read demand cancels while commands continue; offers retire and reload waits for activation. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. F1 trace-cache-identity review (2026-10-18): requestWholeTrace/requestTraceWindow serve exact windows from retained whole streams; new useWholeTraceWarm effect warms one next-epoch stream in the background, only while visible and unscoped, aborting on identity/revision/owner change; no command or scoped authority is involved.",
       "tests": [
         "src/epochResourceLifecycle.test.js",
         "src/pagedTreeLifecycle.test.js",
         "src/traces/retainedReadLifecycle.test.js",
         "src/retainedWorkspaceViews.test.js",
         "src/traces/traceBinary.test.js",
-        "src/candidateContinuity.test.js"
+        "src/candidateContinuity.test.js",
+        "src/traces/wholeTraceCache.test.js",
+        "src/traces/traceCacheIdentity.test.js"
       ]
     },
     "src/app-updates/appUpdates.js": {
@@ -1056,7 +1063,7 @@
       ]
     },
     "src/epoch-browser/ui/Inspector.jsx": {
-      "fingerprint": "158594044f0e554ad4042edb849b21c4009118a0f9d35194f3319285200c54c3",
+      "fingerprint": "6a19241c8a8d4102080eb844e1f7af8a49f7f08bb2c82f7cffe066afe193af08",
       "sites": [
         {
           "owner": "InspectorContent",
@@ -1185,7 +1192,7 @@
         }
       ],
       "lifetime": "focused-display-and-fresh-curation",
-      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal. Independently reviewed initial selected-manifest acquisition withholds only the parent page offer; same-selected renewal keeps its own inert trace and strict capability validation is unchanged. Frozen sidebar presentation keys include owner, cohort, focus, cell selection and structure revision, excluding Live metadata and annotation-dependent or unproven selected scopes. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Tag decoupling review (2026-10-17): v4 contract enables kept receipt authority; the all-cell key follows kept authority; neighbour prefetch uses wholeTracePrefetchPath. Effect sites unchanged. Tag channel review (2026-10-17): useAnnotationReceipts takes revision, v4 contract and filters only. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): group receipts and confirmed receipts within the selection limit are reported on the tag channel. Effect sites unchanged. Edit Tree tagging review (2026-10-17): any confirmed receipt within the selection limit is forwarded on the tag channel (the store holds it; navigation identity no longer gates it). Effect sites unchanged. Cell-row review (2026-10-17): list props add focusedCell and onTargetCell, which only set the cell tag target (no read, no focus change). Workbench tag-scope review (2026-10-17): page authority is stable for the advertised workbench-candidate-scope-v2 token as for protocol-state-v4; the frozen tag summary overlays tag-store receipts on the retained page (memo only). Effect sites unchanged.",
+      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal. Independently reviewed initial selected-manifest acquisition withholds only the parent page offer; same-selected renewal keeps its own inert trace and strict capability validation is unchanged. Frozen sidebar presentation keys include owner, cohort, focus, cell selection and structure revision, excluding Live metadata and annotation-dependent or unproven selected scopes. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Tag decoupling review (2026-10-17): v4 contract enables kept receipt authority; the all-cell key follows kept authority; neighbour prefetch uses wholeTracePrefetchPath. Effect sites unchanged. Tag channel review (2026-10-17): useAnnotationReceipts takes revision, v4 contract and filters only. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): group receipts and confirmed receipts within the selection limit are reported on the tag channel. Effect sites unchanged. Edit Tree tagging review (2026-10-17): any confirmed receipt within the selection limit is forwarded on the tag channel (the store holds it; navigation identity no longer gates it). Effect sites unchanged. Cell-row review (2026-10-17): list props add focusedCell and onTargetCell, which only set the cell tag target (no read, no focus change). Workbench tag-scope review (2026-10-17): page authority is stable for the advertised workbench-candidate-scope-v2 token as for protocol-state-v4; the frozen tag summary overlays tag-store receipts on the retained page (memo only). Effect sites unchanged. F1 review (2026-10-18): trace revision and neighbor/next-stream warming follow structureRevision, not the display clock; effect census unchanged.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/epoch-browser/inspectionMetadata.test.js",
@@ -1202,7 +1209,8 @@
         "src/incomingWorkbenchRendering.test.js",
         "src/resourceCache.test.js",
         "src/treeGroupAnnotationWorkflow.test.js",
-        "src/workbenchTagScope.test.js"
+        "src/workbenchTagScope.test.js",
+        "src/traces/traceCacheIdentity.test.js"
       ]
     },
     "src/epoch-browser/ui/InspectorActions.jsx": {
@@ -3079,14 +3087,15 @@
       ]
     },
     "src/resourceCache.js": {
-      "fingerprint": "69bb68ee486742d6c2c504d123279bf0f30543a73c831e8bb40f86db71eb97ac",
+      "fingerprint": "178de6f46aaedf8d322e4ca14998f8fc1aa87f519536792b103258b54ede14df",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Tag decoupling review (2026-10-17): adds wholeTracePrefetchPath (initial window only when it is the whole stream). Effect sites unchanged.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Tag decoupling review (2026-10-17): adds wholeTracePrefetchPath (initial window only when it is the whole stream). Effect sites unchanged. F1 review (2026-10-18): annotation receipts fence only epoch-detail metadata (metadata generation); trace samples and prefetch keep the global generation; bounded decoded-stream store shares global invalidation.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
-        "src/resourceCache.test.js"
+        "src/resourceCache.test.js",
+        "src/traces/wholeTraceCache.test.js"
       ]
     },
     "src/resourceRequest.js": {
@@ -3312,18 +3321,19 @@
       ]
     },
     "src/traces/traceViewPreference.jsx": {
-      "fingerprint": "391f92a56861a8d41ec4a168ba4f2097a0e2f40901ee0d44382e07b722bd0a20",
+      "fingerprint": "5f56cd9bc7bc0eee2071815461b7826f188fa93caa5154b480500386d251c3e6",
       "sites": [],
       "lifetime": "exact-response-presentation + reconnecting-trace-authority",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Last explicit bounded epoch/stream pair persists as inert presentation. Restoration requires matching current epoch and response descriptor, including late descriptors; never match labels or issue a request for a saved UUID alone. Window/Whole/zoom changes preserve the pair; mounted local selection wins.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Last explicit bounded epoch/stream pair persists as inert presentation. Restoration requires matching current epoch and response descriptor, including late descriptors; never match labels or issue a request for a saved UUID alone. Window/Whole/zoom changes preserve the pair; mounted local selection wins. F1 review (2026-10-18): amplitude range carries units and device; unbound ranges dropped. Presentation only.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
-        "src/traces/responsePreferenceRetention.test.js"
+        "src/traces/responsePreferenceRetention.test.js",
+        "src/traces/traceViewPreference.test.js"
       ]
     },
     "src/traces/ui/TraceViewer.jsx": {
-      "fingerprint": "beacc04db228a68d419221d1cb79ae3de349a6ba6d4c86480a52655d21bddb8d",
+      "fingerprint": "d1eea2cb7e2ffe076408b24a604e579a7b71be7793290a98c743d27f22f3e1da",
       "sites": [
         {
           "owner": "TraceViewer",
@@ -3367,7 +3377,7 @@
         }
       ],
       "lifetime": "exact-presentation-and-read-lifetime",
-      "reason": "Whole geometry uses one committed measurement/request owner; raw windows and exact cursor tiles remain separate. Source/context/width and live signal fences reject stale display; first mount dispatch precedes following sibling layout and no raw prefetch occurs. Only the prepared empty-shell opt-in resets interaction to Zoom and releases captured pointers during the empty committed layout; global Sample/window preference and generic Trace null behavior remain unchanged.",
+      "reason": "Whole geometry uses one committed measurement/request owner; raw windows and exact cursor tiles remain separate. Source/context/width and live signal fences reject stale display; first mount dispatch precedes following sibling layout and no raw prefetch occurs. Only the prepared empty-shell opt-in resets interaction to Zoom and releases captured pointers during the empty committed layout; global Sample/window preference and generic Trace null behavior remain unchanged. F1 review (2026-10-18): canonical whole-stream demand uses requestWholeTrace; amplitude applies only on matching units/device; effect lifetimes unchanged.",
       "tests": [
         "src/retainedControls.test.js",
         "src/traces/responsePreferenceRetention.test.js",
@@ -3376,7 +3386,8 @@
         "src/traces/traceGeometryLifecycle.test.js",
         "src/traces/tracePaintLifecycle.test.js",
         "src/traces/preparedTraceGeometryCommit.test.js",
-        "src/traces/preparedEmptyShell.test.js"
+        "src/traces/preparedEmptyShell.test.js",
+        "src/traces/traceSurfaceIntegration.test.js"
       ]
     },
     "src/traces/ui/traceGeometry.js": {
