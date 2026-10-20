@@ -58,6 +58,15 @@ likewise queries only its supplied epochs/cells, including zero reads for an emp
 scope. Generation-fenced indexed summary behavior is unchanged. These are read
 projection changes, not new annotation authority or mutation batching rules.
 
+`summary(rows, scope_token=...)` accepts an optional caller-proven identity of
+`rows` (the overview passes the immutable publication serial). With the indexed
+reader, an equal token reuses the materialized summary scope and its incremental
+tag deltas without re-reading or re-validating every row; any other token, a
+rebuilt index or the nonindexed fallback reads `rows` as before. `tagged_targets()`
+returns the cell and epoch targets currently carrying a shared tag from the same
+generation-fenced index (None without it); the overview derives per-protocol
+shared-tag counts from it without re-scoping the summary per protocol.
+
 `CurationStore.export_link_counts(epoch_ids)` returns a fresh UUID-to-integer map
 for the caller's requested page UUIDs, including zero for unexported epochs.
 It uses the same project-scoped export-index signature polling, recipe validation

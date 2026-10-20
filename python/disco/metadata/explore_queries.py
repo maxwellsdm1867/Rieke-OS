@@ -192,7 +192,7 @@ def field_registry(service):
 
 
 def _native_rows(service, context):
-    rows = service._tree_rows(context['protocol_uuid'], context['filters'])
+    rows = service._navigation_rows(context['protocol_uuid'], context['filters'])
     return [row for row in rows if all(row.get(key) == value for key, value in context['scope'].items())]
 
 

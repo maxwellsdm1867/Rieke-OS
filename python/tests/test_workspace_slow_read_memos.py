@@ -515,6 +515,46 @@ class NavigationScopeCacheTests(MemoFixture):
         self.assertEqual((first['count'],changed['count']),(0,1))
         self.assertNotEqual(first['revision'],changed['revision'])
 
+    def test_structural_selection_reuses_page_groupings(self):
+        import cProfile
+        body={'protocol_uuid':self.protocol,'splits':'cell,date,block'}
+        root=self.pager.page(body)
+        branch=root['branches'][0]
+        profile=cProfile.Profile()
+        with profile:
+            chosen=self.pager.selection({**body,'path':branch['path'],'revision':root['revision']},branch['count'])
+        keyed=sum(entry.callcount for entry in profile.getstats() if getattr(entry.code,'co_name','')=='value_key')
+        self.assertEqual(len(chosen['epoch_uuids']),branch['count'])
+        # Only the branch's own two descendant levels are grouped, never the scope.
+        self.assertLessEqual(keyed,2*branch['count'])
+        self.assertLess(branch['count'],root['count'])
+
+    def test_frozen_epoch_page_hits_compare_no_fingerprints(self):
+        from workspace_service import FrozenDict
+        path=f'{self.case.base}/epochs?limit=5'
+        self.get(path)
+        visits=[]
+        original=FrozenDict.get
+        def get(mapping,*args):
+            if mapping is self.service._fingerprints:visits.append(1)
+            return original(mapping,*args)
+        with patch.object(FrozenDict,'get',get):
+            self.service._epoch_page_identities(self.protocol)
+        self.assertEqual(visits,[])
+
+    def test_frozen_epoch_page_cache_keeps_only_identities_and_reads_no_recipe(self):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        created=history.create(preview,self.service.sources,'catalog.json','fixture')
+        history.bind(created['revision_uuid'],self.protocol,0,'fixture',{},2)
+        self.service._epoch_page_cache=None
+        self.service.query_view(self.protocol)  # The shared view's own one-time binding read.
+        first=self.service._epoch_page_identities(self.protocol)
+        entry=next(iter(self.service._epoch_page_cache[1].values()))
+        self.assertIsNone(entry[0]);self.assertIsNone(entry[3])
+        with patch.object(self.service,'binding',side_effect=AssertionError('page read the binding recipe')):
+            self.assertEqual(self.service._epoch_page_identities(self.protocol),first)
+
     def test_unfrozen_read_model_never_caches_annotation_scopes(self):
         self.service.rows=dict(self.service.rows)
         body={'protocol_uuid':self.protocol,'splits':'cell','filters':{'tag':'chosen'}}
@@ -579,6 +619,124 @@ class OverviewMemoTests(MemoFixture):
         with patch.object(self.service,'events',racing):
             response=self.client.get('/api/overview')
         self.assertEqual(response.status_code,409)
+
+
+class IncrementalOverviewTests(MemoFixture):
+    """Frozen publications assemble the overview from separately keyed parts."""
+    def setUp(self):
+        super().setUp()
+        import uuid as uuidlib
+        from workspace_service import publish_frozen
+        other=str(uuidlib.uuid4())
+        entry=copy.deepcopy(self.service.protocols[self.protocol])
+        entry['definition'].update(protocol_uuid=other,name='Second protocol')
+        entry['result'].update(protocol_uuid=other,epochs=entry['result']['epochs'][:1])
+        self.other=other
+        self.service.protocols={**self.service.protocols,other:entry}
+        ProtocolContextFastPathTests.publish(self)
+        self.parts=self.app.extensions['overview_parts']
+
+    def reference(self):
+        """The full (non-incremental) overview for the same state."""
+        with patch.dict(self.app.extensions,{}),patch('workspace_service.publication_serial',return_value=None):
+            self.app.extensions['overview_memo'].clear()
+            return self.get('/api/overview')
+
+    def test_incremental_overview_matches_the_full_build_after_each_write(self):
+        first=self.get('/api/overview')
+        self.assertIn('base',self.parts)
+        self.assertEqual(first,self.reference())
+        self.save_curation(tags_add=['x'],review_state='approved')
+        self.assertEqual(self.get('/api/overview'),self.reference())
+        self.fixture.edit('epoch',self.ids[0],['project-tag'])
+        tagged=self.get('/api/overview')
+        self.assertEqual(tagged,self.reference())
+        self.assertTrue(tagged['annotation_summary']['tags'])
+        self.fixture.edit('cell',self.service.rows[self.ids[1]]['cell_uuid'],['cell-tag'])
+        self.assertEqual(self.get('/api/overview'),self.reference())
+
+    def test_curation_write_recomputes_only_that_protocol(self):
+        self.get('/api/overview')
+        base=self.parts['base'];other=self.parts['protocols'][self.other]
+        before=self.parts['protocols'][self.protocol]
+        self.save_curation(review_state='approved')
+        self.get('/api/overview')
+        self.assertIs(self.parts['base'],base)
+        self.assertIs(self.parts['protocols'][self.other],other)
+        self.assertIsNot(self.parts['protocols'][self.protocol],before)
+
+    def test_shared_tag_write_recomputes_only_tag_counts(self):
+        self.get('/api/overview')
+        kept={key:self.parts[key] for key in ('base','approval','exports')}
+        protocols=dict(self.parts['protocols']);tags=self.parts['tags']
+        self.fixture.edit('epoch',self.ids[0],['shared'])
+        with patch.object(self.reader,'native_context',side_effect=AssertionError('protocol summaries recomputed')):
+            payload=self.get('/api/overview')
+        for key,value in kept.items():self.assertIs(self.parts[key],value,key)
+        self.assertEqual(self.parts['protocols'],protocols)
+        self.assertIsNot(self.parts['tags'],tags)
+        self.assertEqual(payload['counts']['shared_tagged_epochs'],1)
+
+    def test_summary_scope_token_skips_rereading_rows_and_targets_match_records(self):
+        self.fixture.edit('epoch',self.ids[0],['shared'])
+        self.fixture.edit('cell',self.service.rows[self.ids[1]]['cell_uuid'],['cell-tag'])
+        reads=[]
+        rows=lambda:reads.append(1) or list(self.service.rows.values())
+        first=self.shared.summary(rows,scope_token=('test',1))
+        second=self.shared.summary(rows,scope_token=('test',1))
+        self.assertEqual((first,len(reads)),(second,1))
+        self.assertEqual(self.shared.summary(rows,scope_token=('test',2)),first)
+        self.assertEqual(len(reads),2)
+        self.assertEqual(first,self.shared.summary(list(self.service.rows.values())))
+        targets=self.shared.tagged_targets()
+        self.assertEqual(targets['epoch'],{self.ids[0]})
+        self.assertEqual(targets['cell'],{self.service.rows[self.ids[1]]['cell_uuid']})
+
+
+class ProtocolOverviewMemoTests(MemoFixture):
+    def test_unchanged_protocol_overview_reuses_its_etag_payload(self):
+        ProtocolContextFastPathTests.publish(self)
+        path=f'/api/protocols/{self.protocol}/overview'
+        first=self.client.get(path)
+        memo=self.app.extensions['protocol_overview_memo']
+        built=memo[self.protocol][1]
+        second=self.client.get(path)
+        self.assertIs(memo[self.protocol][1],built)  # Reused, not rebuilt.
+        self.assertEqual(second.get_json(),first.get_json())
+        self.assertEqual(second.headers['ETag'],first.headers['ETag'])
+        self.save_curation(review_state='approved')
+        changed=self.client.get(path)
+        self.assertNotEqual(changed.headers['ETag'],first.headers['ETag'])
+        self.assertEqual(changed.get_json()['counts']['reviewed'],first.get_json()['counts']['reviewed']+1)
+
+
+class LargeProtocolReadMemoTests(MemoFixture):
+    """Per-request protocol reads reuse aggregates of the same frozen view."""
+    def setUp(self):
+        super().setUp()
+        ProtocolContextFastPathTests.publish(self)
+
+    def test_browse_and_cell_counts_reuse_aggregates_until_republication(self):
+        first=self.service.protocol_browse(self.protocol)
+        memo=self.service.__dict__['_browse_aggregates']
+        self.assertEqual(self.service.protocol_browse(self.protocol),first)
+        self.assertIs(self.service.__dict__['_browse_aggregates'],memo)
+        self.service.cells=self.service.cells  # Republish.
+        self.service.protocol_browse(self.protocol)
+        self.assertIsNot(self.service.__dict__['_browse_aggregates'],memo)
+        page=self.service.epoch_page(self.protocol,include_cells=True)
+        counts=self.service.__dict__['_page_cell_counts']
+        self.assertEqual(self.service.epoch_page(self.protocol,include_cells=True)['cells'],page['cells'])
+        self.assertIs(self.service.__dict__['_page_cell_counts'],counts)
+
+    def test_unchanged_overview_reuses_its_encoded_response(self):
+        first=self.client.get('/api/overview')
+        with patch('disco.projects.presentation_cache.display_overview',side_effect=AssertionError('re-encoded')):
+            second=self.client.get('/api/overview')
+        self.assertEqual(second.get_data(),first.get_data())
+        self.save_curation(review_state='approved')
+        third=self.client.get('/api/overview')
+        self.assertNotEqual(third.get_data(),first.get_data())
 
 
 if __name__=='__main__':

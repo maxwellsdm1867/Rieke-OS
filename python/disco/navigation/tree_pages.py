@@ -85,12 +85,14 @@ class _NavigationValues(Mapping):
     columns = {'date': 'date', 'cell': 'cell_uuid', 'block': 'block_uuid'}
     # Charge this reservation to the scope admission budget up front, even
     # before lazy grouping fills it. Group buckets retain only borrowed rows.
-    grouping_budget = 4 * 1024 * 1024
+    # Large scopes (1M members) need their root grouping cached or every page
+    # regroups the scope; the reservation still counts toward scope admission.
+    grouping_budget = 48 * 1024 * 1024
 
     def __init__(self, rows, fields, *, scope_size=None):
         self.rows, self.fields = rows, tuple(fields)
         self.grouping_budget = min(self.grouping_budget, max(16 * 1024,
-            (len(rows) if scope_size is None else scope_size) * 64))
+            (len(rows) if scope_size is None else scope_size) * 40))
         self.group_cache, self.group_bytes, self.summary = {}, 0, None
 
     def __sizeof__(self):
@@ -104,8 +106,10 @@ class _NavigationValues(Mapping):
         # them. The per-entry allowance covers the cache slot/value tuple/cost.
         for bucket in buckets:
             bucket['summary'] = {'count': len(bucket['rows'])} if counts_only else _summary(bucket['rows'])
+        # ``current`` is borrowed: the scope's row list or a parent bucket's list,
+        # each already charged where it is owned.
         cost = (256 + sys.getsizeof(key) + sys.getsizeof(key[1])
-                + sys.getsizeof(buckets) + sys.getsizeof(current)
+                + sys.getsizeof(buckets)
                 + sum(sys.getsizeof(bucket) + sys.getsizeof(bucket['rows'])
                       + sys.getsizeof(bucket['summary'])
                       + sum(sys.getsizeof(value) for value in bucket['summary'].values())
@@ -276,8 +280,13 @@ def selection_revision(service, protocol, predicate, filters, order, rows, bindi
 def _group_buckets(current, depth, order, structural_path, values, *, counts_only):
     field = order[depth]
     cache_key = (field, id(current), counts_only)
-    if isinstance(values, _NavigationValues) and cache_key in values.group_cache:
-        return values.group_cache[cache_key][1]
+    if isinstance(values, _NavigationValues):
+        if cache_key in values.group_cache:
+            return values.group_cache[cache_key][1]
+        # Full-summary groupings carry the same buckets and rows; a counts-only
+        # reader (branch selection) reuses them instead of regrouping the scope.
+        if counts_only and (field, id(current), False) in values.group_cache:
+            return values.group_cache[(field, id(current), False)][1]
     buckets = {}
     for row in current:
         present, value = structural_path.datum(values[row['epoch_uuid']], field)
@@ -468,7 +477,7 @@ class TreePages:
             identities, _ = service._epoch_page_identities(protocol, filters)
             rows = [service.rows[identity] for identity in identities]
         else:
-            rows = service._tree_rows(protocol, filters)
+            rows = service._navigation_rows(protocol, filters)
         shared_definitions = None
         if index is not None:
             # Registered definitions remain valid for empty or excluded scopes;

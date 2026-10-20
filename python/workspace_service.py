@@ -1411,18 +1411,33 @@ class WorkspaceService:
             return None
         result = self.query_view(protocol_uuid)
         definition = self.protocols[_uuid(protocol_uuid)]['definition']
-        rows = [self.rows[member['uuid']] for member in result['epochs']]
         scope = self.source_scope()
-        excluded = set(scope['excluded_source_revisions'])
-        affected = [row for row in rows if row['source_sha256'] in excluded]
+        # The aggregates depend only on the (frozen) member view and the source
+        # scope: reuse them for the same view object and scope revision.
+        serial = publication_serial(self)
+        memo = self.__dict__.get('_browse_aggregates')
+        if (serial is not None and memo is not None and memo[0] is result
+                and memo[1] == scope['revision'] and memo[2] == serial):
+            aggregates = memo[3]
+        else:
+            rows = [self.rows[member['uuid']] for member in result['epochs']]
+            excluded = set(scope['excluded_source_revisions'])
+            affected = [row for row in rows if row['source_sha256'] in excluded]
+            aggregates = {'cell_types': sorted({row['cell_type'] for row in rows if row.get('cell_type')}),
+                          'groups': sorted({row['group_label'] for row in rows}, key=str),
+                          'excluded_epoch_count': len(affected),
+                          'excluded_sources': sorted({row['source_sha256'] for row in affected})}
+            if serial is not None:
+                self.__dict__['_browse_aggregates'] = (result, scope['revision'], serial, aggregates)
         return {'definition': copy.deepcopy(definition), 'starter_query': copy.deepcopy(definition['query']),
                 'effective_query': copy.deepcopy(result.get('effective_query', definition['query'])),
                 'binding': copy.deepcopy(result.get('dataset_binding')),
-                'selection_options': {'cell_types': sorted({row['cell_type'] for row in rows if row.get('cell_type')})},
-                'groups': sorted({row['group_label'] for row in rows}, key=str),
-                'source_eligibility': {'excluded_epoch_count': len(affected),
-                    'excluded_sources': sorted({row['source_sha256'] for row in affected}),
-                    'propagation_required': bool(affected), 'source_scope_revision': scope['revision']}}
+                'selection_options': {'cell_types': list(aggregates['cell_types'])},
+                'groups': list(aggregates['groups']),
+                'source_eligibility': {'excluded_epoch_count': aggregates['excluded_epoch_count'],
+                    'excluded_sources': list(aggregates['excluded_sources']),
+                    'propagation_required': bool(aggregates['excluded_epoch_count']),
+                    'source_scope_revision': scope['revision']}}
 
     def epoch_page(self, protocol_uuid, filters=None, offset=0, limit=100, anchor_uuid=None, *, include_curation=True, include_cells=False):
         with elapsed("workspace_service", "epoch_page"):
@@ -1447,10 +1462,19 @@ class WorkspaceService:
                     **({'_shared_annotation_generation':shared_generation} if shared_generation is not None else {}),
                     **({'anchor_index': anchor_index, 'anchor_uuid': identity} if anchor_index is not None else {})}
             if include_cells:
-                counts={}
-                for identity in identities:
-                    cell=self.rows[identity]['cell_uuid']
-                    counts[cell]=counts.get(cell,0)+1
+                # Cell counts depend only on the identity tuple, which the
+                # serial-keyed page cache returns as the same object.
+                memo = self.__dict__.get('_page_cell_counts')
+                serial = publication_serial(self)
+                if serial is not None and memo is not None and memo[0] is identities and memo[1] == serial:
+                    counts = memo[2]
+                else:
+                    counts={}
+                    for identity in identities:
+                        cell=self.rows[identity]['cell_uuid']
+                        counts[cell]=counts.get(cell,0)+1
+                    if publication_serial(self) is not None:
+                        self.__dict__['_page_cell_counts'] = (identities, publication_serial(self), counts)
                 result['cells']=sorted(({**self.cells[cell],'epochs':count} for cell,count in counts.items()),
                     key=lambda row:(row['cell_type'] or '',row['date'],row['label']))
             return result
@@ -1474,7 +1498,11 @@ class WorkspaceService:
         if header is None and protocol['definition'].get('initial_revision_uuid'):
             raise ValueError('Pinned protocol creation was interrupted. Retry creating it from the same saved selection and name.')
         members = (binding['recipe']['epochs'] if binding else protocol['result']['epochs'])
-        signature = None if header_provider and header is not None else tuple(member['uuid'] for member in members)
+        # A frozen publication's serial proves unbound membership and every
+        # fingerprint, so hits need no per-member comparison.
+        serial = publication_serial(self)
+        signature = (None if (header_provider and header is not None) or serial is not None
+                     else tuple(member['uuid'] for member in members))
         key = (protocol_uuid, header and header['version'], header and header.get('revision_uuid'), tuple(sorted(ordinary.items())))
         from disco.metadata.disk_index import DiskMetadataIndex
         index = getattr(self, 'disk_index', None)
@@ -1483,7 +1511,8 @@ class WorkspaceService:
         overhead = 16 * 1024
         if isinstance(index, DiskMetadataIndex):
             index._check()
-            generation = (id(index),index.generation,id(self.rows),id(self.protocols),id(self._fingerprints))
+            generation = (('publication', serial, index.generation) if serial is not None else
+                          (id(index),index.generation,id(self.rows),id(self.protocols),id(self._fingerprints)))
             previous = getattr(cache_owner, '_epoch_page_cache', None)
             if overhead < EPOCH_PAGE_CACHE_BYTES:
                 if previous is None or previous[0] != generation:
@@ -1492,15 +1521,24 @@ class WorkspaceService:
             else:
                 cache_owner._epoch_page_cache = None
         entry = cache.get(key) if cache is not None else None
-        if (entry is not None and (signature is None or signature == entry[0])
-                and all(self._fingerprints.get(identity)==fingerprint for identity,fingerprint in entry[3].items())):
+        if (entry is not None and (serial is not None or (
+                (signature is None or signature == entry[0])
+                and all(self._fingerprints.get(identity)==fingerprint for identity,fingerprint in entry[3].items())))):
             cache.pop(key)
             cache[key] = entry
             identities = entry[1]
         else:
             if cache is not None:
                 cache.pop(key,None)
-            if header_provider and header is not None:
+            if serial is not None and (header is None or header_provider):
+                # Frozen publication: the shared read-only query view already
+                # holds the bound (or original) membership; no recipe copy.
+                view = self.query_view(protocol_uuid)
+                members = view['epochs']
+                bound = view.get('dataset_binding')
+                key = (protocol_uuid, bound and bound['version'], bound and bound.get('revision_uuid'), tuple(sorted(ordinary.items())))
+                binding = None
+            elif header_provider and header is not None:
                 # Re-read the binding together with its recipe on a cold scope.
                 # A concurrent bind may have changed since the header lookup.
                 binding = self.binding(protocol_uuid)
@@ -1513,7 +1551,16 @@ class WorkspaceService:
                 raise ValueError('Bound dataset contains unavailable epochs; explicit reconciliation is required')
             rows = self._filter_rows([self.rows[identity] for identity in signature], ordinary)
             identities = tuple(row['epoch_uuid'] for row in rows)
-            if cache is not None:
+            if cache is not None and serial is not None:
+                # The serial proves membership and fingerprints: retain only the
+                # ordered identity tuple (its strings are the published keys).
+                size = sys.getsizeof(identities)
+                if size + overhead <= EPOCH_PAGE_CACHE_BYTES:
+                    cache.pop(key,None)
+                    cache[key] = (None,identities,size,None)
+                    while len(cache) > 8 or overhead + sum(item[2] for item in cache.values()) > EPOCH_PAGE_CACHE_BYTES:
+                        cache.pop(next(iter(cache)))
+            elif cache is not None:
                 # Only UUID tuples are retained. Conservatively count their
                 # strings twice even if borrowed/shared, keeping admission cheap.
                 size = sum(sys.getsizeof(values) + sum(sys.getsizeof(value) for value in values)
@@ -1576,7 +1623,7 @@ class WorkspaceService:
         else:
             known = (self._tree_fields(protocol_uuid)[0]['fields'] if filters else
                      self._registered_tree_fields()[0]['fields'] if binding or protocol_uuid is None else None)
-            rows = self._tree_rows(protocol_uuid, filters)
+            rows = self._navigation_rows(protocol_uuid, filters)
             index = getattr(self, 'disk_index', None)
             if index:
                 ids = [row['epoch_uuid'] for row in rows]
@@ -1618,9 +1665,26 @@ class WorkspaceService:
         return {'fields':[{key:copy.deepcopy(field[key]) for key in names if key in field}
             for field in catalog['fields']]}
 
-    def _tree_rows(self, protocol_uuid, filters=None):
+    def _navigation_rows(self, protocol_uuid, filters=None):
+        """Scope rows for navigation/explore readers, which never read curation.
+
+        A replaced ``_tree_rows`` policy stays authoritative and is called with
+        its original signature.
+        """
+        if getattr(self._tree_rows, '__func__', None) is WorkspaceService._tree_rows:
+            return self._tree_rows(protocol_uuid, filters, curation=False)
+        return self._tree_rows(protocol_uuid, filters)
+
+    def _tree_rows(self, protocol_uuid, filters=None, *, curation=True):
         if protocol_uuid is not None:
-            return self.filtered_rows(protocol_uuid, filters)
+            if curation or getattr(self.filtered_rows, '__func__', None) is not WorkspaceService.filtered_rows:
+                return self.filtered_rows(protocol_uuid, filters)
+            # Navigation/explore scopes never read curation state: borrow the
+            # published rows of the cached member view (no recipe copy, no
+            # whole-protocol curation read or per-member decoration).
+            filters = validate_filters(filters)
+            result = self.query_view(protocol_uuid)
+            return self._filter_rows([self.rows[member['uuid']] for member in result['epochs']], filters, protocol_uuid)
         self._ready()
         filters = validate_filters(filters)
         active = set(self.source_scope()['active_source_revisions'])

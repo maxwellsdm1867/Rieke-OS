@@ -307,6 +307,11 @@ class SharedAnnotations:
         if refresh and not previous.refresh():return None
         return previous
 
+    def tagged_targets(self):
+        """Targets carrying a shared tag from the generation-fenced index, or None."""
+        index=self._membership_index(())
+        return index.tagged_targets() if index is not None else None
+
     def generation_token(self):
         tracker=getattr(self,'state_generation',None)
         return tracker.token() if type(self) is SharedAnnotations and tracker is not None else None
@@ -375,10 +380,21 @@ class SharedAnnotations:
                 'revisions':{'cell':dict(cell['revisions']),'epoch':dict(epoch['revisions'])}}
         return result
 
-    def summary(self,rows):
-        rows=list(rows)
+    def summary(self,rows,*,scope_token=None):
+        """Overview tag counts. ``scope_token`` optionally proves ``rows`` unchanged
+        (for example an immutable publication serial): with the generation-fenced
+        index, an already validated token skips re-reading every row."""
+        if (scope_token is not None and type(self) is SharedAnnotations
+                and getattr(self,'_summary_scope_token',None)==scope_token):
+            previous=self._membership_index(())
+            if previous is not None and previous.scope_tokens.get('summary')==scope_token:
+                return previous.summary(rows,scope_token=scope_token)
+        rows=list(rows() if callable(rows) else rows)
         previous=self._membership_index(rows)
-        if previous is not None:return previous.summary(rows)
+        if previous is not None:
+            result=previous.summary(rows,scope_token=scope_token)
+            self._summary_scope_token=scope_token
+            return result
         ids={row['epoch_uuid'] for row in rows};cells={row['cell_uuid'] for row in rows}
         cell_epochs={key:set() for key in cells};epoch_cell={row['epoch_uuid']:row['cell_uuid'] for row in rows}
         for row in rows:cell_epochs[row['cell_uuid']].add(row['epoch_uuid'])

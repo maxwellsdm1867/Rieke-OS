@@ -168,7 +168,7 @@ class StructuralNavigationTests(unittest.TestCase):
         with self.assertRaises(StaleTreePage):
             self.pager.page({**body, 'revision': root['revision']})
 
-    def test_metadata_live_filters_and_custom_binding_keep_decorated_reader(self):
+    def test_metadata_live_filters_skip_curation_and_custom_binding_stays_authoritative(self):
         import cProfile
         self.index()
         body = {'protocol_uuid': self.service.protocol_id, 'splits': 'parameters/example'}
@@ -178,7 +178,9 @@ class StructuralNavigationTests(unittest.TestCase):
             with profile:
                 page = self.pager.page({**body, 'filters': filters})
             self.assertEqual(page['count'], count)
-            self.assertGreater(sum(entry.callcount for entry in profile.getstats()
+            # Navigation scopes never read curation: live filters evaluate on the
+            # published rows without whole-protocol curation decoration.
+            self.assertEqual(sum(entry.callcount for entry in profile.getstats()
                 if getattr(entry.code, 'co_name', '') == '_decorate'), 0)
         binding = self.binding(self.service.ids[0])
         self.service.set_binding_provider(lambda protocol: binding, header_provider=lambda protocol: None)
