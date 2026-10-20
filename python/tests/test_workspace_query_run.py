@@ -228,6 +228,91 @@ class QueryRunTests(unittest.TestCase):
         self.assertEqual(third, self.page({**base, 'offset': 10}, exact=True))
         self.assertEqual(first, self.page(base, exact=True))
 
+    def tag_predicates(self):
+        store, protocol = self.fixture.store, self.service.protocol_id
+        ids = [key for key in self.service.ids if key in {m['uuid'] for m in self.service.query_result(protocol)['epochs']}][:1]
+        current = store.read(protocol, ids, {key: self.service._fingerprints[key] for key in ids})
+        store.update(protocol, ids, {'tags_add': ['qc-flag']}, {key: current[key]['revision'] for key in ids},
+                     {key: self.service._fingerprints[key] for key in ids}, 'fixture')
+        field = f'curation/{protocol}/tags'
+        leaf = {'field': field, 'operator': 'contains', 'value': 'qc-flag'}
+        return [leaf, {'not': leaf}, {'any': [leaf, {'field': 'parameters/example', 'operator': 'eq', 'value': 0}]}]
+
+    def test_tag_predicate_runs_and_pages_come_from_tag_states(self):
+        from disco.navigation.tree_pages import TreePages
+        for predicate in self.tag_predicates():
+            with self.subTest(predicate=predicate):
+                with patch.object(WorkspaceService, 'explore_preview', side_effect=AssertionError('listed membership')):
+                    counted = self.post('/api/explore/run', {'predicate': predicate, 'splits': 'cell', 'catalog_summary': False})
+                with patch.object(WorkspaceService, '_tag_result', return_value=None), \
+                        patch.object(WorkspaceService, '_mixed_context', return_value=None):
+                    exact = self.post('/api/explore/run', {'predicate': predicate, 'splits': 'cell', 'catalog_summary': False})
+                for result in (counted, exact):
+                    result['last_run'].pop('ran_at')
+                mixed = 'any' in predicate
+                if mixed:
+                    # Tag plus metadata: answered at once; exact counts follow from the job.
+                    job = counted.pop('counts')
+                    self.assertEqual((job['status'], counted['matched_count']), ('pending', None))
+                    self.join()
+                    ready = self.client.get('/api/explore/summaries/' + job['request_id']).get_json()
+                    self.assertEqual(ready['result'], {'matched_count': exact['matched_count'],
+                                                       'cell_count': exact['last_run']['cell_count']})
+                    for key in ('matched_count', 'tree', 'catalog'):
+                        counted.pop(key); exact.pop(key)
+                    for key in ('epoch_count', 'cell_count'):
+                        counted['last_run'].pop(key); exact['last_run'].pop(key)
+                self.assertEqual(counted, exact)
+                base = {'predicate': predicate, 'splits': 'cell', 'revision': counted['tree_revision'], 'limit': 7}
+                bodies = [{**base, 'include_cells': True}, {**base, 'offset': 7}, {**base, 'offset': 14},
+                          {**base, 'cells_limit': 1, 'include_cells': True},
+                          {**base, 'cell_uuid': str(uuid.UUID(int=902))}]
+                for body in bodies:
+                    with patch.object(TreePages, '_scope', side_effect=AssertionError('listed matches')):
+                        fast = self.page(body)
+                    expected = self.page(body, exact=True)
+                    if mixed:
+                        self.assertEqual(fast.pop('counts')['status'], 'ready')
+                    self.assertEqual(fast, expected)
+                if mixed:
+                    anchor = self.page({**base, 'offset': 7}, exact=True)['epochs'][0]['epoch_uuid']
+                    fast = self.page({**base, 'anchor_uuid': anchor})
+                    fast.pop('counts')
+                    self.assertEqual(fast, self.page({**base, 'anchor_uuid': anchor}, exact=True))
+
+    def test_tag_results_are_reused_only_while_the_tag_witness_holds(self):
+        from disco.navigation.tag_predicates import TagPredicates
+        predicate = self.tag_predicates()[1]
+        witness = ['w1']
+        with patch.object(TagPredicates, '_witness', lambda instance, fields: (('common',), (('field', witness[0]),))):
+            revision = self.post('/api/explore/run', {'predicate': predicate, 'splits': 'cell', 'catalog_summary': False})['tree_revision']
+            body = {'predicate': predicate, 'splits': 'cell', 'revision': revision, 'limit': 7, 'include_cells': True}
+            first = self.page(body)
+            with patch.object(WorkspaceService, 'match_predicate', side_effect=AssertionError('rematched while witness held')):
+                second = self.page({**body, 'offset': 7})
+            self.assertEqual(second, self.page({**body, 'offset': 7}, exact=True))
+            witness[0] = 'w2'
+            calls = []
+            original = WorkspaceService.match_predicate
+            with patch.object(WorkspaceService, 'match_predicate', autospec=True,
+                              side_effect=lambda *args, **kwargs: calls.append(1) or original(*args, **kwargs)):
+                self.assertEqual(self.page(body), first)
+            self.assertEqual(len(calls), 1)
+
+    def test_mixed_tag_pages_are_answered_before_counts(self):
+        predicate = self.tag_predicates()[2]
+        self.jobs.autostart = False
+        run = self.post('/api/explore/run', {'predicate': predicate, 'splits': 'cell', 'catalog_summary': False})
+        body = {'predicate': predicate, 'splits': 'cell', 'revision': run['tree_revision'], 'limit': 7, 'include_cells': True}
+        pending = self.page(body)
+        exact = self.page(body, exact=True)
+        self.assertEqual((pending['total'], pending['cells_pending'], pending['counts']['status']), (None, True, 'pending'))
+        self.assertEqual((pending['epochs'], pending['has_more']), (exact['epochs'], exact['has_more']))
+        self.jobs.drive_worker()
+        ready = self.page(body)
+        ready.pop('counts')
+        self.assertEqual(ready, exact)
+
     def test_stale_revision_is_refused_before_reading(self):
         response = self.client.post('/api/explore/epochs', json={'predicate': {'all': []}, 'splits': 'cell',
                                     'revision': 'f' * 64}, headers=self.fixture.headers)

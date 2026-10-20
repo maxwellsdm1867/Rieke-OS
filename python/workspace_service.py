@@ -1950,6 +1950,275 @@ class WorkspaceService:
                 'source_scope': scope, 'source_revisions': scope['active_source_revisions'],
                 'metadata_fingerprint_version': 2}
 
+    def _tag_result(self, predicate, splits):
+        """Counted result of a predicate with annotation leaves, or None.
+
+        The match comes from the generation's tag states (TagPredicates over the
+        cached eligible universe); its tree revision binds the annotation
+        evidence revision and the frozen publication. Per revision the matches
+        are kept once in inspection chronology with their cell list, so pages
+        are slices and counts are sizes. Returns a dict with the preview fields,
+        `ids` (chronology order) and `cells`.
+        """
+        from disco.navigation.tag_predicates import referenced_fields
+        from disco.navigation.tree_pages import predicate_publication, selection_revision
+        if (not referenced_fields(predicate) or predicate_publication(self) is None
+                or getattr(self._filter_rows, '__func__', None) is not WorkspaceService._filter_rows):
+            return None
+        self._ready()
+        serial = publication_serial(self)
+        scope = self.source_scope()
+        # A repeated read of the same query is answered from the last result
+        # while every tag scope it reads, the publication and the source scope
+        # are unchanged (the tag-state witness; None always recomputes).
+        from disco.navigation.tag_predicates import TagPredicates
+        from disco.workbench.recipes import checksum
+        witness = TagPredicates(self)._witness(referenced_fields(predicate))
+        fast_key = (checksum(predicate), splits, serial, scope['revision'], witness) if witness is not None else None
+        fast = getattr(self, '_tag_result_fast', None)
+        if fast is None:
+            fast = self._tag_result_fast = {}
+        if fast_key is not None and fast_key in fast:
+            fast[fast_key] = fast.pop(fast_key)
+            return fast[fast_key]
+        validated, identities, annotation_scope = self.match_predicate(predicate)
+        registered = self.disk_index.catalog()
+        fields = [{key: field[key] for key in ('id', 'label', 'category', 'path', 'components') if key in field}
+                  for field in registered['fields']]
+        definitions = {field['id']: field for field in fields}
+        order = parse_splits(splits, definitions)
+        from disco.navigation.tree import joint_definition
+        fields.extend(joint_definition(field, definitions) for field in order if field not in definitions)
+        revision = selection_revision(self, None, validated, {}, order, None, annotation_scope=annotation_scope)
+        memo = getattr(self, '_tag_result_memo', None)
+        if memo is None:
+            memo = self._tag_result_memo = {}
+        entry = memo.pop(revision, None)
+        if entry is None:
+            rows = self.rows
+            ids = sorted(identities, key=lambda key: (rows[key]['date'], rows[key]['start_time'][11:], key))
+            cells = {}
+            for key in ids:
+                cell = rows[key]['cell_uuid']
+                found = cells.get(cell)
+                cells[cell] = (found[0] + 1, found[1]) if found else (1, key)
+            entry = {'ids': ids, 'cells': [(cell, amount, first) for cell, (amount, first) in cells.items()], 'positions': None}
+        memo[revision] = entry
+        while len(memo) > 8:
+            memo.pop(next(iter(memo)))
+        if publication_serial(self) != serial:
+            return None
+        matched = len(entry['ids'])
+        result = {'preview': {'predicate': validated, 'splits': splits, 'tree': {'count': matched, 'split_order': order},
+                            'catalog': {'fields': fields, 'total': matched, 'summary_available': False}, 'catalog_summary': False,
+                            'tree_revision': revision, 'total_source': len(self._eligible(scope)[1]),
+                            'total_catalog': len(self.rows), 'matched_count': matched, 'source_scope': scope,
+                            'source_revisions': scope['active_source_revisions'], 'metadata_fingerprint_version': 2,
+                            **({'annotation_scope': annotation_scope} if annotation_scope else {})},
+                'entry': entry, 'revision': revision}
+        if fast_key is not None and TagPredicates(self)._witness(referenced_fields(predicate)) == witness:
+            fast[fast_key] = result
+            while len(fast) > 8:
+                fast.pop(next(iter(fast)))
+        return result
+
+    @staticmethod
+    def _mixed_predicate(predicate):
+        """True when a predicate has both annotation leaves and recorded-metadata leaves."""
+        tags = metadata = False
+        pending = [predicate]
+        while pending:
+            node = pending.pop()
+            if 'field' in node:
+                if node['field'].startswith(('annotations/', 'curation/')):
+                    tags = True
+                else:
+                    metadata = True
+            pending.extend(node.get('all', []) + node.get('any', []) + ([node['not']] if 'not' in node else []))
+        return tags and metadata
+
+    def _chronology_ids(self, scope):
+        """Eligible IDs in inspection chronology, kept per publication and source scope."""
+        key = (publication_serial(self), scope['revision'])
+        cached = getattr(self, '_chronology_cache', None)
+        if cached is not None and cached[0] == key and key[0] is not None:
+            return cached[1]
+        rows = self.rows
+        ids = tuple(sorted(self._eligible(scope)[1], key=lambda item: (rows[item]['date'], rows[item]['start_time'][11:], item)))
+        self._chronology_cache = (key, ids)
+        return ids
+
+    def _mixed_context(self, predicate, splits):
+        """(validated, revision, scope, order) for a tag-plus-metadata predicate, without matching."""
+        from disco.navigation.tag_predicates import TagPredicates
+        from disco.navigation.tree_pages import predicate_publication, selection_revision
+        if (not self._mixed_predicate(predicate) or predicate_publication(self) is None
+                or getattr(self._filter_rows, '__func__', None) is not WorkspaceService._filter_rows
+                or getattr(self, 'typed_index', None) is None):
+            return None
+        self._ready()
+        scope = self.source_scope()
+        # Matching no epochs validates the whole AST and yields the generation's
+        # annotation evidence, exactly as a full match would.
+        validated, _, annotation_scope = TagPredicates(self).match(predicate, [])
+        definitions = {field['id']: field for field in self.disk_index.catalog()['fields']}
+        order = parse_splits(splits, definitions)
+        revision = selection_revision(self, None, validated, {}, order, None, annotation_scope=annotation_scope)
+        return validated, revision, scope, order, annotation_scope
+
+    def _mixed_counts(self, predicate, validated, revision, scope):
+        """Exact total and cell list of a tag-plus-metadata result from a counts job, or pending."""
+        from disco.workbench.recipes import checksum
+        jobs = getattr(self, '_summary_jobs', None)
+        memo = getattr(self, '_result_counts_memo', None)
+        if memo is None:
+            memo = self._result_counts_memo = {}
+        key = (revision, checksum(validated))
+        entry = memo.get(key)
+        status, result = jobs.job_result(entry['request_id']) if entry else ('missing', None)
+        if status == 'ready' and 'cells' in entry['holder']:
+            return {'total': result['matched_count'], 'cells': entry['holder']['cells'],
+                    'job': {'status': 'ready', 'request_id': entry['request_id']}}
+        if status != 'pending':
+            holder = {}
+
+            def compute(cancelled, predicate=predicate, holder=holder):
+                # Exact membership through the canonical matcher, under the
+                # request lock it shares with every other service read.
+                with jobs.db_lock:
+                    _, identities, _ = self.match_predicate(predicate)
+                    rows = self.rows
+                    ordered = sorted(identities, key=lambda item: (rows[item]['date'], rows[item]['start_time'][11:], item))
+                    cells = {}
+                    for item in ordered:
+                        cell = rows[item]['cell_uuid']
+                        found = cells.get(cell)
+                        cells[cell] = (found[0] + 1, found[1]) if found else (1, item)
+                holder['cells'] = [(cell, amount, first) for cell, (amount, first) in cells.items()]
+                return {'matched_count': len(ordered), 'cell_count': len(cells)}
+            context = {'predicate': validated, 'scope': {}, 'protocol_uuid': None, 'filters': {}}
+            entry = memo[key] = {'request_id': jobs.submit_counts(context, compute), 'holder': holder}
+            while len(memo) > 32:
+                memo.pop(next(iter(memo)))
+        return {'total': None, 'cells': None, 'job': {'status': 'pending', 'request_id': entry['request_id']}}
+
+    def _mixed_epoch_page(self, predicate, splits, expected_revision, offset, limit, anchor_uuid, cell_uuid, include_cells):
+        """First and later pages of a tag-plus-metadata predicate without matching every epoch.
+
+        Walks the eligible inspection chronology in bounded chunks, matching each
+        chunk with the canonical matcher (tag leaves from the tag states, metadata
+        leaves from the typed index over the chunk), until the page is full.
+        Each page boundary's chronology position is kept, so later pages resume
+        there. Totals and the cell list come from a counts job (pending first).
+        """
+        from disco.navigation.tag_predicates import TagPredicates
+        from disco.workbench.recipes import checksum
+        context = self._mixed_context(predicate, splits)
+        if context is None or getattr(self, '_summary_jobs', None) is None:
+            return None
+        validated, revision, scope, order, _ = context
+        if revision != expected_revision:
+            return {'stale': True, 'revision': revision}
+        serial = publication_serial(self)
+        counts = self._mixed_counts(predicate, validated, revision, scope)
+        cells = counts['cells']
+        ids = self._chronology_ids(scope)
+        if cell_uuid is not None:
+            ids = tuple(item for item in ids if self.rows[item]['cell_uuid'] == cell_uuid) if cells is None else ids
+        memo = getattr(self, '_mixed_page_memo', None)
+        if memo is None:
+            memo = self._mixed_page_memo = {}
+        key = (revision, checksum(validated), cell_uuid)
+        positions = memo.pop(key, None) or {0: 0}
+        memo[key] = positions
+        while len(memo) > 32:
+            memo.pop(next(iter(memo)))
+        matcher = TagPredicates(self)
+        found = []
+
+        def matches(start, wanted, stop=None):
+            """Matches from chronology position `start`: (matched ids, next position)."""
+            chunk = 256
+            position = start
+            out = []
+            while position < len(ids) and len(out) < wanted:
+                window = list(ids[position:position + chunk])
+                matched = set(matcher.match(predicate, window)[1])
+                for index, item in enumerate(window):
+                    if item in matched and (cell_uuid is None or self.rows[item]['cell_uuid'] == cell_uuid):
+                        out.append((item, position + index + 1))
+                        if len(out) >= wanted or (stop is not None and item == stop):
+                            break
+                if stop is not None and out and out[-1][0] == stop:
+                    break
+                position += chunk
+                chunk = min(chunk * 2, 8192)
+            return out
+        anchor_index = None
+        if anchor_uuid is not None:
+            walked = matches(0, len(ids), stop=anchor_uuid)
+            if not walked or walked[-1][0] != anchor_uuid:
+                raise ValueError('Epoch is outside this predicate')
+            anchor_index = len(walked) - 1
+            offset = anchor_index // limit * limit
+        start = positions.get(offset)
+        skip = 0
+        if start is None:
+            start, skip = 0, offset
+        window = matches(start, skip + limit + 1)[skip:]
+        more = len(window) > limit
+        window = window[:limit]
+        if window:
+            positions[offset + len(window)] = window[-1][1]
+        if publication_serial(self) != serial:
+            return None
+        total = counts['total']
+        if cell_uuid is not None:
+            total = None if cells is None else next((amount for cell, amount, _ in cells if cell == cell_uuid), 0)
+        listed = None
+        if include_cells and cells is not None:
+            listed = []
+            for cell, amount, first in cells:
+                row = self.rows[first]
+                listed.append({'cell_uuid': cell, 'label': row['cell_label'], 'date': row['date'],
+                               'cell_type': row.get('cell_type'), 'epochs': amount})
+        return {'rows': [self.rows[item] for item, _ in window], 'total': total, 'has_more': more, 'offset': offset,
+                'anchor_index': anchor_index, 'cells': listed, 'cells_pending': include_cells and cells is None,
+                'counts': counts['job'], 'revision': revision}
+
+    def _tag_epoch_page(self, predicate, splits, expected_revision, offset, limit, anchor_uuid, cell_uuid, include_cells):
+        if self._mixed_predicate(predicate):
+            return self._mixed_epoch_page(predicate, splits, expected_revision, offset, limit, anchor_uuid, cell_uuid, include_cells)
+        result = self._tag_result(predicate, splits)
+        if result is None:
+            return None
+        if result['revision'] != expected_revision:
+            return {'stale': True, 'revision': result['revision']}
+        entry = result['entry']
+        ids = entry['ids']
+        if cell_uuid is not None:
+            ids = entry.setdefault('by_cell', {}).get(cell_uuid)
+            if ids is None:
+                ids = entry['by_cell'][cell_uuid] = [key for key in entry['ids'] if self.rows[key]['cell_uuid'] == cell_uuid]
+        anchor_index = None
+        if anchor_uuid is not None:
+            positions = {key: index for index, key in enumerate(ids)}
+            anchor_index = positions.get(anchor_uuid)
+            if anchor_index is None:
+                raise ValueError('Epoch is outside this predicate')
+            offset = anchor_index // limit * limit
+        listed = None
+        if include_cells:
+            listed = []
+            for cell, amount, first in entry['cells']:
+                row = self.rows[first]
+                listed.append({'cell_uuid': cell, 'label': row['cell_label'], 'date': row['date'],
+                               'cell_type': row.get('cell_type'), 'epochs': amount})
+        window = ids[offset:offset + limit]
+        return {'rows': [self.rows[key] for key in window], 'total': len(ids), 'has_more': offset + limit < len(ids),
+                'offset': offset, 'anchor_index': anchor_index, 'cells': listed, 'cells_pending': False,
+                'counts': None, 'revision': result['revision']}
+
     def _typed_query_context(self, predicate, splits):
         """(validated, typed scope, order, revision) for a counted typed read, or None."""
         from disco.navigation.tag_predicates import referenced_fields
@@ -2027,7 +2296,7 @@ class WorkspaceService:
         self._ready()
         context = self._typed_query_context(predicate, splits)
         if context is None:
-            return None
+            return self._tag_epoch_page(predicate, splits, expected_revision, offset, limit, anchor_uuid, cell_uuid, include_cells)
         scope, sources, order = context
         serial = publication_serial(self)
         with typed_reader(self) as reader:
@@ -2086,6 +2355,31 @@ class WorkspaceService:
         at once. Other predicates return matched_count/cell_count None with a
         pending counts job (`counts`); the job's result carries both.
         """
+        mixed = self._mixed_context(predicate, splits) if self._mixed_predicate(predicate) else None
+        if mixed is not None and getattr(self, '_summary_jobs', None) is not None:
+            # Tag plus metadata: answer at once; exact counts follow from a job.
+            validated, revision, scope, order, annotation_scope = mixed
+            counts = self._mixed_counts(predicate, validated, revision, scope)
+            registered = self.disk_index.catalog()
+            fields = [{key: field[key] for key in ('id', 'label', 'category', 'path', 'components') if key in field}
+                      for field in registered['fields']]
+            definitions = {field['id']: field for field in fields}
+            from disco.navigation.tree import joint_definition
+            fields.extend(joint_definition(field, definitions) for field in order if field not in definitions)
+            total = counts['total']
+            preview = {'predicate': validated, 'splits': splits, 'tree': {'count': total, 'split_order': order},
+                       'catalog': {'fields': fields, 'total': total, 'summary_available': False}, 'catalog_summary': False,
+                       'tree_revision': revision, 'total_source': len(self._eligible(scope)[1]),
+                       'total_catalog': len(self.rows), 'matched_count': total, 'source_scope': scope,
+                       'source_revisions': scope['active_source_revisions'], 'metadata_fingerprint_version': 2,
+                       **({'annotation_scope': annotation_scope} if annotation_scope else {}),
+                       'cell_count': None if counts['cells'] is None else len(counts['cells'])}
+            if counts['job'] is not None:
+                preview['counts'] = counts['job']
+            return preview
+        tagged = self._tag_result(predicate, splits)
+        if tagged is not None:
+            return {**tagged['preview'], 'cell_count': len(tagged['entry']['cells'])}
         preview = self._counted_preview(predicate, splits, defer_counts=True)
         if preview is None:
             return None
