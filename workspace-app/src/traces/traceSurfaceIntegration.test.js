@@ -188,3 +188,15 @@ for(const surface of ['main','workbench','search'])test(`${surface} shared trace
   assert.equal(detailReads().length,reads,'turning metadata off keeps traces independent');
  }finally{await h.close();}
 });
+
+test('search results keep trace samples across a receipt-less tag change (source-identity keys)',async()=>{
+ const h=await harness();try{
+  await h.render({surface:'search',shared:false});h.assertWhole();
+  const before=h.calls.length,detailReads=()=>h.calls.slice(before).filter(call=>/^\/epochs\/[^/]+$/.test(call.path)).length;
+  await act(async()=>{h.viewer.treePane.treeProps.onAnnotationsChanged({},undefined);});
+  await act(async()=>{await new Promise(resolve=>setTimeout(resolve,50));});
+  assert.deepEqual(h.calls.slice(before).filter(call=>call.path.endsWith('/trace')).map(call=>call.path),[],'tag change sends zero trace GETs');
+  assert.ok(detailReads()<=1,'only the epoch detail (which carries tags) may re-read');
+  h.assertWhole();
+ }finally{await h.close();}
+});
