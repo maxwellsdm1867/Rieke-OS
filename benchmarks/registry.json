@@ -405,9 +405,9 @@
       "ci_protocol_epochs": 20000
     },
     "route-million": {
-      "version": "1.8.0",
+      "version": "1.9.0",
       "runner": "tools/benchmark_routes.py",
-      "fixture_version": "route-owned-v5",
+      "fixture_version": "route-owned-v6",
       "samples": 3,
       "max_worker_seconds": 3600,
       "max_rss_bytes": 6442450944,
@@ -495,7 +495,10 @@
           "explore.result_summary.",
           "explore.summaries_poll"
         ],
-        "vm_step_floor": 20000
+        "vm_step_floor": 20000,
+        "flat_cases": [
+          "search.uuid_prefix"
+        ]
       },
       "comparison": {
         "relative": 0.25,

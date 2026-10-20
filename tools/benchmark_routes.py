@@ -360,6 +360,8 @@ def expected_class(case, cfg):
     Query results (run, first and later pages, cursor pages) must be flat; the
     async result summary job is linear by design and informational.
     """
+    if case in cfg['scaling'].get('flat_cases', []):
+        return 'flat'
     for prefix in cfg['scaling'].get('flat_prefixes', []):
         if case.startswith(prefix):
             return 'flat'

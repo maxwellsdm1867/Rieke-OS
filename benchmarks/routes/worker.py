@@ -672,7 +672,15 @@ def main():
 
     # ---- Search and predicates --------------------------------------------
     measure('search.text', same(None), lambda s: call('get', '/api/search?q=cell'))
-    measure('search.uuid_prefix', same(None), lambda s: call('get', f'/api/search?q={focus[:13]}'))
+    # A selective prefix (the focused epoch's full UUID: one row) is the lookup a
+    # user types; the 13-character prefix matches every fixture identity and is
+    # kept only as an explicitly named match-all case (linear by construction).
+    def one_hit(responses, state):
+        found = [item for item in responses[0].get_json().get('results', []) if item.get('kind') == 'epoch']
+        if not found or found[0].get('epoch_uuid', found[0].get('uuid')) != focus:
+            raise AssertionError('selective UUID prefix did not return the focused epoch first')
+    measure('search.uuid_prefix', same(None), lambda s: call('get', f'/api/search?q={focus}'), oracle=one_hit)
+    measure('search.uuid_prefix_match_all', same(None), lambda s: call('get', f'/api/search?q={focus[:13]}'))
     measure('explore.predicate_fields', same(None), lambda s: call('get', '/api/explore/predicate-fields'))
     predicates = {
         'eq_cell_type': {'field': 'cell type', 'operator': 'eq', 'value': service.rows[focus]['cell_type']},

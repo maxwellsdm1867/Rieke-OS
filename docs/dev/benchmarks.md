@@ -530,7 +530,8 @@ scales with the target stays flat across the first two and grows only with the
 protocol; work that grows from 100k to 1M with an unchanged target is project
 scaling. Cases cover epoch detail inside the protocol, protocol pages, overview,
 tree root/expand/next page/column batch/selection and a shared-tag filtered tree,
-text and UUID-prefix search, predicate fields, explore page and preview for
+text search, a selective UUID-prefix lookup (one row) and an explicitly named
+match-all prefix (linear by construction), predicate fields, explore page and preview for
 equality, `ne`, `exists`/`missing` on a built-in and on a partly missing recorded
 field, ranges, protocol tags, shared and effective tags, tag times and AND/OR,
 explore run, summary jobs with polling, curation toggle (with and without its
