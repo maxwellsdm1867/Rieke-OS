@@ -470,19 +470,6 @@ class CurationTests(unittest.TestCase):
         self.assertEqual(sum('RELEASE_LOCK' in sql for sql in self.connection.queries), 3)
 
 
-def _insert(self, rows):
-    """Multi-row insert, as DataJoint's ``insert``; all rows or none."""
-    rows = list(rows)
-    keys = [tuple(row[k] for k in self.keys) for row in rows]
-    existing = {tuple(old[k] for k in self.keys) for old in self.rows}
-    if len(set(keys)) != len(keys) or existing.intersection(keys):
-        raise ValueError("Duplicate primary key")
-    self.rows.extend(copy.deepcopy(rows))
-
-
-Table.insert = _insert  # Defined after the reviewed call sites above.
-
-
 def _delete_quick(self):
     """Delete the restricted rows, as DataJoint's ``delete_quick``."""
     doomed = {id(row) for row in self.rows if all(_matches(row, restriction) for restriction in self.restrictions)}
