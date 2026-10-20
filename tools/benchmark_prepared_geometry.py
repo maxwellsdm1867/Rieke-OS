@@ -47,9 +47,9 @@ def dependency_fingerprints(source):
     else:
         from benchmark_workflow import dependency_identity
     locks = ('workspace-app/package-lock.json', 'desktop/package-lock.json')
-    # Match the existing workflow policy: only the application's version may
-    # differ; every locked dependency and the Python requirements remain exact.
-    return {name: hashlib.sha256(dependency_identity(source / name).encode()).hexdigest()
+    # Browser lanes execute Playwright, not Electron. Keep the full frontend
+    # lock, exact Playwright closure and Python requirements comparable.
+    return {name: hashlib.sha256(dependency_identity(source / name, browser_only=name.startswith('desktop/')).encode()).hexdigest()
             for name in locks} | {'benchmarks/requirements-py311.txt': digest(source / 'benchmarks/requirements-py311.txt')}
 
 
@@ -93,9 +93,11 @@ def validate(receipt, *, clean=False):
     if clean and receipt['source_start']['dirty']:
         raise ValueError('Dirty geometry source cannot qualify comparison')
     if __package__:
-        from tools.benchmark_workflow import CLICK_PROTOCOL, validate_click_protocol
+        from tools.benchmark_workflow import CLICK_PROTOCOL, DEPENDENCY_POLICY, validate_click_protocol
     else:
-        from benchmark_workflow import CLICK_PROTOCOL, validate_click_protocol
+        from benchmark_workflow import CLICK_PROTOCOL, DEPENDENCY_POLICY, validate_click_protocol
+    if receipt.get('dependency_policy') != DEPENDENCY_POLICY:
+        raise ValueError('Different browser dependency policy; rerun both sources')
     outer = receipt.get('environment')
     browser = outer.get('browser') if isinstance(outer, dict) else None
     if not isinstance(browser, dict) or browser.get('click_dispatch_protocol') != CLICK_PROTOCOL:
@@ -146,8 +148,12 @@ def compare(before, after):
 
 def new_source(source, output):
     source = source.resolve(); output = output.resolve(); output.mkdir(parents=True, exist_ok=False)
-    receipt = {'status': 'running', 'source_start': source_identity(source),
-        'harness': {str(p.relative_to(ROOT)): digest(p) for p in sorted([*HARNESS.glob('*'), ROOT / 'benchmarks/workflow/server.py', ROOT / 'benchmarks/workflow/fixture-app.mjs', ROOT / 'benchmarks/workflow/browser.mjs', ROOT / 'benchmarks/navigation-probe.mjs']) if p.is_file()} | {'tools/benchmark_prepared_geometry.py': digest(__file__)},
+    if __package__:
+        from tools.benchmark_workflow import DEPENDENCY_POLICY
+    else:
+        from benchmark_workflow import DEPENDENCY_POLICY
+    receipt = {'status': 'running', 'dependency_policy': DEPENDENCY_POLICY, 'source_start': source_identity(source),
+        'harness': {str(p.relative_to(ROOT)): digest(p) for p in sorted([*HARNESS.glob('*'), ROOT / 'benchmarks/workflow/server.py', ROOT / 'benchmarks/workflow/fixture-app.mjs', ROOT / 'benchmarks/workflow/browser.mjs', ROOT / 'benchmarks/navigation-probe.mjs']) if p.is_file()} | {'tools/benchmark_prepared_geometry.py': digest(__file__), 'tools/benchmark_workflow.py': digest(ROOT / 'tools/benchmark_workflow.py')},
         'environment': {'platform': platform.platform(), 'machine': platform.machine(), 'python': platform.python_version(),
             'packages': {name: importlib.metadata.version(name) for name in ('numpy', 'h5py', 'Flask', 'Werkzeug', 'scipy')},
             'node': subprocess.check_output(['node', '--version'], text=True).strip(), 'cpus': os.cpu_count()},

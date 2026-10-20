@@ -229,8 +229,9 @@ all-module coverage. Timings are optional diagnostics, not performance gates.
 
 Use `--browser-executable /absolute/path/to/chrome` when needed. Each source
 checkout needs its own matching dependency resolution. Reusing installed modules
-is allowed only after the corresponding package locks match; do not compare
-baseline code silently linked against different frontend dependencies.
+is allowed only after the full frontend lock and exact desktop Playwright closure
+match under the [versioned browser dependency policy](#browser-dependency-identity-after-the-0121-security-update);
+do not compare baseline code silently linked against different frontend dependencies.
 
 By default all one million project epochs belong to the active protocol: 999,900
 main epochs and 100 pending incoming epochs across 10,000 cells. Use
@@ -864,3 +865,25 @@ an explicit executable with `PREPARED_GEOMETRY_BROWSER`; paired qualification
 rejects an executable override and requires the lock-pinned Playwright Chromium
 headless-shell distribution. The two browser identities must be distinct and
 share that pinned launch configuration and version.
+
+### Browser dependency identity after the 0.1.21 security update
+
+Browser benchmarks run Playwright Chromium, not Electron. Their dependency
+comparison retains the entire frontend lock (excluding application version) and
+the exact transitive Playwright graph from the desktop lock, including resolved
+URLs, integrity, required/optional/peer edges and every selected package field.
+Missing required packages or linked packages fail closed. Electron and packaging
+tools outside that graph do not define the browser runtime. Raw full lock hashes
+remain source provenance; native/package checks still use the complete desktop
+lock. A Playwright or frontend change remains incomparable.
+
+This explicit harness policy replaces the former whole-desktop-lock comparison
+which rejected an Electron-only security update before browser sampling. It does
+not change timing thresholds, fixtures, pinned source revisions or passing
+requirements. Run every retained source afresh with the same current harness;
+old receipts cannot qualify this harness.
+
+Both workflow and prepared-geometry receipts declare the versioned policy
+`browser-dependencies-v2:frontend-full:desktop-playwright-closure-v1`. The workflow
+provenance binds it; both validators reject missing or earlier policy identifiers.
+No legacy receipt conversion or reinterpretation is supported.

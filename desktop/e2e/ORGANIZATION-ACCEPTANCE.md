@@ -119,7 +119,7 @@ Output must be outside the checkout and candidate bundle; it must not exist.
 The source checkout must be clean at the same commit as the candidate. The
 assembled bundle must include the exact parser source and bundled Python at
 `Contents/Resources/runtime/python/bin/python3.11`. Node Playwright is pinned to
-1.63.0; expected Electron is 44.5.0. Pin changes need reviewed rebinding.
+1.63.0; expected Electron is 44.9.2. Pin changes need reviewed rebinding.
 
 ## Workflow and authority checks
 

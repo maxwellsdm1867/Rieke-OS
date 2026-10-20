@@ -24,9 +24,10 @@ else:
 
 ROOT = Path(__file__).resolve().parents[1]
 FORMAT = 'disco-workflow-v1'
+DEPENDENCY_POLICY = 'browser-dependencies-v2:frontend-full:desktop-playwright-closure-v1'
 BROWSER_FORMAT = 'disco-workflow-browser-v1'
 PRODUCTION_RUNTIME = 'vite-proxy-react-production-v1'
-PROVENANCE_KEYS = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','module_timing','fixture','runtime','production_build','suite')
+PROVENANCE_KEYS = ('dependency_policy','source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','module_timing','fixture','runtime','production_build','suite')
 SUITES = {'core': 'workflow-million', 'app': 'workflow-app'}
 
 
@@ -88,11 +89,55 @@ def validate_production(raw, directory, samples):
                 raise ValueError('Unattested loaded workflow asset')
 
 
-def dependency_identity(path):
-    """Ignore only the application's version, never locked dependency data."""
+def dependency_identity(path, *, browser_only=False):
+    """Compare full frontend locks or the exact desktop Playwright closure."""
     value = json.loads(Path(path).read_text())
     if value.get('lockfileVersion') != 3 or not isinstance(value.get('packages', {}).get(''), dict):
         raise ValueError('Expected npm v3 lockfile with a root package')
+    if browser_only:
+        packages = value['packages']
+        declaration = packages[''].get('devDependencies', {}).get('playwright')
+        if not isinstance(declaration, str) or not declaration:
+            raise ValueError('Browser identity requires an explicit locked Playwright root')
+        selected = {}
+        def resolve(name, owner):
+            if not isinstance(name, str) or not name or '..' in name.split('/'):
+                raise ValueError('Invalid browser dependency name')
+            scope = owner
+            while True:
+                key = (scope + '/' if scope else '') + 'node_modules/' + name
+                if key in packages:
+                    return key
+                if not scope:
+                    return None
+                scope = scope.rsplit('/node_modules/', 1)[0] if '/node_modules/' in scope else ''
+        def visit(key):
+            if key in selected:
+                return
+            row = packages[key]
+            if (not isinstance(row, dict) or row.get('link') or
+                    any(not isinstance(row.get(field), str) or not row[field]
+                        for field in ('version', 'resolved', 'integrity'))):
+                raise ValueError('Browser closure requires sealed registry packages')
+            selected[key] = row
+            required = {**row.get('dependencies', {}), **row.get('peerDependencies', {})}
+            optional = row.get('optionalDependencies', {})
+            for name in required.keys() | optional.keys():
+                target = resolve(name, key)
+                allowed_missing = (name in optional or
+                    row.get('peerDependenciesMeta', {}).get(name, {}).get('optional') is True)
+                if target is None:
+                    if not allowed_missing:
+                        raise ValueError('Missing locked browser dependency: ' + name)
+                else:
+                    visit(target)
+        target = resolve('playwright', '')
+        if target is None:
+            raise ValueError('Missing locked Playwright package')
+        visit(target)
+        return json.dumps({'policy': 'desktop-playwright-closure-v1',
+                           'root': declaration, 'packages': selected},
+                          sort_keys=True, separators=(',', ':'))
     value.pop('version', None)
     value['packages'][''].pop('version', None)
     # JSON spelling also preserves type distinctions such as true versus 1.
@@ -577,7 +622,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
     protocol_epochs = epochs if protocol_epochs is None else protocol_epochs
     if type(protocol_epochs) is not int or not 200 <= protocol_epochs <= epochs:
         raise ValueError('Protocol epochs must be 200..project epochs')
-    receipt = {'format':FORMAT,'status':'running','runtime':runtime,'production_build':None,'source_root':str(source_root),
+    receipt = {'format':FORMAT,'dependency_policy':DEPENDENCY_POLICY,'status':'running','runtime':runtime,'production_build':None,'source_root':str(source_root),
                'source_start':query_bench.source(source_root),'harness_start':harness(),
                'environment':query_bench.environment(),'config':cfg,'epochs':epochs,
                'samples':samples,'protocol_epochs':protocol_epochs,'profile':profile,'module_timing':module_timing,'smoke':smoke,'suite':suite,'cleanup':{},'metrics':{},'limitations':[]}
@@ -692,6 +737,8 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
 
 def load_receipt(path, *, diagnostic=False):
     receipt = json.loads(path.read_text())
+    if receipt.get('dependency_policy') != DEPENDENCY_POLICY:
+        raise ValueError('Different browser dependency policy; rerun both sources')
     runtime = receipt.get('runtime')
     validate_runtime(runtime, receipt.get('profile'))
     allowed_status = 'diagnostic' if diagnostic and runtime == 'development' else 'passed'
@@ -782,6 +829,7 @@ def main():
     dependencies = commands.add_parser('dependencies-match')
     dependencies.add_argument('baseline',type=Path)
     dependencies.add_argument('candidate',type=Path)
+    dependencies.add_argument('--browser-only', action='store_true')
     command = commands.add_parser('run')
     command.add_argument('--source-root',type=Path,default=ROOT)
     command.add_argument('--output',type=Path,required=True)
@@ -799,7 +847,7 @@ def main():
     args = parser.parse_args()
     try:
         if args.command == 'dependencies-match':
-            if dependency_identity(args.baseline) != dependency_identity(args.candidate):
+            if dependency_identity(args.baseline, browser_only=args.browser_only) != dependency_identity(args.candidate, browser_only=args.browser_only):
                 raise ValueError('Incomparable locked browser dependencies')
         elif args.command == 'run':
             validate_runtime(args.runtime, args.profile)

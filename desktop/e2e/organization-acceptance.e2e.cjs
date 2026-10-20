@@ -196,7 +196,7 @@ class Acceptance {
       electron:process.versions.electron,window:BrowserWindow.getAllWindows()[0]?.webContents.getLastWebPreferences()}));
     assert.equal(actual.packaged,true); assert.equal(actual.name,'DISCO'); assert.equal(actual.version,this.manifest.application_version);
     assert.equal(actual.home,this.home); assert.equal(actual.userData,this.userData); assert.equal(actual.preferences,this.preferences);
-    assert.ok(within(this.bundle,actual.appPath)); assert.equal(actual.electron,'44.5.0');
+    assert.ok(within(this.bundle,actual.appPath)); assert.equal(actual.electron,'44.9.2');
     const preferences=await this.app.evaluate(({BrowserWindow})=>{
       const value=BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences();
       return {sandbox:value.sandbox,contextIsolation:value.contextIsolation,nodeIntegration:value.nodeIntegration,webSecurity:value.webSecurity};
