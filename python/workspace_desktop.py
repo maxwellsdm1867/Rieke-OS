@@ -178,7 +178,8 @@ class DesktopBoundary:
             return jsonify(**self.identity, ready=not self.draining,
                            draining=self.draining,
                            services=self.services.records() if self.services else [],
-                           recovery_projects=self.services.recovery_records() if self.services else [])
+                           recovery_projects=self.services.recovery_records() if self.services else [],
+                           staging_attention=staging_attention() if self.services else [])
 
         def empty_control():
             return not request.args and request.get_json(silent=True) == {}
@@ -360,6 +361,12 @@ class DesktopBoundary:
                     self.active -= 1
                     self.condition.notify_all()
         return ClosingIterator(response, finished)
+
+
+def staging_attention():
+    """Registered staging folders the last sweep could not prove abandoned."""
+    from disco.projects.staging import last_report
+    return [item for item in last_report()['retained'] if item['reason'] != 'owner_running']
 
 
 def validate_child_startup_receipt(line, record):
@@ -966,6 +973,8 @@ def main(argv=None):
             session_lock = lock_path.open('a')
             fcntl.flock(session_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             _SERVICES = DesktopServices(user_state, resources, manifest_path, session_id, capability, identity)
+            from disco.projects.staging import sweep_in_background
+            sweep_in_background()  # Owned crashed transfer/verify/migration staging only.
             os.environ['RIEKE_DESKTOP_LAUNCHER_PORT'] = str(args.port)
             from workspace_launcher import create_launcher
             app = create_launcher(runtime_config['managed_root'], retinanalysis,

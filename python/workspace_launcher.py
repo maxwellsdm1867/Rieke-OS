@@ -230,6 +230,8 @@ def main():
     parser.add_argument('--retinanalysis',type=Path,required=True)
     parser.add_argument('--port',type=int,default=8766)
     args=parser.parse_args()
+    from disco.projects.staging import sweep_in_background
+    sweep_in_background()  # Owned crashed transfer/verify/migration staging only.
     create_launcher(args.managed_root,args.retinanalysis).run(host='127.0.0.1',port=args.port,debug=False,threaded=True,use_reloader=False)
 
 if __name__=='__main__':

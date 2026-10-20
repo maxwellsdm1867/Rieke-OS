@@ -247,7 +247,8 @@ def migrate_source_project(project_dir, destination):
     """Restore a read-only legacy snapshot to the user's new, exclusive folder."""
     root = Path(project_dir).expanduser().resolve(strict=True)
     target = _destination(destination, root)
-    parent = Path(tempfile.mkdtemp(prefix='.rieke-migration-', dir=target.parent))
+    from disco.projects.staging import create_staging, discard_staging
+    parent = create_staging(target.parent, '.rieke-migration-', 'migrate_source')
     try:
         snapshot = snapshot_source_project(root, parent / 'source-snapshot')
         result = restore_project(snapshot['directory'], target)
@@ -256,4 +257,4 @@ def migrate_source_project(project_dir, destination):
         result.update(migrated=True, source_unchanged=True, source_server_version=snapshot['source_server_version'])
         return result
     finally:
-        shutil.rmtree(parent)
+        discard_staging(parent)

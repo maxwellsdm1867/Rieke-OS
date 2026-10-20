@@ -2768,6 +2768,7 @@
             "__future__",
             "contextlib",
             "disco.projects.recording_files",
+            "disco.projects.staging",
             "fcntl",
             "http.client",
             "json",
@@ -2941,6 +2942,27 @@
             "pathlib",
             "psutil",
             "workspace_native_mysql"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/projects/staging.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "datetime",
+            "disco.projects",
+            "disco.projects.runtime_state",
+            "fcntl",
+            "json",
+            "os",
+            "pathlib",
+            "shutil",
+            "tempfile",
+            "threading",
+            "uuid",
+            "workspace_native_mysql",
+            "workspace_startup_registry"
           ]
         }
       ],
@@ -5258,6 +5280,22 @@
             ]
           },
           {
+            "path": "python/disco/projects/staging.py",
+            "module": "disco.projects.staging",
+            "exports": [
+              "OWNER_FILE",
+              "PREFIXES",
+              "read_registry",
+              "create_staging",
+              "release_owner",
+              "forget_staging",
+              "discard_staging",
+              "sweep_registered_staging",
+              "last_report",
+              "sweep_in_background"
+            ]
+          },
+          {
             "path": "python/disco/projects/recording_registry.py",
             "module": "disco.projects.recording_registry",
             "exports": [
@@ -6067,7 +6105,7 @@
       {
         "file": "python/tests/test_workspace_migration.py",
         "file_sha256": "c47705178461b51e6f28c41941d8d7e0ba20f7e590c1450679b68db156f7c2f1",
-        "reason": "Simulate missing source/path, reject unsupported connection profiles, and capture mysqldump command arguments without running transfer. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
+        "reason": "Simulate missing source/path, reject unsupported connection profiles, and capture mysqldump command arguments without running transfer. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Staging ownership review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged; owner bytes create transfer, verify and migration staging through disco.projects.staging (owner file + registry) and sweep only provably abandoned registered folders. See python/disco/projects/CONTRACT.md#project-runtime-state-and-per-project-recovery.",
         "sites": [
           {
             "selector": "Call:7",
@@ -6086,7 +6124,7 @@
               {
                 "module": "disco.projects.migration",
                 "file": "python/disco/projects/migration.py",
-                "file_sha256": "4423cbdbd9dd77194091d069537ca6c15d0d532ec580f57e1ee547d28c712753",
+                "file_sha256": "3da6c970871bb8bd4c3538abbb73ca22deccb9114531e57061cbd5d3d518fca5",
                 "contract_id": "backend-projects"
               }
             ]
@@ -6108,7 +6146,7 @@
               {
                 "module": "disco.projects.migration",
                 "file": "python/disco/projects/migration.py",
-                "file_sha256": "4423cbdbd9dd77194091d069537ca6c15d0d532ec580f57e1ee547d28c712753",
+                "file_sha256": "3da6c970871bb8bd4c3538abbb73ca22deccb9114531e57061cbd5d3d518fca5",
                 "contract_id": "backend-projects"
               }
             ]
@@ -6131,13 +6169,13 @@
               {
                 "module": "disco.projects.migration",
                 "file": "python/disco/projects/migration.py",
-                "file_sha256": "4423cbdbd9dd77194091d069537ca6c15d0d532ec580f57e1ee547d28c712753",
+                "file_sha256": "3da6c970871bb8bd4c3538abbb73ca22deccb9114531e57061cbd5d3d518fca5",
                 "contract_id": "backend-projects"
               },
               {
                 "module": "workspace_portability",
                 "file": "python/workspace_portability.py",
-                "file_sha256": "96199fb497f626f85057591a39717b4704bfe663e592209c4e613664a37474f9",
+                "file_sha256": "bc82450ce36f19c93b2eac8bae198578fa8e7f02cb34bb71c871d1df98415110",
                 "contract_id": null
               }
             ]
@@ -6159,7 +6197,7 @@
               {
                 "module": "disco.projects.migration",
                 "file": "python/disco/projects/migration.py",
-                "file_sha256": "4423cbdbd9dd77194091d069537ca6c15d0d532ec580f57e1ee547d28c712753",
+                "file_sha256": "3da6c970871bb8bd4c3538abbb73ca22deccb9114531e57061cbd5d3d518fca5",
                 "contract_id": "backend-projects"
               }
             ]
