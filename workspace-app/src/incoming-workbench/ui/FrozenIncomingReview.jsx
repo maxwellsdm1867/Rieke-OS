@@ -144,7 +144,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   async function submitAcceptance(acceptedPreview,{retry=false}={}){
     const owner=mergeLifetime.current,wasUnconfirmed=unconfirmed,receiptOnly=unconfirmed&&!retry;let submitted=false;
     setAcceptPending(true);publish({acceptPending:true,preview:acceptedPreview,operation:operation.current});
-    try{if(!receiptOnly){const flushed=await flushBeforeSubmission();setViewNotice(flushed.notice);if(!owner||mergeLifetime.current!==owner||activeOwner.current!==loadOwner)throw Error('The incoming workspace changed. Choose Merge again in the current workspace.');submitted=true;}const result=await acceptWorkbench(root,acceptedPreview,operation.current,api,{receiptOnly});setUnconfirmed(false);setReceipt(result);publish({receipt:result,unconfirmed:false,acceptPending:false,preview:null,operation:operation.current});setPreview(null);onChange?.();onMerged?.(result);return result;}
+    try{if(!receiptOnly){const flushed=await flushBeforeSubmission();setViewNotice(flushed.notice);if(!owner||mergeLifetime.current!==owner||activeOwner.current!==loadOwner)throw Error('The incoming workspace changed. Choose Merge again in the current workspace.');submitted=true;}const result=await acceptWorkbench(root,acceptedPreview,operation.current,api,{receiptOnly});setUnconfirmed(false);setReceipt(result);publish({receipt:result,unconfirmed:false,acceptPending:false,preview:null,operation:operation.current});setPreview(null);onChange?.({kind:'membership',protocolId});onMerged?.(result);return result;}
     catch(error){
       if(receiptOnly){setError(`No acceptance receipt was confirmed. Use Retry this merge only to explicitly submit the original operation again. ${error.message}`);publish({acceptPending:false});}
       else if(!submitted){setError(`Merge was not submitted. Pending accepted changes were not confirmed or the workspace changed. ${error.message}`);publish({acceptPending:false});}
@@ -164,7 +164,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
       const value=await finishWorkbenchReview(root,current.current,api);
       if(activeOwner.current!==loadOwner)return false;
       current.current=value;setContext(value);setFinishing(false);select([]);
-      onChange?.();onRefresh?.();return true;
+      onChange?.({kind:'membership',protocolId});onRefresh?.();return true;
     }catch(error){if(activeOwner.current===loadOwner){setFinishing(false);setError(`Finish review was not confirmed. Refresh the draft before continuing. ${error.message}`);setContext(null);}return false;}
     finally{inFlight.current=false;setBusy(false);}
   }

@@ -47,8 +47,19 @@ close admission. They use the same exports as callers; no wrapper is needed.
 
 ## Display invalidation: keep the independent hook
 
-[useWorkspaceChanges.js](useWorkspaceChanges.js) exports `useWorkspaceChanges`
-and `useSummaryRevision`. Annotation/curation increments display revision only;
+[useWorkspaceChanges.js](useWorkspaceChanges.js) exports `useWorkspaceChanges`,
+`useSummaryRevision` and the pure `applyWorkspaceChange` reducer (for harnesses).
+Typed events are additive: `{kind:'membership',protocolId}` (merge-all, undo,
+finish, accept, apply) and `{kind:'curation',protocolId}` advance only that
+protocol's clock (`protocolRevision`, `protocolReviewRevision`; membership also
+`protocolMembershipRevision` and `membershipRevision`) plus `dataRevision` for
+project summaries; `{kind:'structure'}` advances every clock. /projects, /jobs,
+/metadata/status and suggestions follow structure only; the Workbench summary
+follows structure plus membership; the overview cache invalidates one protocol's
+summaries (mounted ones re-read). A curation receipt applied in place
+(`receipt:true`, see [curation receipts](epoch-browser/AGENTS.md#curation-receipts-applied-in-place))
+advances only that protocol's summary counter. Untyped events keep the original behavior:
+annotation/curation without a protocol increments display revision only;
 other events increment structure too. Only version-1 confirmed annotation deltas
 propagate. Hidden summaries defer display revision until visible, while structure
 changes refresh immediately. These are local integer clocks, never receipts or

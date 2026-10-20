@@ -5,13 +5,20 @@ export default function useWorkbenchQueue(protocolId,revision,provided){
   const [state,setState]=useState({data:provided??null,loading:provided===undefined,error:null}),[nonce,setNonce]=useState(0);
   const controller=useRef(null),generation=useRef(0),requested=useRef({protocolId,revision,nonce,provided});
   const reload=useCallback(()=>setNonce(value=>value+1),[]);
+  // An Activity reconnect (tab return) with the same protocol, revision and
+  // reload nonce keeps the completed queue: nothing it shows can have changed
+  // locally, and merges/finish still check queue_revision at action time.
+  const completed=useRef(null);
   useEffect(()=>{
     requested.current={protocolId,revision,nonce,provided};
     if(provided!==undefined){setState({data:provided,loading:false,error:null});return;}
+    const done=completed.current;
+    if(done&&done.protocolId===protocolId&&done.revision===revision&&done.nonce===nonce)return;
     controller.current?.abort();
     const token=++generation.current,cancel=new AbortController();controller.current=cancel;
     setState(previous=>({...previous,loading:true,error:null}));
-    api(`${workbenchRoot(protocolId)}?limit=20`,{signal:cancel.signal}).then(value=>{if(!cancel.signal.aborted&&token===generation.current)setState({data:requireWorkbenchQueue(value),loading:false,error:null});}).catch(error=>{if(!cancel.signal.aborted&&token===generation.current)setState(previous=>({...previous,loading:false,error:error.message}));});
+    api(`${workbenchRoot(protocolId)}?limit=20`,{signal:cancel.signal}).then(value=>{if(!cancel.signal.aborted&&token===generation.current){const data=requireWorkbenchQueue(value);completed.current={protocolId,revision,nonce};setState({data,loading:false,error:null});}}).catch(error=>{if(!cancel.signal.aborted&&token===generation.current)setState(previous=>({...previous,loading:false,error:error.message}));});
+    completed.current=null;
     return()=>{cancel.abort();generation.current++;};
   },[protocolId,revision,nonce,provided]);
   async function more(){

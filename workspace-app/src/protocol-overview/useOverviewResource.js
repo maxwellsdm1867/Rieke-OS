@@ -4,19 +4,25 @@ import {api,useResource} from '../api.js';
 import {useWorkspaceRequestScope} from '../workspaceRequest.js';
 import {createOverviewCache} from './overviewCache.js';
 
-export function useOverviewCache(scope,revision,structureRevision=revision){
+export function useOverviewCache(scope,revision,structureRevision=revision,change=null){
  const cache=useMemo(()=>createOverviewCache(),[scope]);
  const current=useRef(revision);current.current=revision;
- const structure=useRef(null);
+ const structure=useRef(null),typed=useRef(null);
  useLayoutEffect(()=>{
   const structural=structure.current?.cache!==cache||structure.current?.revision!==structureRevision;
   structure.current={cache,revision:structureRevision};
-  // Imports/membership changes refresh visited summaries in the background.
+  // A typed membership/curation change for one protocol invalidates only that
+  // protocol's summaries and the project summary. Mounted entries re-read via
+  // their changed descriptor; other visited summaries stay until visited.
+  const protocolId=['membership','curation','curation-receipt'].includes(change?.kind)&&change.seq!==typed.current?change.protocolId:null;
+  typed.current=change?.seq??null;
+  if(protocolId&&!structural){cache.invalidate(entry=>entry.path==='/overview'||entry.path.startsWith(`/protocols/${protocolId}/`)||entry.path.startsWith(`/protocols/${protocolId}?`));return;}
+  // Imports/structure changes refresh visited summaries in the background.
   // During tag editing, invalidate hidden summaries without competing with the
   // active scientific page; its visible summary reads refresh themselves.
   cache.invalidate();
   if(structural){const timer=setTimeout(()=>{void cache.prefetch(revision);},200);return()=>clearTimeout(timer);}
- },[cache,revision,structureRevision]);
+ },[cache,revision,structureRevision,change?.seq]);
  useEffect(()=>{
   let pendingFocus,internalUntil=0,projectVisible=true;
   const bridge=window.riekeDesktop;

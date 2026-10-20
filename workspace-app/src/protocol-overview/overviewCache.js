@@ -47,8 +47,8 @@ export function createOverviewCache({maxEntries=12,maxBytes=8*1024*1024}={}){
   });
   notify();return operation.promise;
  }
- function invalidate(){
-  queue++;const targets=[...entries.values()];
+ function invalidate(matches=null){
+  queue++;const targets=[...entries.values()].filter(entry=>!matches||matches(entry));
   for(const entry of targets){entry.invalidated=true;entry.operation?.controller.abort();entry.operation=null;entry.loading=true;}
   notify();
   return targets;

@@ -225,3 +225,17 @@ guarded curation. It does not preload samples or borrow the empty canvas width:
 the existing trace owner measures the focused committed canvas before every read.
 Clearing focus retires reads and resets shell interactions; scientific context,
 curation scope, legacy views and SelectionOverview precedence remain unchanged.
+
+## Curation receipts (applied in place)
+
+`curationReceipts.js` holds this renderer's own confirmed main-protocol curation
+receipts (`POST /protocols/<id>/curation` with `query_revision`, PR #91). The
+Inspector overlays the post-write curation on rows and the focused epoch, sends
+the latest chained `query_revision` on the next write, and emits
+`{kind:'curation',protocolId,receipt:true}`, which re-keys no page or tree.
+Filters that depend on curation or tags (`annotationFilterNeedsRefresh`) keep the
+reload path, as do legacy replies without a receipt and frozen/candidate views.
+Main page revisions compare through the chain in `epochPageRevision`; a page
+carrying any token outside the chain retires it, so a view made stale by another
+actor still fails with the server's 409. Evidence: `curationReceipts.test.js`
+and the curation cases in `workspaceChangesLedger.test.js`.

@@ -3,7 +3,7 @@ import {useRetainedModal} from '../../retainedWorkspaceViews.js';
 import {downloadExport} from '../downloadExport.js';
 import {useEffect,useRef,useState} from 'react';
 import {api,number} from "../../api.js";
-import {acceptWorkbench,acceptanceFailureKind,previewWorkbench,requireWorkbenchContext,workbenchCandidateRoot,workbenchPreviewCounts} from "../../incoming-workbench/workbenchAuthority.js";
+import {MERGE_UNDONE_MESSAGE,isMergeUndone,acceptWorkbench,acceptanceFailureKind,previewWorkbench,requireWorkbenchContext,workbenchCandidateRoot,workbenchPreviewCounts} from "../../incoming-workbench/workbenchAuthority.js";
 import {acceptedExportRequest,candidateExportRequest,submitWorkbenchExport} from '../workbenchExport.js';
 import {ExportDestination} from './ProtocolExports.jsx';
 import {exportDownloadLabel} from '../exportFormats.js';
@@ -22,7 +22,7 @@ export default function WorkbenchExportDialog({selectedOnly=false,protocolId,ite
   useEffect(()=>{
     if(committed||state.prepared||state.preview)return;
     const controller=new AbortController();
-    api(`${root}/context`,{signal:controller.signal}).then(value=>{if(!controller.signal.aborted){setContext(requireWorkbenchContext(value));if(saved.current.phase==='rejected')publish({phase:null,error:`Fresh proposal loaded. ${saved.current.error||''}`});}}).catch(error=>{if(!controller.signal.aborted)setLoadError(error.message);});
+    api(`${root}/context`,{signal:controller.signal}).then(value=>{if(!controller.signal.aborted){setContext(requireWorkbenchContext(value));if(saved.current.phase==='rejected')publish({phase:null,error:`Fresh proposal loaded. ${saved.current.error||''}`});}}).catch(error=>{if(!controller.signal.aborted)setLoadError(isMergeUndone(error)?MERGE_UNDONE_MESSAGE:error.message);});
     return()=>controller.abort();
   },[root,!!committed,!!state.prepared,!!state.preview]);
   async function submit(event){
@@ -47,7 +47,9 @@ export default function WorkbenchExportDialog({selectedOnly=false,protocolId,ite
       }
       const exported=await submitWorkbenchExport(prepared,api);nameDraft.clear();formatDraft.clear();publish({receipt,exported,phase:'exported'});downloadExport(exported);onChanged?.();
     }catch(error){
-      if(phase==='accepting'&&acceptanceFailureKind(error)==='rejected'){
+      if(isMergeUndone(error)){
+        publish({receipt,phase:'merge-undone',prepared:null,exportOperation:null,preview:null,mergeUndone:true,error:MERGE_UNDONE_MESSAGE});
+      }else if(phase==='accepting'&&acceptanceFailureKind(error)==='rejected'){
         publish({phase:'rejected',acceptOperation:null,preview:null,error:`Acceptance rejected. Reopen to refresh the proposal. ${error.message}`});setContext(null);
       }else if(phase==='exporting'&&saved.current.prepared&&acceptanceFailureKind(error)==='rejected'){
         publish({receipt,prepared:null,exportOperation:null,preview:null,phase:receipt?'export-rejected':'rejected',error:`Export was rejected. ${receipt?'Choose a supported format or retry with fresh export context. Acceptance remains saved.':'Reopen to refresh the proposal.'} ${error.message}`});if(!receipt)setContext(null);
@@ -59,8 +61,8 @@ export default function WorkbenchExportDialog({selectedOnly=false,protocolId,ite
     <div className="export-selection-body">
       <p>{accepting?'Add eligible incoming epochs to main, then export only those newly accepted epochs. Existing main epochs and curation stay included.':'Export only new incoming epochs absent from main. Main membership stays unchanged.'} Shared tags are saved separately; this action does not publish scientific approval tags.</p>
       {committed&&<p role="status">Acceptance saved · binding version {committed.binding.version} · receipt {committed.event_uuid}. Export retries do not apply additions again.</p>}
-      {loadError&&<p role="alert">{loadError} Close and reopen to load the frozen proposal.</p>}
-      {state.error&&<p role="alert">{committed?'Acceptance succeeded; export has not been confirmed. ':''}{state.error}</p>}
+      {loadError&&<p role="alert">{loadError}{loadError===MERGE_UNDONE_MESSAGE?'':' Close and reopen to load the frozen proposal.'}</p>}
+      {state.error&&<p role="alert">{committed&&!state.mergeUndone?'Acceptance succeeded; export has not been confirmed. ':''}{state.error}</p>}
       {state.phase==='acceptance-unconfirmed'&&<p>Acceptance may have committed. Retry the same saved operation to recover its receipt before exporting.</p>}
       {state.phase==='export-unconfirmed'&&<p>Export may have committed. Retry the same export operation to recover its artifact.</p>}
       {selectedOnly&&!committed&&!state.prepared&&!state.preview&&<p role="status">Close this dialog and choose Export again to verify the current exact selection.</p>}
