@@ -48,6 +48,13 @@ supervisor startup/inspection suites retain that separate responsibility.
 
 ## Root and child contract
 
+Backend TLS clients use the bundled, hash-pinned `certifi/cacert.pem` through
+`SSL_CERT_FILE`, `REQUESTS_CA_BUNDLE` and `CURL_CA_BUNDLE`. `SSL_CERT_DIR` points
+to that same contained package directory, preventing an additional host OpenSSL
+certificate directory from restoring distrusted roots. The supervisor supplies
+these values rather than inheriting shell overrides; project children inherit
+the backend environment. Updating the bundled trust store requires a new package.
+
 Construct `ServiceSupervisor` with explicit `resourcesPath`, `userData` and
 `appVersion`; optional `spawnProcess`, `request`, `inspectProcess` and
 `recoverProcess` adapters are existing seams. `loadManifest()` binds platform,
