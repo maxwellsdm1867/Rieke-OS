@@ -314,3 +314,19 @@ chronology in bounded chunks matched by the canonical matcher (tag leaves from
 the tag states, metadata leaves from the typed index over the chunk) and resume
 from each page's kept position; totals and the cell list come from a pending
 counts job that runs the full match.
+
+## Background mixed-query counts
+
+`TagPredicates.snapshot_matcher` captures the validated AST, frozen row mapping,
+copy-on-write tag-state entry and validated canonical tag-time records while the
+caller holds the database lock. Its evaluator uses only these inputs and a leased
+worker-owned typed reader; it never calls live annotation or service readers. The
+live and captured paths share exact Boolean set semantics and metadata validation.
+Custom time stores without the canonical time table retain the conservative live
+locked fallback; display chip timestamps are not substituted for recorded times.
+
+Mixed-count jobs release the navigation lock before broad membership evaluation,
+chronology sorting and distinct-cell counting. Existing SummaryJobs opening and
+closing generation fences remain required; source/tag mutation or cancellation
+cannot publish a result. See test_workspace_query_run's held-worker navigation,
+source-staleness and exact tag/time/source-scope parity checks.

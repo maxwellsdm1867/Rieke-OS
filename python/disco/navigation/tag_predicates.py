@@ -108,6 +108,32 @@ def _canonical_strings(value):
     return None
 
 
+def _matching_set(node, universe, metadata, annotation, cancelled=lambda: False):
+    """Shared set semantics for the live reader and captured count-job inputs."""
+    if cancelled():
+        raise RuntimeError('Predicate count cancelled')
+    if not referenced_fields(node):
+        return metadata(node)
+    if 'all' in node:
+        children=node['all']
+        if not children:return set(universe)
+        result=_matching_set(children[0],universe,metadata,annotation,cancelled)
+        # Do not short-circuit: each metadata subtree still validates its types.
+        for child in children[1:]:
+            result.intersection_update(_matching_set(child,universe,metadata,annotation,cancelled))
+        return result
+    if 'any' in node:
+        result=set()
+        for child in node['any']:
+            result.update(_matching_set(child,universe,metadata,annotation,cancelled))
+        return result
+    if 'not' in node:
+        result=set(universe)
+        result.difference_update(_matching_set(node['not'],universe,metadata,annotation,cancelled))
+        return result
+    return annotation(node)
+
+
 class _Publication:
     """Structures derived from one captured metadata publication."""
     def __init__(self,service):
@@ -539,30 +565,63 @@ class TagPredicates:
         validated=check_time_nodes(validate(predicate,{'fields':definitions},samples(fields,[''])))
         ids=ids if isinstance(ids,(list,tuple)) else list(ids)
         universe=set(ids) if universe is None else universe
-        def walk(node):
-            # Every branch returns a fresh mutable subset of the universe.
-            if not referenced_fields(node):
-                return set(self.service._match_metadata_predicate(node,ids)[1])
-            if 'all' in node:
-                children=node['all']
-                if not children:return set(universe)
-                result=walk(children[0])
-                # No short circuit: each metadata subtree is still validated.
-                for child in children[1:]: result.intersection_update(walk(child))
-                return result
-            if 'any' in node:
-                result=set()
-                for child in node['any']: result.update(walk(child))
-                return result
-            if 'not' in node:
-                result=set(universe);result.difference_update(walk(node['not']))
-                return result
-            if node['field'] in TIME_FIELDS: return self._time_leaf(node,ids,universe,entry)
-            return entry.leaf(node,universe)
-        matched=walk(validated)
+        matched=_matching_set(validated,universe,
+            lambda node:set(self.service._match_metadata_predicate(node,ids)[1]),
+            lambda node:self._time_leaf(node,ids,universe,entry) if node['field'] in TIME_FIELDS else entry.leaf(node,universe))
         ordered=(order(matched) if order is not None and len(matched)*8<len(ids)
                  else [identity for identity in ids if identity in matched])
         return validated,ordered,copy.deepcopy(entry.evidence)
+
+    def snapshot_matcher(self, validated, rows, sources):
+        """Capture live annotation inputs under the caller's database lock.
+
+        Return an evaluator that uses only the captured frozen rows/tag entry,
+        validated time records and a worker-owned sealed typed reader. Native
+        tag entries are copy-on-write; later generations never mutate this one.
+        Custom time stores without the canonical time table retain the locked
+        live fallback (None), rather than substituting display chip timestamps.
+        """
+        from disco.decisions.tag_times import tag_time_targets
+        from disco.navigation.tag_time_filter import condition, in_window
+        predicate=copy.deepcopy(validated)
+        fields=referenced_fields(predicate)
+        entry=self._entry(fields)
+        time_targets={}
+        pending=[predicate]
+        while pending:
+            node=pending.pop()
+            if node.get('field') in TIME_FIELDS:
+                value=condition(node['value'])
+                found=tag_time_targets(self.service.shared_annotations,value['tag'])
+                if found is None:return None
+                time_targets[checksum(node)]=tuple(found)
+            pending.extend(node.get('all',[])+node.get('any',[])+([node['not']] if 'not' in node else []))
+        sources=frozenset(sources)
+
+        def evaluate(reader,cancelled):
+            universe=set()
+            for index,(identity,row) in enumerate(rows.items()):
+                if index%2048==0 and cancelled():raise RuntimeError('Predicate count cancelled')
+                if row['source_sha256'] in sources:universe.add(identity)
+            cells=None
+            def annotation(node):
+                nonlocal cells
+                if node['field'] not in TIME_FIELDS:return entry.leaf(node,universe)
+                value=condition(node['value']);kinds=TIME_FIELDS[node['field']]
+                epochs=set();selected_cells=set()
+                for kind,target,added_at in time_targets[checksum(node)]:
+                    if kind in kinds and in_window(added_at,value):
+                        (epochs if kind=='epoch' else selected_cells).add(target)
+                if selected_cells and cells is None:
+                    cells={}
+                    for identity in universe:cells.setdefault(rows[identity]['cell_uuid'],[]).append(identity)
+                result=epochs&universe
+                for cell in selected_cells:result.update(cells.get(cell,()))
+                return result
+            return _matching_set(predicate,universe,
+                lambda node:set(reader.iter_membership(reader._validate(node),{'sources':list(sources)})),
+                annotation,cancelled)
+        return evaluate
 
     def _time_leaf(self,node,ids,universe=None,entry=None):
         """Validated per-tag times; canonical chips when no time table exists."""

@@ -2113,17 +2113,30 @@ class WorkspaceService:
             holder = {}
 
             def compute(cancelled, predicate=predicate, holder=holder):
-                # Exact membership through the canonical matcher, under the
-                # request lock it shares with every other service read.
+                from disco.navigation.tag_predicates import TagPredicates
+                # Capture live annotation inputs only. Retaining the typed owner
+                # pins its native/derived leases; rows and tag entries are frozen.
+                # SummaryJobs fences this capture/calculation before and after.
                 with jobs.db_lock:
-                    _, identities, _ = self.match_predicate(predicate)
-                    rows = self.rows
-                    ordered = sorted(identities, key=lambda item: (rows[item]['date'], rows[item]['start_time'][11:], item))
-                    cells = {}
-                    for item in ordered:
-                        cell = rows[item]['cell_uuid']
-                        found = cells.get(cell)
-                        cells[cell] = (found[0] + 1, found[1]) if found else (1, item)
+                    rows, owner = self.rows, self.typed_index
+                    matcher = TagPredicates(self).snapshot_matcher(validated, rows, scope['active_source_revisions'])
+                    if matcher is None:
+                        # Custom/legacy time stores retain their canonical reader.
+                        _, identities, _ = self.match_predicate(predicate)
+                if matcher is not None:
+                    with owner.clone() as reader:
+                        reader.set_cancel_callback(cancelled)
+                        identities = matcher(reader, cancelled)
+                if cancelled():
+                    raise RuntimeError('Predicate count cancelled')
+                ordered = sorted(identities, key=lambda item: (rows[item]['date'], rows[item]['start_time'][11:], item))
+                cells = {}
+                for index, item in enumerate(ordered):
+                    if index % 2048 == 0 and cancelled():
+                        raise RuntimeError('Predicate count cancelled')
+                    cell = rows[item]['cell_uuid']
+                    found = cells.get(cell)
+                    cells[cell] = (found[0] + 1, found[1]) if found else (1, item)
                 holder['cells'] = [(cell, amount, first) for cell, (amount, first) in cells.items()]
                 return {'matched_count': len(ordered), 'cell_count': len(cells)}
             context = {'predicate': validated, 'scope': {}, 'protocol_uuid': None, 'filters': {}}

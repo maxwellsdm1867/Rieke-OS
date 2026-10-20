@@ -313,6 +313,88 @@ class QueryRunTests(unittest.TestCase):
         ready.pop('counts')
         self.assertEqual(ready, exact)
 
+    def test_mixed_count_worker_releases_navigation_lock_and_rejects_changed_source(self):
+        import threading
+        from disco.metadata.typed_index import TypedMetadataIndex
+        predicate = self.tag_predicates()[2]
+        entered, release = threading.Event(), threading.Event()
+        original = TypedMetadataIndex.iter_membership
+        def held(reader, *args, **kwargs):
+            if threading.current_thread().name == 'metadata-summaries':
+                entered.set()
+                if not release.wait(5):
+                    raise AssertionError('Test count worker was not released')
+            yield from original(reader, *args, **kwargs)
+        with patch.object(TypedMetadataIndex, 'iter_membership', held):
+            try:
+                run = self.run_query(predicate)
+                self.assertTrue(entered.wait(5), 'background matching started')
+                acquired = self.jobs.db_lock.acquire(timeout=0.5)
+                self.assertTrue(acquired, 'background count holds the ordinary navigation lock')
+                try:
+                    response = self.client.get('/api/epochs/' + self.service.ids[0])
+                    self.assertEqual(response.status_code, 200, response.get_json())
+                    self.service.set_source_state_provider(lambda: {'a' * 64: {'query_excluded': True}})
+                finally:
+                    self.jobs.db_lock.release()
+            finally:
+                release.set()
+                self.join()
+        result = self.jobs.poll(run['counts']['request_id'])
+        self.assertEqual(result['status'], 'stale', result)
+        self.assertNotIn('result', result)
+
+    def test_captured_mixed_matcher_equals_live_for_tags_times_boolean_and_exclusions(self):
+        from disco.decisions.annotations import SharedAnnotations
+        from disco.navigation.tag_predicates import TagPredicates
+        from test_workspace_curation import Table
+        from test_workspace_tag_times import TimeTable, TIME_KEYS
+        profiles = Table(('project_uuid', 'profile_uuid'))
+        records = Table(('project_uuid', 'target_kind', 'target_uuid', 'profile_uuid'))
+        times = TimeTable(TIME_KEYS)
+        self.fixture.connection.tables.extend([profiles, records, times])
+        shared = SharedAnnotations(self.service, (profiles, records, self.fixture.events, times))
+        self.service.shared_annotations = shared
+        identity = self.service.ids[0]
+        shared.update('epoch', [identity], shared.default_profile['profile_uuid'], {'tags_add': ['shared']},
+                      {identity: 0}, 'test')
+        protocol = self.tag_predicates()[0]
+        metadata = {'field': 'parameters/example', 'operator': 'eq', 'value': 0}
+        shared_tag = {'field': 'annotations/effective/tags', 'operator': 'contains', 'value': 'shared'}
+        shared_time = {'field': 'annotations/effective/tag_times', 'operator': 'contains',
+                       'value': {'tag': 'shared', 'after': '2020-01-01T00:00:00Z'}}
+        predicates = [{'all': [protocol, metadata]}, {'any': [shared_tag, metadata]},
+                      {'not': {'all': [shared_tag, metadata]}}, {'all': [shared_time, {'not': metadata}]},
+                      {'any': [shared_time, protocol, metadata]}]
+        for excluded in (False, True):
+            self.service.set_source_state_provider(lambda: {'b' * 64: {'query_excluded': excluded}})
+            for predicate in predicates:
+                with self.subTest(excluded=excluded, predicate=predicate):
+                    validated, expected, _ = self.service.match_predicate(predicate)
+                    evaluate = TagPredicates(self.service).snapshot_matcher(validated, self.service.rows,
+                        self.service.source_scope()['active_source_revisions'])
+                    self.assertIsNotNone(evaluate)
+                    with self.service.typed_index.clone() as reader, \
+                            patch.object(self.service, '_match_metadata_predicate', side_effect=AssertionError('live matcher')), \
+                            patch.object(shared, 'snapshot', side_effect=AssertionError('live tags')):
+                        self.assertEqual(evaluate(reader, lambda: False), set(expected))
+                        with self.assertRaisesRegex(RuntimeError, 'cancelled'):
+                            evaluate(reader, lambda: True)
+
+    def test_captured_tag_states_do_not_follow_later_mutations(self):
+        from disco.navigation.tag_predicates import TagPredicates
+        predicate = self.tag_predicates()[2]
+        validated, expected, _ = self.service.match_predicate(predicate)
+        evaluate = TagPredicates(self.service).snapshot_matcher(validated, self.service.rows,
+            self.service.source_scope()['active_source_revisions'])
+        protocol = self.service.protocol_id
+        identities = [self.service.ids[0]]
+        current = self.fixture.store.read(protocol, identities, {key: self.service._fingerprints[key] for key in identities})
+        self.fixture.store.update(protocol, identities, {'tags_remove': ['qc-flag']},
+            {key: current[key]['revision'] for key in identities}, {key: self.service._fingerprints[key] for key in identities}, 'test')
+        with self.service.typed_index.clone() as reader:
+            self.assertEqual(evaluate(reader, lambda: False), set(expected))
+
     def test_stale_revision_is_refused_before_reading(self):
         response = self.client.post('/api/explore/epochs', json={'predicate': {'all': []}, 'splits': 'cell',
                                     'revision': 'f' * 64}, headers=self.fixture.headers)
