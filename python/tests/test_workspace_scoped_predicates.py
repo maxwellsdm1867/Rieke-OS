@@ -60,12 +60,12 @@ class ScopedPredicates(unittest.TestCase):
         self.assertEqual(response.status_code,400);self.assertIn('foreign',response.get_json()['error'])
         own={'field':f'curation/{self.p}/tags','operator':'eq','value':[]}
         self.assertEqual(self.s.epoch_page(self.p,self.filters(own))['total'],2)
-    def test_count_only_summary_fences_filter_annotation_context(self):
+    def test_scoped_summary_fences_filter_annotation_context(self):
         filters=self.filters({'field':'parameters/example','operator':'eq','value':1})
-        response=self.c.post('/api/explore/summaries',json={'predicate':{'all':[]},'summary_fields':[],'protocol_uuid':self.p,'filters':filters},headers=self.f.headers)
+        response=self.c.post('/api/explore/summaries',json={'predicate':{'all':[]},'summary_fields':['parameters/example'],'protocol_uuid':self.p,'filters':filters},headers=self.f.headers)
         self.assertEqual(response.status_code,202,response.get_json());ack=response.get_json();self.jobs.drive_worker()
         result=self.jobs.poll(ack['request_id'])
-        self.assertEqual(result['generation'],ack['generation']);self.assertEqual(result['result'],{'matched_count':1,'summaries':{}})
+        self.assertEqual(result['generation'],ack['generation']);self.assertEqual(result['result']['matched_count'],1)
     def test_tree_equal_membership_annotation_witness_changes(self):
         self.s.shared_annotations=SimpleNamespace(snapshot=lambda:{'revision':'a','records':[]},for_epochs=lambda rows:{})
         filters=self.filters({'not':{'field':'annotations/effective/tags','operator':'contains','value':'absent'}})
@@ -94,7 +94,7 @@ class ScopedPredicates(unittest.TestCase):
                 context={'predicate':{'all':[]},'protocol_uuid':self.p,'filters':filters,'scope':{}}
                 self.assertTrue(queries.typed_combination_over_budget(context))
                 with patch('disco.metadata.explore_queries.typed_policy',return_value=True):
-                    job=self.jobs.submit({**context,'summary_fields':[]})
+                    job=self.jobs.submit({**context,'summary_fields':['parameters/example']})
                     self.jobs.drive_worker()
                 result=self.jobs.poll(job['request_id'])
                 self.assertEqual(result['status'],'ready',result)

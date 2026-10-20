@@ -1611,7 +1611,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             # A plain summary-only preview needs no membership: it is counted.
             membership = not body.get('summary_only', False) or 'baseline_revision_uuid' in body or 'focused_uuid' in body
             preview = service.explore_preview(body['predicate'], body['splits'], include_tree=not body.get('summary_only', False),
-                include_catalog_summary=body.get('catalog_summary', True), include_membership=membership)
+                include_catalog_summary=inline_catalog(body), include_membership=membership)
             if 'baseline_revision_uuid' in body:
                 baseline = explorer_history.get(body['baseline_revision_uuid'])['recipe']
                 before = {item['uuid']: item['metadata_hash'] for item in baseline['epochs']}
@@ -1625,6 +1625,17 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 preview['focused_in_scope'] = any(item['uuid'] == focused for item in preview['membership'])
                 preview['focused_uuid'] = focused
             return jsonify(compact_preview(preview) if body.get('summary_only') else preview)
+
+    def inline_catalog(body):
+        """Scoped catalog statistics only for rendered trees (summary_only false).
+
+        Summary-only results never compute statistics; one summary job follows
+        the query. ``catalog_summary`` is accepted as a deprecated boolean and
+        no longer changes a summary-only response.
+        """
+        if 'catalog_summary' in body and type(body['catalog_summary']) is not bool:
+            raise ValueError('catalog_summary must be a boolean')
+        return False if body.get('summary_only', False) else body.get('catalog_summary', True)
 
     def compact_annotations(scope):
         result={**scope, 'protocols': [{**{key:value for key,value in protocol.items() if key != 'records'},
@@ -1663,7 +1674,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise ValueError('summary_only must be a boolean')
         with db_lock, data_stores.registration_locks(), annotation_locks(service, body['predicate']):
             verify_service_sources()
-            preview = service.explore_preview(body['predicate'], body['splits'], include_tree=not body.get('summary_only', False), include_catalog_summary=body.get('catalog_summary', True))
+            preview = service.explore_preview(body['predicate'], body['splits'], include_tree=not body.get('summary_only', False), include_catalog_summary=inline_catalog(body))
             result = explorer_history.create(preview, service.sources, project_dir / 'catalog.json',
                 os.environ.get('USER', 'local-user'), name=body.get('name'),
                 parent_revision_uuid=body.get('parent_revision_uuid'))
@@ -1701,9 +1712,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             # A run records counts and the tree revision, not membership: count it
             # on the typed index when it can be proven, else take the exact path.
             counted = getattr(service, 'run_summary', None)
-            preview = counted(body['predicate'], body['splits']) if counted is not None and body.get('catalog_summary', True) is False else None
+            inline_catalog(body)  # validates the deprecated flag; runs never compute statistics
+            preview = counted(body['predicate'], body['splits']) if counted is not None else None
             if preview is None:
-                preview = service.explore_preview(body['predicate'], body['splits'], include_tree=False, include_catalog_summary=body.get('catalog_summary', True))
+                preview = service.explore_preview(body['predicate'], body['splits'], include_tree=False, include_catalog_summary=False)
             result = search_preset_store().record_run(preview, service.rows, os.environ.get('USER', 'local-user'))
             return jsonify(**{key: value for key, value in compact_preview(preview).items() if key != 'cell_count'}, last_run=result)
 

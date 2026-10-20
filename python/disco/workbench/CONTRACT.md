@@ -245,7 +245,8 @@ scope and tokens), `workspace-app/src/treeTagCoverageWorkflow.test.js` and
 
 ## Response-local native attestation
 
-Read-only GET and existing preview, tree-page and candidate-summary POST routes
+Read-only GET and existing preview and tree-page POST routes (the candidate count-preview
+`POST .../candidates/<r>/summary` route was removed with query-building previews)
 reuse the exact native `response_contract` only while holding their annotation
 locks. Schema authority is attested at both boundaries, with live scope counters
 inside. A failed closing check discards the response. Custom authorities retain
