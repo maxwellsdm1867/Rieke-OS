@@ -774,7 +774,14 @@ class WorkspaceService:
         if disk_index is not None:
             from disco.metadata.typed_lifecycle import prepare as prepare_typed
             typed_started = time.perf_counter()
-            typed_index, metrics['typed_metadata_index'] = prepare_typed(disk_index, getattr(self, 'typed_index', None))
+            try:
+                typed_index, metrics['typed_metadata_index'] = prepare_typed(disk_index, getattr(self, 'typed_index', None))
+            except Exception as error:
+                # The typed sidecar only accelerates reads of this verified
+                # native generation. Without it, queries use the native index;
+                # refresh still publishes and health reports the reason.
+                typed_index, metrics['typed_metadata_index'] = None, 'unavailable'
+                metrics['typed_metadata_index_error'] = f'{type(error).__name__}: {error}'
             metrics['typed_metadata_index_seconds'] = time.perf_counter() - typed_started
             for path, signature in final_checks:
                 if self._input_signature(path) != signature:
