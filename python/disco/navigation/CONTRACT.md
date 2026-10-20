@@ -330,3 +330,9 @@ chronology sorting and distinct-cell counting. Existing SummaryJobs opening and
 closing generation fences remain required; source/tag mutation or cancellation
 cannot publish a result. See test_workspace_query_run's held-worker navigation,
 source-staleness and exact tag/time/source-scope parity checks.
+
+`tag_predicates.prepare_publication` lazily imports the retained
+`workspace_service.publication_serial` witness to admit only the canonical frozen
+read model before precomputing metadata-derived tag lookup maps. This narrow
+reverse dependency reuses the existing publication proof; it neither constructs a
+second authority token nor changes mutable/custom fallback admission.

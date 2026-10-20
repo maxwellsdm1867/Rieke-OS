@@ -2607,7 +2607,8 @@
             "disco.navigation.tree",
             "disco.workbench.recipes",
             "hashlib",
-            "uuid"
+            "uuid",
+            "workspace_service"
           ]
         },
         {
