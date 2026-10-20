@@ -417,6 +417,17 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 service.manager_recovery(error)
             raise
 
+    def verify_service_sources():
+        """Pre-write source recheck for targeted writes (approve, explorer save,
+        masks, exports): O(sources) stat/registration witnesses; any change runs
+        the complete refresh, whose failure leaves the service not ready."""
+        try:
+            return service.verify_sources() if hasattr(service, 'verify_sources') else service.refresh()
+        except (OSError, ValueError) as error:
+            with contextlib.suppress(Exception):
+                service.manager_recovery(error)
+            raise
+
     def read_contract():
         """Attest the native schema once at each end of a complete read response.
 
@@ -1373,7 +1384,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if type(body.get('summary_only', False)) is not bool:
             raise ValueError('summary_only must be a boolean')
         with db_lock, data_stores.registration_locks(), annotation_locks(service, body['predicate']):
-            refresh_service()
+            verify_service_sources()
             preview = service.explore_preview(body['predicate'], body['splits'], include_tree=not body.get('summary_only', False), include_catalog_summary=body.get('catalog_summary', True))
             result = explorer_history.create(preview, service.sources, project_dir / 'catalog.json',
                 os.environ.get('USER', 'local-user'), name=body.get('name'),
@@ -1727,7 +1738,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise ValueError("Choose a nonempty, unique list of epochs (at most 10,000).")
         with db_lock:
             if body.get("changes", {}).get("review_state") == "approved":
-                refresh_service()
+                verify_service_sources()
             context=selected_state.native_context(protocol_uuid,ids)
             if context is None:
                 result, _, revision = state(protocol_uuid)
@@ -1761,7 +1772,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if request.args:
             raise ValueError("Masks cover the entire protocol query; filtered mask exports are unsupported")
         with db_lock:
-            refresh_service()
+            verify_service_sources()
             result, curation, _ = state(protocol_uuid)
             response = jsonify(format="recording-selection-mask", version=1,
                            protocol_uuid=protocol_uuid,
@@ -1802,7 +1813,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 raise ValueError("Mask has a noncanonical or duplicate epoch UUID")
             inclusion[identity] = member["included"]
         with db_lock:
-            refresh_service()
+            verify_service_sources()
             result, current, revision = state(protocol_uuid)
             if body["query_revision"] != revision:
                 raise StaleWorkspace("The query, source metadata, or curation changed. Refresh before importing the mask.")
@@ -1828,6 +1839,19 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             binding = explorer_history.protocol_binding(protocol_uuid)
             if binding:
                 recipe = binding['recipe']
+                # Membership first, without a tree. An unchanged rerun (same
+                # members, fingerprints and sources) persists no revision.
+                summary = service.explore_preview(recipe['predicate'], recipe['splits'], include_tree=False,
+                                                  include_catalog_summary=False)
+                saved = {member['uuid']: member['metadata_hash'] for member in recipe['epochs']}
+                rerun = {member['uuid']: member['metadata_hash'] for member in summary['membership']}
+                if (rerun == saved and len(summary['membership']) == len(recipe['epochs'])
+                        and sorted(summary.get('source_revisions', recipe['source_revisions'])) == sorted(recipe['source_revisions'])):
+                    _, _, working_revision = state(protocol_uuid)
+                    return jsonify(candidate_revision_uuid=None, diff={'added': [], 'removed': [], 'changed': []},
+                        diff_counts={'added': 0, 'removed': 0, 'changed': 0}, query_revision=working_revision,
+                        working_dataset_unchanged=True, up_to_date=True,
+                        message='Up to date. This protocol contains all matching recordings.')
                 preview = service.explore_preview(recipe['predicate'], recipe['splits'])
                 candidate = explorer_history.create(preview, service.sources, project_dir / 'catalog.json',
                     os.environ.get('USER', 'local-user'), name=recipe['name'],
@@ -1891,7 +1915,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise ValueError('Unsupported export format')
         managed_directory(project_dir, 'exports')  # Recheck live links before any query/publication work.
         with db_lock, data_stores.registration_locks(), (shared_annotations.lock() if shared_annotations else contextlib.nullcontext()):
-            refresh_service()  # Recheck source identity and live query before publication.
+            verify_service_sources()  # Recheck source identity (stat + registration) before publication.
             result, curation, revision = state(protocol_uuid)
             if body.get("query_revision") != revision:
                 raise StaleWorkspace("The query or curation changed. Refresh before exporting.")

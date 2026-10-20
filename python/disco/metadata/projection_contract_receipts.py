@@ -311,4 +311,34 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
               'evidence': ('git:a7aca9b',
                            'python/tests/test_workspace_slow_read_memos.py',
                            'python/tests/test_workspace_refresh_cache.py',
-                           'python/tests/test_workspace_projection_contract.py')})}
+                           'python/tests/test_workspace_projection_contract.py')},
+             {'id': 'refresh-scoping-compatibility-2026-10-18',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 'e89b33999a7bea49634e9458327739358542d445de4d1725f546b268b9b8e1c8',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to claude/protocol-state-freshness (receipt '
+                           'protocol-state-freshness-compatibility-2026-10-18), workspace_service only (1) '
+                           'skips re-decoding source projections in refresh when every source key (database '
+                           'record including manifest, metadata and recording stat signatures, projection '
+                           'contract) and the sealed index generation equal the last successful publication, '
+                           'reusing the already published frozen rows/cells/fingerprints while still running '
+                           'protocol SQL validation and the all-source final stat checks, keeping the '
+                           'previous objects and publication serial unless the SQL protocol result changed; '
+                           'and (2) adds verify_sources, an O(sources) registration/stat precheck that runs '
+                           'the complete refresh on any difference. Projection keys, codecs, decoded values, '
+                           'membership, index generation and cache authority are unchanged; all other '
+                           'ordered owners and the resolver are byte-identical. A reopened or rebuilt typed '
+                           'metadata generation is still published on the reuse path.',
+              'evidence': ('git:claude/protocol-state-freshness',
+                           'python/tests/test_workspace_refresh_cache.py',
+                           'python/tests/test_workspace_slow_read_memos.py',
+                           'python/tests/test_workspace_projection_contract.py',
+                           'python/tests/test_workspace_explore_queries.py')})}

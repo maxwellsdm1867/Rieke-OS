@@ -423,6 +423,49 @@ class TypedReadinessErrorTests(MemoFixture):
         self.assertEqual(self.client.get('/api/overview').status_code,503)
 
 
+class RouteRefreshScopingTests(MemoFixture):
+    def publish(self):
+        ProtocolContextFastPathTests.publish(self)
+
+    def test_approve_verifies_sources_without_republishing_and_reads_stay_warm(self):
+        from workspace_service import publication_serial
+        self.publish()
+        # The fixture authority cannot open SQL transactions; use the legacy
+        # mutation path (the route preflight under test is identical).
+        self.tracker.ready=False
+        page=self.get(self.case.base+'/epochs?limit=1')
+        view=self.service.query_view(self.protocol)
+        rows,serial=self.service.rows,publication_serial(self.service)
+        current=self.store.read(self.protocol,self.ids[:1],{self.ids[0]:self.service._fingerprints[self.ids[0]]})[self.ids[0]]['revision']
+        verified=[]
+        with patch.object(self.service,'verify_sources',side_effect=lambda:verified.append(1) or True), \
+             patch.object(self.service,'refresh',side_effect=AssertionError('approve must not run a full refresh')):
+            response=self.client.post(self.case.base+'/curation',json={'epoch_uuids':self.ids[:1],
+                'query_revision':page['query_revision'],'changes':{'review_state':'approved'},
+                'expected_revisions':{self.ids[0]:current}},headers=self.case.headers)
+        self.assertEqual(response.status_code,200,response.get_json())
+        self.assertEqual(verified,[1])
+        self.assertIs(self.service.rows,rows);self.assertEqual(publication_serial(self.service),serial)
+        self.assertIs(self.service.query_view(self.protocol),view)  # Identity-keyed caches stay warm.
+
+    def test_unchanged_check_for_updates_persists_no_revision(self):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        created=history.create(preview,self.service.sources,'catalog.json','fixture')
+        history.bind(created['revision_uuid'],self.protocol,0,'fixture',{},2)
+        revisions=len(history.Revision.rows)
+        with patch.object(self.service,'refresh',return_value={}), \
+             patch.object(self.service,'explore_preview',wraps=self.service.explore_preview) as previews:
+            response=self.client.post(self.case.base+'/refresh',json={'filters':{}},headers=self.case.headers)
+        self.assertEqual(response.status_code,200,response.get_json())
+        body=response.get_json()
+        self.assertIsNone(body['candidate_revision_uuid'])
+        self.assertEqual(body['diff_counts'],{'added':0,'removed':0,'changed':0})
+        self.assertEqual(len(history.Revision.rows),revisions)
+        self.assertEqual(previews.call_count,1)
+        self.assertFalse(previews.call_args.kwargs.get('include_tree',True))
+
+
 class OverviewMemoTests(MemoFixture):
     def overview(self):
         return self.get('/api/overview')
