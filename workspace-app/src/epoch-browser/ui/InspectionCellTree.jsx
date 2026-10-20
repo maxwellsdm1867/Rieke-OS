@@ -6,7 +6,7 @@ import {loadIncomingSelection} from '../../incoming-workbench/incomingSelection.
 import {frozenPresentationScope} from '../frozenReadContext.js';
 import StableContent from '../../components/StableContent.jsx';
 import {epochIncluded} from '../../incoming-workbench/incomingReviewDecision.js';
-import {useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
+import {memo,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import EpochInclusionToggle from './EpochInclusionToggle.jsx';
 import {api as defaultApi,humanize} from '../../api.js';
 import {epochPageRequest,epochPageRevision} from '../epochBrowserSource.js';
@@ -20,13 +20,17 @@ import {useEpochBrowserPage} from '../useEpochBrowserPage.js';
 import {createEpochPageReads} from '../epochPageReads.js';
 import {inspectionNavigation,inspectionPageOffset,toggleInspectionBranch,restoreInspectionScroll} from '../inspectionNavigation.js';
 
-function CellEpochPage({highlightedEpochs,cell,offset,restoreOffset,onFrontier,expected,onFault,revealEpoch,seen=[],source,revision,pageReads,focused,onFocus,targets,onSelect,disabled,navigationDisabled=disabled,onToggleInclusion,inclusionForEpoch,setTargets,onTagEpoch}){
+const NO_IDS=[];
+function CellEpochPage({rowRegistry,highlightedEpochs,cell,offset,restoreOffset,onFrontier,expected,onFault,revealEpoch,seen=NO_IDS,source,revision,pageReads,focused,onFocus,targets,onSelect,disabled,navigationDisabled=disabled,onToggleInclusion,inclusionForEpoch,setTargets,onTagEpoch}){
   const pageSize=useWorkspaceRequestScope()?.pageSize??60;
   const page=useEpochBrowserPage(source,{cellUuid:cell.cell_uuid,offset},JSON.stringify([revision,source.queryRevision,source.treeRevision]),pageReads);
   // Loaded rows carry author revisions: hints let selection tags write in one request.
   useEffect(()=>{if(Array.isArray(page.data?.epochs))tagStore.hint(page.data.epochs);},[page.data]);
   const [expanded,setExpanded]=useState(false);
   const tail=useRef(null);
+  // Set lookups keep row rendering linear in visible rows, not rows x selection.
+  const seenIds=useMemo(()=>new Set(seen),[seen]),targetIds=useMemo(()=>new Set(targets),[targets]),highlightedIds=useMemo(()=>highlightedEpochs?new Set(highlightedEpochs):null,[highlightedEpochs]);
+  const childSeen=useMemo(()=>Array.isArray(page.data?.epochs)?[...seen,...page.data.epochs.map(row=>row.epoch_uuid)]:seen,[seen,page.data]);
   let receipt=null,problem=null;
   if(page.data){
     try{
@@ -34,12 +38,13 @@ function CellEpochPage({highlightedEpochs,cell,offset,restoreOffset,onFrontier,e
       receipt=JSON.stringify([epochPageRevision(source,data),data.total,data.expected_binding_version??null]);
       if(!Number.isInteger(data.total)||data.total<0||data.offset!==offset||!Array.isArray(rows)||rows.length>pageSize||
           rows.length!==Math.min(pageSize,Math.max(0,data.total-offset))||
-          rows.some(row=>!row||row.cell_uuid!==cell.cell_uuid||typeof row.epoch_uuid!=='string'||!row.epoch_uuid||seen.includes(row.epoch_uuid))||new Set(rows.map(row=>row.epoch_uuid)).size!==rows.length||
+          rows.some(row=>!row||row.cell_uuid!==cell.cell_uuid||typeof row.epoch_uuid!=='string'||!row.epoch_uuid||seenIds.has(row.epoch_uuid))||new Set(rows.map(row=>row.epoch_uuid)).size!==rows.length||
           (expected!==null&&expected!==receipt))throw Error('Epoch list changed while scrolling. Reload the list.');
     }catch(error){problem=error.message;}
   }
   useLayoutEffect(()=>{if(problem)onFault(problem);else if(page.data&&!page.loading&&!page.error)onFrontier(offset);},[problem,receipt,page.loading,page.error,offset]);
   const ready=!!page.data&&!page.loading&&!page.error&&!problem;
+  if(ready&&rowRegistry)for(const row of page.data.epochs)rowRegistry.add(row.epoch_uuid);
   const more=ready&&offset+page.data.epochs.length<page.data.total;
   useEffect(()=>{
     if(!more||expanded||navigationDisabled||typeof IntersectionObserver==='undefined'||!tail.current)return;
@@ -50,8 +55,8 @@ function CellEpochPage({highlightedEpochs,cell,offset,restoreOffset,onFrontier,e
   const reveal=ready&&revealEpoch?.cell_uuid===cell.cell_uuid&&!page.data.epochs.some(row=>row.epoch_uuid===revealEpoch.epoch_uuid);
   useEffect(()=>{if(more&&reveal)setExpanded(true);},[more,reveal]);
   const content=<>
-    {(ready?page.data.epochs:[]).map((record,index)=>{const epoch=inclusionForEpoch?inclusionForEpoch(record):record,tags=source.readContext?incomingRowAnnotation(epoch):undefined;return <div key={epoch.epoch_uuid} className={`epoch-row cell-tree-epoch ${tags?'has-shared-tags':''} ${highlightedEpochs?.includes(epoch.epoch_uuid)?'is-highlighted':''} ${focused===epoch.epoch_uuid?'active':''} ${targets.includes(epoch.epoch_uuid)?'bulk-selected':''} ${epochIncluded(epoch,!!source.readContext)===false?'analysis-excluded':''}`}>
-      <button aria-description={tags} title={tags} disabled={navigationDisabled||page.loading} aria-current={focused===epoch.epoch_uuid?'true':undefined} aria-pressed={highlightedEpochs?highlightedEpochs.includes(epoch.epoch_uuid):targets.includes(epoch.epoch_uuid)||(!source.readContext&&!targets.length&&focused===epoch.epoch_uuid)} onMouseDown={event=>{if(event.shiftKey)event.preventDefault();}} onClick={event=>onSelect(event,{cellUuid:cell.cell_uuid,index:offset+index,uuid:epoch.epoch_uuid},epoch,page.data)} aria-label={`Inspect ${datedCellLabel(cell,true)} epoch ${offset+index+1}`}>
+    {(ready?page.data.epochs:[]).map((record,index)=>{const epoch=inclusionForEpoch?inclusionForEpoch(record):record,tags=source.readContext?incomingRowAnnotation(epoch):undefined;return <div key={epoch.epoch_uuid} className={`epoch-row cell-tree-epoch ${tags?'has-shared-tags':''} ${highlightedIds?.has(epoch.epoch_uuid)?'is-highlighted':''} ${focused===epoch.epoch_uuid?'active':''} ${targetIds.has(epoch.epoch_uuid)?'bulk-selected':''} ${epochIncluded(epoch,!!source.readContext)===false?'analysis-excluded':''}`}>
+      <button aria-description={tags} title={tags} disabled={navigationDisabled||page.loading} aria-current={focused===epoch.epoch_uuid?'true':undefined} aria-pressed={highlightedIds?highlightedIds.has(epoch.epoch_uuid):targetIds.has(epoch.epoch_uuid)||(!source.readContext&&!targets.length&&focused===epoch.epoch_uuid)} onMouseDown={event=>{if(event.shiftKey)event.preventDefault();}} onClick={event=>onSelect(event,{cellUuid:cell.cell_uuid,index:offset+index,uuid:epoch.epoch_uuid},epoch,page.data)} aria-label={`Inspect ${datedCellLabel(cell,true)} epoch ${offset+index+1}`}>
         <strong>{offset+index+1}</strong>
         <time>{epoch.start_time?.split(/[T ]/)[1]?.slice(0,8)||'—'}</time>
         <span className="epoch-short-protocol" title={humanize(epoch.protocol_name?.split('.').at(-1))}>{humanize(epoch.protocol_name?.split('.').at(-1))||'—'}</span>
@@ -59,47 +64,84 @@ function CellEpochPage({highlightedEpochs,cell,offset,restoreOffset,onFrontier,e
       {source.readContext&&<><IncomingEpochSelect epoch={epoch} selected={targets} onSelect={setTargets} onToggle={event=>onSelect(event,{cellUuid:cell.cell_uuid,index:offset+index,uuid:epoch.epoch_uuid},epoch,page.data,true)} disabled={disabled||page.loading}/><TreeGroupTagButton showLabel label="Tag This Epoch" count={1} disabled={disabled||page.loading} onClick={event=>onTagEpoch(epoch,event)}/></>}
       {onToggleInclusion&&<EpochInclusionToggle incoming={!!source.readContext} epoch={epoch} label={`${datedCellLabel(cell,true)} epoch ${offset+index+1}`} disabled={disabled||page.loading} onToggle={onToggleInclusion}/>}
     </div>;})}
-    {more&&(expanded||offset<restoreOffset||reveal)?<CellEpochPage highlightedEpochs={highlightedEpochs} cell={cell} offset={offset+pageSize} restoreOffset={restoreOffset} onFrontier={onFrontier} expected={expected??receipt} onFault={onFault} revealEpoch={reveal?revealEpoch:null} seen={[...seen,...page.data.epochs.map(row=>row.epoch_uuid)]} source={source} revision={revision} pageReads={pageReads} focused={focused} onFocus={onFocus} targets={targets} onSelect={onSelect} disabled={disabled} navigationDisabled={navigationDisabled} onToggleInclusion={onToggleInclusion} inclusionForEpoch={inclusionForEpoch} setTargets={setTargets} onTagEpoch={onTagEpoch}/>:more&&<button ref={tail} className="epoch-load-more" disabled={navigationDisabled} onFocus={()=>{if(!navigationDisabled)setExpanded(true);}} onClick={()=>setExpanded(true)}>Load more epochs</button>}
+    {more&&(expanded||offset<restoreOffset||reveal)?<MemoCellEpochPage rowRegistry={rowRegistry} highlightedEpochs={highlightedEpochs} cell={cell} offset={offset+pageSize} restoreOffset={restoreOffset} onFrontier={onFrontier} expected={expected??receipt} onFault={onFault} revealEpoch={reveal?revealEpoch:null} seen={childSeen} source={source} revision={revision} pageReads={pageReads} focused={focused} onFocus={onFocus} targets={targets} onSelect={onSelect} disabled={disabled} navigationDisabled={navigationDisabled} onToggleInclusion={onToggleInclusion} inclusionForEpoch={inclusionForEpoch} setTargets={setTargets} onTagEpoch={onTagEpoch}/>:more&&<button ref={tail} className="epoch-load-more" disabled={navigationDisabled} onFocus={()=>{if(!navigationDisabled)setExpanded(true);}} onClick={()=>setExpanded(true)}>Load more epochs</button>}
 
   </>;
   if(source.readContext?.cohort_key)return <div data-inspection-page-ready={ready}><StableContent loading={page.loading} error={page.error} data={page.data} scope={JSON.stringify([frozenPresentationScope(source.readContext,source.protocolId,source.query),cell.cell_uuid,offset])} retry={page.reload} label="Refreshing incoming epoch list">{content}</StableContent></div>;
   return <div data-inspection-page-ready={ready}><Status {...page} retry={page.reload}>{content}</Status></div>;
 }
+const MemoCellEpochPage=memo(CellEpochPage);
 function CellEpochs({offset,onFrontier,...props}){
   const [fault,setFault]=useState(null),[attempt,setAttempt]=useState(0),[frontier,setFrontier]=useState(-1);
   const restoredOffset=useRef(offset);
   const loaded=value=>{setFrontier(old=>Math.max(old,value));onFrontier(value);};
   if(fault)return <div data-inspection-page-ready={false} role="alert">{fault} <button onClick={()=>{setFault(null);setAttempt(value=>value+1);setFrontier(-1);}}>Reload epochs</button></div>;
-  return <div data-inspection-page-ready={frontier>=restoredOffset.current}><CellEpochPage key={attempt} {...props} offset={0} restoreOffset={restoredOffset.current} expected={null} onFault={setFault} onFrontier={loaded}/></div>;
+  return <div data-inspection-page-ready={frontier>=restoredOffset.current}><MemoCellEpochPage key={attempt} {...props} offset={0} restoreOffset={restoredOffset.current} expected={null} onFault={setFault} onFrontier={loaded}/></div>;
 }
-function CellBranch({cell,dateOpen,onSelectCell,onSelectGroupCell,onTagCell,selectedCell,navigation,changeNavigation,rememberFrontier,...props}){
+function CellBranch({cell,dateOpen,onSelectCell,onSelectGroupCell,onTagCell,selectedCell,navigation,changeNavigation,rememberFrontier,liveTree,rowRegistries,...props}){
   const pageSize=useWorkspaceRequestScope()?.pageSize??60;
   const open=navigation.cells.includes(cell.cell_uuid);
   const setOpen=value=>{if(value!==open)changeNavigation(old=>({...old,cells:toggleInspectionBranch(old.cells,cell.cell_uuid,value)}));};
   const offset=inspectionPageOffset(navigation.offsets[cell.cell_uuid],cell.epochs,pageSize);
-  const onFrontier=value=>rememberFrontier(cell.cell_uuid,value);
+  const onFrontier=useMemo(()=>value=>rememberFrontier(cell.cell_uuid,value),[rememberFrontier,cell.cell_uuid]);
+  const rowRegistry=rowRegistries(cell.cell_uuid);
   const tags=props.source.readContext?incomingRowAnnotation(cell,'cell'):undefined;
   return <details className={tags?'cell-tree-cell has-shared-tags':'cell-tree-cell'} open={open} onToggle={event=>setOpen(event.currentTarget.open)}>
     <summary className={selectedCell===cell.cell_uuid?'selected-cell':''} onClick={event=>{
       // Clicking a cell targets the cell for tags (epochs target epochs); the row still opens/closes.
       // Browsing never replaces an inspected epoch from another cell.
       if(event.target.closest('button,input')||selectedCell===cell.cell_uuid)return;
-      if(!props.browseOnly||!props.focusedCell)onSelectCell?.(cell);else if(props.focusedCell===cell.cell_uuid)props.onTargetCell?.(cell);}} aria-label={datedCellLabel(cell,true)} aria-description={tags} title={[cell.identity_qualifier&&cell.cell_uuid,tags].filter(Boolean).join('\n')||undefined}><strong>{cell.label||cell.cell_label||'Unlabeled cell'}</strong>{cell.identity_qualifier&&<span> · {cell.identity_qualifier}</span>}{props.source.readContext&&!props.browseOnly&&<TreeGroupTagButton label="Tag This Cell" count={cell.epochs} disabled={props.disabled} onSelect={event=>onSelectGroupCell(cell,event)} onClick={event=>onTagCell(cell,event)}/>}</summary>
-    {dateOpen&&open&&<CellEpochs key={props.source.readContext?.cohort_key?frozenPresentationScope(props.source.readContext,props.source.protocolId,props.source.query):JSON.stringify([props.source,props.revision,cell.cell_uuid,cell.epochs])} cell={cell} offset={offset} onFrontier={onFrontier} {...props}/>}
+      // Read live focus: a memoized branch can skip renders for unrelated focus.
+      const {focusedCell,onTargetCell}=liveTree.current;
+      if(!props.browseOnly||!focusedCell)onSelectCell?.(cell);else if(focusedCell===cell.cell_uuid)onTargetCell?.(cell);}} aria-label={datedCellLabel(cell,true)} aria-description={tags} title={[cell.identity_qualifier&&cell.cell_uuid,tags].filter(Boolean).join('\n')||undefined}><strong>{cell.label||cell.cell_label||'Unlabeled cell'}</strong>{cell.identity_qualifier&&<span> · {cell.identity_qualifier}</span>}{props.source.readContext&&!props.browseOnly&&<TreeGroupTagButton label="Tag This Cell" count={cell.epochs} disabled={props.disabled} onSelect={event=>onSelectGroupCell(cell,event)} onClick={event=>onTagCell(cell,event)}/>}</summary>
+    {dateOpen&&open&&<CellEpochs key={props.source.readContext?.cohort_key?frozenPresentationScope(props.source.readContext,props.source.protocolId,props.source.query):JSON.stringify([props.source,props.revision,cell.cell_uuid,cell.epochs])} cell={cell} offset={offset} onFrontier={onFrontier} rowRegistry={rowRegistry} {...props}/>}
   </details>;
 }
+// A branch re-renders for focus/selection/highlight changes only when they
+// touch its loaded rows (or its own cell); every other prop compares exactly.
+function changedIds(previous=NO_IDS,next=NO_IDS,rows){
+  if(previous===next)return false;
+  const before=new Set(previous),after=new Set(next);
+  for(const id of before)if(!after.has(id)&&rows.has(id))return true;
+  for(const id of after)if(!before.has(id)&&rows.has(id))return true;
+  return false;
+}
+function sameCellBranch(previous,next){
+  const rows=next.rowRegistries(next.cell.cell_uuid),own=next.cell.cell_uuid;
+  for(const key of new Set([...Object.keys(previous),...Object.keys(next)])){
+    const a=previous[key],b=next[key];
+    if(a===b)continue;
+    if(key==='focused'){if(rows.has(a)||rows.has(b))return false;continue;}
+    if(key==='focusedCell'){if(a===own||b===own)return false;continue;}
+    if(key==='selectedCell'){if(a===own||b===own)return false;continue;}
+    if(key==='revealEpoch'){if(a?.cell_uuid===own||b?.cell_uuid===own)return false;continue;}
+    if(key==='targets'||key==='highlightedEpochs'){if(!a!==!b||changedIds(a,b,rows))return false;continue;}
+    if(key==='navigation'){if(a.cells.includes(own)!==b.cells.includes(own)||a.offsets[own]!==b.offsets[own])return false;continue;}
+    return false;
+  }
+  return true;
+}
+const MemoCellBranch=memo(CellBranch,sameCellBranch);
 function DateBranch({group,navigation,changeNavigation,...props}){
   const open=navigation.dates.includes(group.date);
   const setOpen=value=>{if(value!==open)changeNavigation(old=>({...old,dates:toggleInspectionBranch(old.dates,group.date,value)}));};
   return <details className="cell-tree-date" open={open} onToggle={event=>setOpen(event.currentTarget.open)}>
     <summary><strong>{group.date}</strong></summary>
-    {group.cells.map(cell=><CellBranch navigation={navigation} changeNavigation={changeNavigation} key={cell.cell_uuid} cell={cell} dateOpen={open} {...props}/>)}
+    {group.cells.map(cell=><MemoCellBranch navigation={navigation} changeNavigation={changeNavigation} key={cell.cell_uuid} cell={cell} dateOpen={open} {...props}/>)}
   </details>;
 }
+const MemoDateBranch=memo(DateBranch);
 export default function InspectionCellTree({cells,targets,setTargets,disabled,navigationDisabled=disabled,onFocus,onSelectCell,navigationScope,initialNavigation,onNavigationChange,membershipReady=true,navigationRequest=0,collapseRequest,...props}){
   const api=useWorkspaceRequest(defaultApi),requestScope=useWorkspaceRequestScope(),pageSize=requestScope?.pageSize??60;
   const source={...props.source,pageSize};
+  const sourceIdentity=JSON.stringify(props.source);
+  const stableSource=useMemo(()=>props.source,[sourceIdentity]);
+  const liveTree=useRef({});
+  const registries=useRef(new Map());
+  const rowRegistries=useMemo(()=>cellUuid=>{let rows=registries.current.get(cellUuid);if(!rows){rows=new Set();registries.current.set(cellUuid,rows);}return rows;},[]);
   const pageReadScope=JSON.stringify([source,props.revision]);
+  // Loaded-row registries only narrow re-renders; a new read scope starts empty.
+  useMemo(()=>registries.current.clear(),[pageReadScope]);
   const pageReads=useMemo(()=>createEpochPageReads(api),[pageReadScope,api,requestScope]);
   const groupTags=useTreeGroupTags({readContext:props.source.readContext,protocolId:props.source.protocolId,filters:{},revision:props.revision,actionsDisabled:disabled,onAnnotationsChanged:props.onAnnotationsChanged});
   const dates=useMemo(()=>inspectionDates(cells),[cells]);
@@ -143,6 +185,12 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
   const [selecting,setSelecting]=useState(false),[error,setError]=useState('');
   const scope=JSON.stringify({source:props.source,revision:props.revision,disabled:!!disabled,navigationDisabled:!!navigationDisabled,
     cells:ordered.map(cell=>[cell.cell_uuid,cell.epochs])});
+  // Forwarders are fenced to the selection scope that created them: a handler
+  // from an older scope stays inert, as before; same-scope calls use the latest
+  // render, so memoized branches keep exact behavior without re-rendering.
+  const actions=useMemo(()=>{const call=name=>(...args)=>liveTree.current.scope===scope?liveTree.current[name]?.(...args):undefined;return {onSelect:call('select'),onSelectCell:call('selectCell'),onSelectGroupCell:call('selectGroupCell'),
+    onTagCell:(cell,event)=>liveTree.current.scope===scope?liveTree.current.selectCell(cell,event,true):undefined,changeNavigation:call('changeNavigation'),rememberFrontier:call('rememberFrontier'),onFocus:call('onFocus'),
+    setTargets:call('setTargets'),onTagEpoch:call('openEpoch'),onToggleInclusion:call('onToggleInclusion'),onTargetCell:call('onTargetCell')};},[scope]);
   useLayoutEffect(()=>{callbacks.current={targets,setTargets,onFocus,onSelectCell,highlightedEpochs:props.highlightedEpochs,setHighlightedEpochs:props.setHighlightedEpochs};});
   useLayoutEffect(()=>{
     committedScope.current=scope;generation.current++;anchor.current=null;
@@ -219,5 +267,13 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setError(error.message);}
     finally{if(isCurrent())setSelecting(false);}
   }
-  return <div ref={treeElement} data-inspection-membership-ready={membershipReady} className="inspection-cell-tree" aria-label="All matching dates, cells and epochs" title={props.setHighlightedEpochs?"⌘/Ctrl-click to highlight epochs; Shift-click for a range":"⌘/Ctrl-click to select epochs; Shift-click for a range"}>{groupTags.dialog}{error&&<p role="alert">{error}</p>}{selecting&&<p role="status">Selecting epoch range…</p>}{!dates.length&&<p role="status">No epochs match the current filters.</p>}{dates.map(group=><DateBranch key={group.date} group={group} {...props} pageReads={pageReads} rememberFrontier={rememberFrontier} navigation={navigation} changeNavigation={changeNavigation} targets={targets} setTargets={setTargets} onTagEpoch={groupTags.openEpoch} onSelectGroupCell={selectGroupCell} onTagCell={(cell,event)=>selectCell(cell,event,true)} onFocus={onFocus} onSelectCell={selectCell} onSelect={select} disabled={disabled||selecting} navigationDisabled={navigationDisabled||selecting}/>)}</div>;
+  // Action callbacks forward to the latest render, so memoized branches keep
+  // exact behavior without re-rendering. Data functions (inclusionForEpoch)
+  // keep their identity so tag/curation overlays still re-render rows.
+  liveTree.current={scope,select,selectCell,selectGroupCell,changeNavigation,rememberFrontier,onFocus,setTargets,openEpoch:groupTags.openEpoch,
+    onToggleInclusion:props.onToggleInclusion,onTargetCell:props.onTargetCell,focusedCell:props.focusedCell};
+  const stableActions={onSelect:actions.onSelect,onSelectCell:actions.onSelectCell,onSelectGroupCell:actions.onSelectGroupCell,onTagCell:actions.onTagCell,
+    changeNavigation:actions.changeNavigation,rememberFrontier:actions.rememberFrontier,onFocus:onFocus?actions.onFocus:undefined,setTargets:setTargets?actions.setTargets:undefined,
+    onTagEpoch:actions.onTagEpoch,onToggleInclusion:props.onToggleInclusion?actions.onToggleInclusion:undefined,onTargetCell:props.onTargetCell?actions.onTargetCell:undefined};
+  return <div ref={treeElement} data-inspection-membership-ready={membershipReady} className="inspection-cell-tree" aria-label="All matching dates, cells and epochs" title={props.setHighlightedEpochs?"⌘/Ctrl-click to highlight epochs; Shift-click for a range":"⌘/Ctrl-click to select epochs; Shift-click for a range"}>{groupTags.dialog}{error&&<p role="alert">{error}</p>}{selecting&&<p role="status">Selecting epoch range…</p>}{!dates.length&&<p role="status">No epochs match the current filters.</p>}{dates.map(group=><MemoDateBranch key={group.date} group={group} {...props} {...stableActions} source={stableSource} liveTree={liveTree} rowRegistries={rowRegistries} pageReads={pageReads} navigation={navigation} targets={targets.length?targets:NO_IDS} disabled={disabled||selecting} navigationDisabled={navigationDisabled||selecting}/>)}</div>;
 }

@@ -34,7 +34,12 @@ export default function PagedTree(props){
   const callbacks=useRef(props);callbacks.current=props;
   const remember=useCallback(navigation=>{remembered.current[view==='tree'?'hierarchyNavigation':'columnNavigation']=navigation;callbacks.current.onNavigationChange?.({...remembered.current,treeView:view});},[view]);
   function changeView(next){setView(next);callbacks.current.onNavigationChange?.({...remembered.current,treeView:next});}
-  const anchor=useRef(null),selectionRequest=useRef(null);
+  const anchor=useRef(null),selectionRequest=useRef(null),selectionPath=useRef(null);
+  // Collapsing a branch (or all) cancels its pending first-epoch selection.
+  const collapseBranch=path=>{
+    const pending=selectionPath.current;
+    if(pending&&(!path||path.length<=pending.length&&path.every((key,index)=>key===pending[index]))){selectionRequest.current?.abort();selectionPath.current=null;}
+  };
   const [selectionError,setSelectionError]=useState('');
   const scopeKey=JSON.stringify({protocolId:props.protocolId,predicate:props.predicate,filters:props.filters||{},splits:props.splits||'',revision:props.revision??0,readContext:props.readContext,expectedRevision:props.expectedRevision,active:props.active,readPaused:!!props.readPaused,selectionAuthority:continuityKey(props)});
   const selectionScope=useRef(null),generation=useRef(0);
@@ -45,13 +50,13 @@ export default function PagedTree(props){
     selectionRequest.current?.abort();anchor.current=null;setSelectionError('');
     return()=>{generation.current++;selectionScope.current=null;selectionRequest.current?.abort();};
   },[scopeKey]);
-  async function selectCell(item,field,revision){
+  async function selectCell(item,field,revision,loadedPage=null){
     if(props.active===false||props.readPaused||props.actionsDisabled||!continuityCurrent(props)||selectionScope.current!==scopeKey||field?.field!=='cell'||!props.onSelectCell)return;
-    const request=new AbortController();selectionRequest.current?.abort();selectionRequest.current=request;
+    const request=new AbortController();selectionRequest.current?.abort();selectionRequest.current=request;selectionPath.current=item.path;
     const token=generation.current,isCurrent=()=>token===generation.current&&continuityMatches(props,callbacks.current)&&selectionRequest.current===request&&!request.signal.aborted;
     setSelectionError('');anchor.current=null;
     try{
-      const epoch=await selectionReader.firstEpoch(props,{path:item.path,revision,signal:request.signal});
+      const epoch=await selectionReader.firstEpoch(props,{path:item.path,revision,signal:request.signal,page:loadedPage});
       if(isCurrent()&&epoch)callbacks.current.onSelectCell?.(item.value,epoch);
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setSelectionError(error.message);}
   }
@@ -86,6 +91,6 @@ export default function PagedTree(props){
       }
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setSelectionError(error.message);}
   }
-  const selectionProps={onSelectEpoch:selectEpoch,onSelectEpochToggle:(...args)=>selectEpoch(...args,true),onSelectBranch:props.design?undefined:selectCell};
+  const selectionProps={onSelectEpoch:selectEpoch,onSelectEpochToggle:(...args)=>selectEpoch(...args,true),onSelectBranch:props.design?undefined:selectCell,onCollapseBranch:collapseBranch};
   return <div className="tree-view-workspace">{selectionError&&<p role="alert">{selectionError}</p>}{!props.presentation&&<div className="tree-view-switch" role="group" aria-label="Tree presentation"><button aria-pressed={view==='tree'} className={view==='tree'?'active':''} onClick={()=>changeView('tree')}>Expandable tree</button><button aria-pressed={view==='columns'} className={view==='columns'?'active':''} onClick={()=>changeView('columns')}>Columns</button></div>}{view==='tree'?<HierarchyTree {...props} {...selectionProps} initialNavigation={remembered.current.hierarchyNavigation} onNavigationChange={remember}/>:<ColumnTree {...props} {...selectionProps} initialNavigation={remembered.current.columnNavigation} onNavigationChange={remember}/>}</div>;
 }

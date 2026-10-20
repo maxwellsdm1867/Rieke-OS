@@ -33,7 +33,12 @@ export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,re
   &&canonical(page.path)===canonical(path.slice(0,depth))
   &&page.offset===(columnPositions[depth]?.offset??page.offset)));
  const parentCacheable=reusableTreeBody(treePageRequest(scope,{path:[],offset:0,currentRevision:revisionOverride||retainedPages[0]?.revision}));
- const batch=scope.readContext?.tree_column_pages===true||liveCapability&&(!!anchor||path.length>0)&&(!covered||!parentCacheable||!readOwner?.available);
+ // An advertised frozen context whose displayed parents already carry the
+ // pinned revision reads only its target; parents are reused only if their full
+ // fence (revision, candidate token, query, binding, generation) equals it.
+ const frozenRetained=scope.readContext?.tree_column_pages===true&&!anchor&&!freshContinuation&&path.length>0&&covered&&!!revisionOverride
+  &&retainedPages.every(page=>page.revision===revisionOverride);
+ const batch=scope.readContext?.tree_column_pages===true&&!frozenRetained||liveCapability&&(!!anchor||path.length>0)&&(!covered||!parentCacheable||!readOwner?.available);
  if(batch){body.include_ancestors=true;body.ancestor_offsets=Array.from(columnPositions.slice(0,8),position=>position?.offset==null?null:Number.isSafeInteger(position.offset)&&position.offset>=0?position.offset:0);}
  const page=await load(endpoint,{method:'POST',body,signal});
  if(!current())throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
@@ -71,6 +76,19 @@ export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,re
   const request=treePageRequest(scope,{path:value.path,offset:value.offset,currentRevision:value.revision});
   if(reusableTreeBody(request))await readOwner.read(lease,request,{load:async()=>value,signal});
  };
+ if(frozenRetained){
+  const parents=targets.map(target=>retainedPages.find(retained=>retained.kind==='branches'&&canonical(retained.path)===canonical(target.path)&&retained.offset===target.offset));
+  const fenced=page.revision===revisionOverride&&page.candidate_scope_revision===scope.readContext.candidate_scope_revision&&page.query_revision===page.candidate_scope_revision
+   &&Number.isSafeInteger(page.expected_binding_version)&&page.expected_binding_version>=0&&!!page.generation&&typeof page.generation==='object'&&!Array.isArray(page.generation)
+   &&canonical(page.path)===canonical(ordinaryBody.path)&&page.offset===ordinaryBody.offset;
+  if(fenced&&parents.every(parent=>parent&&parent.revision===page.revision&&parent.candidate_scope_revision===page.candidate_scope_revision
+   &&parent.query_revision===page.query_revision&&parent.expected_binding_version===page.expected_binding_version&&canonical(parent.generation)===canonical(page.generation))){
+   if(!current())throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
+   return [...parents,page];
+  }
+  // Retained parents no longer match: one bounded fresh target+ancestor batch.
+  return loadColumnTreePages({scope,path,offset,anchor,revisionOverride,columnPositions,freshContinuation,retainedPages:[],readOwner,load,signal,isCurrent});
+ }
  if(batch){
   const parents=page.ancestor_pages;
   const identity=page.read_identity;

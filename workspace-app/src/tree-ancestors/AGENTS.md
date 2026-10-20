@@ -154,3 +154,26 @@ batch capability. They remain excluded from reusableTreeBody; batching support
 must not imply cache admission. Warm scheduling requires both retained geometry
 and an eligible ordinary parent body. Noncacheable metadata parents therefore
 use a fresh bundle, including after capability discovery on the first target.
+
+## Presentation identity versus read authority
+
+`useTreeBranchReads()` also exposes `presentationIdentity`: the owner scope
+without its activation counter. Browser focus, online, pageshow, pagehide,
+visibility and desktop status still retire the cache and revoke every lease
+(`identity`, `active()` and `current()` change). They no longer change the
+presentation identity, so `RetainedTreePresentation`, `ColumnTree` and the
+Inspector page/tree read keys neither remount nor re-read: the open path and
+loaded pages stay visible. After activation the provider republishes its value,
+so mounted consumers re-check `active()`. Fail-closed behavior stays at action
+time: gestures check the live owner, writes carry their own revision
+expectations, and the next navigation reads a fresh target under the renewed
+owner. A column read interrupted by an activation change is re-issued on the
+same path (not the selected anchor). Evidence: "window focus and visibility
+revoke read leases without remounting Edit Tree…" in
+`inspectorTreeAuthority.test.js`.
+
+Advertised frozen contexts no longer request `include_ancestors` on every
+expand. When the displayed parents cover the path at the pinned revision, only
+the target is read; the parents are reused only if their revision, candidate
+token, query, binding and generation all equal the fresh target's. Any mismatch
+issues one bounded fresh target+ancestor batch. See `frozenColumnReads.test.js`.

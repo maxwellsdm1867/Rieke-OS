@@ -11,7 +11,7 @@ export default function RetainedTreePresentation({active,tree}){
  const owner=useTreeBranchReads();
  const selectedProof=!tree.readContext?.selection_token||typeof tree.readContext.selection_view_key==='string'&&!!tree.readContext.selection_view_key.trim();
  const frozenPresentation=selectedProof?frozenTreePresentationScope(tree):null;
- const key=frozenPresentation?canonicalReadIdentity({frozenPresentation}):canonicalReadIdentity({owner:owner?.identity??null,protocol:tree.protocolId??null,filters:tree.filters||{},predicate:tree.predicate??null,splits:tree.splits??'',revision:tree.revision??0,expectedRevision:tree.expectedRevision??null,readContext:tree.readContext??null});
+ const key=frozenPresentation?canonicalReadIdentity({frozenPresentation}):canonicalReadIdentity({owner:owner?.presentationIdentity??owner?.identity??null,protocol:tree.protocolId??null,filters:tree.filters||{},predicate:tree.predicate??null,splits:tree.splits??'',revision:tree.revision??0,expectedRevision:tree.expectedRevision??null,readContext:tree.readContext??null});
  const eligible=!!owner&&!tree.readContext;
  const focus=tree.selected??null;
  const [slot,setSlot]=useState({key,focus,seen:active,active,visit:0,mount:0});

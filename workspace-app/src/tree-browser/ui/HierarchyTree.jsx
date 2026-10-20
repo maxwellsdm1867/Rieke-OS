@@ -85,6 +85,7 @@ export default function HierarchyTree(props){
       initialized.current=true;commit(old=>({...old,loading:false,loadingPath:null,error:null,loadedScope:scopeKey}));callbacks.current.onStatus?.({loading:false,error:null});
       const receipt=current.current.pages.find(page=>!page.path.length)||result;
       callbacks.current.onMetadata?.({...receipt,count:receipt.total_epochs});
+      return result;
     }catch(error){if(!request.signal.aborted&&token===serial.current){commit(old=>({...old,loading:false,error:error.message,loadingPath:null}));callbacks.current.onStatus?.({loading:false,error:error.message});}}
   },[scopeKey,commit]);
   useEffect(()=>{
@@ -114,15 +115,20 @@ export default function HierarchyTree(props){
     const key=hierarchyKey(branch.path),opened=current.current.expanded.some(path=>hierarchyKey(path)===key);
     if(opened){
       revealSelected.current=null;focusScroll.current=null;
+      // A pending first-epoch selection must not re-expand what was just closed.
+      callbacks.current.onCollapseBranch?.(branch.path);
       if(current.current.loadingPath&&pathContains(branch.path,current.current.loadingPath)){controller.current?.abort();serial.current++;callbacks.current.onStatus?.({loading:false,error:null});}
       commit(old=>({...collapseHierarchy(old,branch.path),loading:old.loadingPath&&pathContains(branch.path,old.loadingPath)?false:old.loading,loadingPath:old.loadingPath&&pathContains(branch.path,old.loadingPath)?null:old.loadingPath}));
     }else{
       commit(old=>expandHierarchy(old,branch.path));
-      if(!current.current.pages.some(page=>hierarchyKey(page.path)===key))load({path:branch.path});
+      const loaded=current.current.pages.find(page=>hierarchyKey(page.path)===key&&page.offset===0);
+      // The expansion read also supplies the first-epoch selection: one request.
+      return {page:loaded??(current.current.pages.some(page=>hierarchyKey(page.path)===key)?null:load({path:branch.path}))};
     }
-    return !opened;
+    return false;
   }
   function collapseAll(){
+    callbacks.current.onCollapseBranch?.(null);
     controller.current?.abort();serial.current++;
     revealSelected.current=null;focusScroll.current=null;
     commit(old=>({...old,expanded:[],loading:false,loadingPath:null}));
@@ -146,7 +152,7 @@ export default function HierarchyTree(props){
         const key=hierarchyKey(item.path),opened=state.expanded.some(path=>hierarchyKey(path)===key),children=state.pages.find(child=>hierarchyKey(child.path)===key),loading=state.loading&&hierarchyKey(state.loadingPath||[])===key;
         const branchOn=readContext&&!blocked&&props.active!==false&&state.loadedScope===scopeKey&&groupSelection.on(item,page);
         const tags=readContext&&field?.field==='cell'?incomingRowAnnotation(props.cells?.find(cell=>cell.cell_uuid===item.value),'cell'):undefined;
-        return <li key={item.key} role="treeitem" aria-expanded={opened} className={opened?'ht-branch expanded':'ht-branch'}><button className={[readContext&&!props.browseOnly?branchOn?'incoming-branch-on':'incoming-branch-off':'',field?.field==='cell'&&props.selectedCell===item.value?'selected':''].filter(Boolean).join(' ')} aria-description={tags} aria-expanded={opened} disabled={blocked} onClick={()=>{if(toggle(item))callbacks.current.onSelectBranch?.(item,field,page.revision);}} onContextMenu={props.browseOnly?undefined:event=>groupTags.open(item,field,page,event)} onKeyDown={event=>branchKeys(event,item,opened,field,page)} title={[branchTooltip(item,field?.field),item.start_time&&`Recorded start: ${item.start_time}`,tags].filter(Boolean).join('\n')}>{loading?<LoaderCircle size={14} className="spin"/>:opened?<ChevronDown size={14}/>:<ChevronRight size={14}/>}<TreeBranchIcon node={item} field={field?.field} opened={opened}/><span className="ht-value"><span className="ht-field">{!item.components?.length&&`${label}: `}</span>{item.components?.length?<span className="ht-combination">{item.components.map(part=><span key={part.field}><small>{componentLabel(part)}</small> {componentValue(part)}</span>)}</span>:field?.field==='block'&&item.start_time?item.start_time:branchLabel(item,field?.field)}</span><span className="ht-count">{number(item.count)} <small>epochs</small></span></button>{!props.browseOnly&&<TreeGroupTagButton selectionLimit={readContext?.selection_manifests?Infinity:1000} selectionOn={branchOn} selectionPendingOn={groupSelection.pending(item,page)?.on} label={readContext&&field?.field==='cell'?'Tag This Cell':'Tag this group'} onSelect={groupSelection.select?event=>groupSelection.select(item,page,event):undefined} disabled={blocked||state.loading||props.actionsDisabled} count={item.count} onClick={event=>groupTags.open(item,field,page,event)}/>}{opened&&(children?renderPage(children):<div className="ht-loading" role="status">{loading?'Loading branch…':'Branch is not loaded.'}</div>)}</li>;
+        return <li key={item.key} role="treeitem" aria-expanded={opened} className={opened?'ht-branch expanded':'ht-branch'}><button className={[readContext&&!props.browseOnly?branchOn?'incoming-branch-on':'incoming-branch-off':'',field?.field==='cell'&&props.selectedCell===item.value?'selected':''].filter(Boolean).join(' ')} aria-description={tags} aria-expanded={opened} disabled={blocked} onClick={()=>{const expanded=toggle(item);if(expanded)callbacks.current.onSelectBranch?.(item,field,page.revision,expanded.page);}} onContextMenu={props.browseOnly?undefined:event=>groupTags.open(item,field,page,event)} onKeyDown={event=>branchKeys(event,item,opened,field,page)} title={[branchTooltip(item,field?.field),item.start_time&&`Recorded start: ${item.start_time}`,tags].filter(Boolean).join('\n')}>{loading?<LoaderCircle size={14} className="spin"/>:opened?<ChevronDown size={14}/>:<ChevronRight size={14}/>}<TreeBranchIcon node={item} field={field?.field} opened={opened}/><span className="ht-value"><span className="ht-field">{!item.components?.length&&`${label}: `}</span>{item.components?.length?<span className="ht-combination">{item.components.map(part=><span key={part.field}><small>{componentLabel(part)}</small> {componentValue(part)}</span>)}</span>:field?.field==='block'&&item.start_time?item.start_time:branchLabel(item,field?.field)}</span><span className="ht-count">{number(item.count)} <small>epochs</small></span></button>{!props.browseOnly&&<TreeGroupTagButton selectionLimit={readContext?.selection_manifests?Infinity:1000} selectionOn={branchOn} selectionPendingOn={groupSelection.pending(item,page)?.on} label={readContext&&field?.field==='cell'?'Tag This Cell':'Tag this group'} onSelect={groupSelection.select?event=>groupSelection.select(item,page,event):undefined} disabled={blocked||state.loading||props.actionsDisabled} count={item.count} onClick={event=>groupTags.open(item,field,page,event)}/>}{opened&&(children?renderPage(children):<div className="ht-loading" role="status">{loading?'Loading branch…':'Branch is not loaded.'}</div>)}</li>;
       })}
       {!entries.length&&<li className="ht-empty">No matching epochs.</li>}
       {(page.offset>0||page.has_more)&&<li role="none" className="ht-pagination"><button disabled={blocked||state.loading||!page.offset} aria-label={`Previous ${label} page`} onClick={()=>load({path:page.path,offset:Math.max(0,page.offset-60)})}><ArrowLeft size={13}/></button><span>{page.offset+1}–{page.offset+entries.length} / {number(page.total)}</span><button disabled={blocked||state.loading||!page.has_more} aria-label={`Next ${label} page`} onClick={()=>load({path:page.path,offset:page.offset+60})}><ArrowRight size={13}/></button></li>}
