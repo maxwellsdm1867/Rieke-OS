@@ -5484,7 +5484,7 @@
       },
       {
         "file": "python/disco/navigation/tree_pages.py",
-        "file_sha256": "15f0c384e9b7c22488afb03d9c1c935a0c533f56897d286e97b0a74376ec881a",
+        "file_sha256": "731f2499fb5823741dc66fb06cf9befb8d49f7eff25da113a3868c2ce802e524",
         "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Protocol-local cache follow-up: captured method targets and fallback checks are unchanged; fingerprint dependencies and grouping reservations are cohort-scoped. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Source/protocol cache retention review: exact method captures and observer targets remain unchanged; one shared bounded cache retains both navigation modes with original freshness checks. Navigation scope review (2026-10-18; includes merged PR #93 metadata index reads): reviewed syntax, categories, origins and targets are unchanged (selectors re-aligned by line diff and exact AST digest only); owner bytes share one navigation scope across depths/anchors/selection keyed by the publication serial, cache annotation-filtered scopes under verified annotation generations, read shared catalog definitions, and label search hits from the service's shared query member sets. Incremental overview review (2026-10-18): reviewed syntax, categories, origins and targets are unchanged (selectors re-aligned by line diff and exact AST digest only); owner bytes assemble the project overview from separately keyed components (publication base, per-protocol tokens, approval, exports, shared-tag counts), reuse protocol overview payloads by ETag, let indexed shared-tag summaries reuse a caller-proven scope token, key epoch-page identities on the publication serial, let branch selection reuse page groupings, and let navigation/explore scopes skip curation decoration. Missing-semantics review (2026-10-18, predicate contract v2): reviewed syntax, categories, origins and targets are unchanged (selectors re-aligned by line diff and exact AST digest only); owner bytes treat built-in fields recorded as None as not recorded in predicate values, typed index input and joint keys, emit predicate_version 2, and refuse reinterpreting affected version-1 saved selections. Counted predicate path review (2026-10-19): reviewed syntax, categories, origins and targets are unchanged; owner bytes add counted previews, typed query runs and inspection pages over frozen publications. See python/disco/navigation/CONTRACT.md#counted-previews-and-publication-revisions. Delta revision review (2026-10-18): captured ExplorerHistory targets unchanged; owner explorer bytes add membership-delta revisions (header/members/create_delta, lineage index); get/protocol_binding keep their contracts.",
         "sites": [
           {
@@ -5507,7 +5507,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "49ec6acd01c77bea507d1a8dc4d20d7ebb880b4cce8644db384b2d51afe6fb1c",
+                "file_sha256": "392223f5301b7884311bb77837b762f9a2e79356ac9b1c62016b0db13ba376ba",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5558,7 +5558,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "30bc25c3bbf122b5b045b0a723ea2b97e0a308874d41ccad787aad908ea30cb7",
+                "file_sha256": "b0e6e5d20a307723cee8441e794f94af30f08c16c0131fa2bdf3376439465bf8",
                 "contract_id": null
               }
             ]
@@ -5841,7 +5841,7 @@
       },
       {
         "file": "python/tests/test_workspace_curation.py",
-        "file_sha256": "2310a987421bfa86a5f69e615d169c59c5f87a269669db419d872c9960557d47",
+        "file_sha256": "d61cf876542ba81eac7a4183ed1aee186f90fc6273f3ce39fa2183c81846db51",
         "reason": "Inject owned in-memory workspace table fixtures during curation construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Counted predicate path review (2026-10-19): reviewed syntax, categories, origins and targets are unchanged; owner bytes add counted previews, typed query runs and inspection pages over frozen publications. See python/disco/navigation/CONTRACT.md#counted-previews-and-publication-revisions. Workbench context reads (2026-10-18): the table double gains a multi-row insert defined after all reviewed sites; reviewed syntax and targets are unchanged. Workbench context reads (2026-10-18): the table double gains a multi-row insert defined after all reviewed sites; reviewed syntax and targets are unchanged. Delta revision review (2026-10-18): the double gains delete_quick after all reviewed sites.",
         "sites": [
           {
@@ -5890,7 +5890,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "49ec6acd01c77bea507d1a8dc4d20d7ebb880b4cce8644db384b2d51afe6fb1c",
+                "file_sha256": "392223f5301b7884311bb77837b762f9a2e79356ac9b1c62016b0db13ba376ba",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5993,7 +5993,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "30bc25c3bbf122b5b045b0a723ea2b97e0a308874d41ccad787aad908ea30cb7",
+                "file_sha256": "b0e6e5d20a307723cee8441e794f94af30f08c16c0131fa2bdf3376439465bf8",
                 "contract_id": null
               }
             ]
@@ -6026,7 +6026,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "30bc25c3bbf122b5b045b0a723ea2b97e0a308874d41ccad787aad908ea30cb7",
+                "file_sha256": "b0e6e5d20a307723cee8441e794f94af30f08c16c0131fa2bdf3376439465bf8",
                 "contract_id": null
               }
             ]
@@ -6762,7 +6762,7 @@
               {
                 "module": "disco.workbench.workbench_exports",
                 "file": "python/disco/workbench/workbench_exports.py",
-                "file_sha256": "65ed90fa6849ede8a800f28d652d31b4aa03a87300838937809fab9a2a96725b",
+                "file_sha256": "d8ab8c80d4494f0910421bbb5e3ca2f008599587623a77eed17a77d32bcfee60",
                 "contract_id": "backend-workbench"
               },
               {
@@ -6797,7 +6797,7 @@
               {
                 "module": "disco.workbench.workbench_exports",
                 "file": "python/disco/workbench/workbench_exports.py",
-                "file_sha256": "65ed90fa6849ede8a800f28d652d31b4aa03a87300838937809fab9a2a96725b",
+                "file_sha256": "d8ab8c80d4494f0910421bbb5e3ca2f008599587623a77eed17a77d32bcfee60",
                 "contract_id": "backend-workbench"
               }
             ]
@@ -6883,7 +6883,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "49ec6acd01c77bea507d1a8dc4d20d7ebb880b4cce8644db384b2d51afe6fb1c",
+                "file_sha256": "392223f5301b7884311bb77837b762f9a2e79356ac9b1c62016b0db13ba376ba",
                 "contract_id": "backend-decisions"
               }
             ]
