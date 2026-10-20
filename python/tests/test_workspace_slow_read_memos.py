@@ -825,6 +825,20 @@ class PagedCellListTests(MemoFixture):
         self.assertEqual([row['cell_uuid'] for row in cells],appearance)
         self.assertEqual(rest,{key:value for key,value in full.items() if key!='cells'})
 
+    def test_protocol_overview_hit_reads_only_the_export_signature(self):
+        path=f'/api/protocols/{self.protocol}/overview?cells_limit=1'
+        calls=[]
+        original=type(self.store).protocol_export_status
+        def status(store,protocol,epoch_ids):
+            calls.append(len(list(epoch_ids)))
+            return original(store,protocol,epoch_ids)
+        with patch.object(type(self.store),'protocol_export_status',status):
+            first=self.get(path)
+            self.assertIn(max(calls),range(1,10**6))  # The miss builds the exported set once.
+            calls.clear()
+            self.assertEqual(self.get(path),first)
+        self.assertEqual(set(calls),{0})
+
     def test_invalid_windows_are_refused(self):
         for path in ('/api/overview',f'/api/protocols/{self.protocol}/overview',
                      f'/api/protocols/{self.protocol}/epochs?include_cells=true'):

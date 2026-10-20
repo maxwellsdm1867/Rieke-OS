@@ -1477,7 +1477,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if context is not None:
                 from workspace_protocol_state import proof_members
                 members=proof_members(proof)
-                exported,signature=store.protocol_export_status(protocol_uuid,members)
+                # The export signature keys the ETag; the protocol's exported
+                # set (O(members)) is built only when the memo misses.
+                _,signature=store.protocol_export_status(protocol_uuid,())
                 rig_token=recording_rig_token(members)
                 # The summary shows tag counts; v4 revisions omit shared tags.
                 etag=checksum({'projection':'protocol-overview-v2','query':context['query_revision'],'recording_rigs':rig_token,
@@ -1489,8 +1491,12 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 # The ETag names every input of this payload (protocol revision,
                 # shared-tag generation, exports, rigs, filters): reuse it per tag.
                 memo=protocol_overview_memo.get(protocol_uuid)
-                payload=(None if unchanged else memo[1] if memo is not None and memo[0]==etag else
-                         native_protocol_summary(protocol_uuid,query_filters,cross_protocols=False,exported_ids=exported))
+                payload=None if unchanged else memo[1] if memo is not None and memo[0]==etag else None
+                if payload is None and not unchanged:
+                    exported,current=store.protocol_export_status(protocol_uuid,members)
+                    if current!=signature:
+                        raise StaleWorkspace('Protocol summary changed while reading. Refresh and retry.')
+                    payload=native_protocol_summary(protocol_uuid,query_filters,cross_protocols=False,exported_ids=exported)
                 after=selected_state.native_context(protocol_uuid)
                 _,after_signature=store.protocol_export_status(protocol_uuid,())
                 if (not same_protocol_state(after,context) or after_signature!=signature or recording_rig_token(members)!=rig_token):
