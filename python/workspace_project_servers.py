@@ -38,8 +38,26 @@ def _close_failed_native_start(directory):
 
 def write_server_record(project_dir, identity, port):
     from workspace_updates import release_metadata
+    from disco.projects.runtime_state import current_process_created
     write_json(server_record(project_dir), {'project_uuid': identity, 'port': port, 'pid': os.getpid(),
+        'process_created': current_process_created(),
         'project_path': str(Path(project_dir).resolve()), 'app_release': release_metadata()['version']})
+
+
+def release_server_record(project_dir):
+    """On server exit, drop this process's PID but keep the browser-origin port."""
+    path = server_record(project_dir)
+    try:
+        if path.is_symlink() or not path.is_file() or path.stat().st_size > 65536:
+            return
+        record = json.loads(path.read_text())
+        if not isinstance(record, dict) or record.get('pid') != os.getpid():
+            return
+        for key in ('pid', 'process_created'):
+            record.pop(key, None)
+        write_json(path, record)
+    except (OSError, ValueError):
+        pass  # PID-plus-creation-time checks remain authoritative.
 
 
 def ready_url(project_dir, identity):

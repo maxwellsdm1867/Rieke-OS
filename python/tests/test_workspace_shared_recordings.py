@@ -45,6 +45,29 @@ class SharedRecordingTests(unittest.TestCase):
         self.assertIsNone(managed_recording_owner(self.a, self.source))
         self.assertTrue(self.source.exists(), 'Do not delete an unowned original')
 
+    def test_startup_sweep_removes_only_crashed_unpublished_library_staging(self):
+        import fcntl
+        from disco.projects.recording_files import sweep_incoming_staging
+        published = retain_recording(self.a, self.source, self.sha)
+        library = self.a.parent / 'recordings'
+        crashed = library / '.incoming-crashed'
+        crashed.mkdir()
+        (crashed / 'partial.h5').write_bytes(b'partial copy')
+        outside = self.root / 'outside'
+        outside.mkdir()
+        (outside / 'keep.h5').write_bytes(b'keep')
+        (library / '.incoming-link').symlink_to(outside, target_is_directory=True)
+        # A concurrent copy holds the recording lock: the sweep waits for a later start.
+        with (self.root / 'workspace/.disco-recordings.lock').open('a') as holder:
+            fcntl.flock(holder.fileno(), fcntl.LOCK_EX)
+            self.assertIsNone(sweep_incoming_staging(self.b))
+            self.assertTrue(crashed.exists())
+        self.assertEqual(sweep_incoming_staging(self.b), ['.incoming-crashed'])
+        self.assertFalse(crashed.exists())
+        self.assertTrue((outside / 'keep.h5').exists())
+        self.assertTrue((library / '.incoming-link').is_symlink())
+        self.assertEqual(published.read_bytes(), self.source.read_bytes())
+
     def test_repeat_import_into_one_project_does_not_copy_again(self):
         first = retain_recording(self.a, self.source, self.sha)
         self.assertEqual(retain_recording(self.a, self.source, self.sha), first)

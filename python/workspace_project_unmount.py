@@ -136,20 +136,24 @@ def unmount_project(app, inventory, body, *, current=None):
                         fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                 # Fail closed for old services that predate session locks, and
                 # for a native database left running without its app service.
-                import psutil
-                for name in ('logs/workspace-server.json', 'database/native-runtime.json'):
-                    runtime_path = directory / name
-                    if runtime_path.is_symlink():
-                        raise ValueError('Project service ownership is unavailable')
-                    if runtime_path.exists():
-                        if runtime_path.stat().st_size > 65536:
-                            raise ValueError('Project service ownership record is invalid')
-                        runtime = json.loads(runtime_path.read_text())
-                        pid = runtime.get('pid')
-                        if type(pid) is not int or pid <= 1:
-                            raise ValueError('Project service ownership record is invalid')
-                        if psutil.pid_exists(pid):
-                            raise ValueError('This project has a running service. Open it and unmount there after its operations finish')
+                from disco.projects.runtime_state import RUNNING, project_runtime_state, recorded_process_alive
+                runtime_path = directory / 'logs/workspace-server.json'
+                if runtime_path.is_symlink():
+                    raise ValueError('Project service ownership is unavailable')
+                if runtime_path.exists():
+                    if runtime_path.stat().st_size > 65536:
+                        raise ValueError('Project service ownership record is invalid')
+                    runtime = json.loads(runtime_path.read_text())
+                    pid = runtime.get('pid') if isinstance(runtime, dict) else None
+                    if pid is not None and (type(pid) is not int or pid <= 1):
+                        raise ValueError('Project service ownership record is invalid')
+                    # PID plus creation time (or, for older records, the server
+                    # entry point) proves identity; a recycled PID does not block.
+                    if pid is not None and recorded_process_alive(pid, runtime.get('process_created'),
+                                                                  entry_points={'workspace_api.py'}):
+                        raise ValueError('This project has a running service. Open it and unmount there after its operations finish')
+                if project_runtime_state(directory)['state'] in RUNNING:
+                    raise ValueError('This project has a running service. Open it and unmount there after its operations finish')
                 # Recheck identity after acquiring the opening/session locks.
                 if record.get('available'):
                     from workspace_projects import _project_record

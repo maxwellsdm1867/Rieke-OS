@@ -4,6 +4,7 @@ import datetime as dt
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import unittest
 import tempfile
@@ -65,6 +66,46 @@ class ImportPreflightAPITests(unittest.TestCase):
         self.assertEqual((self.case.sources.rows, self.case.data_store_states.rows), before)
         self.assertEqual(self.case.events.rows[-1]['action'], 'import_job_duplicate')
         self.assertEqual(self.case.events.rows[-1]['payload']['audit']['outcome'], 'completed')
+
+    def interrupted_job(self, progress):
+        job_id = str(uuid.uuid4())
+        folder = Path(self.case.temp.name) / 'logs/app-jobs'
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / (job_id + '.json')).write_text(json.dumps({'status': 'interrupted', 'source': str(self.source),
+            'owner_run_id': 'earlier-run', 'catalog_committed': None, 'progress': progress}))
+        return job_id
+
+    def test_recycled_import_pid_does_not_block_imports_and_job_can_be_acknowledged(self):
+        import psutil
+        other = psutil.Process(os.getppid())  # Alive, but not the recorded import worker.
+        recycled = self.interrupted_job({'version': 1, 'stage': 'parsing', 'pid': other.pid,
+                                         'process_created': other.create_time() - 100})
+        with patch('workspace_api.subprocess.run', side_effect=AssertionError('Duplicate must not invoke parser')):
+            response = self.case.client.post('/api/imports', json={'source_path': str(self.source)}, headers=self.case.headers)
+        self.assertEqual(response.status_code, 202, response.get_json())
+        acknowledged = self.case.client.post(f'/api/jobs/{recycled}/acknowledge', json={}, headers=self.case.headers)
+        self.assertEqual(acknowledged.status_code, 200, acknowledged.get_json())
+        self.assertTrue(acknowledged.get_json()['job']['acknowledged'])
+        listed = {row['job_uuid']: row for row in self.case.client.get('/api/jobs').get_json()['jobs']}
+        self.assertTrue(listed[recycled]['acknowledged'])
+        self.assertEqual(listed[recycled]['status'], 'interrupted')
+
+    def test_live_recorded_import_worker_still_blocks_and_cannot_be_acknowledged(self):
+        import psutil
+        worker = psutil.Process(os.getppid())
+        live = self.interrupted_job({'version': 1, 'stage': 'parsing', 'pid': worker.pid,
+                                     'process_created': worker.create_time()})
+        response = self.case.client.post('/api/imports', json={'source_path': str(self.source)}, headers=self.case.headers)
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(self.case.client.post(f'/api/jobs/{live}/acknowledge', json={}, headers=self.case.headers).status_code, 409)
+        for bad in ('../escape', 'missing-job'):
+            self.assertIn(self.case.client.post(f'/api/jobs/{bad}/acknowledge', json={}, headers=self.case.headers).status_code, {400, 404, 405})
+        self.assertEqual(self.case.client.post(f'/api/jobs/{live}/acknowledge', json={'force': True}, headers=self.case.headers).status_code, 400)
+
+    def test_progress_records_worker_creation_time(self):
+        from workspace_import_progress import ProgressReporter
+        import psutil
+        self.assertAlmostEqual(ProgressReporter().current['process_created'], psutil.Process().create_time(), places=3)
 
     def test_duplicate_upload_discards_only_new_staging_copy(self):
         with patch('workspace_api.subprocess.run', side_effect=AssertionError('No duplicate parse')):

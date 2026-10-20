@@ -5,7 +5,7 @@ belong to the project. Process ownership is checked before connection or shutdow
 """
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 import fcntl
 import hashlib
 import json
@@ -14,6 +14,7 @@ import re
 from functools import lru_cache
 from pathlib import Path
 import secrets
+import shutil
 import socket
 import stat
 import subprocess
@@ -209,6 +210,10 @@ def _runtime(root, descriptor):
         if _owned_process(value):
             raise ValueError('This copied project still refers to an active source database; close it cleanly before copying')
         return None
+    if _owned_process(value) is None:
+        # A dead or recycled-PID record is stale evidence. Callers observe no
+        # owned process; only a live process is compared with this runtime.
+        return value
     if value.get('executable') != str(native_binary()):
         raise ValueError('Native database runtime executable changed; stop the old runtime before updating')
     argv = value.get('argv')
@@ -393,6 +398,70 @@ def stop_native_database(project_dir):
         return _shutdown(root, descriptor, runtime, credentials['password'])
 
 
+def _initialize(root, descriptor, data, credential_path, owner_path, timeout):
+    data.mkdir(mode=0o700, exist_ok=True)
+    credentials = {'version': 1, 'project_uuid': descriptor['project_uuid'],
+        'instance_uuid': descriptor['instance_uuid'], 'password': secrets.token_urlsafe(36)}
+    _write(credential_path, credentials)
+    executable = native_binary()
+    result = subprocess.run([str(executable), '--no-defaults', '--initialize-insecure',
+        f'--basedir={executable.parent.parent}', f'--datadir={data}', '--mysqlx=OFF',
+        '--skip-log-bin', '--lower-case-table-names=2' if os.uname().sysname == 'Darwin' else '--lower-case-table-names=0'],
+        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=timeout)
+    if result.returncode:
+        raise ValueError('Private MySQL initialization failed; its partial new files were removed so it can be retried')
+    runtime = _launch(root, descriptor, bootstrap=True, timeout=timeout)
+    password = ''
+    stopped = False
+    try:
+        connection = _unix_connection(runtime['socket'], '', autocommit=True)
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("CREATE USER 'root'@'127.0.0.1' IDENTIFIED BY %s", (credentials['password'],))
+                cursor.execute("GRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1' WITH GRANT OPTION")
+                cursor.execute("ALTER USER 'root'@'localhost' IDENTIFIED BY %s", (credentials['password'],))
+                password = credentials['password']
+        finally:
+            connection.close()
+        stopped = True
+        _shutdown(root, descriptor, runtime, password)
+    finally:
+        if not stopped:
+            # Never leave the bootstrap server running after a failed setup.
+            with suppress(Exception):
+                _shutdown(root, descriptor, runtime, password)
+    _write(owner_path, {'version': 1, 'project_uuid': descriptor['project_uuid'],
+        'instance_uuid': descriptor['instance_uuid'], 'mysql_series': '8.4',
+        'clean_shutdown': True, 'last_project_path': str(root), 'machine_id': _machine_identity()})
+
+
+def _discard_failed_initialization(root, descriptor, data, credential_path, owner_path):
+    """Remove only files this attempt created before any owner receipt existed.
+
+    No owner receipt means no scientific database was ever opened for use, so
+    the new credentials and system tables carry no project data. Files remain
+    whenever a bootstrap server may still be alive or ownership is unclear.
+    """
+    try:
+        if owner_path.exists():
+            return
+        runtime_path = root / descriptor['runtime_ref']
+        if runtime_path.exists():
+            runtime = _read(runtime_path)
+            if runtime.get('bootstrap') is True and _owned_process(runtime) is not None:
+                with suppress(Exception):
+                    _shutdown(root, descriptor, runtime, '')  # e.g. a bootstrap startup timeout
+            if runtime_path.exists():
+                if _owned_process(_read(runtime_path)) is not None:
+                    return  # Still running: preserve everything for explicit recovery.
+                runtime_path.unlink()
+        if data.is_dir() and not data.is_symlink():
+            shutil.rmtree(data)
+        credential_path.unlink(missing_ok=True)
+    except (OSError, ValueError):
+        pass  # Preserve the original failure; remaining files keep the recovery gate.
+
+
 def ensure_native_database(project_dir, *, timeout=120):
     for pid, child in list(_PROCESSES.items()):
         if child.poll() is not None:
@@ -416,31 +485,11 @@ def ensure_native_database(project_dir, *, timeout=120):
                 raise ValueError('Existing MySQL files have no native ownership record; explicit recovery is required')
             if credential_path.exists():
                 raise ValueError('Native database initialization was interrupted; preserve its files for explicit recovery')
-            data.mkdir(mode=0o700, exist_ok=True)
-            credentials = {'version': 1, 'project_uuid': descriptor['project_uuid'],
-                'instance_uuid': descriptor['instance_uuid'], 'password': secrets.token_urlsafe(36)}
-            _write(credential_path, credentials)
-            executable = native_binary()
-            result = subprocess.run([str(executable), '--no-defaults', '--initialize-insecure',
-                f'--basedir={executable.parent.parent}', f'--datadir={data}', '--mysqlx=OFF',
-                '--skip-log-bin', '--lower-case-table-names=2' if os.uname().sysname == 'Darwin' else '--lower-case-table-names=0'],
-                stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=timeout)
-            if result.returncode:
-                raise ValueError('Private MySQL initialization failed; existing files were preserved for recovery')
-            runtime = _launch(root, descriptor, bootstrap=True, timeout=timeout)
-            import pymysql
-            connection = _unix_connection(runtime['socket'], '', autocommit=True)
             try:
-                with connection.cursor() as cursor:
-                    cursor.execute("CREATE USER 'root'@'127.0.0.1' IDENTIFIED BY %s", (credentials['password'],))
-                    cursor.execute("GRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1' WITH GRANT OPTION")
-                    cursor.execute("ALTER USER 'root'@'localhost' IDENTIFIED BY %s", (credentials['password'],))
-            finally:
-                connection.close()
-            _shutdown(root, descriptor, runtime, credentials['password'])
-            _write(owner_path, {'version': 1, 'project_uuid': descriptor['project_uuid'],
-                'instance_uuid': descriptor['instance_uuid'], 'mysql_series': '8.4',
-                'clean_shutdown': True, 'last_project_path': str(root), 'machine_id': _machine_identity()})
+                _initialize(root, descriptor, data, credential_path, owner_path, timeout)
+            except BaseException:
+                _discard_failed_initialization(root, descriptor, data, credential_path, owner_path)
+                raise
         else:
             owner = _read(owner_path)
             expected = {'version': 1, 'project_uuid': descriptor['project_uuid'],

@@ -13,6 +13,7 @@ from werkzeug.wrappers import Response
 
 from workspace_desktop import DesktopBoundary, DesktopServices, acquire_project_session
 from workspace_app_routes import register_app_routes
+from disco.projects import runtime_state
 
 
 class DesktopBoundaryTests(unittest.TestCase):
@@ -276,14 +277,17 @@ class DesktopRegistryTests(unittest.TestCase):
         self.services.path.write_text(json.dumps({'version': 1, 'services': [record]}))
         zombie = Mock(); zombie.status.return_value = psutil.STATUS_ZOMBIE
         with patch('psutil.Process', return_value=zombie):
-            with self.assertRaisesRegex(ValueError, 'clean database exit receipt'):
-                DesktopServices(self.state, self.state / 'resources', self.state / 'manifest', 'next', 's' * 48, {})
-        self.assertEqual(json.loads(self.services.path.read_text())['services'], [record])
+            # Without a clean receipt only this project needs recovery; the
+            # desktop still starts for every other project.
+            marked = DesktopServices(self.state, self.state / 'resources', self.state / 'manifest', 'next', 's' * 48, {})
+        self.assertEqual([item['project_path'] for item in marked.recovery_records()], [str(root)])
+        self.assertEqual(json.loads(self.services.path.read_text())['recovery_required'][0]['project_path'], str(root))
         zombie.terminate.assert_not_called(); zombie.kill.assert_not_called()
         owner.write_text(json.dumps({'project_uuid': 'project', 'clean_shutdown': True}))
         with patch('psutil.Process', return_value=zombie):
             recovered = DesktopServices(self.state, self.state / 'resources', self.state / 'manifest', 'next', 's' * 48, {})
         self.assertEqual(recovered.records(), [])
+        self.assertEqual(recovered.recovery_records(), [])
 
     def test_busy_second_child_resumes_first_and_never_stops_any(self):
         records = [{'pid': 1}, {'pid': 2}]
@@ -376,10 +380,103 @@ class DesktopRegistryTests(unittest.TestCase):
         self.services.database_operations['operation'] = record
         self.services.finish_database_operation('operation', failed=True)
         self.assertEqual(json.loads(self.services.path.read_text())['database_operations'][0]['phase'], 'failed_shutdown')
-        with self.assertRaisesRegex(ValueError, 'clean exit receipt'):
-            DesktopServices(self.state, self.state / 'resources', self.state / 'manifest', 'next', 's' * 48, {})
+        relaunched = DesktopServices(self.state, self.state / 'resources', self.state / 'manifest', 'next', 's' * 48, {})
+        self.assertEqual([item['project_path'] for item in relaunched.recovery_records()], [str(root)])
         (database / 'native-owner.json').write_text(json.dumps({'project_uuid': 'project', 'instance_uuid': 'instance', 'clean_shutdown': True}))
         self.assertEqual(self.services.database_operation_records(), [])
+        relaunched = DesktopServices(self.state, self.state / 'resources', self.state / 'manifest', 'again', 's' * 48, {})
+        self.assertEqual(relaunched.recovery_records(), [])
+
+    def _dead_project_record(self, name='failed-start', *, clean=False, phase='database_attempted'):
+        import uuid as uuid_module
+        root = self.state / name
+        (root / 'database').mkdir(parents=True)
+        identity = str(uuid_module.uuid4())
+        (root / 'database/native-owner.json').write_text(json.dumps({
+            'project_uuid': identity, 'clean_shutdown': clean, 'last_project_path': '/copied/from/elsewhere'}))
+        (root / 'catalog.json').write_text(json.dumps({'connection': {'credential_provider': {'kind': 'native-project'}}}))
+        session = str(uuid_module.uuid4())
+        record = {'pid': 123456789, 'session_id': session, 'project_uuid': identity, 'project_path': str(root),
+                  'source_commit': 'source', 'data_deferred': True, 'bound': True}
+        receipt = self.state / 'project-sessions' / f'{session}-123456789.json'
+        receipt.parent.mkdir(exist_ok=True)
+        receipt.write_text(json.dumps({**record, 'phase': phase}))
+        return root, record
+
+    def relaunch(self, session='next'):
+        return DesktopServices(self.state, self.state / 'resources', self.state / 'manifest', session, 's' * 48, {})
+
+    def test_failed_first_start_marks_only_that_project_and_other_projects_still_open(self):
+        root, record = self._dead_project_record()
+        self.services.path.write_text(json.dumps({'version': 1, 'services': [record]}))
+        relaunched = self.relaunch()
+        self.assertEqual([item['project_path'] for item in relaunched.recovery_records()], [str(root)])
+        self.assertEqual(relaunched.recovery_records()[0]['state'], 'stopped_unclean')
+        # The mark persists across another relaunch until the project is recovered.
+        self.assertEqual(len(self.relaunch('third').recovery_records()), 1)
+        other = self.state / 'other'
+        other.mkdir()
+        (other / 'catalog.json').write_text(json.dumps({'connection': {'credential_provider': {'kind': 'native-project'}}}))
+        with patch('workspace_desktop.subprocess.Popen', side_effect=RuntimeError('spawn reached')):
+            with self.assertRaisesRegex(RuntimeError, 'spawn reached'):
+                relaunched.open(other, 'other', None, 1)
+
+    def test_live_owned_database_of_a_dead_service_still_blocks_globally(self):
+        root, record = self._dead_project_record()
+        self.services.path.write_text(json.dumps({'version': 1, 'services': [record]}))
+        with patch.object(runtime_state, 'project_runtime_state',
+                   return_value={'state': 'running_owned', 'pid': 4242, 'reason': 'owned database process is alive'}):
+            with self.assertRaisesRegex(ValueError, 'still running'):
+                self.relaunch()
+        operation = {'operation_id': 'op', 'project_path': str(root), 'project_uuid': record['project_uuid'],
+                     'instance_uuid': None, 'phase': 'running'}
+        self.services.path.write_text(json.dumps({'version': 1, 'services': [], 'database_operations': [operation]}))
+        with patch.object(runtime_state, 'project_runtime_state',
+                   return_value={'state': 'running_owned', 'pid': 4242, 'reason': 'owned database process is alive'}):
+            with self.assertRaisesRegex(ValueError, 'still running'):
+                self.relaunch()
+
+    def test_recovery_marked_project_opens_only_without_a_live_database(self):
+        root, record = self._dead_project_record()
+        self.services.path.write_text(json.dumps({'version': 1, 'services': [record]}))
+        relaunched = self.relaunch()
+        with patch.object(runtime_state, 'project_runtime_state',
+                   return_value={'state': 'running_foreign', 'pid': 4242, 'reason': 'ownership changed'}), \
+             patch('workspace_desktop.subprocess.Popen', side_effect=AssertionError('never spawn')):
+            with self.assertRaisesRegex(ValueError, 'needs recovery'):
+                relaunched.open(root, record['project_uuid'], None, 1)
+        self.assertEqual(len(relaunched.recovery_records()), 1)
+        # No live process: the project's own native gate decides about its data.
+        with patch('workspace_desktop.subprocess.Popen', side_effect=RuntimeError('spawn reached')):
+            with self.assertRaisesRegex(RuntimeError, 'spawn reached'):
+                relaunched.open(root, record['project_uuid'], None, 1)
+        self.assertEqual(relaunched.recovery_records(), [])
+        self.assertNotIn('recovery_required', json.loads(relaunched.path.read_text()))
+
+    def test_released_failed_start_is_a_clean_exit_receipt(self):
+        root, record = self._dead_project_record(phase='database_released')
+        self.services.path.write_text(json.dumps({'version': 1, 'services': [record]}))
+        relaunched = self.relaunch()
+        self.assertEqual(relaunched.recovery_records(), [])
+        child = Mock(); child.poll.return_value = 0
+        relaunched.children[str(root)] = {'record': record, 'process': child}
+        self.assertEqual(relaunched.records(), [])
+        # A released receipt never hides a database that is running again.
+        relaunched.children[str(root)] = {'record': record, 'process': child}
+        with patch.object(runtime_state, 'project_runtime_state',
+                   return_value={'state': 'running_owned', 'pid': 4242, 'reason': 'alive'}):
+            self.assertTrue(relaunched.records()[0]['recovery_required'])
+
+    def test_failed_start_cleanup_requires_only_no_live_owned_database(self):
+        from workspace_desktop import release_failed_project_database
+        root, record = self._dead_project_record(name='copied-unclean')
+        # A copied unclean project never launched: cleanup is confirmed.
+        release_failed_project_database(root)
+        with patch.object(runtime_state, 'project_runtime_state',
+                   return_value={'state': 'running_owned', 'pid': 4242, 'reason': 'alive'}), \
+             patch('workspace_native_mysql.stop_native_database', return_value=False):
+            with self.assertRaisesRegex(ValueError, 'could not be confirmed'):
+                release_failed_project_database(root)
 
     def test_legacy_preflight_rejects_before_child_or_registry_changes(self):
         root = self.state / 'legacy'

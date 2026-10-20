@@ -15,6 +15,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import threading
@@ -139,11 +140,20 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         app.extensions['app_state_session_lock'] = session_lock
     db_lock = threading.RLock()
     importing = threading.Lock()
-    from workspace_import_progress import ProgressReporter, read_jobs, recover_jobs, progress_for, load_json
+    from workspace_import_progress import ProgressReporter, read_job, read_jobs, recover_jobs, progress_for, load_json
     owner_run_id = str(uuid.uuid4())
     active_jobs = set()
     app.extensions['project_active_writers'] = lambda: bool(active_jobs) or importing.locked()
     recover_jobs(log_dir(project_dir, 'app-jobs'), owner_run_id)
+    try:
+        # Crashed library copies leave unpublished staging folders. Only an
+        # uncontended recording lock proves no copy is running; never blocks.
+        from disco.projects.recording_files import sweep_incoming_staging
+        swept = sweep_incoming_staging(project_dir)
+        if swept:
+            app.logger.warning('Removed %d unpublished recording staging folder(s) left by an interrupted copy', len(swept))
+    except (OSError, ValueError):
+        app.logger.exception('Recording staging sweep was skipped')
     service = service or WorkspaceService(project_dir)
     # Index source descriptors once per published source list, not per protocol.
     # Values retain their recorded metadata; this index grants no read authority.
@@ -2181,25 +2191,45 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 active_jobs.discard(job_file.stem)
                 importing.release()
 
+    def earlier_import_worker_alive():
+        # An interrupted parser may still own a catalog transaction. PID plus
+        # recorded creation time proves identity; a recycled PID does not block.
+        from disco.projects.runtime_state import import_worker_alive
+        return any(job.get('status') == 'interrupted' and import_worker_alive(job.get('progress'))
+                   for job in read_jobs(log_dir(project_dir, 'app-jobs'), owner_run_id, active_jobs))
+
+    @app.post('/api/jobs/<job_id>/acknowledge')
+    def acknowledge_interrupted_job(job_id):
+        # Dismisses an interrupted import from attention lists. It never
+        # changes catalog evidence and is refused while its worker may run.
+        if request.args or request.get_json(silent=True) != {}:
+            raise ValueError('Acknowledge accepts an empty object')
+        if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,127}', job_id):
+            raise ValueError('Unknown import job')
+        job_file = log_dir(project_dir, 'app-jobs') / (job_id + '.json')
+        if job_file.is_symlink() or not job_file.is_file():
+            return jsonify(error='Unknown import job'), 404
+        from disco.projects.runtime_state import import_worker_alive
+        current = read_job(job_file, owner_run_id, active_jobs)
+        if current.get('status') != 'interrupted' or (current.get('diagnostics') or {}).get('stage') == 'job_log':
+            return jsonify(error='Only a readable interrupted import job can be acknowledged'), 409
+        if import_worker_alive(current.get('progress')):
+            return jsonify(error='This import worker may still be running; it cannot be acknowledged yet'), 409
+        for key in ('heartbeat_at', 'monitor_alive', 'elapsed_seconds', 'stage_elapsed_seconds', 'progress_age_seconds', 'job_uuid'):
+            current.pop(key, None)
+        current.update(acknowledged=True, acknowledged_at=now())
+        write_json(job_file, current)
+        return jsonify(job=read_job(job_file, owner_run_id, active_jobs))
+
     def submit_inbox(source, identity):
         if not importing.acquire(blocking=False):
             return False
         try:
             # An interrupted parser may still own a catalog transaction. Apply
             # the same conservative block as manual import admission.
-            for previous in read_jobs(log_dir(project_dir, 'app-jobs'), owner_run_id, active_jobs):
-                if previous.get('status') == 'interrupted':
-                    progress = previous.get('progress') or {}
-                    pid = progress.get('pid')
-                    if type(pid) is int and pid > 0 and pid != os.getpid() and progress.get('stage') not in {'complete', 'failed', 'duplicate'}:
-                        try:
-                            os.kill(pid, 0)
-                        except ProcessLookupError:
-                            continue
-                        except PermissionError:
-                            pass
-                        importing.release()
-                        return False
+            if earlier_import_worker_alive():
+                importing.release()
+                return False
             job_file = log_dir(project_dir, 'app-jobs') / (identity + '.json')
             write_json(job_file, {'status': 'queued', 'source': str(source), 'created_at': now(),
                                  'origin': 'h5-inbox', 'managed_upload': False,
@@ -2233,19 +2263,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if not importing.acquire(blocking=False):
             raise StaleWorkspace("An import is already running. Its progress is shown in Imports.")
         try:
-            for old in read_jobs(log_dir(project_dir, 'app-jobs'), owner_run_id, active_jobs):
-                if old.get('status') != 'interrupted':
-                    continue
-                progress = old.get('progress') or {}
-                pid = progress.get('pid')
-                if type(pid) is int and pid > 0 and pid != os.getpid() and progress.get('stage') not in {'complete', 'failed', 'duplicate'}:
-                    try:
-                        os.kill(pid, 0)
-                    except ProcessLookupError:
-                        continue
-                    except PermissionError:
-                        pass
-                    raise StaleWorkspace('An earlier import child may still be running. Check Data stores and the interrupted job diagnostics before starting another import.')
+            if earlier_import_worker_alive():
+                raise StaleWorkspace('An earlier import child may still be running. Check Data stores and the interrupted job diagnostics before starting another import.')
             managed_upload, upload_directory_uuid = False, None
             if request.files:
                 if set(request.files) != {'file'} or len(request.files.getlist('file')) != 1 or request.form:
@@ -2403,7 +2422,7 @@ def main():
     logging.getLogger('werkzeug').addHandler(handler)
     app.logger.setLevel(logging.INFO)
     app.logger.info('Workspace started; managed project directory: %s', args.project_dir.resolve())
-    from workspace_project_servers import write_server_record
+    from workspace_project_servers import release_server_record, write_server_record
     write_server_record(args.project_dir, app.extensions["workspace_service"].project["project_uuid"], args.port)
     from werkzeug.serving import make_server
     server = make_server('127.0.0.1', args.port, app, threaded=True)
@@ -2419,6 +2438,7 @@ def main():
                 close_traces()
         finally:
             server.server_close()
+            release_server_record(args.project_dir)
 
 
 if __name__ == "__main__":
