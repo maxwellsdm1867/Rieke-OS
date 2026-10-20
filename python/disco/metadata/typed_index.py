@@ -217,6 +217,29 @@ def build(source_db, target_db, *, max_seconds=300, min_free_gib=4, max_rss_gib=
         target.execute('CREATE INDEX typed_value_counts_field ON typed_value_counts(field_no,value_id,amount)')
         target.commit();budget.check(True)
         mark('value_counts_seconds',start)
+        # Per-cell aggregates of each bounded field (at most FIELD_COUNT_MAX_VALUES
+        # distinct values): epochs per (value, cell) and per cell without the
+        # field, with their earliest inspection rank. A single-field predicate's
+        # cell list and distinct-cell count then cost O(values x cells).
+        start=time.perf_counter()
+        target.execute('CREATE TABLE typed_cell_fields(field_no INTEGER PRIMARY KEY)')
+        target.execute('INSERT INTO typed_cell_fields SELECT field_no FROM typed_value_counts GROUP BY field_no HAVING COUNT(*)<=?',
+                       (FIELD_COUNT_MAX_VALUES,))
+        target.execute('CREATE TABLE typed_value_cell_counts(field_no INTEGER NOT NULL,value_id INTEGER NOT NULL,'
+                       'cell_uuid TEXT,amount INTEGER NOT NULL,first_rank INTEGER NOT NULL)')
+        target.execute('INSERT INTO typed_value_cell_counts SELECT ev.field_no,ev.value_id,c.cell_uuid,COUNT(*),MIN(c.chronology_rank) '
+                       'FROM typed_cell_fields f JOIN native.epoch_values ev ON ev.field_no=f.field_no '
+                       'JOIN typed_core c ON c.epoch_id=ev.epoch_id GROUP BY ev.field_no,ev.value_id,c.cell_uuid')
+        target.execute('CREATE INDEX typed_value_cell_counts_field ON typed_value_cell_counts(field_no,value_id)')
+        target.commit();budget.check(True)
+        target.execute('CREATE TABLE typed_missing_cell_counts(field_no INTEGER NOT NULL,cell_uuid TEXT,'
+                       'amount INTEGER NOT NULL,first_rank INTEGER NOT NULL)')
+        target.execute('INSERT INTO typed_missing_cell_counts SELECT f.field_no,c.cell_uuid,COUNT(*),MIN(c.chronology_rank) '
+                       'FROM typed_cell_fields f CROSS JOIN typed_core c WHERE NOT EXISTS (SELECT 1 FROM native.epoch_values ev '
+                       'WHERE ev.epoch_id=c.epoch_id AND ev.field_no=f.field_no) GROUP BY f.field_no,c.cell_uuid')
+        target.execute('CREATE INDEX typed_missing_cell_counts_field ON typed_missing_cell_counts(field_no)')
+        target.commit();budget.check(True)
+        mark('cell_counts_seconds',start)
         start=time.perf_counter();core_safe={}
         for field,column in CORE_FIELDS.items():
             number=target.execute('SELECT field_no FROM fields WHERE field_id=?',(field,)).fetchone()
@@ -457,16 +480,13 @@ class TypedMetadataIndex(_TypedQueries):
                 raise QueryCancelled('Typed metadata query cancelled') from None
             raise
 
-    @_guard
-    def single_field_count(self, predicate, *, max_values=FIELD_COUNT_MAX_VALUES):
-        """Exact whole-table count of a validated predicate over one field, or None.
+    def _single_field(self, predicate, max_values=FIELD_COUNT_MAX_VALUES):
+        """(field_no, matching value ids, epochs matched, missing matches) or None.
 
-        Each epoch holds at most one value per field, so the predicate's truth
-        depends only on that stored value (or its absence). Every distinct value
-        is evaluated with the native predicate evaluator, exactly as the native
-        index matches, and its stored epoch count is summed; absent epochs add
-        when the predicate matches a missing field. Fields with more than
-        `max_values` distinct values return None (the caller counts in SQL).
+        Each epoch holds at most one value per field, so a predicate over one
+        field is decided by that stored value (or its absence). Every distinct
+        value is evaluated with the native predicate evaluator, exactly as the
+        native index matches.
         """
         fields=set();pending=[predicate]
         while pending:
@@ -474,28 +494,82 @@ class TypedMetadataIndex(_TypedQueries):
             if 'not' in node:pending.append(node['not'])
             elif 'all' in node or 'any' in node:pending.extend(node.get('all',node.get('any',[])))
             else:fields.add(node['field'])
+        if not fields:
+            # A constant predicate (no leaves) matches every epoch or none: use
+            # any bounded field, all of its values plus its missing epochs.
+            found=self.connection.execute('SELECT field_no FROM typed_cell_fields ORDER BY field_no LIMIT 1').fetchone()
+            if found is None:return None
+            everything=predicates.matches(predicate,{})
+            total=self.connection.execute('SELECT COUNT(*) FROM typed_core').fetchone()[0]
+            values={row[0] for row in self.connection.execute('SELECT value_id FROM typed_value_counts WHERE field_no=?',found)} if everything else set()
+            return found[0],values,total if everything else 0,everything
         if len(fields)!=1:return None
         field=next(iter(fields));number=self.fields.get(field)
         if number is None:return None
         distinct=self.connection.execute('SELECT COUNT(*) FROM typed_value_counts WHERE field_no=?',(number,)).fetchone()[0]
         if distinct>max_values:return None
         total=self.connection.execute('SELECT COUNT(*) FROM typed_core').fetchone()[0]
-        matched=present=0
-        for raw,amount in self.connection.execute('SELECT v.value_json,c.amount FROM typed_value_counts c '
+        matched=present=0;values=set()
+        for value_id,raw,amount in self.connection.execute('SELECT c.value_id,v.value_json,c.amount FROM typed_value_counts c '
                 'JOIN typed_values v ON v.value_id=c.value_id WHERE c.field_no=?',(number,)):
             present+=amount
-            if predicates.matches(predicate,{field:json.loads(raw)}):matched+=amount
-        if predicates.matches(predicate,{}):matched+=total-present
-        return matched
+            if predicates.matches(predicate,{field:json.loads(raw)}):matched+=amount;values.add(value_id)
+        missing=predicates.matches(predicate,{})
+        if missing:matched+=total-present
+        return number,values,matched,missing
 
     @_guard
-    def chronology_page(self, predicate=None, scope=None, offset=0, limit=60):
-        """Matching epoch UUIDs in inspection chronology, one bounded window."""
-        where, arguments = self._where(predicate, scope)
-        return [row[0] for row in self.connection.execute(
-            'WITH page AS MATERIALIZED (SELECT c.epoch_uuid,c.chronology_rank FROM typed_core c WHERE '+where+
-            ' ORDER BY c.chronology_rank LIMIT ? OFFSET ?) SELECT epoch_uuid FROM page ORDER BY chronology_rank',
-            arguments+[limit, offset])]
+    def single_field_count(self, predicate, *, max_values=FIELD_COUNT_MAX_VALUES):
+        """Exact whole-table count of a validated single-field predicate, or None."""
+        plan=self._single_field(predicate,max_values)
+        return None if plan is None else plan[2]
+
+    @_guard
+    def single_field_cells(self, predicate):
+        """Matching cells as (cell_uuid, epochs, first epoch UUID) in order of first appearance, or None.
+
+        Sums the sealed per-(value, cell) and per-cell missing aggregates of the
+        predicate's matching values; never reads matching epochs.
+        """
+        plan=self._single_field(predicate)
+        if plan is None:return None
+        number,values,_,missing=plan
+        if not self.connection.execute('SELECT 1 FROM typed_cell_fields WHERE field_no=?',(number,)).fetchone():return None
+        cells={}
+        rows=self.connection.execute('SELECT value_id,cell_uuid,amount,first_rank FROM typed_value_cell_counts WHERE field_no=?',(number,))
+        extra=(self.connection.execute('SELECT NULL,cell_uuid,amount,first_rank FROM typed_missing_cell_counts WHERE field_no=?',(number,)).fetchall()
+               if missing else [])
+        for value_id,cell,amount,rank in [*rows,*extra]:
+            if value_id is not None and value_id not in values:continue
+            entry=cells.get(cell)
+            cells[cell]=(amount,rank) if entry is None else (entry[0]+amount,min(entry[1],rank))
+        ordered=sorted(cells.items(),key=lambda item:item[1][1])
+        ranks=[rank for _,(_,rank) in ordered];firsts={}
+        for start in range(0,len(ranks),900):
+            chunk=ranks[start:start+900]
+            firsts.update(self.connection.execute('SELECT chronology_rank,epoch_uuid FROM typed_core WHERE chronology_rank IN ('+
+                                                  ','.join('?' for _ in chunk)+')',chunk).fetchall())
+        return [(cell,amount,firsts[rank]) for cell,(amount,rank) in ordered]
+
+    @_guard
+    def chronology_page(self, predicate=None, scope=None, offset=0, limit=60, *, after_rank=None, local=False):
+        """One window of matching epochs in inspection chronology: [(epoch_uuid, rank)].
+
+        With `after_rank` (the last rank of the previous window) the window is a
+        keyset seek on chronology_rank and `offset` is ignored. `local` evaluates
+        the predicate per visited epoch (dense results) instead of materializing
+        every match (sparse results).
+        """
+        where, arguments = self._where(predicate, scope, local=local)
+        seek = ' AND c.chronology_rank>?' if after_rank is not None else ''
+        bounds = [after_rank, limit] if after_rank is not None else [limit]
+        window = ' LIMIT ?' if after_rank is not None else ' LIMIT ? OFFSET ?'
+        if after_rank is None:
+            bounds.append(offset)
+        return self.connection.execute(
+            'WITH page AS MATERIALIZED (SELECT c.epoch_uuid,c.chronology_rank FROM typed_core c WHERE ('+where+')'+seek+
+            ' ORDER BY c.chronology_rank'+window+') SELECT epoch_uuid,chronology_rank FROM page ORDER BY chronology_rank',
+            arguments+bounds).fetchall()
 
     @_guard
     def chronology_position(self, epoch_uuid, predicate=None, scope=None):
@@ -629,10 +703,10 @@ class TypedMetadataIndex(_TypedQueries):
     def explain(self, predicate=None, scope=None):
         return super().explain(predicate, scope)
 
-    def _where(self,predicate=None,scope=None):
+    def _where(self,predicate=None,scope=None,*,local=False):
         self._check()
         previous=getattr(self,'_structurally_scoped',False)
-        self._structurally_scoped=scope is not None and (not isinstance(scope,dict) or bool(set(scope)&{'cell','block','group','epoch_ids'}))
+        self._structurally_scoped=local or (scope is not None and (not isinstance(scope,dict) or bool(set(scope)&{'cell','block','group','epoch_ids'})))
         try:
             return super()._where(predicate,scope)
         finally:

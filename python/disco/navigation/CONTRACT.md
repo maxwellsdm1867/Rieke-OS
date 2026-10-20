@@ -260,7 +260,30 @@ first check the revision, then read one typed window ordered by the inspection
 chronology `chronology_rank` (date, time of day of `start_time`, UUID: exactly
 `tree_pages._chronology`), with the total, anchor position (a count of earlier
 matches) and the cell list (per-cell counts in order of first appearance)
-computed in SQL. Results equal the exact scope reader; annotation predicates,
+computed in SQL. A single-field predicate (any AND/OR/NOT over one field, at most
+20,000 distinct values) takes its total, cell list and distinct-cell count from
+sealed per-(field, value), per-(field, value, cell) and per-(field, cell missing)
+aggregates (O(values x cells), never O(matches)). Totals and cell lists are kept
+per (revision, predicate, cell filter); later pages are keyset seeks from the
+previous page's last inspection rank (O(page)). Results equal the exact scope reader; annotation predicates,
 unfrozen adapters and replaced policies use the exact path. A run does not
 freeze membership; revisions and exports keep exact membership. Coverage:
 `python/tests/test_workspace_query_run.py`.
+
+### Pending counts and the paged cell list
+
+A multi-field predicate's run and pages answer at once without its totals:
+`matched_count`/`total`, `last_run.epoch_count`/`cell_count` and the page cell
+list are `null`, with `counts: {status: "pending", request_id}` (and
+`cells_pending: true` on pages that asked for cells). One server-owned job per
+(revision, predicate) counts them exactly on the summary worker under the same
+generation fence; `GET /api/explore/summaries/<request_id>` returns
+`{matched_count, cell_count}` when ready, and later pages then carry the exact
+total and cell list with `counts.status: "ready"`. `has_more` is always exact
+(one extra row is read). Single-field predicates answer their counts at once.
+
+`POST /api/explore/epochs` pages the cell list with `cells_limit` (1–1000) and
+`cells_after` (cells already received, default 0): the response carries `cells`
+(that window, in first-appearance order), `cells_total` and `cells_next` (the
+next `cells_after`, or `null` at the end). Without `cells_limit` the full list
+is returned as before.

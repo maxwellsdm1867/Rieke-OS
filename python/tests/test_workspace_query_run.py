@@ -85,13 +85,74 @@ class QueryRunTests(unittest.TestCase):
                 return self.post('/api/explore/epochs', body)
         return self.post('/api/explore/epochs', body)
 
+    def single_field(self, predicate):
+        fields, pending = set(), [predicate]
+        while pending:
+            node = pending.pop()
+            if 'field' in node:
+                fields.add(node['field'])
+            pending.extend(node.get('all', []) + node.get('any', []) + ([node['not']] if 'not' in node else []))
+        return len(fields) <= 1
+
     def test_counted_run_equals_the_exact_run(self):
         for predicate in self.predicates():
             with self.subTest(predicate=predicate):
                 counted, exact = self.run_query(predicate), self.run_query(predicate, exact=True)
                 for result in (counted, exact):
                     result['last_run'].pop('ran_at')
+                if self.single_field(predicate):
+                    self.assertNotIn('counts', counted)
+                    self.assertEqual(counted, exact)
+                    continue
+                # Multi-field runs answer at once; exact counts follow from the job.
+                job = counted.pop('counts')
+                self.assertEqual((job['status'], counted['matched_count'], counted['last_run']['cell_count']), ('pending', None, None))
+                self.join()
+                result = self.client.get('/api/explore/summaries/' + job['request_id']).get_json()
+                self.assertEqual(result['status'], 'ready', result)
+                self.assertEqual(result['result'], {'matched_count': exact['matched_count'], 'cell_count': exact['last_run']['cell_count']})
+                for key in ('matched_count', 'tree', 'catalog'):
+                    counted.pop(key); exact.pop(key)
+                for key in ('epoch_count', 'cell_count'):
+                    counted['last_run'].pop(key); exact['last_run'].pop(key)
                 self.assertEqual(counted, exact)
+
+    def test_multi_field_pages_report_pending_counts_then_exact_totals(self):
+        predicate = {'any': [{'field': 'cell', 'operator': 'eq', 'value': str(uuid.UUID(int=901))},
+                             {'field': 'parameters/example', 'operator': 'eq', 'value': 0}]}
+        self.jobs.autostart = False
+        revision = self.run_query(predicate)['tree_revision']
+        body = {'predicate': predicate, 'splits': 'cell', 'revision': revision, 'limit': 7, 'include_cells': True}
+        pending = self.page(body)
+        exact = self.page(body, exact=True)
+        self.assertEqual((pending['total'], pending['cells_pending'], pending['counts']['status']), (None, True, 'pending'))
+        self.assertNotIn('cells', pending)
+        self.assertEqual(pending['epochs'], exact['epochs'])
+        self.assertEqual(pending['has_more'], exact['has_more'])
+        self.jobs.drive_worker()
+        ready = self.page(body)
+        self.assertEqual(ready.pop('counts')['status'], 'ready')
+        self.assertEqual(ready, exact)
+
+    def test_cell_list_pages_in_first_appearance_order(self):
+        for predicate in ({'field': 'parameters/example', 'operator': 'ne', 'value': 2}, {'all': []}):
+            revision = self.run_query(predicate)['tree_revision']
+            body = {'predicate': predicate, 'splits': 'cell', 'revision': revision, 'limit': 7, 'include_cells': True}
+            full = self.page(body, exact=True)['cells']
+            collected, position = [], 0
+            while position is not None:
+                for exact in (False, True):
+                    response = self.page({**body, 'cells_limit': 2, 'cells_after': position}, exact=exact)
+                    if not exact:
+                        counted = response
+                    else:
+                        self.assertEqual({k: v for k, v in counted.items() if k != 'counts'}, response)
+                self.assertEqual(counted['cells_total'], len(full))
+                collected.extend(counted['cells'])
+                position = counted['cells_next']
+            self.assertEqual(collected, full)
+        self.post('/api/explore/epochs', {**body, 'cells_after': 2}, status=400)
+
 
     def test_counted_pages_equal_the_exact_scope_reader(self):
         from disco.navigation.tree_pages import TreePages
@@ -115,8 +176,57 @@ class QueryRunTests(unittest.TestCase):
                 with self.subTest(predicate=predicate, body={k: v for k, v in body.items() if k != 'predicate'}):
                     with patch.object(TreePages, '_scope', side_effect=AssertionError('listed matches')):
                         counted = self.page(body)
+                        if counted.get('counts', {}).get('status') == 'pending':
+                            self.join()  # Multi-field totals arrive with the counts job.
+                            counted = self.page(body)
+                    counted.pop('counts', None)
                     self.assertEqual(counted, self.page(body, exact=True))
             self.assertEqual(exact_first['total'], len(ids))
+
+    def test_single_field_aggregates_equal_the_scanned_cells_and_counts(self):
+        from disco.metadata.explore_queries import typed_reader
+        with typed_reader(self.service) as reader:
+            for predicate in self.predicates():
+                validated = reader._validate(predicate)
+                single = reader.single_field_cells(validated)
+                with self.subTest(predicate=predicate):
+                    fields, pending = set(), [predicate]
+                    while pending:
+                        node = pending.pop()
+                        if 'field' in node:
+                            fields.add(node['field'])
+                        pending.extend(node.get('all', []) + node.get('any', []) + ([node['not']] if 'not' in node else []))
+                    if len(fields) > 1:
+                        self.assertIsNone(single)
+                        continue
+                    self.assertEqual(single, reader.chronology_cells(validated))
+                    self.assertEqual(reader.single_field_count(validated), reader.count(validated))
+                    self.assertEqual(len(single), reader.distinct_cells(validated))
+
+    def test_single_field_run_and_pages_never_scan_matches_and_later_pages_seek(self):
+        from disco.metadata.typed_index import TypedMetadataIndex
+        predicate = {'all': [{'field': 'parameters/example', 'operator': 'gte', 'value': 1},
+                             {'field': 'parameters/example', 'operator': 'lt', 'value': 4}]}
+        refuse = lambda name: patch.object(TypedMetadataIndex, name, side_effect=AssertionError(name + ' scanned matches'))
+        with refuse('distinct_cells'), refuse('chronology_cells'), refuse('count'):
+            revision = self.run_query(predicate)['tree_revision']
+            base = {'predicate': predicate, 'splits': 'cell', 'revision': revision, 'limit': 5, 'include_cells': True}
+            first = self.page(base)
+        seeks = []
+        original = TypedMetadataIndex.chronology_page
+
+        def observed(reader, *args, **kwargs):
+            seeks.append(kwargs.get('after_rank'))
+            return original(reader, *args, **kwargs)
+        with refuse('distinct_cells'), refuse('chronology_cells'), refuse('count'), \
+                refuse('single_field_cells'), refuse('single_field_count'), \
+                patch.object(TypedMetadataIndex, 'chronology_page', observed):
+            second = self.page({**base, 'offset': 5})
+            third = self.page({**base, 'offset': 10})
+        self.assertTrue(all(rank is not None for rank in seeks), seeks)
+        self.assertEqual(second, self.page({**base, 'offset': 5}, exact=True))
+        self.assertEqual(third, self.page({**base, 'offset': 10}, exact=True))
+        self.assertEqual(first, self.page(base, exact=True))
 
     def test_stale_revision_is_refused_before_reading(self):
         response = self.client.post('/api/explore/epochs', json={'predicate': {'all': []}, 'splits': 'cell',
