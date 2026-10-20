@@ -24,7 +24,11 @@ When WorkspaceService publishes deep-frozen read-model maps, a cached proof is k
 by the monotonic publication serial, binding header, source scope and index
 generation and retains only a digest and member set (no rows); unfrozen maps keep
 the exact content comparison. `DISCO_PROTOCOL_STATE_VERIFY=1` re-derives the digest
-on every key hit as a debug assertion.
+on every key hit as a debug assertion. A bound main on a frozen publication uses
+`protocol-state-v5`: its revision hashes the binding revision/version, the frozen
+recipe's content seal, the process-unique publication token, the source scope
+revision and the curation generation (shared tags excluded, as in v4), with no
+per-member metadata digest. Unbound or unfrozen protocols keep v4.
 Moving it into metadata or decisions without that distinction would hide its
 cross-owner proof rather than simplify callers. The finite-path proposal for
 `disco/decisions/protocol_state.py` is explicitly replaced by this KEEP decision.

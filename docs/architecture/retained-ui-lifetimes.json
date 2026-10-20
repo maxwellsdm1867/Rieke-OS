@@ -89,10 +89,10 @@
       ]
     },
     "src/annotations/annotationReceipts.js": {
-      "fingerprint": "2f17b24b8f9602a1f15953766a86f132b54c7d0982ea94cd7e587e990e71e1bc",
+      "fingerprint": "730ddda5b5480f764f479aff94d80e229c711dc420dabbfce70157a09624ecc9",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Per-tag time review (2026-10-17): receipt validation additionally checks optional chip added_at (ISO UTC Z) and time_source; no lifecycle sites changed. Workbench tag-scope review (2026-10-17): stableTagAuthority() is a pure contract check (protocol-state-v4 or workbench-candidate-scope-v2); no effects.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Per-tag time review (2026-10-17): receipt validation additionally checks optional chip added_at (ISO UTC Z) and time_source; no lifecycle sites changed. Workbench tag-scope review (2026-10-17): stableTagAuthority() is a pure contract check (protocol-state-v4 or workbench-candidate-scope-v2); no effects. Protocol-state v5 review (2026-10-18): STABLE_TAG_AUTHORITY_CONTRACTS also lists protocol-state-v5 (bound mains; shared tags excluded as in v4); still a pure constant/contract check with no lifecycle sites.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",

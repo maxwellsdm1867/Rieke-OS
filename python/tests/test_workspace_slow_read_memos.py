@@ -692,6 +692,56 @@ class IncrementalOverviewTests(MemoFixture):
         self.assertEqual(targets['epoch'],{self.ids[0]})
         self.assertEqual(targets['cell'],{self.service.rows[self.ids[1]]['cell_uuid']})
 
+    def test_cell_chips_reread_only_cells_named_by_the_change_feed(self):
+        """A tag write re-reads only the written cell, never every cell's chips."""
+        start=self.tracker.token();feed=[]
+        original_edit=self.fixture.edit
+        def edit(kind,target,*args,**kwargs):
+            result=original_edit(kind,target,*args,**kwargs)
+            feed.append((self.tracker.token(),{'target_kind':kind,'target_uuid':target,
+                'profile_uuid':self.fixture.author,'last_generation':len(feed)+1,'deleted':0}))
+            return result
+        self.fixture.edit=edit
+        lost={'value':False}
+        def changes(after,limit=10000):
+            if lost['value']:return None
+            if after==start:position=0
+            else:
+                matches=[index for index,(token,_) in enumerate(feed) if token==after]
+                if not matches:return None
+                position=matches[-1]+1
+            return [row for _,row in feed[position:]],self.tracker.token()
+        self.tracker.shared_changes=changes
+        reads=[]
+        # read_targets itself is a contract-checked method; its first step,
+        # the per-kind identity scope check, records which targets it reads.
+        original_scope=self.shared._scope
+        def scope(kind,ids):
+            reads.append((kind,list(ids)))
+            return original_scope(kind,ids)
+        self.shared._scope=scope
+        self.get('/api/overview')
+        self.assertTrue(reads)
+        cells=self.parts['tag_cells'][2]
+        self.fixture.edit('epoch',self.ids[0],['epoch-only'])
+        reads.clear()
+        payload=self.get('/api/overview')
+        self.assertEqual([kind for kind,_ in reads if kind=='cell'],[])
+        for identity,value in self.parts['tag_cells'][2].items():self.assertIs(value,cells[identity])
+        self.assertEqual(payload,self.reference())
+        cell=self.service.rows[self.ids[1]]['cell_uuid']
+        self.fixture.edit('cell',cell,['cell-only'])
+        reads.clear()
+        payload=self.get('/api/overview')
+        self.assertEqual([entry for entry in reads if entry[0]=='cell'],[('cell',[cell])])
+        self.assertEqual(payload,self.reference())
+        self.assertEqual([chip['tag'] for chip in next(item for item in payload['cells'] if item['cell_uuid']==cell)['annotations']['cell_tags']],['cell-only'])
+        lost['value']=True
+        self.fixture.edit('cell',cell,remove=['cell-only'],revision=1)
+        reads.clear()
+        payload=self.get('/api/overview')
+        self.assertEqual(sorted(sum((ids for kind,ids in reads if kind=='cell'),[])),sorted(self.parts['base'][1]['order']))
+        self.assertEqual(payload,self.reference())
 
 class SourcePreverificationRouteTests(MemoFixture):
     def test_trace_route_hashes_first_access_outside_the_database_lock(self):
@@ -798,6 +848,90 @@ class PredicateContractRefusalTests(MemoFixture):
         with patch.object(self.service,'refresh',return_value={}):
             response=self.client.post(self.case.base+'/refresh',json={'filters':{}},headers=self.case.headers)
         self.assertEqual(response.status_code,200,response.get_json())
+
+
+class ProtocolStateV5Tests(MemoFixture):
+    """Bound mains on a frozen publication: identity-based protocol-state-v5."""
+    def setUp(self):
+        super().setUp()
+        ProtocolContextFastPathTests.publish(self)
+
+    def bind(self):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        created=history.create(preview,self.service.sources,'catalog.json','fixture')
+        current=history.protocol_binding_header(self.protocol)
+        history.bind(created['revision_uuid'],self.protocol,current['version'] if current else 0,'fixture',{},2)
+        return created
+
+    def test_unbound_stays_v4_and_bound_uses_v5_without_a_metadata_digest(self):
+        unbound=self.reader.native_context(self.protocol)
+        self.assertEqual(unbound['query_revision_contract'],'protocol-state-v4')
+        self.bind()
+        with patch.object(self.reader,'_metadata',side_effect=AssertionError('v5 computed a metadata digest')):
+            bound=self.reader.native_context(self.protocol,self.ids[:1])
+            again=self.reader.native_context(self.protocol,self.ids[:1])
+        self.assertTrue(bound['query_revision'].startswith('protocol-state-v5:'))
+        self.assertEqual(bound['query_revision_contract'],'protocol-state-v5')
+        self.assertEqual(bound,again)
+        page=self.get(self.case.base+'/epochs?limit=5')
+        self.assertEqual(page['query_revision_contract'],'protocol-state-v5')
+        self.assertEqual(page['query_revision'],bound['query_revision'])
+
+    def test_v5_bare_revision_reads_no_members_and_prefers_revision_headers(self):
+        from disco.decisions.explorer import ExplorerHistory
+        created=self.bind()
+        self.reader.native_cache.clear()
+        bare=self.reader.native_context(self.protocol)
+        entry=self.reader.native_cache[self.protocol]
+        self.assertIsNone(entry['members'])  # A bare revision read never builds the member set.
+        self.reader.native_context(self.protocol,self.ids[:1])
+        self.assertIsNotNone(entry['members'])
+        # A history with sealed revision headers/members is read through them.
+        self.reader.native_cache.clear()
+        history=self.case.explorer_history
+        # Public history API only: sealed revision headers when the history
+        # has them (delta revisions), else the verified full revision.
+        if getattr(type(history),'header',None) is not None:
+            seal=history.header(created['revision_uuid'])['content_sha256']
+        else:
+            seal=history.get(created['revision_uuid'])['recipe']['content_sha256']
+        calls=[]
+        with patch.object(ExplorerHistory,'header',create=True,side_effect=lambda revision:calls.append('header') or
+                          {'content_sha256':seal,'source_revisions':['a'*64]}), \
+             patch.object(ExplorerHistory,'members',create=True,side_effect=lambda revision:calls.append('members') or list(self.ids)):
+            context=self.reader.native_context(self.protocol,self.ids[:1])
+        self.assertEqual(calls,['header','members'])
+        self.assertEqual(context['query_revision'],self.reader.native_context(self.protocol)['query_revision'])
+        self.assertEqual(bare['query_revision'],context['query_revision'])
+
+    def test_v5_changes_with_each_named_input(self):
+        self.bind()
+        seen={self.reader.native_context(self.protocol)['query_revision']}
+        def changed(mutate):
+            mutate()
+            revision=self.reader.native_context(self.protocol)['query_revision']
+            self.assertNotIn(revision,seen);seen.add(revision)
+        changed(lambda:self.save_curation(review_state='approved'))       # curation generation
+        changed(lambda:self.bind())                                        # binding revision/version/seal
+        changed(lambda:setattr(self.service,'cells',self.service.cells))   # publication token
+        changed(lambda:self.service.set_source_state_provider(lambda:{'a'*64:{'query_excluded':True}}))  # source scope
+        # Shared-tag writes do not retire the curation authority (as in v4).
+        before=self.reader.native_context(self.protocol)['query_revision']
+        self.fixture.edit('epoch',self.ids[0],['shared'])
+        self.assertEqual(self.reader.native_context(self.protocol)['query_revision'],before)
+
+    def test_v5_refuses_outside_members_and_locked_assertion_uses_the_key(self):
+        self.bind()
+        with self.assertRaisesRegex(ValueError,'outside'):
+            self.reader.native_context(self.protocol,['00000000-0000-4000-8000-000000000123'])
+        context=self.reader.native_context(self.protocol)
+        from disco.decisions.curation import RevisionConflict
+        self.tracker.assert_current_locked=lambda expected:None
+        self.assertEqual(self.reader.assert_context_locked(self.protocol,context),context['query_revision'])
+        self.service.cells=self.service.cells  # Republish: the key no longer matches.
+        with self.assertRaises(RevisionConflict):
+            self.reader.assert_context_locked(self.protocol,context)
 
 
 if __name__=='__main__':
