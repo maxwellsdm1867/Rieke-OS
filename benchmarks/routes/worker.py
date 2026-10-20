@@ -506,7 +506,12 @@ def main():
     # Sparse protocol tags (1 per 500 members) and shared tags with times, written
     # through production owners before timing so tag predicates have matches.
     seed_started = time.perf_counter()
-    tagged = main_ids[::500][:2000]
+    # At least 121 tagged epochs at every size (two full 60-row result pages
+    # plus one), so protocol-tag pages measure the app, not a short last page:
+    # 1 per 500 members at large sizes, denser below 100k, capped at 2,000.
+    tag_step = max(1, min(500, len(main_ids) // 200))
+    tagged = main_ids[::tag_step][:2000]
+    assert len(tagged) >= min(121, len(main_ids)), 'protocol-tag fixture too sparse'
     page = client.get(f'/api/protocols/{protocol}/epochs?limit=1', headers=headers).get_json()
     for start in range(0, len(tagged), 1000):
         chunk = tagged[start:start + 1000]

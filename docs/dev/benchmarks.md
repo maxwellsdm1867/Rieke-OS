@@ -576,7 +576,11 @@ The counting pass also records `sqlite.vm_steps` (SQLite virtual-machine steps
 via a progress handler, a load-independent proxy for rows scanned and sorted),
 so work done inside one SQL statement is visible. Everyday clicks are expected
 flat; whole-project search predicates and exports (`scaling.linear_allowed`)
-may be linear. A flat-expected case that
+may be linear. `/api/explore/page` (`explore.page.*`, `explore.page_next.*`) is used only by
+`tools/metadata_qualification`, not the UI, so it may be linear; its untyped tag-predicate
+loop is a known qualification-tool cost. The UI result path (`explore.run.*`,
+`explore.results_first/next.*`) is expected flat. The protocol-tag fixture seeds at least
+121 tagged epochs at every size so its result pages are full. A flat-expected case that
 grows in time or counts, or with project size alone, is flagged, as is any
 superlinear case; the command exits 2 when anything is flagged.
 
