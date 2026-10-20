@@ -79,7 +79,15 @@ def capture_query(definition, result, catalog_ref):
     if binding:
         payload['dataset_binding'] = copy.deepcopy(binding)
         payload['starter_query'] = copy.deepcopy(definition['query'])
+    if query.get('kind') == 'source_predicate':
+        # Predicate contract of the frozen source predicate (2: built-in null =
+        # not recorded); reuse refuses to reinterpret an older contract.
+        payload['predicate_contract_version'] = PREDICATE_CONTRACT_VERSION
     return seal(payload)
+
+
+# Mirrors disco.navigation.predicates.PREDICATE_VERSION.
+PREDICATE_CONTRACT_VERSION = 2
 
 
 def seal(payload):
@@ -221,7 +229,8 @@ def build_tree(rows, split_text, field_values=None, allowed_fields=None):
     fields = parse_splits(split_text, allowed)
     joints = [field for field in fields if field.startswith('joint/')]
     if joints:
-        field_values = {row['epoch_uuid']: {**{field:row.get(path) for field,path in SPLIT_FIELDS.items()},
+        # Predicate contract v2: a built-in recorded as None is not recorded.
+        field_values = {row['epoch_uuid']: {**{field:row[path] for field,path in SPLIT_FIELDS.items() if row.get(path) is not None},
                         **(field_values or {}).get(row['epoch_uuid'], {})} for row in rows}
         for field in joints:
             components = joint_components(field, allowed)

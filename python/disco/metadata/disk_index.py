@@ -453,7 +453,7 @@ class DiskMetadataIndex:
                     elif len(buckets)<=predicates.MAX_CHOICES:
                         bucket=dict(value=value,type=kind,count=count);buckets.append(bucket);indexed[key]=bucket
                 field.update(types=sorted(types),choices=buckets[:predicates.MAX_CHOICES],choices_truncated=len(buckets)>predicates.MAX_CHOICES)
-        result.update(operators=list(predicates.OPERATORS),predicate_version=1,limits=dict(max_depth=predicates.MAX_DEPTH,max_nodes=predicates.MAX_NODES,max_choices=predicates.MAX_CHOICES))
+        result.update(operators=list(predicates.OPERATORS),predicate_version=2,limits=dict(max_depth=predicates.MAX_DEPTH,max_nodes=predicates.MAX_NODES,max_choices=predicates.MAX_CHOICES))
         if ids is None: self._predicate_cache=copy.deepcopy(result)
         return result
 

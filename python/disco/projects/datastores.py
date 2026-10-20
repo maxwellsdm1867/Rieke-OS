@@ -227,7 +227,7 @@ class DataStores:
         """Rerun saved queries against eligible sources without changing any working set."""
         if identity is not None:
             self._source(identity)
-        items = []
+        items, skipped = [], []
         source_ids = {key for key, row in self.service.rows.items()
                       if identity is None or row['source_sha256'] == identity}
         for protocol_uuid, workspace in self.service.protocols.items():
@@ -236,6 +236,14 @@ class DataStores:
             if binding:
                 recipe = binding['recipe']
                 predicate, splits = recipe['predicate'], recipe['splits']
+                check = getattr(self, 'reinterpretation_required', None)
+                if check is not None and check(predicate, recipe.get('predicate_version', 1)):
+                    # Never re-run an old-contract saved selection under the new
+                    # meaning: report it as skipped with a visible reason.
+                    skipped.append({'protocol_uuid': protocol_uuid, 'name': workspace['definition']['name'],
+                                    'code': 'predicate_contract_rerun_required',
+                                    'reason': "Saved selection uses the old 'missing' meaning; re-run it."})
+                    continue
                 previous = {row['uuid']: row['metadata_hash'] for row in recipe['epochs']}
             else:
                 definition = workspace['definition']
@@ -270,7 +278,8 @@ class DataStores:
                 'diff': diff, 'diff_summary': summarize_diff(self.service.rows, previous, proposed),
                 'previous_count': len(previous), 'next_count': len(proposed),
                 'matched_count': preview['matched_count'], 'total_source': preview['total_source'], 'preview': preview})
-        return {'source_sha256': identity, 'source_scope': self.service.source_scope(), 'protocols': items}
+        return {'source_sha256': identity, 'source_scope': self.service.source_scope(), 'protocols': items,
+                **({'skipped_protocols': skipped} if skipped else {})}
 
     @staticmethod
     def _quantities(rows):

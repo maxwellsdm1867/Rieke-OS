@@ -174,3 +174,20 @@ class SearchPresetTests(unittest.TestCase):
         history=self.client.get('/api/search-presets/'+first['preset_uuid']+'/versions').get_json()
         self.assertEqual(len(history['versions']),1)
         self.assertEqual(history['versions'][0]['predicate'],self.body['predicate'])
+
+    def test_runs_recorded_under_the_old_predicate_contract_are_superseded(self):
+        from disco.navigation.search_presets import query_key
+        from disco.navigation.predicates import reinterpretation_required
+        self.fixture.app.extensions['search_presets'].superseded=reinterpretation_required
+        affected=self.create().get_json()
+        missing={'field':'cell type','operator':'missing'}
+        other=self.client.post('/api/search-presets',json={**self.body,'name':'Missing type','predicate':missing},
+                               headers=self.headers).get_json()
+        for predicate in (self.body['predicate'],missing):
+            self.runs.rows.append({'project_uuid':self.fixture.service.project['project_uuid'],'query_sha256':query_key(predicate),
+                                   'result':{'predicate_version':1,'epoch_count':7,'cell_count':1}})
+        presets={row['preset_uuid']:row for row in self.client.get('/api/search-presets').get_json()['presets']}
+        self.assertTrue(presets[other['preset_uuid']]['last_run_superseded'])
+        self.assertIsNone(presets[other['preset_uuid']]['last_run'])
+        if 'cell type' not in str(self.body['predicate']):
+            self.assertEqual(presets[affected['preset_uuid']]['last_run']['epoch_count'],7)

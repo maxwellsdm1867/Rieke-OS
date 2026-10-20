@@ -94,7 +94,7 @@ def _export_candidate_locked(service, store, history, revision_uuid, *, format,
         'metadata_fingerprint_version':preview['metadata_fingerprint_version'],
         'view':{'group_by':grouping,'layout':'landscape'},'source_revisions':candidate['source_revisions'],
         'source_scope':copy.deepcopy(candidate['source_scope']), 'export_scope':scope,
-        'epochs':[saved[key] for key in sorted(saved)]}
+        'epochs':[saved[key] for key in sorted(saved)],'predicate_contract_version':2}
     shared=getattr(service,'shared_annotations',None)
     if shared:snapshot['shared_annotations_revision']=shared.snapshot()['revision']
     if 'annotation_scope' in candidate:

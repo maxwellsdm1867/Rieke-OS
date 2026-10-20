@@ -97,7 +97,8 @@ def publish_incoming_export(manager, store, context, fingerprints, actor, option
         query=query, query_sha256=checksum(query), metadata_fingerprint_version=2,
         view=dict(group_by=candidate['tree_view']['fields'], layout='landscape'),
         source_revisions=source_revisions, source_scope=copy.deepcopy(context['source_scope']), export_scope=scope,
-        epochs=[dict(uuid=key, metadata_hash=value) for key, value in sorted(fingerprints.items())])
+        epochs=[dict(uuid=key, metadata_hash=value) for key, value in sorted(fingerprints.items())],
+        predicate_contract_version=2)
     shared = getattr(service, 'shared_annotations', None)
     if shared:
         snapshot['shared_annotations_revision'] = shared.snapshot()['revision']
