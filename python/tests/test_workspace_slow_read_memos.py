@@ -889,12 +889,17 @@ class ProtocolStateV5Tests(MemoFixture):
         self.assertIsNotNone(entry['members'])
         # A history with sealed revision headers/members is read through them.
         self.reader.native_cache.clear()
-        seal=self.case.explorer_history._recipe_cache[created['revision_uuid']]['content_sha256']
+        history=self.case.explorer_history
+        # Public history API only: sealed revision headers when the history
+        # has them (delta revisions), else the verified full revision.
+        if getattr(type(history),'header',None) is not None:
+            seal=history.header(created['revision_uuid'])['content_sha256']
+        else:
+            seal=history.get(created['revision_uuid'])['recipe']['content_sha256']
         calls=[]
         with patch.object(ExplorerHistory,'header',create=True,side_effect=lambda revision:calls.append('header') or
                           {'content_sha256':seal,'source_revisions':['a'*64]}), \
              patch.object(ExplorerHistory,'members',create=True,side_effect=lambda revision:calls.append('members') or list(self.ids)):
-            self.case.explorer_history._recipe_cache.clear()
             context=self.reader.native_context(self.protocol,self.ids[:1])
         self.assertEqual(calls,['header','members'])
         self.assertEqual(context['query_revision'],self.reader.native_context(self.protocol)['query_revision'])
