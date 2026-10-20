@@ -5911,7 +5911,7 @@
       },
       {
         "file": "python/tests/test_workspace_explore_queries.py",
-        "file_sha256": "f3641827c1c10181a7527d382673dd72e6a01a0af7d5e7d4edc083f4dd878911",
+        "file_sha256": "2f504f9797031c20ff012d1b9d9b0177564b91140ac8fce02fa3e8963d9a8fd0",
         "reason": "Choose the existing typed/native summary target and block it to exercise asynchronous request lifecycle. Explicit refresh recovery tests added; existing reviewed mock syntax and targets remain unchanged. Stale live readers still refuse; refresh reopens only fully verified sidecars. Per-tag time review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add shared_annotation_tag time rows written with tag changes, time-aware tag-filter validation/evaluation and bootstrap backfill. See python/disco/decisions/tag_times.py. Typed sidecar budget review (2026-10-18): the refresh test now expects a typed build failure to publish the native generation; reviewed sites are unchanged. Metadata index reads review (2026-10-18): disk_index adds a shared read-only catalog_definitions view, windowed per-key value reads, _Values.subset and an epoch_uuid prefix probe; explore_queries streams index-only summaries; reviewed targets and fixture behavior are unchanged.",
         "sites": [
           {
