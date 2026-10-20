@@ -1510,7 +1510,8 @@ class WorkspaceService:
                     'propagation_required': bool(aggregates['excluded_epoch_count']),
                     'source_scope_revision': scope['revision']}}
 
-    def epoch_page(self, protocol_uuid, filters=None, offset=0, limit=100, anchor_uuid=None, *, include_curation=True, include_cells=False):
+    def epoch_page(self, protocol_uuid, filters=None, offset=0, limit=100, anchor_uuid=None, *, include_curation=True, include_cells=False,
+                   cells_page=None):
         with elapsed("workspace_service", "epoch_page"):
             if isinstance(offset, bool) or isinstance(limit, bool) or not isinstance(offset, int) or not isinstance(limit, int) or offset < 0 or not 1 <= limit <= 250:
                 raise ValueError('Epoch page requires nonnegative offset and limit 1–250')
@@ -1538,16 +1539,30 @@ class WorkspaceService:
                 memo = self.__dict__.get('_page_cell_counts')
                 serial = publication_serial(self)
                 if serial is not None and memo is not None and memo[0] is identities and memo[1] == serial:
-                    counts = memo[2]
+                    counts, ordered = memo[2], memo[3]
                 else:
                     counts={}
                     for identity in identities:
                         cell=self.rows[identity]['cell_uuid']
                         counts[cell]=counts.get(cell,0)+1
+                    # First-appearance order in this page order (dict order).
+                    ordered=tuple(counts.items())
                     if publication_serial(self) is not None:
-                        self.__dict__['_page_cell_counts'] = (identities, publication_serial(self), counts)
-                result['cells']=sorted(({**self.cells[cell],'epochs':count} for cell,count in counts.items()),
-                    key=lambda row:(row['cell_type'] or '',row['date'],row['label']))
+                        self.__dict__['_page_cell_counts'] = (identities, publication_serial(self), counts, ordered)
+                if cells_page is None:
+                    result['cells']=sorted(({**self.cells[cell],'epochs':count} for cell,count in counts.items()),
+                        key=lambda row:(row['cell_type'] or '',row['date'],row['label']))
+                else:
+                    # A window of cells in first appearance along the epoch
+                    # order (the search contract); O(window) on a memo hit.
+                    cells_limit, cells_after = cells_page
+                    if (type(cells_limit) is not int or not 1 <= cells_limit <= 1000
+                            or type(cells_after) is not int or cells_after < 0):
+                        raise ValueError('cells_limit must be 1–1000 and cells_after a nonnegative position')
+                    window = ordered[cells_after:cells_after + cells_limit]
+                    result['cells']=[{**self.cells[cell],'epochs':count} for cell,count in window]
+                    result['cells_total']=len(ordered)
+                    result['cells_next']=(cells_after+len(window) if cells_after+len(window)<len(ordered) else None)
             return result
 
     def _epoch_page_identities(self, protocol_uuid, filters=None):

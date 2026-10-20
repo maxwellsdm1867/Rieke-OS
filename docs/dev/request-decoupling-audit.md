@@ -268,3 +268,30 @@ verified annotation generation. Tree pages read the index's shared definitions v
 Caveat: the harness's in-place "unrelated fingerprint edit" becomes a republication
 under frozen maps and rebuilds the scope once (base: 0 builds). In production every
 fingerprint change is a refresh republication, which already cleared the cache.
+
+## Paged cell lists (2026-10-19)
+
+Every per-cell list that was returned in full now accepts the cell window of
+`POST /api/explore/epochs`, as GET query parameters:
+
+| route | list | window order |
+|---|---|---|
+| `GET /api/overview` | `cells` | the full list's order |
+| `GET /api/protocols/<p>/overview` | `cells` | the full list's order |
+| `GET /api/protocols/<p>/epochs?include_cells=true` | `cells` | first appearance along the protocol's epoch order |
+
+- `cells_limit`: integer 1–1000. `cells_after`: cells already received
+  (integer ≥ 0, default 0). Each may appear once. `cells_after` without
+  `cells_limit`, or `cells_limit` on the epochs page without
+  `include_cells=true`, is a 400.
+- With `cells_limit` the response carries `cells` (that window), `cells_total`
+  and `cells_next` (the next `cells_after`, or `null` at the end). All other
+  fields are unchanged; `counts.cells` stays the full count.
+- Without both parameters the full list is returned exactly as before (older
+  clients). The epochs page's full list keeps its type/date/label sort.
+- Protocol overview windows carry their own `ETag` (the full-list validator is
+  not reused for a window).
+- On a frozen publication, a project-overview window is assembled from the
+  cached components in O(window). The startup display cache is rebuilt from
+  paged reads only when its cell or count inputs change, so its event list may
+  lag until then or until a full read.
