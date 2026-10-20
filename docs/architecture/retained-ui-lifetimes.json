@@ -3083,10 +3083,10 @@
       ]
     },
     "src/requested-summaries/requestedSummaries.js": {
-      "fingerprint": "da2d82dec2c622d2070d08935dbe99b987646f4e2f02b2aabb169bedf7f3b9f8",
+      "fingerprint": "dc67e1964f4509d4c0530dd8b103222ec621cc289c0e6361da382756f3ef0fe7",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. F4 review (2026-10-18): submit no longer receives the run abort signal so a retired run always sees the receipt and cancels the server job; the run controller aborts polls only. No effect sites.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"
@@ -3268,16 +3268,16 @@
       ]
     },
     "src/summary-jobs/useFieldRegistry.js": {
-      "fingerprint": "f3a90ad6b7db4ae70fcc9f2a0546dae527ecf3b8fd3772555640cba846f76184",
+      "fingerprint": "12117a65dcd21033a861238c02e0a50296cb40f9b08dc7b0c47da693ef65bdde",
       "sites": [
         {
           "owner": "useFieldRegistry",
           "kind": "useEffect",
-          "fingerprint": "61830b24b662bcd10ccb293780480f5597f27a453a52d59918c980434b2d67bc"
+          "fingerprint": "e8507f12d6de62618c3d8c00e37d269a6fcfa165291be4a482269ea25ef51ae1"
         }
       ],
       "lifetime": "bounded-resource-lifetime",
-      "reason": "Registry/fallback reads follow visibility, abort on hide and retain completed same-key presentation.",
+      "reason": "Registry/fallback reads follow visibility, abort on hide and retain completed same-key presentation. F4 review (2026-10-18): fallbackPath joins the read identity only after a legacy service answered through it; completed-key skip also requires the current state to be that key; same-identity refresh keeps the last completed fields with loading=true, errors and identity changes clear them. Abort/cleanup unchanged.",
       "tests": [
         "src/requested-summaries/requestedSummariesLifecycle.test.js",
         "src/traces/retainedReadLifecycle.test.js",

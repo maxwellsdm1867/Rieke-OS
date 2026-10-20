@@ -49,7 +49,8 @@ test('typed null/array/mixed-number summaries preserve exact source values; trun
 });
 test('A/B/A navigation cancels both old jobs and ignores late submission completions even with the same key',async()=>{
  const h=harness();h.client.start(request);h.client.start({...request,scope:{cell_uuid:'B'}});h.client.start(request);
- assert.equal(h.jobs[0].signal.aborted,true);assert.equal(h.jobs[1].signal.aborted,true);
+ // Submissions are never aborted; their late receipts are cancelled below.
+ assert.equal(h.jobs[0].signal,undefined);assert.equal(h.jobs[1].signal,undefined);
  h.jobs[2].work.resolve(ready('new-A'));await settle();assert.equal(h.state.request_id,'new-A');
  h.jobs[0].work.resolve(pending('old-A'));h.jobs[1].work.resolve(pending('old-B'));await settle();
  assert.equal(h.state.request_id,'new-A');assert.deepEqual(h.cancelled,['old-A','old-B']);h.client.dispose();
@@ -110,4 +111,28 @@ test('registry authority drift and missing authority witnesses reject initial jo
    const h=harness(),context={...registry,annotation:'scoped'};if(missing)delete context[witness];else context[witness]='changed';h.client.start({...request,generation:registry});h.jobs[0].work.resolve({...pending('invalid'),generation:context});await settle();assert.equal(h.state.status,'stale');assert.equal(h.state.result,null);assert.deepEqual(h.cancelled,['invalid']);h.client.dispose();
   }
  }
+});
+
+// Real fetch rejects once its signal aborts, so a receipt that the server has
+// already created can only be cancelled if the submit is never aborted.
+function honoringHarness(){
+ const h=harness(),jobs=h.jobs,submit=(request,signal)=>{const work=deferred();jobs.push({request,signal,work});
+  signal?.addEventListener('abort',()=>work.reject(Object.assign(Error('aborted'),{name:'AbortError'})));return work.promise;};
+ const states=h.states,timers=h.timers;let id=0;
+ const adapter={submit,poll:(jobId,signal)=>submit({poll:jobId},signal),cancel:jobId=>{h.cancelled.push(jobId);return Promise.resolve();}};
+ const client=createSummaryController({adapter,onState:state=>states.push(state),schedule:callback=>{timers.set(++id,callback);return id;},unschedule:key=>timers.delete(key)});
+ return {...h,client,get state(){return states.at(-1);}};
+}
+test('signal-honoring transport: cancel, replacement and unmount still cancel late server jobs',async()=>{
+ const h=honoringHarness();h.client.start(request);h.client.cancel();h.jobs[0].work.resolve(pending('late-cancel'));await settle();
+ assert.deepEqual(h.cancelled,['late-cancel']);assert.equal(h.state.status,'cancelled');h.client.dispose();
+ const r=honoringHarness();r.client.start(request);r.client.start({...request,scope:{cell_uuid:'B'}});r.jobs[0].work.resolve(pending('late-replaced'));await settle();
+ assert.deepEqual(r.cancelled,['late-replaced']);r.client.dispose();
+ const u=honoringHarness();u.client.start(request);u.client.dispose();u.jobs[0].work.resolve(pending('late-unmount'));await settle();
+ assert.deepEqual(u.cancelled,['late-unmount']);
+});
+test('retiring a run aborts its poll but cancels the acknowledged job',async()=>{
+ const h=honoringHarness();h.client.start(request);h.jobs[0].work.resolve(pending('polling'));await settle();h.tick();
+ assert.equal(h.jobs[1].signal.aborted,false);h.client.cancel();await settle();
+ assert.equal(h.jobs[1].signal.aborted,true);assert.deepEqual(h.cancelled,['polling']);assert.equal(h.state.status,'cancelled');h.client.dispose();
 });
