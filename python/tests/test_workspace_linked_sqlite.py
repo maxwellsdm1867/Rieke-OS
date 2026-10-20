@@ -155,6 +155,23 @@ class LinkedSQLiteTests(unittest.TestCase):
         self.assertLess(self.path.stat().st_size, full.stat().st_size / 2)
         self.assertEqual(self.package, before)
 
+    def test_frozen_catalog_split_absent_from_every_member_groups_as_not_recorded(self):
+        # A protocol catalog field can be absent from every exported (filtered)
+        # epoch. The frozen tree_view still names it, so it remains a valid split.
+        absent = {'id': 'parameters/absent_setting', 'label': 'Absent setting',
+                  'category': 'Parameters', 'path': 'parameters.absent_setting'}
+        snapshot = self.package['recipe']['query_snapshot']
+        recipe = prepare_export(snapshot, self.service.ids, destination='linked-sqlite',
+            review_policy='include_unreviewed', actor='fixture',
+            options={'split_order': 'parameters/absent_setting, cell',
+                     'tree_view': {'format': 'recording-tree-view', 'version': 1, 'fields': [absent,
+                         {'id': 'cell', 'label': 'Cell', 'category': 'Cell', 'path': 'cell_label'}]}})
+        self.package = {**self.package, 'recipe': recipe}
+        self.build()
+        with LinkedExport(self.path) as export:
+            self.assertEqual(export.query('SELECT field_id, missing, epoch_count FROM analysis_groups WHERE depth=1'),
+                             [{'field_id': 'parameters/absent_setting', 'missing': 1, 'epoch_count': 2}])
+
     def test_library_recording_supports_exact_linked_export_and_trace_after_original_removed(self):
         from disco.projects.recording_files import retain_recording
         source = self.package['sources'][0]
