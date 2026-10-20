@@ -14,10 +14,12 @@ class HistoricalProposalRecoveryTests(unittest.TestCase):
 
     def test_fresh_proposal_recovers_exact_additions_while_stale_origin_stays_immutable(self):
         original = self.manager.context(self.protocol, self.revision, 'actor-one')
-        old_recipe = copy.deepcopy(original['candidate'])
+        old_recipe = copy.deepcopy(self.manager.history.get(self.revision)['recipe'])  # Full stored recipe.
         baseline = original['baseline']
         changed = next(iter(original['previous']))
-        self.case.service._fingerprints[changed] = 'c' * 64
+        # A refresh publishes a new fingerprint map under a new publication token.
+        self.case.service._fingerprints = {**self.case.service._fingerprints, changed: 'c' * 64}
+        self.case.service._explore_publication = str(uuid.uuid4())
         # Simulate an explicitly reconciled main with refreshed metadata, followed
         # by another import proposal. The historical proposal stays immutable.
         preview = self.case.service.explore_preview(baseline['predicate'], baseline['splits'])

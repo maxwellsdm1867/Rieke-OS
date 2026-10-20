@@ -143,12 +143,12 @@ class CumulativePendingTests(unittest.TestCase):
         tracker=self.native_transaction_receipts()
         request=dict(expected_queue_revision=self.queue()['queue_revision'])
         before=copy.deepcopy([table.rows for table in self.case.connection.tables])
-        create=self.manager.history.create
+        create=self.manager.history.create_delta
         def race(*args,**kwargs):
             result=create(*args,**kwargs)
             tracker.generation+=1
             return result
-        with patch.object(self.manager.history,'create',side_effect=race):
+        with patch.object(self.manager.history,'create_delta',side_effect=race):
             response=self.case.client.post(self.case.base+'/workbench/prepare',json=request,headers=self.case.headers)
         self.assertEqual(response.status_code,409,response.get_json())
         self.assertEqual([table.rows for table in self.case.connection.tables],before)
@@ -342,7 +342,11 @@ class CumulativePendingTests(unittest.TestCase):
     def test_main_level_blocker_offers_nothing_and_names_the_reason(self):
         main = self.case.explorer_history.protocol_binding(self.protocol)['recipe']
         drifted = main['epochs'][0]['uuid']
-        self.case.service._fingerprints[drifted] = 'e' * 64
+        self.queue()  # Warm the per-publication main checks first.
+        # A refresh publishes a new fingerprint map under a new publication token.
+        service = self.case.service
+        service._fingerprints = {**service._fingerprints, drifted: 'e' * 64}
+        service._explore_publication = str(uuid.uuid4())
         queue = self.queue()
         self.assertEqual(queue['pending_epoch_count'], 0)
         self.assertIn('metadata changed', queue['main_blocked_reason'])
@@ -831,8 +835,8 @@ class CumulativePendingTests(unittest.TestCase):
         log = self.case.explorer_revisions.read_log
         start = len(log)
         action()
-        return sum(any('revision_uuid' in restriction for restriction in entry['restrictions']
-                       if isinstance(restriction, dict)) for entry in log[start:])
+        return sum(entry['projected'] is None and any('revision_uuid' in restriction for restriction in entry['restrictions']
+                   if isinstance(restriction, dict)) for entry in log[start:])
 
     def test_queue_and_candidate_recipe_reads_stay_flat_as_imports_grow(self):
         queue_reads, page_reads = [], []

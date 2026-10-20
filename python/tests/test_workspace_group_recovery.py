@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch, Mock
 
 import disco.backup.recovery_store as recovery
-from workspace_state_snapshot import (LEGACY_TABLES, WORKBENCH_TABLES, TABLES,
+from workspace_state_snapshot import (LEGACY_TABLES, WORKBENCH_TABLES, GROUP_TABLES, TABLES,
     migrate_restore_tables, restore_table_order)
 from disco.backup.recovery_generation import TABLE_NAMES, TABLE_IDS
 from test_workspace_recovery_store import scientific_fixture, canonical, identity
@@ -17,12 +17,14 @@ from test_workspace_recovery_store import scientific_fixture, canonical, identit
 
 class GroupRecoveryTests(unittest.TestCase):
     def test_table_ordinals_append_and_restore_migrates_without_changing_workbench(self):
-        self.assertEqual(TABLES[:-1],WORKBENCH_TABLES)
+        self.assertEqual(GROUP_TABLES[:-1],WORKBENCH_TABLES)
+        self.assertEqual(TABLES[:-1],GROUP_TABLES)
         self.assertEqual(WORKBENCH_TABLES[:len(LEGACY_TABLES)],LEGACY_TABLES)
-        self.assertEqual(TABLES[-1],'annotation_group_receipt')
-        self.assertEqual(TABLE_NAMES[-1],'annotation_group_receipt')
+        self.assertEqual(GROUP_TABLES[-1],'annotation_group_receipt')
+        self.assertEqual(TABLE_NAMES[-2:],('annotation_group_receipt','protocol_membership'))
         self.assertEqual(TABLE_IDS['annotation_group_receipt'],18)
-        for old in (LEGACY_TABLES,WORKBENCH_TABLES):
+        self.assertEqual(TABLE_IDS['protocol_membership'],19)  # Appended: earlier ordinals unchanged.
+        for old in (LEGACY_TABLES,WORKBENCH_TABLES,GROUP_TABLES):
             state,_=scientific_fixture()
             state['tables']={table:state['tables'][table] for table in old}
             if old==WORKBENCH_TABLES:
@@ -33,7 +35,9 @@ class GroupRecoveryTests(unittest.TestCase):
             migrate_restore_tables(state)
             self.assertEqual({name:state['tables'][name] for name in old},previous)
             self.assertEqual(set(state['tables']),set(TABLES))
-            self.assertEqual(state['tables']['annotation_group_receipt'],[])
+            self.assertEqual(state['tables']['protocol_membership'],[])
+            if old!=GROUP_TABLES:
+                self.assertEqual(state['tables']['annotation_group_receipt'],[])
             order=restore_table_order(dict(reversed(list(state['tables'].items()))))
             self.assertLess(order.index('workbench_draft'),order.index('workbench_decision'))
 

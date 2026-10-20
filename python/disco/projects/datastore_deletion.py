@@ -111,10 +111,23 @@ class DataStoreDeletion:
     def _journal(self, identity):
         return managed_directory(self.root, 'logs/storage/data-store-deletions') / (identity + '.json')
 
+    def _delta_history(self):
+        """Whether bound memberships can be read as views and pruned as removed deltas."""
+        history = self.stores.explorer_history
+        # The explorer history's own class methods, never instance overrides.
+        return all(name not in vars(history) and callable(getattr(type(history), name, None))
+                   for name in ('get', 'header', 'members', 'create_delta', 'bind'))
+
     def _bindings(self, removed):
         result = []
         history = self.stores.explorer_history
         for header in (history.Binding & {'project_uuid': self.project}).to_dicts():
+            if self._delta_history():
+                # O(removed) membership probes against the sealed revision's view.
+                members = history.members(header['revision_uuid'])
+                if any(key in members for key in removed):
+                    result.append({**header, 'recipe': history.header(header['revision_uuid'])})
+                continue
             binding = history.protocol_binding(header['protocol_uuid'])
             if any(row['uuid'] in removed for row in binding['recipe']['epochs']):
                 result.append(binding)
@@ -289,8 +302,21 @@ class DataStoreDeletion:
     def _prune_bindings(self, bindings, removed, identity):
         history = self.stores.explorer_history
         sources = [row for row in self.service.sources if row['source_sha256'] != identity]
+        actor = os.environ.get('USER', 'local-user')
         for binding in bindings:
             recipe = binding['recipe']
+            if 'epochs' not in recipe:
+                # Removed delta: O(removed), the pruned membership is never rewritten.
+                members = history.members(binding['revision_uuid'])
+                gone = sorted(key for key in removed if key in members)
+                record = history.create_delta(binding['revision_uuid'], {}, gone, actor, name=recipe['name'],
+                    fields={'total_source': max(0, recipe.get('total_source', len(members)) - len(removed)),
+                            'source_revisions': [sha for sha in recipe.get('source_revisions', []) if sha != identity]},
+                    _in_transaction=True)
+                history.bind(record['revision_uuid'], binding['protocol_uuid'], binding['version'], actor,
+                    {'added': [], 'removed': gone, 'changed': []}, len(members),
+                    _in_transaction=True, _lock_held=True, reason='data_store_deleted')
+                continue
             preview = prune_preview(recipe, removed, identity)
             gone = sorted(row['uuid'] for row in recipe['epochs'] if row['uuid'] in removed)
             record = history.create(preview, sources, self.root / 'catalog.json', os.environ.get('USER', 'local-user'),

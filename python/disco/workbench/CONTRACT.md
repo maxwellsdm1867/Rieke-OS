@@ -134,9 +134,13 @@ seen that main's saved query matches, from active sources, under a protocol
 name the entry accepts (`pending_pool`). "Seen" recordings are those present
 when main was last defined (query save, pinned creation or baseline freeze);
 additive merges do not change it. A main-level blocker offers nothing. The pool
-is cached and recomputed only when main's binding, sources, the service
+is cached and recomputed only when main's bound revision, sources, the service
 publication token (every refresh publishes a new one; map addresses are never a
-key), fingerprints, the entry definition or tags its query uses change. Re-running a search predicate
+key), fingerprints, the entry definition or tags its query uses change. The
+binding version is not an input: an undo back to a revision reuses that
+revision's pool. An additive merge admits the pool of main' as the old pool
+minus the accepted epochs (main's query and seen recordings are unchanged), so
+neither merge nor undo re-runs main's query. Re-running a search predicate
 is the separate, explicit full-diff path.
 
 The combined review is one immutable candidate per main revision and pool
@@ -175,6 +179,36 @@ use that one response's context for its initial display under matching local
 owner/lifetime checks; the header grants no new page, mutation or replay authority.
 The pending suite checks fresh 200/201 responses, byte-identical replay bodies,
 absent replay headers and failed-commit refusal using transactional doubles.
+
+## Delta merges (O(added), not O(main))
+
+With the canonical explorer reader, Workbench revisions are read as verified
+headers plus shared member views (`ExplorerHistory.header/members`); custom
+recipe readers keep full recipes. The combined review candidate is a
+membership delta over main (added = the pool), and an additive merge publishes
+main' as a delta over main (added = the accepted epochs), so neither writes,
+copies nor hashes main's membership. Context derivation for a candidate that is
+its baseline plus a sealed delta takes incoming, base conflicts and unavailable
+members from the delta. Main's changed-fingerprint and inactive-recording sets
+are computed once per (revision, publication token, the same published
+fingerprint map and rows, source scope) and derived for a delta from its
+parent in O(delta); a refresh publishes new maps and a new token under the
+database lock and nothing mutates them in place. `current_fingerprints_sha256`
+hashes the members whose current fingerprint differs (and those values), which
+together with the sealed recipes determines every current member fingerprint.
+merge-all builds one context and passes it to accept; the in-transaction check
+is the token close. `verify_sources` re-verifies the added epochs' recordings;
+main's carried members are proven by the context (sealed recipe, current
+fingerprints, active sources). The binding diff summary is derived from a
+cached per-revision profile (`summarize_additions`, equal to `summarize_diff`
+for additions). Lineage and undo read the delta: a delta over its exact parent
+that removes nothing is additive by construction, and undo rebinds the parent
+and retires the delta's index rows in the same binding-CAS transaction.
+Binding version fences, preview/draft/queue fences, source eligibility and
+fingerprint checks of added epochs are unchanged. Exports still freeze an
+explicit exact member list. The protocol query revision (protocol-state proof)
+is owned by the protocol-state reader and is still O(protocol) until its
+bound-main token (protocol-state-v5) lands.
 
 ## Recipes and separate publication
 

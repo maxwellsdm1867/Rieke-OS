@@ -17,7 +17,7 @@ import uuid
 
 from workspace_audit import build_audit_payload
 from disco.decisions.curation import RevisionConflict
-from disco.workbench.diff import summarize_diff
+from disco.workbench.diff import summarize_additions, summarize_diff
 from disco.workbench.recipes import checksum
 from workspace_protocol_identity import require_protocol_compatibility
 from disco.operation_timing import elapsed
@@ -133,6 +133,13 @@ def workbench_tables(dj):
 _DISCOVERY_LIMIT = 1024
 
 
+def _remember_pool(cache, key, value):
+    cache.pop(key, None)
+    cache[key] = value
+    while len(cache) > 4:
+        del cache[next(iter(cache))]
+
+
 def _remember(cache, key, value):
     """Insert as most recent in an insertion-ordered dict bounded to _DISCOVERY_LIMIT."""
     cache[key] = value
@@ -152,7 +159,7 @@ class _RecipeReads:
         from disco.decisions.explorer import is_canonical_binding_reader
         self.history = history
         self.canonical = is_canonical_binding_reader(history.protocol_binding)
-        self.records, self.members = {}, {}
+        self.records, self.members, self.revisions = {}, {}, {}
 
     def get(self, revision):
         if not self.canonical:
@@ -193,6 +200,7 @@ class ProtocolWorkbench:
         # revision UUID (recipes are insert-only and content-sealed with their
         # UUID). Never scope authority: opening contexts verify fresh recipes.
         self._discovery, self._seen_sources = {}, {}
+        self._checks, self._profiles = {}, {}
 
     @property
     def tables(self):
@@ -224,14 +232,132 @@ class ProtocolWorkbench:
         return (reads.get(revision) if reads is not None and reads.history is self.history
                 else self.history.get(revision))['recipe']
 
+    def _delta_reads(self):
+        """Whether revisions are read as verified headers plus shared member views.
+
+        Custom recipe readers keep full recipes and per-call reads.
+        """
+        from disco.decisions.explorer import ExplorerHistory
+        return (getattr(self.history.get, '__func__', None) is ExplorerHistory.get
+                and getattr(getattr(self.history, 'header', None), '__func__', None) is ExplorerHistory.header
+                and getattr(getattr(self.history, 'members', None), '__func__', None) is ExplorerHistory.members)
+
+    def _revision(self, revision):
+        """(recipe header, UUID->fingerprint members) of one verified revision.
+
+        Canonical reads verify a delta link in O(delta) and share a read-only
+        member view; custom readers get the full recipe and a fresh map.
+        """
+        if not self._delta_reads():
+            recipe = self._recipe(revision)
+            return recipe, _members(recipe)
+        revision = str(uuid.UUID(revision))
+        reads = _recipe_reads.get()
+        if reads is not None and reads.history is self.history and revision in reads.revisions:
+            return reads.revisions[revision]
+        value = self.history.header(revision), self.history.members(revision)
+        if reads is not None and reads.history is self.history:
+            reads.revisions[revision] = value
+        return value
+
+    def _profile(self, header, members):
+        """Per-cell counts, representatives and protocol/duration totals of a revision.
+
+        Feeds additive diff summaries and pending-new-cell counts without
+        rescanning main: cached per revision (members are sealed; rows only
+        change with a new publication) and derived for a delta from its parent.
+        """
+        service = self.service
+        rows = service.rows
+        publication = getattr(service, '_explore_publication', None)
+        revision = header.get('revision_uuid')
+        entry = self._profiles.get(revision) if revision else None
+        if entry is not None and entry['publication'] == publication and entry['rows'] is rows:
+            return entry['profile']
+
+        def add(profile, keys):
+            for key in keys:
+                row = rows[key]
+                cell = profile['cells'].setdefault(row['cell_uuid'], [0, None])
+                cell[0] += 1
+                rank = (row.get('date', ''), row.get('start_time', ''), key)
+                if cell[1] is None or rank < cell[1]:
+                    cell[1] = rank
+                profile['protocols'][row['protocol_name']] = profile['protocols'].get(row['protocol_name'], 0) + 1
+                profile['duration'] += row['duration_seconds']
+                profile['epochs'] += 1
+        parent = self._profiles.get(header.get('parent_revision_uuid')) if header.get('storage') else None
+        if (parent is not None and parent['publication'] == publication and parent['rows'] is rows
+                and not header['delta']['removed'] and publication is not None):
+            base = parent['profile']
+            profile = dict(cells={key: list(value) for key, value in base['cells'].items()},
+                           protocols=dict(base['protocols']), duration=base['duration'], epochs=base['epochs'])
+            add(profile, [row['uuid'] for row in header['delta']['added']])
+        else:
+            profile = dict(cells={}, protocols={}, duration=0, epochs=0)
+            add(profile, members)
+        if revision and publication is not None and self._delta_reads():
+            _remember(self._profiles, revision, dict(publication=publication, rows=rows, profile=profile))
+        return profile
+
+    def _member_checks(self, revision, header, members, scope):
+        """(changed, inactive) members of a verified revision under the current publication.
+
+        ``changed`` members' current fingerprints differ from the frozen ones;
+        ``inactive`` members come from recordings excluded from queries. Cached
+        per (revision, publication token, the same published fingerprint map
+        and rows, source scope): a refresh publishes new maps with a new token
+        under the database lock and nothing mutates them in place. A delta
+        revision derives its result from its parent's in O(delta).
+        """
+        service = self.service
+        fingerprints, rows = service._fingerprints, service.rows
+        active = set(scope['active_source_revisions'])
+        publication = getattr(service, '_explore_publication', None)
+
+        def compute(items):
+            # One pass: ``items`` may be a one-shot iterator over a member view.
+            changed, inactive = set(), set()
+            for key, value in items:
+                if fingerprints.get(key) != value:
+                    changed.add(key)
+                if key in rows and rows[key]['source_sha256'] not in active:
+                    inactive.add(key)
+            return changed, inactive
+
+        def valid(entry):
+            return (entry is not None and entry['publication'] == publication and entry['fingerprints'] is fingerprints
+                    and entry['rows'] is rows and entry['scope'] == scope['revision'])
+        if revision is None or publication is None or not self._delta_reads():
+            changed, inactive = compute(members.items())
+            return frozenset(changed), frozenset(inactive)
+        entry = self._checks.get(revision)
+        if not valid(entry):
+            parent = self._checks.get(header.get('parent_revision_uuid')) if header.get('storage') else None
+            if header.get('storage') and valid(parent):
+                delta = header['delta']
+                removed = set(delta['removed'])
+                changed, inactive = compute((row['uuid'], row['metadata_hash']) for row in delta['added'])
+                changed |= parent['changed'] - removed
+                inactive |= parent['inactive'] - removed
+            else:
+                changed, inactive = compute(members.items())
+            entry = dict(publication=publication, fingerprints=fingerprints, rows=rows, scope=scope['revision'],
+                         changed=frozenset(changed), inactive=frozenset(inactive))
+            _remember(self._checks, revision, entry)
+        else:
+            self._checks.pop(revision)
+            _remember(self._checks, revision, entry)
+        return entry['changed'], entry['inactive']
+
     def proposal(self, protocol, revision):
         rows = (self.suggestions.Table & dict(project_uuid=self.project,
             protocol_uuid=protocol)).to_dicts()
         found = [row['summary'] for row in rows if row['summary']['candidate_revision_uuid'] == revision]
         if not found:
             raise KeyError('Incoming candidate not found for this protocol in this project')
-        candidate = self._recipe(revision)
-        baseline = self._recipe(found[0]['baseline_revision_uuid'])
+        candidate = self._revision(revision)[0]
+        baseline = self._revision(found[0]['baseline_revision_uuid'])[0]
         if candidate.get('parent_revision_uuid') != baseline['revision_uuid']:
             raise ValueError('Incoming candidate baseline does not match its sealed parent')
         return found[0], baseline, candidate
@@ -251,7 +377,9 @@ class ProtocolWorkbench:
         revision = str(uuid.UUID(revision))
         cached = self._discovery.pop(revision, None)
         if cached is None:
-            cached = self._discovery_facts(self.history.get(revision)['recipe'])
+            # A verified header has every discovery fact without the members.
+            cached = self._discovery_facts(self.history.header(revision) if self._delta_reads()
+                                           else self.history.get(revision)['recipe'])
         _remember(self._discovery, revision, cached)
         return copy.deepcopy(cached)
 
@@ -367,7 +495,7 @@ class ProtocolWorkbench:
             publication = main.get('additive_publication', {})
             if not parent or publication.get('previous_revision_uuid') != parent:
                 return False
-            previous = self._recipe(parent)
+            previous, old = self._revision(parent)
             matches = [row['receipt'] for row in transitions if row['receipt'].get('binding', {}).get('revision_uuid') == identity
                        and row['receipt']['binding'].get('version') == version
                        and row['receipt'].get('expected_binding_version') == version - 1
@@ -375,9 +503,15 @@ class ProtocolWorkbench:
                        and row['receipt'].get('accepted_epoch_count', 0) > 0]
             if len(matches) != 1 or version <= baseline_version:
                 return False
-            old, current = _members(previous), _members(main)
-            if any(current.get(key) != value for key, value in old.items()):
-                return False
+            if main.get('storage'):
+                # A sealed delta over this exact parent that removes nothing
+                # and adds only new epochs is additive by construction.
+                if main.get('parent_revision_uuid') != parent or main['delta']['removed']:
+                    return False
+            else:
+                current = self._revision(identity)[1]
+                if any(current.get(key) != value for key, value in old.items()):
+                    return False
             main = previous
             version -= 1
         return main['content_sha256'] == baseline['content_sha256'] and version == baseline_version
@@ -402,9 +536,10 @@ class ProtocolWorkbench:
             from disco.navigation.tag_predicates import referenced_fields
             predicates = [self.discovery(row['summary']['candidate_revision_uuid'])['predicate']
                 for row in self.original_records(protocol)]
-            binding = self.history.protocol_binding(protocol)
+            # Main's predicate from its verified header: never copy main's members.
+            binding = self.history.protocol_binding_header(protocol)
             if binding:
-                predicates.append(binding['recipe']['predicate'])
+                predicates.append(self.discovery(binding['revision_uuid'])['predicate'])
             fields = set().union(*(referenced_fields(predicate) for predicate in predicates))
             protocols = {protocol} | {field.split('/')[1] for field in fields if field.startswith('curation/')}
             for origin in [None, *sorted(protocols)]:
@@ -474,23 +609,44 @@ class ProtocolWorkbench:
                 query_revision = query_revision_guard()
                 result = self.service.query_result(protocol) if binding is None else None
             main = None
-            if binding:
-                # A binding's UUID cache is not fresh recipe storage authority.
-                main = self._recipe(binding['revision_uuid']) if reads.canonical else binding['recipe']
-            previous = _members(main) if main else _members(result)
-            base, proposed = _members(baseline), _members(candidate)
-            incoming = {key: value for key, value in proposed.items() if key not in base}
-            base_conflicts = {key for key in base.keys() & proposed.keys() if base[key] != proposed[key]}
-            main_conflicts = {key for key, value in previous.items() if self.service._fingerprints.get(key) != value}
-            conflicts = base_conflicts | main_conflicts | {key for key in incoming.keys() & previous.keys() if incoming[key] != previous[key]}
-            # Frozen browse refuses changed/missing rows; it cannot claim current values are old metadata.
-            unavailable = {key for key, value in proposed.items() if self.service._fingerprints.get(key) != value}
             scope = self.service.source_scope()
             active = set(scope['active_source_revisions'])
-            ineligible = {key for key in incoming if key in self.service.rows
-                          and self.service.rows[key]['source_sha256'] not in active}
-            ineligible_main = {key for key in previous if key in self.service.rows
-                               and self.service.rows[key]['source_sha256'] not in active}
+            fingerprints, rows = self.service._fingerprints, self.service.rows
+            if binding:
+                # A binding's UUID cache is not fresh recipe storage authority.
+                if reads.canonical:
+                    main, previous = self._revision(binding['revision_uuid'])
+                else:
+                    main = binding['recipe']
+                    previous = _members(main)
+                main_conflicts, ineligible_main = self._member_checks(
+                    main['revision_uuid'] if reads.canonical else None, main, previous, scope)
+            else:
+                previous = _members(result)
+                main_conflicts, ineligible_main = self._member_checks(None, {}, previous, scope)
+            if self._delta_reads():
+                base, candidate_members = self._revision(baseline['revision_uuid'])[1], self._revision(revision)[1]
+            else:
+                base, candidate_members = _members(baseline), _members(candidate)
+            delta = candidate.get('delta') if candidate.get('storage') else None
+            if delta is not None and candidate.get('parent_revision_uuid') == baseline['revision_uuid']:
+                # Candidate = baseline + sealed delta: only the delta can differ.
+                incoming = {row['uuid']: row['metadata_hash'] for row in delta['added']}
+                base_conflicts = set()
+                base_changed, _ = self._member_checks(baseline['revision_uuid'], baseline, base, scope)
+                unavailable = (set(base_changed) - set(delta['removed'])) | {
+                    key for key, value in incoming.items() if fingerprints.get(key) != value}
+            else:
+                proposed = candidate_members
+                incoming = {key: value for key, value in proposed.items() if key not in base}
+                base_conflicts = {key for key in base.keys() & proposed.keys() if base[key] != proposed[key]}
+                # Frozen browse refuses changed/missing rows; it cannot claim current values are old metadata.
+                unavailable = {key for key, value in proposed.items() if fingerprints.get(key) != value}
+            main_conflicts = set(main_conflicts)
+            ineligible_main = set(ineligible_main)
+            conflicts = base_conflicts | main_conflicts | {key for key, value in incoming.items()
+                                                           if key in previous and value != previous[key]}
+            ineligible = {key for key in incoming if key in rows and rows[key]['source_sha256'] not in active}
             from disco.navigation.tag_predicates import TagPredicates, referenced_fields
             fields = referenced_fields(candidate['predicate'])
             annotation = TagPredicates(self.service).snapshot(fields)[1] if fields else None
@@ -513,6 +669,7 @@ class ProtocolWorkbench:
             valid_base = bool(main and self._additive_lineage(main, baseline, protocol,
                 binding['version'], summary['baseline_binding_version'])) and origins_valid
             pending = {key: value for key, value in incoming.items() if key not in previous}
+            changed_members = unavailable | main_conflicts
             evidence = dict(contract_version=1, project_uuid=self.project, protocol_uuid=protocol,
                 actor=actor, candidate_revision_uuid=revision, candidate_recipe_sha256=candidate['content_sha256'],
                 baseline_revision_uuid=baseline['revision_uuid'], baseline_recipe_sha256=baseline['content_sha256'],
@@ -524,8 +681,11 @@ class ProtocolWorkbench:
                 origin_witnesses=origin_witnesses,
                 draft_version=header['version'], decisions_sha256=checksum(decisions),
                 selection_mode=header['selection_mode'], deferred=bool(header['deferred']),
+                # Given the sealed recipes above, the members whose current
+                # fingerprint differs (and those values) determine every current
+                # fingerprint of candidate and main members.
                 incoming_sha256=checksum(incoming), current_fingerprints_sha256=checksum(
-                    {key: self.service._fingerprints.get(key) for key in proposed.keys() | previous.keys()}))
+                    {key: fingerprints.get(key) for key in sorted(changed_members)}))
             evidence_fields = tuple(evidence)
             evidence['candidate_scope_revision'] = checksum(evidence)
             closing_witness = None
@@ -539,7 +699,7 @@ class ProtocolWorkbench:
                 conflicts=conflicts, base_conflicts=base_conflicts, main_conflicts=main_conflicts,
                 unavailable=unavailable, ineligible=ineligible,
                 blocked_main=ineligible_main, annotation_changed=annotation_changed, valid_base=valid_base,
-                source_scope=scope, already_present=set(incoming) & set(previous))
+                source_scope=scope, already_present={key for key in incoming if key in previous})
 
     def _closing_context(self, opened, protocol, revision, actor, query_revision_guard):
         """Recompute the opened scope revision from current tokens, or None.
@@ -669,7 +829,7 @@ class ProtocolWorkbench:
         if not binding:
             return dict(pool={}, main=None, binding=None, reason=None, annotation=None, scope=None, key=None)
         scope = self.service.source_scope()
-        main = self._recipe(binding['revision_uuid'])
+        main, members = self._revision(binding['revision_uuid'])
         fields = referenced_fields(main['predicate'])
         annotation = TagPredicates(self.service).snapshot(fields)[1] if fields else None
         fingerprints = self.service._fingerprints
@@ -680,21 +840,21 @@ class ProtocolWorkbench:
         publication = getattr(self.service, '_explore_publication', None)
         if publication is None:
             publication = self.service._explore_publication = str(uuid.uuid4())
-        key = checksum(dict(binding=[binding['revision_uuid'], binding['version']], scope=scope['revision'],
-            annotation=(annotation or {}).get('revision'), publication=publication,
-            fingerprints=[len(fingerprints), len(self.service.rows)],
-            definition=self.service.protocols[protocol]['definition'].get('query')))
-        members = _members(main)
-        cached = self._pool_cache.get(protocol)
-        if (cached and cached['key'] == key
-                and all(fingerprints.get(identity) == value for identity, value in cached['pool'].items())
-                and all(fingerprints.get(identity) == value for identity, value in members.items())):
-            return cached
+        key = self._pool_key(protocol, binding['revision_uuid'], scope, annotation)
+        changed, inactive = self._member_checks(main['revision_uuid'] if self._delta_reads() else None,
+                                                main, members, scope)
+        # The pool depends on main's revision (membership, seen recordings),
+        # not its binding version: an undo back to a revision reuses its pool.
+        cached = self._pool_cache.get(protocol, {}).get(key)
+        if (cached and not changed
+                and all(fingerprints.get(identity) == value for identity, value in cached['pool'].items())):
+            _remember_pool(self._pool_cache[protocol], key, cached)  # A hit is most recent (true LRU).
+            return dict(cached, binding=binding)
         active = set(scope['active_source_revisions'])
         reason, pool = None, {}
-        if any(fingerprints.get(identity) != value for identity, value in members.items()):
+        if changed:
             reason = 'Main contains epochs whose recorded metadata changed; save the query again to update main.'
-        elif any(self.service.rows[identity]['source_sha256'] not in active for identity in members):
+        elif inactive:
             reason = 'Main contains epochs from a recording that is excluded from queries; include it again in Data stores.'
         else:
             allowed = protocol_ids(self.service, protocol)
@@ -704,9 +864,37 @@ class ProtocolWorkbench:
                 if (identity not in members and row['source_sha256'] in active and row['source_sha256'] not in seen
                         and protocol_key(row.get('protocol_name')) in allowed):
                     pool[identity] = fingerprints[identity]
-        value = dict(pool=pool, main=main, binding=binding, reason=reason, annotation=annotation, scope=scope, key=key)
-        self._pool_cache[protocol] = value
+        value = dict(pool=pool, main=main, members=members, binding=binding, reason=reason, annotation=annotation,
+                     scope=scope, key=key, main_cells=None)
+        _remember_pool(self._pool_cache.setdefault(protocol, {}), key, value)
         return value
+
+    def _pool_key(self, protocol, revision, scope, annotation):
+        fingerprints = self.service._fingerprints
+        # Every refresh publishes rows and fingerprints under a new publication
+        # token, so the token (never a map address, which can be reused) and
+        # the map size key the cache without hashing every epoch. A hit still
+        # re-checks the pool's fingerprints; main's are checked per publication.
+        publication = getattr(self.service, '_explore_publication', None)
+        if publication is None:
+            publication = self.service._explore_publication = str(uuid.uuid4())
+        return checksum(dict(binding=revision, scope=scope['revision'],
+            annotation=(annotation or {}).get('revision'), publication=publication,
+            fingerprints=[len(fingerprints), len(self.service.rows)],
+            definition=self.service.protocols[protocol]['definition'].get('query')))
+
+    def _pool_after_merge(self, protocol, state, header, members, accepted):
+        """Admit the pool of main' = main + accepted without re-running main's query.
+
+        An additive merge keeps main's predicate and seen recordings, so the
+        new pool is exactly the old pool minus the accepted epochs.
+        """
+        if state.get('key') is None or state.get('reason') is not None or not self._delta_reads():
+            return
+        key = self._pool_key(protocol, header['revision_uuid'], state['scope'], state['annotation'])
+        value = dict(state, pool={key_: value for key_, value in state['pool'].items() if key_ not in accepted},
+                     main=header, members=members, key=key, main_cells=None)
+        _remember_pool(self._pool_cache.setdefault(protocol, {}), key, value)
 
     @staticmethod
     @contextlib.contextmanager
@@ -1006,20 +1194,24 @@ class ProtocolWorkbench:
             raise WorkbenchConflict('Operation UUID already used by another actor or request')
         return copy.deepcopy(row['receipt'])
 
-    def accept(self, protocol, revision, actor, body, *, merge_all=False):
+    def accept(self, protocol, revision, actor, body, *, merge_all=False, context=None):
         request_hash = self.accept_request_hash(protocol, revision, actor, body)
         existing = self.receipt(body['operation_uuid'], actor, request_hash)
         if existing:
             return existing  # Receipt precedes stale binding/draft checks, including after restart.
-        context = self.context(protocol, revision, actor)
+        if (context is None or context.get('protocol_uuid') != protocol
+                or context.get('candidate_revision_uuid') != revision or context.get('actor') != actor):
+            context = self.context(protocol, revision, actor)
         preview, selected, accepted = self.preview(context, body, merge_all=merge_all)
         if (body['preview_sha256'] != preview['preview_sha256'] or type(body['expected_binding_version']) is not int
                 or body['expected_binding_version'] != preview['expected_binding_version']
                 or body['expected_query_revision'] != preview['expected_query_revision']):
             raise WorkbenchConflict('Additive preview changed; compare again before accepting')
         guard, _ = self.transaction_authority(protocol)
-        self.verify_sources(context, selected | context['previous'].keys())
-        union = {**context['previous'], **{key: context['incoming'][key] for key in accepted}}
+        # Main's carried members are proven by the context (sealed recipe,
+        # current fingerprints, active sources); only added epochs' recordings
+        # are re-verified for this publication.
+        self.verify_sources(context, selected)
         main = context['main']
         publication = dict(previous_revision_uuid=main['revision_uuid'], main_recipe_sha256=main['content_sha256'],
             baseline_revision_uuid=context['baseline_revision_uuid'], baseline_recipe_sha256=context['baseline_recipe_sha256'],
@@ -1028,13 +1220,22 @@ class ProtocolWorkbench:
             actor=actor, draft_version=context['draft_version'], operation_uuid=body['operation_uuid'])
         if body['mode'] == 'source':
             publication['source_sha256'] = body['source_sha256']
-        frozen = dict(predicate=copy.deepcopy(main['predicate']), splits=main['splits'],
-            membership=[dict(uuid=key, metadata_hash=value) for key, value in sorted(union.items())],
-            matched_count=len(union), total_source=len(self.service.rows), metadata_fingerprint_version=2,
-            source_revisions=sorted({self.service.rows[key]['source_sha256'] for key in union}),
-            source_scope=context['source_scope'], tree=dict(split_order=main['tree_view']['fields']),
-            additive_publication=publication,
-            **({'annotation_scope': main['annotation_scope']} if main.get('annotation_scope') else {}))
+        added = {key: context['incoming'][key] for key in sorted(accepted)}
+        delta_reads = self._delta_reads()
+        if delta_reads:
+            fields = dict(total_source=len(self.service.rows), source_scope=context['source_scope'],
+                source_revisions=sorted(set(main['source_revisions'])
+                                        | {self.service.rows[key]['source_sha256'] for key in added}),
+                additive_publication=publication)
+        else:
+            union = {**context['previous'], **added}
+            frozen = dict(predicate=copy.deepcopy(main['predicate']), splits=main['splits'],
+                membership=[dict(uuid=key, metadata_hash=value) for key, value in sorted(union.items())],
+                matched_count=len(union), total_source=len(self.service.rows), metadata_fingerprint_version=2,
+                source_revisions=sorted({self.service.rows[key]['source_sha256'] for key in union}),
+                source_scope=context['source_scope'], tree=dict(split_order=main['tree_view']['fields']),
+                additive_publication=publication,
+                **({'annotation_scope': main['annotation_scope']} if main.get('annotation_scope') else {}))
         diff = dict(added=sorted(accepted), removed=[], changed=[])
         connection = self.service.dj.conn()
         # Route owns destination advisory lock. Recipe, binding, audit and receipt commit together.
@@ -1042,20 +1243,32 @@ class ProtocolWorkbench:
             again = self.receipt(body['operation_uuid'], actor, request_hash)
             if again:
                 return again
-            self.check_scope(self.context(protocol, revision, actor, query_revision_guard=guard),
+            self.check_scope(self.context(protocol, revision, actor, query_revision_guard=guard, closing=context),
                 context['candidate_scope_revision'])
             if accepted:
-                record = self.history.create(frozen, self.service.sources, self.service.project_dir / 'catalog.json', actor,
-                    name=main['name'], parent_revision_uuid=main['revision_uuid'], _in_transaction=True)
+                if delta_reads:
+                    record = self.history.create_delta(main['revision_uuid'], added, [], actor, name=main['name'],
+                        fields=fields, _in_transaction=True)
+                    diff_summary = summarize_additions(self.service.rows,
+                        self._profile(main, context['previous']), added)
+                else:
+                    record = self.history.create(frozen, self.service.sources, self.service.project_dir / 'catalog.json',
+                        actor, name=main['name'], parent_revision_uuid=main['revision_uuid'], _in_transaction=True)
+                    diff_summary = summarize_diff(self.service.rows, context['previous'], union)
                 (_revision_memo.get() or {}).clear()
+                pool_state = self.pending_pool(protocol) if delta_reads else None
                 saved = self.history.bind(record['revision_uuid'], protocol, preview['expected_binding_version'], actor,
                     diff, len(context['previous']), expected_query_revision=preview['expected_query_revision'],
-                    current_query_revision=guard, diff_summary=summarize_diff(self.service.rows, context['previous'], union),
+                    current_query_revision=guard, diff_summary=diff_summary,
                     _in_transaction=True, _lock_held=True)
+                if pool_state is not None and pool_state.get('main') is not None \
+                        and pool_state['main']['revision_uuid'] == main['revision_uuid']:
+                    new_header, new_members = self._revision(record['revision_uuid'])
+                    self._pool_after_merge(protocol, pool_state, new_header, new_members, accepted)
             else:
                 record = dict(revision_uuid=main['revision_uuid'], recipe=main)
                 saved = dict(version=context['expected_binding_version'], revision_uuid=main['revision_uuid'], event_uuid=None)
-            self.verify_sources(context, selected | context['previous'].keys())
+            self.verify_sources(context, selected)
             receipt = dict(**preview, operation_uuid=str(uuid.UUID(body['operation_uuid'])), protocol_uuid=protocol,
                 candidate_revision_uuid=revision, actor=actor, binding=saved, event_uuid=str(uuid.uuid4()),
                 candidate_recipe_sha256=context['candidate_recipe_sha256'],
@@ -1095,12 +1308,16 @@ class ProtocolWorkbench:
                 or binding['version'] != merged['binding']['version']
                 or binding['revision_uuid'] != merged['binding']['revision_uuid']):
             raise WorkbenchConflict('Main changed after this merge, so it can no longer be undone safely.')
-        current = self._recipe(binding['revision_uuid'])
+        current, current_members = self._revision(binding['revision_uuid'])
         previous_uuid = current.get('additive_publication', {}).get('previous_revision_uuid')
         if not previous_uuid or current.get('parent_revision_uuid') != previous_uuid:
             raise WorkbenchConflict('This merge has no recorded previous main to restore.')
-        previous = self._recipe(previous_uuid)
-        removed = sorted(_members(current).keys() - _members(previous).keys())
+        if current.get('storage') and not current['delta']['removed']:
+            # The sealed delta over that exact parent names exactly what it added.
+            removed = sorted(row['uuid'] for row in current['delta']['added'])
+        else:
+            previous_members = self._revision(previous_uuid)[1]
+            removed = sorted(key for key in current_members if key not in previous_members)
         if removed != sorted(merged['accepted_epoch_uuids']):
             raise WorkbenchConflict('Main does not match this merge; it cannot be undone safely.')
         with self.service.dj.conn().transaction:
@@ -1108,8 +1325,10 @@ class ProtocolWorkbench:
             if again:
                 return again
             (_revision_memo.get() or {}).clear()
+            if current.get('storage') and callable(getattr(self.history, 'retire_delta', None)):
+                self.history.retire_delta(current['revision_uuid'])  # One DELETE of the merge's rows.
             saved = self.history.bind(previous_uuid, protocol, binding['version'], actor,
-                dict(added=[], removed=removed, changed=[]), len(_members(current)),
+                dict(added=[], removed=removed, changed=[]), len(current_members),
                 _in_transaction=True, _lock_held=True)
             receipt = dict(contract_version=1, kind='workbench_undo', operation_uuid=undo_operation,
                 undone_operation_uuid=operation, protocol_uuid=protocol, actor=actor,
@@ -1251,7 +1470,12 @@ class ProtocolWorkbench:
                     status=status, pending_epoch_count=len(mine), eligible_pending_epoch_count=len(mine)))
             rows = self.service.rows
             cells = {rows[identity]['cell_uuid'] for identity in pending}
-            main_cells = {rows[identity]['cell_uuid'] for identity in _members(state['main'])} if state['main'] else set()
+            if state['main'] is None:
+                main_cells = set()
+            else:
+                if state.get('main_cells') is None:
+                    state['main_cells'] = self._profile(state['main'], state['members'])['cells'].keys()
+                main_cells = state['main_cells']
             filenames = {source['source_sha256']: source.get('filename') for source in self.service.sources}
             by_source = {}
             for identity in pending:
@@ -1319,6 +1543,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
     manager = ProtocolWorkbench(service, history, suggestions, state, revision_guard, read_revision=read_revision)
     if hasattr(service.dj, 'Schema'):
         manager.tables  # Additive DDL before startup recovery/checkpoint capture.
+        getattr(history, 'Membership', None)  # Lineage membership index, also before data transactions.
     app.extensions['protocol_workbench'] = manager
     from workspace_trace_views import TraceViews, TraceViewConflict
     from disco.decisions.annotations import SharedAnnotations
