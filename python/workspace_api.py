@@ -1698,9 +1698,14 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def run_search_query():
         body = explorer_request({'predicate', 'splits', 'catalog_summary'}, {'predicate', 'splits'})
         with db_lock, data_stores.registration_locks(), annotation_locks(service, body['predicate']):
-            preview = service.explore_preview(body['predicate'], body['splits'], include_tree=False, include_catalog_summary=body.get('catalog_summary', True))
+            # A run records counts and the tree revision, not membership: count it
+            # on the typed index when it can be proven, else take the exact path.
+            counted = getattr(service, 'run_summary', None)
+            preview = counted(body['predicate'], body['splits']) if counted is not None and body.get('catalog_summary', True) is False else None
+            if preview is None:
+                preview = service.explore_preview(body['predicate'], body['splits'], include_tree=False, include_catalog_summary=body.get('catalog_summary', True))
             result = search_preset_store().record_run(preview, service.rows, os.environ.get('USER', 'local-user'))
-            return jsonify(**compact_preview(preview), last_run=result)
+            return jsonify(**{key: value for key, value in compact_preview(preview).items() if key != 'cell_count'}, last_run=result)
 
     @app.route('/api/search-presets', methods=['GET', 'POST'])
     @app.route('/api/search-presets/<preset_uuid>', methods=['GET', 'PUT'])

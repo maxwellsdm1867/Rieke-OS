@@ -53,6 +53,9 @@ def attach_native(connection, source_path):
     connection.execute('PRAGMA native.cache_size=-32768')
 
 
+FIELD_COUNT_MAX_VALUES = 20000
+
+
 class Budget:
     def __init__(self, directory, max_seconds=300, min_free_gib=4, max_rss_gib=1, cancelled=None):
         self.directory = directory
@@ -156,6 +159,15 @@ def build(source_db, target_db, *, max_seconds=300, min_free_gib=4, max_rss_gib=
         target.execute('CREATE UNIQUE INDEX typed_ranks_id ON typed_ranks(epoch_id)')
         target.execute('UPDATE typed_core SET sort_rank=(SELECT sort_rank FROM typed_ranks r WHERE r.epoch_id=typed_core.epoch_id)')
         target.execute('DROP TABLE typed_ranks')
+        # Inspection-page chronology: date, then the time part of start_time,
+        # then epoch UUID (tree_pages._chronology), which can differ from
+        # sort_rank when an epoch's start time falls on another calendar date.
+        target.execute('ALTER TABLE typed_core ADD COLUMN chronology_rank INTEGER')
+        target.execute('CREATE TABLE typed_ranks AS SELECT epoch_id,ROW_NUMBER() OVER (ORDER BY COALESCE(date,\'\'),'
+                       'substr(COALESCE(start_time,\'\'),12),epoch_uuid) AS chronology_rank FROM typed_core')
+        target.execute('CREATE UNIQUE INDEX typed_ranks_id ON typed_ranks(epoch_id)')
+        target.execute('UPDATE typed_core SET chronology_rank=(SELECT chronology_rank FROM typed_ranks r WHERE r.epoch_id=typed_core.epoch_id)')
+        target.execute('DROP TABLE typed_ranks')
         target.commit(); mark('chronology_assign_seconds',start)
         start=time.perf_counter(); batch=[]
         for value_id, field_no, raw in target.execute('SELECT value_id,field_no,value_json FROM native.field_values ORDER BY value_id'):
@@ -184,6 +196,7 @@ def build(source_db, target_db, *, max_seconds=300, min_free_gib=4, max_rss_gib=
         for sql in [
             'CREATE UNIQUE INDEX typed_uuid ON typed_core(epoch_uuid)',
             'CREATE UNIQUE INDEX typed_sort_rank ON typed_core(sort_rank)',
+            'CREATE UNIQUE INDEX typed_chronology_rank ON typed_core(chronology_rank)',
             'CREATE INDEX typed_chronology ON typed_core(date,start_time,epoch_uuid)',
             'CREATE INDEX typed_cell_children ON typed_core(cell_uuid,sort_rank)',
             'CREATE INDEX typed_block_children ON typed_core(block_uuid,sort_rank)',
@@ -195,6 +208,15 @@ def build(source_db, target_db, *, max_seconds=300, min_free_gib=4, max_rss_gib=
             'CREATE INDEX typed_kind ON typed_values(field_no,kind,value_id)']:
             target.execute(sql);target.commit();budget.check(True)
         mark('indexes_seconds',start)
+        # Exact epoch count per stored (field, value): a whole-table count of a
+        # single-field predicate sums these over its matching dictionary values.
+        start=time.perf_counter()
+        target.execute('CREATE TABLE typed_value_counts(value_id INTEGER PRIMARY KEY,field_no INTEGER NOT NULL,amount INTEGER NOT NULL)')
+        target.execute('INSERT INTO typed_value_counts SELECT value_id,field_no,COUNT(*) FROM native.epoch_values '
+                       'GROUP BY field_no,value_id')
+        target.execute('CREATE INDEX typed_value_counts_field ON typed_value_counts(field_no,value_id,amount)')
+        target.commit();budget.check(True)
+        mark('value_counts_seconds',start)
         start=time.perf_counter();core_safe={}
         for field,column in CORE_FIELDS.items():
             number=target.execute('SELECT field_no FROM fields WHERE field_id=?',(field,)).fetchone()
@@ -434,6 +456,81 @@ class TypedMetadataIndex(_TypedQueries):
             if self._cancel_requested():
                 raise QueryCancelled('Typed metadata query cancelled') from None
             raise
+
+    @_guard
+    def single_field_count(self, predicate, *, max_values=FIELD_COUNT_MAX_VALUES):
+        """Exact whole-table count of a validated predicate over one field, or None.
+
+        Each epoch holds at most one value per field, so the predicate's truth
+        depends only on that stored value (or its absence). Every distinct value
+        is evaluated with the native predicate evaluator, exactly as the native
+        index matches, and its stored epoch count is summed; absent epochs add
+        when the predicate matches a missing field. Fields with more than
+        `max_values` distinct values return None (the caller counts in SQL).
+        """
+        fields=set();pending=[predicate]
+        while pending:
+            node=pending.pop()
+            if 'not' in node:pending.append(node['not'])
+            elif 'all' in node or 'any' in node:pending.extend(node.get('all',node.get('any',[])))
+            else:fields.add(node['field'])
+        if len(fields)!=1:return None
+        field=next(iter(fields));number=self.fields.get(field)
+        if number is None:return None
+        distinct=self.connection.execute('SELECT COUNT(*) FROM typed_value_counts WHERE field_no=?',(number,)).fetchone()[0]
+        if distinct>max_values:return None
+        total=self.connection.execute('SELECT COUNT(*) FROM typed_core').fetchone()[0]
+        matched=present=0
+        for raw,amount in self.connection.execute('SELECT v.value_json,c.amount FROM typed_value_counts c '
+                'JOIN typed_values v ON v.value_id=c.value_id WHERE c.field_no=?',(number,)):
+            present+=amount
+            if predicates.matches(predicate,{field:json.loads(raw)}):matched+=amount
+        if predicates.matches(predicate,{}):matched+=total-present
+        return matched
+
+    @_guard
+    def chronology_page(self, predicate=None, scope=None, offset=0, limit=60):
+        """Matching epoch UUIDs in inspection chronology, one bounded window."""
+        where, arguments = self._where(predicate, scope)
+        return [row[0] for row in self.connection.execute(
+            'WITH page AS MATERIALIZED (SELECT c.epoch_uuid,c.chronology_rank FROM typed_core c WHERE '+where+
+            ' ORDER BY c.chronology_rank LIMIT ? OFFSET ?) SELECT epoch_uuid FROM page ORDER BY chronology_rank',
+            arguments+[limit, offset])]
+
+    @_guard
+    def chronology_position(self, epoch_uuid, predicate=None, scope=None):
+        """Index of a matching epoch in inspection chronology, or None."""
+        found = self.connection.execute('SELECT chronology_rank FROM typed_core WHERE epoch_uuid=?', (epoch_uuid,)).fetchone()
+        if found is None:
+            return None
+        where, arguments = self._where(predicate, scope)
+        if not self.connection.execute('SELECT EXISTS (SELECT 1 FROM typed_core c WHERE c.epoch_uuid=? AND ('+where+'))',
+                                       [epoch_uuid]+arguments).fetchone()[0]:
+            return None
+        where, arguments = self._where(predicate, scope)
+        return self.connection.execute('SELECT COUNT(*) FROM typed_core c WHERE c.chronology_rank<? AND ('+where+')',
+                                       [found[0]]+arguments).fetchone()[0]
+
+    @_guard
+    def chronology_cells(self, predicate=None, scope=None):
+        """(cell_uuid, matching epochs, first epoch UUID) in order of first appearance."""
+        where, arguments = self._where(predicate, scope)
+        groups = self.connection.execute('SELECT c.cell_uuid,COUNT(*),MIN(c.chronology_rank) FROM typed_core c WHERE '+where+
+                                         ' GROUP BY c.cell_uuid ORDER BY 3', arguments).fetchall()
+        firsts = {}
+        ranks = [rank for _, _, rank in groups]
+        for start in range(0, len(ranks), 900):
+            chunk = ranks[start:start+900]
+            firsts.update(self.connection.execute('SELECT chronology_rank,epoch_uuid FROM typed_core WHERE chronology_rank IN ('+
+                                                  ','.join('?' for _ in chunk)+')', chunk).fetchall())
+        return [(cell, amount, firsts[rank]) for cell, amount, rank in groups]
+
+    @_guard
+    def distinct_cells(self, predicate=None, scope=None):
+        """Number of distinct cell UUIDs (a missing cell counts once) among matches."""
+        where, arguments = self._where(predicate, scope)
+        return self.connection.execute('SELECT COUNT(DISTINCT c.cell_uuid)+COALESCE(MAX(c.cell_uuid IS NULL),0) '
+                                       'FROM typed_core c WHERE '+where, arguments).fetchone()[0]
 
     @_guard
     def count(self, predicate=None, scope=None):

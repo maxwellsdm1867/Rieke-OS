@@ -160,7 +160,8 @@ class SearchPresets:
                       source_revisions=sorted(preview.get('source_revisions',preview['source_scope'].get('active_source_revisions',[]))),
                       predicate_version=self.PREDICATE_VERSION, metadata_fingerprint_version=preview.get('metadata_fingerprint_version',2),
                       epoch_count=preview['matched_count'],
-                      cell_count=len({rows[item['uuid']]['cell_uuid'] for item in preview['membership']}),
+                      cell_count=(preview['cell_count'] if 'membership' not in preview else
+                                  len({rows[item['uuid']]['cell_uuid'] for item in preview['membership']})),
                       tree_revision=preview['tree_revision'],
                       source_revision=preview['source_scope']['revision'], actor=actor)
         scope = dict(project_uuid=self.store.project_uuid, query_sha256=key)
