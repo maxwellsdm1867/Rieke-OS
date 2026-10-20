@@ -38,6 +38,19 @@ export function bulkAnnotationChange({targetKind='epoch',targetUuids,profileUuid
   return {target_kind:targetKind,target_uuids:ids,profile_uuid:profileUuid,tags_add:[tag.trim()],tags_remove:[],expected_revisions:expected};
 }
 
+/** After a failed tag save: the failed add text plus texts of the later queued adds
+ *  it cancelled. The first goes back to an empty (or identical) composer; every
+ *  other text is named in the error, so typed text is never silently lost. */
+export function unsavedTagRecovery({failedTag=null,cancelled=[],composer='',restorable=true}){
+  const texts=[...new Set([failedTag,...cancelled.filter(op=>!op.remove).map(op=>op.tag)].filter(tag=>typeof tag==='string'&&tag.trim()).map(tag=>tag.trim()))];
+  const current=composer.trim(),restore=restorable&&texts.length&&(!current||current===texts[0])?texts[0]:null;
+  const unsaved=texts.filter(tag=>tag!==restore&&tag!==current);
+  return {restore,unsaved};
+}
+export function unsavedTagMessage(message,unsaved){
+  return unsaved.length?`${message} Not saved: ${unsaved.map(tag=>`“${tag}”`).join(', ')}.`:message;
+}
+
 // Await the save receipt and retain the epoch if saving failed or focus changed.
 export async function navigateAfterTagSave({draft,save,isCurrent,navigate,direction}){
   if(draft.trim()&&!await save(draft.trim()))return false;
