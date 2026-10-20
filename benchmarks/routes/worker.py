@@ -749,6 +749,16 @@ def main():
     # The predicate result path as the UI drives it: run the query, read the
     # first and a later results page (matching epochs at the run's revision),
     # page the native cursor, then one async summary job for the result set.
+    # Mirror each source's UI: sources with #120 send a bounded cell window
+    # (cells_limit 200); older sources refuse the field and list every cell.
+    probe_revision = call('post', '/api/explore/run', {'predicate': predicates['eq_cell_type'], 'splits': 'cell',
+                                                       'catalog_summary': False}).get_json()['tree_revision']
+    probe = client.post('/api/explore/epochs', headers=headers, json={
+        'predicate': predicates['eq_cell_type'], 'splits': 'cell', 'revision': probe_revision, 'limit': 1,
+        'offset': 0, 'include_cells': True, 'cells_limit': 200})
+    cells_window = {'cells_limit': 200} if probe.status_code == 200 else {}
+    result['notes'].append('results pages send cells_limit 200 (bounded cell window)' if cells_window
+                           else 'results pages list every matched cell (source has no cells_limit)')
     result_labels = ('eq_cell_type', 'exists_cell_type', 'ne_cell_type', 'range_contrast', 'and_or',
                      'protocol_tag', 'shared_tag')
     for label in result_labels:
@@ -769,8 +779,8 @@ def main():
         for name, offset in (('results_first', 0), ('results_next', 60)):
             measure(f'explore.{name}.{label}', run_revision, lambda s, p=predicates[label], o=offset: call(
                 'post', '/api/explore/epochs', {'predicate': p, 'splits': 'cell', 'revision': s, 'limit': 60,
-                                                'offset': o, 'include_cells': True, 'cells_limit': 200}),
-                oracle=results_page(offset))  # As the UI (#120) sends: a bounded cell window.
+                                                'offset': o, 'include_cells': True, **cells_window}),
+                oracle=results_page(offset))
 
         def first_cursor(phase, p=predicates[label]):
             return call('post', '/api/explore/page', {'predicate': p, 'protocol_uuid': protocol, 'limit': 60}).get_json().get('cursor')
