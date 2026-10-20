@@ -279,6 +279,8 @@ def compare(baseline_path, candidate_path, output):
                     findings.append(f'{profile}/{case}/{metric}')
             for name, old in ({} if before.get('counts_variable') else before.get('counts', {})).items():
                 new = after.get('counts', {}).get(name, 0)
+                if not isinstance(old, (int, float)) or not isinstance(new, (int, float)):
+                    continue
                 if new > old:
                     count_findings.append({'profile': profile, 'case': case, 'count': name, 'baseline': old, 'candidate': new})
         before_counts = baseline['profiles'][profile]['result'].get('predicate_counts', {})
@@ -348,7 +350,7 @@ def lock_holder(lock):
     return text or 'an unrecorded process (runners that do not write holder lines)'
 
 
-SCALING_COUNTS = ('sqlite.vm_steps', 'sqlite.execute', 'copy.deepcopy', 'predicate.matches', 'sql_double.read', 'generation.scope_read',
+SCALING_COUNTS = ('python.max_function_calls', 'sqlite.vm_steps', 'sqlite.execute', 'copy.deepcopy', 'predicate.matches', 'sql_double.read', 'generation.scope_read',
                   'protocol_state.metadata', 'protocol_state.materialized_state', 'service.query_result',
                   'service.refresh', 'tree_pages.build_scope', 'marshal.dumps')
 ORDER = ('flat', 'sublinear', 'linear', 'superlinear')
@@ -448,6 +450,7 @@ def scaling(receipt_path, small, large, project, output):
         verdict = worst(counted)
         time_ratio, time_kind = growth(a.get('median_ms'), b.get('median_ms'), size_ratio, floor)
         row = {'case': case, 'expected': expected, 'verdict': verdict, 'counts': counted,
+               'hot_function': b.get('counts', {}).get('python.max_function'),
                'small_ms': a.get('median_ms'), 'large_ms': b.get('median_ms'), 'time_ratio': time_ratio,
                'time_kind': time_kind, 'timing_diagnostic': timing_diagnostic}
         p = project_cases.get(case)
@@ -498,6 +501,8 @@ def scaling(receipt_path, small, large, project, output):
             lines.append(f"| {row['case']} | | | | | | {row['status']} |"); continue
         counts = '; '.join(f"{n} {fmt(v['small'])}→{fmt(v['large'])}" + ('' if v['kind'] == 'flat' else f" ({v['kind']})")
                            for n, v in row['counts'].items())
+        if row.get('hot_function'):
+            counts += f"; hottest {row['hot_function']}"
         project_text = row.get('project_verdict', '')
         timing = f"{fmt(row['small_ms'])}→{fmt(row['large_ms'])} ({fmt(row['time_ratio'])}×)" + (' diag' if row['timing_diagnostic'] else '')
         lines.append(f"| {row['case']} | {row['expected']} | {row['verdict']} | {counts} | {project_text} | {timing} | {'; '.join(row['flags'])} |")

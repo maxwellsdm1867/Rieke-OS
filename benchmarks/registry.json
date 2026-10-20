@@ -405,7 +405,7 @@
       "ci_protocol_epochs": 20000
     },
     "route-million": {
-      "version": "1.9.0",
+      "version": "1.10.0",
       "runner": "tools/benchmark_routes.py",
       "fixture_version": "route-owned-v6",
       "samples": 3,
@@ -481,15 +481,13 @@
           "search."
         ],
         "flat_floor_ms": 5.0,
-        "meaning": "Verdicts use load-independent counts and response bytes from the counting pass: exponent of large/small growth <0.25 flat, <0.75 sublinear, <1.3 linear, otherwise superlinear (quantities at or under count_floor, or bytes under 4 KiB, are flat). Everyday clicks are expected flat, also against project size alone; explore/search may be linear. Timing ratios are shown alongside and are diagnostic when the peak load average exceeds timing_load_limit.",
+        "meaning": "Verdicts use load-independent counts and response bytes from the counting pass: exponent of large/small growth <0.25 flat, <0.75 sublinear, <1.3 linear, otherwise superlinear (quantities at or under count_floor, or bytes under 4 KiB, are flat). Everyday clicks are expected flat, also against project size alone; explore/search may be linear. Timing ratios are shown alongside and are diagnostic when the peak load average exceeds timing_load_limit. explore.page.* / explore.page_next.* measure POST /api/explore/page, the metadata-qualification API (tools/metadata_qualification), not the UI result path; they are whole-project search (linear allowed). The UI result path is explore.run.* + explore.results_first/next.* (POST /api/explore/epochs with cells_limit).",
         "count_floor": 20,
         "timing_load_limit": 10.0,
         "flat_prefixes": [
           "explore.run.",
           "explore.results_first.",
-          "explore.results_next.",
-          "explore.page.",
-          "explore.page_next."
+          "explore.results_next."
         ],
         "informational_prefixes": [
           "explore.result_summary.",

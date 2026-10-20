@@ -100,9 +100,15 @@ def count_profile(profile, source_python):
                 # Primitive (non-recursive) calls: deepcopy counts top-level copies.
                 headline[name] += primitive
         if key[0].startswith(source_python):
-            functions.append({'function': f'{Path(key[0]).relative_to(source_python)}:{key[2]}',
+            functions.append({'function': f'{Path(key[0]).relative_to(source_python)}:{key[1]}:{key[2]}',
                               'calls': total, 'cumulative_ms': round(cumulative * 1000, 3)})
     functions.sort(key=lambda row: -row['calls'])
+    # Per-row Python work (lambdas, generator expressions, loop bodies) that no
+    # named headline counter covers: the most-called single app function.
+    # SQL-double code under tests/ is excluded: its linear scans are fixture cost.
+    app = [row for row in functions if not row['function'].startswith('tests/') and '/tests/' not in row['function']]
+    headline['python.max_function_calls'] = app[0]['calls'] if app else 0
+    headline['python.max_function'] = app[0]['function'] if app else None
     return headline, functions[:60]
 
 
@@ -763,7 +769,8 @@ def main():
         for name, offset in (('results_first', 0), ('results_next', 60)):
             measure(f'explore.{name}.{label}', run_revision, lambda s, p=predicates[label], o=offset: call(
                 'post', '/api/explore/epochs', {'predicate': p, 'splits': 'cell', 'revision': s, 'limit': 60,
-                                                'offset': o, 'include_cells': True}), oracle=results_page(offset))
+                                                'offset': o, 'include_cells': True, 'cells_limit': 200}),
+                oracle=results_page(offset))  # As the UI (#120) sends: a bounded cell window.
 
         def first_cursor(phase, p=predicates[label]):
             return call('post', '/api/explore/page', {'predicate': p, 'protocol_uuid': protocol, 'limit': 60}).get_json().get('cursor')
