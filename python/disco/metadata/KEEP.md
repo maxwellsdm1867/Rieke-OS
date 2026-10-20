@@ -70,6 +70,11 @@ an exact bounded window in recorded order. It performs no resampling, decimation
 unit conversion or synthetic fallback. Start/count validation, legitimate empty
 end-of-stream slices and context-managed H5 closure remain unchanged. There is no
 per-read cancellation token; hash validation can precede a small read.
+The first-access whole-file SHA-256 runs off the workspace lock: the desktop project
+open starts a background `preverify_sources` pass and the trace route preverifies its
+epoch's source before taking the lock. A preverified result is accepted only when a
+fresh stat under the lock equals the signature observed before and after hashing;
+it lives in process memory only, so every restart verifies again.
 
 These composition/source-verification paths are stable and cross-owned. Extracting
 one trace function would not remove its provenance obligations and would cross the

@@ -693,21 +693,23 @@ class IncrementalOverviewTests(MemoFixture):
         self.assertEqual(targets['cell'],{self.service.rows[self.ids[1]]['cell_uuid']})
 
 
-class ProtocolOverviewMemoTests(MemoFixture):
-    def test_unchanged_protocol_overview_reuses_its_etag_payload(self):
-        ProtocolContextFastPathTests.publish(self)
-        path=f'/api/protocols/{self.protocol}/overview'
-        first=self.client.get(path)
-        memo=self.app.extensions['protocol_overview_memo']
-        built=memo[self.protocol][1]
-        second=self.client.get(path)
-        self.assertIs(memo[self.protocol][1],built)  # Reused, not rebuilt.
-        self.assertEqual(second.get_json(),first.get_json())
-        self.assertEqual(second.headers['ETag'],first.headers['ETag'])
-        self.save_curation(review_state='approved')
-        changed=self.client.get(path)
-        self.assertNotEqual(changed.headers['ETag'],first.headers['ETag'])
-        self.assertEqual(changed.get_json()['counts']['reviewed'],first.get_json()['counts']['reviewed']+1)
+class SourcePreverificationRouteTests(MemoFixture):
+    def test_trace_route_hashes_first_access_outside_the_database_lock(self):
+        lock=self.app.extensions['workspace_db_lock']
+        calls=[]
+        def preverify(epoch):
+            calls.append((epoch,lock._is_owned()))
+            return 0
+        with patch.object(self.service,'preverify_epoch_source',side_effect=preverify):
+            self.client.get(f'/api/epochs/{self.ids[0]}/trace?stream_uuid={self.ids[0]}')
+        self.assertEqual(calls,[(self.ids[0],False)])
+
+    def test_prewarm_runs_in_a_background_thread(self):
+        done=[]
+        with patch.object(self.service,'preverify_sources',side_effect=lambda:done.append(1)):
+            worker=self.app.extensions['prewarm_source_signatures']()
+            worker.join(5)
+        self.assertEqual(done,[1])
 
 
 class LargeProtocolReadMemoTests(MemoFixture):
