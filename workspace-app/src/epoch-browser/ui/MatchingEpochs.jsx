@@ -54,9 +54,9 @@ function MatchingEpochsContent({projectId=null,designMode=false,builder=null,col
   const countsKey=preview.counts?.status==='ready'?`counted:${preview.counts.request_id}`:ownCountsJob.status==='ready'?`counted:${countsRead}`:'';
   const page=useEpochBrowserPage(source,{...request,includeCells:true,cellsLimit:CELL_WINDOW},countsKey);
   // The cell list arrives in bounded windows; later windows load on scroll.
-  const cellList=useCellWindows(JSON.stringify([listScope,countsKey]),async after=>{
+  const cellList=useCellWindows(JSON.stringify([listScope,countsKey]),async (after,{signal})=>{
     const {path,options}=epochPageRequest(source,{offset:0,includeCells:true,cellsLimit:CELL_WINDOW,cellsAfter:after});
-    const data=await api(path,options);epochPageRevision(source,data);return data;
+    const data=await api(path,{...options,signal});epochPageRevision(source,data);return data;
   });
   const cells=cellList.cells;
   const currentPage=!!page.data&&!page.loading&&!page.error;

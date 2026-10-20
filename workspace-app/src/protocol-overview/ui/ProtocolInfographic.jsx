@@ -1,3 +1,5 @@
+import {useOverviewCells} from '../useOverviewCells.js';
+import CellsWindow from '../../epoch-browser/ui/CellsWindow.jsx';
 import {Activity,ArrowRight,CalendarDays,Clock3,Database,Download,Inbox,Info,Lock} from 'lucide-react';
 import {duration,number} from "../../api.js";
 import {aggregateCellTypes,countNoun,groupTotal,isTypingProtocol,recordingDateLabel,validCellCount,validRecordedDuration} from '../protocolOverviewModel.js';
@@ -14,7 +16,9 @@ const durationLabel=value=>validRecordedDuration(value)?duration(value):'Unavail
 // Visual language follows the project Overview: a hero metric row, cells by type
 // beside recording dates, and a footer inventory strip.
 export default function ProtocolInfographic({data,revision,overviewCache,onFilter,onInspect,onQC,pendingReviewCells=null,onWorkbench}){
-  const counts=data.counts||{},hasCellSummary=Array.isArray(data.cells),omitted=hasCellSummary?data.cells.filter(cell=>!(cell?.cell_uuid||cell?.uuid)).length:0,completeCellSummary=hasCellSummary&&!omitted,types=aggregateCellTypes(data.cells),cells=types.flatMap(type=>type.cells),model=overviewModel({cells}),total=completeCellSummary?cells.length:null;
+  const cellList=useOverviewCells(data,`/protocols/${data.definition?.protocol_uuid}/overview`,revision);
+  const cellsData=cellList.cells;
+  const counts=data.counts||{},hasCellSummary=Array.isArray(cellsData),omitted=hasCellSummary?cellsData.filter(cell=>!(cell?.cell_uuid||cell?.uuid)).length:0,completeCellSummary=hasCellSummary&&!omitted&&!cellList.partial,types=aggregateCellTypes(cellsData),cells=types.flatMap(type=>type.cells),model=overviewModel({cells}),total=Number.isSafeInteger(data.cells_total)?data.cells_total:completeCellSummary?cells.length:null;
   // The caller supplies the unfiltered protocol DTO. Retain a truthful fallback
   // if this component is ever used with an explicitly filtered or unbound DTO.
   const filtered=Object.keys(data.filters||{}).length>0;
@@ -34,9 +38,9 @@ export default function ProtocolInfographic({data,revision,overviewCache,onFilte
       <div><span><Clock3 size={16}/> Recorded time</span><strong>{durationLabel(counts.duration_seconds)}</strong><small>Sum of epoch durations</small></div>
     </div>
     {pendingReviewCells!==0&&<section className="pi-pending-review" aria-label="Needs review"><div><Inbox size={19}/><h3>Needs review</h3></div><strong>{countLabel(pendingReviewCells)}</strong><p>Pending candidate cells, separate from main membership.</p>{onWorkbench&&<button onClick={onWorkbench}>Review incoming cells <ArrowRight size={14}/></button>}</section>}</div>
-    {!completeCellSummary&&<p className="pi-cell-coverage" role="status">{hasCellSummary?`${number(omitted)} cell summary ${omitted===1?'row lacks':'rows lack'} a UUID and ${omitted===1?'is':'are'} omitted. Available identities are shown; complete membership counts are unavailable.`:'Cell summaries are unavailable; complete membership counts cannot be determined.'}</p>}
+    {cellList.partial&&<p className="pi-cell-coverage" role="status">Types, dates and export participation summarize loaded cells.</p>}{!completeCellSummary&&!cellList.partial&&<p className="pi-cell-coverage" role="status">{hasCellSummary?`${number(omitted)} cell summary ${omitted===1?'row lacks':'rows lack'} a UUID and ${omitted===1?'is':'are'} omitted. Available identities are shown; complete membership counts are unavailable.`:'Cell summaries are unavailable; complete membership counts cannot be determined.'}</p>}
     <div className="pi-acquisition">
-      {hasCellSummary&&<section className="pi-types" aria-label="Cells by type"><div className="pi-section-title"><h3>Cells by type</h3><small>Select a type to list its cells</small></div><CellTypeAccordions cells={data.cells} onInspect={onInspect} onQC={onQC} showInclusion variant="summary"/></section>}
+      {hasCellSummary&&<section className="pi-types" aria-label="Cells by type"><div className="pi-section-title"><h3>Cells by type</h3><small>Select a type to list its cells</small></div><CellTypeAccordions cells={cellsData} onInspect={onInspect} onQC={onQC} showInclusion variant="summary"/>{cellList.window&&<CellsWindow {...cellList.window}/>}</section>}
       <section className="pi-dates" aria-label="Recording dates"><div className="pi-section-title"><h3><CalendarDays size={16}/> Recording dates</h3><Info size={14} aria-label="Dates come from cell recording metadata, not import timestamps."/></div>
         <div className="pi-date-list">{model.dates.slice(0,8).map(date=><div key={date.date}><span className="pi-date-dot"/><span className="pi-date-identity"><strong>{recordingDateLabel(date.date)}</strong><small>{countNoun(date.epochs,'epoch')} · {durationLabel(date.duration)}</small></span><span className="pi-date-track"><i style={{width:`${date.cells/maxDateCells*100}%`}}/></span><span className="pi-date-count">{countNoun(date.cells,'cell')}</span></div>)}</div>
         {model.dates.length>8&&<small className="pi-more-dates">{number(model.dates.length-8)} more dates</small>}{!model.dates.length&&<p>{completeCellSummary?'No recording dates in this scope.':'Recording date coverage unavailable.'}</p>}

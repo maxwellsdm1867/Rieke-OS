@@ -17,21 +17,21 @@ test('actual Protocol cold Inspect and return request a compact entry; only visi
  try{
   await h.mount(h.Protocol,props);await ready(h);
   assert.equal(h.fixture.requests.filter(r=>r.path===browsePath).length,1);
-  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview').length,0);
+  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview?cells_limit=200').length,0);
   assert.equal(h.viewer.navigation.total,500);
   assert.deepEqual(h.viewer.treePane.listProps.cells.map(c=>[c.cell_uuid,c.epochs]),[['cell-0',500]]);
   await tab(h,'Overview');
   await h.waitFor(()=>h.root.findAllByType('workflow-child').some(n=>n.props.data?.counts?.epochs===500));
-  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview').length,1);
+  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview?cells_limit=200').length,1);
   const visible=h.root.findAllByType('workflow-child').find(n=>n.props.data?.counts?.epochs===500).props.data;
   assert.deepEqual(visible.counts,{epochs:500,cells:1,included:500});
   await tab(h,'Inspect');await ready(h);
   assert.equal(h.fixture.requests.filter(r=>r.path===browsePath).length,2,'return obtains a fresh descriptor');
-  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview').length,1);
+  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview?cells_limit=200').length,1);
   const mounts=h.fixture.mounts;
   await tab(h,'Export');await h.waitFor(()=>h.root.findAllByType('workflow-dialog').length===1);
   assert.ok(h.fixture.requests.some(r=>r.path==='/protocols/protocol-A'));
-  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview').length,2);
+  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview?cells_limit=200').length,2);
   assert.equal(h.fixture.mounts,mounts,'showing export never replaces the active Inspector');
   const save=h.root.findByType('workflow-dialog').findAllByType('button').find(n=>n.children.some(v=>typeof v==='string'&&v.includes('Save & export')));
   assert.equal(save.props.disabled,false);

@@ -4,11 +4,12 @@
 export const CELL_WINDOW=200;
 
 /** The window facts of a cell-list response, or null for a complete list. */
-export function cellWindowOf(data){
-  if(!Array.isArray(data?.cells)||!Number.isSafeInteger(data.cells_total)||data.cells_total<0)return null;
-  const next=data.cells_next;
-  if(next!==null&&next!==undefined&&(!Number.isSafeInteger(next)||next<=0))throw Error('The cell list window is invalid. Refresh the list.');
-  return {total:data.cells_total,next:next??null};
+export function cellWindowOf(data,after=0){
+  if(!Object.hasOwn(data||{},'cells_total'))return null;
+  const total=data.cells_total,next=data.cells_next,end=after+(data.cells?.length??0);
+  if(!Array.isArray(data.cells)||!Number.isSafeInteger(total)||total<0||end>total||
+    (end<total?(next!==end||next<=after):next!==null))throw Error('The cell list window is invalid. Refresh the list.');
+  return {total,next};
 }
 
 /** Append a later window, keeping first-appearance order and each cell once. */

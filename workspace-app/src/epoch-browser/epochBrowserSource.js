@@ -7,7 +7,7 @@ export function epochPageRequest(source,{offset=0,cellUuid=null,anchorUuid=null,
     const query=new URLSearchParams(source.query);
     if(cellUuid)query.set('cell_uuid',cellUuid);
     query.set('limit',source.pageSize??60);
-    if(includeCells)query.set('include_cells','true');
+    if(includeCells){query.set('include_cells','true');if(cellsLimit&&!source.readContext){query.set('cells_limit',cellsLimit);if(cellsAfter)query.set('cells_after',cellsAfter);}}
     if(anchorUuid)query.set('anchor_uuid',anchorUuid);else query.set('offset',offset);
     return {path:frozenReadPath(source.readContext,source.protocolId,'/epochs',query.toString()),options:{}};
   }

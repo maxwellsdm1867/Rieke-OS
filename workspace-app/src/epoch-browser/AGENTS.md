@@ -241,3 +241,19 @@ guarded curation. It does not preload samples or borrow the empty canvas width:
 the existing trace owner measures the focused committed canvas before every read.
 Clearing focus retires reads and resets shell interactions; scientific context,
 curation scope, legacy views and SelectionOverview precedence remain unchanged.
+
+## Paged protocol cell lists (0.1.21)
+
+Ordinary protocol Inspector reads request `cells_limit=200`. The shared
+`useCellWindows` owner appends `cells_after` windows only while query revision,
+binding version, project/actor and local navigation scope agree. Each later
+window must advance its cursor with the same total; changed receipts or malformed
+windows fail visibly. A/B/A returns, Activity hide and unmount retire in-flight
+windows. Synchronous duplicate demand is coalesced. Incoming frozen/custom
+owners retain their existing full-list contract; #121 does not implement paging
+on those routes. Range selection spans loaded cells, as in predicate inspection.
+
+`CellsWindow` loads once per observed entry into view, avoiding a repeated
+autoload loop when type/date groups are collapsed; its button supports explicit
+load/retry. Tests: `useCellWindows.test.js`, `cellWindows.test.js`,
+`../inspectorNavigationLifecycle.test.js`, `../pagedOverviewLists.test.js`.

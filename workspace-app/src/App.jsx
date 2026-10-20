@@ -135,12 +135,12 @@ export function Protocol({id,projectId,overviewCache,revision,structureRevision=
   // a compact descriptor; bounded pages retain filtered membership/edit authority.
   const profile=useAnnotationProfile(),requestOwner=useWorkspaceRequestScope();
   const overviewScope=JSON.stringify([projectId,profile.profileUuid||'']);
-  const overviewPath=requestOwner?`/protocols/${id}`:`/protocols/${id}/overview`;
+  const overviewPath=requestOwner?`/protocols/${id}`:`/protocols/${id}/overview?cells_limit=200`;
   const unfilteredMain=useOverviewResource(visitedTabs.current.has('overview')||exportOpen?overviewPath:null,summaryRevision,{cache:overviewCache,scope:overviewScope,active:tab==='overview'||exportOpen});
   const browseMain=useProtocolBrowse(id,projectId,structureRevision,tab==='inspect');
   const main=tab==='inspect'?browseMain:unfilteredMain;
   // Incoming review owns its frozen reads; main summary/layout cannot gate entry.
-  const browsingSummary=useOverviewResource(tab==='overview'&&filteredQuery?`${overviewPath}?${filteredQuery}`:null,summaryRevision,{cache:overviewCache,scope:overviewScope});
+  const browsingSummary=useOverviewResource(tab==='overview'&&filteredQuery?`${overviewPath}${overviewPath.includes('?')?'&':'?'}${filteredQuery}`:null,summaryRevision,{cache:overviewCache,scope:overviewScope});
   const protocol=tab==='overview'&&filteredQuery?browsingSummary:unfilteredMain;
   const exportSummary=useResource(exportOpen?`/protocols/${id}?${exportQuery}`:null,revision);
   const exportResource=exportOpen?exportSummary:protocol;
@@ -227,7 +227,7 @@ export default function App(){
   const savedPresentation=useProjectPresentation(registry.data?.current_project_uuid,presentationRecord?.path,{enabled:projectReady&&!dataReady});
   const overviewScope=JSON.stringify([registry.data?.current_project_uuid,registry.data?.projects?.find(project=>project.current)?.path]);
   const overviewCache=useOverviewCache(overviewScope,summaryClock,structureRevision);
-  const overview=useOverviewResource(dataReady?'/overview':null,overviewRevision,{cache:overviewCache,scope:overviewScope}),suggestionsResource=useResource(dataReady?'/protocol-suggestions':null,structureRevision);
+  const overview=useOverviewResource(dataReady?'/overview?cells_limit=200':null,overviewRevision,{cache:overviewCache,scope:overviewScope}),suggestionsResource=useResource(dataReady?'/protocol-suggestions':null,structureRevision);
   const workbenchSummary=useResource(dataReady?'/workbench/summary':null,structureRevision);
   const importReviewStatus=useImportReviewStatus(workbenchSummary,registry.data?.current_project_uuid||overview.data?.project?.project_uuid);
   const sourceMergeProject=registry.data?.current_project_uuid||overview.data?.project?.project_uuid;

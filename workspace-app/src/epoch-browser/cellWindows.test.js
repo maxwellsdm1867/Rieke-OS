@@ -12,3 +12,8 @@ test('a response with cells_total is one window; without it the list is complete
 test('later windows append in first-appearance order without duplicates',()=>{
   assert.deepEqual(appendCellWindow([cell('a'),cell('b')],[cell('b'),cell('c'),cell('c')]).map(item=>item.cell_uuid),['a','b','c']);
 });
+
+test('advertised pagination refuses malformed totals and an early terminal cursor',()=>{
+ assert.throws(()=>cellWindowOf({cells:[cell('a')],cells_total:-1,cells_next:null}));
+ assert.throws(()=>cellWindowOf({cells:[cell('a')],cells_total:3,cells_next:null}));
+});

@@ -379,3 +379,24 @@ test('frozen same-page focus retains tree read scope and enabled actions with me
   assert(h.fixture.resources.filter(row=>row.path?.includes('/epochs?')).every(row=>row.path===request.path&&row.revision===request.revision));
  }finally{await h.close();}
 });
+
+
+test('ordinary Inspector bounds cell lists, appends only matching receipts and fences filter changes',async()=>{
+ const h=await createInspectorHarness();try{
+  const a={cell_uuid:'cell-A',epochs:100},b={cell_uuid:'cell-B',epochs:10};
+  h.fixture.page={...page,cells:[a],cells_total:2,cells_next:1};
+  await h.render(props);
+  assert(h.fixture.resources.some(x=>x.path?.includes('include_cells=true&cells_limit=200')));
+  let path;
+  h.fixture.api=async p=>{path=p;return {...page,cells:[b],cells_total:2,cells_next:null};};
+  await h.act(()=>h.viewer.treePane.listProps.cellsMore.onMore());
+  assert.match(path,/cells_limit=200&cells_after=1/);
+  assert.deepEqual(h.viewer.treePane.listProps.cells.map(x=>x.cell_uuid),['cell-A','cell-B']);
+  assert.equal(h.viewer.treePane.listProps.cellsMore.loaded,2);
+  h.fixture.page={...page,cells:[a],cells_total:2,cells_next:1};await h.render({...props,revision:1});
+  h.fixture.api=async()=>({...page,query_revision:'foreign',cells:[b],cells_total:2,cells_next:null});
+  await h.act(()=>h.viewer.treePane.listProps.cellsMore.onMore());
+  assert.match(h.viewer.treePane.listProps.cellsMore.error,/membership changed/);
+  assert.deepEqual(h.viewer.treePane.listProps.cells.map(x=>x.cell_uuid),['cell-A']);
+ }finally{await h.close();}
+});

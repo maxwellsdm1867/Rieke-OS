@@ -11,12 +11,12 @@ test('actual Protocol returns render the cached overview without a summary reque
  const h=await createWorkflowHarness(),cache=createOverviewCache();
  try{
   await h.mount(h.Protocol,{...props,overviewCache:cache});await h.waitFor(()=>summary(h));
-  const count=h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview').length;
+  const count=h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview?cells_limit=200').length;
   assert.equal(summary(h).props.data.counts.epochs,500);
   await h.render('div',{});await h.render(h.Protocol,{...props,overviewCache:cache});
   assert.equal(summary(h).props.data.counts.epochs,500);
   assert.equal(h.root.findAllByProps({className:'status'}).length,0);
-  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview').length,count);
+  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview?cells_limit=200').length,count);
  }finally{await h.close();cache.clear();}
 });
 
@@ -29,7 +29,7 @@ test('an invalidated overview retains its presentation while awaiting the correc
   assert.equal(summary(h).props.data.counts.epochs,500);
   const next={...summary(h).props.data,counts:{epochs:501,cells:1,included:501},query_revision:'query-1'};
   await h.act(()=>pending.resolve(next));await h.waitFor(()=>summary(h)?.props.data.counts.epochs===501);
-  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview').length,2);
+  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview?cells_limit=200').length,2);
  }finally{pending.resolve({});await h.close();cache.clear();}
 });
 
@@ -38,10 +38,10 @@ test('project overview stays cached across protocol navigation in actual App',as
  h.fixture.route={page:'protocol',protocol:'protocol-A',key:'route-1'};
  try{
   await h.mount();await h.waitFor(()=>summary(h));
-  const count=h.fixture.requests.filter(r=>r.path==='/overview').length;
+  const count=h.fixture.requests.filter(r=>r.path==='/overview?cells_limit=200').length;
   await h.act(()=>h.fixture.navigate('overview'));
   await h.act(()=>h.fixture.navigate('protocol',{protocol:'protocol-A'}));await h.waitFor(()=>summary(h));
-  assert.equal(h.fixture.requests.filter(r=>r.path==='/overview').length,count);
-  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview').length,1);
+  assert.equal(h.fixture.requests.filter(r=>r.path==='/overview?cells_limit=200').length,count);
+  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview?cells_limit=200').length,1);
  }finally{await h.close();}
 });
