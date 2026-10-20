@@ -848,6 +848,7 @@ class ProtocolWorkbench:
         cached = self._pool_cache.get(protocol, {}).get(key)
         if (cached and not changed
                 and all(fingerprints.get(identity) == value for identity, value in cached['pool'].items())):
+            _remember_pool(self._pool_cache[protocol], key, cached)  # A hit is most recent (true LRU).
             return dict(cached, binding=binding)
         active = set(scope['active_source_revisions'])
         reason, pool = None, {}

@@ -307,6 +307,18 @@ class DeltaRevisionTests(_Workbench):
         self.assertIn('excluded from queries', queue['main_blocked_reason'])
         self.assertEqual(queue['pending_epoch_count'], 0)
 
+    def test_many_merge_undo_cycles_keep_main_pool_cached(self):
+        self.more_import()
+        service = self.case.service
+        self.queue()
+        with patch.object(service, 'match_predicate', wraps=service.match_predicate) as queries:
+            for _ in range(6):  # More cycles than the per-protocol pool cache holds.
+                merged = self.post_merge()
+                self.assertEqual(merged.status_code, 200, merged.get_json())
+                self.assertEqual(self.undo(merged.get_json()).status_code, 200)
+                self.assertEqual(self.queue()['pending_epoch_count'], 2)
+        self.assertEqual(queries.call_count, 0, 'main\'s pool was evicted and rebuilt')
+
     def tamper(self, revision, change):
         history = self.case.explorer_history
         row = next(row for row in self.case.explorer_revisions.rows if row['revision_uuid'] == revision)
