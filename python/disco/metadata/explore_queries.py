@@ -16,7 +16,7 @@ from disco.navigation.predicates import OPERATORS, equality_key, kind
 from disco.workbench.recipes import checksum
 from workspace_service import validate_filters, metadata_filter_predicate
 from disco.navigation.tag_predicates import TagPredicates, referenced_fields, annotation_locks
-from disco.navigation.tree import predicate_scope
+from disco.navigation.tree import predicate_scope, StreamingValueView
 from disco.operation_timing import elapsed
 
 MAX_JOBS = 8
@@ -214,10 +214,22 @@ def _native_summaries(service, context, cancelled):
     # The disk mapping has a small row LRU. Walking the entire identity scope
     # once per field evicts every row before its next use. Borrow one full native
     # value row at a time; keep only the first 60 buckets for each requested field.
+    # A native mapping streams exactly these identities in order from one read,
+    # instead of one SQLite lookup per epoch; a missing identity still raises.
+    stream = None
+    if (summaries and metadata_fields and isinstance(values, StreamingValueView) and hasattr(values.base, 'subset')
+            and len(set(identities)) == len(identities)):
+        stream = StreamingValueView(values.base.subset(identities), allowed=values.allowed,
+                                    combinations=values.combinations).items()
     for identity in identities if summaries else ():
         if cancelled():
             raise InterruptedError('Summary cancelled')
-        current = values[identity] if metadata_fields else {}
+        if stream is not None:
+            found, current = next(stream, (None, None))
+            if found != identity:
+                raise KeyError(identity)
+        else:
+            current = values[identity] if metadata_fields else {}
         for field, summary in summaries.items():
             if cancelled():
                 raise InterruptedError('Summary cancelled')

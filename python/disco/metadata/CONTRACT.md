@@ -115,6 +115,33 @@ files avoid cross-process publication and immutable-file repair races.
 The typed-index truth-table/facet tests now include explicit scopes, source
 intersections and empty cohorts; dictionary tests count evaluated values.
 
+## Bounded index reads
+
+`DiskMetadataIndex.catalog_definitions()` returns one read-only `field id ->
+definition` view per opened generation (nested values are read-only mappings and
+tuples). It is never copied per call; `catalog()` still returns an independent
+mutable copy for callers that edit it. Navigation callers that only build
+id-to-definition maps should use the view (a shallow `dict(view)` when they add
+derived joint definitions).
+
+Per-key `values()[key]` access reads an adaptive window of the scope per
+connection: it starts at one key, doubles to at most 512 while the caller keeps
+walking the scope in order, and halves otherwise, so random access stays one key
+per read. Each access still returns an independent copy and unknown or
+out-of-scope keys still raise KeyError. `values().subset(ids)` streams explicit
+identities in their order from one read.
+
+`epoch_prefix(prefix, limit)` answers a lowercase epoch-UUID prefix with one range
+probe on the unique `epoch_uuid` index: the first `limit` identities in UUID order
+and the exact total. A generation holding non-lowercase identities returns None.
+UUID search uses it only when the index row count equals the published row
+mapping and every returned identity is present there; otherwise it keeps its
+case-insensitive scan. Search labels hits from per-protocol member sets cached by
+binding (revision, version) and row publication when the binding reader has its
+paired header reader; any other reader keeps the `query_result` path. Changing
+`disk_index.py` changes the native generation recipe, so existing disposable
+indexes rebuild once.
+
 ## Lifetime and source witnesses
 
 Projection, native and typed generations keep their existing independent witness
