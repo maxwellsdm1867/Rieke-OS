@@ -692,6 +692,56 @@ class IncrementalOverviewTests(MemoFixture):
         self.assertEqual(targets['epoch'],{self.ids[0]})
         self.assertEqual(targets['cell'],{self.service.rows[self.ids[1]]['cell_uuid']})
 
+    def test_cell_chips_reread_only_cells_named_by_the_change_feed(self):
+        """A tag write re-reads only the written cell, never every cell's chips."""
+        start=self.tracker.token();feed=[]
+        original_edit=self.fixture.edit
+        def edit(kind,target,*args,**kwargs):
+            result=original_edit(kind,target,*args,**kwargs)
+            feed.append((self.tracker.token(),{'target_kind':kind,'target_uuid':target,
+                'profile_uuid':self.fixture.author,'last_generation':len(feed)+1,'deleted':0}))
+            return result
+        self.fixture.edit=edit
+        lost={'value':False}
+        def changes(after,limit=10000):
+            if lost['value']:return None
+            if after==start:position=0
+            else:
+                matches=[index for index,(token,_) in enumerate(feed) if token==after]
+                if not matches:return None
+                position=matches[-1]+1
+            return [row for _,row in feed[position:]],self.tracker.token()
+        self.tracker.shared_changes=changes
+        reads=[]
+        # read_targets itself is a contract-checked method; its first step,
+        # the per-kind identity scope check, records which targets it reads.
+        original_scope=self.shared._scope
+        def scope(kind,ids):
+            reads.append((kind,list(ids)))
+            return original_scope(kind,ids)
+        self.shared._scope=scope
+        self.get('/api/overview')
+        self.assertTrue(reads)
+        cells=self.parts['tag_cells'][2]
+        self.fixture.edit('epoch',self.ids[0],['epoch-only'])
+        reads.clear()
+        payload=self.get('/api/overview')
+        self.assertEqual([kind for kind,_ in reads if kind=='cell'],[])
+        for identity,value in self.parts['tag_cells'][2].items():self.assertIs(value,cells[identity])
+        self.assertEqual(payload,self.reference())
+        cell=self.service.rows[self.ids[1]]['cell_uuid']
+        self.fixture.edit('cell',cell,['cell-only'])
+        reads.clear()
+        payload=self.get('/api/overview')
+        self.assertEqual([entry for entry in reads if entry[0]=='cell'],[('cell',[cell])])
+        self.assertEqual(payload,self.reference())
+        self.assertEqual([chip['tag'] for chip in next(item for item in payload['cells'] if item['cell_uuid']==cell)['annotations']['cell_tags']],['cell-only'])
+        lost['value']=True
+        self.fixture.edit('cell',cell,remove=['cell-only'],revision=1)
+        reads.clear()
+        payload=self.get('/api/overview')
+        self.assertEqual(sorted(sum((ids for kind,ids in reads if kind=='cell'),[])),sorted(self.parts['base'][1]['order']))
+        self.assertEqual(payload,self.reference())
 
 class SourcePreverificationRouteTests(MemoFixture):
     def test_trace_route_hashes_first_access_outside_the_database_lock(self):

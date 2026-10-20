@@ -712,7 +712,35 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         shared=tracker.token()
         if shared is None:return None
         return {'base':base,'scope':scope,'exports':(base,exports),'protocols':protocols,
-                'shared':(shared.authority,shared.shared_epoch,shared.shared_generation)}
+                'shared':(shared.authority,shared.shared_epoch,shared.shared_generation),'shared_token':shared}
+
+    def overview_cell_annotations(keys,base):
+        """Per-cell shared tag chips, re-reading only cells the change feed names.
+
+        Entries are immutable once cached (later responses share them). A tag
+        write on one target re-reads only that cell (an epoch write re-reads
+        none); an unavailable/overflowing feed or new publication reads all.
+        """
+        def read(ids,into):
+            for start in range(0,len(ids),1000):
+                records=shared_annotations.read_targets('cell',ids[start:start+1000])
+                for identity in ids[start:start+1000]:
+                    into[identity]={'cell_tags':records[identity]['tags'],'revisions':records[identity]['revisions']}
+            return into
+        cached=overview_parts.get('tag_cells')
+        if cached is not None and cached[0]==keys['base']:
+            if cached[1]==keys['shared_token']:return cached[2]
+            tracker=overview_guard()
+            change=tracker.shared_changes(cached[1]) if tracker is not None else None
+            if change is not None and change[1]==keys['shared_token']:
+                changed=sorted({row['target_uuid'] for row in change[0]
+                                if row['target_kind']=='cell' and row['target_uuid'] in base['cells']})
+                annotations=read(changed,dict(cached[2]))
+                overview_parts['tag_cells']=(keys['base'],keys['shared_token'],annotations)
+                return annotations
+        annotations=read(list(base['order']),{})
+        overview_parts['tag_cells']=(keys['base'],keys['shared_token'],annotations)
+        return annotations
 
     def overview_base(keys):
         cached=overview_parts.get('base')
@@ -813,12 +841,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     for identity,value in protocols.items():
                         own=shared_annotations.summary([service.rows[key] for key in value['ids']])
                         per_protocol[identity]={key:own[key] for key in ('shared_tagged_cells','shared_tagged_epochs')}
-                annotations={}
-                cell_ids=base['order']
-                for start in range(0,len(cell_ids),1000):
-                    records=shared_annotations.read_targets('cell',cell_ids[start:start+1000])
-                    for identity in cell_ids[start:start+1000]:
-                        annotations[identity]={'cell_tags':records[identity]['tags'],'revisions':records[identity]['revisions']}
+                annotations=overview_cell_annotations(keys,base)
                 cached=overview_parts['tags']=(tag_key,{'summary':summary,'per_protocol':per_protocol,'cells':annotations})
             tags=cached[1]
         protocol_list=[]
