@@ -4086,7 +4086,9 @@
             "exports": [
               "createMergeUndo",
               "mergeUndoTarget",
-              "mergeWasUndone"
+              "mergeUndoneVersion",
+              "mergeWasUndone",
+              "subscribeMergeUndone"
             ]
           },
           {

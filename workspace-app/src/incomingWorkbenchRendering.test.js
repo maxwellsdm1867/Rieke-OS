@@ -726,3 +726,29 @@ for(const cumulative of [false,true])test(`incoming ${cumulative?'cumulative':'d
   assert.notEqual(inspector().props.revision,previous);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
+
+test('Export accepted is withdrawn as soon as its merge is undone',async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch;let renderer;
+ const context={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:2,pending_cells:1},protocol:{definition:{protocol_uuid:'history'}}};
+ const receipt={operation_uuid:'merge-op',candidate_revision_uuid:'candidate',protocol_uuid:'history',event_uuid:'event',binding:{revision_uuid:'merged',version:3},accepted_epoch_count:2};
+ globalThis.fetch=async(path,options={})=>{
+  const endpoint=String(path).replace(/^\/api/,'');
+  if(endpoint==='/protocols/history/workbench/undo')return {ok:true,status:200,json:async()=>({binding:{revision_uuid:'restored',version:4},restored_revision_uuid:'before'})};
+  return {ok:true,status:200,json:async()=>context};
+ };
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
+  const {createMergeUndo}=await server.ssrLoadModule('/src/incoming-workbench/mergeUndo.js');
+  const {api}=await server.ssrLoadModule('/src/api.js');
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'candidate'},session:{receipt},capabilities:{drafts:true,frozen_browse:true,additive_accept:true,incoming_export:true}}));});
+  const exportButton=()=>renderer.root.findAllByType('button').find(node=>label(node)==='Export accepted');
+  const inspector=()=>renderer.root.find(node=>node.type?.name==='Inspector');
+  assert.equal(exportButton().props.disabled,false);assert.equal(typeof inspector().props.onExport,'function');
+  const undo=createMergeUndo({request:api});undo.show(receipt,{projectId:'project',protocolName:'History'});
+  await act(async()=>{await undo.undo();});
+  assert.equal(exportButton().props.disabled,true,'an undone merge has no accepted additions to export');
+  assert.match(exportButton().props.title,/undone/);assert.equal(inspector().props.onExport,undefined);
+  assert.match(label(renderer.root),/This merge was undone/);assert.doesNotMatch(label(renderer.root),/Merged 2 epochs into Main/);
+  await act(async()=>renderer.unmount());
+ }finally{globalThis.fetch=oldFetch;await server.close();}
+});

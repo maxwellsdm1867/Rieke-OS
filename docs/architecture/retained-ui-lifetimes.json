@@ -1681,10 +1681,10 @@
       ]
     },
     "src/incoming-workbench/mergeUndo.js": {
-      "fingerprint": "a31f56f31eb7a299d940c9511ece276690c9733330de9ba93438265eba37249f",
+      "fingerprint": "50e905ddb527b86198786f1c69231639f46eec732d8ca963c68260e1dfbbc6c0",
       "sites": [],
       "lifetime": "project-command-owner",
-      "reason": "2026-10-16: plain Undo-merge controller held by an App ref above route mounts. One toast at a time; a token fences late undo replies so an older undo cannot overwrite a newer merge notice. Undo is one explicit request bound to the receipt operation and binding version; 409 refuses without refresh, other failures refresh and never retry. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed.",
+      "reason": "2026-10-16: plain Undo-merge controller held by an App ref above route mounts. One toast at a time; a token fences late undo replies so an older undo cannot overwrite a newer merge notice. Undo is one explicit request bound to the receipt operation and binding version; 409 refuses without refresh, other failures refresh and never retry. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed. F6 review (2026-10-18): undo completion notifies subscribeMergeUndone listeners (session memory only); no effect sites.",
       "tests": [
         "src/incoming-workbench/mergeUndo.test.js"
       ]
@@ -1712,7 +1712,7 @@
       ]
     },
     "src/incoming-workbench/ui/CumulativeIncomingReview.jsx": {
-      "fingerprint": "c01d414313c9684e327959bed885c0bcd85bf900449dd36951db956eaec59386",
+      "fingerprint": "a71e624e869a520380d6f21ec3031fd64477edaadc9ba0ab1dbe4c58d7de64ba",
       "sites": [
         {
           "owner": "CumulativeIncomingReview",
@@ -1731,7 +1731,7 @@
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination. 2026-10-16 review: the preparation effect now reads mergeable pending counts via pendingQueueCounts (eligible fields) instead of queue.data.pending_epoch_count; the dependency is the same primitive count, so preparation timing, owner/generation fences and the idempotent prepare rejoin are unchanged. requirePreparedWorkbench moved to workbenchAuthority.js. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed.",
+      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination. 2026-10-16 review: the preparation effect now reads mergeable pending counts via pendingQueueCounts (eligible fields) instead of queue.data.pending_epoch_count; the dependency is the same primitive count, so preparation timing, owner/generation fences and the idempotent prepare rejoin are unchanged. requirePreparedWorkbench moved to workbenchAuthority.js. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed. F6 review (2026-10-18): subscribes to merge-undo completions via useSyncExternalStore so the earlier-merge export offer disappears at once; effect sites unchanged.",
       "tests": [
         "src/workbenchSessionLifecycle.test.js",
         "src/incomingWorkbenchStrictMode.test.js",
@@ -1741,7 +1741,7 @@
       ]
     },
     "src/incoming-workbench/ui/FrozenIncomingReview.jsx": {
-      "fingerprint": "872b2b292a534fac210271d1092b78eac5d28983ffc983797aed5e0ed1e52828",
+      "fingerprint": "cd0e7074cdc407aa7bae81e9c440b683710916c7715124e7c5d18e8f128a3687",
       "sites": [
         {
           "owner": "FrozenIncomingReview",
@@ -1775,7 +1775,7 @@
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Prepared display capability passes from the frozen candidate without changing draft, selection, merge or publication ownership. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. 2026-10-16: acceptance awaits flushBeforeSubmission (views-only failure is a quiet note, accepted-write failure still refuses); Finish review is an explicit confirmed write under activeOwner/inFlight guards like save(); onMerged reports verified receipts. Effect sites unchanged. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed.",
+      "reason": "Prepared display capability passes from the frozen candidate without changing draft, selection, merge or publication ownership. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. 2026-10-16: acceptance awaits flushBeforeSubmission (views-only failure is a quiet note, accepted-write failure still refuses); Finish review is an explicit confirmed write under activeOwner/inFlight guards like save(); onMerged reports verified receipts. Effect sites unchanged. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed. F6 review (2026-10-18): Export accepted, Merge & export and the Inspector export callback are withdrawn once the receipt's merge is undone (useSyncExternalStore over mergeUndo); effect sites unchanged.",
       "tests": [
         "src/importMergeWorkflow.test.js",
         "src/incomingWorkbenchRendering.test.js",
@@ -1828,7 +1828,7 @@
       ]
     },
     "src/incoming-workbench/ui/IncomingSelectionSummary.jsx": {
-      "fingerprint": "c8a02e9c52935a8273b85b7ae1db822a0dc0b4db11a1bda99b0ebfafafa3544a",
+      "fingerprint": "2949222618c64f43335141b3b72bb55b1c90b6246bc34ba41415f4ab34e500f4",
       "sites": [
         {
           "owner": "IncomingSelectionSummary",
@@ -1838,11 +1838,11 @@
         {
           "owner": "IncomingSelectionSummary",
           "kind": "useEffect",
-          "fingerprint": "6641d1468c6bb04843f309b125b9b522df56fc9cb0772b2fb77aee46eae3d342"
+          "fingerprint": "ea68840956af2cf9e384757965b4aea81cd10c8485126bf49caa6b11bfc3873e"
         }
       ],
       "lifetime": "scoped-selection-authority",
-      "reason": "Selection summaries, manifests and ordered selection queue use committed scope/generation with abort and stale-publication refusal. Visibility may retire a read witness; retained selection presentation never substitutes for fresh command authority.",
+      "reason": "Selection summaries, manifests and ordered selection queue use committed scope/generation with abort and stale-publication refusal. Visibility may retire a read witness; retained selection presentation never substitutes for fresh command authority. F6 review (2026-10-18): ids are memoized on the selection array; later selection changes settle 250 ms behind a timer cleared in the same cleanup that aborts the read; one manifest token is reused for the same exact selection/scope/binding and dropped after any refusal. Abort, identity and pause fences unchanged.",
       "tests": [
         "src/incomingSelectionSummaryRendering.test.js",
         "src/incomingTreeSelectionQueue.test.js",
