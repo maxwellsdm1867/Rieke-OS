@@ -743,6 +743,99 @@ class IncrementalOverviewTests(MemoFixture):
         self.assertEqual(sorted(sum((ids for kind,ids in reads if kind=='cell'),[])),sorted(self.parts['base'][1]['order']))
         self.assertEqual(payload,self.reference())
 
+class PagedCellListTests(MemoFixture):
+    """cells_limit/cells_after windows (the POST /api/explore/epochs contract)."""
+    def setUp(self):
+        super().setUp()
+        ProtocolContextFastPathTests.publish(self)
+        self.parts=self.app.extensions['overview_parts']
+
+    def walk(self, path, separator='?'):
+        """All windows of one cell list, checking totals and cursors."""
+        cells=[];after=0;totals=set();rest=None
+        while after is not None:
+            page=self.get(f'{path}{separator}cells_limit=1&cells_after={after}')
+            self.assertLessEqual(len(page['cells']),1)
+            cells+=page['cells'];totals.add(page['cells_total'])
+            rest={key:value for key,value in page.items() if key not in ('cells','cells_total','cells_next')}
+            after=page['cells_next']
+        self.assertEqual(totals,{len(cells)})
+        return cells,rest
+
+    def full(self, path):
+        page=self.get(path)
+        self.assertNotIn('cells_total',page);self.assertNotIn('cells_next',page)
+        return page
+
+    def test_project_overview_windows_concatenate_to_the_full_list(self):
+        full=self.full('/api/overview')
+        self.assertGreater(len(full['cells']),1)
+        cells,rest=self.walk('/api/overview')
+        self.assertEqual(cells,full['cells'])
+        self.assertEqual(rest,{key:value for key,value in full.items() if key!='cells'})
+        # After a shared-tag write the window is assembled without a full list.
+        self.fixture.edit('cell',full['cells'][1]['cell_uuid'],['paged'])
+        assembled=self.parts.get('assembled')
+        self.assertIsNotNone(assembled)
+        cells,_=self.walk('/api/overview')
+        self.assertIs(self.parts.get('assembled'),assembled)
+        self.assertEqual(cells,self.full('/api/overview')['cells'])
+        self.assertEqual(cells[1]['annotations']['cell_tags'][0]['tag'],'paged')
+
+    def test_paged_overview_keeps_the_display_cache_equal_to_a_full_read(self):
+        from disco.projects.presentation_cache import display_overview
+        saved=self.app.extensions.get('overview_parts')
+        self.save_curation(review_state='approved')
+        self.get('/api/overview?cells_limit=1')
+        self.assertIn('display_key',saved)
+        with patch('disco.projects.presentation_cache.save_overview',return_value=True) as save:
+            # Unchanged inputs: a paged read never rebuilds or rewrites it.
+            self.get('/api/overview?cells_limit=1&cells_after=1')
+        save.assert_not_called()
+        self.parts.clear()
+        with patch('disco.projects.presentation_cache.save_overview',return_value=True) as save:
+            self.get('/api/overview?cells_limit=1')
+        written=display_overview(save.call_args[0][1])
+        full=self.full('/api/overview')
+        reference=display_overview(full)
+        self.assertEqual({key:value for key,value in written.items() if key!='events'},
+                         {key:value for key,value in reference.items() if key!='events'})
+
+    def test_protocol_overview_windows_have_their_own_validators(self):
+        path=f'/api/protocols/{self.protocol}/overview'
+        full=self.full(path)
+        cells,rest=self.walk(path)
+        self.assertEqual(cells,full['cells'])
+        self.assertEqual(rest,{key:value for key,value in full.items() if key!='cells'})
+        first=self.client.get(path+'?cells_limit=1');second=self.client.get(path+'?cells_limit=1&cells_after=1')
+        whole=self.client.get(path)
+        self.assertEqual(len({first.headers['ETag'],second.headers['ETag'],whole.headers['ETag']}),3)
+        again=self.client.get(path+'?cells_limit=1',headers={'If-None-Match':first.headers['ETag']})
+        self.assertEqual(again.status_code,304)
+        other=self.client.get(path+'?cells_limit=1&cells_after=1',headers={'If-None-Match':first.headers['ETag']})
+        self.assertEqual(other.status_code,200)
+
+    def test_epoch_page_windows_cells_in_first_appearance_order(self):
+        path=f'/api/protocols/{self.protocol}/epochs?include_cells=true&limit=5'
+        full=self.full(path)
+        cells,rest=self.walk(path,'&')
+        self.assertEqual(sorted(cells,key=lambda row:row['cell_uuid']),sorted(full['cells'],key=lambda row:row['cell_uuid']))
+        appearance=list(dict.fromkeys(self.service.rows[key]['cell_uuid']
+            for key in self.service._epoch_page_identities(self.protocol,{})[0]))
+        self.assertEqual([row['cell_uuid'] for row in cells],appearance)
+        self.assertEqual(rest,{key:value for key,value in full.items() if key!='cells'})
+
+    def test_invalid_windows_are_refused(self):
+        for path in ('/api/overview',f'/api/protocols/{self.protocol}/overview',
+                     f'/api/protocols/{self.protocol}/epochs?include_cells=true'):
+            separator='&' if '?' in path else '?'
+            for query in ('cells_after=1','cells_limit=0','cells_limit=1001','cells_limit=x',
+                          'cells_limit=1&cells_after=-1','cells_limit=1&cells_limit=2'):
+                response=self.client.get(path+separator+query)
+                self.assertEqual(response.status_code,400,(path,query))
+        response=self.client.get(f'/api/protocols/{self.protocol}/epochs?cells_limit=1')
+        self.assertEqual(response.status_code,400)
+
 class SourcePreverificationRouteTests(MemoFixture):
     def test_trace_route_hashes_first_access_outside_the_database_lock(self):
         lock=self.app.extensions['workspace_db_lock']

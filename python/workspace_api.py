@@ -308,6 +308,35 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
         return service.validate_metadata_filters(values, (request.view_args or {}).get('protocol_uuid'))
 
+    def cell_page():
+        """Optional cell-list window (same contract as POST /api/explore/epochs).
+
+        ``cells_limit`` (1–1000) and ``cells_after`` (cells already received,
+        default 0) return ``cells`` (that window), ``cells_total`` and
+        ``cells_next`` (the next ``cells_after``, or null at the end). Absent
+        parameters keep the full list for older clients.
+        """
+        if any(len(request.args.getlist(key))>1 for key in ('cells_limit','cells_after')):
+            raise ValueError('cells_limit and cells_after may be specified once')
+        if 'cells_limit' not in request.args:
+            if 'cells_after' in request.args:
+                raise ValueError('cells_after requires cells_limit and must be a nonnegative position')
+            return None
+        raw_limit=request.args['cells_limit'];raw_after=request.args.get('cells_after','0')
+        if not raw_limit.isascii() or not raw_limit.isdecimal() or len(raw_limit)>4 or not 1<=int(raw_limit)<=1000:
+            raise ValueError('cells_limit must be 1–1000')
+        if not raw_after.isascii() or not raw_after.isdecimal() or len(raw_after)>12:
+            raise ValueError('cells_after requires cells_limit and must be a nonnegative position')
+        return int(raw_limit),int(raw_after)
+
+    def window_cells(payload,page):
+        """Shallow copy of ``payload`` with its ``cells`` list windowed."""
+        if page is None:return payload
+        limit,after=page;cells=payload.get('cells') or []
+        window=cells[after:after+limit]
+        return {**payload,'cells':window,'cells_total':len(cells),
+                'cells_next':after+len(window) if after+len(window)<len(cells) else None}
+
     def legacy_state(protocol_uuid):
         result = service.query_result(protocol_uuid)
         fingerprints = service.fingerprints(protocol_uuid)
@@ -781,8 +810,13 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         overview_parts['protocols'][identity]=(key,value)
         return value
 
-    def incremental_overview():
-        """Overview assembled from separately keyed components (frozen publications)."""
+    def incremental_overview(page=None):
+        """Overview assembled from separately keyed components (frozen publications).
+
+        With a cell ``page`` only that window of cells is assembled (O(window)
+        once components are current); the display cache is then refreshed only
+        when its cell or count inputs change (see ``paged_overview_display``).
+        """
         keys=overview_part_keys()
         if keys is None:return None
         base=overview_base(keys)
@@ -815,11 +849,15 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 'per_cell':{identity:len(cell['ids'] & exported) for identity,cell in base['cells'].items()}})
         exports=cached[1]
         assembled_key=(approval_key,keys['exports'],keys['shared'],tuple(keys['protocols'].items()))
+        display_key=(keys['base'],approval_key,keys['exports'])
         cached=overview_parts.get('assembled')
         if cached is not None and cached[0]==assembled_key:
             payload={**cached[1],'events':service.events(25),'exports':store.list_dataset_revisions()}
             if overview_part_keys()!=keys:
                 raise StaleWorkspace('Saved decisions changed while reading this project. Refresh and retry.')
+            if page is not None:
+                paged_overview_display(display_key,payload,lambda:payload['cells'])
+                payload=window_cells(payload,page)
             return payload
         tags=None
         if shared_annotations:
@@ -849,7 +887,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             entry={**value['entry'],'counts':{**value['entry']['counts'],**(tags['per_protocol'][identity] if tags else {})}}
             protocol_list.append(copy.deepcopy(entry))
         cells=[]
-        for identity in base['order']:
+        order=base['order'] if page is None else base['order'][page[1]:page[1]+page[0]]
+        for identity in order:
             cell=base['cells'][identity];reviewed,members_of=approval['per_cell'][identity]
             item={**cell['static'],'epochs':len(cell['ids']),'duration_seconds':cell['duration_seconds'],
                   'included':len(cell['ids']),'reviewed':reviewed,'unreviewed':len(cell['ids'])-reviewed,
@@ -858,7 +897,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if tags is not None:item['annotations']=tags['cells'][identity]
             cells.append(item)
         approved=approval['approved'];exported=exports['exported']
-        counts={'cells':len(cells),'epochs':base['epochs'],'reviewed':len(approved),'included':base['epochs'],
+        counts={'cells':len(base['order']),'epochs':base['epochs'],'reviewed':len(approved),'included':base['epochs'],
             'duration_seconds':base['duration_seconds'],'protocols':len(protocol_list),'sources':len(service.sources),
             'exported':len(exported),'approved':len(approved),'unreviewed':base['epochs']-len(approved)}
         payload={'active_source_counts':dict(base['active_source_counts']),'source_scope':copy.deepcopy(keys['scope']),
@@ -868,6 +907,22 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if tags is not None:
             counts.update({key:tags['summary'][key] for key in ('shared_tagged_cells','shared_tagged_epochs')})
             payload['annotation_summary']=copy.deepcopy({key:tags['summary'][key] for key in ('tags','total_tags','truncated')})
+        if page is not None:
+            # A window is never cached as the assembled (full) overview.
+            limit,after=page;total=len(base['order'])
+            payload.update(cells_total=total,cells_next=after+len(cells) if after+len(cells)<total else None,
+                           events=service.events(25),exports=store.list_dataset_revisions())
+            if overview_part_keys()!=keys:
+                raise StaleWorkspace('Saved decisions changed while reading this project. Refresh and retry.')
+            def display_cells():
+                rows=[]
+                for identity in base['order']:
+                    cell=base['cells'][identity]
+                    rows.append({**cell['static'],'epochs':len(cell['ids']),'duration_seconds':cell['duration_seconds'],
+                                 'protocol_uuids':list(approval['per_cell'][identity][1])})
+                return rows
+            paged_overview_display(display_key,payload,display_cells)
+            return payload
         # The assembled payload is shared read-only by later identical requests
         # (serialization and the presentation cache only read it).
         overview_parts['assembled']=(assembled_key,payload)
@@ -878,10 +933,34 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise StaleWorkspace('Saved decisions changed while reading this project. Refresh and retry.')
         return payload
 
-    def native_overview():
-        """Project counts from exact decision projections, memoized per generation."""
+    def paged_overview_display(display_key,payload,cells):
+        """Keep the startup display cache current from paged overview reads.
+
+        Its cells and counts depend only on the publication base, protocol and
+        approval components and exports, so it is rebuilt (O(cells)) only when
+        those change; the event list in that presentation-only cache may lag
+        until then or until a full overview read.
+        """
+        if overview_parts.get('display_key')==display_key:return
+        from disco.projects.presentation_cache import save_overview, display_overview
+        full={**payload,'cells':cells()}
+        for key in ('cells_total','cells_next'):full.pop(key,None)
+        try:
+            display=display_overview(full)
+        except (ValueError, TypeError, KeyError, AttributeError):
+            display=None
+        if display is None or display!=saved_overview.get('display'):
+            saved_overview['display']=display if save_overview(project_dir,full) else None
+        overview_parts['display_key']=display_key
+
+    def native_overview(page=None):
+        """Project counts from exact decision projections, memoized per generation.
+
+        Only the incremental path windows cells itself (``page``); the memoized
+        fallback returns the full payload and the route windows it.
+        """
         if not service.protocols:return None
-        incremental=incremental_overview()
+        incremental=incremental_overview(page)
         if incremental is not None:return incremental
         witness=overview_witness()
         if witness is not None and overview_memo.get('key')==witness:
@@ -1316,9 +1395,15 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     @app.get("/api/overview")
     def overview():
+        cells_window=cell_page()
         with db_lock, read_contract():
-            native=native_overview()
-            if native is not None:return overview_response(native)
+            native=native_overview(cells_window)
+            if native is not None:
+                if cells_window is None:return overview_response(native)
+                if 'cells_total' in native:return jsonify(native)
+                # Memoized fallback: full payload (display cache as before), then a window.
+                overview_response(native)
+                return jsonify(window_cells(native,cells_window))
             payload = copy.deepcopy(service.overview())
             memberships = {}
             export_memberships = store.export_memberships()
@@ -1342,7 +1427,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 payload['counts'].update({key:summary[key] for key in ('shared_tagged_cells','shared_tagged_epochs')})
                 payload['annotation_summary']={key:summary[key] for key in ('tags','total_tags','truncated')}
             payload["exports"] = store.list_dataset_revisions()
-            return overview_response(payload)
+            if cells_window is None:return overview_response(payload)
+            overview_response(payload)
+            return jsonify(window_cells(payload,cells_window))
 
     @app.get('/api/tags')
     def tags():
@@ -1377,8 +1464,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         keep their full policy and never issue a conditional reuse receipt.
         """
         protocol_uuid=str(uuid.UUID(protocol_uuid))
+        cells_window=cell_page()
         with db_lock:
-            query_filters=filters()
+            query_filters=filters({'cells_limit','cells_after'})
             native_exports=(type(store) is CurationStore
                 and getattr(store.export_memberships,'__func__',None) is CurationStore.export_memberships
                 and getattr(store.protocol_export_status,'__func__',None) is CurationStore.protocol_export_status)
@@ -1394,7 +1482,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 # The summary shows tag counts; v4 revisions omit shared tags.
                 etag=checksum({'projection':'protocol-overview-v2','query':context['query_revision'],'recording_rigs':rig_token,
                                'exports':signature,'filters':query_filters,'annotations':annotation_generation(context['generation'])})
-                unchanged=request.headers.get('If-None-Match')=='"'+etag+'"'
+                # Each cell window has its own validator; the memo keeps the full payload.
+                response_etag=etag if cells_window is None else checksum({'overview':etag,'cells_limit':cells_window[0],
+                                                                          'cells_after':cells_window[1]})
+                unchanged=request.headers.get('If-None-Match')=='"'+response_etag+'"'
                 # The ETag names every input of this payload (protocol revision,
                 # shared-tag generation, exports, rigs, filters): reuse it per tag.
                 memo=protocol_overview_memo.get(protocol_uuid)
@@ -1409,12 +1500,12 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     protocol_overview_memo[protocol_uuid]=(etag,payload)
                     while len(protocol_overview_memo)>8:
                         protocol_overview_memo.pop(next(iter(protocol_overview_memo)))
-                response=app.response_class(status=304) if unchanged else jsonify(payload)
-                response.set_etag(etag)
+                response=app.response_class(status=304) if unchanged else jsonify(window_cells(payload,cells_window))
+                response.set_etag(response_etag)
             else:
                 payload=enrich_protocol(copy.deepcopy(service.protocol(protocol_uuid,query_filters)),protocol_uuid,query_filters)
                 for cell in payload.get('cells',[]):cell.pop('protocol_uuids',None)
-                response=jsonify(payload)
+                response=jsonify(window_cells(payload,cells_window))
             response.headers['Cache-Control']='no-store'
             return response
 
@@ -1495,13 +1586,17 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         include_cells=request.args.get('include_cells','false')
         if len(request.args.getlist('include_cells'))>1 or include_cells not in ('true','false'):
             raise ValueError('include_cells must be true or false')
+        cells_window=cell_page()
+        if cells_window is not None and include_cells!='true':
+            raise ValueError('cells_limit requires include_cells=true')
         with db_lock, selected_state.native_read(protocol_uuid,provider=page_curation_provider) as native:
             tracker=getattr(store,'state_generation',None)
             page_generation=tracker.token(protocol_uuid) if tracker and native is None else None
             arguments={'anchor_uuid':request.args.get('anchor_uuid')}
             if native is not None:arguments['include_curation']=False
             if include_cells=='true':arguments['include_cells']=True
-            query_filters=filters({'anchor_uuid','include_cells'})
+            if cells_window is not None:arguments['cells_page']=cells_window
+            query_filters=filters({'anchor_uuid','include_cells','cells_limit','cells_after'})
             from disco.metadata.explore_queries import generation
             scoped_context={'protocol_uuid':protocol_uuid,'filters':query_filters}
             scoped_generation=generation(service,scoped_context) if 'metadata_predicate' in query_filters else None
