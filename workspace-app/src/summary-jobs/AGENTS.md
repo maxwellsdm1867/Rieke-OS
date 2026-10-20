@@ -2,22 +2,20 @@
 
 ## Public interface
 
-`ui/SummaryPreferences.jsx`, `ui/SummaryStatus.jsx`, `useFieldRegistry.js` and `useProtocolSummaryPreferences.js` are named public entries.
+`ui/SummaryStatus.jsx` and `useFieldRegistry.js` are named public entries.
 
 All existing exports and props remain public. Import the named entry directly; no
 barrel, forwarding facade or export demotion is introduced. CSS stays beside its
 view. Public entries and styles:
 
-- `ui/SummaryPreferences.jsx`
 - `ui/SummaryStatus.jsx`
 - `useFieldRegistry.js`
-- `useProtocolSummaryPreferences.js`
 
 ## Contract and authority
 
-Field registry fallback is allowed only on 404/405 route absence, never generation or validation failure. Invalid field arrays fail visibly. Cleanup aborts requests and suppresses late publication. Summary preferences retain versioned project/protocol/view identity; unavailable identity disables writes and storage failures remain visible.
+Field registry fallback is allowed only on 404/405 route absence, never generation or validation failure. Invalid field arrays fail visibly. Cleanup aborts requests and suppresses late publication.
 
-Despite the historical group name, this folder does not execute summary jobs. KEEP requested-summaries as the submit/poll/cancel and requested-field policy owner; backend computation owns scientific results. Controls and locally stored preferences cannot certify data freshness.
+Despite the historical group name, this folder does not execute summary jobs. KEEP requested-summaries as the submit/poll/cancel and requested-field policy owner; backend computation owns scientific results. Status controls cannot certify data freshness. Per-protocol summary preferences and their controls were removed on 2026-10-19 with query-building statistics.
 
 ## Factoring decision
 

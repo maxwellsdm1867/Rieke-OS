@@ -20,7 +20,7 @@ test('shared and curation scientific criteria require authority refresh',()=>{
  assert.equal(annotationFilterNeedsRefresh({metadata_predicate:'invalid'}),true);
 });
 
-import {frozenReadPath,candidatePreviewReceipt} from './epoch-browser/frozenReadContext.js';
+import {frozenReadPath} from './epoch-browser/frozenReadContext.js';
 import {epochPageRequest} from './epoch-browser/epochBrowserSource.js';
 import {treePageRequest} from './pagedTreeRequest.js';
 test('frozen row/detail/tree requests retain exact token and never fall back',()=>{
@@ -32,12 +32,4 @@ test('frozen row/detail/tree requests retain exact token and never fall back',()
  const body=treePageRequest({protocolId:'p',readContext,filters:{metadata_predicate:'{"any":[]}'}});
  assert.equal(body.candidate_scope_revision,readContext.candidate_scope_revision);assert.equal(body.protocol_uuid,undefined);assert.equal(body.predicate,undefined);
  assert.throws(()=>frozenReadPath({root:readContext.root},'p','/epochs'));
-});
-test('candidate preview requires echoed scope and exact canonical filters; absent count is unavailable',()=>{
- const request={candidate_scope_revision:'scope-a',filters:{cell_type:'RGC',metadata_predicate:'{"all":[]}'}};
- const result={candidate_scope_revision:'scope-a',filters:{metadata_predicate:'{ "all" : [] }',cell_type:'RGC'},counts:{epochs:0}};
- assert.equal(candidatePreviewReceipt(result,request),0);
- assert.throws(()=>candidatePreviewReceipt({...result,candidate_scope_revision:'scope-b'},request));
- assert.throws(()=>candidatePreviewReceipt({...result,filters:{...result.filters,cell_type:'ON'}},request));
- assert.throws(()=>candidatePreviewReceipt({...result,counts:{}},request));
 });

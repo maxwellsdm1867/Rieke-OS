@@ -6,7 +6,6 @@ import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, CircleMinus, GitB
 import { number, useResource } from '../../api.js';
 import {useFieldRegistry} from '../../summary-jobs/useFieldRegistry.js';
 import {useRequestedSummaries} from '../../requested-summaries/useRequestedSummaries.js';
-import {useProtocolSummaryPreferences} from '../../summary-jobs/useProtocolSummaryPreferences.js';
 import {fieldsWithSummaries,requestedSummaryFields} from '../../requested-summaries/requestedSummaries.js';
 import './TreeBuilder.css';
 import { reorderIds } from '../../ordering.js';
@@ -27,7 +26,7 @@ function Highlight({text, term}) {
   return index < 0 ? value : <>{value.slice(0,index)}<mark>{value.slice(index,index+query.length)}</mark>{value.slice(index+query.length)}</>;
 }
 
-export default function TreeBuilder({protocolId, projectId, catalogPath, catalogData, summaryContext=null, summaryEnabled=true, readContext=null, treeSelectionIntent,onTreeSelectionIntentChange,onTreeSelectionFeedback, selectedEpochs=[],setSelectedEpochs,onAnnotationsChanged, actionsDisabled=false, onFullCatalog, queryString='', revision=0, value, onChange, preview, loading, error}) {
+export default function TreeBuilder({protocolId, projectId, catalogPath, catalogData, summaryContext=null, summaryEnabled=true, readContext=null, treeSelectionIntent,onTreeSelectionIntentChange,onTreeSelectionFeedback, selectedEpochs=[],setSelectedEpochs,onAnnotationsChanged, actionsDisabled=false, queryString='', revision=0, value, onChange, preview, loading, error}) {
   const [order,setOrder] = useState(value);
   const retainedActive=useRetainedView()?.active!==false;
   const [open,setOpen] = useState(false),[combineOpen,setCombineOpen]=useState(false);
@@ -45,10 +44,9 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
   })}:null,[!!readContext,registry.data]);
   const catalog=catalogData?{data:catalogData,loading:false,error:null,reload:()=>{}}:fullCatalog
     ?{...fetchedCatalog,data:fetchedCatalog.data||registryDefinitions}:{...registry,data:registryDefinitions};
-  const preferences=useProtocolSummaryPreferences(projectId,summaryContext?.protocol_uuid||protocolId,'tree');
   const definitions=catalog.data?.tree_fields||catalog.data?.fields||[];
   const context=summaryContext||{predicate:{all:[]},...(protocolId?{protocol_uuid:protocolId}:{}),...(queryString?{filters:Object.fromEntries(new URLSearchParams(queryString))}:{})};
-  const requested=requestedSummaryFields({registry:registry.data?.fields||definitions,axes:order,predicate:summaryContext?.filters?.metadata_predicate?{all:[summaryContext.predicate||{all:[]},JSON.parse(summaryContext.filters.metadata_predicate)]}:summaryContext?.predicate,preferences:preferences.value});
+  const requested=requestedSummaryFields({registry:registry.data?.fields||definitions,axes:order,predicate:summaryContext?.filters?.metadata_predicate?{all:[summaryContext.predicate||{all:[]},JSON.parse(summaryContext.filters.metadata_predicate)]}:summaryContext?.predicate});
   const summaries=useRequestedSummaries({...context,summary_fields:requested.fields,generation:registry.data?.generation},
     {enabled:summaryEnabled&&(open||combineOpen)&&!!registry.supportsSummaries&&!!registry.data?.generation&&requested.fields.length>0});
   const fields = useMemo(()=>{

@@ -15,7 +15,7 @@ test('predicate catalog refresh preserves the editor node but gates every action
   assert.equal(body.props.inert,true);assert.equal(body.props['aria-hidden'],true);
   const buttons=h.root.findAllByType('button');
   assert.equal(buttons.find(n=>n.children.includes('View matching epochs')).props.disabled,true);
-  assert.equal(buttons.find(n=>n.children.includes('Preview matches')).props.disabled,true);
+  assert.equal(buttons.some(n=>n.children.includes('Preview matches')),false,'building a query offers no preview');
   await h.render(Dialog,{...props,catalog:{...catalog,key:'registry-1'}});
   assert.equal(h.root.findByType('fieldset'),builder);
   assert.equal(h.root.findByProps({className:'stable-content-body'}).props.inert,false);
