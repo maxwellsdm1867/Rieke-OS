@@ -130,6 +130,15 @@ def workbench_tables(dj):
     return WorkbenchDraft, WorkbenchDecision, WorkbenchReceipt
 
 
+_DISCOVERY_LIMIT = 1024
+
+
+def _remember(cache, key, value):
+    """Insert as most recent in an insertion-ordered dict bounded to _DISCOVERY_LIMIT."""
+    cache[key] = value
+    while len(cache) > _DISCOVERY_LIMIT:
+        del cache[next(iter(cache))]
+
 _recipe_reads = contextvars.ContextVar('workbench_recipe_reads', default=None)
 # A per-proposal loop (queue, cumulative snapshot) reads each protocol's
 # revision once instead of once per proposal. Opening/closing read checks and
@@ -180,6 +189,10 @@ class ProtocolWorkbench:
         self.selection_manifests = {}
         self._read_projections = _FrozenReadProjections()
         self._pool_cache = {}
+        # Small facts derived from verified immutable recipes, keyed by
+        # revision UUID (recipes are insert-only and content-sealed with their
+        # UUID). Never scope authority: opening contexts verify fresh recipes.
+        self._discovery, self._seen_sources = {}, {}
 
     @property
     def tables(self):
@@ -222,6 +235,44 @@ class ProtocolWorkbench:
         if candidate.get('parent_revision_uuid') != baseline['revision_uuid']:
             raise ValueError('Incoming candidate baseline does not match its sealed parent')
         return found[0], baseline, candidate
+
+    def discovery(self, revision):
+        """Predicate and lineage facts of one immutable recipe, for lock discovery.
+
+        Annotation-lock discovery and seen-recording reads need only these
+        small facts. They are derived once per revision from a verified recipe
+        (insert-only and sealed with its UUID) instead of re-reading and
+        re-hashing every proposal's recipe on every request. Custom recipe
+        readers keep their per-call reads. Scope authority never uses this.
+        """
+        from disco.decisions.explorer import ExplorerHistory
+        if getattr(self.history.get, '__func__', None) is not ExplorerHistory.get:
+            return self._discovery_facts(self.history.get(revision)['recipe'])
+        revision = str(uuid.UUID(revision))
+        cached = self._discovery.pop(revision, None)
+        if cached is None:
+            cached = self._discovery_facts(self.history.get(revision)['recipe'])
+        _remember(self._discovery, revision, cached)
+        return copy.deepcopy(cached)
+
+    @staticmethod
+    def _discovery_facts(recipe):
+        return dict(predicate=copy.deepcopy(recipe['predicate']), membership_kind=recipe.get('membership_kind'),
+            previous_revision_uuid=recipe.get('additive_publication', {}).get('previous_revision_uuid'),
+            source_revisions=tuple(recipe.get('source_revisions', ())),
+            origins=[witness['candidate_revision_uuid'] for witness in
+                     recipe.get('pending_union_provenance', {}).get('origins', [])])
+
+    def proposal_predicates(self, protocol, revision):
+        """Predicates a candidate read depends on: its own and its origins'."""
+        rows = (self.suggestions.Table & dict(project_uuid=self.project, protocol_uuid=protocol)).to_dicts()
+        known = {row['summary']['candidate_revision_uuid'] for row in rows}
+        if revision not in known:
+            raise KeyError('Incoming candidate not found for this protocol in this project')
+        facts = self.discovery(revision)
+        if any(origin not in known for origin in facts['origins']):
+            raise KeyError('Incoming candidate not found for this protocol in this project')
+        return [facts['predicate'], *(self.discovery(origin)['predicate'] for origin in facts['origins'])]
 
     def draft(self, key):
         headers = (self.tables[0] & key).to_dicts()
@@ -349,7 +400,7 @@ class ProtocolWorkbench:
             # shallow read adapter, and capture the complete outside-SQL proof.
             read_witness = read_generation(self.service, read_context)
             from disco.navigation.tag_predicates import referenced_fields
-            predicates = [self.history.get(row['summary']['candidate_revision_uuid'])['recipe']['predicate']
+            predicates = [self.discovery(row['summary']['candidate_revision_uuid'])['predicate']
                 for row in self.original_records(protocol)]
             binding = self.history.protocol_binding(protocol)
             if binding:
@@ -385,7 +436,14 @@ class ProtocolWorkbench:
             return current
         return guard, generation
 
-    def context(self, protocol, revision, actor, *, query_revision_guard=None):
+    def context(self, protocol, revision, actor, *, query_revision_guard=None, closing=None):
+        if closing is not None:
+            # A read closes against the context it opened with: fresh tokens
+            # for every mutable input, opened values for immutable ones. Any
+            # unprovable case rebuilds the full context instead.
+            closed = self._closing_context(closing, protocol, revision, actor, query_revision_guard)
+            if closed is not None:
+                return closed
         with elapsed("disco.workbench.workbench", "context"), self._context_reads():
             key = self.key(protocol, revision, actor)
             summary, baseline, candidate = self.proposal(protocol, revision)
@@ -438,9 +496,10 @@ class ProtocolWorkbench:
             annotation = TagPredicates(self.service).snapshot(fields)[1] if fields else None
             annotation_changed = (candidate.get('annotation_scope', {}).get('revision') !=
                                   (annotation or {}).get('revision'))
-            origin_witnesses, origins_valid = [], True
+            origin_witnesses, origins_valid, origin_field_sets = [], True, []
             for summary_origin, baseline_origin, origin in self.origin_recipes(protocol, candidate):
                 origin_fields = referenced_fields(origin['predicate'])
+                origin_field_sets.append(origin_fields)
                 witness = TagPredicates(self.service).snapshot(origin_fields)[1] if origin_fields else None
                 annotation_changed |= origin.get('annotation_scope', {}).get('revision') != (witness or {}).get('revision')
                 origins_valid &= bool(main and self._additive_lineage(main, baseline_origin, protocol,
@@ -467,14 +526,69 @@ class ProtocolWorkbench:
                 selection_mode=header['selection_mode'], deferred=bool(header['deferred']),
                 incoming_sha256=checksum(incoming), current_fingerprints_sha256=checksum(
                     {key: self.service._fingerprints.get(key) for key in proposed.keys() | previous.keys()}))
+            evidence_fields = tuple(evidence)
             evidence['candidate_scope_revision'] = checksum(evidence)
-            return dict(**evidence, shared_annotation_witness=shared_witness,
+            closing_witness = None
+            if binding and reads.canonical:
+                closing_witness = dict(evidence_fields=evidence_fields, fields=fields, origin_fields=origin_field_sets,
+                    fingerprints=self.service._fingerprints, rows=self.service.rows,
+                    publication=getattr(self.service, '_explore_publication', None))
+            return dict(**evidence, shared_annotation_witness=shared_witness, _closing_witness=closing_witness,
                 summary=summary, baseline=baseline, candidate=candidate, main=main,
                 previous=previous, incoming=incoming, pending=pending, decisions=decisions,
                 conflicts=conflicts, base_conflicts=base_conflicts, main_conflicts=main_conflicts,
                 unavailable=unavailable, ineligible=ineligible,
                 blocked_main=ineligible_main, annotation_changed=annotation_changed, valid_base=valid_base,
                 source_scope=scope, already_present=set(incoming) & set(previous))
+
+    def _closing_context(self, opened, protocol, revision, actor, query_revision_guard):
+        """Recompute the opened scope revision from current tokens, or None.
+
+        Immutable inputs keep their opened values: candidate/baseline recipes
+        (sealed with their UUIDs), main (the same binding revision UUID) and
+        everything derived from them. The fingerprint map and rows are the
+        same published objects (a refresh replaces both under the database
+        lock that every Workbench read holds, with a new publication token;
+        nothing mutates them in place). Draft, binding version, query
+        revision, source scope and predicate annotation witnesses are read
+        fresh exactly as an opening context reads them.
+        """
+        witness = opened.get('_closing_witness')
+        if (witness is None or opened.get('protocol_uuid') != protocol
+                or opened.get('candidate_revision_uuid') != revision or opened.get('actor') != actor):
+            return None
+        service = self.service
+        if (service._fingerprints is not witness['fingerprints'] or service.rows is not witness['rows']
+                or witness['publication'] is None
+                or getattr(service, '_explore_publication', None) != witness['publication']):
+            return None
+        from disco.decisions.explorer import is_canonical_binding_reader
+        if not is_canonical_binding_reader(self.history.protocol_binding):
+            return None
+        if query_revision_guard is None and not (self.read_revision is not None
+                                                 and self.state is self._read_revision_state):
+            return None
+        with elapsed("disco.workbench.workbench", "closing_context"):
+            binding = self.history.protocol_binding_header(protocol)
+            if not binding or binding['revision_uuid'] != opened['main_revision_uuid']:
+                return None
+            query_revision = query_revision_guard() if query_revision_guard is not None else self.read_revision(protocol)
+            if query_revision is None:
+                return None
+            header, decisions = self.draft(self.key(protocol, revision, actor))
+            scope = service.source_scope()
+            from disco.navigation.tag_predicates import TagPredicates
+            def annotation(fields):
+                return ((TagPredicates(service).snapshot(fields)[1] if fields else None) or {}).get('revision')
+            evidence = {field: opened[field] for field in witness['evidence_fields']}
+            evidence.update(expected_binding_version=binding['version'], expected_query_revision=query_revision,
+                source_scope_revision=scope['revision'], annotation_scope_revision=annotation(witness['fields']),
+                origin_witnesses=[dict(item, annotation_scope_revision=annotation(fields)) for item, fields
+                                  in zip(opened['origin_witnesses'], witness['origin_fields'])],
+                draft_version=header['version'], decisions_sha256=checksum(decisions),
+                selection_mode=header['selection_mode'], deferred=bool(header['deferred']))
+            evidence['candidate_scope_revision'] = checksum(evidence)
+            return dict(opened, **evidence)
 
     @staticmethod
     def superseded(context):
@@ -523,11 +637,22 @@ class ProtocolWorkbench:
         """Recordings main was defined against: those present when its query was
         last saved, its pinned set created or its baseline frozen. Merges do not
         change it, so an unmerged rest of a new recording stays new."""
+        start = main.get('revision_uuid')
+        if start in self._seen_sources:
+            value = self._seen_sources.pop(start)
+            _remember(self._seen_sources, start, value)
+            return value
         seen = 0
-        while main.get('membership_kind') == 'additive_union' and seen < 10000:
-            main = self._recipe(main['additive_publication']['previous_revision_uuid'])
+        facts = self._discovery_facts(main)
+        while facts['membership_kind'] == 'additive_union' and seen < 10000:
+            facts = self.discovery(facts['previous_revision_uuid'])
             seen += 1
-        return frozenset(main.get('source_revisions', ()))
+        value = frozenset(facts['source_revisions'])
+        # The chain below an immutable revision never changes, so its result
+        # is remembered per revision instead of re-walking every merge.
+        if start is not None:
+            _remember(self._seen_sources, start, value)
+        return value
 
     def pending_pool(self, protocol):
         """New data for main: epochs from recordings main has not seen that its
@@ -733,12 +858,18 @@ class ProtocolWorkbench:
                 raise WorkbenchConflict('Review draft version changed')
             draft = dict(**key, version=context['draft_version'] + 1, selection_mode='selected', deferred=context['deferred'])
             (self.tables[0].update1 if context['draft_version'] else self.tables[0].insert1)(draft)
+            new_rows = []
             for identity in remaining:
                 saved = context['decisions'].get(identity, {})
                 valid = saved.get('metadata_hash') == context['incoming'][identity]
                 row = dict(**key, epoch_uuid=identity, metadata_hash=context['incoming'][identity], selected=False,
                            reviewed=bool(saved.get('reviewed')) if valid else False, excluded=True)
-                (self.tables[1].update1 if identity in context['decisions'] else self.tables[1].insert1)(row)
+                if identity in context['decisions']:
+                    self.tables[1].update1(row)
+                else:
+                    new_rows.append(row)
+            if new_rows:
+                self.tables[1].insert(new_rows)  # One statement, not one per left-out epoch.
             self._event(context['actor'], 'workbench_review_finished', dict(protocol_uuid=context['protocol_uuid'],
                 candidate_revision_uuid=context['candidate_revision_uuid'], left_out_epoch_count=len(remaining),
                 left_out_epoch_uuids=remaining), str(uuid.uuid4()))
@@ -1242,16 +1373,14 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             manager.tables  # Declare native tables before transactions/annotation locks.
             predicates = []
             if revision:
-                candidate_recipe = manager.proposal(protocol, revision)[2]
-                predicates.append(candidate_recipe['predicate'])
-                predicates.extend(origin[2]['predicate'] for origin in manager.origin_recipes(protocol, candidate_recipe))
+                predicates.extend(manager.proposal_predicates(protocol, revision))
             else:
                 # Queue summaries read every candidate's annotation witness.
                 restriction = dict(project_uuid=manager.project)
                 if protocol is not None:
                     restriction['protocol_uuid'] = protocol
                 records = (suggestions.Table & restriction).to_dicts()
-                predicates.extend(history.get(row['summary']['candidate_revision_uuid'])['recipe']['predicate'] for row in records)
+                predicates.extend(manager.discovery(row['summary']['candidate_revision_uuid'])['predicate'] for row in records)
             for field in ('metadata_predicate', 'tag_predicate'):
                 if (filters or {}).get(field):
                     value = filters[field]
@@ -1323,7 +1452,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             value['generation'] = current
         guard = context.get('_transaction_authority', (None,))[0]
         manager.check_scope(manager.context(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor'],
-                            query_revision_guard=guard),
+                            query_revision_guard=guard, closing=context),
                             context['candidate_scope_revision'])
         value.update(candidate_scope_revision=context['candidate_scope_revision'],
             query_revision=context['candidate_scope_revision'], expected_binding_version=context['expected_binding_version'])

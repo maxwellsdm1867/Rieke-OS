@@ -73,12 +73,12 @@ def prepare_pool_candidate(manager, protocol, actor):
         header, decisions = manager.review_decisions(protocol, actor)
         manager.tables[0].insert1(dict(**key, version=max(1, header.get('version', 1)), selection_mode='selected',
                                        deferred=bool(header.get('deferred'))))
-        count = 0
-        for identity, saved in decisions.items():
-            if pool.get(identity) == saved['metadata_hash']:
-                manager.tables[1].insert1(dict(**key, epoch_uuid=identity, metadata_hash=saved['metadata_hash'],
-                    **{field: bool(saved[field]) for field in ('selected', 'reviewed', 'excluded')}))
-                count += 1
+        rows = [dict(**key, epoch_uuid=identity, metadata_hash=saved['metadata_hash'],
+                     **{field: bool(saved[field]) for field in _DECISION_FIELDS})
+                for identity, saved in decisions.items() if pool.get(identity) == saved['metadata_hash']]
+        if rows:
+            manager.tables[1].insert(rows)  # One statement for the whole carry.
+        count = len(rows)
         carried = dict(initialized=True, carried_decision_count=count, carried_from=[] if not previous else
             [dict(candidate_revision_uuid=header['candidate_revision_uuid'], draft_version=header['version'])])
     return summary, recipe, created, carried, content
@@ -121,7 +121,11 @@ def _synchronize_reused_draft(manager, protocol, actor, key, pool):
     manager.tables[0].update1(dict(**key, version=max(own['version'], header['version']),
                                    selection_mode='selected', deferred=deferred))
     for exists, row in rows:
-        (manager.tables[1].update1 if exists else manager.tables[1].insert1)(row)
+        if exists:
+            manager.tables[1].update1(row)
+    inserted = [row for exists, row in rows if not exists]
+    if inserted:
+        manager.tables[1].insert(inserted)
     return dict(initialized=False, synchronized=True, carried_decision_count=len(desired),
                 carried_from=[dict(candidate_revision_uuid=header['candidate_revision_uuid'], draft_version=header['version'])])
 
