@@ -62,6 +62,7 @@ async function fixture(t) {
     }
     if (command === '/usr/bin/xattr') {assert.ok(args.at(-1).startsWith(root + path.sep)); throw Object.assign(Error('absent'), {code: 1, stderr: 'No such xattr'});}
     if (command === '/usr/bin/sw_vers') {assert.deepEqual(args, ['-productVersion']); return {stdout: '14.2'};}
+    if (command === '/bin/ps' && args[0] === '-o') {assert.deepEqual(args.slice(0, 3), ['-o', 'lstart=', '-p']); return {stdout: 'Sat Oct 18 09:00:00 2026\n'};}
     if (command === '/bin/ps') {assert.deepEqual(args, ['-axo', 'pid=,comm=']); return {stdout: ''};}
     if (command === '/usr/bin/ditto') {
       assert.deepEqual(args.slice(0, 3), ['--rsrc', '--extattr', '--acl']);

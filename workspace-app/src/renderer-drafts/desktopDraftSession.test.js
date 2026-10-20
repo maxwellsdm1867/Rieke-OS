@@ -89,3 +89,23 @@ test('pending scientific recovery hydrates even when navigation supersedes the s
  release({format:'rieke-renderer-draft',version:1,projectId:'project',value:{route:'old',sourceMerge:operation}});
  await session.flush();assert.equal(restores,0);assert.deepEqual(recovery,operation);assert.deepEqual(stored.sourceMerge,operation);session.close();
 });
+
+test('idle autosave ticks write nothing after the current view is saved once',async()=>{
+  let view={route:{page:'files'},stores:{a:1}},writes=0;
+  const session=createDesktopDraftSession({projectId:'project',snapshot:()=>view,restore:()=>{},isBusy:()=>false,
+    bridge:{loadDraft:async()=>null,saveDraft:async()=>{writes++;}}});
+  for(let tick=0;tick<20;tick++)await session.flush();
+  assert.equal(writes,1);
+  view={route:{page:'files'},stores:{a:1}};await session.flush();assert.equal(writes,1,'Equal content is unchanged even as a new object');
+  view={route:{page:'protocol'},stores:{a:1}};await session.flush();await session.flush();assert.equal(writes,2);
+  session.close();
+});
+test('a failed save is retried on the next tick and retry forgets the saved baseline',async()=>{
+  let fail=true,writes=0;
+  const session=createDesktopDraftSession({projectId:'project',snapshot:()=>({route:'same'}),restore:()=>{},isBusy:()=>false,
+    bridge:{loadDraft:async()=>null,saveDraft:async()=>{writes++;if(fail)throw new Error('Disk full');}}});
+  await assert.rejects(session.flush(),/Disk full/);fail=false;
+  await session.flush();await session.flush();assert.equal(writes,2);
+  await session.retry();await session.flush();assert.equal(writes,3);
+  session.close();
+});

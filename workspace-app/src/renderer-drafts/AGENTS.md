@@ -45,7 +45,9 @@ visible phase/message/resetAllowed/projectId state plus `startFresh`, `retry` an
 `quitPreserving`. It uses the latest callbacks without restarting a same-project
 session, binds that session to projectId, registers its flush with the shared
 [desktopLifecycle](../desktopLifecycle.js), and attempts idle autosave every three
-seconds. Project switch/unmount closes and unregisters the old session and clears
+seconds. A flush whose serialized view equals the last view the session saved
+skips the bridge, so idle ticks write nothing; load, retry and fresh reset that
+baseline and a failed save is retried on the next tick. Project switch/unmount closes and unregisters the old session and clears
 its timer. A previous project's recovery state is hidden immediately. App remains
 the production hook consumer and recovery UI owner. Navigation, presentation,
 project preferences and lifecycle fencing stay outside this folder.

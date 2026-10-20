@@ -7,6 +7,17 @@ const path = require('node:path');
 const os = require('node:os');
 const {createHash} = require('node:crypto');
 const {installCompleteBundle, bundleDigest, readBundleManifest} = require('../bootstrap.cjs');
+// Injected process start times for install-lock owner checks; no host ps runs.
+const OWN_START = 'Sat Oct 18 09:00:00 2026';
+const lockStarts = new Map([[process.pid, OWN_START]]);
+const lockStart = pid => (lockStarts.get(Number(pid)) ?? '') + '\n';
+// Injected process table for ownerless-lock liveness; our own descendants are listed.
+let otherProcesses = [];
+const processTable = () => [
+  `${process.pid} 1 /Applications/Installer/Disco.app/Contents/MacOS/Disco`,
+  `${process.pid + 100000} ${process.pid} /Applications/Installer/Disco.app/Contents/Frameworks/Disco Helper.app/Contents/MacOS/Disco Helper`,
+  `${process.pid + 100001} ${process.pid + 100000} /Applications/Installer/Disco.app/Contents/Resources/runtime/python/bin/python3.11`,
+  '42 1 /usr/sbin/unrelated', ...otherProcesses].join('\n') + '\n';
 
 async function fixture(t, {existing = true, channel = 'unsigned-testing', fault = null, prepared = false} = {}) {
   const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'disco-bootstrap-install-')));
@@ -69,6 +80,8 @@ async function fixture(t, {existing = true, channel = 'unsigned-testing', fault 
       assert.ok(args[2].startsWith(root + path.sep));
       throw Object.assign(new Error('no fixture quarantine'), {code: 1, stderr: 'No such xattr'});
     }
+    if (command === '/bin/ps' && args[0] === '-o') {assert.deepEqual(args.slice(0, 3), ['-o', 'lstart=', '-p']); return {stdout: lockStart(args[3]), stderr: ''};}
+    if (command === '/bin/ps' && args[1] === 'pid=,ppid=,comm=') {assert.deepEqual(args, ['-axo', 'pid=,ppid=,comm=']); return {stdout: processTable(), stderr: ''};}
     if (command === '/bin/ps') {assert.deepEqual(args, ['-axo', 'pid=,comm=']); return {stdout: '', stderr: ''};}
     if (command === '/usr/bin/sw_vers') {assert.deepEqual(args, ['-productVersion']); return {stdout: '14.2', stderr: ''};}
     if (command === '/usr/sbin/spctl') {
@@ -242,5 +255,60 @@ for (const relative of ['Contents/Resources/runtime/mysql/bin/mysql', 'Contents/
   assert.equal((await fs.stat(f.source)).ino, originalBundle.ino);
   assert.equal(await bundleDigest(f.destination), f.originalDigest);
   assert.deepEqual(await fs.readdir(path.dirname(f.destination)), ['Disco.app']);
+  assert.equal(f.calls.filter(([command]) => command === '/usr/bin/ditto').length, 0);
+});
+
+async function deadPid() {
+  const {spawn} = require('node:child_process');
+  const child = spawn(process.execPath, ['-e', ''], {stdio: 'ignore'});
+  await new Promise(resolve => child.once('exit', resolve));
+  return child.pid;
+}
+async function writeLock(f, owner) {
+  const lock = path.join(path.dirname(f.destination), '.rieke-os-install.lock');
+  await fs.mkdir(lock, {mode: 0o700});
+  if (owner) await fs.writeFile(path.join(lock, 'owner.json'), JSON.stringify({format: 'disco-install-lock', version: 1, nonce: 'fixture-nonce', ...owner}));
+  return lock;
+}
+test('install lock left by a dead installer is reclaimed and leaked staging copies are swept', async t => {
+  const f = await fixture(t), parent = path.dirname(f.destination);
+  await writeLock(f, {pid: await deadPid(), started: 'Fri Oct 17 08:00:00 2026'});
+  const leaked = path.join(parent, '.Rieke OS.install-0f0e0d0c-0b0a-4908-8706-050403020100.app');
+  await fs.mkdir(path.join(leaked, 'Contents'), {recursive: true});
+  const result = await f.install();
+  assert.equal((await readBundleManifest(f.destination)).application_version, '0.1.10');
+  assert.deepEqual((await fs.readdir(parent)).sort(), ['.Rieke OS.previous.app', 'Disco.app']);
+  assert.equal(result.previous, path.join(parent, '.Rieke OS.previous.app'));
+});
+test('install lock whose PID was reused by another process is reclaimed', async t => {
+  const f = await fixture(t);
+  lockStarts.set(process.ppid, 'Sat Oct 18 10:00:00 2026'); t.after(() => lockStarts.delete(process.ppid));
+  await writeLock(f, {pid: process.ppid, started: 'Fri Oct 17 08:00:00 2026'});
+  await f.install();
+  assert.equal((await readBundleManifest(f.destination)).application_version, '0.1.10');
+});
+test('install lock held by a live installer is refused without touching it or the installed app', async t => {
+  const f = await fixture(t);
+  lockStarts.set(process.ppid, 'Sat Oct 18 10:00:00 2026'); t.after(() => lockStarts.delete(process.ppid));
+  const lock = await writeLock(f, {pid: process.ppid, started: 'Sat Oct 18 10:00:00 2026'});
+  await assert.rejects(f.install(), /installation is in progress/);
+  assert.equal(JSON.parse(await fs.readFile(path.join(lock, 'owner.json'), 'utf8')).nonce, 'fixture-nonce');
+  assert.equal(await bundleDigest(f.destination), f.originalDigest);
+  assert.equal(f.calls.filter(([command]) => command === '/usr/bin/ditto').length, 0);
+});
+test('ownerless legacy lock is reclaimed at once when no other Disco process is running', async t => {
+  const f = await fixture(t), lock = await writeLock(f, null);
+  await f.install();
+  assert.equal((await readBundleManifest(f.destination)).application_version, '0.1.10');
+  await assert.rejects(fs.lstat(lock), {code: 'ENOENT'});
+});
+for (const other of ['/Users/owner/Applications/Disco.app/Contents/MacOS/Disco',
+  '/Users/owner/Applications/Rieke OS.app/Contents/MacOS/Rieke OS',
+  '/Users/owner/Applications/.Rieke OS.install-0f0e0d0c-0b0a-4908-8706-050403020100.app/Contents/MacOS/Disco']) test(`ownerless legacy lock is refused while another Disco process runs: ${path.basename(path.dirname(path.dirname(path.dirname(other))))}`, async t => {
+  const f = await fixture(t), lock = await writeLock(f, null);
+  otherProcesses = [`9${process.pid} 1 ${other}`]; t.after(() => { otherProcesses = []; });
+  await assert.rejects(f.install(), /installation is in progress/);
+  assert.equal((await fs.lstat(lock)).isDirectory(), true);
+  assert.equal(await bundleDigest(f.destination), f.originalDigest);
   assert.equal(f.calls.filter(([command]) => command === '/usr/bin/ditto').length, 0);
 });

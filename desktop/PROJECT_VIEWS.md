@@ -69,6 +69,30 @@ the launcher is shown. Reopening the failed document requires quitting and reope
 Disco. Draft barriers still checkpoint healthy owners while reporting the failed
 owner as unconfirmed; strict replacement cannot claim a clean draft receipt.
 
+A backend crash clears the supervisor's authenticated origins. Draft persistence
+does not need the backend, so `desktop:save-draft` and `desktop:drafts-ack` (only)
+also admit a retained owner at the exact binding origin recorded when it
+registered; every other channel still requires a current origin. Recovery Retry
+checkpoints retained owners (`project-checkpoint`) while their old bindings still
+authenticate, and after a successful replacement start disposes owners whose
+binding no longer matches the new root. A checkpoint that was not acknowledged
+keeps Quit's "last saved view unconfirmed" warning for the rest of the session.
+A failed Retry keeps the owners and their draft path.
+
+**Invariant: one project = one draft writer.** The app has one live document per
+project (single-instance lock with second-instance focus, one native window,
+denied window.open, ProjectViews reuse per binding). The only way a second document
+for a project's saved-view scope (UUID + canonical path; the launcher has its own
+scope) can appear is a new backend binding while the previous document is still
+retained. Main records the writer per scope at registration. A newer owner's
+`desktop:save-draft` waits until the previous owner's final `project-checkpoint`
+completes or times out (then declared unconfirmed, which Quit reports). The
+previous owner may save only while that checkpoint is outstanding; afterwards its
+saves are refused and it is disposed. Retry disposes stale owners before the new
+root's documents register, so they never overlap. Browser/dev mode has no desktop
+bridge and therefore no draft writer. Renderer skip-unchanged relies on this:
+no other document writes the same saved view between a session's saves.
+
 Host teardown can call `clear` from the native window’s `closed` event. Detaching
 an active view first checks whether the host is already destroyed; both active
 and detached WebContents still receive normal closure and are removed from

@@ -111,3 +111,24 @@ test('draft hook hides prior recovery immediately under another project identity
   await flushDesktopDrafts();assert.equal(loads,2);
  }finally{pending.resolve(null);await h.close();}
 });
+
+test('browser and dev mode without a desktop bridge has no draft writer, timer or flush registration',async()=>{
+ const h=await fixture(undefined);
+ try{
+  await h.render();
+  assert.equal(h.state.phase,'inactive');assert.equal(h.timers.size,0);
+  await flushDesktopDrafts();
+ }finally{await h.close();}
+});
+
+test('the single project writer writes once across idle autosave ticks and again only on change',async()=>{
+ const writes=[];let view={route:'overview'};
+ const h=await fixture({loadDraft:async()=>null,saveDraft:async value=>writes.push(value)});
+ try{
+  await h.render({snapshot:()=>view});await act(async()=>{await turn();});
+  for(let tick=0;tick<5;tick++)await h.tick();
+  assert.equal(writes.length,1);
+  view={route:'files'};await h.render({snapshot:()=>view});await h.tick();await h.tick();
+  assert.equal(writes.length,2);assert.deepEqual(writes[1].value.value,{route:'files'});
+ }finally{await h.close();}
+});

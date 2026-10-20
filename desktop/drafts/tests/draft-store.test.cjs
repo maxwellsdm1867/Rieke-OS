@@ -28,3 +28,15 @@ test('symlink draft never reads target and reset preserves link without changing
   const backup = (await fs.readdir(path.join(root, 'drafts'))).find(name => name.startsWith('launcher.corrupt-'));
   assert.equal((await fs.lstat(path.join(root, 'drafts', backup))).isSymbolicLink(), true);
 });
+test('repeated saves keep verified state in memory instead of re-reading the saved file', async t => {
+  const {store} = await fixture(t); assert.equal(await store.load('launcher'), null);
+  const original = fs.readFile; let reads = 0;
+  fs.readFile = async function(...args) { reads++; return original.apply(this, args); };
+  try { for (let index = 0; index < 5; index++) await store.save(payload()); } finally { fs.readFile = original; }
+  assert.equal(reads, 0); assert.deepEqual(await store.load('launcher'), payload().value);
+});
+test('an unverified store still reads prior state and refuses to replace unreadable bytes', async t => {
+  const {root, filename} = await fixture(t); await fs.writeFile(filename, '{corrupted');
+  const fresh = new DraftStore(root);
+  await assert.rejects(fresh.save(payload()), /recovery decision/); assert.equal(await fs.readFile(filename, 'utf8'), '{corrupted');
+});

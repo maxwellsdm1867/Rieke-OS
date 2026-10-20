@@ -9,18 +9,20 @@
  * bytes without saving only during recovery. Errors retain the existing messages.
  * close suppresses late loads, but does not cancel an already submitted bridge save
  * or add a stronger generation fence to fresh(). Native scope validation stays native.
+ * A flush whose serialized view equals the last view this session saved skips the
+ * bridge (idle autosave writes nothing); load, retry and fresh forget that baseline.
  * Returned operations: flush, fresh, retry, preserveForQuit, close.
  * See AGENTS.md and the executable public example in desktopDraftSession.test.js.
  */
 export function createDesktopDraftSession({bridge,projectId,snapshot,restore,restoreRecovery=()=>{},isBusy,navigationIdentity=()=>null,onState=()=>{}}){
   let loadGeneration=0;
-  let alive=true,phase='loading',allowPreservedClose=false,resetAllowed=false,loading,saveChain=Promise.resolve();
+  let alive=true,phase='loading',allowPreservedClose=false,resetAllowed=false,loading,saveChain=Promise.resolve(),lastSaved=null;
   function publish(next,message=''){
     phase=next;if(alive)onState({projectId,phase,message,resetAllowed});
   }
   function load(){
     const generation=++loadGeneration,startedNavigation=navigationIdentity();
-    allowPreservedClose=false;resetAllowed=false;publish('loading');
+    allowPreservedClose=false;resetAllowed=false;lastSaved=null;publish('loading');
     loading=Promise.resolve().then(()=>bridge.loadDraft(projectId)).then(saved=>{
       if(!alive||generation!==loadGeneration)return;
       if(saved?.format==='rieke-draft-recovery'){
@@ -46,7 +48,10 @@ export function createDesktopDraftSession({bridge,projectId,snapshot,restore,res
       if(isBusy())throw new Error('An import or queued write is still active.');
       if(phase==='recovery'&&allowPreservedClose)return;
       if(phase!=='ready')throw new Error('Saved view recovery requires an explicit choice.');
-      await bridge.saveDraft({projectId,value:{format:'rieke-renderer-draft',version:1,projectId,value:snapshot()}});
+      const value=snapshot(),serialized=JSON.stringify(value);
+      if(serialized!==undefined&&serialized===lastSaved)return;
+      await bridge.saveDraft({projectId,value:{format:'rieke-renderer-draft',version:1,projectId,value}});
+      lastSaved=serialized;
       });
       saveChain=operation;return operation;
     },
@@ -54,7 +59,7 @@ export function createDesktopDraftSession({bridge,projectId,snapshot,restore,res
       await loading;
       if(!resetAllowed)throw new Error('The saved view must be read before it can be reset.');
       await bridge.resetDraft(projectId);
-      allowPreservedClose=false;resetAllowed=false;publish('ready');
+      allowPreservedClose=false;resetAllowed=false;lastSaved=null;publish('ready');
     },
     retry:load,
     preserveForQuit(){allowPreservedClose=true;},
