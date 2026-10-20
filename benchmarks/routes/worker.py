@@ -22,6 +22,7 @@ H5 access after fixture construction fails the run: traces are out of scope.
 import argparse
 import cProfile
 import hashlib
+import inspect
 import json
 import os
 from pathlib import Path
@@ -623,17 +624,43 @@ def main():
             if response.status_code != 200:
                 raise AssertionError(response.status_code)
 
+    # Match the source's production cell-window contract without warming the
+    # measured routes with a capability probe. #121 adds this service argument
+    # together with paging on both overview routes; older sources retain their
+    # original UI request. Assert the wire response so a broken route cannot
+    # silently fall back to an unbounded list.
+    paged_cells = 'cells_page' in inspect.signature(service.epoch_page).parameters
+    cells_query = 'cells_limit=200&cells_after=0' if paged_cells else ''
+    project_overview_url = '/api/overview' + ('?' + cells_query if cells_query else '')
+    protocol_overview_url = f'{base}/overview' + ('?' + cells_query if cells_query else '')
+    protocol_epochs_url = f'{base}/epochs?limit=60&include_cells=true' + ('&' + cells_query if cells_query else '')
+    result['notes'].append('overview and protocol epochs use production 200-cell windows' if paged_cells
+                           else 'overview and protocol epochs use legacy complete cell lists')
+
+    def cells_oracle(responses, state):
+        for response in responses:
+            body = response.get_json()
+            if paged_cells:
+                shown = body['cells']
+                total, following = body['cells_total'], body['cells_next']
+                assert len(shown) == min(200, total), 'wrong first cell window'
+                assert following == (len(shown) if len(shown) < total else None), 'wrong next cell position'
+
+    def protocol_epochs_oracle(responses, state):
+        cells_oracle(responses, state)
+        assert responses[0].get_json()['total'] == len(main_ids), 'total'
+
     # ---- Epoch reads -------------------------------------------------------
     measure('epoch.detail_in_protocol', same(None), lambda s: call('get', f'/api/epochs/{focus}?protocol_uuid={protocol}'),
             oracle=lambda r, s: r[0].get_json()['epoch_uuid'] == focus or (_ for _ in ()).throw(AssertionError('wrong epoch')))
     measure('epoch.detail', same(None), lambda s: call('get', f'/api/epochs/{focus}'))
     measure('epoch.annotations', same(None), lambda s: call('get', f'/api/epochs/{focus}/annotations'))
-    measure('protocol.epochs_first', same(None), lambda s: call('get', f'{base}/epochs?limit=60&include_cells=true'),
-            oracle=lambda r, s: r[0].get_json()['total'] == len(main_ids) or (_ for _ in ()).throw(AssertionError('total')))
+    measure('protocol.epochs_first', same(None), lambda s: call('get', protocol_epochs_url),
+            oracle=protocol_epochs_oracle)
     measure('protocol.epochs_deep', same(None), lambda s: call('get', f'{base}/epochs?limit=60&offset={max(0, len(main_ids) - 120)}'))
     measure('protocol.browse', same(None), lambda s: call('get', f'{base}?projection=browse'))
-    measure('protocol.overview', same(None), lambda s: call('get', f'{base}/overview'))
-    measure('overview', same(None), lambda s: call('get', '/api/overview'))
+    measure('protocol.overview', same(None), lambda s: call('get', protocol_overview_url), oracle=cells_oracle)
+    measure('overview', same(None), lambda s: call('get', project_overview_url), oracle=cells_oracle)
 
     # ---- Tree pages --------------------------------------------------------
     # Mirrors workspace-app/src/pagedTreeRequest.js: counts_only, explicit filters, 60-row pages.
@@ -909,7 +936,7 @@ def main():
             return None
         measure('tag.then_epoch_read', after_tag, lambda s: call('get', f'/api/epochs/{focus_next}?protocol_uuid={protocol}'), cold=False)
         measure('tag.then_epochs_page', after_tag, lambda s: call('get', f'{base}/epochs?limit=60'), cold=False)
-        measure('tag.then_overview', after_tag, lambda s: call('get', '/api/overview'), cold=False)
+        measure('tag.then_overview', after_tag, lambda s: call('get', project_overview_url), oracle=cells_oracle, cold=False)
         measure('tag.then_tree_root', after_tag, lambda s: call('post', '/api/tree-pages', tree_body), cold=False)
     else:
         result['skipped']['tag.*'] = 'Source has no SharedAnnotations extension'
