@@ -2043,8 +2043,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def curate(protocol_uuid):
         body = request.get_json()
         ids = body["epoch_uuids"]
-        if not isinstance(ids, list) or not ids or len(ids) > 10000 or len(set(ids)) != len(ids):
-            raise ValueError("Choose a nonempty, unique list of epochs (at most 10,000).")
+        # No size cap: per-epoch expected revisions, query_revision and binding
+        # version are still exact, and CurationStore writes in batches.
+        if not isinstance(ids, list) or not ids or len(set(ids)) != len(ids):
+            raise ValueError("Choose a nonempty, unique list of epochs.")
         with db_lock:
             if body.get("changes", {}).get("review_state") == "approved":
                 verify_service_sources()
@@ -2074,7 +2076,14 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                                    audit_context={"query_revision": revision, "source_revisions": result["source_revisions"]},
                                    expected_binding_version=result.get("dataset_binding", {}).get("version", 0),
                                    generation_preflight=(lambda:selected_state.assert_context_locked(protocol_uuid,context)) if context else None)
-            return jsonify(changed)
+            # Receipt read after commit under the same db_lock: the exact
+            # tokens the next write must present (checks stay server-side).
+            current, new_revision, new_binding_version = selected_state.read_selected(protocol_uuid, ids)
+            expected = body["expected_revisions"]
+            return jsonify(**changed, query_revision=new_revision,
+                           expected_binding_version=new_binding_version,
+                           curation_revisions={key: current[key]["revision"] for key in ids
+                                               if current[key]["revision"] != expected[key]})
 
     @app.get("/api/protocols/<protocol_uuid>/masks/export")
     def export_mask(protocol_uuid):
@@ -2110,8 +2119,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 or len(sources) != len(set(sources))):
             raise ValueError("Mask source revisions must be unique SHA256 strings")
         members = mask["epochs"]
-        if not isinstance(members, list) or not members or len(members) > 10000:
-            raise ValueError("A mask must contain 1–10,000 epochs and cover the complete protocol query")
+        # No size cap: export is unbounded, membership must equal the query
+        # exactly below, and CurationStore writes changed epochs in batches.
+        if not isinstance(members, list) or not members:
+            raise ValueError("A mask must contain at least one epoch and cover the complete protocol query")
         inclusion = {}
         for member in members:
             if (not isinstance(member, dict) or set(member) != {"epoch_uuid", "included"}

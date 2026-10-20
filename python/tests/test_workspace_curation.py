@@ -14,18 +14,22 @@ from disco.workbench.recipes import capture_query, prepare_export, seal
 
 class Table:
     """Small transactional relation double; no acquisition data or DB needed."""
-    def __init__(self, keys, rows=None, restrictions=(), projected=None, read_log=None):
+    def __init__(self, keys, rows=None, restrictions=(), projected=None, read_log=None, write_log=None):
         self.keys = keys
         self.rows = [] if rows is None else rows
         self.restrictions = restrictions
         self.projected = projected
         self.read_log = [] if read_log is None else read_log
+        # One entry per write statement: (statement kind, row count).
+        self.write_log = [] if write_log is None else write_log
 
     def __and__(self, restriction):
-        return Table(self.keys, self.rows, self.restrictions + (restriction,), self.projected, self.read_log)
+        return Table(self.keys, self.rows, self.restrictions + (restriction,), self.projected,
+                     self.read_log, self.write_log)
 
     def proj(self, *fields):
-        return Table(self.keys, self.rows, self.restrictions, set(self.keys) | set(fields), self.read_log)
+        return Table(self.keys, self.rows, self.restrictions, set(self.keys) | set(fields),
+                     self.read_log, self.write_log)
 
     def to_dicts(self):
         self.read_log.append({"projected": self.projected, "restrictions": self.restrictions})
@@ -46,16 +50,33 @@ class Table:
         return rows[offset:None if limit is None else offset + limit]
 
     def insert1(self, row):
+        self.write_log.append(('insert1', 1))
         if any(all(row[k] == old[k] for k in self.keys) for old in self.rows):
             raise ValueError("Duplicate primary key")
         self.rows.append(copy.deepcopy(row))
 
     def update1(self, row):
+        self.write_log.append(('update1', 1))
         for old in self.rows:
             if all(row[k] == old[k] for k in self.keys):
                 old.update(copy.deepcopy(row))
                 return
         raise ValueError("Missing row")
+
+    def insert(self, rows, replace=False):
+        """One multi-row INSERT (or REPLACE) statement; all rows or none."""
+        rows = list(rows)
+        self.write_log.append(('replace' if replace else 'insert', len(rows)))
+        index = {tuple(old[k] for k in self.keys): old for old in self.rows}
+        keys = [tuple(row[k] for k in self.keys) for row in rows]
+        if len(set(keys)) != len(keys) or (not replace and any(key in index for key in keys)):
+            raise ValueError("Duplicate primary key")
+        for key, row in zip(keys, rows):
+            if key in index:
+                index[key].clear()
+                index[key].update(copy.deepcopy(row))
+            else:
+                self.rows.append(copy.deepcopy(row))
 
 
 class Connection:
@@ -164,7 +185,7 @@ class CurationTests(unittest.TestCase):
         self.assertEqual(restored[second], state[second])
 
     def test_state_failure_rolls_back_curation(self):
-        with patch.object(self.curation, "insert1", side_effect=RuntimeError("state unavailable")):
+        with patch.object(self.curation, "insert", side_effect=RuntimeError("state unavailable")):
             with self.assertRaises(RuntimeError):
                 self.update({"included": False})
         self.assertEqual(self.curation.rows, [])
@@ -270,13 +291,57 @@ class CurationTests(unittest.TestCase):
         self.assertTrue(all(value['review_state'] == 'approved' and value['tags'] == ['reviewed']
                             for value in result['curation'].values()))
         self.assertEqual(self.events.rows, [])
-        with patch.object(self.curation, 'update1', side_effect=RuntimeError('state unavailable')):
+        # Only the epoch whose inclusion changed gets a new revision.
+        self.assertEqual({key: value['revision'] for key, value in result['curation'].items()},
+                         dict(zip(self.ids, [2, 1])))
+        revisions = {key: value['revision'] for key, value in result['curation'].items()}
+        with patch.object(self.curation, 'insert', side_effect=RuntimeError('state unavailable')):
             with self.assertRaises(RuntimeError):
-                self.store.update(self.protocol, self.ids, {}, {key: 2 for key in self.ids},
-                    self.fingerprints, 'researcher', inclusion_by_epoch={key: True for key in self.ids})
+                self.store.update(self.protocol, self.ids, {}, revisions,
+                    self.fingerprints, 'researcher', inclusion_by_epoch={key: not value for key, value in mask.items()})
         current = self.store.read(self.protocol, self.ids, self.fingerprints)
         self.assertEqual({key: value['included'] for key, value in current.items()}, mask)
         self.assertEqual(len(self.events.rows), 0)
+
+    def test_noop_change_keeps_revision_and_writes_nothing_but_still_checks_revisions(self):
+        first = self.update({'tags_add': ['keep']})
+        self.assertTrue(all(value['revision'] == 1 for value in first['curation'].values()))
+        rows, writes = copy.deepcopy(self.curation.rows), len(self.curation.write_log)
+        for changes in ({'tags_add': ['keep']}, {'included': True}, {'tags_remove': ['absent']},
+                        {'review_state': 'unreviewed'}):
+            with self.subTest(changes=changes):
+                again = self.update(changes, revisions={key: 1 for key in self.ids})
+                self.assertEqual({key: value['revision'] for key, value in again['curation'].items()},
+                                 {key: 1 for key in self.ids})
+                self.assertEqual(self.curation.rows, rows)
+                self.assertEqual(len(self.curation.write_log), writes)
+                # The expected-revision check is unchanged for a no-op request.
+                with self.assertRaises(curation.RevisionConflict):
+                    self.update(changes, revisions={key: 0 for key in self.ids})
+        # Defaults are not persisted for an epoch without saved decisions.
+        fresh = str(uuid.uuid4())
+        result = self.update({'included': True}, ids=[fresh], fingerprints={fresh: 'b' * 64})
+        self.assertEqual(result['curation'][fresh]['revision'], 0)
+        self.assertEqual(self.curation.rows, rows)
+
+    def test_large_update_uses_batched_statements_in_one_transaction(self):
+        ids = [str(uuid.UUID(int=(5 << 64) | index)) for index in range(2500)]
+        fingerprints = {key: 'b' * 64 for key in ids}
+        mask = {key: index % 2 == 0 for index, key in enumerate(ids)}
+        self.store.update(self.protocol, ids, {}, {key: 0 for key in ids}, fingerprints,
+                          'researcher', inclusion_by_epoch=mask)
+        # 1,250 changed epochs (excluded); the rest stay default and unwritten.
+        self.assertEqual(self.curation.write_log, [('insert', 1000), ('insert', 250)])
+        self.curation.write_log.clear()
+        current = self.store.read(self.protocol, ids, fingerprints)
+        flipped = {key: not value for key, value in mask.items()}
+        result = self.store.update(self.protocol, ids, {}, {key: value['revision'] for key, value in current.items()},
+                                   fingerprints, 'researcher', inclusion_by_epoch=flipped)
+        self.assertEqual(self.curation.write_log, [('insert', 1000), ('insert', 250),
+                                                   ('replace', 1000), ('replace', 250)])
+        self.assertEqual({key: value['included'] for key, value in result['curation'].items()}, flipped)
+        self.assertEqual({key: value['included'] for key, value in
+                          self.store.read(self.protocol, ids, fingerprints).items()}, flipped)
 
     def test_mixed_mask_rejects_missing_extra_and_nonboolean_values(self):
         cases = [{self.ids[0]: True}, {**dict.fromkeys(self.ids, True), str(uuid.uuid4()): True},

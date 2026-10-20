@@ -5551,7 +5551,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "ba0c70cc36734e07565d57e980c831464c2e72b95b3fe09f4abfaed1f03a9295",
+                "file_sha256": "a04c10271aad14c96dc985e83bc10fdf703858accfef7775ee81d8affcd54c3a",
                 "contract_id": null
               }
             ]
@@ -5725,7 +5725,7 @@
       },
       {
         "file": "python/tests/test_workspace_api.py",
-        "file_sha256": "651a2b9d9ce751c0dd72a238c0ae17684ac9d5fa768f721fb9321d0171e92c3d",
+        "file_sha256": "00a37e01d0f5236edc4a4e39d3e40c7553bd333cc1ac778503cbe497f0849ef4",
         "reason": "Inject owned in-memory workspace/curation table fixtures during CurationStore construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Added display-cache HTTP coverage; existing CurationStore fixture injection AST and targets are unchanged. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch regression additions retain existing reviewed mocks and observer syntax. Binary64 integration tests were added; the existing curation mock AST, origin and target are unchanged, with its exact selector relocated after review. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Counted predicate path review (2026-10-19): reviewed syntax, categories, origins and targets are unchanged; owner bytes add counted previews, typed query runs and inspection pages over frozen publications. See python/disco/navigation/CONTRACT.md#counted-previews-and-publication-revisions.",
         "sites": [
           {
@@ -5745,7 +5745,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "7963c64fc4c05d9257ee8ecc1a29d578f70d651200d6509620959bcabc494ba2",
+                "file_sha256": "5f3a6c1f4d99ba5ce71ab192a102b93d6b2f7257e5012a68ff65d66451a86ba8",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5834,11 +5834,11 @@
       },
       {
         "file": "python/tests/test_workspace_curation.py",
-        "file_sha256": "9ae93ce7dfa961cefce1559e659dcb0fbee8c71601c0fc5d215b57d64b5eeef8",
+        "file_sha256": "024a4a452797cef35ba4bb052cf373daa5c5e52749e3b5e521390e55a9a7aa09",
         "reason": "Inject owned in-memory workspace table fixtures during curation construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Counted predicate path review (2026-10-19): reviewed syntax, categories, origins and targets are unchanged; owner bytes add counted previews, typed query runs and inspection pages over frozen publications. See python/disco/navigation/CONTRACT.md#counted-previews-and-publication-revisions.",
         "sites": [
           {
-            "selector": "Call:48",
+            "selector": "Call:66",
             "ast_sha256": "c7ae650a387b60a4e7aa7a8eb3ae52bdc75fd5d265280a160b679509d228bc13",
             "category": "test-mock-target",
             "origins": [
@@ -5854,7 +5854,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "7963c64fc4c05d9257ee8ecc1a29d578f70d651200d6509620959bcabc494ba2",
+                "file_sha256": "5f3a6c1f4d99ba5ce71ab192a102b93d6b2f7257e5012a68ff65d66451a86ba8",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5986,7 +5986,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "ba0c70cc36734e07565d57e980c831464c2e72b95b3fe09f4abfaed1f03a9295",
+                "file_sha256": "a04c10271aad14c96dc985e83bc10fdf703858accfef7775ee81d8affcd54c3a",
                 "contract_id": null
               }
             ]
@@ -6019,7 +6019,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "ba0c70cc36734e07565d57e980c831464c2e72b95b3fe09f4abfaed1f03a9295",
+                "file_sha256": "a04c10271aad14c96dc985e83bc10fdf703858accfef7775ee81d8affcd54c3a",
                 "contract_id": null
               }
             ]
@@ -6608,7 +6608,7 @@
               {
                 "module": "tests.test_workspace_api",
                 "file": "python/tests/test_workspace_api.py",
-                "file_sha256": "651a2b9d9ce751c0dd72a238c0ae17684ac9d5fa768f721fb9321d0171e92c3d",
+                "file_sha256": "00a37e01d0f5236edc4a4e39d3e40c7553bd333cc1ac778503cbe497f0849ef4",
                 "contract_id": null
               }
             ]
@@ -6703,7 +6703,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "7963c64fc4c05d9257ee8ecc1a29d578f70d651200d6509620959bcabc494ba2",
+                "file_sha256": "5f3a6c1f4d99ba5ce71ab192a102b93d6b2f7257e5012a68ff65d66451a86ba8",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -6725,7 +6725,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "7963c64fc4c05d9257ee8ecc1a29d578f70d651200d6509620959bcabc494ba2",
+                "file_sha256": "5f3a6c1f4d99ba5ce71ab192a102b93d6b2f7257e5012a68ff65d66451a86ba8",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -6823,7 +6823,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "7963c64fc4c05d9257ee8ecc1a29d578f70d651200d6509620959bcabc494ba2",
+                "file_sha256": "5f3a6c1f4d99ba5ce71ab192a102b93d6b2f7257e5012a68ff65d66451a86ba8",
                 "contract_id": "backend-decisions"
               }
             ]
