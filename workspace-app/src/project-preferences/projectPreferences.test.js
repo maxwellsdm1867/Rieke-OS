@@ -176,3 +176,49 @@ test('malformed legacy entries never render or migrate while raw cache survives 
   assert.deepEqual(server.read().state.recent_searches,[search]);
   assert.deepEqual(JSON.parse(local.getItem(key)),[search]);
 });
+
+test('flush re-sends a failed save once, names the preference if it still fails, and never blocks forever',async()=>{
+  const server=backend({recent_searches:[],protocol_shortcuts:{}});
+  let failures=1;
+  const request=(path,options)=>options&&failures-->0?Promise.reject(new Error('disk full')):server.request(path,options);
+  const client=createProjectPreferenceClient({projectId,request,storage:storage()});
+  await assert.rejects(client.update('recent_searches',previous=>[...previous,search]),/disk full/);
+  await client.flush();
+  assert.deepEqual(server.read().state.recent_searches,[search],'the visible change is re-sent, not re-applied twice');
+  assert.equal(client.get('recent_searches').error,null);
+  failures=2;
+  await assert.rejects(client.update('protocol_shortcuts',{pinned:{section:'pinned',rank:0}}),/disk full/);
+  await assert.rejects(client.flush(),/Protocol shortcuts.*disk full/);
+  assert.match(client.get('protocol_shortcuts').error,/could not be saved/);
+  await client.flush();
+  assert.deepEqual(server.read().state.protocol_shortcuts,{pinned:{section:'pinned',rank:0}});
+  assert.equal(client.get('protocol_shortcuts').error,null);
+  assert.equal(server.calls.filter(call=>call.options).length,2,'exactly the two successful PUTs reached the server');
+});
+
+test('flush retry reapplies the failed intent after a concurrent change instead of overwriting it',async()=>{
+  const server=backend({recent_searches:[]});
+  let fail=true;
+  const client=createProjectPreferenceClient({projectId,request:(path,options)=>options&&fail?Promise.reject(new Error('offline')):server.request(path,options),storage:storage()});
+  await assert.rejects(client.update('recent_searches',previous=>[...previous,search]));
+  fail=false;
+  const other={...search,id:'other'};
+  await server.request('/project-preferences',{method:'PUT',body:{field:'recent_searches',value:[other],expected_revision:0}});
+  await client.flush();
+  assert.deepEqual(server.read().state.recent_searches,[other,search]);
+});
+
+test('flush retries a failed earlier-device migration and load-only failures do not block it',async()=>{
+  const server=backend();
+  const local=storage({[preferenceStorageKey(projectId,'recent_searches')]:JSON.stringify([search])});
+  let fail=true;
+  const client=createProjectPreferenceClient({projectId,request:(path,options)=>options?.body.field==='recent_searches'&&fail?Promise.reject(new Error('disk full')):server.request(path,options),storage:local});
+  await client.load();
+  assert.match(client.get('recent_searches').error,/Earlier device shortcuts/);
+  fail=false;await client.flush();
+  assert.deepEqual(server.read().state.recent_searches,[search]);
+  assert.equal(client.get('recent_searches').error,null);
+  const down=createProjectPreferenceClient({projectId,request:()=>Promise.reject(new Error('server down')),storage:storage()});
+  await assert.rejects(down.load(),/server down/);
+  await down.flush();
+});

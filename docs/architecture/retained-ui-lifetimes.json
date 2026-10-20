@@ -2259,10 +2259,10 @@
       ]
     },
     "src/project-preferences/projectPreferences.js": {
-      "fingerprint": "944a3e9c961cb950563d3e8cc85ee84f91acfc089deae7c7dd35172216949508",
+      "fingerprint": "60f9ad890cb54e7a8301f7eb7cc29491869076a22b7bed7a7a6e8dc4ffe0698e",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. F7 review (2026-10-18): flush() re-sends each failed PUT once (visible value; conflicts reapply the original change) and rejects only if that retry fails, naming the preference, so one failed save no longer blocks Quit/close permanently. No effect sites.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"

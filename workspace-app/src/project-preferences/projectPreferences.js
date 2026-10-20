@@ -5,6 +5,7 @@ export function preferenceStorageKey(projectId,field){
   return field==='recent_searches'?`rieke-os.search-presets.v1.${projectId}`:`rieke-os.sidebar.protocols.v1.${projectId}`;
 }
 const empty=field=>field==='recent_searches'?[]:{};
+const labels={recent_searches:'Recent searches',protocol_shortcuts:'Protocol shortcuts'};
 function renderableLegacySearch(entry){
   if(!entry||typeof entry!=='object'||Array.isArray(entry)||typeof entry.id!=='string'||!entry.id||entry.id.length>65536)return false;
   if(entry.name!=null&&(typeof entry.name!=='string'||entry.name.length>255))return false;
@@ -42,6 +43,9 @@ function legacySearches(value){
 }
 export function createProjectPreferenceClient({projectId,request,storage}){
   let loaded=false,loading=null,queue=Promise.resolve(),revisions={},values={},errors={};
+  // Fields whose last PUT failed, with the change that PUT carried. flush()
+  // re-sends the visible value; a conflict reapplies that change to fresh state.
+  const unsent={};
   const listeners=new Set();
   const legacy={};
   for(const field of fields){
@@ -77,18 +81,20 @@ export function createProjectPreferenceClient({projectId,request,storage}){
         }catch(error){
           if(error.message==='Project preferences changed; reload before saving.'){
             receipt=await request('/project-preferences');accept(receipt);
-          }else{errors[field]=`Earlier device shortcuts could not be saved to this project: ${error.message}`;}
+          }else{errors[field]=`Earlier device shortcuts could not be saved to this project: ${error.message}`;unsent[field]=previous=>previous;}
         }
       }
       loaded=true;publish();
     })().catch(error=>{for(const field of fields)errors[field]=error.message;publish();throw error;}).finally(()=>{loading=null;});
     return loading;
   }
-  function update(field,change){
+  function update(field,change,{resend=false}={}){
     const operation=queue.catch(()=>{}).then(async()=>{
       await load();
       const revise=typeof change==='function'?change:()=>change;
-      let next=revise(values[field]);
+      // A resend carries the value already visible; reapplying the change to it
+      // would apply a non-idempotent edit twice.
+      let next=resend?values[field]:revise(values[field]);
       values[field]=next;errors[field]=null;publish();
       try{
         let receipt;
@@ -99,8 +105,8 @@ export function createProjectPreferenceClient({projectId,request,storage}){
           next=revise(values[field]);
           receipt=await request('/project-preferences',{method:'PUT',body:{field,value:next,expected_revision:revisions[field]}});
         }
-        accept(receipt,field);errors[field]=null;publish();return values[field];
-      }catch(error){values[field]=next;errors[field]=`Changes are visible in this session, but could not be saved to the project: ${error.message}`;publish();throw error;}
+        accept(receipt,field);errors[field]=null;delete unsent[field];publish();return values[field];
+      }catch(error){values[field]=next;unsent[field]=revise;errors[field]=`Changes are visible in this session, but could not be saved to the project: ${error.message}`;publish();throw error;}
     });
     queue=operation;return operation;
   }
@@ -108,7 +114,18 @@ export function createProjectPreferenceClient({projectId,request,storage}){
     get:field=>({value:values[field],loading:!loaded&&!errors[field],error:errors[field]||null}),
     subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},
     load,update,
-    async flush(){await queue;if(Object.values(errors).some(Boolean))throw new Error('Project preferences have unsaved changes.');},
+    // Re-sends each failed PUT once and rejects only if that retry fails, naming
+    // the preference. A later flush retries again, so one failure never blocks
+    // Quit/close forever. Read-only load failures leave nothing unsaved.
+    async flush(){
+      await queue.catch(()=>{});
+      const failed=[];
+      for(const field of fields.filter(field=>unsent[field])){
+        try{await update(field,unsent[field],{resend:true});}
+        catch(error){failed.push(`“${labels[field]}” (${error.message})`);}
+      }
+      if(failed.length)throw new Error(`Project preference ${failed.join(', ')} could not be saved.`);
+    },
     async reload(){await queue.catch(()=>{});loaded=false;errors={};return load();},
     async refresh(){await queue.catch(()=>{});if(loaded&&Object.values(errors).some(Boolean))return;loaded=false;return load();},
   };
