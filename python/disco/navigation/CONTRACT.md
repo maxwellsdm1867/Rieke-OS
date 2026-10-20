@@ -287,3 +287,20 @@ total and cell list with `counts.status: "ready"`. `has_more` is always exact
 (that window, in first-appearance order), `cells_total` and `cells_next` (the
 next `cells_after`, or `null` at the end). Without `cells_limit` the full list
 is returned as before.
+
+### Predicates with annotation leaves
+
+Runs and inspection pages of predicates with tag leaves (protocol curation
+tags, shared/effective tags, tag times, alone or with metadata leaves) take the
+match from the generation's tag states (`match_predicate` over the cached
+eligible universe). The tree revision binds the annotation evidence revision and
+the frozen publication. Per revision the matches are kept once in inspection
+chronology with their cell list: totals are sizes, pages are slices, anchors and
+cell filters index the kept list. Results equal the exact scope reader
+(`python/tests/test_workspace_query_run.py`).
+Predicates mixing tag leaves with recorded-metadata leaves answer runs and pages
+at once like other multi-field predicates: pages walk the eligible inspection
+chronology in bounded chunks matched by the canonical matcher (tag leaves from
+the tag states, metadata leaves from the typed index over the chunk) and resume
+from each page's kept position; totals and the cell list come from a pending
+counts job that runs the full match.
