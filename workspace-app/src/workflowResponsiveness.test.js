@@ -54,7 +54,7 @@ test('mounted shared save refreshes live authority once, defers hidden summaries
     assert.equal(h.fixture.mounts,1);
     const returnAt=h.fixture.requests.length;
     await h.act(()=>h.fixture.navigate('overview'));
-    assert.equal(h.fixture.requests.slice(returnAt).filter(record=>record.path==='/overview').length,1);
+    assert.equal(h.fixture.requests.slice(returnAt).filter(record=>record.path==='/overview?cells_limit=200').length,1);
     assert.equal(h.fixture.requests.slice(returnAt).filter(record=>record.path==='/projects').length,0);
   }finally{await h.close();}
 });
@@ -150,7 +150,7 @@ test('mounted structural refresh invalidates project/import/metadata summaries e
     const metadata=h.root.find(node=>typeof node.type==='function'&&node.type.name==='MetadataRefresh');
     await h.act(()=>metadata.props.onChange());
     const paths=new Set(h.fixture.requests.slice(before).map(record=>record.path));
-    for(const path of ['/projects','/overview','/protocol-suggestions','/jobs','/metadata/status','/metadata/fields','/protocols/protocol-A?projection=browse'])assert.ok(paths.has(path),path);
+    for(const path of ['/projects','/overview?cells_limit=200','/protocol-suggestions','/jobs','/metadata/status','/metadata/fields','/protocols/protocol-A?projection=browse'])assert.ok(paths.has(path),path);
     assert.equal(paths.has('/protocols/protocol-A'),false,'structural refresh demands the compact entry, not a hidden overview');
   }finally{await h.close();}
 });

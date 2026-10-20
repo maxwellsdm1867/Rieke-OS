@@ -255,3 +255,19 @@ Main page revisions compare through the chain in `epochPageRevision`; a page
 carrying any token outside the chain retires it, so a view made stale by another
 actor still fails with the server's 409. Evidence: `curationReceipts.test.js`
 and the curation cases in `workspaceChangesLedger.test.js`.
+
+## Paged protocol cell lists (0.1.21)
+
+Ordinary protocol Inspector reads request `cells_limit=200`. The shared
+`useCellWindows` owner appends `cells_after` windows only while query revision,
+binding version, project/actor and local navigation scope agree. Each later
+window must advance its cursor with the same total; changed receipts or malformed
+windows fail visibly. A/B/A returns, Activity hide and unmount retire in-flight
+windows. Synchronous duplicate demand is coalesced. Incoming frozen/custom
+owners retain their existing full-list contract; #121 does not implement paging
+on those routes. Range selection spans loaded cells, as in predicate inspection.
+
+`CellsWindow` loads once per observed entry into view, avoiding a repeated
+autoload loop when type/date groups are collapsed; its button supports explicit
+load/retry. Tests: `useCellWindows.test.js`, `cellWindows.test.js`,
+`../inspectorNavigationLifecycle.test.js`, `../pagedOverviewLists.test.js`.

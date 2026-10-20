@@ -89,3 +89,12 @@ empty membership. Project overview keeps the full project DTO. Linked file-size
 reads inspect only relevant registered paths and never request epoch inventory.
 
 Retained Protocol panels keep Overview, Inspect and Workbench state separately. Summary failure exposes `displayData` independently of canonical `data`; App renders that display inert while keeping current authority unavailable. An invalidated unfinished root summary restarts even if its deferred summary revision did not change, preventing startup from remaining empty after simultaneous draft restoration and an annotation scan. `overviewDemand.test.js` covers this race and failed-refresh separation. Native project visibility messages suppress the coalesced internal focus refresh; genuine app focus/reconnect still revalidates. Disk presentation uses a fixed-height quiet status slot and disables Overview callbacks/recording-size requests until canonical data is current.
+
+Project and ordinary protocol overview summaries request a first window of 200
+cells. `useOverviewCells` owns later display-only windows separately from the
+cached first summary, fenced by response object, project/request owner, path and
+revision. Hidden/inert presentations cannot request more. Total cells come from
+`cells_total`; type/date and experimental-cell breakdowns explicitly describe
+loaded cells until all windows arrive. Exact date/export-participation totals
+remain unavailable until complete. Export membership reads retain their separate
+full-response authority. See `../pagedOverviewLists.test.js`.

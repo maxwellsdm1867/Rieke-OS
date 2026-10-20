@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import React from 'react';
+import TestRenderer,{act} from 'react-test-renderer';
+import {createServer} from './test-support/isolatedVite.js';
+import {fileURLToPath} from 'node:url';
+test('a visible collapsed-list marker loads once, then requires a new viewport entry or explicit demand',async t=>{
+ const previous=globalThis.IntersectionObserver;let notify,observers=0,calls=0,renderer;
+ globalThis.IntersectionObserver=class{constructor(callback){notify=callback;observers++;}observe(){}disconnect(){}};
+ const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
+ const {default:CellsWindow}=await server.ssrLoadModule('/src/epoch-browser/ui/CellsWindow.jsx');
+ t.after(async()=>{await act(()=>renderer?.unmount());await server.close();globalThis.IntersectionObserver=previous;});
+ const props={loaded:200,total:1000,onMore:()=>{calls++;}};
+ await act(()=>{renderer=TestRenderer.create(React.createElement(CellsWindow,props),{createNodeMock:()=>({closest:()=>null})});});
+ await act(()=>notify([{isIntersecting:true}]));assert.equal(calls,1);
+ await act(()=>renderer.update(React.createElement(CellsWindow,{...props,loaded:400,onMore:()=>{calls++;}})));
+ await act(()=>notify([{isIntersecting:true}]));assert.equal(calls,1,'rerender must not drain the whole list');assert.equal(observers,1);
+ await act(()=>notify([{isIntersecting:false}]));await act(()=>notify([{isIntersecting:true}]));assert.equal(calls,2);
+ await act(()=>renderer.root.findByType('button').props.onClick());assert.equal(calls,3);
+});
