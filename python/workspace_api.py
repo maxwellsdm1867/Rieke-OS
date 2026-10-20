@@ -368,7 +368,6 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         from workspace_state_generation import bootstrap
         generation=bootstrap(service.dj.conn(),service.project['project_uuid'])
         store.state_generation=generation
-        store.binding_header_provider=explorer_history.protocol_binding_header
         if shared_annotations is not None:shared_annotations.state_generation=generation
         app.extensions['state_generation']=generation
         service._explore_state_generation=generation
