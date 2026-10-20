@@ -39,6 +39,20 @@ def accepted_export_context(manager, protocol, operation, actor):
         raise WorkbenchConflict('Acceptance candidate recipe changed')
     if not fingerprints:
         raise ValueError('This acceptance added no new epochs to export')
+    # An accepted export claims its epochs are main's additions. An undone
+    # merge, or a main that changed since, no longer supports that claim.
+    if manager.undone_by(operation):
+        undone = WorkbenchConflict('This merge was undone, so its epochs are no longer in main and cannot be '
+                                   'exported as accepted additions.')
+        undone.code = 'workbench_merge_undone'
+        raise undone
+    # A later merge that keeps these epochs does not block export; main losing
+    # any of them (or holding a different fingerprint) does.
+    binding = manager.history.protocol_binding(protocol)
+    members = {row['uuid']: row['metadata_hash'] for row in binding['recipe']['epochs']} if binding else {}
+    if any(members.get(key) != value for key, value in fingerprints.items()):
+        raise WorkbenchConflict('Main no longer contains every epoch this merge added; '
+                                'its additions can no longer be exported as accepted')
     shared = getattr(manager.service, 'shared_annotations', None)
     scope = manager.service.source_scope()
     context = dict(protocol_uuid=protocol, actor=actor, candidate_revision_uuid=receipt['candidate_revision_uuid'],
@@ -177,7 +191,7 @@ def register_workbench_export_routes(app, manager, store, db_lock, guarded, acto
             receipt = manager.receipt(operation, actor())
             if not receipt or receipt.get('protocol_uuid') != protocol:
                 raise KeyError('Workbench receipt not found')
-            return jsonify(public_receipt(receipt))
+            return jsonify(manager.public_merge_receipt(receipt))
 
     @app.post(candidate_root + '/exports')
     def workbench_incoming_export(protocol, revision):

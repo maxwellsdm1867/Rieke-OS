@@ -6734,8 +6734,8 @@
       },
       {
         "file": "python/tests/test_workspace_workbench_exports.py",
-        "file_sha256": "e88d8c5fd7d5d24e51ad2507481d89668a7bb8c90bd6446b4742bf10305b995a",
-        "reason": "Available formats now include linked SQLite; the two existing artifact-staging failure targets and publication assertions remain unchanged. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Missing-semantics review (2026-10-18, predicate contract v2): reviewed syntax, categories, origins and targets are unchanged (selectors re-aligned by line diff and exact AST digest only); owner bytes treat built-in fields recorded as None as not recorded in predicate values, typed index input and joint keys, emit predicate_version 2, and refuse reinterpreting affected version-1 saved selections.",
+        "file_sha256": "3a31e78e1080994b60afff75645454636ffaa150ba71165ab1112654dafdb900",
+        "reason": "Available formats now include linked SQLite; the two existing artifact-staging failure targets and publication assertions remain unchanged. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Missing-semantics review (2026-10-18, predicate contract v2): reviewed syntax, categories, origins and targets are unchanged (selectors re-aligned by line diff and exact AST digest only); owner bytes treat built-in fields recorded as None as not recorded in predicate values, typed index input and joint keys, emit predicate_version 2, and refuse reinterpreting affected version-1 saved selections. Workbench decisions update: an appended undone/superseded-merge export test adds no mock target; workbench_exports owner bytes add the undo and binding refusal.",
         "sites": [
           {
             "selector": "Call:55",
@@ -6755,7 +6755,7 @@
               {
                 "module": "disco.workbench.workbench_exports",
                 "file": "python/disco/workbench/workbench_exports.py",
-                "file_sha256": "86714408b559868fdad1662ab73c8163e1e3e36459db72292acded9c3a606681",
+                "file_sha256": "65ed90fa6849ede8a800f28d652d31b4aa03a87300838937809fab9a2a96725b",
                 "contract_id": "backend-workbench"
               },
               {
@@ -6790,7 +6790,7 @@
               {
                 "module": "disco.workbench.workbench_exports",
                 "file": "python/disco/workbench/workbench_exports.py",
-                "file_sha256": "86714408b559868fdad1662ab73c8163e1e3e36459db72292acded9c3a606681",
+                "file_sha256": "65ed90fa6849ede8a800f28d652d31b4aa03a87300838937809fab9a2a96725b",
                 "contract_id": "backend-workbench"
               }
             ]

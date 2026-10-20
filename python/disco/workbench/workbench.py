@@ -78,7 +78,9 @@ class _FrozenReadProjections:
 
 
 class WorkbenchConflict(ValueError):
-    pass
+    # Response code; an instance may name a more specific one (for example
+    # 'workbench_merge_undone' when an export names an undone merge).
+    code = 'workbench_conflict'
 
 
 # Candidate scope revisions omit project-wide shared tags (a separate witness).
@@ -241,14 +243,26 @@ class ProtocolWorkbench:
         return origins
 
     def cumulative_draft(self, protocol, actor):
-        records = (self.suggestions.Table & dict(project_uuid=self.project, protocol_uuid=protocol)).to_dicts()
-        records.sort(key=lambda row: (row['summary']['created_at'], row['suggestion_uuid']), reverse=True)
-        for row in records:
-            if row['summary'].get('kind') == 'workbench_pending_union':
-                key = self.key(protocol, row['summary']['candidate_revision_uuid'], actor)
-                if (self.tables[0] & key).to_dicts():
-                    return self.draft(key)
-        return None
+        """The actor's latest combined-review draft.
+
+        Draft versions only grow along one actor's review: a new combined
+        candidate starts at the latest draft's version and every edit adds one.
+        The highest version is therefore the latest review even when an earlier
+        immutable candidate is reused; ties (an unedited carry) prefer the
+        newest candidate. Queue and merge-all read decisions through this order.
+        """
+        unions = {row['summary']['candidate_revision_uuid']: (row['summary']['created_at'], row['suggestion_uuid'])
+                  for row in (self.suggestions.Table & dict(project_uuid=self.project, protocol_uuid=protocol)).to_dicts()
+                  if row['summary'].get('kind') == 'workbench_pending_union'}
+        if not unions:
+            return None
+        restriction = self.key(protocol, next(iter(unions)), actor)
+        del restriction['candidate_revision_uuid']
+        headers = [row for row in (self.tables[0] & restriction).to_dicts() if row['candidate_revision_uuid'] in unions]
+        if not headers:
+            return None
+        latest = max(headers, key=lambda row: (row['version'], unions[row['candidate_revision_uuid']]))
+        return self.draft(self.key(protocol, latest['candidate_revision_uuid'], actor))
 
     def review_decisions(self, protocol, actor):
         """The actor's latest review decisions: the combined review draft, or
@@ -534,11 +548,16 @@ class ProtocolWorkbench:
         fields = referenced_fields(main['predicate'])
         annotation = TagPredicates(self.service).snapshot(fields)[1] if fields else None
         fingerprints = self.service._fingerprints
-        # A refresh replaces the fingerprint map, so its identity and size key
-        # the cache without hashing every epoch; a hit still re-checks the
-        # fingerprints the pool and main depend on.
+        # Every refresh publishes rows and fingerprints under a new publication
+        # token, so the token (never a map address, which can be reused) and
+        # the map size key the cache without hashing every epoch. A hit still
+        # re-checks the fingerprints the pool and main depend on.
+        publication = getattr(self.service, '_explore_publication', None)
+        if publication is None:
+            publication = self.service._explore_publication = str(uuid.uuid4())
         key = checksum(dict(binding=[binding['revision_uuid'], binding['version']], scope=scope['revision'],
-            annotation=(annotation or {}).get('revision'), fingerprints=[id(fingerprints), len(fingerprints)],
+            annotation=(annotation or {}).get('revision'), publication=publication,
+            fingerprints=[len(fingerprints), len(self.service.rows)],
             definition=self.service.protocols[protocol]['definition'].get('query')))
         members = _members(main)
         cached = self._pool_cache.get(protocol)
@@ -629,7 +648,7 @@ class ProtocolWorkbench:
         return dict(selected=(context['selection_mode'] == 'all' or (valid and bool(saved.get('selected')))) and not excluded,
                     reviewed=bool(saved.get('reviewed')) if valid else False, excluded=excluded)
 
-    def selection(self, context, mode, source_sha256=None):
+    def selection(self, context, mode, source_sha256=None, *, merge_all=False):
         if mode == 'source':
             if not isinstance(source_sha256, str) or not source_sha256:
                 raise ValueError('Source merge requires an exact recording identity')
@@ -641,7 +660,9 @@ class ProtocolWorkbench:
                     and not self.decision(context, key)['excluded']}
         if source_sha256 is not None:
             raise ValueError('Recording identity is only valid for source merge mode')
-        if mode not in ('all', 'selected') or mode != context['selection_mode']:
+        # merge-all resolves 'all' on the server without persisting that consent
+        # in the draft; public preview/accept must agree with the saved mode.
+        if mode not in ('all', 'selected') or (mode != context['selection_mode'] and not (merge_all and mode == 'all')):
             raise ValueError('Preview mode must agree with the saved draft selection_mode')
         if mode == 'all':
             selected = {key for key in context['pending'] if key not in context['ineligible'] | context['unavailable']
@@ -819,11 +840,11 @@ class ProtocolWorkbench:
                 (self.tables[1].update1 if row['epoch_uuid'] in context['decisions'] else self.tables[1].insert1)(row)
         return self.context(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor'])
 
-    def preview(self, context, body):
+    def preview(self, context, body, *, merge_all=False):
         self.check_scope(context, body['expected_candidate_scope_revision'])
         if type(body['expected_draft_version']) is not int or body['expected_draft_version'] != context['draft_version']:
             raise WorkbenchConflict('Review draft changed')
-        selected = self.selection(context, body['mode'], body.get('source_sha256'))
+        selected = self.selection(context, body['mode'], body.get('source_sha256'), merge_all=merge_all)
         self.publishable(context, selected)
         if not selected:
             if context['ineligible']:
@@ -854,13 +875,13 @@ class ProtocolWorkbench:
             raise WorkbenchConflict('Operation UUID already used by another actor or request')
         return copy.deepcopy(row['receipt'])
 
-    def accept(self, protocol, revision, actor, body):
+    def accept(self, protocol, revision, actor, body, *, merge_all=False):
         request_hash = self.accept_request_hash(protocol, revision, actor, body)
         existing = self.receipt(body['operation_uuid'], actor, request_hash)
         if existing:
             return existing  # Receipt precedes stale binding/draft checks, including after restart.
         context = self.context(protocol, revision, actor)
-        preview, selected, accepted = self.preview(context, body)
+        preview, selected, accepted = self.preview(context, body, merge_all=merge_all)
         if (body['preview_sha256'] != preview['preview_sha256'] or type(body['expected_binding_version']) is not int
                 or body['expected_binding_version'] != preview['expected_binding_version']
                 or body['expected_query_revision'] != preview['expected_query_revision']):
@@ -969,6 +990,19 @@ class ProtocolWorkbench:
                 request_sha256=request_hash, receipt=receipt))
             self._event(actor, 'workbench_merge_undone', receipt, undo_operation)
         return receipt
+
+    def undone_by(self, operation):
+        """The undo operation UUID that reverted this merge, or None."""
+        undo = str(uuid.uuid5(uuid.UUID(self.project), 'workbench-undo:' + str(uuid.UUID(operation))))
+        return undo if (self.tables[2] & dict(project_uuid=self.project, operation_uuid=undo)).to_dicts() else None
+
+    def public_merge_receipt(self, receipt):
+        """public_receipt plus durable undo state for an additive merge receipt."""
+        result = public_receipt(receipt)
+        if 'accepted_epoch_uuids' in receipt and 'kind' not in receipt:
+            undo = self.undone_by(receipt['operation_uuid'])
+            result.update(undone=undo is not None, undone_by_operation_uuid=undo)
+        return result
 
     @staticmethod
     def accept_request_hash(protocol, revision, actor, body):
@@ -1361,7 +1395,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     @app.errorhandler(WorkbenchConflict)
     def conflict(error):
-        return jsonify(error=str(error), code='workbench_conflict'), 409
+        return jsonify(error=str(error), code=error.code), 409
 
     root = '/api/protocols/<protocol>/workbench'
     candidate = root + '/candidates/<revision>'
@@ -1453,11 +1487,11 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             existing = manager.receipt(value['operation_uuid'], owner,
                 manager.accept_request_hash(protocol, revision, owner, value))
             if existing:
-                return jsonify(public_receipt(existing))
+                return jsonify(manager.public_merge_receipt(existing))
         with guarded(protocol, revision) as owner:
             # Acceptance verifies the sources and fingerprints it publishes
             # (verify_sources); a whole-catalog refresh here only repeated work.
-            return jsonify(public_receipt(manager.accept(protocol, revision, owner, value)))
+            return jsonify(manager.public_merge_receipt(manager.accept(protocol, revision, owner, value)))
 
     @app.get(candidate + '/epochs')
     def workbench_epochs(protocol, revision):
