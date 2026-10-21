@@ -124,6 +124,25 @@ class OverviewProjectionTests(unittest.TestCase):
         self.assertEqual(model.protocol_counts('p')['duration_status'],'failed')
         self.assertIsNone(model.cell_counts('b','p')['duration_seconds'])
 
+    def test_protocol_and_retained_duration_keep_their_distinct_canonical_folds(self):
+        from disco.navigation.overview_durations import fold_duration
+        rows={key:{'epoch_uuid':key,'cell_uuid':'cell','duration_seconds':value}
+              for key,value in zip(('a','b','c'),(1e16,1.,1.))}
+        model=OverviewProjection.prepare(rows=rows,memberships={'p':('a','b','c')},
+            fingerprints=dict.fromkeys(rows,'f'),decisions=[],publication=1,watermark=0)
+        ordered=0
+        for row in rows.values():ordered+=row['duration_seconds']
+        retained=sum(row['duration_seconds'] for row in rows.values())
+        self.assertEqual(model.protocol_counts('p')['duration_seconds'],ordered)
+        self.assertEqual(model.cell_counts('cell','p')['duration_seconds'],ordered)
+        self.assertEqual(model.retained_counts('p')['duration_seconds'],retained)
+        model.apply_membership('p',added={'b':None},removed=['b'])
+        self.assertIsNone(model.retained_counts('p')['duration_seconds'])
+        model.publish_duration('p',model.duration_versions['p'],fold_duration(model.duration_orders['p'],model.rows))
+        self.assertEqual(model.protocol_counts('p')['duration_seconds'],ordered)
+        self.assertEqual(model.cell_counts('cell','p')['duration_seconds'],ordered)
+        self.assertEqual(model.retained_counts('p')['duration_seconds'],retained)
+
     def test_stale_watermark_rejects_without_partial_changes(self):
         model=self.model()
         with self.assertRaises(ProjectionUnavailable):model.apply_decisions([('p','0',None)],4,5)

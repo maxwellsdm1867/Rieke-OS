@@ -21,10 +21,16 @@ class MembershipOrder:
 def fold_duration(order,rows):
     identities=order.identities() if isinstance(order,MembershipOrder) else order
     total=0;cells={}
-    for identity in identities:
-        row=rows[identity];duration=row['duration_seconds'];cell=row['cell_uuid']
-        total+=duration;cells[cell]=cells.get(cell,0)+duration
-    return total,cells
+    def durations():
+        nonlocal total
+        for identity in identities:
+            row=rows[identity];duration=row['duration_seconds'];cell=row['cell_uuid']
+            total+=duration;cells[cell]=cells.get(cell,0)+duration
+            yield duration
+    # Both canonical algorithms consume the same ordered values in one pass:
+    # counts/cells use += while retained total_counts uses builtin sum.
+    retained=sum(durations())
+    return total,cells,retained
 
 
 class DurationPreparation:

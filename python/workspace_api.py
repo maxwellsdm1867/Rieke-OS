@@ -1273,7 +1273,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if shared_annotations:
                 payload['counts'].update({key:current[key] for key in ('shared_tagged_cells','shared_tagged_epochs')})
             if current.get('duration_status'):payload['counts']['duration_status']=current['duration_status']
-            payload['total_counts']={key:current.get(key,value) for key,value in template['total_counts'].items()}
+            retained=model.retained_counts(protocol)
+            payload['total_counts']={key:retained.get(key,value) for key,value in template['total_counts'].items()}
             payload.update(query_revision=context['query_revision'],expected_query_revision=context['query_revision'],
                 query_revision_contract=context['query_revision_contract'],expected_binding_version=context['binding_version'],
                 annotation_generation=annotation_generation(context['generation']),binding=prepared_binding(protocol))

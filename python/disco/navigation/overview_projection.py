@@ -36,6 +36,7 @@ class OverviewProjection:
         self.epochs={};self.memberships={};self.protocols={};self.cells={};self.protocol_cells={}
         self.cell_protocols={};self.rows=rows;self.exported_by_protocol={};self.attributes={};self.cell_attributes={}
         self.duration_versions={};self.duration_results={};self.duration_orders={};self.duration_serial=0;self.duration_failures={}
+        self.retained_durations={}
         self.decisions={};self.total=_counts();self.tagged_cells=set(tagged_cells);self.tagged_epochs=set(tagged_epochs)
         self.direct_counts={};self.last_work={}
         exported=exports or {}
@@ -65,6 +66,9 @@ class OverviewProjection:
                 if any(link['protocol_uuid']==protocol for link in exported.get(identity,())):
                     count['exported']+=1;entry['exported']+=1;self.exported_by_protocol[protocol].add(identity)
             count['cells']=len(bins)
+            # Preserve the canonical retained-summary builtin sum separately:
+            # Python 3.12+ may differ from the counts/cell ordered += folds.
+            self.retained_durations[protocol]=sum(rows[key]['duration_seconds'] for key in identities)
         self.total['cells']=len(self.cells);self.total['protocols']=len(self.protocols)
         self.apply_decisions([(row['protocol_uuid'],row['epoch_uuid'],row) for row in decisions],watermark,watermark)
         # Effective shared tags are a union, not a count of author records.
@@ -229,6 +233,14 @@ class OverviewProjection:
         if protocol in self.duration_results:
             value['duration_seconds']=self.duration_results[protocol][0];value.pop('duration_status',None)
         if protocol in self.duration_failures:value['duration_seconds']=None;value['duration_status']='failed'
+        return value
+
+    def retained_counts(self, protocol):
+        """Canonical total_counts, including its distinct builtin duration sum."""
+        value=self.protocol_counts(protocol)
+        if value['duration_seconds'] is not None:
+            value['duration_seconds']=(self.duration_results[protocol][2] if protocol in self.duration_results
+                                       else self.retained_durations[protocol])
         return value
 
     def cell_counts(self, cell, protocol=None):

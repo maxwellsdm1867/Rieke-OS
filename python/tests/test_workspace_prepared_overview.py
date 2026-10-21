@@ -48,6 +48,38 @@ class PreparedOverviewTests(fixtures.MemoFixture):
         try:return self.get(path)
         finally:self.service._recovery_tracker=self.capture
 
+    def test_adversarial_duration_matches_both_canonical_http_totals(self):
+        import uuid
+        from pathlib import Path
+        from disco.metadata.disk_index import DiskMetadataIndex
+        third=str(uuid.uuid4());identities=[*self.ids,third]
+        rows=copy.deepcopy(dict(self.service.rows));rows[third]=copy.deepcopy(rows[self.ids[0]])
+        rows[third]['epoch_uuid']=third
+        for identity,value in zip(identities,(1e16,1.,1.)):rows[identity]['duration_seconds']=value
+        details={key:copy.deepcopy(self.service.details[key]) for key in self.ids}
+        details[third]=copy.deepcopy(details[self.ids[0]])
+        details[third]['metadata']['epoch']['uuid']=third
+        protocols=copy.deepcopy(self.service.protocols)
+        protocols[self.protocol]['result']['epochs']=[{'uuid':key,'metadata_hash':'b'*64} for key in identities]
+        self.service.rows=rows;self.service.protocols=protocols
+        self.service._fingerprints={**self.service._fingerprints,third:'b'*64}
+        index=DiskMetadataIndex.build(Path(self.case.temp.name)/'adversarial-duration.sqlite',
+            rows,details,self.service.sources,'adversarial-duration',self.service.project['project_uuid'])
+        self.service.disk_index,self.service.details=index,index.details
+        fixtures.ProtocolContextFastPathTests.publish(self)
+        path=f'/api/protocols/{self.protocol}/overview?cells_limit=1'
+        expected=self.reference(path);self.prepare()
+        model=self.app.extensions['prepared_overview']['model']
+        with patch.object(model,'retained_counts',wraps=model.retained_counts) as retained_reads:
+            actual=self.get(path)
+        retained_reads.assert_called_once_with(self.protocol)
+        ordered=0
+        for identity in identities:ordered+=rows[identity]['duration_seconds']
+        retained=sum(rows[identity]['duration_seconds'] for identity in identities)
+        self.assertEqual(expected['counts']['duration_seconds'],ordered)
+        self.assertEqual(expected['total_counts']['duration_seconds'],retained)
+        self.assertEqual(actual,expected)
+
     def test_first_page_matches_canonical_after_explicit_preparation(self):
         path='/api/overview?cells_limit=1'
         self.assertEqual(self.client.get(path).status_code,202)
