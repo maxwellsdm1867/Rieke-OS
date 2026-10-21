@@ -59,3 +59,12 @@ test('build-only source and dependency links are unlinked without following targ
  const replaced=path.join(root,'unexpected-file');await fs.writeFile(replaced,'preserve');
  await assert.rejects(removeBuildLinks([replaced]),/was replaced/);assert.equal(await fs.readFile(replaced,'utf8'),'preserve');
 });
+
+test('diagnostic reversed launch keeps the exact six-sample schedule and source ownership',async t=>{
+ const original=process.env.DISCO_DIAGNOSTIC_REVERSE_LAUNCH;
+ process.env.DISCO_DIAGNOSTIC_REVERSE_LAUNCH='1';t.after(()=>{if(original===undefined)delete process.env.DISCO_DIAGNOSTIC_REVERSE_LAUNCH;else process.env.DISCO_DIAGNOSTIC_REVERSE_LAUNCH=original;});
+ const f=fixture();const pair=await runPaired(f.plan,f);
+ assert.deepEqual(f.events.filter(x=>x.startsWith('launch-')),['launch-candidate','launch-baseline']);
+ assert.deepEqual(f.events.filter(x=>x.startsWith('sample-')),['sample-baseline-0','sample-candidate-0','sample-candidate-1','sample-baseline-1','sample-baseline-2','sample-candidate-2']);
+ assert.deepEqual(pair.diagnostic_launch_order,['candidate','baseline']);assert.equal(pair.diagnostic_only,true);
+});

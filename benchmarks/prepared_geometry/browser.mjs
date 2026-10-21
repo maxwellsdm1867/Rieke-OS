@@ -1,3 +1,4 @@
+import {installFrameDiagnostic,wrapReadinessDiagnostic} from './frame-diagnostic.mjs';
 import {geometryReadiness,geometrySnapshot} from './observer.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -37,7 +38,7 @@ export async function createSourceSession({root,serverJson,output}){
   },
   async sample(browser,sample,observation={}){
    if(!prepared||finished||context||sample!==results.length||sample<0||sample>=3)throw Error('Invalid source sample lifecycle');
-   receipt.environment={click_dispatch_protocol:'raf-aligned-click-v1',node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},dpr:1,runtime:'production-react-direct-werkzeug',http_server:meta.http_server,vite_proxy:false,timing_mode:timingEnabled?'diagnostic':'ordinary',sampling_protocol:observation.protocol??standaloneProtocol,browser_launch:{distribution:browser.geometryOwner.distribution,playwright_version:browser.geometryOwner.playwright_version,executable_override:browser.geometryOwner.executable_override}};
+   receipt.environment={click_dispatch_protocol:'raf-aligned-click-v1',node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},dpr:1,runtime:'production-react-direct-werkzeug',http_server:meta.http_server,vite_proxy:false,timing_mode:'diagnostic',sampling_protocol:observation.protocol??standaloneProtocol,browser_launch:{distribution:browser.geometryOwner.distribution,playwright_version:browser.geometryOwner.playwright_version,executable_override:browser.geometryOwner.executable_override}};
   context=await browser.newContext({viewport:{width:1500,height:1100},...(timingEnabled?{extraHTTPHeaders:{'X-Disco-Trace-Timing':'1'}}:{})});const page=await context.newPage();
   const displayTimings=new Map();
   if(timingEnabled)page.on('response',response=>{
@@ -47,7 +48,7 @@ export async function createSourceSession({root,serverJson,output}){
    // cloning or fetching its body. Exact action+URL excludes setup/cursor reads.
    displayTimings.set(JSON.stringify([action,url.pathname+url.search]),response.headers()['server-timing']??null);
   });
-  await page.addInitScript(installTraceControlReader,{streams:meta.trace_streams});await page.addInitScript(installBinaryTraceOracle);await page.addInitScript(installObserver,{phase:'ordinary',module_timing:false});
+  await page.addInitScript(installTraceControlReader,{streams:meta.trace_streams});await page.addInitScript(installBinaryTraceOracle);await page.addInitScript(installObserver,{phase:'ordinary',module_timing:false});await page.addInitScript(installFrameDiagnostic);
   await page.addInitScript(()=>{
    const paths=new WeakMap(),proto=CanvasRenderingContext2D.prototype;
    const begin=proto.beginPath,move=proto.moveTo,line=proto.lineTo,stroke=proto.stroke;
@@ -64,6 +65,7 @@ export async function createSourceSession({root,serverJson,output}){
    // Install and arm the page-owned oracle before intent; driver transport only
    // retrieves a completed result and cannot advance its frame count or clock.
    await page.evaluate(`window.__workflowReadiness = (${(spec.trace?geometryReadiness:readiness).toString()})`);
+   if(spec.trace)await page.evaluate(wrapReadinessDiagnostic);
    await locator.evaluate(armAction,{action_id:id,phase:'ordinary',spec,timeoutMs:180000});
    await page.waitForFunction(observationFinished,id,{polling:'raf',timeout:195000});
    return await page.evaluate(spec.trace?geometrySnapshot:snapshotAction,id);
@@ -84,6 +86,8 @@ export async function createSourceSession({root,serverJson,output}){
     request.server_timing=timing;
    }
   }
+  const frameDiagnostic=await page.evaluate(()=>window.__traceFrameDiagnostic);
+  await fs.writeFile(path.join(output,`frame-diagnostic-${sample}.json`),JSON.stringify({diagnostic_only:true,observation,...frameDiagnostic},null,2));
   // Independent wire, source-index, exact point-byte and whole-statistics oracle.
   row.exact=await page.evaluate(({action_id,display,traceRoot,epoch,stream})=>{
    const fail=message=>{throw Error(message);},requests=window.__workflow.completed[action_id].captured_requests;
@@ -126,7 +130,7 @@ export async function createSourceSession({root,serverJson,output}){
    if(finished)throw Error('Source session already finished');
    finished=true;
    if(error&&context){
-    try{const page=context.pages()[0];if(page){await fs.writeFile(path.join(output,'failure-body.txt'),await page.locator('body').innerText());await fs.writeFile(path.join(output,'failure-requests.json'),JSON.stringify(await page.evaluate(()=>window.__workflow.requests.map(({result,binary,...r})=>r)),null,2));}}catch(diagnosticError){receipt.failure_capture_error=String(diagnosticError);}
+    try{const page=context.pages()[0];if(page){await fs.writeFile(path.join(output,'frame-diagnostic-failure.json'),JSON.stringify({diagnostic_only:true,...await page.evaluate(()=>window.__traceFrameDiagnostic??{})},null,2));await fs.writeFile(path.join(output,'failure-body.txt'),await page.locator('body').innerText());await fs.writeFile(path.join(output,'failure-requests.json'),JSON.stringify(await page.evaluate(()=>window.__workflow.requests.map(({result,binary,...r})=>r)),null,2));}}catch(diagnosticError){receipt.failure_capture_error=String(diagnosticError);}
    }
    try{await context?.close();}catch(closeError){error??=closeError;}context=null;
    if(results.length!==3)error??=Error('Exactly three completed source samples required');

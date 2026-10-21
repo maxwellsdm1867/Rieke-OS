@@ -22,7 +22,9 @@ export async function runPaired(plan,{create=createSourceSession,launch=launchBr
    sessions[role].receipt.pair=pair;sessions[role].receipt.pair_role=role;
    await sessions[role].prepare();
   }
-  for(const role of ['baseline','candidate'])browsers[role]=await launch(plan.sources[role].root,{processFile:plan.sources[role].process_file});
+  const launchOrder=process.env.DISCO_DIAGNOSTIC_REVERSE_LAUNCH==='1'?['candidate','baseline']:['baseline','candidate'];
+  pair.diagnostic_only=true;pair.diagnostic_launch_order=launchOrder;
+  for(const role of launchOrder)browsers[role]=await launch(plan.sources[role].root,{processFile:plan.sources[role].process_file});
   pair.browser_version=browsers.baseline.version();
   if(browsers.candidate.version()!==pair.browser_version)throw Error('Pinned browser versions differ');
   pair.browser_instances=Object.fromEntries(['baseline','candidate'].map(role=>[role,browsers[role].geometryOwner.pid]));
