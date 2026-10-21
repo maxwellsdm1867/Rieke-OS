@@ -2,7 +2,7 @@
 import unittest
 from unittest.mock import patch
 import test_workspace_query_run as query_fixture
-from disco.navigation.tag_predicates import _Publication, prepare_publication, TagPredicates
+from disco.navigation.tag_predicates import prepare_publication, TagPredicates
 from disco.workbench.recipes import checksum
 from workspace_service import WorkspaceService, publish_frozen
 
@@ -21,7 +21,7 @@ class PredicatePublicationTests(unittest.TestCase):
             expected = checksum({'protocols': [], 'shared_revision': revision,
                                  'shared_fields': fields, 'registered_cell_links': prepared.cell_links()})
             if revision == 'shared-1':
-                with patch.object(_Publication, 'cell_links', side_effect=AssertionError('rehash')):
+                with patch.object(prepared, 'cell_links', side_effect=AssertionError('rehash')):
                     self.assertEqual(prepared.shared_revision([], revision, fields), expected)
             else:
                 self.assertEqual(prepared.shared_revision([], revision, fields), expected)
@@ -36,11 +36,11 @@ class PredicatePublicationTests(unittest.TestCase):
         self.assertIs(prepared.rows, original_rows)
 
     def test_cold_mixed_run_does_not_rehash_metadata_or_enumerate_eligible_rows(self):
-        prepare_publication(self.service)
+        prepared = prepare_publication(self.service)
         self.case.jobs.autostart = False
         predicate = {'any': [{'field': f'curation/{self.service.protocol_id}/tags', 'operator': 'contains', 'value': 'unused'},
                              {'field': 'parameters/example', 'operator': 'eq', 'value': 1}]}
-        with patch.object(_Publication, 'cell_links', side_effect=AssertionError('hashed whole publication')), \
+        with patch.object(prepared, 'cell_links', side_effect=AssertionError('hashed whole publication')), \
                 patch.object(WorkspaceService, '_eligible', side_effect=AssertionError('enumerated eligible rows')):
             result = self.case.run_query(predicate)
         self.assertEqual(result['total_source'], len(self.service.rows))

@@ -5046,7 +5046,8 @@
               "TagPredicates",
               "_protocol_locks",
               "annotation_locks",
-              "referenced_fields"
+              "referenced_fields",
+              "prepare_publication"
             ]
           },
           {

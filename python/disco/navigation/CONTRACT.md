@@ -336,3 +336,6 @@ source-staleness and exact tag/time/source-scope parity checks.
 read model before precomputing metadata-derived tag lookup maps. This narrow
 reverse dependency reuses the existing publication proof; it neither constructs a
 second authority token nor changes mutable/custom fallback admission.
+The named `prepare_publication(service)` entry is public for the retained service
+and its synthetic route fixture; `_Publication` remains private. Regression tests
+observe the returned prepared witness rather than importing its private class.
