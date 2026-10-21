@@ -582,6 +582,15 @@ class TreePages:
         anchor = _uuid(body['anchor_uuid']) if 'anchor_uuid' in body else None
         if anchor and (path or offset):
             raise ValueError('An epoch locator cannot also specify a path or offset')
+        prepared = getattr(self.service, '_prepared_navigation', None)
+        if prepared is not None and self._canonical_reader():
+            entry = prepared.read(body)
+            if entry is not None:
+                if expected is not None and expected != entry.revision:
+                    raise StaleTreePage('Tree metadata or membership changed; reload the root before continuing')
+                result = self._prepared_page(body, entry)
+                prepared.verify(entry)
+                return result
         rows, catalog, values, definitions, order, revision = scope_reader(body)
         if expected is not None and expected != revision:
             raise StaleTreePage('Tree metadata or membership changed; reload the root before continuing')
@@ -692,6 +701,54 @@ class TreePages:
         return payload
 
 
+    def _prepared_page(self, body, entry):
+        """Render only the requested prepared branches using the existing labels."""
+        order, definitions = entry.order, entry.definitions
+        TreePath(order, definitions, body.get('path', []))
+        payload = entry.tree.page(path=body.get('path', []), offset=body.get('offset', 0),
+            limit=body.get('limit', 80), anchor_uuid=body.get('anchor_uuid'),
+            counts_only=body.get('counts_only', False))
+        def rendered(branches, depth):
+            if not branches:
+                return []
+            field = order[depth]
+            representatives = [branch['representative'] for branch in branches]
+            values = {branch['representative']['epoch_uuid']: dict(branch['values']) for branch in branches}
+            if definitions[field].get('components'):
+                for value in values.values():
+                    value[field] = joint_value(value, definitions[field]['components'])
+            tree = self.service._render_tree(representatives,
+                {**entry.catalog, 'fields': list(definitions.values())}, values, field)
+            labels = {checksum({'field': field, 'present': not child.get('missing', False),
+                **({'value': child['value']} if not child.get('missing', False) else {})}): child
+                for child in tree.get('children', [])}
+            result = []
+            for branch in branches:
+                child = labels[branch['key']]
+                result.append({key: value for key, value in branch.items() if key not in ('representative', 'values', 'parent_index')} |
+                    {'label': child['label']} | {name: child[name] for name in
+                        ('components', 'has_missing_components', 'start_time', 'cell_type') if name in child})
+            return result
+        payload['branches'] = rendered(payload['branches'], payload['depth']) if payload['branches'] else []
+        payload['ancestors'] = [rendered([branch], depth)[0] for depth, branch in enumerate(payload['ancestors'])]
+        if entry.duration_error and not body.get('counts_only', False):
+            for summary in (payload, payload['selection'], *payload['branches'], *payload['ancestors']):
+                if summary.get('duration_status') == 'pending':
+                    summary.update(duration_status='failed', duration_error=entry.duration_error)
+        shown = payload['epochs']
+        payload['epochs'] = [_epoch(row) for row in shown]
+        shared = getattr(self.service, 'shared_annotations', None)
+        if shown and shared:
+            annotations = shared.for_epochs(shown)
+            for row in payload['epochs']:
+                row['annotations'] = annotations[row['epoch_uuid']]
+        payload.update(revision=entry.revision, split_order=order,
+            levels=[{'field': field, 'label': definitions[field]['label'],
+                **({'components': definitions[field]['components']} if definitions[field].get('components') else {})}
+                for field in order],
+            source_scope_revision=entry.witness['source_scope'] if body.get('protocol_uuid') is None else None)
+        return payload
+
     def _canonical_reader(self):
         return all(getattr(getattr(self, name), '__func__', None) is original
                    for name, original in _BATCH_READER_METHODS.items())
@@ -739,6 +796,16 @@ class TreePages:
                 raise ValueError('Tree selection requires a current revision')
             if not self._canonical_reader():
                 return self._selection_pages(body, expected_count)
+            prepared = getattr(self.service, '_prepared_navigation', None)
+            entry = prepared.read(body) if prepared is not None else None
+            if entry is not None:
+                if entry.revision != expected:
+                    raise StaleTreePage('Tree selection revision changed')
+                ids = entry.tree.select(path=path, max_count=max_count)
+                if len(ids) != expected_count:
+                    raise StaleTreePage('Tree selection count changed; refresh this branch')
+                prepared.verify(entry)
+                return dict(revision=entry.revision, path=path, count=expected_count, epoch_uuids=list(ids))
             # Every split column is projected once per scope, so the cached
             # navigation scope (shared with pages) serves branch selection.
             rows, _, values, definitions, order, revision = self._scope(body)
@@ -872,6 +939,53 @@ def register_tree_page_routes(app, service, db_lock, registration_locks):
     from flask import jsonify, request
     pager = TreePages(service)
     app.extensions['disco.navigation.tree_pages'] = pager
+    from disco.navigation.prepared_navigation import PreparedNavigation
+    from disco.navigation.publication_changes import PreparationRequired
+    prepared = PreparedNavigation(pager, db_lock)
+    service._prepared_navigation = prepared
+    app.extensions['disco.navigation.prepared'] = prepared
+
+    def prepare_publication():
+        if not prepared.supported():
+            return {'status': 'unsupported'}
+        prepared.reset()
+        scopes = [{'splits': 'date,cell,block'}]
+        store = app.extensions.get('tree_layouts')
+        for identity, protocol in service.protocols.items():
+            default = protocol['definition'].get('view', {}).get('group_by', ['date', 'cell', 'block'])
+            scopes.append({'protocol_uuid': identity, 'splits': ','.join(default)})
+            saved = store.read(identity) if store is not None else None
+            if saved and saved['split_order'] != default:
+                scopes.append({'protocol_uuid': identity, 'splits': ','.join(saved['split_order'])})
+        receipts, deferred = [], []
+        for scope in scopes:
+            try:
+                receipts.append(prepared.prepare(scope))
+            except PreparationRequired as error:
+                deferred.append({'scope': scope, 'reason': str(error)})
+        failed = {prepared.key(item['scope']) for item in deferred}
+        for scope in scopes:
+            key = prepared.key(scope)
+            if key not in prepared.entries and key not in failed:
+                deferred.append({'scope': scope, 'reason': 'Prepared view collection exceeds its resource budget'})
+                failed.add(key)
+        return {'status': 'partial' if deferred else 'ready', 'resource': 'tree', 'views': len(prepared.entries),
+                'deferred': deferred, 'elapsed_ms': sum(item.get('elapsed_ms', 0) for item in receipts)}
+
+    app.extensions['prepare_tree_publication'] = prepare_publication
+
+    @app.post('/api/tree-pages/prepare')
+    def prepare_tree_page():
+        if request.args or (request.content_length is not None and request.content_length > 65536):
+            raise ValueError('Tree preparation requires at most 64 KiB of JSON and no URL parameters')
+        body = request.get_json()
+        if not isinstance(body, dict) or set(body) - {'protocol_uuid', 'predicate', 'filters', 'splits'}:
+            raise ValueError('Malformed tree preparation scope')
+        with db_lock, registration_locks():
+            try:
+                return jsonify(prepared.prepare(body))
+            except PreparationRequired as error:
+                return jsonify(status='preparing', preparation={'status': 'pending', 'resource': 'tree', 'reason': str(error)}), 202
 
     @app.post('/api/tree-pages')
     def tree_page():
@@ -886,3 +1000,5 @@ def register_tree_page_routes(app, service, db_lock, registration_locks):
                 return jsonify(witnessed_tree_page(pager, body))
             except StaleTreePage as error:
                 return jsonify(error=str(error),code='stale_tree_revision'),409
+            except PreparationRequired as error:
+                return jsonify(status='preparing', preparation={'status': 'pending', 'resource': 'tree', 'reason': str(error)}),202

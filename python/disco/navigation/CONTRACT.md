@@ -346,3 +346,37 @@ the direct cell scope before seeking. Active-source eligibility is checked withi
 each window, preserving exact matches without constructing a project-wide UUID
 list or sorting it on a first page. Explicit uncached offset/anchor searches may
 visit preceding matches; sparse predicates may visit multiple windows.
+
+## Explicit prepared navigation
+
+`prepared_tree.PreparedTree` holds caller-validated immutable metadata in ordered
+indexes. Preparation preserves canonical scope order for representatives and
+float sums; page, anchor and at-most-1,000 selection reads visit only indexed
+paths and returned rows. Persistent membership deltas preserve prior snapshots,
+update exact epoch/distinct-cell counts, and mark affected durations pending.
+`finish_durations` performs the exact canonical fold outside ordinary reads.
+
+`prepared_navigation.PreparedNavigation` owns native publication admission,
+explicit preparation and per-response closing fences. Initial default/saved
+layouts are prepared at project publication; other layouts use the explicit
+`POST /api/tree-pages/prepare` action. Unsupported custom/mutable adapters keep
+their existing reader. Missing projections, feed gaps, metadata/source changes,
+unretained scientific proofs or resource limits return HTTP 202 preparing with
+no stale count payload; GET never rebuilds them implicitly. Prepared views share
+a 768 MiB conservative structure budget and a 32-view limit. Preparation receipts
+report deferred/evicted views instead of claiming that every layout is ready.
+
+Only an ExplorerHistory-owned already-verified adjacent delta may continue a
+bound scope, including undo. Its bounded accessor can require preparation when
+proofs are no longer retained. Navigation does not reimplement recipe seals or
+member authority. Catch-up publishes only after recovery capture has verified
+and exited; every prepared page/selection also checks its closing publication,
+binding and recovery watermark. Mixed-family labels use exact incremental
+family counts. Metadata/index registration locks and response attestations remain.
+
+One worker folds pending durations on detached immutable trees. Completion
+compares tree and membership identity, retaining a newer unrelated-write
+watermark; obsolete/evicted jobs cannot publish. Failure remains explicit rather
+than permanent pending. Shutdown drains this owner before acquiring the DB lock.
+The exact page/anchor/DFS, mutation, feed-gap and held-worker race checks are in
+`test_workspace_prepared_tree.py` and `test_workspace_prepared_navigation.py`.
