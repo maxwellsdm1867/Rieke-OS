@@ -441,10 +441,12 @@ Prepared navigation belongs to the exact live service object. Copied/frozen
 Workbench adapters never inherit its prepared membership, even if a shallow copy
 retains the owner attribute; they retain their own canonical/frozen policy.
 
-Explicit startup preparation uses the bound revision's split order when present,
-matching the tree-layout endpoint default; a separate saved layout is also
-prepared. Definition defaults apply only without bound splits. This work stays
-in the explicit publication phase, never the first page read.
+Explicit startup preparation matches the tree-layout endpoint's effective view:
+use a saved split order when present, otherwise bound revision splits, otherwise
+the protocol definition default. Only one effective protocol layout is retained;
+an invisible default must not evict the source view. Native bootstrap initializes
+the canonical layout store before recovery capture and publication preparation.
+This work stays in the explicit publication phase, never the first page read.
 
 Overview pins the initially prepared canonical duration order independently of
 its bounded recent-order cache. Undo to that recipe preserves the exact float

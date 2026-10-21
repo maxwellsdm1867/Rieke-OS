@@ -236,7 +236,7 @@ class PreparedNavigationTests(unittest.TestCase):
                 entry = self.owner.read(body)
             self.assertEqual(entry.catalog['protocol_family'], 'history-noise')
 
-    def test_publication_prepares_bound_default_and_saved_layout(self):
+    def test_publication_prepares_only_effective_saved_layout_or_bound_default(self):
         from flask import Flask
         from disco.navigation.tree_pages import register_tree_page_routes
         app = Flask(__name__)
@@ -258,8 +258,16 @@ class PreparedNavigationTests(unittest.TestCase):
             receipt = app.extensions['prepare_tree_publication']()
         self.assertEqual(receipt['status'], 'ready')
         self.assertEqual(scopes, [{'splits': 'date,cell,block'},
-            {'protocol_uuid': 'bound', 'splits': 'cell,block'},
             {'protocol_uuid': 'bound', 'splits': 'date'},
+            {'protocol_uuid': 'unbound', 'splits': 'block'}])
+        self.assertEqual(receipt['views'], 3)
+        scopes.clear()
+        with patch.object(owner, 'supported', return_value=True), patch.object(owner, 'prepare', side_effect=prepare), \
+                patch.object(app.extensions['tree_layouts'], 'read', return_value=None):
+            receipt = app.extensions['prepare_tree_publication']()
+        self.assertEqual(receipt['views'], 3)
+        self.assertEqual(scopes, [{'splits': 'date,cell,block'},
+            {'protocol_uuid': 'bound', 'splits': 'cell,block'},
             {'protocol_uuid': 'unbound', 'splits': 'block'}])
 
 
