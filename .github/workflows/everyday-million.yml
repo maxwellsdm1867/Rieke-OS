@@ -59,9 +59,11 @@ jobs:
           desktop/node_modules/.bin/playwright install chromium
           for source in trace-baseline trace-candidate; do
             for package in workspace-app desktop; do
-              dependency_args=()
-              if [ "$package" = desktop ]; then dependency_args=(--browser-only); fi
-              "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$RUNNER_TEMP/$source/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json" "${dependency_args[@]}"
+              if [ "$package" = desktop ]; then
+                "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$RUNNER_TEMP/$source/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json" --browser-only
+              else
+                "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$RUNNER_TEMP/$source/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json"
+              fi
               ln -s "$GITHUB_WORKSPACE/$package/node_modules" "$RUNNER_TEMP/$source/$package/node_modules"
             done
             test -z "$(git -C "$RUNNER_TEMP/$source" status --porcelain)"
@@ -131,6 +133,8 @@ jobs:
             ${{ runner.temp }}/trace-frame-diagnostic/**/*.log
             ${{ runner.temp }}/trace-frame-diagnostic/**/failure-*
   linux-development-profile:
+    # Original Linux attribution is already running at832dab4; setup repair defaults off.
+    if: ${{ false }}
     name: Diagnostic only — candidate development CPU attribution
     runs-on: ubuntu-latest
     timeout-minutes: 20

@@ -7,7 +7,7 @@ remains clean `61881e87e2fe07f1d317ec92e42827243cfec9fa`; pinned comparison sour
 The workflow checkout supplies only the diagnostic harness.
 
 The registered workflow path is reused only so manual dispatch on this branch is
-possible. It has no PR/push trigger, inputs, aggregate, publication, or qualification
+possible. It has no PR/push trigger, aggregate, publication, or qualification
 artifact. It runs one macos-15 job with a 15-minute wall limit and one separately hosted
 Linux candidate-only attribution job with a 20-minute limit. Approval of this diff
 is separate from push/dispatch. No automatic retries are configured.
@@ -105,3 +105,14 @@ registers/removes only its callback, preserving others; teardown retires request
 ownership. GC totals overlap request totals and concurrent requests, so they must
 not be added together. Six small tests cover intervals, cross-thread attribution,
 caps, pending/error evidence, teardown and callback/policy preservation.
+
+## Premeasurement macOS setup repair
+
+Run 39537973091 started the single Linux attribution job, but macOS stopped before
+any browser/sample at dependency setup: Bash 3 treats an empty array expansion as
+unbound under `set -u`. The repair uses explicit desktop/non-desktop commands,
+verified by executing the extracted loop under actual `/bin/bash` 3. No application
+or macOS observer code changes. Root authorized one macOS-only setup-repair
+dispatch; the Linux job is hard-disabled with `if: ${{ false }}`, so the
+original Linux job is not repeated. The original failed
+setup receipt and both CI timing failures remain retained.
