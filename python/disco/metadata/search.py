@@ -1,6 +1,7 @@
 """Bounded project metadata lookup. No waveform reads, SQL text, or mutations."""
 from __future__ import annotations
 
+from bisect import bisect_left
 import json
 from pathlib import Path
 import re
@@ -29,6 +30,20 @@ def _cell_rows(service):
             cells.setdefault(row['cell_uuid'], row)
         cached = service._search_cell_rows = (key, sorted(cells.items()))
     return cached[1]
+
+
+def _cell_prefix_hits(service, prefix, limit):
+    """Bounded UUID range in the prepared immutable registered-cell publication."""
+    from disco.navigation.tag_predicates import prepare_publication
+    publication = prepare_publication(service)
+    if publication is None or not publication.lowercase_cells:
+        return None
+    identities = publication.cell_identities
+    first = bisect_left(identities, prefix)
+    last = bisect_left(identities, prefix + '\uffff')
+    rows = [(identity, publication.rows[publication.cell_epochs(identity)[0]])
+            for identity in identities[first:min(last, first + limit)]]
+    return rows, last - first
 
 
 def _epoch_prefix_hits(service, prefix, limit):
@@ -77,7 +92,13 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
                 'query_excluded': row['source_sha256'] not in active}
 
     if field is None and len(query) >= 2:
-        for identity, row in _cell_rows(service):
+        cell_probe = _cell_prefix_hits(service, normalized, limit) if uuid_query else None
+        if cell_probe is None:
+            cell_rows = _cell_rows(service)
+        else:
+            cell_rows, cell_total = cell_probe
+            unlisted += cell_total - len(cell_rows)
+        for identity, row in cell_rows:
             identity_match = uuid_query and identity.lower().startswith(normalized)
             label_match = not uuid_query and normalized in f"{row['date']} {row['cell_label']} {row['cell_type']}".casefold()
             if identity_match or label_match:
@@ -92,7 +113,7 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
                               if identity.lower().startswith(normalized)]
             else:
                 epoch_rows, epoch_total = probed
-                unlisted = epoch_total - len(epoch_rows)
+                unlisted += epoch_total - len(epoch_rows)
             for identity, row in epoch_rows:
                 results.append({'kind': 'epoch', 'id': identity, 'epoch_uuid': identity,
                     'label': f"Epoch {row.get('epoch_number', '')} · {row['cell_label']}",

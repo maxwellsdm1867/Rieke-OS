@@ -162,6 +162,8 @@ class _Publication:
             cells.setdefault(row['cell_uuid'],[]).append(key)
             source=row['source_sha256'];sources[source]=sources.get(source,0)+1
         self._cells,self.source_counts=cells,sources
+        self.cell_identities=sorted(cells)
+        self.lowercase_cells=all(identity == identity.lower() for identity in cells)
         # Keep the exact historical JSON/hash bytes used in saved evidence.
         links=_canonical_strings(self.cell_links())
         if links is not None:

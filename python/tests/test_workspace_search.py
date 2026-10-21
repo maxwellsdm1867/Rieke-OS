@@ -159,6 +159,8 @@ class WorkspaceSearchTests(unittest.TestCase):
         service.rows = publish_frozen(service.rows, rows=True)
         service.cells, service.protocols, service._fingerprints = (publish_frozen(service.cells),
             publish_frozen(service.protocols), publish_frozen(service._fingerprints))
+        from disco.navigation.tag_predicates import prepare_publication
+        prepare_publication(service)
         published = {'rows': service.rows}
         original_items = FrozenDict.items
 
@@ -195,6 +197,63 @@ class WorkspaceSearchTests(unittest.TestCase):
             {key: row for key, row in service.rows.items() if key != 'abcdef01-0000-4000-8000-000000000004'}, rows=True)
         with patch.object(FrozenDict, 'items', guarded), self.assertRaises(AssertionError):
             search_workspace(service, 'abcdef01')
+
+    def test_prepared_cell_prefix_bounds_work_and_preserves_totals_and_exact_hits(self):
+        from workspace_service import publish_frozen
+        from disco.navigation.tag_predicates import prepare_publication
+        template = self.service.rows[self.service.ids[0]]
+        for n in range(2000):
+            identity = f'abcdef01-0000-4000-8000-{n:012d}'
+            epoch = f'fedcba01-0000-4000-8000-{n:012d}'
+            self.service.rows[epoch] = {**template, 'epoch_uuid': epoch, 'cell_uuid': identity}
+            self.service._fingerprints[epoch] = 'b' * 64
+        queries = [('abcdef01', 5), ('ABCDEF01', 1),
+                   ('abcdef01-0000-4000-8000-000000000019', 3), ('ffffffff', 2)]
+        expected = [search_workspace(self.service, query, limit) for query, limit in queries]
+        self.assertEqual(expected[0]['total'], 2000)
+        service = self.service
+        for name in ('rows', 'cells', 'protocols', '_fingerprints'):
+            setattr(service, name, publish_frozen(getattr(service, name), rows=name == 'rows'))
+        publication = prepare_publication(service)
+
+        class CountedKeys(list):
+            reads = 0
+            def __getitem__(self, key):
+                self.reads += 1
+                if isinstance(key, slice):
+                    assert key.stop - key.start <= 5
+                return super().__getitem__(key)
+
+        keys = publication.cell_identities = CountedKeys(publication.cell_identities)
+        with patch('disco.metadata.search._cell_rows', side_effect=AssertionError('full cell scan')), \
+                patch('disco.metadata.search._epoch_prefix_hits', return_value=([], 0)):
+            for (query, limit), response in zip(queries, expected):
+                keys.reads = 0
+                self.assertEqual(search_workspace(service, query, limit), response)
+                self.assertLess(keys.reads, 30, 'UUID search must bisect, not walk all cells')
+
+    def test_prepared_prefix_combines_truncated_cell_and_epoch_totals(self):
+        from workspace_service import publish_frozen
+        template = self.service.rows[self.service.ids[0]]
+        for n in range(10):
+            identity = f'abcdef01-0000-4000-8000-{n:012d}'
+            self.service.rows[identity] = {**template, 'epoch_uuid': identity, 'cell_uuid': identity}
+            self.service._fingerprints[identity] = 'b' * 64
+        queries = ['abcdef01', 'abcdef01-0000-4000-8000-000000000004']
+        expected = [search_workspace(self.service, query, 2) for query in queries]
+        self.assertEqual(expected[0]['total'], 20)
+        self.assertEqual(expected[1]['total'], 2)
+        for name in ('rows', 'cells', 'protocols', '_fingerprints'):
+            setattr(self.service, name, publish_frozen(getattr(self.service, name), rows=name == 'rows'))
+        for query, response in zip(queries, expected):
+            self.assertEqual(search_workspace(self.service, query, 2), response)
+
+    def test_mutable_cell_prefix_keeps_live_case_insensitive_fallback(self):
+        identity = self.service.ids[0]
+        search_workspace(self.service, self.service.cell_ids[0])
+        self.service.rows[identity]['cell_uuid'] = 'ABCDEF01-0000-4000-8000-000000000001'
+        result = search_workspace(self.service, 'abcdef01')
+        self.assertEqual(result['results'][0]['id'], self.service.rows[identity]['cell_uuid'])
 
     def test_route_json_value_and_option_validation(self):
         from flask import Flask, jsonify

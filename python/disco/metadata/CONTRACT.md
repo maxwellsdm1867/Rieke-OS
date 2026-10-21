@@ -294,3 +294,10 @@ summary-only response (clients may drop it); rendered trees
 `POST /api/explore/summaries` job summarizes the fields the view shows; a job
 must request at least one field. Coverage:
 `python/tests/test_workspace_preview_removal.py`.
+
+UUID cell-prefix searches bisect sorted registered cell identities retained by
+the immutable publication preparation. Only the requested limit of first cell
+rows is materialized; the range bounds retain the exact total. Mutable/custom
+publications and non-lowercase cell identities keep case-insensitive scanning.
+Exact UUID precedence, cell-before-epoch ordering and source-excluded identity
+visibility are unchanged. Preparation cost is paid with publication, not each keypress.
