@@ -250,6 +250,46 @@ class StructuralNavigationTests(unittest.TestCase):
         scope = next(iter(self.service._tree_page_scope_cache[1].values()))[0]
         self.assertEqual(scope[2].grouping_budget, 16*1024)
 
+    def test_legacy_large_scope_reserves_original_budget_and_keeps_exact_freshness(self):
+        from disco.navigation import tree_pages
+        from workspace_service import WorkspaceService, publish_frozen, publication_serial
+        # A smaller real scope at an equivalent admission boundary reproduces the
+        # 1M fixture cliff without a heavyweight timing benchmark.
+        class AdmittedSchema(DiskMetadataIndex):
+            def __init__(self):self.generation='legacy-budget-fixture'
+            def _check(self):pass
+            def catalog(self,*args,**kwargs):return {'fields':[{'id':'cell','label':'Cell','types':['string']}], 'total':110000}
+            def values(self,*args,**kwargs):raise AssertionError('structural matrix')
+        service=WorkspaceService.__new__(WorkspaceService)
+        service._loaded=True;service.project=self.service.project;service.curation_provider=None
+        row=next(iter(self.service.rows.values()))
+        service.rows={f'00000000-0000-0000-0000-{n:012x}':{**row,'epoch_uuid':f'00000000-0000-0000-0000-{n:012x}'} for n in range(110000)}
+        service._fingerprints=dict.fromkeys(service.rows,'b'*64)
+        service.sources=self.service.sources;service.cells={};service.protocols={};service.disk_index=AdmittedSchema()
+        self.assertIsNone(publication_serial(service))
+        pager=TreePages(service);body={'splits':'cell','counts_only':True,'limit':1}
+        scope=pager._build_scope(body)
+        retained=tree_pages._retained_scope_bytes(scope,service.rows,sys.maxsize)
+        legacy_reservation=4*1024*1024
+        budget=(tree_pages.TREE_SCOPE_CACHE_OVERHEAD+sys.getsizeof(service._fingerprints)+retained
+                -scope[2].grouping_budget+legacy_reservation)
+        self.assertLess(budget,tree_pages.TREE_SCOPE_BYTE_BUDGET)
+        with patch.object(tree_pages,'TREE_SCOPE_BYTE_BUDGET',budget),patch.object(pager,'_build_scope',wraps=pager._build_scope) as builds:
+            first=pager.page(body)
+            self.assertEqual(pager.page(body),first)
+            self.assertEqual(builds.call_count,1,'legacy reservation must not evict an otherwise admissible scope')
+            cached=service._tree_page_scope_cache
+            self.assertLessEqual(tree_pages.TREE_SCOPE_CACHE_OVERHEAD+sys.getsizeof(cached[2])+sum(e[2] for e in cached[1].values()),budget)
+            identity=next(iter(service.rows));service._fingerprints[identity]='c'*64
+            with self.assertRaises(StaleTreePage):pager.page({**body,'revision':first['revision']})
+            self.assertEqual(builds.call_count,2,'unfrozen in-place changes retain exact content checks')
+        # The identical canonical publication keeps its larger structural cache
+        # reservation; only the legacy witness path receives the compatibility cap.
+        for name in ('rows','cells','protocols','_fingerprints'):
+            setattr(service,name,publish_frozen(getattr(service,name),rows=name=='rows'))
+        self.assertIsNotNone(publication_serial(service))
+        self.assertGreater(pager._build_scope(body)[2].grouping_budget,legacy_reservation)
+
     def test_source_search_survives_protocol_navigation_with_freshness_checks(self):
         self.index()
         source = {'splits':'cell', 'predicate':{

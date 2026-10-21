@@ -380,3 +380,9 @@ watermark; obsolete/evicted jobs cannot publish. Failure remains explicit rather
 than permanent pending. Shutdown drains this owner before acquiring the DB lock.
 The exact page/anchor/DFS, mutation, feed-gap and held-worker race checks are in
 `test_workspace_prepared_tree.py` and `test_workspace_prepared_navigation.py`.
+Unfrozen source adapters retain an exact fingerprint-dictionary witness and the
+historical 4 MiB grouping reservation. Canonical frozen publications may reserve
+up to 48 MiB for grouping. Both reservations and all retained containers still
+count against the same conservative 64 MiB scope-cache limit; oversized groups
+and scopes remain uncached. The larger frozen reservation must not evict a
+previously admissible mutable/subclass fixture scope.

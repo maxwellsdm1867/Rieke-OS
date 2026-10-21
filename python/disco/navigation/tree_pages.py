@@ -89,9 +89,13 @@ class _NavigationValues(Mapping):
     # regroups the scope; the reservation still counts toward scope admission.
     grouping_budget = 48 * 1024 * 1024
 
-    def __init__(self, rows, fields, *, scope_size=None):
+    def __init__(self, rows, fields, *, scope_size=None, publication_frozen=False):
         self.rows, self.fields = rows, tuple(fields)
-        self.grouping_budget = min(self.grouping_budget, max(16 * 1024,
+        # Unfrozen source scopes also retain an exact fingerprint dictionary.
+        # Keep their historical reservation so the larger frozen-model grouping
+        # cache cannot push an otherwise admissible legacy scope over 64 MiB.
+        maximum = self.grouping_budget if publication_frozen else 4 * 1024 * 1024
+        self.grouping_budget = min(maximum, max(16 * 1024,
             (len(rows) if scope_size is None else scope_size) * 40))
         self.group_cache, self.group_bytes, self.summary = {}, 0, None
 
@@ -541,7 +545,8 @@ class TreePages:
             if field not in definitions:
                 definitions[field] = joint_definition(field, definitions)
         if structural:
-            values = _NavigationValues(service.rows, order, scope_size=len(rows))
+            values = _NavigationValues(service.rows, order, scope_size=len(rows),
+                                       publication_frozen=publication_serial(service) is not None)
         elif index is not None:
             # Project every split column once per scope, so one cached scope
             # serves every depth, anchor and branch selection of this tree.
