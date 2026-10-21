@@ -16,7 +16,7 @@ export function createOverviewCache({maxEntries=12,maxBytes=8*1024*1024}={}){
   if(!entry){entry={...descriptor,data:null,etag:null,bytes:0,loading:false,error:null};entries.set(key,entry);}
   entry.operation?.controller.abort();
   const operation={controller:new AbortController()};
-  entry.operation=operation;entry.loading=true;entry.error=null;entry.invalidated=false;
+  entry.operation=operation;entry.loading=true;entry.error=null;entry.preparation=null;entry.invalidated=false;
   entry.revision=descriptor.revision;entry.request=request;
   const previous=entry.data,etag=entry.etag;
   let nextEtag=null;
@@ -42,7 +42,7 @@ export function createOverviewCache({maxEntries=12,maxBytes=8*1024*1024}={}){
   },error=>{
    if(operation.controller.signal.aborted||entries.get(key)!==entry||entry.operation!==operation)return;
    bytes-=entry.bytes;entry.bytes=0;entry.data=null;entry.etag=null;
-   entry.loading=false;entry.error=error.message;entry.operation=null;notify();
+   entry.loading=false;entry.error=error.message;entry.preparation=error.preparation||null;entry.operation=null;notify();
    throw error;
   });
   notify();return operation.promise;
