@@ -78,7 +78,7 @@ def admitted_index(service):
     return Index()
 
 
-def build(source, output, epochs, protocol_epochs=None, suite='core', retain_reset=True):
+def build(source, output, epochs, protocol_epochs=None, suite='core', retain_reset=True, prepare_publication=False):
     protocol_epochs = epochs if protocol_epochs is None else protocol_epochs
     if not 200 <= protocol_epochs <= epochs:
         raise ValueError("protocol_epochs must be 200..epochs")
@@ -110,6 +110,14 @@ def build(source, output, epochs, protocol_epochs=None, suite='core', retain_res
     case.app.config['TESTING'] = True
     case.app.extensions['search_presets'] = SearchPresets(case.store, (presets, versions), runs=runs)
     case.client = case.app.test_client()
+    native_publication = prepare_publication and any(
+        'prepare_' + name + '_publication' in case.app.extensions for name in ('tree', 'overview'))
+    if prepare_publication and not native_publication:
+        fixture.doCleanups()
+        raise ValueError('This source has no explicit prepared publication interface')
+    if native_publication:
+        from publication_fixture import journal_transactions
+        publication_journal = journal_transactions(fixture)
     incoming = min(100, max(1, protocol_epochs // 10))
     main_count = protocol_epochs - incoming
     incoming_start = epochs - incoming
@@ -202,6 +210,8 @@ def build(source, output, epochs, protocol_epochs=None, suite='core', retain_res
                 table.rows[:] = copy.deepcopy(rows)
             retained_revisions = {row['revision_uuid'] for row in case.explorer_revisions.rows}
             case.explorer_history._recipe_cache = {key: value for key, value in case.explorer_history._recipe_cache.items() if key in retained_revisions}
+            if reset_state.get('reprepare') is not None:
+                reset_state['reprepare']()
             return jsonify(reset=True, ready=True, main_count=main_count, incoming_count=incoming,
                            protocol_epochs=protocol_epochs, epochs=epochs,
                            scope='owned post-import SQL fixture; outside measurement',
@@ -283,6 +293,22 @@ def build(source, output, epochs, protocol_epochs=None, suite='core', retain_res
             'admissions': ['transactional SQL doubles', 'synthetic metadata index catalog/projection; production predicate evaluator', 'source verification double'],
             'trace': 'three owned synthetic H5 ramps; real lazy reads',
             'owned_h5_path': str(tracefile.resolve()), 'native_qualification': False}
+    if native_publication:
+        from publication_fixture import publish_browser_fixture, prepare_views
+        try:
+            meta['prepared_publication'] = publish_browser_fixture(fixture, case.app, output, publication_journal)
+        except BaseException:
+            fixture.doCleanups()
+            raise
+        meta['fixture'] = 'workflow-owned-v5-prepared-native'
+        meta['admissions'] = ['transactional generation/recovery SQL leaf doubles',
+                              'sealed native metadata and typed indexes', 'source verification double']
+        def reprepare():
+            state = case.app.extensions['benchmark_recovery_authority']
+            import uuid
+            state['scope_epoch'] = str(uuid.uuid4()); state['generation'] = 0; state['feed'].clear()
+            prepare_views(case.app)
+        reset_state['reprepare'] = reprepare
     return fixture, case.app, meta
 
 
@@ -292,6 +318,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--epochs', type=int, default=1_000_000)
     parser.add_argument('--protocol-epochs', type=int, help='Active protocol scope including incoming; default is entire project')
+    parser.add_argument('--prepared-publication', action='store_true', help='Separate native prepared-publication qualification; leaves legacy fixture default unchanged')
     parser.add_argument('--suite', choices=('core', 'app'), default='core', help='app adds the launcher inventory double and a stored tag author')
     args = parser.parse_args()
     if args.epochs < 200 or args.epochs > 1_000_000: parser.error('epochs must be 200..1000000')
@@ -302,7 +329,7 @@ def main():
     cleanup = {'server_closed': False, 'fixture_closed': False, 'instrumentation_restored': False,
                'heap_closed': True}
     try:
-        fixture, app, meta = build(args.source_root.resolve(), args.output.resolve(), args.epochs, args.protocol_epochs, args.suite)
+        fixture, app, meta = build(args.source_root.resolve(), args.output.resolve(), args.epochs, args.protocol_epochs, args.suite, prepare_publication=args.prepared_publication)
         # Exercise the same explicit dedicated-worker startup policy as desktop.
         # Older source revisions have no process-heap owner and keep their policy.
         if (args.source_root.resolve() / 'python/workspace_process_heap.py').is_file():

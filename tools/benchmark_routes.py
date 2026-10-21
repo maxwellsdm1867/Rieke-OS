@@ -39,7 +39,7 @@ else:
 ROOT = Path(__file__).resolve().parents[1]
 FORMAT = 'disco-route-million-v1'
 HARNESS = ['tools/benchmark_routes.py', 'tools/benchmark_everyday.py', 'benchmarks/routes/worker.py',
-           'benchmarks/workflow/server.py', 'benchmarks/registry.json', 'benchmarks/requirements-py311.txt']
+           'benchmarks/workflow/server.py', 'benchmarks/workflow/publication_fixture.py', 'benchmarks/registry.json', 'benchmarks/requirements-py311.txt']
 
 
 def config():

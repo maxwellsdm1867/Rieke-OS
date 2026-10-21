@@ -613,7 +613,7 @@ def stop_owned(child, identities):
     return not remaining
 
 
-def run(source_root, output, *, smoke=False, browser_executable=None, protocol_epochs=None, profile=False, module_timing=False, runtime='production', suite='core'):
+def run(source_root, output, *, smoke=False, browser_executable=None, protocol_epochs=None, profile=False, module_timing=False, runtime='production', suite='core', prepared_publication=False):
     validate_runtime(runtime, profile)
     cfg = config(suite)
     source_root,output = source_root.resolve(),output.resolve()
@@ -623,7 +623,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
     if type(protocol_epochs) is not int or not 200 <= protocol_epochs <= epochs:
         raise ValueError('Protocol epochs must be 200..project epochs')
     receipt = {'format':FORMAT,'dependency_policy':DEPENDENCY_POLICY,'status':'running','runtime':runtime,'production_build':None,'source_root':str(source_root),
-               'source_start':query_bench.source(source_root),'harness_start':harness(),
+               'source_start':query_bench.source(source_root),'harness_start':harness(),'prepared_publication':prepared_publication,
                'environment':query_bench.environment(),'config':cfg,'epochs':epochs,
                'samples':samples,'protocol_epochs':protocol_epochs,'profile':profile,'module_timing':module_timing,'smoke':smoke,'suite':suite,'cleanup':{},'metrics':{},'limitations':[]}
     query_bench.write(output/'receipt.json',receipt)
@@ -633,7 +633,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
     server_ids,browser_ids = {},{}
     try:
         server,stream,deadline = execute_owned([sys.executable,'-B',str(ROOT/'benchmarks/workflow/server.py'),
-            '--source-root',str(source_root),'--output',str(output/'server'),'--epochs',str(epochs),'--protocol-epochs',str(protocol_epochs)]+(['--suite',suite] if suite != 'core' else []),
+            '--source-root',str(source_root),'--output',str(output/'server'),'--epochs',str(epochs),'--protocol-epochs',str(protocol_epochs)]+(['--suite',suite] if suite != 'core' else [])+(['--prepared-publication'] if prepared_publication else []),
             output/'server.log',cfg['max_startup_seconds'],cfg['max_rss_bytes'],server_ids)
         streams.append(stream)
         meta_path = output/'server/server.json'
@@ -753,6 +753,17 @@ def load_receipt(path, *, diagnostic=False):
     query_bench.validate_environment(receipt.get('environment'))
     if receipt['source_start'] != receipt['source_end'] or receipt['harness_start'] != receipt.get('harness_end'):
         raise ValueError('Source/harness changed during measurement')
+    prepared_mode = receipt.get('prepared_publication', False)
+    if type(prepared_mode) is not bool:
+        raise ValueError('Invalid publication fixture mode')
+    publication = receipt.get('fixture', {}).get('prepared_publication')
+    if prepared_mode:
+        if (not isinstance(publication, dict) or publication.get('native_metadata_index') is not True
+                or not publication.get('preparation')
+                or any(item.get('status') != 'ready' for item in publication['preparation'].values())):
+            raise ValueError('Prepared-native fixture lacks a ready explicit publication receipt')
+    elif publication is not None:
+        raise ValueError('Legacy fixture receipt contains native publication admission')
     cleanup = receipt.get('cleanup',{})
     if (cleanup.get('server_processes_closed') is not True or cleanup.get('browser_processes_closed') is not True
             or any(cleanup.get('backend',{}).get(key) is not True for key in ('server_closed','fixture_closed','instrumentation_restored'))
@@ -805,6 +816,8 @@ def load_receipt(path, *, diagnostic=False):
 
 def compare(baseline_path, candidate_path, output):
     baseline,candidate = load_receipt(baseline_path),load_receipt(candidate_path)
+    if baseline.get('prepared_publication', False) != candidate.get('prepared_publication', False):
+        raise ValueError('Incomparable publication fixture modes; legacy and prepared-native tracks are separate')
     if baseline.get('suite', 'core') != candidate.get('suite', 'core'):
         raise ValueError('Incomparable workflow suite')
     for key in ('config','harness_start','environment','browser_environment','epochs','protocol_epochs'):
@@ -839,6 +852,7 @@ def main():
     command.add_argument('--runtime',choices=('production','development'),default='production',help='Production qualifies; explicit development is diagnostic-only')
     command.add_argument('--profile',action='store_true',help='Collect optional module diagnostics after ordinary samples; excluded from regression gate')
     command.add_argument('--module-timing',action='store_true',help='Collect built-in module elapsed timers during ordinary requests')
+    command.add_argument('--prepared-publication',action='store_true',help='Separate prepared-native publication track; never compare against the legacy fixture')
     command.add_argument('--suite',choices=tuple(SUITES),default='core',help='core: fixed fifteen-variant shell; app: full-App decoupling variants')
     comparison = commands.add_parser('compare')
     comparison.add_argument('baseline',type=Path)
@@ -855,7 +869,7 @@ def main():
             import tempfile
             with (Path(tempfile.gettempdir())/'disco-everyday-million.lock').open('a') as lock:
                 fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-                print(run(args.source_root,args.output,smoke=args.smoke,browser_executable=args.browser_executable,protocol_epochs=args.protocol_epochs,profile=args.profile,module_timing=args.module_timing,runtime=args.runtime,suite=args.suite))
+                print(run(args.source_root,args.output,smoke=args.smoke,browser_executable=args.browser_executable,protocol_epochs=args.protocol_epochs,profile=args.profile,module_timing=args.module_timing,runtime=args.runtime,suite=args.suite,prepared_publication=args.prepared_publication))
         elif args.command == 'compare':
             result = compare(args.baseline,args.candidate,args.output)
             print(json.dumps({'status':result['status'],'review_required':result['review_required']}))

@@ -53,6 +53,7 @@ if os.environ.get('RIEKE_TEST_DOM_MODULE') is not None:
 result = {'format': FORMAT, 'status': 'running', 'epochs': args.epochs, 'protocol_epochs': args.protocol_epochs,
           'samples': args.samples, 'cases': {}, 'skipped': {}, 'h5_open_attempts': [], 'notes': []}
 started = time.perf_counter()
+OWNED_CLEANUP = []
 
 
 def report(event, **values):
@@ -260,13 +261,17 @@ def main():
     source = args.source_root.resolve()
     source_python = str(source / 'python') + os.sep
     sys.path[:0] = [str(ROOT / 'benchmarks/workflow')]
-    folder = tempfile.mkdtemp(prefix='disco-route-million-')
+    folder_owner = tempfile.TemporaryDirectory(prefix='disco-route-million-')
+    folder = folder_owner.name
+    result['fixture_directory'] = folder
+    OWNED_CLEANUP.append(('fixture_directory_removed', folder_owner.cleanup))
     import server as workflow_fixture  # Harness-owned fixture; imports app code from --source-root.
     sys.path[:0] = [str(source / 'python'), str(source / 'python/tests')]
     install_journaled_transactions()
     install_sqlite_counter()
     build_started = time.perf_counter()
-    fixture, app, meta = workflow_fixture.build(source, Path(folder), args.epochs, args.protocol_epochs, retain_reset=False)
+    fixture, app, meta = workflow_fixture.build(source, Path(folder), args.epochs, args.protocol_epochs, retain_reset=False, prepare_publication=False)
+    OWNED_CLEANUP.append(('fixture_closed', fixture.doCleanups))
     case = fixture.case
     service = case.service
     report('fixture_built', seconds=time.perf_counter() - build_started, rss=rss())
@@ -306,6 +311,7 @@ def main():
     seal_started = time.perf_counter()
     index = DiskMetadataIndex.build(Path(folder) / 'index' / 'routes.sqlite', service.rows, Details(service.rows),
                                     index_sources, f'route-million-{args.epochs}-{args.protocol_epochs}', project)
+    OWNED_CLEANUP.append(('index_closed', index.close))
     service.disk_index, service.details = index, index.details
     # Production refresh prepares the typed sidecar right after sealing
     # (WorkspaceService.refresh -> disco.metadata.typed_lifecycle.prepare).
@@ -328,6 +334,9 @@ def main():
                                    'explore cases measure the untyped fallback')
         result['typed_index'] = {'status': typed_status, 'seconds': time.perf_counter() - typed_started,
                                  'present': service.typed_index is not None}
+    if service.typed_index is not None:
+        from publication_fixture import close_typed_publication
+        OWNED_CLEANUP.append(('typed_index_closed', lambda: close_typed_publication(service)))
     service._explore_publication = str(uuid.uuid4())
     service._tree_page_scope_cache = None
     service._tree_catalog_cache = {}
@@ -504,6 +513,17 @@ def main():
             original_init(self, current)
         curation_module.RevisionConflict.__init__ = noisy
 
+    from publication_fixture import close_summary_jobs
+    OWNED_CLEANUP.append(('summary_jobs_closed', lambda: close_summary_jobs(service)))
+    prepared_capability = any('prepare_' + name + '_publication' in app.extensions for name in ('tree', 'overview'))
+    if prepared_capability:
+        from publication_fixture import install_authority, prepare_views
+        install_authority(fixture, app, JOURNAL)
+        for name in ('tree', 'overview'):
+            close = app.extensions.get('close_' + name + '_publication')
+            if close is not None:OWNED_CLEANUP.append((name + '_publication_closed', close))
+        navigation = app.extensions.get('disco.navigation.prepared')
+        if navigation is not None:OWNED_CLEANUP.append(('tree_publication_closed', navigation.close))
     client = app.test_client()
     headers = dict(getattr(case, 'headers', {}) or {'X-Workspace-Request': '1'})
     author = shared.default_profile['profile_uuid'] if shared is not None else None
@@ -545,6 +565,12 @@ def main():
                       {key: 0 for key in shared_epochs}, 'benchmark')
     result['seed'] = {'protocol_tagged_epochs': len(tagged), 'shared_tagged_epochs': 200 if shared else 0,
                       'shared_tagged_cells': 3 if shared else 0, 'seconds': time.perf_counter() - seed_started}
+
+    if prepared_capability:
+        preparation_started = time.perf_counter()
+        result['preparation'] = prepare_views(app)
+        report('prepared_publication', seconds=time.perf_counter() - preparation_started,
+               receipts=result['preparation'], rss=rss())
 
     def call(method, path, body=None, expected=(200,)):
         response = getattr(client, method)(path, headers=headers, **({'json': body} if body is not None else {}))
@@ -710,9 +736,27 @@ def main():
             oracle=lambda r, s: len(r[0].value['epoch_uuids']) == s['count'] or (_ for _ in ()).throw(AssertionError('count')))
     # The tree 'tag' filter reads shared effective tags (cell chips inherit).
     tag_tree = {**tree_body, 'splits': 'cell', 'filters': {'tag': 'drift'}}
+    prepared_tree_capability = 'prepare_tree_publication' in app.extensions
+    if prepared_tree_capability:
+        # A newly requested filtered layout has an explicit user preparation phase.
+        # This receipt stays separate from subsequent page/read measurements.
+        preparation_started = time.perf_counter()
+        tag_preparation = call('post', '/api/tree-pages/prepare',
+            {key: tag_tree[key] for key in ('protocol_uuid', 'splits', 'filters')}).get_json()
+        result['preparation']['tree.tag_filtered_root'] = {
+            **tag_preparation, 'elapsed_seconds': time.perf_counter() - preparation_started}
+        if tag_preparation.get('status') != 'ready':raise AssertionError('Filtered tree did not prepare')
     expected_tag_total = len(shared_epochs) if shared is not None else 0
-    measure('tree.tag_filtered_root', same(None), lambda s: call('post', '/api/tree-pages', tag_tree),
+    tag_record = measure('tree.tag_filtered_root', same(None), lambda s: call('post', '/api/tree-pages', tag_tree),
             oracle=lambda r, s: r[0].get_json()['total_epochs'] == expected_tag_total or (_ for _ in ()).throw(AssertionError(f"tag total {r[0].get_json().get('total_epochs')} != {expected_tag_total}")))
+
+    if tag_record is not None:
+        preparation_ms = (result['preparation']['tree.tag_filtered_root']['elapsed_seconds'] * 1000
+                          if prepared_tree_capability else 0.0)
+        tag_record['preparation_ms'] = round(preparation_ms, 3)
+        tag_record['first_use_ms'] = round(preparation_ms + tag_record.get('cold_ms', 0.0), 3)
+        tag_record['first_use_contract'] = ('explicit prepare plus first page' if prepared_tree_capability
+                                          else 'legacy inline first page')
 
     # ---- Search and predicates --------------------------------------------
     measure('search.text', same(None), lambda s: call('get', '/api/search?q=cell'))
@@ -993,13 +1037,7 @@ def main():
             lambda s: call('get', f'{root_path}?limit=20'), cold=False)
 
     result['refresh_calls'] = counters_refresh['calls']
-    result['index_closed'] = True
-    try:
-        index.close()
-    except Exception as error:
-        result['index_closed'] = False
-        result['notes'].append(f'index close failed: {error}')
-    fixture.doCleanups()
+
 
 
 try:
@@ -1012,6 +1050,18 @@ except Exception as error:
     result['error'] = f'{type(error).__name__}: {error}'
     result['traceback'] = traceback.format_exc()
 finally:
+    result['cleanup'] = {}
+    while OWNED_CLEANUP:
+        name, close = OWNED_CLEANUP.pop()
+        try:
+            if name == 'fixture_directory_removed' and not all(result['cleanup'].values()):
+                raise RuntimeError('Retaining fixture directory after incomplete shutdown')
+            close(); result['cleanup'][name] = True
+        except Exception as error:
+            result['cleanup'][name] = False
+            result['notes'].append(name + ': ' + str(error))
+            result['status'] = 'failed'
+    result['index_closed'] = result['cleanup'].get('index_closed', False)
     import resource
     peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     result['peak_rss_bytes'] = peak if sys.platform == 'darwin' else peak * 1024

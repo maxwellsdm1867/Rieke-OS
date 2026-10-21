@@ -887,3 +887,25 @@ Both workflow and prepared-geometry receipts declare the versioned policy
 `browser-dependencies-v2:frontend-full:desktop-playwright-closure-v1`. The workflow
 provenance binds it; both validators reject missing or earlier policy identifiers.
 No legacy receipt conversion or reinterpretation is supported.
+
+### Explicit prepared-publication qualification
+
+The default paired browser workflow keeps its historical SQL/index fixture and
+strict gates. `tools/benchmark_workflow.py run --prepared-publication` is a
+separate opt-in native-index publication track: the owned fixture freezes the
+canonical service, seals native/typed metadata, and uses real generation and
+recovery-capture owners over transactional SQL leaf doubles. It does not qualify
+native MySQL. Receipts have a distinct `workflow-owned-v5-prepared-native` fixture
+identity and separately timed publication preparation. Comparing this mode with
+the legacy browser fixture is rejected; no speedup across those admissions is
+claimed. Installed/native application checks remain separately required.
+
+Route track 1.12.0 retains native metadata/service admission on both old and new
+sources. New sources explicitly prepare default publications before first reads.
+The filtered tag layout separately times `POST /api/tree-pages/prepare`; its case
+records `preparation_ms` and `first_use_ms` (prepare plus first page), alongside
+subsequent bounded read samples/counts. A 202 preparation response is never a
+successful page, and preparation must report ready. Old sources keep the inline
+first-page contract. Publication and layout preparation are visible costs, not
+GET warmups. Owned route directories are recorded and removed after worker,
+reader, and fixture shutdown, including failure paths.
