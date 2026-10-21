@@ -68,7 +68,7 @@ def _epoch_prefix_hits(service, prefix, limit):
     return rows, total
 
 
-def search_workspace(service, query, limit=20, *, field=None, operator='eq', value=None):
+def search_workspace(service, query, limit=20, *, field=None, operator='eq', value=None, membership_lookup=None):
     if not isinstance(query, str) or len(query) > 512:
         raise ValueError('Search text must contain at most 512 characters')
     if type(limit) is not int or not 1 <= limit <= 50:
@@ -127,10 +127,15 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
         if uuid_query:
             memberships = {}
             shown = [item for item in results[:limit] if item['kind'] == 'epoch']
+            prepared = membership_lookup([item['epoch_uuid'] for item in shown]) if shown and membership_lookup else None
+            if prepared is not None:
+                memberships = {identity:[{'protocol_uuid':protocol,
+                    'name':service.protocols[protocol]['definition']['name']} for protocol in protocols]
+                    for identity,protocols in prepared.items()}
             # The service's shared read-only member set (one per publication and
             # binding revision/version); None keeps the query_result path.
             reader = getattr(service, 'query_members', None) if shown else None
-            for protocol_id, workspace in (service.protocols.items() if shown else ()):
+            for protocol_id, workspace in (service.protocols.items() if shown and prepared is None else ()):
                 members = reader(protocol_id) if reader is not None else None
                 if members is None:
                     members = {item['uuid'] for item in service.query_result(protocol_id)['epochs']}
@@ -233,7 +238,7 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
             'source_scope_revision': scope['revision']}
 
 
-def register_search_routes(app, service, db_lock):
+def register_search_routes(app, service, db_lock, *, membership_lookup=None):
     from flask import jsonify, request
 
     @app.get('/api/search')
@@ -245,8 +250,14 @@ def register_search_routes(app, service, db_lock):
             raise ValueError('Typed field searches require an explicit JSON value')
         value = json.loads(request.args['value']) if 'value' in request.args else None
         def respond():
-            return jsonify(search_workspace(service, request.args.get('q', ''), int(request.args.get('limit', 20)),
-                field=request.args.get('field'), operator=request.args.get('operator', 'eq'), value=value))
+            from disco.navigation.publication_changes import PreparationRequired
+            try:
+                return jsonify(search_workspace(service, request.args.get('q', ''), int(request.args.get('limit', 20)),
+                    field=request.args.get('field'), operator=request.args.get('operator', 'eq'), value=value,
+                    membership_lookup=membership_lookup))
+            except PreparationRequired as error:
+                return jsonify(error='Search metadata is being prepared. Retry search shortly.',code='metadata_preparing',
+                    preparation={'status':'pending','resource':'overview','reason':str(error)}),503
         # One schema attestation per response; scope generations stay live.
         contract = app.extensions.get('read_contract')
         with db_lock:

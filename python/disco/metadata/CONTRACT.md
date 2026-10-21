@@ -56,6 +56,22 @@ close is idempotent. Native index reading has no generic cancellation token.
 Query orchestration preserves generation, source eligibility, binding, publication
 and annotation fences; disposable metadata cannot stand in for those proofs.
 
+The existing SQLite lowercase-identity proof runs during verified native index
+opening. The first epoch-prefix lookup performs only its range count and bounded
+UUID read; it does not defer a whole-project lowercase scan to the first search.
+The query still uses SQLite's original `lower` semantics and returns the legacy
+fallback signal for uppercase or unadmitted generations. No stored format or seal
+field is added.
+
+UUID search labels may use the API's optional prepared membership lookup for at
+most fifty shown epoch IDs. It reads the existing Overview projection's reverse
+membership after fresh recovery/publication/binding checks and preserves canonical
+protocol order. Closing changes discard the response. A supported native owner
+that requires preparation returns HTTP 503 with `code: metadata_preparing` and
+an explicit retry message, without partial results or a whole-membership fallback.
+Existing search error handling keeps stale rows disabled. Custom and unsupported legacy
+readers retain their exact query-result path, including unavailable-member errors.
+
 ## Explicit membership query work
 
 `DiskMetadataIndex.cell_epoch_ids` and `cell_epoch_count` read the complete

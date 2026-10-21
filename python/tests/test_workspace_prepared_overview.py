@@ -2,6 +2,7 @@
 import contextlib
 import copy
 import json
+import sys
 from types import SimpleNamespace
 from unittest.mock import patch
 import test_workspace_slow_read_memos as fixtures
@@ -10,6 +11,93 @@ from disco.decisions.explorer import MemberView
 
 
 class PreparedOverviewTests(fixtures.MemoFixture):
+    @contextlib.contextmanager
+    def no_search_member_hydration(self):
+        previous=sys.getprofile()
+        def check(frame,event,arg):
+            if (event=='call' and frame.f_globals.get('__name__')=='workspace_service'
+                    and frame.f_code.co_name in ('query_members','query_result')):
+                raise AssertionError('Search hydrated full query membership')
+        sys.setprofile(check)
+        try:yield
+        finally:sys.setprofile(previous)
+
+    def test_first_uuid_search_labels_reuse_prepared_members_without_query_hydration(self):
+        path='/api/search?q='+self.ids[0]
+        with self.no_search_member_hydration():
+            response=self.client.get(path)
+            self.assertEqual(response.status_code,503)
+            self.assertEqual(response.get_json()['code'],'metadata_preparing')
+            self.assertIn('Retry search',response.get_json()['error'])
+            self.assertNotIn('results',response.get_json())
+        self.prepare()
+        with self.no_search_member_hydration(), \
+             patch.object(MemberView,'__iter__',side_effect=AssertionError('full bound membership iteration')):
+            result=self.get(path)
+        epoch=next(item for item in result['results'] if item['kind']=='epoch')
+        self.assertEqual(epoch['protocols'],[{'protocol_uuid':self.protocol,
+            'name':self.service.protocols[self.protocol]['definition']['name']}])
+
+    def test_uuid_search_tracks_membership_remove_and_restore_without_hydration(self):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        root=history.create(preview,self.service.sources,'catalog.json','fixture')
+        history.bind(root['revision_uuid'],self.protocol,0,'fixture',{},2)
+        self.prepare()
+        delta=history.create_delta(root['revision_uuid'],{},[self.ids[0]],'fixture',name='Remove one')
+        history.bind(delta['revision_uuid'],self.protocol,1,'fixture',{},2)
+        path='/api/search?q='+self.ids[0]
+        with self.no_search_member_hydration(), \
+             patch.object(MemberView,'__iter__',side_effect=AssertionError('full bound membership')), \
+             patch.object(self.app.extensions['overview_durations'],'submit'):
+            self.assertEqual(self.get(path)['results'][0]['protocols'],[])
+            history.bind(root['revision_uuid'],self.protocol,2,'fixture',{},2)
+            self.assertEqual(self.get(path)['results'][0]['protocol_uuid'],self.protocol)
+
+    def test_uuid_search_closing_binding_change_discards_prepared_labels(self):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        root=history.create(preview,self.service.sources,'catalog.json','fixture')
+        history.bind(root['revision_uuid'],self.protocol,0,'fixture',{},2)
+        self.prepare();model=self.app.extensions['prepared_overview']['model']
+        lookup=model.protocols_for_epochs
+        def changed(identities):
+            result=lookup(identities);history.Binding.rows[0]['version']+=1;return result
+        with patch.object(model,'protocols_for_epochs',side_effect=changed):
+            response=self.client.get('/api/search?q='+self.ids[0])
+        self.assertEqual(response.status_code,409)
+        self.assertNotIn('results',response.get_json())
+
+    def test_uuid_search_source_eligibility_change_requires_preparation_without_losing_registered_labels(self):
+        self.prepare()
+        self.service.set_source_state_provider(lambda:{'a'*64:{'query_excluded':True}})
+        path='/api/search?q='+self.ids[0]
+        response=self.client.get(path)
+        self.assertEqual(response.status_code,503)
+        self.prepare()
+        result=self.get(path)['results'][0]
+        self.assertTrue(result['query_excluded'])
+        self.assertEqual(result['protocol_uuid'],self.protocol)
+
+    def test_uuid_search_invalid_publication_does_not_hide_another_unavailable_member(self):
+        from workspace_service import freeze
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        root=history.create(preview,self.service.sources,'catalog.json','fixture')
+        history.bind(root['revision_uuid'],self.protocol,0,'fixture',{},2)
+        self.prepare()
+        self.service.rows=freeze({key:row for key,row in self.service.rows.items() if key!=self.ids[1]})
+        response=self.client.get('/api/search?q='+self.ids[0])
+        self.assertEqual(response.status_code,503)
+        self.assertNotIn('results',response.get_json())
+        # An unsupported custom reader still executes the old exact oracle,
+        # including rejection of an unavailable member outside the shown hit.
+        original=self.service.query_result
+        with patch.object(self.service,'query_result',side_effect=original):
+            response=self.client.get('/api/search?q='+self.ids[0])
+        self.assertEqual(response.status_code,400)
+        self.assertIn('unavailable',response.get_json()['error'])
+
     def setUp(self):
         super().setUp();fixtures.ProtocolContextFastPathTests.publish(self)
         owner=self

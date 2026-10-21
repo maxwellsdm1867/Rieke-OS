@@ -34,6 +34,7 @@ class OverviewProjection:
         self=cls()
         self.publication=publication;self.watermark=watermark;self.ready=True
         self.epochs={};self.memberships={};self.protocols={};self.cells={};self.protocol_cells={}
+        self.protocol_order={protocol:position for position,protocol in enumerate(memberships)}
         self.cell_protocols={};self.rows=rows;self.exported_by_protocol={};self.attributes={};self.cell_attributes={}
         self.duration_versions={};self.duration_results={};self.duration_orders={};self.duration_serial=0;self.duration_failures={}
         self.retained_durations={}
@@ -77,6 +78,20 @@ class OverviewProjection:
         self.apply_tags([(kind,key,True) for kind,keys in (('epoch',initial_epochs),('cell',initial_cells)) for key in keys])
         self.last_work={'prepared_epochs':len(self.epochs),'prepared_memberships':sum(map(len,self.memberships.values()))}
         return self
+
+    def protocols_for_epochs(self, identities):
+        """Exact prepared owners for at most fifty displayed epochs, in protocol order.
+
+        The caller supplies publication, recovery and binding fences. This reads
+        existing reverse membership only; it never constructs a new member set.
+        """
+        self._check()
+        if (type(identities) not in (list,tuple) or len(identities)>50
+                or any(type(identity) is not str for identity in identities)
+                or len(set(identities))!=len(identities)):
+            raise ValueError('Epoch owner lookup requires at most fifty distinct identities')
+        return {identity:tuple(sorted(self.epochs[identity][2],key=self.protocol_order.__getitem__))
+                for identity in identities}
 
     def invalidate(self):
         self.ready=False

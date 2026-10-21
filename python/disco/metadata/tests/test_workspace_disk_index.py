@@ -293,4 +293,32 @@ class DiskIndexTests(unittest.TestCase):
         self.addCleanup(mixed.close)
         self.assertIsNone(mixed.epoch_prefix('epoch-',5),'Mixed-case identities use the caller scan')
 
+    def test_first_epoch_prefix_after_open_and_reopen_never_checks_whole_identity_case(self):
+        index=self.build(count=31)
+        index.close()
+        connect=sqlite3.connect
+        for _ in range(2):
+            opened=DiskMetadataIndex.open(self.path,'generation','project')
+            statements=[]
+            def traced(*args,**kwargs):
+                connection=connect(*args,**kwargs)
+                connection.set_trace_callback(statements.append)
+                return connection
+            try:
+                with patch.object(sqlite3,'connect',side_effect=traced):
+                    self.assertEqual(opened.epoch_prefix('epoch-2',2),(['epoch-2','epoch-20'],11))
+                self.assertFalse(any('lower(' in sql.lower() for sql in statements),statements)
+            finally:opened.close()
+
+    def test_prefix_admission_preserves_sqlite_non_ascii_case_semantics(self):
+        rows,details,sources=fixture(1)
+        rows[0]['epoch_uuid']='Époch-0';details['Époch-0']=details.pop('epoch-0')
+        index=DiskMetadataIndex.build(self.path,rows,details,sources,'unicode','project')
+        try:
+            # SQLite lower leaves this non-ASCII capital unchanged. Preserve the
+            # existing SQL proof rather than replacing it with Python.lower.
+            self.assertEqual(index.epoch_prefix('époch-',1),([],0))
+            self.assertEqual(index.epoch_prefix('x',1),([],0))
+        finally:index.close()
+
 if __name__=='__main__': unittest.main()

@@ -4,6 +4,24 @@ from disco.navigation.overview_projection import OverviewProjection, ProjectionU
 
 
 class OverviewProjectionTests(unittest.TestCase):
+    def test_bounded_epoch_owners_use_existing_reverse_membership_and_protocol_order(self):
+        model=self.model()
+        class LookupOnly(dict):
+            def __iter__(self):raise AssertionError('full iteration')
+            def items(self):raise AssertionError('full iteration')
+            def values(self):raise AssertionError('full iteration')
+        model.epochs=LookupOnly(model.epochs)
+        self.assertEqual(model.protocols_for_epochs(['1','0']),{'1':('p','q'),'0':('p',)})
+        model.apply_membership('p',added={},removed=['1'])
+        self.assertEqual(model.protocols_for_epochs(['1']),{'1':('q',)})
+        model.apply_membership('p',added={'1':None},removed=[])
+        self.assertEqual(model.protocols_for_epochs(['1']),{'1':('p','q')})
+        for invalid in ('1',['1','1'],[None],list(map(str,range(51)))):
+            with self.assertRaises(ValueError):model.protocols_for_epochs(invalid)
+        with self.assertRaises(KeyError):model.protocols_for_epochs(['unknown'])
+        model.invalidate()
+        with self.assertRaises(ProjectionUnavailable):model.protocols_for_epochs(['1'])
+
     def model(self):
         rows={str(i):{'epoch_uuid':str(i),'cell_uuid':'a' if i<2 else 'b',
                      'duration_seconds':float(i+1)} for i in range(4)}

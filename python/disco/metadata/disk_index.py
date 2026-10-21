@@ -218,6 +218,10 @@ class DiskMetadataIndex:
                 instance._definitions=[json.loads(row[0]) for row in connection.execute('SELECT definition_json FROM fields ORDER BY field_no')]
                 instance._catalog_cache=metadata.get('catalog');instance._predicate_cache=metadata.get('predicate_catalog')
                 instance._epoch_count=connection.execute('SELECT COUNT(*) FROM epochs').fetchone()[0]
+                # Admission work belongs to verified opening, never the first
+                # interactive UUID probe. Keep SQLite's existing lower semantics.
+                instance._lowercase_identities=not connection.execute(
+                    'SELECT EXISTS(SELECT 1 FROM epochs WHERE epoch_uuid<>lower(epoch_uuid))').fetchone()[0]
             instance._detail_cache=OrderedDict();instance._detail_lock=threading.RLock();instance._details_reference=None
             instance._detail_cache_costs={};instance._detail_cache_bytes=0
             instance._metadata_decoder=MetadataDecoder()
@@ -360,10 +364,7 @@ class DiskMetadataIndex:
             raise ValueError('Epoch prefix lookup needs a lowercase prefix and a nonnegative limit')
         upper=prefix[:-1]+chr(ord(prefix[-1])+1)
         with self._connect([]) as connection:
-            if getattr(self,'_lowercase_identities',None) is None:
-                self._lowercase_identities=not connection.execute(
-                    'SELECT EXISTS(SELECT 1 FROM epochs WHERE epoch_uuid<>lower(epoch_uuid))').fetchone()[0]
-            if not self._lowercase_identities:
+            if getattr(self,'_lowercase_identities',None) is not True:
                 return None
             total=connection.execute('SELECT COUNT(*) FROM epochs WHERE epoch_uuid>=? AND epoch_uuid<?',(prefix,upper)).fetchone()[0]
             identities=[row[0] for row in connection.execute(

@@ -1295,6 +1295,26 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise StaleWorkspace('Overview changed during the read. Refresh and retry.')
         return payload,None
 
+    def prepared_search_memberships(identities):
+        """Reuse prepared reverse membership under the search response's read lease."""
+        from disco.navigation.publication_changes import PreparationRequired
+        # Custom and legacy readers keep their exact existing query_result path.
+        # A prepared native owner that loses authority must not turn into a scan.
+        if (not selected_state._native_contract()
+                or getattr(service.query_members,'__func__',None) is not WorkspaceService.query_members):
+            return None
+        if not prepared_overview and getattr(service,'_recovery_tracker',None) is None:
+            return None
+        model,reason=current_prepared_overview()
+        if model is None:raise PreparationRequired(reason)
+        keys=overview_part_keys()
+        if keys is None or not prepared_binding_witness(keys):raise PreparationRequired('state_changed')
+        result=model.protocols_for_epochs(identities)
+        if (prepared_overview['tracker'].token()!=model.watermark or overview_part_keys()!=keys
+                or not prepared_binding_witness(keys)):
+            raise StaleWorkspace('Search membership changed during the read. Refresh and retry.')
+        return result
+
     @app.post('/api/overview/prepare')
     def prepare_overview_route():
         if request.args or request.get_json(silent=True) not in (None,{}):raise ValueError('Overview preparation takes no options')
@@ -3191,7 +3211,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     register_qc_routes(app, service, db_lock)
     # Selected-cell preparation and import own QC work; opening never reads all cells.
     from disco.metadata.search import register_search_routes
-    register_search_routes(app, service, db_lock)
+    register_search_routes(app, service, db_lock, membership_lookup=prepared_search_memberships)
 
     from disco.navigation.tree_pages import register_tree_page_routes
     register_tree_page_routes(app, service, db_lock, data_stores.registration_locks)
