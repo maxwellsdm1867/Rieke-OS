@@ -1046,6 +1046,17 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 cell_ordinals={protocol:{key:index for index,key in enumerate(cells)} for protocol,cells in model.protocol_cells.items()})
             if old:
                 old['pages'].close();old['vocab'].close()
+            # This full display-only checkpoint belongs to explicit preparation,
+            # never to page reads or target-delta catch-up. Cache failure cannot
+            # invalidate or roll back the separately witnessed canonical model.
+            from disco.projects.presentation_cache import save_overview,display_overview
+            display_payload={**project_payload,'events':service.events(25)}
+            try:
+                display=display_overview(display_payload)
+            except (ValueError,TypeError,KeyError,AttributeError):
+                display=None
+            if display is None or display!=saved_overview.get('display'):
+                saved_overview['display']=display if save_overview(project_dir,display_payload) else None
             receipt={'status':'ready','publication_serial':keys['base'][0],
                 'elapsed_ms':(time.perf_counter()-started)*1000,'epochs':len(model.epochs),
                 'protocol_memberships':sum(map(len,model.memberships.values()))}

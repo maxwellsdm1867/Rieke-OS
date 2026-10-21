@@ -121,6 +121,24 @@ class PreparedOverviewTests(fixtures.MemoFixture):
         self.assertEqual(result['counts']['duration_status'],'failed')
         self.assertIsNone(result['counts']['duration_seconds'])
 
+    def test_inert_display_checkpoint_is_prepared_once_and_never_serialized_by_pages(self):
+        with patch('disco.projects.presentation_cache.save_overview',return_value=True) as saved:
+            self.prepare()
+            self.assertEqual(saved.call_count,1)
+            self.assertEqual(len(saved.call_args.args[1]['cells']),len(self.service.cells))
+            with patch('disco.projects.presentation_cache.display_overview',side_effect=AssertionError('Full display on GET')):
+                self.get('/api/overview?cells_limit=1')
+                self.save_curation(review_state='approved')
+                self.get('/api/overview?cells_limit=1')
+            self.assertEqual(saved.call_count,1)
+            self.prepare()
+            self.assertEqual(saved.call_count,2)  # A changed approved count is part of the display allowlist.
+
+    def test_display_checkpoint_failure_does_not_invalidate_prepared_data(self):
+        with patch('disco.projects.presentation_cache.save_overview',return_value=False):
+            self.assertEqual(self.prepare()['status'],'ready')
+        self.assertEqual(self.get('/api/overview?cells_limit=1')['counts']['epochs'],len(self.ids))
+
     def test_incomplete_feed_returns_preparing_instead_of_rebuilding(self):
         self.prepare();self.capture.lost=True;self.save_curation(included=False)
         with patch('workspace_api.summarize_cell_membership',side_effect=AssertionError('hidden rebuild')):

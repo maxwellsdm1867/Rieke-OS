@@ -424,7 +424,9 @@ Duration completion changes the conditional response validator. Worker failure
 reports `duration_status: failed` and an explicit retryable preparation descriptor
 while preserving exact counts; it never leaves a permanent pending claim. Worker shutdown
 drains callbacks before taking their publication lock. The inert startup display
-cache is not rewritten during these page reads.
+cache is refreshed once during explicit preparation after the publication fences,
+using the existing best-effort display allowlist/save semantics. Cache write failure
+does not invalidate canonical data. It is not serialized or rewritten by page reads.
 
 The pure owner/capture/vocabulary tests in `navigation/tests` cover overlapping
 approval, stale fingerprints, tag inheritance, membership deltas, canonical fold
