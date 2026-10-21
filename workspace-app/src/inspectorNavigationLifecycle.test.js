@@ -402,3 +402,143 @@ test('ordinary Inspector bounds cell lists, appends only matching receipts and f
   assert.deepEqual(h.viewer.treePane.listProps.cells.map(x=>x.cell_uuid),['cell-A']);
  }finally{await h.close();}
 });
+
+
+test('main list recovery renews parent receipts once, preserves focus, and never replays writes',async()=>{
+ const h=await createInspectorHarness();
+ try{
+  h.fixture.page=page;await h.render(props);
+  const before=h.viewer.treePane.listProps,oldRead=h.fixture.resources.filter(row=>row.path?.includes('/epochs?')).at(-1).revision;
+  let accepted;
+  h.fixture.page={...page,query_revision:'query-B'};
+  await h.act(()=>{accepted=before.onRecoverEpochs();});
+  assert.equal(accepted,true);
+  assert.equal(h.viewer.treePane.listProps.source.queryRevision,'query-B');
+  assert.equal(h.viewer.treePane.listProps.focused,before.focused);
+  assert.equal(h.viewer.treePane.listProps.navigationScope,before.navigationScope);
+  assert.notEqual(h.viewer.treePane.listProps.revision,before.revision);
+  assert.notEqual(h.fixture.resources.filter(row=>row.path?.includes('/epochs?')).at(-1).revision,oldRead);
+  await h.act(()=>{accepted=h.viewer.treePane.listProps.onRecoverEpochs();});assert.equal(accepted,false,'persistent drift cannot loop');
+  await h.act(()=>{accepted=h.viewer.treePane.listProps.onRecoverEpochs(true);});assert.equal(accepted,true,'explicit local retry remains available');
+  const oldCallback=h.viewer.treePane.listProps.onRecoverEpochs;
+  await h.render({...props,filters:{cell_type:'OFF'}});await h.render(props);
+  await h.act(()=>{accepted=oldCallback();});assert.equal(accepted,false,'A/B/A must reject old callbacks');
+  const current=h.viewer.treePane.listProps.onRecoverEpochs;
+  await h.render(props,{activity:'hidden'});
+  await h.act(()=>{accepted=current();});assert.equal(accepted,false,'hidden owner cannot renew');
+ }finally{await h.close();}
+});
+
+test('read recovery preserves explicit UUID intent without replaying a write',async()=>{
+ const h=await createInspectorHarness();try{
+  h.fixture.page=page;await h.render(props);
+  await h.act(()=>h.viewer.treePane.listProps.setTargets(['epoch-A']));
+  let accepted;await h.act(()=>{accepted=h.viewer.treePane.listProps.onRecoverEpochs();});
+  assert.equal(accepted,true);assert.deepEqual(h.viewer.treePane.listProps.targets,['epoch-A']);
+ }finally{await h.close();}
+});
+
+
+test('real parent and cell reads recover a missed update without polling or metadata verification',async()=>{
+ const h=await createWorkflowHarness({total:500});try{
+  const Inspector=await h.component('Inspector');
+  await h.mount(Inspector,{...props,protocol:{...props.protocol,query_revision:'query-0',cells:[{cell_uuid:'cell-0',date:'2026-09-29',label:'Cell 0',epochs:500}]},initialEpochUuid:'epoch-0'});
+  await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);
+  const before=h.fixture.requests.length;
+  h.fixture.generation=1; // another completed update, no query edit or renderer notification
+  await openCell(h);
+  await h.waitFor(()=>h.viewer.treePane.listProps.source.queryRevision==='query-1'&&!!row(h,1));
+  assert.equal(h.viewer.treePane.listProps.focused,'epoch-0');
+  assert.equal(h.root.findAllByType('dialog').length,0);
+  const renewal=h.fixture.requests.slice(before);
+  assert.ok(renewal.filter(item=>item.path.includes('/epochs?')).length<=4,'one coordinated bounded renewal');
+  assert.equal(renewal.some(item=>item.method!=='GET'||item.path.includes('/metadata/refresh')),false);
+  const settled=h.fixture.requests.length;await h.settle(200);
+  assert.equal(h.fixture.requests.length,settled,'no background refresh/poll loop');
+  const listReads=h.fixture.requests.filter(item=>item.path.includes('/epochs?')).length;
+  await h.act(()=>row(h,2).props.onClick({}));
+  assert.equal(h.fixture.requests.filter(item=>item.path.includes('/epochs?')).length,listReads,'ordinary same-page navigation does not renew the list');
+ }finally{await h.close();}
+});
+
+test('repeated external drift stops automatic reads and offers one refresh dialog',async()=>{
+ const h=await createWorkflowHarness({total:500});try{
+  const Inspector=await h.component('Inspector');
+  await h.mount(Inspector,{...props,protocol:{...props.protocol,query_revision:'query-0',cells:[{cell_uuid:'cell-0',date:'2026-09-29',label:'Cell 0',epochs:500}]},initialEpochUuid:'epoch-0'});
+  await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);
+  h.fixture.respond=(url,options,normal)=>{if(url.pathname.endsWith('/epochs')&&url.searchParams.has('cell_uuid'))h.fixture.generation++;return normal();};
+  const date=h.root.findAllByType('details').find(node=>node.props.className==='cell-tree-date');
+  await h.act(()=>date.props.onToggle({currentTarget:{open:true}}));
+  const cell=h.root.findAllByType('details').find(node=>node.props.className==='cell-tree-cell');
+  await h.act(()=>cell.props.onToggle({currentTarget:{open:true}}));
+  await h.waitFor(()=>h.root.findAllByType('dialog').length===1);
+  const settled=h.fixture.requests.length;await h.settle(200);assert.equal(h.fixture.requests.length,settled);
+  assert.equal(h.fixture.requests.some(item=>item.method!=='GET'),false);
+  h.fixture.respond=null;
+  const dialog=h.root.findByType('dialog');
+  await h.act(()=>dialog.findAllByType('button').find(node=>node.children.join('')==='Refresh epoch list').props.onClick());
+  await h.waitFor(()=>!!row(h,1)&&h.root.findAllByType('dialog').length===0);
+  assert.equal(h.viewer.treePane.listProps.disabled,false);
+ }finally{await h.close();}
+});
+
+
+test('frozen Inspector asks its owner only on explicit refresh and honors owner refusal',async()=>{
+ const h=await createInspectorHarness();let allowed=false,calls=0;
+ const frozen={...props,readContext:{root:'/protocols/protocol-A/workbench/candidates/candidate-A',candidate_scope_revision:'query-A',cohort_key:'cohort-A'},onRefreshEpochs:()=>{calls++;return allowed;}};
+ try{
+  h.fixture.page=page;await h.render(frozen);let accepted;
+  const before=h.viewer.treePane.listProps.revision;
+  await h.act(()=>{accepted=h.viewer.treePane.listProps.onRecoverEpochs();});assert.equal(accepted,false);assert.equal(calls,0);
+  await h.act(()=>{accepted=h.viewer.treePane.listProps.onRecoverEpochs(true);});assert.equal(accepted,false);assert.equal(calls,1);
+  assert.equal(h.viewer.treePane.listProps.revision,before);
+  allowed=true;await h.act(()=>{accepted=h.viewer.treePane.listProps.onRecoverEpochs(true);});assert.equal(accepted,true);assert.equal(calls,2);
+  assert.notEqual(h.viewer.treePane.listProps.revision,before);
+  assert.equal(h.viewer.treePane.listProps.source.readContext.root,frozen.readContext.root);
+ }finally{await h.close();}
+});
+
+
+test('mounted frozen Inspector refresh retires its faulted child even when cohort identity is unchanged',async()=>{
+ const h=await createWorkflowHarness({total:500,frozenTraces:true});let stale=true,ownerCalls=0;
+ const context={root:'/protocols/protocol-A/workbench/candidates/candidate-A',candidate_scope_revision:'scope-A',cohort_key:'cohort-A'};
+ try{
+  h.fixture.respond=(url,options,normal)=>{
+   const original=url.pathname;
+   if(original.includes('/workbench/candidates/candidate-A')){
+    url.pathname=original.replace('/workbench/candidates/candidate-A','');
+    if(url.pathname.includes('/epochs/'))url.pathname=url.pathname.replace('/protocols/protocol-A','');
+    const data=normal();url.pathname=original;
+    if(original.endsWith('/epochs')&&url.searchParams.has('cell_uuid')&&stale)return {...data,query_revision:'stale-child'};
+    return data;
+   }
+   return normal();
+  };
+  const Inspector=await h.component('Inspector');
+  await h.mount(Inspector,{...props,protocol:{...props.protocol,query_revision:'query-0',cells:[{cell_uuid:'cell-0',date:'2026-09-29',label:'Cell 0',epochs:500}]},initialEpochUuid:'epoch-0',readContext:context,onRefreshEpochs:()=>{ownerCalls++;return true;}});
+  await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);
+  await h.act(()=>h.root.findAllByType('details').find(node=>node.props.className==='cell-tree-date').props.onToggle({currentTarget:{open:true}}));
+  await h.act(()=>h.root.findAllByType('details').find(node=>node.props.className==='cell-tree-cell').props.onToggle({currentTarget:{open:true}}));
+  await h.waitFor(()=>h.root.findAllByType('dialog').length===1);assert.equal(ownerCalls,0);
+  stale=false;
+  await h.act(()=>h.root.findByType('dialog').findAllByType('button').find(node=>node.children.join('')==='Refresh epoch list').props.onClick());
+  await h.waitFor(()=>!!row(h,1)&&h.root.findAllByType('dialog').length===0);
+  assert.equal(ownerCalls,1);assert.equal(h.viewer.treePane.listProps.source.readContext.cohort_key,'cohort-A');
+  const reads=h.fixture.requests.filter(item=>item.path.includes('/epochs?'));
+  assert.ok(reads.every(item=>item.path.startsWith(context.root+'/epochs?')&&item.path.includes('candidate_scope_revision=scope-A')));
+ }finally{await h.close();}
+});
+
+
+test('a stale anchor read recovers without trapping the pending navigation intent',async()=>{
+ const h=await createWorkflowHarness({total:500});let failures=0;
+ try{
+  const Inspector=await h.component('Inspector');await h.mount(Inspector,{...props,protocol:{...props.protocol,query_revision:'query-0'},initialEpochUuid:'epoch-0'});
+  await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);
+  h.fixture.respond=(url,options,normal)=>{if(url.pathname.endsWith('/epochs')&&url.searchParams.has('anchor_uuid')&&failures++===0)return {failure:409,error:'Saved decisions changed during read'};return normal();};
+  await h.act(()=>h.viewer.treePane.listProps.onFocus('epoch-70'));
+  await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-70'&&!h.viewer.navigation.loading&&!h.viewer.treePane.listProps.disabled);
+  assert.equal(h.fixture.requests.filter(item=>item.path.includes('anchor_uuid=epoch-70')).length,2);
+  assert.equal(h.fixture.requests.some(item=>item.method!=='GET'),false);
+ }finally{await h.close();}
+});

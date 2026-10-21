@@ -29,11 +29,11 @@ test('bounded selection refuses oversized ranges before loading',async()=>{
 });
 test('same endpoints and counts cannot conceal a different query revision inside a range',async()=>{
   await assert.rejects(epochSelectionRange({cells,anchor:endpoint('a',58),target:endpoint('a',63),
-    loadPage:async(cell,offset)=>({...await loadPage(cell,offset),query_revision:offset?'query-B':'query-A'})}),/query changed/);
+    loadPage:async(cell,offset)=>({...await loadPage(cell,offset),query_revision:offset?'query-B':'query-A'})}),/epoch list is out of date/);
   await assert.rejects(epochSelectionRange({cells,anchor:endpoint('a',58),target:{...endpoint('a',63),revision:'query-B'},
-    loadPage:()=>assert.fail('Endpoint revisions must agree before loading')}),/query changed/);
+    loadPage:()=>assert.fail('Endpoint revisions must agree before loading')}),/epoch list is out of date/);
   await assert.rejects(epochSelectionRange({cells,anchor:endpoint('a',58),target:endpoint('a',63),
-    loadPage:async(cell,offset)=>({...await loadPage(cell,offset),query_revision:undefined})}),/query changed/);
+    loadPage:async(cell,offset)=>({...await loadPage(cell,offset),query_revision:undefined})}),/epoch list is out of date/);
 });
 test('predicate ranges validate the explicit explorer revision receipt',async()=>{
   assert.deepEqual(await epochSelectionRange({cells,anchor:endpoint('a',63),target:endpoint('b',2),

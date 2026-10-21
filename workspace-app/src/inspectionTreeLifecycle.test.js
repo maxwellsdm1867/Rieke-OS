@@ -87,7 +87,7 @@ test('protocol and predicate range pages require consistent receipts despite unc
    await h.render({...base,source,onFocus(){},setTargets:ids=>published.push(ids)});
    await h.selectEpoch(58,{},'cell-A',pageAt('cell-A',0,'query-A',kind));published.length=0;
    const {work}=await h.selectEpoch(63,{shiftKey:true},'cell-A',pageAt('cell-A',60,'query-A',kind));
-   await h.act(()=>work);assert.deepEqual(published,[]);assert.match(h.errors[0],/query changed/);
+   await h.act(()=>work);assert.deepEqual(published,[]);assert.match(h.errors[0],/epoch list is out of date/);
    await h.unmount();
   }
  }finally{await h.close();}
@@ -169,7 +169,7 @@ test('scrolling appends bounded pages with original ordinals and retires changed
   h.network.page=(source,request)=>({loading:false,error:null,reload(){},data:pageAt(request.cellUuid,request.offset,request.offset?'changed':'query-A')});
   await h.render(props);await h.toggle(0,true);await h.toggle(1,true);
   await h.act(()=>h.buttons.find(button=>button.children==='Load more epochs').onClick());
-  assert.match(h.errors.join(' '),/query changed/i);
+  assert.match(h.errors.join(' '),/epoch list is out of date/i);
   assert.equal(h.buttons.some(button=>button['aria-label']?.startsWith('Inspect ')),false);
  }finally{await h.close();}
 });
@@ -184,7 +184,7 @@ test('keyboard focus reveals later rows without a visible sentinel and rejects b
   h.network.page=(source,request)=>({loading:false,error:null,reload(){},data:{...pageAt(request.cellUuid,request.offset),expected_binding_version:request.offset?2:1}});
   await h.render(props);await h.toggle(0,true);await h.toggle(1,true);
   await h.act(()=>h.buttons.find(button=>button.children==='Load more epochs').onClick());
-  assert.match(h.errors.join(' '),/list changed/i);
+  assert.match(h.errors.join(' '),/epoch list (is out of date|could not be verified)/i);
   assert.equal(h.buttons.some(button=>button['aria-label']?.startsWith('Inspect ')),false);
  }finally{await h.close();}
 });
@@ -195,7 +195,7 @@ test('malformed continuation renders retry instead of publishing rows or crashin
   h.network.page=(source,request)=>({loading:false,error:null,reload(){},data:request.offset?{...pageAt(request.cellUuid,request.offset),epochs:{invalid:true}}:pageAt(request.cellUuid,request.offset)});
   await h.render(props);await h.toggle(0,true);await h.toggle(1,true);
   await h.act(()=>h.buttons.find(button=>button.children==='Load more epochs').onClick());
-  assert.match(h.errors.join(' '),/list changed/i);
+  assert.match(h.errors.join(' '),/epoch list (is out of date|could not be verified)/i);
  }finally{await h.close();}
 });
 
@@ -298,5 +298,60 @@ test('focus, highlight and selection changes re-render only the cell branches wh
   // A data function change (tag/curation overlay) still re-renders every row.
   await h.render({...props,focused:'cell-A-2',targets:['cell-B-1'],inclusionForEpoch:epoch=>{rendered.push(epoch.cell_uuid);return epoch;}});
   assert.ok(count('cell-A')>0&&count('cell-B')>0);
+ }finally{await h.close();}
+});
+
+
+test('stale child page requests parent recovery, while malformed and frozen pages fail closed',async()=>{
+ const h=await createInspectionHarness();
+ try{
+  for(const mode of ['stale','malformed','frozen']){
+   let renewals=0;
+   h.network.page=(source,request)=>({loading:false,error:null,reload(){},data:mode==='malformed'?{...pageAt(request.cellUuid,request.offset),query_revision:undefined}:pageAt(request.cellUuid,request.offset,'query-B')});
+   const props={...base,setTargets(){assert.fail('read recovery must not select');},onRecoverEpochs:()=>{renewals++;return true;},...(mode==='frozen'?{source:{...sourceA,readContext:{cohort_key:'frozen'}}}:{})};
+   await h.render(props);await h.toggle(0,true);await h.toggle(1,true);
+   assert.equal(renewals,mode==='stale'?1:0,mode);
+   assert.equal(h.buttons.some(button=>button['aria-label']?.startsWith('Inspect ')),false);
+   if(mode==='stale'){
+    await h.render({...props,revision:2,source:{...sourceA,queryRevision:'query-B'}});
+    assert.equal(h.errors.length,0);assert.equal(h.buttons.filter(button=>button['aria-label']?.startsWith('Inspect ')).length,60);
+    assert.equal(h.details[0].open,true);assert.equal(h.details[1].open,true);
+   }
+   await h.unmount();
+  }
+ }finally{await h.close();}
+});
+
+
+test('simultaneous child faults show one dialog; refresh survives collapsing the first faulted cell',async()=>{
+ const h=await createInspectionHarness();let reads=0;
+ try{
+  let stale=true;
+  h.network.page=(source,request)=>{reads++;return {loading:false,error:null,reload(){},data:pageAt(request.cellUuid,request.offset,stale?'query-B':'query-A')};};
+  await h.render({...base,setTargets(){}});await h.toggle(0,true);await h.toggle(1,true);await h.toggle(2,true);
+  assert.equal(h.buttons.filter(button=>button.children==='Later').length,1);
+  await h.toggle(1,false);stale=false;
+  const before=reads;
+  await h.act(()=>h.buttons.find(button=>button.className==='primary'&&button.children==='Refresh epoch list').onClick());
+  assert.ok(reads>before);assert.equal(h.buttons.filter(button=>button.children==='Later').length,0);
+  assert.ok(h.buttons.some(button=>button['aria-label']?.startsWith('Inspect ')));
+ }finally{await h.close();}
+});
+
+
+test('frozen fallback refresh re-reads the exact context after a fault without silently changing cohorts',async()=>{
+ const h=await createInspectionHarness({realPages:true}),calls=[];
+ const source={...sourceA,readContext:{root:'/protocols/protocol-A/workbench/candidates/candidate-A',candidate_scope_revision:'frozen-A',cohort_key:'cohort-A'}};
+ h.network.api=async(path,options)=>{calls.push({path,options});return pageAt('cell-A',0,calls.length===1?'query-B':'query-A');};
+ try{
+  await h.render({...base,source,setTargets(){assert.fail('refresh must not select');}});await h.toggle(0,true);await h.toggle(1,true);
+  assert.equal(calls.length,1,'frozen mismatch must not retry automatically');
+  const refresh=h.buttons.find(button=>button.className==='primary'&&button.children==='Refresh epoch list');assert.ok(refresh);
+  await h.act(()=>refresh.onClick());
+  assert.equal(calls.length,2);assert.equal(calls[0].path,calls[1].path);
+  assert.ok(calls[1].path.includes('/workbench/candidates/candidate-A/epochs?'));
+  assert.equal(new URLSearchParams(calls[1].path.split('?')[1]).get('candidate_scope_revision'),'frozen-A');
+  assert.equal(h.buttons.filter(button=>button.children==='Later').length,0);
+  assert.ok(h.buttons.some(button=>button['aria-label']?.startsWith('Inspect ')));
  }finally{await h.close();}
 });

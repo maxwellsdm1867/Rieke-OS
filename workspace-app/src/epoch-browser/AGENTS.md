@@ -271,3 +271,32 @@ on those routes. Range selection spans loaded cells, as in predicate inspection.
 autoload loop when type/date groups are collapsed; its button supports explicit
 load/retry. Tests: `useCellWindows.test.js`, `cellWindows.test.js`,
 `../inspectorNavigationLifecycle.test.js`, `../pagedOverviewLists.test.js`.
+
+
+## Stale-list recovery
+
+`useEpochListRecovery.js` owns a bounded read-renewal generation and live callback
+fences. Main Inspector renews central epoch/cell receipts and expanded pages
+together after a valid stale receipt or HTTP 409 from a read. One automatic
+attempt is allowed per semantic owner and known update generation; unchanged
+browsing does not poll, run metadata refresh, hash recordings, or replay writes.
+Recovery generations change authority/read keys, not navigation presentation.
+Existing UUID intent remains inert until ordinary fresh authority checks pass.
+Malformed pages remain explicit failures. Own confirmed curation receipt chains
+retain their existing equivalence rule.
+
+`ui/EpochListRefreshDialog.jsx` is the retained-view-aware fallback. The tree owns
+one dialog and explicit local retry generation; it never retains a callback into
+an unmounted child cell. Repeated drift stops automatic retry and offers Refresh.
+Predicate refresh invokes its existing parent refresh explicitly. Frozen reads
+never auto-renew or fall back to a live/global query. Inspector's optional
+`onRefreshEpochs(): boolean` asks the frozen owner to renew its context on an
+explicit click: return false when a write/recovery forbids renewal, true after
+scheduling it. Refusal must not fall through to a different refresh path. Without
+that callback, explicit frozen refresh re-reads the exact same context.
+
+Regression examples: `inspectionTreeLifecycle.test.js` covers stale/malformed
+pages, a single dialog, collapsed-cell retry and exact frozen retry;
+`inspectorNavigationLifecycle.test.js` covers real parent/child renewal, bounded
+request counts/no polling, fresh action gates, owner refusal and retained UUID
+intent. These mounted tests exclude native paint and real recording I/O.

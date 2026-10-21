@@ -21,7 +21,7 @@ export function useEpochBrowserPage(source,page,revision=0,reads=null){
     const send=attempt.current.fresh&&refresh?refresh:transport;
     const controller=new AbortController(),{path,options}=JSON.parse(request);
     setState({data:null,loading:true,error:null,key,owner,transport});
-    send(path,{...options,signal:controller.signal}).then(data=>{if(!controller.signal.aborted)setState({data,loading:false,error:null,key,owner,transport});}).catch(error=>{if(!controller.signal.aborted)setState({data:null,loading:false,error:error.message,key,owner,transport});});
+    send(path,{...options,signal:controller.signal}).then(data=>{if(!controller.signal.aborted)setState({data,loading:false,error:null,key,owner,transport});}).catch(error=>{if(!controller.signal.aborted)setState({data:null,loading:false,error:error.message,errorStatus:error.status??null,key,owner,transport});});
     return()=>controller.abort();
   },[key,request,owner,transport,refresh,active]);
   return {...(state.key===key&&state.owner===owner&&state.transport===transport?state:{data:null,loading:true,error:null}),reload:()=>setNonce(value=>value+1)};

@@ -29,6 +29,7 @@ export function epochPageRevision(source,page){
   const chained=protocol&&!source.readContext,same=value=>chained?curationReceipts.canonical(source.protocolId,value):value;
   const actual=protocol?page?.query_revision:page?.revision;
   const expected=protocol?source.queryRevision:source.treeRevision;
-  if(typeof actual!=='string'||!actual||((expected!==undefined&&expected!==null)&&same(actual)!==same(expected)))throw new Error('Epoch query changed. Refresh and select again.');
+  if(typeof actual!=='string'||!actual)throw new Error('The epoch list could not be verified. Reload the list.');
+  if(expected!==undefined&&expected!==null&&same(actual)!==same(expected))throw Object.assign(new Error('The epoch list is out of date. Reload the list.'),{code:'epoch_list_stale'});
   return same(actual);
 }

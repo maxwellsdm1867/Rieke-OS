@@ -1,3 +1,4 @@
+import EpochListRefreshDialog from './EpochListRefreshDialog.jsx';
 import {tagStore} from '../../annotations/tagStore.js';
 import {useWorkspaceRequest,useWorkspaceRequestScope} from '../../workspaceRequest.js';
 import {IncomingEpochSelect} from '../../incoming-workbench/ui/IncomingTreeSelection.jsx';
@@ -6,7 +7,7 @@ import {loadIncomingSelection} from '../../incoming-workbench/incomingSelection.
 import {frozenPresentationScope} from '../frozenReadContext.js';
 import StableContent from '../../components/StableContent.jsx';
 import {epochIncluded} from '../../incoming-workbench/incomingReviewDecision.js';
-import {memo,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
+import {memo,useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import EpochInclusionToggle from './EpochInclusionToggle.jsx';
 import {api as defaultApi,humanize} from '../../api.js';
 import {epochPageRequest,epochPageRevision} from '../epochBrowserSource.js';
@@ -32,18 +33,18 @@ function CellEpochPage({rowRegistry,highlightedEpochs,cell,offset,restoreOffset,
   // Set lookups keep row rendering linear in visible rows, not rows x selection.
   const seenIds=useMemo(()=>new Set(seen),[seen]),targetIds=useMemo(()=>new Set(targets),[targets]),highlightedIds=useMemo(()=>highlightedEpochs?new Set(highlightedEpochs):null,[highlightedEpochs]);
   const childSeen=useMemo(()=>Array.isArray(page.data?.epochs)?[...seen,...page.data.epochs.map(row=>row.epoch_uuid)]:seen,[seen,page.data]);
-  let receipt=null,problem=null;
+  let receipt=null,problem=page.errorStatus===409?Object.assign(new Error('The epoch list is out of date. Refresh the list.'),{code:'epoch_list_stale'}):null;
   if(page.data){
     try{
       const data=page.data,rows=data.epochs;
-      receipt=JSON.stringify([epochPageRevision(source,data),data.total,data.expected_binding_version??null]);
       if(!Number.isInteger(data.total)||data.total<0||data.offset!==offset||!Array.isArray(rows)||rows.length>pageSize||
           rows.length!==Math.min(pageSize,Math.max(0,data.total-offset))||
-          rows.some(row=>!row||row.cell_uuid!==cell.cell_uuid||typeof row.epoch_uuid!=='string'||!row.epoch_uuid||seenIds.has(row.epoch_uuid))||new Set(rows.map(row=>row.epoch_uuid)).size!==rows.length||
-          (expected!==null&&expected!==receipt))throw Error('Epoch list changed while scrolling. Reload the list.');
-    }catch(error){problem=error.message;}
+          rows.some(row=>!row||row.cell_uuid!==cell.cell_uuid||typeof row.epoch_uuid!=='string'||!row.epoch_uuid||seenIds.has(row.epoch_uuid))||new Set(rows.map(row=>row.epoch_uuid)).size!==rows.length)throw Error('The epoch list could not be verified. Refresh the list.');
+      receipt=JSON.stringify([epochPageRevision(source,data),data.total,data.expected_binding_version??null]);
+      if(expected!==null&&expected!==receipt)throw Object.assign(Error('The epoch list is out of date. Refresh the list.'),{code:'epoch_list_stale'});
+    }catch(error){problem=error;}
   }
-  useLayoutEffect(()=>{if(problem)onFault(problem);else if(page.data&&!page.loading&&!page.error)onFrontier(offset);},[problem,receipt,page.loading,page.error,offset]);
+  useLayoutEffect(()=>{if(problem)onFault(problem);else if(page.data&&!page.loading&&!page.error)onFrontier(offset);},[problem?.message,problem?.code,receipt,page.loading,page.error,offset]);
   const ready=!!page.data&&!page.loading&&!page.error&&!problem;
   if(ready&&rowRegistry)for(const row of page.data.epochs)rowRegistry.add(row.epoch_uuid);
   const more=ready&&offset+page.data.epochs.length<page.data.total;
@@ -72,11 +73,17 @@ function CellEpochPage({rowRegistry,highlightedEpochs,cell,offset,restoreOffset,
   return <div data-inspection-page-ready={ready}><Status {...page} retry={page.reload}>{content}</Status></div>;
 }
 const MemoCellEpochPage=memo(CellEpochPage);
-function CellEpochs({offset,onFrontier,...props}){
+function CellEpochs({offset,onFrontier,onRecoverEpochs,onListFault,onListRefresh,...props}){
   const [fault,setFault]=useState(null),[attempt,setAttempt]=useState(0),[frontier,setFrontier]=useState(-1);
   const restoredOffset=useRef(offset);
   const loaded=value=>{setFrontier(old=>Math.max(old,value));onFrontier(value);};
-  if(fault)return <div data-inspection-page-ready={false} role="alert">{fault} <button onClick={()=>{setFault(null);setAttempt(value=>value+1);setFrontier(-1);}}>Reload epochs</button></div>;
+  const retry=()=>{if(onListRefresh){onListRefresh();return;}setFault(null);setAttempt(value=>value+1);setFrontier(-1);};
+  useEffect(()=>{
+    if(!fault||props.recoveryPending)return;
+    if(fault.code==='epoch_list_stale'&&props.source.kind==='protocol'&&!props.source.readContext&&onRecoverEpochs?.())return;
+    onListFault?.({message:fault.message});
+  },[fault,onRecoverEpochs,onListFault,props.source.readContext,props.recoveryPending]);
+  if(fault)return <div data-inspection-page-ready={false} role="alert">{fault.message} <button onClick={retry}>Refresh epoch list</button> <a href="#project-metadata-refresh">Refresh metadata in toolbar</a></div>;
   return <div data-inspection-page-ready={frontier>=restoredOffset.current}><MemoCellEpochPage key={attempt} {...props} offset={0} restoreOffset={restoredOffset.current} expected={null} onFault={setFault} onFrontier={loaded}/></div>;
 }
 function CellBranch({cell,dateOpen,onSelectCell,onSelectGroupCell,onTagCell,selectedCell,navigation,changeNavigation,rememberFrontier,liveTree,rowRegistries,...props}){
@@ -95,7 +102,7 @@ function CellBranch({cell,dateOpen,onSelectCell,onSelectGroupCell,onTagCell,sele
       // Read live focus: a memoized branch can skip renders for unrelated focus.
       const {focusedCell,onTargetCell}=liveTree.current;
       if(!props.browseOnly||!focusedCell)onSelectCell?.(cell);else if(focusedCell===cell.cell_uuid)onTargetCell?.(cell);}} aria-label={datedCellLabel(cell,true)} aria-description={tags} title={[cell.identity_qualifier&&cell.cell_uuid,tags].filter(Boolean).join('\n')||undefined}><strong>{cell.label||cell.cell_label||'Unlabeled cell'}</strong>{cell.identity_qualifier&&<span> · {cell.identity_qualifier}</span>}{props.source.readContext&&!props.browseOnly&&<TreeGroupTagButton label="Tag This Cell" count={cell.epochs} disabled={props.disabled} onSelect={event=>onSelectGroupCell(cell,event)} onClick={event=>onTagCell(cell,event)}/>}</summary>
-    {dateOpen&&open&&<CellEpochs key={props.source.readContext?.cohort_key?frozenPresentationScope(props.source.readContext,props.source.protocolId,props.source.query):JSON.stringify([props.source,props.revision,cell.cell_uuid,cell.epochs])} cell={cell} offset={offset} onFrontier={onFrontier} rowRegistry={rowRegistry} {...props}/>}
+    {dateOpen&&open&&<CellEpochs key={props.source.readContext?.cohort_key?JSON.stringify([frozenPresentationScope(props.source.readContext,props.source.protocolId,props.source.query),props.refreshGeneration]):JSON.stringify([props.source,props.revision,cell.cell_uuid,cell.epochs])} cell={cell} offset={offset} onFrontier={onFrontier} rowRegistry={rowRegistry} {...props}/>}
   </details>;
 }
 // A branch re-renders for focus/selection/highlight changes only when they
@@ -140,10 +147,19 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
   const liveTree=useRef({});
   const registries=useRef(new Map());
   const rowRegistries=useMemo(()=>cellUuid=>{let rows=registries.current.get(cellUuid);if(!rows){rows=new Set();registries.current.set(cellUuid,rows);}return rows;},[]);
-  const pageReadScope=JSON.stringify([source,props.revision]);
+  const [localRefresh,setLocalRefresh]=useState(0);
+  const listRevision=JSON.stringify([props.revision,localRefresh]);
+  const pageReadScope=JSON.stringify([source,listRevision]);
   // Loaded-row registries only narrow re-renders; a new read scope starts empty.
   useMemo(()=>registries.current.clear(),[pageReadScope]);
   const pageReads=useMemo(()=>createEpochPageReads(api),[pageReadScope,api,requestScope]);
+  const [listFault,setListFault]=useState(null),faultOwner=useRef(null);
+  useLayoutEffect(()=>{faultOwner.current=pageReads;return()=>{faultOwner.current=null;};},[pageReads]);
+  const reportListFault=useCallback(fault=>{if(faultOwner.current===pageReads)setListFault(old=>old?.owner===pageReads?old:{...fault,owner:pageReads});},[pageReads]);
+  const refreshList=useCallback(()=>{if(faultOwner.current!==pageReads)return;if(props.onRecoverEpochs){if(!props.onRecoverEpochs(true))return;}else setLocalRefresh(value=>value+1);setListFault(null);},[pageReads,props.onRecoverEpochs]);
+  const refreshDialog=listFault?.owner===pageReads?<EpochListRefreshDialog message={listFault.message}
+    onClose={()=>{if(faultOwner.current===pageReads)setListFault(null);}}
+    onRefresh={refreshList}/>:null;
   const groupTags=useTreeGroupTags({readContext:props.source.readContext,protocolId:props.source.protocolId,filters:{},revision:props.revision,actionsDisabled:disabled,onAnnotationsChanged:props.onAnnotationsChanged});
   const dates=useMemo(()=>inspectionDates(cells),[cells]);
   const ordered=useMemo(()=>dates.flatMap(group=>group.cells),[dates]);
@@ -276,7 +292,7 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
   const stableActions={onSelect:actions.onSelect,onSelectCell:actions.onSelectCell,onSelectGroupCell:actions.onSelectGroupCell,onTagCell:actions.onTagCell,
     changeNavigation:actions.changeNavigation,rememberFrontier:actions.rememberFrontier,onFocus:onFocus?actions.onFocus:undefined,setTargets:setTargets?actions.setTargets:undefined,
     onTagEpoch:actions.onTagEpoch,onToggleInclusion:props.onToggleInclusion?actions.onToggleInclusion:undefined,onTargetCell:props.onTargetCell?actions.onTargetCell:undefined};
-  return <div ref={treeElement} data-inspection-membership-ready={membershipReady} className="inspection-cell-tree" aria-label="All matching dates, cells and epochs" title={props.setHighlightedEpochs?"⌘/Ctrl-click to highlight epochs; Shift-click for a range":"⌘/Ctrl-click to select epochs; Shift-click for a range"}>{groupTags.dialog}{error&&<p role="alert">{error}</p>}{selecting&&<p role="status">Selecting epoch range…</p>}{!dates.length&&<p role="status">No epochs match the current filters.</p>}{dates.map(group=><MemoDateBranch key={group.date} group={group} {...props} {...stableActions} source={stableSource} liveTree={liveTree} rowRegistries={rowRegistries} pageReads={pageReads} navigation={navigation} targets={targets.length?targets:NO_IDS} disabled={disabled||selecting} navigationDisabled={navigationDisabled||selecting}/>)}{cellsMore&&<CellsWindow {...cellsMore}/>}</div>;
+  return <div ref={treeElement} data-inspection-membership-ready={membershipReady} className="inspection-cell-tree" aria-label="All matching dates, cells and epochs" title={props.setHighlightedEpochs?"⌘/Ctrl-click to highlight epochs; Shift-click for a range":"⌘/Ctrl-click to select epochs; Shift-click for a range"}>{groupTags.dialog}{refreshDialog}{error&&<p role="alert">{error}</p>}{selecting&&<p role="status">Selecting epoch range…</p>}{!dates.length&&<p role="status">No epochs match the current filters.</p>}{dates.map(group=><MemoDateBranch key={group.date} group={group} {...props} {...stableActions} recoveryPending={!membershipReady} onListFault={reportListFault} onListRefresh={refreshList} refreshGeneration={JSON.stringify([props.refreshGeneration??0,localRefresh])} revision={listRevision} source={stableSource} liveTree={liveTree} rowRegistries={rowRegistries} pageReads={pageReads} navigation={navigation} targets={targets.length?targets:NO_IDS} disabled={disabled||selecting} navigationDisabled={navigationDisabled||selecting}/>)}{cellsMore&&<CellsWindow {...cellsMore}/>}</div>;
 
 }
 

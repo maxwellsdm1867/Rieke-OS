@@ -25,8 +25,8 @@ test('protocol and predicate revisions retain their source-specific receipt cont
  const protocol={kind:'protocol',queryRevision:'protocol-A'},predicate={kind:'predicate',treeRevision:'explorer-A'};
  assert.equal(epochPageRevision(protocol,{query_revision:'protocol-A',revision:'other'}),'protocol-A');
  assert.equal(epochPageRevision(predicate,{revision:'explorer-A',query_revision:'other'}),'explorer-A');
- for(const page of [{query_revision:'protocol-B'},{revision:'protocol-A'},{}])assert.throws(()=>epochPageRevision(protocol,page),/query changed/);
- for(const page of [{revision:'explorer-B'},{query_revision:'explorer-A'},{}])assert.throws(()=>epochPageRevision(predicate,page),/query changed/);
+ for(const page of [{query_revision:'protocol-B'},{revision:'protocol-A'},{}])assert.throws(()=>epochPageRevision(protocol,page),/epoch list (is out of date|could not be verified)/);
+ for(const page of [{revision:'explorer-B'},{query_revision:'explorer-A'},{}])assert.throws(()=>epochPageRevision(predicate,page),/epoch list (is out of date|could not be verified)/);
  assert.equal(epochPageRevision({kind:'protocol'},{query_revision:'observed'}),'observed');
 });
 
@@ -39,4 +39,11 @@ test('predicate pages bound the cell list when asked: cells_limit and cells_afte
   const next=epochPageRequest(source,{includeCells:true,cellsLimit:200,cellsAfter:200}).options.body;
   assert.deepEqual([next.cells_limit,next.cells_after],[200,200]);
   assert.equal(epochPageRequest(source,{cellsLimit:200}).options.body.cells_limit,undefined,'no cell window without include_cells');
+});
+
+
+test('stale receipt is recoverable but missing receipt is an integrity failure',()=>{
+ const source={kind:'protocol',protocolId:'p',queryRevision:'before'};
+ assert.throws(()=>epochPageRevision(source,{query_revision:'after'}),error=>error.code==='epoch_list_stale');
+ assert.throws(()=>epochPageRevision(source,{}),error=>!error.code);
 });

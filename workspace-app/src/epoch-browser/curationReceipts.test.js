@@ -27,7 +27,7 @@ test('page chains compare through the receipt chain; frozen sources never do',()
  curationReceipts.record('P',{sentRevision:'q0',bindingVersion:2,epochUuids:['e1'],receipt:receipt('q1')});
  try{
   assert.equal(epochPageRevision({kind:'protocol',protocolId:'P',queryRevision:'q0'},{query_revision:'q1'}),'q0');
-  assert.throws(()=>epochPageRevision({kind:'protocol',protocolId:'P',queryRevision:'q0'},{query_revision:'zz'}),/changed/);
-  assert.throws(()=>epochPageRevision({kind:'protocol',protocolId:'P',queryRevision:'q0',readContext:{root:'/x'}},{query_revision:'q1'}),/changed/);
+  assert.throws(()=>epochPageRevision({kind:'protocol',protocolId:'P',queryRevision:'q0'},{query_revision:'zz'}),/epoch list is out of date/);
+  assert.throws(()=>epochPageRevision({kind:'protocol',protocolId:'P',queryRevision:'q0',readContext:{root:'/x'}},{query_revision:'q1'}),/epoch list is out of date/);
  }finally{curationReceipts.clear('P');}
 });
