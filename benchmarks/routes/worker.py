@@ -517,7 +517,7 @@ def main():
     OWNED_CLEANUP.append(('summary_jobs_closed', lambda: close_summary_jobs(service)))
     prepared_capability = any('prepare_' + name + '_publication' in app.extensions for name in ('tree', 'overview'))
     if prepared_capability:
-        from publication_fixture import install_authority, prepare_views
+        from publication_fixture import install_authority, prepare_views, declare_saved_layout
         install_authority(fixture, app, JOURNAL)
         for name in ('tree', 'overview'):
             close = app.extensions.get('close_' + name + '_publication')
@@ -568,7 +568,8 @@ def main():
 
     if prepared_capability:
         preparation_started = time.perf_counter()
-        result['preparation'] = prepare_views(app)
+        scenario_layout = declare_saved_layout(fixture, app)
+        result['preparation'] = {'scenario_saved_layout': scenario_layout, **prepare_views(app)}
         report('prepared_publication', seconds=time.perf_counter() - preparation_started,
                receipts=result['preparation'], rss=rss())
 

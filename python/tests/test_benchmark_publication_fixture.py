@@ -64,6 +64,17 @@ class PublicationAuthorityFixtureTests(unittest.TestCase):
         feed = self.case.app.extensions['benchmark_recovery_authority']['feed']
         self.assertEqual(len(feed), RECOVERY_WINDOW)
 
+    def test_declared_layout_uses_saved_view_owner_without_membership_changes(self):
+        from benchmarks.workflow.publication_fixture import declare_saved_layout
+        import copy
+        before = copy.deepcopy(self.case.protocol_bindings.rows)
+        fixture = SimpleNamespace(case=self.case)
+        receipt = declare_saved_layout(fixture, self.case.app)
+        self.assertEqual(receipt['split_order'], ['date', 'cell', 'block'])
+        self.assertFalse(receipt['membership_changed'])
+        self.assertEqual(self.case.protocol_bindings.rows, before)
+        self.assertEqual(self.case.app.extensions['tree_layouts'].read(self.protocol)['version'], 1)
+
     def test_changed_clock_refuses_and_rolls_back_capture(self):
         before = self.tracker.token()
         with self.assertRaisesRegex(ValueError, 'snapshot changed'):

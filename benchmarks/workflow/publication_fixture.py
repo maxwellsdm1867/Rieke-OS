@@ -229,6 +229,21 @@ def close_summary_jobs(service):
         if worker.is_alive():raise RuntimeError('Owned summary worker did not stop')
 
 
+def declare_saved_layout(fixture, app, fields=('date', 'cell', 'block')):
+    """Declare the benchmark's actual saved UI layout before publication work."""
+    owner = app.extensions.get('tree_layouts')
+    if owner is None:
+        from disco.navigation.tree_layouts import TreeLayouts
+        owner = app.extensions['tree_layouts'] = TreeLayouts(fixture.case.store)
+    protocol = fixture.case.service.protocol_id
+    previous = owner.read(protocol)
+    started = time.perf_counter()
+    saved = owner.save(protocol, list(fields), previous['version'] if previous else 0, 'owned-benchmark')
+    return {'status': 'ready', 'protocol_uuid': protocol, 'split_order': saved['split_order'],
+            'version': saved['version'], 'elapsed_seconds': time.perf_counter() - started,
+            'membership_changed': False}
+
+
 def prepare_views(app):
     """Named explicit preparation, before requests; retain each owner's timing."""
     import psutil
@@ -294,6 +309,7 @@ def publish_browser_fixture(fixture, app, output, journal):
         if close is not None:fixture.addCleanup(close)
     navigation = app.extensions.get('disco.navigation.prepared')
     if navigation is not None:fixture.addCleanup(navigation.close)
-    return {'authority': 'production owners over transactional SQL leaf doubles',
+    scenario = declare_saved_layout(fixture, app)
+    return {'scenario_saved_layout': scenario, 'authority': 'production owners over transactional SQL leaf doubles',
             'native_sql_qualification': False, 'native_metadata_index': True, 'typed_index': typed,
             'preparation': prepare_views(app)}
