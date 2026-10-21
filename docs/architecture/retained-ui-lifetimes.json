@@ -2716,10 +2716,10 @@
       ]
     },
     "src/protocol-overview/overviewCache.js": {
-      "fingerprint": "54a0be49e26796b1606fff630d58cceb3a480ed33d9775faa087bf6cb3caf12c",
+      "fingerprint": "8062ef170013abb8770fe0a0b58323efd52b312a6a7b6b4ee935c58c3c7ff80b",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. F2 typed-change-events review (2026-10-18): invalidate accepts an entry predicate. Prepared-view review (2026-10-20): Preparation-required failures clear current data and retain structured state; they never admit 202 bodies as overview data. Existing inert display and cache cancellation ownership remain.",
+      "reason": "Delayed project prefetch visits only still-invalidated entries; a foreground protocol read retains its own revision clock and cannot be replaced or aborted by a delayed project clock.",
       "tests": [
         "src/preparedRead.test.js",
         "src/presentationSessionsApp.test.js",
@@ -2727,7 +2727,8 @@
         "src/protocol-overview/overviewCache.test.js",
         "src/protocol-overview/overviewDemand.test.js",
         "src/tree-browser/preparedTreeMount.test.js",
-        "src/workspaceChangesLedger.test.js"
+        "src/workspaceChangesLedger.test.js",
+        "src/overviewSwitching.test.js"
       ]
     },
     "src/protocol-overview/protocolOverviewModel.js": {

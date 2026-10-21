@@ -38,6 +38,8 @@ test('project overview stays cached across protocol navigation in actual App',as
  h.fixture.route={page:'protocol',protocol:'protocol-A',key:'route-1'};
  try{
   await h.mount();await h.waitFor(()=>summary(h));
+  await h.settle(260); // Let the delayed project prefetch run before navigation.
+  assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview?cells_limit=200').length,1,'startup prefetch must preserve the protocol-owned summary');
   const count=h.fixture.requests.filter(r=>r.path==='/overview?cells_limit=200').length;
   await h.act(()=>h.fixture.navigate('overview'));
   await h.act(()=>h.fixture.navigate('protocol',{protocol:'protocol-A'}));await h.waitFor(()=>summary(h));

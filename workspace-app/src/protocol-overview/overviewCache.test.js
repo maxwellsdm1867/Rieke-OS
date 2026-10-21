@@ -64,3 +64,25 @@ test('bounded retention evicts hidden entries while retaining visible consumers'
  assert.equal(cache.stats().entries,2);assert.ok(cache.peek(visible));assert.equal(cache.peek(descriptor('/one')),null);
  cache.release(visible);cache.clear();assert.equal(cache.stats().bytes,0);
 });
+
+test('delayed background refresh preserves a fresh protocol-owned revision',async()=>{
+ const cache=createOverviewCache();let calls=0;
+ const own=descriptor('/protocols/a/overview','[0,0,0]');
+ cache.invalidate();
+ await cache.read(own,{request:async()=>({count:++calls})});
+ await cache.prefetch('[0,0]');
+ assert.equal(calls,1,'the project clock cannot replace an already refreshed protocol summary');
+ assert.equal(cache.peek(own).revision,own.revision);
+ await cache.read(own,{request:async()=>({count:++calls})});assert.equal(calls,1);
+});
+
+test('delayed background refresh shares an active protocol read with a distinct clock',async()=>{
+ const cache=createOverviewCache(),pending=deferred();let calls=0,signal;
+ const own=descriptor('/protocols/a/overview','[0,0,0]');
+ cache.invalidate();
+ const foreground=cache.read(own,{request:async(path,options)=>{calls++;signal=options.signal;return pending.promise;}});
+ await Promise.resolve();const originalSignal=signal,background=cache.prefetch('[0,0]');await Promise.resolve();
+ pending.resolve({count:132});await Promise.all([foreground,background]);
+ assert.equal(calls,1);assert.equal(originalSignal.aborted,false);
+ assert.equal(cache.peek(own).revision,own.revision);assert.equal(cache.peek(own).data.count,132);
+});

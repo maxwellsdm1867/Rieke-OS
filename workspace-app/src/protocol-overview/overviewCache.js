@@ -60,7 +60,10 @@ export function createOverviewCache({maxEntries=12,maxBytes=8*1024*1024}={}){
   for(const entry of targets){
    if(ownQueue!==queue)return;
    if(entries.get(keyOf(entry))!==entry||!entry.request)continue;
-   if(!entry.invalidated&&entry.revision===revision)continue;
+   // A foreground owner may already have refreshed this entry using its own
+   // revision clock. A delayed project-wide prefetch must not replace that
+   // fresh (or pending) read just because the two clocks have different shapes.
+   if(!entry.invalidated)continue;
    try{await read({...entry,revision},{request:entry.request,background:true});}catch{}
   }
  }

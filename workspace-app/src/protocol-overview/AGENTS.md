@@ -141,3 +141,8 @@ keep review open. Its native modal uses the shared retained-visibility lifecycle
 including cleanup when a busy retained route becomes hidden. Finish reviewing
 uses FinishReviewConfirmation in both cards and prepared Workbench; queue versus
 prepared-candidate command fences remain owned by their existing controllers.
+
+Delayed project-wide prefetch visits only still-invalidated summaries. A visible
+owner that already refreshed (or is reading) with its own revision clock wins;
+background prefetch must not replace that clock or make the fresh view inert.
+The cache and actual-App overview switching tests cover the delayed startup path.
