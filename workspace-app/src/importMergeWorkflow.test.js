@@ -76,7 +76,7 @@ test('expanded match visual has one comparison and right-side actions; Inspect o
 });
 test('StrictMode double click prepares once and selected merge accepts once with exact preview fences',async()=>{
  const h=await harness();try{
-  await h.click('Open cumulative merge preview',true);assert.equal(h.calls.filter(c=>c.endpoint===base+'/prepare').length,1);assert.equal(h.previews,0,'opening never previews all');await h.selectAndMerge(true);assert.equal(h.previews,1);assert.equal(h.accepts,1);assert.doesNotMatch(h.container.textContent,/not submitted|was rejected|may have committed/,'the combined review moves on to what remains');
+  await h.click('Open cumulative merge preview',true);assert.equal(h.calls.filter(c=>c.endpoint===base+'/prepare').length,1);assert.equal(h.previews,0,'opening never previews all');await h.selectAndMerge(true);assert.equal(h.previews,1);assert.equal(h.accepts,0,'selection stops at the sealed preview');await h.click('Add these additions to main',true);assert.equal(h.accepts,1);assert.doesNotMatch(h.container.textContent,/not submitted|was rejected|may have committed/,'the combined review moves on to what remains');
   assert.equal(h.navigation.route.workbench.merge_intent,undefined);assert.equal(window.history.state.riekeWorkspace.route.workbench.merge_intent,undefined);
   assert.equal(h.accepts,1);assert.equal(h.receiptBodies.length,1);
   const body=JSON.parse(h.receiptBodies[0]);assert.deepEqual({...body,operation_uuid:'operation'},{expected_candidate_scope_revision:'scope-2',expected_draft_version:2,mode:'selected',preview_sha256:'exact-additions',expected_binding_version:7,expected_query_revision:'main-seven',operation_uuid:'operation'});
@@ -114,7 +114,7 @@ test('explicit preparation retry recovers browsing without replaying the failed 
   assert.equal(h.previews,0,'the failed preview request was consumed');assert.equal(h.accepts,0);
   assert.equal(h.calls.filter(c=>c.endpoint===base+'/prepare').length,2);
   assert.ok(h.calls.every(c=>c.method==='GET'||c.endpoint===base+'/prepare'));
-  await h.selectAndMerge();assert.equal(h.previews,1,'a new explicit merge obtains a fresh preview');assert.equal(h.accepts,1);
+  await h.selectAndMerge();assert.equal(h.previews,1,'a new explicit merge obtains a fresh preview');assert.equal(h.accepts,0);await h.click('Add these additions to main');assert.equal(h.accepts,1);
  }finally{await h.close();}
 });
 for(const [label,options] of [['zero pending',{pending:0}],['unavailable queue',{failQueue:true}],['stale preview',{failPreview:true}],['zero eligible',{pending:1}]])test(`${label} never silently accepts`,async()=>{
@@ -127,7 +127,7 @@ for(const [label,options] of [['zero pending',{pending:0}],['unavailable queue',
 });
 test('lost acceptance response retains the exact operation; repeated click recovers one durable mutation',async()=>{
  const h=await harness({failAccept:true});try{
-  await h.click('Open cumulative merge preview');await h.selectAndMerge();assert.equal(h.accepts,1);assert.match(h.container.textContent,/may have committed/);
+  await h.click('Open cumulative merge preview');await h.selectAndMerge();assert.equal(h.accepts,0);await h.click('Add these additions to main');assert.equal(h.accepts,1);assert.match(h.container.textContent,/may have committed/);
   assert.equal(h.button('Cancel merge preview'),undefined);await h.rerender();assert.equal(h.previews,1);assert.equal(h.receiptBodies.length,1);
   await h.click('Recover acceptance receipt');assert.equal(h.accepts,1);assert.equal(h.receiptBodies.length,1);assert.equal(h.calls.filter(call=>call.method==='GET'&&call.endpoint.startsWith(base+'/receipts/')).length,1);
  }finally{await h.close();}
