@@ -1,7 +1,7 @@
 /** Readiness fault tests. Fake DOM only; no browser/server/large fixtures. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readiness,snapshotAction,assertFinalizedRequests,resetPreparation,options,phasePlan,moduleTimingEnabled,armAction,observationFinished} from './browser.mjs';
+import {predicateEditorMode,predicateSummaryReady,readiness,snapshotAction,assertFinalizedRequests,resetPreparation,options,phasePlan,moduleTimingEnabled,armAction,observationFinished} from './browser.mjs';
 import {installObserver,installTraceControlReader,installBinaryTraceOracle} from './fixture-app.mjs';
 
 function element(text='', attributes={}) {
@@ -689,4 +689,53 @@ test('suite option accepts only core and app',()=>{
   assert.equal(options(['--source-root','s','--server-json','j','--output','o']).suite,'core');
   assert.equal(options(['--source-root','s','--server-json','j','--output','o','--suite','app']).suite,'app');
   assert.throws(()=>options(['--source-root','s','--server-json','j','--output','o','--suite','full']),/suite/);
+});
+
+
+function install(t,requests=[]){
+ const old=globalThis.window;globalThis.window={__workflow:{requests}};
+ t.after(()=>{if(old===undefined)delete globalThis.window;else globalThis.window=old;});return requests;
+}
+const payload=(status='pending')=>({request_id:'job',status,generation:{metadata:'m',source:'s',publication:3},summary_fields:['cell'],...(status==='ready'?{result:{matched_count:3,summaries:{cell:{present_count:3,missing_count:0}}}}:{})});
+function fixture(){return [
+ {url:'/api/explore/run',method:'POST',action_id:'run',start:10,end:12,status:200,result:{matched_count:3}},
+ {url:'/api/explore/summaries',method:'POST',action_id:'run',start:13,end:14,status:202,result:payload()},
+ {url:'/api/explore/summaries/job',method:'GET',after_action_id:'run',start:16,end:17,status:200,result:payload('ready')},
+ ];}
+const spec={startIndex:0,expectedCount:3,actionId:'run'};
+
+test('editor mode waits for enabled explicit Run and preserves legacy summary ownership',t=>{
+ const old=globalThis.document;const button={textContent:'View matching epochs',disabled:true};
+ const dialog={open:true,querySelectorAll:()=>[button],querySelector:()=>null};
+ globalThis.document={querySelector:()=>dialog};t.after(()=>{if(old===undefined)delete globalThis.document;else globalThis.document=old;});
+ assert.equal(predicateEditorMode(),false);button.disabled=false;assert.equal(predicateEditorMode(),'after-query');
+ dialog.querySelector=()=>({});assert.equal(predicateEditorMode(),'legacy-before-query');dialog.open=false;assert.equal(predicateEditorMode(),false);
+});
+test('one consumed after-query job proves exact count fields and generation',t=>{
+ install(t,fixture());assert.deepEqual(predicateSummaryReady(spec),{request_id:'job',generation:payload().generation,summary_fields:['cell'],matched_count:3,status:'ready',ownership:'after-query'});
+});
+test('pending and foreign jobs cannot substitute for ready current results',t=>{
+ const rows=install(t,fixture());rows[2].result=payload();assert.equal(predicateSummaryReady(spec),false);
+ rows[2].url='/api/explore/summaries/foreign';rows[2].result=payload('ready');assert.equal(predicateSummaryReady(spec),false);
+ rows.splice(0,rows.length);assert.equal(predicateSummaryReady(spec),false);
+});
+test('legacy ready summaries remain checked without requiring nonexistent after-query job',t=>{
+ const rows=install(t,fixture().slice(1));rows[0].action_id=null;rows[0].start=2;rows[0].end=3;
+ assert.equal(predicateSummaryReady({...spec,actionId:null}).ownership,'legacy-before-query');
+});
+test('summary oracle refuses stale generation wrong counts missing fields and failed jobs',t=>{
+ const rows=install(t,fixture());
+ for(const change of [r=>r.generation.source='other',r=>r.request_id='other',r=>r.result.matched_count=2,r=>r.summary_fields=['other'],r=>r.result.summaries={},r=>r.status='stale',r=>r.status='failed',r=>r.status='cancelled']){
+  rows[2].result=payload('ready');change(rows[2].result);assert.throws(()=>predicateSummaryReady(spec));
+ }
+});
+test('after-query oracle rejects duplicate jobs pre-run summaries and another action',t=>{
+ const rows=install(t,fixture());rows.push({...rows[1]});assert.throws(()=>predicateSummaryReady(spec),/more than one/);rows.pop();
+ rows[1].start=11;assert.throws(()=>predicateSummaryReady(spec),/completed query/);rows[1].start=13;
+ rows[1].action_id='foreign';assert.throws(()=>predicateSummaryReady(spec),/completed query/);
+});
+test('summary proof cannot borrow an earlier editor visit or a failed HTTP response',t=>{
+ const rows=install(t,fixture());assert.equal(predicateSummaryReady({...spec,startIndex:3}),false);
+ rows[2].status=409;assert.throws(()=>predicateSummaryReady(spec),/poll failed/);rows[2].status=200;
+ rows[1].status=503;assert.throws(()=>predicateSummaryReady(spec),/submission failed/);
 });

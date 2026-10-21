@@ -7,6 +7,48 @@ import {fixtureSource,installObserver,installTraceControlReader,installBinaryTra
 import {attachLedger} from '../navigation-probe.mjs';
 import {appInventory,appLimits,appFixtureSource,runAppSample,TRAILING_MS,BACKGROUND_PATHS} from './app-suite.mjs';
 
+// Both reviewed editor generations keep the same explicit Run boundary. The
+// legacy editor owns summaries before Run; current results own one job after it.
+export function predicateEditorMode(){
+  const dialog=document.querySelector('.predicate-dialog');
+  if(!dialog||!dialog.open)return false;
+  const button=[...dialog.querySelectorAll('button')].find(node=>node.textContent.trim()==='View matching epochs');
+  if(!button||button.disabled)return false;
+  return dialog.querySelector('.metadata-summary-status')?'legacy-before-query':'after-query';
+}
+
+/** Read actual consumed job replies, without making another product request.
+ * Called outside the headline action clock, after exact result membership has
+ * already passed. Never accept another action's summary or a stale generation. */
+export function predicateSummaryReady({startIndex,expectedCount,actionId=null}){
+  const requests=window.__workflow.requests.slice(startIndex);
+  const pathname=row=>new URL(row.url,'http://fixture').pathname;
+  const canonical=value=>JSON.stringify((function sort(item){return Array.isArray(item)?item.map(sort):item&&typeof item==='object'?Object.fromEntries(Object.keys(item).sort().map(key=>[key,sort(item[key])])):item;})(value));
+  const submissions=requests.filter(row=>row.method==='POST'&&pathname(row)==='/api/explore/summaries');
+  if(submissions.length>1)throw Error('Predicate summary created more than one job');
+  const submission=submissions[0];if(!submission)return false;
+  if(submission.error||submission.status>=400)throw Error('Predicate summary submission failed');
+  if(submission.end===undefined||!submission.result)return false;
+  if(actionId){
+    const run=requests.find(row=>row.action_id===actionId&&row.method==='POST'&&pathname(row)==='/api/explore/run');
+    if(!run||run.end===undefined)return false;
+    if(submission.start<run.end||!(submission.action_id===actionId||submission.after_action_id===actionId))throw Error('Predicate summary does not belong to the completed query');
+    if(run.result?.matched_count!==expectedCount)throw Error('Predicate run count differs from fixture');
+  }
+  const acknowledgement=submission.result,id=acknowledgement.request_id,fields=acknowledgement.summary_fields;
+  if(typeof id!=='string'||!id||!Array.isArray(fields)||!fields.length||new Set(fields).size!==fields.length||!acknowledgement.generation)throw Error('Invalid predicate summary acknowledgement');
+  const polls=requests.filter(row=>row.method==='GET'&&pathname(row)==='/api/explore/summaries/'+encodeURIComponent(id));
+  if(polls.some(row=>row.error||row.status>=400))throw Error('Predicate summary poll failed');
+  const latest=[submission,...polls].filter(row=>row.end!==undefined&&row.result).at(-1);
+  const result=latest.result;
+  if(result.request_id!==id||canonical(result.generation)!==canonical(acknowledgement.generation)||canonical(result.summary_fields)!==canonical(fields))throw Error('Predicate summary receipt identity changed');
+  if(['failed','stale','cancelled'].includes(result.status))throw Error('Predicate summary did not finish: '+result.status);
+  if(result.status!=='ready')return false;
+  if(result.result?.matched_count!==expectedCount)throw Error('Predicate summary count differs from fixture');
+  if(!result.result.summaries||fields.some(field=>!Object.hasOwn(result.result.summaries,field)))throw Error('Predicate summary omitted requested fields');
+  return {request_id:id,generation:result.generation,summary_fields:fields,matched_count:result.result.matched_count,status:'ready',ownership:actionId?'after-query':'legacy-before-query'};
+}
+
 export function options(argv){const value={samples:3,profile:false,module_timing:false,runtime:'production',suite:'core'};for(let i=0;i<argv.length;i+=2){if(!argv[i].startsWith('--')||argv[i+1]===undefined)throw Error('Expected --key value');value[argv[i].slice(2).replaceAll('-','_')]=argv[i+1];}for(const key of ['source_root','server_json','output'])if(!value[key])throw Error(`Missing --${key.replaceAll('_','-')}`);value.samples=Number(value.samples);if(!Number.isInteger(value.samples)||value.samples<1)throw Error('samples must be positive');value.profile=profileEnabled(value.profile);value.module_timing=moduleTimingEnabled(value.module_timing);value.runtime=runtimeOption(value.runtime,value.profile);if(!['core','app'].includes(value.suite))throw Error('suite must be core or app');return value;}
 
 
@@ -325,7 +367,18 @@ export async function run(config){
         await page.locator('.cell-tree-date').first().evaluate(el=>{el.open=true;});
         await page.locator('.cell-tree-cell').first().evaluate(el=>{el.open=true;});
         try{await measure('trace.inspect','first-owned-waveform',page.getByRole('button',{name:`Inspect ${meta.date_label} · ${meta.cell_label} epoch 1`,exact:true}),{selector:'.tv-base',trace:meta.trace_expected});}catch{} // Retain failed trace evidence while exercising independent workflows.
-        await button('Benchmark Predicate').click();await page.getByText('Metadata summaries: ready',{exact:true}).waitFor({timeout:Number(config.action_timeout_ms||(phase==='profile'?900000:600000))});try{await measure('predicate.search','cell-equality',button('View matching epochs'),{selector:'.mx-results-workflow',requestPath:'/explore/run',expectedCount:expected.length,searchUuids:expected});}catch{}
+        const predicateRequestsStart=await page.evaluate(()=>window.__workflow.requests.length);
+        await button('Benchmark Predicate').click();
+        const predicateTimeout=Number(config.action_timeout_ms||(phase==='profile'?900000:600000));
+        const editorMode=await (await page.waitForFunction(predicateEditorMode,null,{timeout:predicateTimeout})).jsonValue();
+        if(editorMode==='legacy-before-query')await page.getByText('Metadata summaries: ready',{exact:true}).waitFor({timeout:predicateTimeout});
+        else if(await page.evaluate(start=>window.__workflow.requests.slice(start).some(row=>row.method==='POST'&&row.url.split('?')[0]==='/api/explore/summaries'),predicateRequestsStart))throw Error('Current predicate editor requested statistics before Run');
+        try{
+          const result=await measure('predicate.search','cell-equality',button('View matching epochs'),{selector:'.mx-results-workflow',requestPath:'/explore/run',expectedCount:expected.length,searchUuids:expected});
+          const summary=await (await page.waitForFunction(predicateSummaryReady,{startIndex:predicateRequestsStart,expectedCount:expected.length,actionId:editorMode==='after-query'?result.action_id:null},{timeout:predicateTimeout})).jsonValue();
+          receipt.setup_receipts.push({phase,sample,action:'predicate.summary-correctness',outside_headline_timing:true,...summary});
+          await fs.appendFile(path.join(output,'setup-receipts.jsonl'),JSON.stringify(receipt.setup_receipts.at(-1))+'\n');
+        }catch(error){receipt.failures.push({phase,sample,action:'predicate.summary-correctness',error:String(error)});}
         await button('Benchmark Away').click();
         // Restore the owned post-import state outside the action clock, only
         // after this browser's outstanding setup effects have drained.
