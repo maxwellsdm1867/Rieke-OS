@@ -515,11 +515,11 @@ def main():
 
     from publication_fixture import close_summary_jobs
     OWNED_CLEANUP.append(('summary_jobs_closed', lambda: close_summary_jobs(service)))
-    prepared_capability = any('prepare_' + name + '_publication' in app.extensions for name in ('tree', 'overview'))
+    prepared_capability = any('prepare_' + name + '_publication' in app.extensions for name in ('tree', 'overview', 'workbench'))
     if prepared_capability:
         from publication_fixture import install_authority, prepare_views, declare_saved_layout
         install_authority(fixture, app, JOURNAL)
-        for name in ('tree', 'overview'):
+        for name in ('tree', 'overview', 'workbench'):
             close = app.extensions.get('close_' + name + '_publication')
             if close is not None:OWNED_CLEANUP.append((name + '_publication_closed', close))
         navigation = app.extensions.get('disco.navigation.prepared')

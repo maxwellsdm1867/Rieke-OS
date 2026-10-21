@@ -261,7 +261,7 @@ def prepare_views(app):
     import psutil
     process = psutil.Process()
     receipts = {}
-    for name in ('tree', 'overview'):
+    for name in ('tree', 'overview', 'workbench'):
         prepare = app.extensions.get('prepare_' + name + '_publication')
         if prepare is None:continue
         before = process.memory_info().rss
@@ -316,7 +316,7 @@ def publish_browser_fixture(fixture, app, output, journal):
                                       key=lambda row: (row['target_uuid'], row['profile_uuid']))
         shared._index_records = records
     fixture.addCleanup(close_summary_jobs, service)
-    for name in ('tree', 'overview'):
+    for name in ('tree', 'overview', 'workbench'):
         close = app.extensions.get('close_' + name + '_publication')
         if close is not None:fixture.addCleanup(close)
     navigation = app.extensions.get('disco.navigation.prepared')

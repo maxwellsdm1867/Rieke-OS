@@ -112,7 +112,7 @@ def build(source, output, epochs, protocol_epochs=None, suite='core', retain_res
     case.app.extensions['search_presets'] = SearchPresets(case.store, (presets, versions), runs=runs)
     case.client = case.app.test_client()
     native_publication = prepare_publication and any(
-        'prepare_' + name + '_publication' in case.app.extensions for name in ('tree', 'overview'))
+        'prepare_' + name + '_publication' in case.app.extensions for name in ('tree', 'overview', 'workbench'))
     if prepare_publication and not native_publication:
         fixture.doCleanups()
         raise ValueError('This source has no explicit prepared publication interface')

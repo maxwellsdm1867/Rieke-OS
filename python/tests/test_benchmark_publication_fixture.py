@@ -122,3 +122,21 @@ class CanonicalFixturePathTests(unittest.TestCase):
                     self.assertEqual(tempfile.tempdir, str(alias))
                 finally:
                     fixture.temp.cleanup()
+
+
+class PublicationPreparationOrderTests(unittest.TestCase):
+    def test_explicit_workbench_preparation_follows_tree_and_overview(self):
+        from benchmarks.workflow.publication_fixture import prepare_views
+        seen = []
+        def prepare(name):
+            def run():
+                seen.append(name)
+                return {'status': 'ready', 'protocols': 1}
+            return run
+        app = SimpleNamespace(extensions={
+            'prepare_' + name + '_publication': prepare(name)
+            for name in ('tree', 'overview', 'workbench')})
+        receipts = prepare_views(app)
+        self.assertEqual(seen, ['tree', 'overview', 'workbench'])
+        self.assertEqual(list(receipts), seen)
+        self.assertTrue(all(row['elapsed_seconds'] >= 0 for row in receipts.values()))
