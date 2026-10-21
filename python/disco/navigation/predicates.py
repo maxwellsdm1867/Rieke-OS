@@ -101,9 +101,48 @@ def predicate_catalog(catalog, values):
         field['choices'] = buckets[:MAX_CHOICES]
         field['choices_truncated'] = len(buckets) > MAX_CHOICES
     result['operators'] = list(OPERATORS)
-    result['predicate_version'] = 1
+    result['predicate_version'] = PREDICATE_VERSION
     result['limits'] = {'max_depth': MAX_DEPTH, 'max_nodes': MAX_NODES, 'max_choices': MAX_CHOICES}
     return result
+
+
+# Version 2: built-in fields recorded as None are missing ("not recorded"), the
+# meaning the tree already used. Version-1 predicates whose result can differ are
+# refused for frozen/saved reuse (re-run instead), never reinterpreted.
+PREDICATE_VERSION = 2
+_V2_CHANGED_OPERATORS = frozenset(('missing', 'exists', 'is_null', 'ne', 'not_in'))
+# The built-in field ids (navigation.tree.BASE_FIELDS keys; a test keeps them equal).
+BUILT_IN_FIELDS = frozenset(('epoch', 'date', 'cell', 'block', 'block time', 'cell type', 'group label',
+                             'group', 'protocol'))
+
+
+def reinterpretation_required(predicate, version):
+    """Whether a stored predicate of ``version`` could change meaning under v2.
+
+    Only leaves on built-in fields can differ: missing/exists/is_null/ne/not_in,
+    and eq/in literals naming null. Malformed input is treated as affected.
+    """
+    if version == PREDICATE_VERSION:
+        return False
+    pending = [predicate]
+    while pending:
+        node = pending.pop()
+        if not isinstance(node, dict):
+            return True
+        if 'all' in node or 'any' in node:
+            children = node.get('all', node.get('any'))
+            if not isinstance(children, list):
+                return True
+            pending.extend(children)
+        elif 'not' in node:
+            pending.append(node['not'])
+        elif node.get('field') in BUILT_IN_FIELDS:
+            operator = node.get('operator')
+            value = node.get('value')
+            if operator in _V2_CHANGED_OPERATORS or (operator == 'eq' and value is None) or (
+                    operator == 'in' and isinstance(value, list) and None in value):
+                return True
+    return False
 
 
 def validate(predicate, catalog, values):

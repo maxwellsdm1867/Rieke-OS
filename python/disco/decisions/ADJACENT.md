@@ -8,7 +8,7 @@ All leaves are substantive public named modules; the initializer remains inert.
 | Save/restore explicitly sealed shared-tag checkpoints | [annotation_checkpoint.py](annotation_checkpoint.py) |
 | Prepare discardable indexes at existing lifecycle boundaries | [annotation_preparation.py](annotation_preparation.py) |
 | Count dataset tags across protocol epoch unions | [curation_vocabulary.py](curation_vocabulary.py) |
-| Apply immutable source-query/tree revisions transactionally | [explorer.py](explorer.py) |
+| Apply immutable source-query/tree revisions transactionally, including membership-delta revisions | [explorer.py](explorer.py) |
 | Maintain exact native trigger-backed lookup | [native_tag_lookup.py](native_tag_lookup.py) |
 | Build disposable token-fenced SQLite membership/aggregates | [shared_tag_index.py](shared_tag_index.py) |
 | Lazily count distinct shared annotation targets | [shared_vocabulary.py](shared_vocabulary.py) |
@@ -81,3 +81,72 @@ first-write database JSON rounding from breaking an otherwise valid recipe seal.
 Public endpoint and rollback examples are in
 `python/tests/test_workspace_authored_json.py`; pinned native evidence is recorded
 in `docs/dev/h5-conversion-audit-2026-10-09.md`.
+
+## Membership-delta revisions
+
+A revision is either a full recipe (v1, unchanged; every existing revision stays
+a valid root) or a membership delta (`storage: membership-delta-v1`). A delta
+stores `parent_revision_uuid`, `parent_content_sha256`, `lineage_uuid` (its
+full-recipe root), the exact `delta` (`added` members with fingerprints and
+`removed` UUIDs), `epoch_count`, the predicate fields and, when present,
+`predicate_version` inherited from the parent, plus `membership_hash`: an
+order-independent multiset hash, the sum of SHA-256(uuid:fingerprint) terms
+modulo 2**256, updated in O(delta) from the parent's. `content_sha256` seals the
+whole stored delta, so it also seals the parent seal and the multiset hash.
+`create_delta` writes one O(delta) row; only additive deltas are published today.
+
+Reading: `header(revision)` verifies a row's seal (for a delta also its parent
+link, disjointness of added/removed with the parent membership, the recomputed
+multiset hash, lineage and count) and returns the recipe without members.
+`members(revision)` returns a shared read-only UUID->fingerprint view; a delta
+overlays its parent's view (flattened past a bounded depth). Verified seals and
+views are reused within a process; each header read still checks the row
+exists. A tampered row is refused by the first verification of that revision
+in a process; a v1 root's members are re-hashed on that first verification.
+`get(revision)` keeps its contract for every revision: it fetches and verifies
+the named row and returns a detached full recipe whose `epochs` are the exact
+sorted membership (for a delta, materialized from the verified chain).
+`bind` reads headers only.
+
+Lineage index: `protocol_membership(project_uuid, lineage_uuid, epoch_uuid,
+added_revision_uuid -> metadata_hash, removed_revision_uuid)`. Binding a delta
+inserts its added rows and marks its removed members in the bind transaction
+(the first additive delta bound on a lineage backfills the chain once,
+O(root); a removal on an unindexed lineage leaves it unindexed). A revision's
+indexed membership is the rows added on its chain and not removed on it.
+`retire_delta` removes an undone delta's rows with one DELETE inside the
+caller's binding transaction. `verify_lineage` re-hashes the indexed
+membership against the sealed multiset hash, and `verify_membership` re-hashes
+a membership about to be used (and the index) against it. Both are O(members)
+and run where membership becomes scientific truth: protocol export
+materialization re-hashes the exported bound membership, and app-state capture
+and restore re-hash every indexed lineage a binding uses
+(`workspace_state_snapshot.verify_lineage_state`); any mismatch refuses.
+Data-store deletion prunes a bound revision as a removed delta (O(removed)
+membership probes and one delta row) when the canonical reader is in use. The table is registered
+append-only in the recovery state (`workspace_state_snapshot.TABLES`,
+`recovery_generation.TABLE_NAMES`, ordinal 19); compact/expand queries never
+re-query a delta or a root that a delta builds on, because the chain seals that
+root's exact identity. Injected (custom) revision storage declares no index.
+
+`ExplorerHistory.prepared_delta(previous, current, limit=20000)` projects a chain
+of retained verified membership deltas for prepared display owners. It walks at
+most 64 cached parent links across forward/undo/redo paths; matching sealed parent
+links and at most 20,000 unique touched members are required before copying
+payloads or probing the participating revisions' project-scoped existence.
+Missing headers, deleted rows, custom readers and missing inverse fingerprints
+return `None`, requiring explicit preparation. Forward additions use verified
+deltas; inverse additions use point reads from an already retained parent
+MemberView only when their final value survives. Add-then-undo needs no such view.
+The detached result contains `added` UUID-to-fingerprint, `removed` UUIDs, and
+`metadata` with only name/source_revisions/predicate/splits/tree_view/annotation_scope.
+`order_kind` is `uuid` for delta revisions and `recipe` for a full root; duration
+owners must preserve the original recipe order or explicitly prepare it, never
+substitute UUID order after a retained-order eviction.
+A removed-then-readded original member occurs in BOTH removed and added, preserving
+its final fingerprint; consumers must account for this replacement explicitly.
+This accessor never hydrates a recipe, builds/flattens a MemberView, enumerates
+unchanged membership or grants new scientific authority. Tests in
+`test_workspace_prepared_delta.py` cover forward/inverse/sibling chains, merge and
+undo, fingerprint replacement, touched/link limits, member/header eviction,
+deletion, changed-reader fallback and overlay-depth boundaries.

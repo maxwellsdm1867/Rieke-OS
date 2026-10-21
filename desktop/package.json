@@ -1,6 +1,6 @@
 {
   "name": "disco-desktop",
-  "version": "0.1.19",
+  "version": "0.1.21",
   "private": true,
   "description": "DISCO self-contained desktop application",
   "author": "DISCO contributors",
@@ -23,7 +23,7 @@
     "electron-updater": "6.8.9"
   },
   "devDependencies": {
-    "electron": "44.5.0",
+    "electron": "44.9.2",
     "electron-builder": "26.15.3",
     "playwright": "1.63.0"
   },

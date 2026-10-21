@@ -92,6 +92,39 @@ class RecoveryStoreTests(unittest.TestCase):
     def assert_scientific_state(self,wanted):
         self.assertEqual(canonical(self.load()),canonical(wanted))
 
+    def test_prior_group_table_mirror_loads_then_full_capture_adds_membership(self):
+        import workspace_state_snapshot as snapshots
+        prior = copy.deepcopy(self.state)
+        prior['tables'].pop('protocol_membership')
+        prior['tables']['annotation_group_receipt'] = [{
+            'project_uuid': prior['project']['project_uuid'], 'receipt_uuid': identity(88),
+            'receipt': {'epochs': [identity(20)], 'tags': ['exact É']}}]
+        prior_keys = {**self.keys, 'annotation_group_receipt': ['project_uuid', 'receipt_uuid']}
+        # Produce the actual prior reader/writer contract, including stable row
+        # ordinals, checksums and table seals; never edit real project backups.
+        with patch.object(snapshots, 'TABLES', snapshots.GROUP_TABLES):
+            saved = recovery.write(self.root, state=prior, keys=prior_keys,
+                                   watermark=self.watermark, day='2026-10-20')
+        pointer_before = (self.root / 'app-state.json').read_bytes()
+        checkpoint = Path(saved['daily_backup'])
+        checkpoint_before = checkpoint.read_bytes()
+        current = self.inspect()
+        self.assertEqual(set(current['header']['state']['tables']), set(snapshots.GROUP_TABLES))
+        self.assertEqual(canonical(self.load()), canonical(prior))
+        upgraded = copy.deepcopy(prior)
+        snapshots.migrate_restore_tables(upgraded)
+        self.assertEqual(upgraded['tables']['protocol_membership'], [])
+        keys = {**prior_keys, 'protocol_membership': ['project_uuid', 'lineage_uuid', 'epoch_uuid']}
+        columns = {**current['header']['columns'], 'protocol_membership': keys['protocol_membership']}
+        result = recovery.write(self.root, state=upgraded, keys=keys, columns=columns,
+                                watermark={**self.watermark, 'generation': 1}, day='2026-10-20')
+        self.assertFalse(result['incremental'], 'new SQL table contract requires complete capture')
+        self.assertEqual(canonical(self.load()), canonical(upgraded))
+        self.assertEqual(set(self.inspect()['header']['table_seals']), set(TABLES))
+        self.assertEqual((self.root / 'app-state.json').read_bytes(), pointer_before)
+        self.assertEqual(checkpoint.read_bytes(), checkpoint_before)
+        self.assertEqual(canonical(recovery.load_database(checkpoint)), canonical(prior))
+
     def test_content_seals_track_only_changed_tables_and_match_complete_rebuild(self):
         self.write_baseline()
         original=copy.deepcopy(self.inspect()['header']['table_seals'])

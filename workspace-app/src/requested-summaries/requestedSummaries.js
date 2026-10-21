@@ -5,24 +5,15 @@
 import {jointComponents} from '../typed-query/jointGrouping.js';
 import {predicateIdentity} from '../typed-query/predicateIdentity.js';
 
-export const SUMMARY_PREFERENCES_VERSION=1;
-export function summaryPreferenceKey(project,protocol,view){
-  return `workspace.summary-preferences.v1:${JSON.stringify([project,protocol,view])}`;
-}
-export function summaryPreferences(value){
-  // This is a new explicit schema. Saved layouts are seeds, never preferences.
-  if(value?.version!==SUMMARY_PREFERENCES_VERSION||!Array.isArray(value.fields))return {version:SUMMARY_PREFERENCES_VERSION,fields:[]};
-  return {version:SUMMARY_PREFERENCES_VERSION,fields:[...new Set(value.fields.filter(id=>typeof id==='string'&&id))]};
-}
 export function predicateSummaryFields(node){
   if(!node)return [];
   if(node.field)return [node.field];
   if(node.not)return predicateSummaryFields(node.not);
   return (node.children||node.all||node.any||[]).flatMap(predicateSummaryFields);
 }
-export function requestedSummaryFields({registry=[],axes=[],predicate,preferences,all=false}){
+export function requestedSummaryFields({registry=[],axes=[],predicate,all=false}){
   const available=new Set(registry.map(field=>field.id));
-  const selected=all?[...available]:[...axes,...predicateSummaryFields(predicate),...summaryPreferences(preferences).fields];
+  const selected=all?[...available]:[...axes,...predicateSummaryFields(predicate)];
   const ids=[...new Set(selected.flatMap(id=>jointComponents(id).length?jointComponents(id):[id]))];
   return {fields:ids.filter(id=>available.has(id)),unavailable:ids.filter(id=>!available.has(id))};
 }
@@ -57,6 +48,9 @@ export function registryMatchesSummaryGeneration(registry,context){
 
 // The controller consumes a small adapter so lifecycle tests need no API/server.
 // Local sequence fencing remains necessary even when AbortSignal is ignored.
+// Submissions are never aborted: the server may already have created the job,
+// and only its receipt lets a retired run cancel it. The run's controller
+// aborts polls only.
 export function createSummaryController({adapter,onState,pollMs=250,schedule=setTimeout,unschedule=clearTimeout}){
   let serial=0,active=null,disposed=false;
   const publish=(run,state)=>{if(!disposed&&active===run&&!run.stopped)onState({...state,key:run.key});};
@@ -99,7 +93,7 @@ export function createSummaryController({adapter,onState,pollMs=250,schedule=set
     start(request){
       release(active);const run={serial:++serial,key:summaryRequestKey(request),request,controller:new AbortController(),stopped:false};active=run;
       publish(run,{status:'pending',result:null,error:null});
-      execute(run,()=>adapter.submit(request,run.controller.signal));return run.key;
+      execute(run,()=>adapter.submit(request));return run.key;
     },
     cancel(){if(active&&!active.stopped){publish(active,{status:'cancelled',result:null,error:null});release(active);}},
     dispose(){disposed=true;release(active);active=null;},

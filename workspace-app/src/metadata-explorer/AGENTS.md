@@ -21,6 +21,22 @@ A focused UUID requires an explicit matching membership result. Pending, invalid
 
 Typed-query editors, project preset storage, export execution, summary execution, cached reads and scientific membership remain their existing owners. This folder consumes those public entries without creating authority.
 
+Building a query sends no request (no preview, count or statistics). Result reads
+(run, result-tree preview, revisions) send no `catalog_summary` flag: the server
+(backend #117) never computes inline statistics for summary-only reads, and there
+is no explicit full-catalog mode. Once a query's results are shown (results or tree step), the
+explorer submits one requested-summaries job for that result set over the
+registered tree fields and passes the decorated fields to the tree builder
+(`summaryEnabled: false`, so the builder starts no job of its own). The job stays
+while the same query only reloads its tree (layout, focus); a changed predicate,
+view filter or registry generation retires it, and a new job starts only after
+the new results load. `Result statistics` status shows pending/cancel/retry.
+Multi-field runs show their results at once; the explorer polls the run's one
+counts job (`epoch-browser/useQueryCounts.js`), shows "Counting matching epochs and
+cells…", fills exact totals when it is ready and cancels it when the query
+changes. Ledger tests: `requested-summaries/requestedSummariesLifecycle.test.js` (running a
+query sends exactly one job; a changed query cancels and resubmits once).
+
 ## Factoring decision
 
 These files share a presentation responsibility and change locality. Pure helpers

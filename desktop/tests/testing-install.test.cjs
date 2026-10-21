@@ -199,13 +199,36 @@ test('helper readiness must match its spawned PID, current process, target versi
   for(const file of ['testing-install.cjs','testing-install-progress.cjs','testing-install-progress-ui.cjs','bootstrap.cjs','updater-validation.cjs','physical-fs.cjs','install-name.cjs'])await fs.copyFile(path.join(__dirname,'..',file),path.join(directory,file));
   const helper=require(await fs.realpath(path.join(directory,'testing-install.cjs')));
   const {EventEmitter}=require('node:events'),{PassThrough}=require('node:stream');
+  const signals=[];
   const spawnHelper=()=>{
-   const child=new EventEmitter();child.pid=777;child.stdout=new PassThrough();child.stderr=new PassThrough();child.unref=()=>{};child.kill=()=>assert.fail('No helper or current app force kill');
+   const child=new EventEmitter();child.pid=777;child.stdout=new PassThrough();child.stderr=new PassThrough();child.unref=()=>assert.fail('A rejected helper is not detached');child.kill=signal=>{signals.push(signal);return true;};
    setImmediate(()=>child.stdout.write('RIEKE_TESTING_INSTALL_READY='+JSON.stringify({pid:777,current_pid:12345,version:'0.0.1',archive_sha256:f.receipt.archive_sha256})+'\n'));
    return child;
   };
   const run=async(command,args,options)=>command.endsWith('/python/bin/python3.11')?{stdout:'RIEKE_PROCESS_IDENTITY='+JSON.stringify({pid:12345,alive:true,created_at:17,executable:f.currentExecutable})+'\n'}:f.run(command,args,options);
   await assert.rejects(helper.launchTestingInstall({receiptPath:f.receiptPath,currentExecutable:f.currentExecutable,currentPid:12345,run,spawnHelper}),/readiness identity differs/);
+  assert.deepEqual(signals,['SIGTERM'],'A rejected helper is stopped politely, never force killed');
+  assert.equal((await require('../bootstrap.cjs').readBundleManifest(f.destination)).application_version,'0.1.0');
+ }finally{await fs.rm(f.root,{recursive:true,force:true});}
+});
+test('helper readiness timeout or spawn error stops the helper politely and never detaches it',async()=>{
+ const f=await updateFixture();try{
+  const directory=path.join(f.destination,'Contents/Resources/app.asar');await fs.mkdir(directory);
+  for(const file of ['testing-install.cjs','testing-install-progress.cjs','testing-install-progress-ui.cjs','bootstrap.cjs','updater-validation.cjs','physical-fs.cjs','install-name.cjs'])await fs.copyFile(path.join(__dirname,'..',file),path.join(directory,file));
+  const helper=require(await fs.realpath(path.join(directory,'testing-install.cjs')));
+  const {EventEmitter}=require('node:events'),{PassThrough}=require('node:stream');
+  const run=async(command,args,options)=>command.endsWith('/python/bin/python3.11')?{stdout:'RIEKE_PROCESS_IDENTITY='+JSON.stringify({pid:12345,alive:true,created_at:17,executable:f.currentExecutable})+'\n'}:f.run(command,args,options);
+  for(const failure of ['timeout','spawn-error']){
+   const signals=[];
+   const spawnHelper=()=>{
+    const child=new EventEmitter();child.pid=failure==='spawn-error'?undefined:778;child.stdout=new PassThrough();child.stderr=new PassThrough();
+    child.unref=()=>assert.fail('A rejected helper is not detached');child.kill=signal=>{signals.push(signal);return true;};
+    if(failure==='spawn-error')setImmediate(()=>child.emit('error',Object.assign(new Error('spawn EACCES'),{code:'EACCES'})));
+    return child;
+   };
+   await assert.rejects(helper.launchTestingInstall({receiptPath:f.receiptPath,currentExecutable:f.currentExecutable,currentPid:12345,run,spawnHelper,readyTimeoutMs:20}),failure==='timeout'?/readiness was not acknowledged/:/EACCES/);
+   assert.deepEqual(signals,failure==='timeout'?['SIGTERM']:[],failure);
+  }
   assert.equal((await require('../bootstrap.cjs').readBundleManifest(f.destination)).application_version,'0.1.0');
  }finally{await fs.rm(f.root,{recursive:true,force:true});}
 });

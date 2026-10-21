@@ -78,7 +78,7 @@ def admitted_index(service):
     return Index()
 
 
-def build(source, output, epochs, protocol_epochs=None):
+def build(source, output, epochs, protocol_epochs=None, suite='core', retain_reset=True, prepare_publication=False):
     protocol_epochs = epochs if protocol_epochs is None else protocol_epochs
     if not 200 <= protocol_epochs <= epochs:
         raise ValueError("protocol_epochs must be 200..epochs")
@@ -88,7 +88,8 @@ def build(source, output, epochs, protocol_epochs=None):
     from test_workspace_suggestions import ImportSuggestionTests
     import h5py
     import numpy as np
-    fixture = ImportSuggestionTests(); fixture.setUp()
+    from publication_fixture import setup_canonical_fixture
+    fixture = ImportSuggestionTests(); setup_canonical_fixture(fixture)
     case, service = fixture.case, fixture.case.service
     # Register actual annotation and saved-search owners against owned SQL doubles.
     # create_app captures these dependencies when declaring routes.
@@ -110,6 +111,14 @@ def build(source, output, epochs, protocol_epochs=None):
     case.app.config['TESTING'] = True
     case.app.extensions['search_presets'] = SearchPresets(case.store, (presets, versions), runs=runs)
     case.client = case.app.test_client()
+    native_publication = prepare_publication and any(
+        'prepare_' + name + '_publication' in case.app.extensions for name in ('tree', 'overview', 'workbench'))
+    if prepare_publication and not native_publication:
+        fixture.doCleanups()
+        raise ValueError('This source has no explicit prepared publication interface')
+    if native_publication:
+        from publication_fixture import journal_transactions
+        publication_journal = journal_transactions(fixture)
     incoming = min(100, max(1, protocol_epochs // 10))
     main_count = protocol_epochs - incoming
     incoming_start = epochs - incoming
@@ -119,12 +128,19 @@ def build(source, output, epochs, protocol_epochs=None):
     service.cell_ids = [uid(2_000_000 + i) for i in range((epochs + 99) // 100)]
     tracefile = (output / 'trace-fixture.h5').resolve()
     stream = uid(5_000_000)
+    # Equal values share one string object (block, label, group) so a million
+    # rows do not hold millions of duplicate strings; values are unchanged.
+    group_uuid = uid(4_000_000)
+    blocks, labels = {}, {}
+
     def add(start, stop, sha):
         for i in range(start, stop):
-            cell, block = service.cell_ids[i // 100], uid(3_000_000 + i // 20)
+            cell = service.cell_ids[i // 100]
+            block = blocks.get(i // 20) or blocks.setdefault(i // 20, uid(3_000_000 + i // 20))
+            label = labels.get(i // 100) or labels.setdefault(i // 100, f'Cell {i // 100}')
             row = {**original, 'epoch_uuid': uid(i), 'cell_uuid': cell, 'block_uuid': block,
-                   'cell_label': f'Cell {i // 100}', 'epoch_number': i % 20 + 1,
-                   'source_sha256': sha, 'streams': [], 'group_uuid': uid(4_000_000),
+                   'cell_label': label, 'epoch_number': i % 20 + 1,
+                   'source_sha256': sha, 'streams': [], 'group_uuid': group_uuid,
                    'protocol_name': 'ambient' if main_count <= i < incoming_start else 'example'}
             if i in (0, incoming_start, incoming_start + 1):
                 row['streams'] = [{'uuid': stream, 'kind': 'responses', 'sample_count': 10000 if i == 0 else 300000 if i == incoming_start else 1000000,
@@ -182,6 +198,8 @@ def build(source, output, epochs, protocol_epochs=None):
                 abort(409, 'Other owned fixture requests are still active')
             active['resetting'] = True
         try:
+            if not reset_state:
+                abort(409, 'This owned fixture was built without a preparation reset snapshot')
             for table, expected in reset_state['protected']:
                 if table.rows != expected:
                     abort(409, 'Main/source/annotation authority changed; refusing reset')
@@ -193,6 +211,8 @@ def build(source, output, epochs, protocol_epochs=None):
                 table.rows[:] = copy.deepcopy(rows)
             retained_revisions = {row['revision_uuid'] for row in case.explorer_revisions.rows}
             case.explorer_history._recipe_cache = {key: value for key, value in case.explorer_history._recipe_cache.items() if key in retained_revisions}
+            if reset_state.get('reprepare') is not None:
+                reset_state['reprepare']()
             return jsonify(reset=True, ready=True, main_count=main_count, incoming_count=incoming,
                            protocol_epochs=protocol_epochs, epochs=epochs,
                            scope='owned post-import SQL fixture; outside measurement',
@@ -204,11 +224,14 @@ def build(source, output, epochs, protocol_epochs=None):
     fixture.run_import(mutate)
     for item in fixture.preflight.patches: item.stop()
     case.sources.insert1({'project_uuid': service.project['project_uuid'], 'source_sha256': 'a' * 64})
-    reset_state['tables'] = [(table, copy.deepcopy(table.rows)) for table in case.connection.tables]
-    protected = [case.protocol_bindings, case.curation, case.sources, case.data_store_states, annotations]
-    reset_state['protected'] = [(table, rows) for table, rows in reset_state['tables'] if any(table is protected_table for protected_table in protected)]
-    reset_state['sources'] = copy.deepcopy(service.sources)
-    reset_state['fingerprints'] = dict(service._fingerprints)
+    if retain_reset:
+        # Only the browser preparation reset needs this full post-import copy;
+        # route measurements skip it (it duplicates every table at 1M epochs).
+        reset_state['tables'] = [(table, copy.deepcopy(table.rows)) for table in case.connection.tables]
+        protected = [case.protocol_bindings, case.curation, case.sources, case.data_store_states, annotations]
+        reset_state['protected'] = [(table, rows) for table, rows in reset_state['tables'] if any(table is protected_table for protected_table in protected)]
+        reset_state['sources'] = copy.deepcopy(service.sources)
+        reset_state['fingerprints'] = dict(service._fingerprints)
 
     def track_request():
         g.workflow_counted = False
@@ -228,10 +251,32 @@ def build(source, output, epochs, protocol_epochs=None):
 
     case.app.before_request_funcs.setdefault(None, []).insert(0, track_request)
     case.app.teardown_request_funcs.setdefault(None, []).append(finish_request)
+    if suite == 'app':
+        # The full App tags through SharedAnnotations, which requires a stored
+        # UUID author. Workbench actors keep the patched fixture identity.
+        tag_author = shared.default_profile
+        with shared.lock(), shared.dj.conn().transaction:
+            shared._ensure_profiles([{'profile_uuid': tag_author['profile_uuid'], 'display_name': tag_author['display_name']}], 'benchmark')
+        listed = {'profiles': [{'profile_uuid': tag_author['profile_uuid'], 'display_name': tag_author['display_name']}],
+                  'selected_profile_uuid': tag_author['profile_uuid']}
+    else:
+        listed = {'profiles': [{'profile_uuid': 'actor-one', 'display_name': 'Owned fixture'}], 'selected_profile_uuid': 'actor-one'}
+
     def profiles():
         if request.path == '/api/annotation-profiles':
-            return jsonify({'profiles': [{'profile_uuid': 'actor-one', 'display_name': 'Owned fixture'}], 'selected_profile_uuid': 'actor-one'})
+            return jsonify(listed)
     case.app.before_request_funcs.setdefault(None, []).insert(0, profiles)
+
+    def registry():
+        # Launcher inventory double for the full-App suite; the core shell never reads it.
+        if request.path == '/api/projects' and request.method == 'GET':
+            return jsonify({'current_project_uuid': service.project['project_uuid'], 'launcher': False,
+                            'managed_root': str(output), 'projects': [{
+                                'uuid': service.project['project_uuid'], 'name': 'Owned benchmark project',
+                                'path': str(Path(case.temp.name)), 'available': True, 'current': True,
+                                'database_kind': 'owned-fixture'}]})
+    if suite == 'app':
+        case.app.before_request_funcs.setdefault(None, []).insert(0, registry)
     meta = {'project': service.project['project_uuid'], 'protocol': service.protocol_id,
             'candidate': case.suggestion_rows.rows[0]['summary']['candidate_revision_uuid'],
             'epochs': epochs, 'protocol_epochs': protocol_epochs, 'ambient_count': epochs - protocol_epochs,
@@ -245,10 +290,26 @@ def build(source, output, epochs, protocol_epochs=None):
             'million_trace_expected': {'epoch_uuid': uid(incoming_start + 1), 'stream_uuid': stream, 'start': 0, 'count': 1000000, 'sample_rate': 10000, 'units': 'pA', 'values_first': 0, 'values_last': 999999, 'ramp': True, 'source_sha256': fixture.source_sha},
             'trace_streams': copy.deepcopy(service.rows[uid(0)]['streams']),
             'trace_stream': stream, 'trace_samples': 10000, 'trace_rate_hz': 10000,
-            'qualifying_scale': epochs == 1_000_000, 'fixture': 'workflow-owned-v4',
+            'qualifying_scale': epochs == 1_000_000, 'fixture': 'workflow-owned-v4', 'suite': suite,
             'admissions': ['transactional SQL doubles', 'synthetic metadata index catalog/projection; production predicate evaluator', 'source verification double'],
             'trace': 'three owned synthetic H5 ramps; real lazy reads',
             'owned_h5_path': str(tracefile.resolve()), 'native_qualification': False}
+    if native_publication:
+        from publication_fixture import publish_browser_fixture, prepare_views
+        try:
+            meta['prepared_publication'] = publish_browser_fixture(fixture, case.app, output, publication_journal)
+        except BaseException:
+            fixture.doCleanups()
+            raise
+        meta['fixture'] = 'workflow-owned-v5-prepared-native'
+        meta['admissions'] = ['transactional generation/recovery SQL leaf doubles',
+                              'sealed native metadata and typed indexes', 'source verification double']
+        def reprepare():
+            state = case.app.extensions['benchmark_recovery_authority']
+            import uuid
+            state['scope_epoch'] = str(uuid.uuid4()); state['generation'] = 0; state['feed'].clear()
+            prepare_views(case.app)
+        reset_state['reprepare'] = reprepare
     return fixture, case.app, meta
 
 
@@ -258,6 +319,8 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--epochs', type=int, default=1_000_000)
     parser.add_argument('--protocol-epochs', type=int, help='Active protocol scope including incoming; default is entire project')
+    parser.add_argument('--prepared-publication', action='store_true', help='Separate native prepared-publication qualification; leaves legacy fixture default unchanged')
+    parser.add_argument('--suite', choices=('core', 'app'), default='core', help='app adds the launcher inventory double and a stored tag author')
     args = parser.parse_args()
     if args.epochs < 200 or args.epochs > 1_000_000: parser.error('epochs must be 200..1000000')
     if args.protocol_epochs is not None and not 200 <= args.protocol_epochs <= args.epochs:
@@ -267,7 +330,7 @@ def main():
     cleanup = {'server_closed': False, 'fixture_closed': False, 'instrumentation_restored': False,
                'heap_closed': True}
     try:
-        fixture, app, meta = build(args.source_root.resolve(), args.output.resolve(), args.epochs, args.protocol_epochs)
+        fixture, app, meta = build(args.source_root.resolve(), args.output.resolve(), args.epochs, args.protocol_epochs, args.suite, prepare_publication=args.prepared_publication)
         # Exercise the same explicit dedicated-worker startup policy as desktop.
         # Older source revisions have no process-heap owner and keep their policy.
         if (args.source_root.resolve() / 'python/workspace_process_heap.py').is_file():

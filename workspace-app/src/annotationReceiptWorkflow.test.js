@@ -183,3 +183,26 @@ test('a tag is shown pending before its write returns, confirms in place, and ro
     assert.match(h.root.findByProps({className:'annotation-error'}).children.flat().join(''),/conflict/i);
   }finally{await h.close();}
 });
+
+test('a failed tag save restores its text and names the queued tag it cancelled',async()=>{
+  const h=await createWorkflowHarness({total:20});h.fixture.v4=true;
+  let hold=null;h.fixture.delay=record=>record.path==='/annotations'&&hold?hold:0;
+  const chips=()=>h.root.findAll(node=>typeof node.props?.className==='string'&&node.props.className.startsWith('annotation-chip epoch')).map(node=>node.findByType('strong').children.join(''));
+  const posts=()=>h.fixture.requests.filter(record=>record.path==='/annotations').length;
+  try{
+    await h.mount();await ready(h);await h.waitFor(()=>!h.viewer.treePane.listProps.disabled&&!!h.viewer.epoch);
+    hold=300;h.fixture.annotationVersions.set('epoch:epoch-0',99); // the first write conflicts
+    const before=posts();
+    for(const value of ['first','second']){
+      await h.act(()=>input(h).props.onChange({target:{value}}));
+      await h.act(()=>input(h).parent.props.onSubmit({preventDefault(){}}));
+    }
+    assert.deepEqual(chips(),['first','second'],'both shown pending');
+    await h.waitFor(()=>!chips().length&&!!h.root.findAllByProps({className:'annotation-error'}).length);
+    const error=h.root.findByProps({className:'annotation-error'}).children.flat().join('');
+    assert.match(error,/conflict/i);
+    assert.equal(input(h).props.value,'first','failed text returns to the empty composer');
+    assert.match(error,/Not saved: “second”/,'the cancelled queued tag is named, not silently dropped');
+    assert.equal(posts()-before,1,'the dependent queued tag is still not sent');
+  }finally{await h.close();}
+});

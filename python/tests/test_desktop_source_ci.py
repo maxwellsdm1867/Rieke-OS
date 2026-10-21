@@ -36,7 +36,8 @@ class SourceCITests(unittest.TestCase):
         self.comparison = dict(status='passed', review_required=[], candidate_commit=SHA,
                                candidate_receipt_sha256='c' * 64)
         trace_source = dict(commit=SHA, tree='b' * 40, dirty='', files={'app.py': 'd' * 64})
-        self.trace_candidate = dict(status='passed', source_start=trace_source,
+        from benchmark_workflow import DEPENDENCY_POLICY
+        self.trace_candidate = dict(status='passed', dependency_policy=DEPENDENCY_POLICY, source_start=trace_source,
             source_end=copy.deepcopy(trace_source), harness={'fixture': 'same'},
             environment={'browser': 'same'}, dependencies={'lock': 'same'},
             fixture='prepared-geometry-v2', payload_sha256='e' * 64,

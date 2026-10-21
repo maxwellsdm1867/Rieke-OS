@@ -26,7 +26,16 @@ the explorer-revision dependency closure (recomputed from identity-only SQL
 reads and diffed against the mirrored identities). Sources changing, a broken
 feed or authority, or an unexpected key shape fall back to the full capture.
 The mirror format is unchanged, so existing mirrors, checkpoints and v1
-snapshots remain readable and continue with deltas.
+snapshots remain readable. The exact pre-membership `GROUP_TABLES` header used
+by 0.1.20 is accepted alongside the older known table sets; unknown sets,
+checksums, seals and identity mismatches remain failures. Adding the
+`protocol_membership` schema requires a full capture before deltas resume.
+That capture updates the current mirror in place; it does not keep an alternate
+old-version pointer. Existing immutable daily checkpoints remain unchanged,
+but are subject to their ordinary retention. Older apps cannot read a new
+18-table mirror: keep an independently verified pre-upgrade recovery copy before
+live qualification and do not treat reopening an older app as a supported
+rollback after the new schema is captured. Offline restore remains explicit.
 
 `disco.backup.recovery_generation.RecoveryGenerationAuthority` owns native clock,
 trigger/schema/instance continuity and exact typed key coverage. Missing coverage

@@ -188,14 +188,95 @@ class ProtocolContextFastPathTests(MemoFixture):
     def context(self):
         return self.reader.native_context(self.protocol)
 
+    def publish(self):
+        """Publish the fixture maps as production refresh does (deep-frozen)."""
+        from workspace_service import publish_frozen
+        service=self.service
+        service.rows=publish_frozen(service.rows,rows=True)
+        service.cells,service.protocols,service._fingerprints=(publish_frozen(service.cells),
+            publish_frozen(service.protocols),publish_frozen(service._fingerprints))
+        self.assertIsNotNone(service.rows)
+
     def test_unchanged_inputs_skip_the_metadata_rebuild_with_identical_revision(self):
+        self.publish()
         first=self.context()
-        self.assertIsNotNone(self.reader.native_cache[self.protocol]['witness'])
+        entry=self.reader.native_cache[self.protocol]
+        self.assertIsNotNone(entry['key'])
+        self.assertNotIn('metadata',entry)  # Digest + member set only, never rows.
         with patch.object(self.reader,'_metadata',side_effect=AssertionError('fast path rebuilt metadata')):
             second=self.context()
             detail=self.get(f'/api/epochs/{self.ids[0]}?protocol_uuid={self.protocol}')
         self.assertEqual(first,second)
         self.assertEqual(detail['curation']['revision'],0)
+
+    def test_published_maps_refuse_in_place_mutation_and_republish_advances_serial(self):
+        from workspace_service import publication_serial
+        self.publish()
+        before=self.context()
+        serial=publication_serial(self.service)
+        row=self.service.rows[self.ids[0]]
+        mutations=[lambda:row.__setitem__('duration_seconds',2),lambda:row.update(group_label='x'),
+            lambda:self.service.rows.pop(self.ids[0]),lambda:self.service._fingerprints.__setitem__(self.ids[0],'e'*64),
+            lambda:self.service.cells[row['cell_uuid']].__setitem__('label','x'),
+            lambda:self.service.protocols[self.protocol]['result']['epochs'].reverse(),
+            lambda:self.service.protocols[self.protocol]['result']['epochs'][0].__setitem__('uuid','x'),
+            lambda:self.service.protocols[self.protocol]['definition'].setdefault('x',1),
+            lambda:self.service.protocols.__ior__({})]
+        for mutate in mutations:
+            with self.assertRaises(TypeError):mutate()
+        self.assertEqual(self.context(),before)
+        self.assertEqual(publication_serial(self.service),serial)
+        # Replacing a map (the only way to change content) advances the serial.
+        changed={**self.service.rows,self.ids[0]:{**row,'duration_seconds':2.0}}
+        from workspace_service import publish_frozen
+        self.service.rows=publish_frozen(changed,rows=True)
+        self.assertGreater(publication_serial(self.service),serial)
+        with patch.object(self.reader,'_metadata',wraps=self.reader._metadata) as metadata:
+            after=self.context()
+        self.assertTrue(metadata.called)
+        self.assertNotEqual(after['query_revision'],before['query_revision'])
+        # Unfrozen replacement disables the key path entirely (exact contents).
+        self.service.rows=dict(self.service.rows)
+        self.assertIsNone(publication_serial(self.service))
+        self.assertEqual(self.context()['query_revision'],after['query_revision'])
+        self.assertIsNone(self.reader.native_cache[self.protocol]['key'])
+
+    def test_query_view_is_one_shared_read_only_value_per_binding(self):
+        self.publish()
+        service=self.service
+        with patch.object(WorkspaceService,'query_result',autospec=True,side_effect=WorkspaceService.query_result) as copies:
+            first=service.query_view(self.protocol);second=service.query_view(self.protocol)
+        self.assertIs(first,second);self.assertEqual(copies.call_count,0)
+        self.assertEqual(first,service.query_result(self.protocol))
+        with self.assertRaises(TypeError):first['epochs'].append({})
+        history=self.case.explorer_history
+        preview=service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        created=history.create(preview,service.sources,'catalog.json','fixture')
+        history.bind(created['revision_uuid'],self.protocol,0,'fixture',{},2)
+        bound=service.query_view(self.protocol)
+        self.assertEqual(bound['dataset_binding']['version'],1)
+        self.assertEqual(bound,service.query_result(self.protocol))
+        self.assertIs(service.query_view(self.protocol),bound)
+        service.cells=service.cells  # Republish: a new serial never reuses the view.
+        self.assertIsNot(service.query_view(self.protocol),bound)
+        self.assertEqual(service.query_view(self.protocol),bound)
+
+    def test_frozen_copies_are_plain_mutable_values(self):
+        import copy as copying, json as encoding, pickle
+        self.publish()
+        row=self.service.rows[self.ids[0]]
+        for value in (copying.deepcopy(row),copying.copy(row),dict(row),{**row},pickle.loads(pickle.dumps(row))):
+            self.assertIs(type(value),dict);value['changed']=1
+        self.assertEqual(encoding.loads(encoding.dumps(self.service.protocols[self.protocol]['result'])),
+                         copying.deepcopy(self.service.protocols[self.protocol]['result']))
+
+    def test_debug_verification_detects_content_differing_from_the_key(self):
+        self.publish()
+        self.context()
+        entry=self.reader.native_cache[self.protocol]
+        entry['digest']='tampered'
+        with patch.dict('os.environ',{'DISCO_PROTOCOL_STATE_VERIFY':'1'}):
+            with self.assertRaisesRegex(AssertionError,'differs'):self.context()
 
     def test_in_place_value_and_numeric_type_changes_take_the_exact_path(self):
         baseline=self.context()['query_revision']
@@ -218,18 +299,29 @@ class ProtocolContextFastPathTests(MemoFixture):
         self.service.cells[self.service.rows[self.ids[0]]['cell_uuid']]['label']='changed in place'
         self.assertNotIn(self.context()['query_revision'],revisions)
 
-    def test_unmarshallable_inputs_disable_the_witness_but_keep_exact_reuse(self):
-        class Mapping(dict):pass
-        class Text(str):pass
-        for value in (Mapping(a=1),Text('x')):
-            self.service.rows[self.ids[0]]['custom']=value
-            first=self.context()
-            self.assertIsNone(self.reader.native_cache[self.protocol]['witness'])
-            self.assertEqual(self.context(),first)
-        self.service.rows[self.ids[0]]['custom']='plain'
-        changed=self.context()
-        self.assertNotEqual(changed['query_revision'],first['query_revision'])
-        self.assertIsNotNone(self.reader.native_cache[self.protocol]['witness'])
+    def test_racing_publication_prevents_admission_of_a_key_proof(self):
+        self.publish()
+        original=self.reader._metadata
+        def republish(*args,**kwargs):
+            result=original(*args,**kwargs)
+            self.service._fingerprints=self.service._fingerprints  # Any assignment republishes.
+            return result
+        with patch.object(self.reader,'_metadata',republish):
+            self.assertIsNone(self.context())
+        self.assertNotIn(self.protocol,self.reader.native_cache)
+        self.assertIsNotNone(self.context())
+
+    def test_oversized_proof_uses_negative_memo_until_next_publication(self):
+        self.publish()
+        with patch('workspace_protocol_state.STATE_CACHE_BYTES',10):
+            self.assertIsNone(self.context())
+            self.assertIn(self.protocol,self.reader.native_rejected)
+            with patch.object(self.reader,'_metadata',side_effect=AssertionError('futile admission retried')):
+                self.assertIsNone(self.context())
+            self.service.cells=self.service.cells  # Publish drops the memo.
+            with patch.object(self.reader,'_metadata',wraps=self.reader._metadata) as metadata:
+                self.assertIsNone(self.context())
+            self.assertTrue(metadata.called)
 
     def test_witness_is_not_admitted_when_inputs_change_during_the_proof(self):
         original=self.reader._metadata
@@ -276,6 +368,21 @@ class ResponseContractTests(MemoFixture):
             self.get(path)
             self.assertEqual(self.attestations-before,2,path)
 
+    def test_every_get_route_holds_one_lazy_lease(self):
+        paths=[f'/api/protocols/{self.protocol}/overview',f'/api/protocols/{self.protocol}/epochs?limit=5',
+               '/api/tags',f'/api/protocols/{self.protocol}/tree?splits=cell',
+               f'/api/protocols/{self.protocol}/tree-fields','/api/metadata/fields','/api/metadata/status']
+        for path in paths:
+            self.get(path)
+        for path in paths:
+            before=self.attestations
+            self.get(path)
+            self.assertLessEqual(self.attestations-before,2,path)
+        # Routes that never read a native token never attest.
+        before=self.attestations
+        self.get('/api/metadata/fields')
+        self.assertEqual(self.attestations,before)
+
     def test_closing_attestation_change_discards_the_response(self):
         self.get(f'/api/epochs/{self.ids[0]}?protocol_uuid={self.protocol}')
         state={'calls':0}
@@ -286,6 +393,174 @@ class ResponseContractTests(MemoFixture):
         response=self.client.get(f'/api/epochs/{self.ids[0]}?protocol_uuid={self.protocol}')
         self.assertEqual(response.status_code,400)
         self.assertIn('contract changed',response.get_json()['error'])
+
+
+class TypedReadinessErrorTests(MemoFixture):
+    def test_not_ready_is_retryable_503_and_never_served_from_previous_state(self):
+        self.get('/api/overview')
+        self.service._loaded=False
+        for path in ('/api/overview','/api/metadata/fields',f'/api/protocols/{self.protocol}'):
+            response=self.client.get(path)
+            self.assertEqual(response.status_code,503,path)
+            body=response.get_json()
+            self.assertEqual(body['code'],'workspace_not_ready');self.assertTrue(body['retryable'])
+
+    def test_lock_busy_is_retryable_409(self):
+        from workspace_service import LockBusy
+        with patch.object(self.service,'metadata_fields',side_effect=LockBusy('Another operation is running')):
+            response=self.client.get('/api/metadata/fields')
+        self.assertEqual(response.status_code,409)
+        self.assertEqual(response.get_json()['code'],'lock_busy')
+
+    def test_failed_route_refresh_stays_not_ready_and_uses_manager_recovery(self):
+        recovered=[]
+        with patch.object(self.service,'refresh',side_effect=ValueError('Source recording changed')), \
+             patch.object(self.service,'manager_recovery',side_effect=lambda error:recovered.append(str(error))):
+            self.service._loaded=False
+            response=self.client.get(f'/api/protocols/{self.protocol}/masks/export')
+        self.assertEqual(response.status_code,400)
+        self.assertEqual(recovered,['Source recording changed'])
+        self.assertEqual(self.client.get('/api/overview').status_code,503)
+
+
+class RouteRefreshScopingTests(MemoFixture):
+    def publish(self):
+        ProtocolContextFastPathTests.publish(self)
+
+    def test_approve_verifies_sources_without_republishing_and_reads_stay_warm(self):
+        from workspace_service import publication_serial
+        self.publish()
+        # The fixture authority cannot open SQL transactions; use the legacy
+        # mutation path (the route preflight under test is identical).
+        self.tracker.ready=False
+        page=self.get(self.case.base+'/epochs?limit=1')
+        view=self.service.query_view(self.protocol)
+        rows,serial=self.service.rows,publication_serial(self.service)
+        current=self.store.read(self.protocol,self.ids[:1],{self.ids[0]:self.service._fingerprints[self.ids[0]]})[self.ids[0]]['revision']
+        verified=[]
+        with patch.object(self.service,'verify_sources',side_effect=lambda:verified.append(1) or True), \
+             patch.object(self.service,'refresh',side_effect=AssertionError('approve must not run a full refresh')):
+            response=self.client.post(self.case.base+'/curation',json={'epoch_uuids':self.ids[:1],
+                'query_revision':page['query_revision'],'changes':{'review_state':'approved'},
+                'expected_revisions':{self.ids[0]:current}},headers=self.case.headers)
+        self.assertEqual(response.status_code,200,response.get_json())
+        self.assertEqual(verified,[1])
+        self.assertIs(self.service.rows,rows);self.assertEqual(publication_serial(self.service),serial)
+        self.assertIs(self.service.query_view(self.protocol),view)  # Identity-keyed caches stay warm.
+
+    def test_unchanged_check_for_updates_persists_no_revision(self):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        created=history.create(preview,self.service.sources,'catalog.json','fixture')
+        history.bind(created['revision_uuid'],self.protocol,0,'fixture',{},2)
+        revisions=len(history.Revision.rows)
+        with patch.object(self.service,'refresh',return_value={}), \
+             patch.object(self.service,'explore_preview',wraps=self.service.explore_preview) as previews:
+            response=self.client.post(self.case.base+'/refresh',json={'filters':{}},headers=self.case.headers)
+        self.assertEqual(response.status_code,200,response.get_json())
+        body=response.get_json()
+        self.assertIsNone(body['candidate_revision_uuid'])
+        self.assertEqual(body['diff_counts'],{'added':0,'removed':0,'changed':0})
+        self.assertEqual(len(history.Revision.rows),revisions)
+        self.assertEqual(previews.call_count,1)
+        self.assertFalse(previews.call_args.kwargs.get('include_tree',True))
+
+
+class NavigationScopeCacheTests(MemoFixture):
+    def setUp(self):
+        super().setUp()
+        ProtocolContextFastPathTests.publish(self)
+        from disco.navigation.tree_pages import TreePages
+        self.pager=TreePages(self.service)
+
+    def builds(self):
+        from disco.navigation.tree_pages import TreePages
+        return patch.object(TreePages,'_build_scope',autospec=True,side_effect=TreePages._build_scope)
+
+    def test_pages_at_every_depth_anchor_and_selection_share_one_scope(self):
+        body={'protocol_uuid':self.protocol,'splits':'cell,parameters/example'}
+        with self.builds() as builds:
+            root=self.pager.page(body)
+            branch=root['branches'][0]
+            child=self.pager.page({**body,'path':branch['path'],'revision':root['revision']})
+            self.pager.page({**body,'anchor_uuid':self.ids[0]})
+            chosen=self.pager.selection({**body,'path':branch['path'],'revision':root['revision']},branch['count'])
+        self.assertEqual(builds.call_count,1)
+        self.assertEqual(len(chosen['epoch_uuids']),branch['count'])
+        self.assertEqual(child['revision'],root['revision'])
+
+    def test_frozen_hits_compare_no_fingerprint_dictionaries(self):
+        from workspace_service import FrozenDict
+        body={'splits':'cell,parameters/example'}
+        self.pager.page(body)
+        compared=[]
+        original=FrozenDict.__eq__
+        def eq(left,right):
+            if left is self.service._fingerprints or right is self.service._fingerprints:compared.append(1)
+            return original(left,right)
+        with patch.object(FrozenDict,'__eq__',eq),patch.object(FrozenDict,'__ne__',lambda a,b:not eq(a,b)), \
+             self.builds() as builds:
+            self.pager.page(body)
+        self.assertEqual((builds.call_count,compared),(0,[]))
+
+    def test_tag_filtered_scope_is_cached_under_its_annotation_generation(self):
+        body={'protocol_uuid':self.protocol,'splits':'cell','filters':{'tag':'chosen'}}
+        with self.builds() as builds:
+            first=self.pager.page(body);self.pager.page(body)
+        self.assertEqual(builds.call_count,1)
+        self.fixture.edit('epoch',self.ids[0],['chosen'])
+        with self.builds() as builds:
+            changed=self.pager.page(body)
+        self.assertEqual(builds.call_count,1)
+        self.assertEqual((first['count'],changed['count']),(0,1))
+        self.assertNotEqual(first['revision'],changed['revision'])
+
+    def test_structural_selection_reuses_page_groupings(self):
+        import cProfile
+        body={'protocol_uuid':self.protocol,'splits':'cell,date,block'}
+        root=self.pager.page(body)
+        branch=root['branches'][0]
+        profile=cProfile.Profile()
+        with profile:
+            chosen=self.pager.selection({**body,'path':branch['path'],'revision':root['revision']},branch['count'])
+        keyed=sum(entry.callcount for entry in profile.getstats() if getattr(entry.code,'co_name','')=='value_key')
+        self.assertEqual(len(chosen['epoch_uuids']),branch['count'])
+        # Only the branch's own two descendant levels are grouped, never the scope.
+        self.assertLessEqual(keyed,2*branch['count'])
+        self.assertLess(branch['count'],root['count'])
+
+    def test_frozen_epoch_page_hits_compare_no_fingerprints(self):
+        from workspace_service import FrozenDict
+        path=f'{self.case.base}/epochs?limit=5'
+        self.get(path)
+        visits=[]
+        original=FrozenDict.get
+        def get(mapping,*args):
+            if mapping is self.service._fingerprints:visits.append(1)
+            return original(mapping,*args)
+        with patch.object(FrozenDict,'get',get):
+            self.service._epoch_page_identities(self.protocol)
+        self.assertEqual(visits,[])
+
+    def test_frozen_epoch_page_cache_keeps_only_identities_and_reads_no_recipe(self):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        created=history.create(preview,self.service.sources,'catalog.json','fixture')
+        history.bind(created['revision_uuid'],self.protocol,0,'fixture',{},2)
+        self.service._epoch_page_cache=None
+        self.service.query_view(self.protocol)  # The shared view's own one-time binding read.
+        first=self.service._epoch_page_identities(self.protocol)
+        entry=next(iter(self.service._epoch_page_cache[1].values()))
+        self.assertIsNone(entry[0]);self.assertIsNone(entry[3])
+        with patch.object(self.service,'binding',side_effect=AssertionError('page read the binding recipe')):
+            self.assertEqual(self.service._epoch_page_identities(self.protocol),first)
+
+    def test_unfrozen_read_model_never_caches_annotation_scopes(self):
+        self.service.rows=dict(self.service.rows)
+        body={'protocol_uuid':self.protocol,'splits':'cell','filters':{'tag':'chosen'}}
+        with self.builds() as builds:
+            self.pager.page(body);self.pager.page(body)
+        self.assertEqual(builds.call_count,2)
 
 
 class OverviewMemoTests(MemoFixture):
@@ -344,6 +619,426 @@ class OverviewMemoTests(MemoFixture):
         with patch.object(self.service,'events',racing):
             response=self.client.get('/api/overview')
         self.assertEqual(response.status_code,409)
+
+
+class IncrementalOverviewTests(MemoFixture):
+    """Frozen publications assemble the overview from separately keyed parts."""
+    def setUp(self):
+        super().setUp()
+        import uuid as uuidlib
+        from workspace_service import publish_frozen
+        other=str(uuidlib.uuid4())
+        entry=copy.deepcopy(self.service.protocols[self.protocol])
+        entry['definition'].update(protocol_uuid=other,name='Second protocol')
+        entry['result'].update(protocol_uuid=other,epochs=entry['result']['epochs'][:1])
+        self.other=other
+        self.service.protocols={**self.service.protocols,other:entry}
+        ProtocolContextFastPathTests.publish(self)
+        self.parts=self.app.extensions['overview_parts']
+
+    def reference(self):
+        """The full (non-incremental) overview for the same state."""
+        with patch.dict(self.app.extensions,{}),patch('workspace_service.publication_serial',return_value=None):
+            self.app.extensions['overview_memo'].clear()
+            return self.get('/api/overview')
+
+    def test_incremental_overview_matches_the_full_build_after_each_write(self):
+        first=self.get('/api/overview')
+        self.assertIn('base',self.parts)
+        self.assertEqual(first,self.reference())
+        self.save_curation(tags_add=['x'],review_state='approved')
+        self.assertEqual(self.get('/api/overview'),self.reference())
+        self.fixture.edit('epoch',self.ids[0],['project-tag'])
+        tagged=self.get('/api/overview')
+        self.assertEqual(tagged,self.reference())
+        self.assertTrue(tagged['annotation_summary']['tags'])
+        self.fixture.edit('cell',self.service.rows[self.ids[1]]['cell_uuid'],['cell-tag'])
+        self.assertEqual(self.get('/api/overview'),self.reference())
+
+    def test_curation_write_recomputes_only_that_protocol(self):
+        self.get('/api/overview')
+        base=self.parts['base'];other=self.parts['protocols'][self.other]
+        before=self.parts['protocols'][self.protocol]
+        self.save_curation(review_state='approved')
+        self.get('/api/overview')
+        self.assertIs(self.parts['base'],base)
+        self.assertIs(self.parts['protocols'][self.other],other)
+        self.assertIsNot(self.parts['protocols'][self.protocol],before)
+
+    def test_shared_tag_write_recomputes_only_tag_counts(self):
+        self.get('/api/overview')
+        kept={key:self.parts[key] for key in ('base','approval','exports')}
+        protocols=dict(self.parts['protocols']);tags=self.parts['tags']
+        self.fixture.edit('epoch',self.ids[0],['shared'])
+        with patch.object(self.reader,'native_context',side_effect=AssertionError('protocol summaries recomputed')):
+            payload=self.get('/api/overview')
+        for key,value in kept.items():self.assertIs(self.parts[key],value,key)
+        self.assertEqual(self.parts['protocols'],protocols)
+        self.assertIsNot(self.parts['tags'],tags)
+        self.assertEqual(payload['counts']['shared_tagged_epochs'],1)
+
+    def test_summary_scope_token_skips_rereading_rows_and_targets_match_records(self):
+        self.fixture.edit('epoch',self.ids[0],['shared'])
+        self.fixture.edit('cell',self.service.rows[self.ids[1]]['cell_uuid'],['cell-tag'])
+        reads=[]
+        rows=lambda:reads.append(1) or list(self.service.rows.values())
+        first=self.shared.summary(rows,scope_token=('test',1))
+        second=self.shared.summary(rows,scope_token=('test',1))
+        self.assertEqual((first,len(reads)),(second,1))
+        self.assertEqual(self.shared.summary(rows,scope_token=('test',2)),first)
+        self.assertEqual(len(reads),2)
+        self.assertEqual(first,self.shared.summary(list(self.service.rows.values())))
+        targets=self.shared.tagged_targets()
+        self.assertEqual(targets['epoch'],{self.ids[0]})
+        self.assertEqual(targets['cell'],{self.service.rows[self.ids[1]]['cell_uuid']})
+
+    def test_cell_chips_reread_only_cells_named_by_the_change_feed(self):
+        """A tag write re-reads only the written cell, never every cell's chips."""
+        start=self.tracker.token();feed=[]
+        original_edit=self.fixture.edit
+        def edit(kind,target,*args,**kwargs):
+            result=original_edit(kind,target,*args,**kwargs)
+            feed.append((self.tracker.token(),{'target_kind':kind,'target_uuid':target,
+                'profile_uuid':self.fixture.author,'last_generation':len(feed)+1,'deleted':0}))
+            return result
+        self.fixture.edit=edit
+        lost={'value':False}
+        def changes(after,limit=10000):
+            if lost['value']:return None
+            if after==start:position=0
+            else:
+                matches=[index for index,(token,_) in enumerate(feed) if token==after]
+                if not matches:return None
+                position=matches[-1]+1
+            return [row for _,row in feed[position:]],self.tracker.token()
+        self.tracker.shared_changes=changes
+        reads=[]
+        # read_targets itself is a contract-checked method; its first step,
+        # the per-kind identity scope check, records which targets it reads.
+        original_scope=self.shared._scope
+        def scope(kind,ids):
+            reads.append((kind,list(ids)))
+            return original_scope(kind,ids)
+        self.shared._scope=scope
+        self.get('/api/overview')
+        self.assertTrue(reads)
+        cells=self.parts['tag_cells'][2]
+        self.fixture.edit('epoch',self.ids[0],['epoch-only'])
+        reads.clear()
+        payload=self.get('/api/overview')
+        self.assertEqual([kind for kind,_ in reads if kind=='cell'],[])
+        for identity,value in self.parts['tag_cells'][2].items():self.assertIs(value,cells[identity])
+        self.assertEqual(payload,self.reference())
+        cell=self.service.rows[self.ids[1]]['cell_uuid']
+        self.fixture.edit('cell',cell,['cell-only'])
+        reads.clear()
+        payload=self.get('/api/overview')
+        self.assertEqual([entry for entry in reads if entry[0]=='cell'],[('cell',[cell])])
+        self.assertEqual(payload,self.reference())
+        self.assertEqual([chip['tag'] for chip in next(item for item in payload['cells'] if item['cell_uuid']==cell)['annotations']['cell_tags']],['cell-only'])
+        lost['value']=True
+        self.fixture.edit('cell',cell,remove=['cell-only'],revision=1)
+        reads.clear()
+        payload=self.get('/api/overview')
+        self.assertEqual(sorted(sum((ids for kind,ids in reads if kind=='cell'),[])),sorted(self.parts['base'][1]['order']))
+        self.assertEqual(payload,self.reference())
+
+class PagedCellListTests(MemoFixture):
+    """cells_limit/cells_after windows (the POST /api/explore/epochs contract)."""
+    def setUp(self):
+        super().setUp()
+        ProtocolContextFastPathTests.publish(self)
+        self.parts=self.app.extensions['overview_parts']
+
+    def walk(self, path, separator='?'):
+        """All windows of one cell list, checking totals and cursors."""
+        cells=[];after=0;totals=set();rest=None
+        while after is not None:
+            page=self.get(f'{path}{separator}cells_limit=1&cells_after={after}')
+            self.assertLessEqual(len(page['cells']),1)
+            cells+=page['cells'];totals.add(page['cells_total'])
+            rest={key:value for key,value in page.items() if key not in ('cells','cells_total','cells_next')}
+            after=page['cells_next']
+        self.assertEqual(totals,{len(cells)})
+        return cells,rest
+
+    def full(self, path):
+        page=self.get(path)
+        self.assertNotIn('cells_total',page);self.assertNotIn('cells_next',page)
+        return page
+
+    def test_project_overview_windows_concatenate_to_the_full_list(self):
+        full=self.full('/api/overview')
+        self.assertGreater(len(full['cells']),1)
+        cells,rest=self.walk('/api/overview')
+        self.assertEqual(cells,full['cells'])
+        self.assertEqual(rest,{key:value for key,value in full.items() if key!='cells'})
+        # After a shared-tag write the window is assembled without a full list.
+        self.fixture.edit('cell',full['cells'][1]['cell_uuid'],['paged'])
+        assembled=self.parts.get('assembled')
+        self.assertIsNotNone(assembled)
+        cells,_=self.walk('/api/overview')
+        self.assertIs(self.parts.get('assembled'),assembled)
+        self.assertEqual(cells,self.full('/api/overview')['cells'])
+        self.assertEqual(cells[1]['annotations']['cell_tags'][0]['tag'],'paged')
+
+    def test_paged_overview_keeps_the_display_cache_equal_to_a_full_read(self):
+        from disco.projects.presentation_cache import display_overview
+        saved=self.app.extensions.get('overview_parts')
+        self.save_curation(review_state='approved')
+        self.get('/api/overview?cells_limit=1')
+        self.assertIn('display_key',saved)
+        with patch('disco.projects.presentation_cache.save_overview',return_value=True) as save:
+            # Unchanged inputs: a paged read never rebuilds or rewrites it.
+            self.get('/api/overview?cells_limit=1&cells_after=1')
+        save.assert_not_called()
+        self.parts.clear()
+        with patch('disco.projects.presentation_cache.save_overview',return_value=True) as save:
+            self.get('/api/overview?cells_limit=1')
+        written=display_overview(save.call_args[0][1])
+        full=self.full('/api/overview')
+        reference=display_overview(full)
+        self.assertEqual({key:value for key,value in written.items() if key!='events'},
+                         {key:value for key,value in reference.items() if key!='events'})
+
+    def test_protocol_overview_windows_have_their_own_validators(self):
+        path=f'/api/protocols/{self.protocol}/overview'
+        full=self.full(path)
+        cells,rest=self.walk(path)
+        self.assertEqual(cells,full['cells'])
+        self.assertEqual(rest,{key:value for key,value in full.items() if key!='cells'})
+        first=self.client.get(path+'?cells_limit=1');second=self.client.get(path+'?cells_limit=1&cells_after=1')
+        whole=self.client.get(path)
+        self.assertEqual(len({first.headers['ETag'],second.headers['ETag'],whole.headers['ETag']}),3)
+        again=self.client.get(path+'?cells_limit=1',headers={'If-None-Match':first.headers['ETag']})
+        self.assertEqual(again.status_code,304)
+        other=self.client.get(path+'?cells_limit=1&cells_after=1',headers={'If-None-Match':first.headers['ETag']})
+        self.assertEqual(other.status_code,200)
+
+    def test_epoch_page_windows_cells_in_first_appearance_order(self):
+        path=f'/api/protocols/{self.protocol}/epochs?include_cells=true&limit=5'
+        full=self.full(path)
+        cells,rest=self.walk(path,'&')
+        self.assertEqual(sorted(cells,key=lambda row:row['cell_uuid']),sorted(full['cells'],key=lambda row:row['cell_uuid']))
+        appearance=list(dict.fromkeys(self.service.rows[key]['cell_uuid']
+            for key in self.service._epoch_page_identities(self.protocol,{})[0]))
+        self.assertEqual([row['cell_uuid'] for row in cells],appearance)
+        self.assertEqual(rest,{key:value for key,value in full.items() if key!='cells'})
+
+    def test_protocol_overview_hit_reads_only_the_export_signature(self):
+        path=f'/api/protocols/{self.protocol}/overview?cells_limit=1'
+        calls=[]
+        original=type(self.store).protocol_export_status
+        def status(store,protocol,epoch_ids):
+            calls.append(len(list(epoch_ids)))
+            return original(store,protocol,epoch_ids)
+        with patch.object(type(self.store),'protocol_export_status',status):
+            first=self.get(path)
+            self.assertIn(max(calls),range(1,10**6))  # The miss builds the exported set once.
+            calls.clear()
+            self.assertEqual(self.get(path),first)
+        self.assertEqual(set(calls),{0})
+
+    def test_invalid_windows_are_refused(self):
+        for path in ('/api/overview',f'/api/protocols/{self.protocol}/overview',
+                     f'/api/protocols/{self.protocol}/epochs?include_cells=true'):
+            separator='&' if '?' in path else '?'
+            for query in ('cells_after=1','cells_limit=0','cells_limit=1001','cells_limit=x',
+                          'cells_limit=1&cells_after=-1','cells_limit=1&cells_limit=2'):
+                response=self.client.get(path+separator+query)
+                self.assertEqual(response.status_code,400,(path,query))
+        response=self.client.get(f'/api/protocols/{self.protocol}/epochs?cells_limit=1')
+        self.assertEqual(response.status_code,400)
+
+class SourcePreverificationRouteTests(MemoFixture):
+    def test_trace_route_hashes_first_access_outside_the_database_lock(self):
+        lock=self.app.extensions['workspace_db_lock']
+        calls=[]
+        def preverify(epoch):
+            calls.append((epoch,lock._is_owned()))
+            return 0
+        with patch.object(self.service,'preverify_epoch_source',side_effect=preverify):
+            self.client.get(f'/api/epochs/{self.ids[0]}/trace?stream_uuid={self.ids[0]}')
+        self.assertEqual(calls,[(self.ids[0],False)])
+
+    def test_prewarm_runs_in_a_background_thread(self):
+        done=[]
+        with patch.object(self.service,'preverify_sources',side_effect=lambda:done.append(1)):
+            worker=self.app.extensions['prewarm_source_signatures']()
+            worker.join(5)
+        self.assertEqual(done,[1])
+
+
+class LargeProtocolReadMemoTests(MemoFixture):
+    """Per-request protocol reads reuse aggregates of the same frozen view."""
+    def setUp(self):
+        super().setUp()
+        ProtocolContextFastPathTests.publish(self)
+
+    def test_browse_and_cell_counts_reuse_aggregates_until_republication(self):
+        first=self.service.protocol_browse(self.protocol)
+        memo=self.service.__dict__['_browse_aggregates']
+        self.assertEqual(self.service.protocol_browse(self.protocol),first)
+        self.assertIs(self.service.__dict__['_browse_aggregates'],memo)
+        self.service.cells=self.service.cells  # Republish.
+        self.service.protocol_browse(self.protocol)
+        self.assertIsNot(self.service.__dict__['_browse_aggregates'],memo)
+        page=self.service.epoch_page(self.protocol,include_cells=True)
+        counts=self.service.__dict__['_page_cell_counts']
+        self.assertEqual(self.service.epoch_page(self.protocol,include_cells=True)['cells'],page['cells'])
+        self.assertIs(self.service.__dict__['_page_cell_counts'],counts)
+
+    def test_unchanged_overview_reuses_its_encoded_response(self):
+        first=self.client.get('/api/overview')
+        with patch('disco.projects.presentation_cache.display_overview',side_effect=AssertionError('re-encoded')):
+            second=self.client.get('/api/overview')
+        self.assertEqual(second.get_data(),first.get_data())
+        self.save_curation(review_state='approved')
+        third=self.client.get('/api/overview')
+        self.assertNotEqual(third.get_data(),first.get_data())
+
+
+class PredicateContractRefusalTests(MemoFixture):
+    def bind(self, predicate, version):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview(predicate,'cell',include_tree=False,include_catalog_summary=False)
+        created=history.create(preview,self.service.sources,'catalog.json','fixture')
+        history.bind(created['revision_uuid'],self.protocol,0,'fixture',{},2)
+        recipe=history.get(created['revision_uuid'])['recipe']
+        history._recipe_cache[created['revision_uuid']]={**recipe,'predicate_version':version}
+        return created
+
+    def test_old_contract_saved_selection_is_refused_not_reinterpreted(self):
+        self.bind({'not':{'field':'cell type','operator':'missing'}},1)
+        with patch.object(self.service,'refresh',return_value={}):
+            response=self.client.post(self.case.base+'/refresh',json={'filters':{}},headers=self.case.headers)
+        self.assertEqual(response.status_code,409,response.get_json())
+        self.assertIn('Re-run its search',response.get_json()['error'])
+
+    def test_suggestions_and_propagation_skip_old_contract_selections_visibly(self):
+        affected={'not':{'field':'cell type','operator':'missing'}}
+        created=self.bind(affected,1)
+        suggestions=self.app.extensions.get('protocol_suggestions') or self.case.protocol_suggestions
+        from disco.navigation.predicates import reinterpretation_required
+        suggestions.reinterpretation_required=reinterpretation_required
+        recipe=self.case.explorer_history._recipe_cache[created['revision_uuid']]
+        with patch.object(self.service,'explore_preview',side_effect=AssertionError('re-ran an old-contract predicate')):
+            result=suggestions.rerun([{'protocol_uuid':self.protocol,'recipe':recipe,'revision_uuid':created['revision_uuid'],
+                'binding_version':1,'protocol_name':'Fixture'}],'a'*64,'fixture.h5','fixture')
+            plan=self.case.data_stores.propagation_preview()
+        self.assertEqual(result['counts']['skipped_count'],1)
+        self.assertEqual(result['warnings'][0]['code'],'predicate_contract_rerun_required')
+        self.assertIn("old 'missing' meaning",result['warnings'][0]['message'])
+        self.assertEqual([item['protocol_uuid'] for item in plan['skipped_protocols']],[self.protocol])
+        self.assertNotIn(self.protocol,[item['protocol_uuid'] for item in plan['protocols']])
+
+    def test_export_snapshots_record_their_predicate_contract(self):
+        from disco.workbench.recipes import capture_query
+        self.bind({'all':[]},2)
+        result=self.service.query_result(self.protocol)
+        snapshot=capture_query(self.service.protocols[self.protocol]['definition'],result,'catalog.json')
+        self.assertEqual(snapshot['predicate_contract_version'],2)
+
+    def test_export_reuse_refuses_an_old_contract_frozen_predicate(self):
+        record={'recipe':{'protocol_uuid':self.protocol,'options':{},'query_snapshot':{},
+            'query':{'version':2,'kind':'source_predicate','predicate':{'field':'group label','operator':'ne','value':'x'}}}}
+        with patch.object(self.store,'get_dataset_revision',return_value=record):
+            refused=self.client.get('/api/exports/'+'0'*8+'-0000-4000-8000-000000000000/reuse')
+        self.assertEqual(refused.status_code,409,refused.get_json())
+        record['recipe']['query_snapshot']={'predicate_contract_version':2}
+        with patch.object(self.store,'get_dataset_revision',return_value=record):
+            allowed=self.client.get('/api/exports/'+'0'*8+'-0000-4000-8000-000000000000/reuse')
+        self.assertNotEqual(allowed.status_code,409,allowed.get_json())
+
+    def test_unaffected_old_contract_selection_still_checks_for_updates(self):
+        self.bind({'all':[]},1)
+        with patch.object(self.service,'refresh',return_value={}):
+            response=self.client.post(self.case.base+'/refresh',json={'filters':{}},headers=self.case.headers)
+        self.assertEqual(response.status_code,200,response.get_json())
+
+
+class ProtocolStateV5Tests(MemoFixture):
+    """Bound mains on a frozen publication: identity-based protocol-state-v5."""
+    def setUp(self):
+        super().setUp()
+        ProtocolContextFastPathTests.publish(self)
+
+    def bind(self):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        created=history.create(preview,self.service.sources,'catalog.json','fixture')
+        current=history.protocol_binding_header(self.protocol)
+        history.bind(created['revision_uuid'],self.protocol,current['version'] if current else 0,'fixture',{},2)
+        return created
+
+    def test_unbound_stays_v4_and_bound_uses_v5_without_a_metadata_digest(self):
+        unbound=self.reader.native_context(self.protocol)
+        self.assertEqual(unbound['query_revision_contract'],'protocol-state-v4')
+        self.bind()
+        with patch.object(self.reader,'_metadata',side_effect=AssertionError('v5 computed a metadata digest')):
+            bound=self.reader.native_context(self.protocol,self.ids[:1])
+            again=self.reader.native_context(self.protocol,self.ids[:1])
+        self.assertTrue(bound['query_revision'].startswith('protocol-state-v5:'))
+        self.assertEqual(bound['query_revision_contract'],'protocol-state-v5')
+        self.assertEqual(bound,again)
+        page=self.get(self.case.base+'/epochs?limit=5')
+        self.assertEqual(page['query_revision_contract'],'protocol-state-v5')
+        self.assertEqual(page['query_revision'],bound['query_revision'])
+
+    def test_v5_bare_revision_reads_no_members_and_prefers_revision_headers(self):
+        from disco.decisions.explorer import ExplorerHistory
+        created=self.bind()
+        self.reader.native_cache.clear()
+        bare=self.reader.native_context(self.protocol)
+        entry=self.reader.native_cache[self.protocol]
+        self.assertIsNone(entry['members'])  # A bare revision read never builds the member set.
+        self.reader.native_context(self.protocol,self.ids[:1])
+        self.assertIsNotNone(entry['members'])
+        # A history with sealed revision headers/members is read through them.
+        self.reader.native_cache.clear()
+        history=self.case.explorer_history
+        # Public history API only: sealed revision headers when the history
+        # has them (delta revisions), else the verified full revision.
+        if getattr(type(history),'header',None) is not None:
+            seal=history.header(created['revision_uuid'])['content_sha256']
+        else:
+            seal=history.get(created['revision_uuid'])['recipe']['content_sha256']
+        calls=[]
+        with patch.object(ExplorerHistory,'header',create=True,side_effect=lambda revision:calls.append('header') or
+                          {'content_sha256':seal,'source_revisions':['a'*64]}), \
+             patch.object(ExplorerHistory,'members',create=True,side_effect=lambda revision:calls.append('members') or list(self.ids)):
+            context=self.reader.native_context(self.protocol,self.ids[:1])
+        self.assertEqual(calls,['header','members'])
+        self.assertEqual(context['query_revision'],self.reader.native_context(self.protocol)['query_revision'])
+        self.assertEqual(bare['query_revision'],context['query_revision'])
+
+    def test_v5_changes_with_each_named_input(self):
+        self.bind()
+        seen={self.reader.native_context(self.protocol)['query_revision']}
+        def changed(mutate):
+            mutate()
+            revision=self.reader.native_context(self.protocol)['query_revision']
+            self.assertNotIn(revision,seen);seen.add(revision)
+        changed(lambda:self.save_curation(review_state='approved'))       # curation generation
+        changed(lambda:self.bind())                                        # binding revision/version/seal
+        changed(lambda:setattr(self.service,'cells',self.service.cells))   # publication token
+        changed(lambda:self.service.set_source_state_provider(lambda:{'a'*64:{'query_excluded':True}}))  # source scope
+        # Shared-tag writes do not retire the curation authority (as in v4).
+        before=self.reader.native_context(self.protocol)['query_revision']
+        self.fixture.edit('epoch',self.ids[0],['shared'])
+        self.assertEqual(self.reader.native_context(self.protocol)['query_revision'],before)
+
+    def test_v5_refuses_outside_members_and_locked_assertion_uses_the_key(self):
+        self.bind()
+        with self.assertRaisesRegex(ValueError,'outside'):
+            self.reader.native_context(self.protocol,['00000000-0000-4000-8000-000000000123'])
+        context=self.reader.native_context(self.protocol)
+        from disco.decisions.curation import RevisionConflict
+        self.tracker.assert_current_locked=lambda expected:None
+        self.assertEqual(self.reader.assert_context_locked(self.protocol,context),context['query_revision'])
+        self.service.cells=self.service.cells  # Republish: the key no longer matches.
+        with self.assertRaises(RevisionConflict):
+            self.reader.assert_context_locked(self.protocol,context)
 
 
 if __name__=='__main__':

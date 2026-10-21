@@ -15,7 +15,7 @@ import sys
 import time
 from pathlib import Path
 import uuid
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 from recording_workspace import (connect, digest, epochs, evaluate_protocol_file,
                                  validate_protocol_definition, workspace_tables)
@@ -26,6 +26,201 @@ from disco.navigation.predicates import validate as validate_predicate, matches 
 TREE_CACHE_VALUE_BUDGET = 2_000_000
 TREE_CACHE_MAX_SCOPES = 8
 EPOCH_PAGE_CACHE_BYTES = 64 * 1024 * 1024
+
+
+class WorkspaceNotReady(RuntimeError):
+    """Validation did not complete; reads stay refused until a refresh succeeds."""
+    code = 'workspace_not_ready'
+
+
+class LockBusy(RuntimeError):
+    """Another exclusive workspace operation holds the lock; retry later."""
+    code = 'lock_busy'
+
+
+def _immutable(name):
+    def refuse(self, *args, **kwargs):
+        raise TypeError(f'Published workspace read model is immutable ({type(self).__name__}.{name}); republish instead')
+    return refuse
+
+
+class FrozenDict(dict):
+    """Deep-frozen published mapping; only ``freeze`` constructs trusted values.
+
+    Copies (``copy``, ``deepcopy``, ``dict(...)``, ``{**value}``) are ordinary
+    mutable dicts. JSON, equality and ``isinstance(value, dict)`` are unchanged.
+    """
+    __slots__ = ()
+    for _name in ('__setitem__', '__delitem__', 'clear', 'pop', 'popitem', 'setdefault', 'update', '__ior__'):
+        locals()[_name] = _immutable(_name)
+    del _name
+
+    def __copy__(self):
+        return dict(self)
+
+    def __deepcopy__(self, memo):
+        return {copy.deepcopy(key, memo): copy.deepcopy(value, memo) for key, value in dict.items(self)}
+
+    def __reduce__(self):
+        return (dict, (dict(self),))
+
+
+class FrozenList(list):
+    __slots__ = ()
+    for _name in ('__setitem__', '__delitem__', 'append', 'extend', 'insert', 'pop', 'remove', 'clear',
+                  'sort', 'reverse', '__iadd__', '__imul__'):
+        locals()[_name] = _immutable(_name)
+    del _name
+
+    def __copy__(self):
+        return list(self)
+
+    def __deepcopy__(self, memo):
+        return [copy.deepcopy(value, memo) for value in list.__iter__(self)]
+
+    def __reduce__(self):
+        return (list, (list(self),))
+
+
+class _EligibleRows(Sequence):
+    """Ordered rows of one captured immutable publication, without row references.
+
+    The ID tuple is shared with predicate scope admission. Keeping a reference
+    to its frozen row map preserves an older reader when the service republishes.
+    """
+    __slots__ = ('_ids', '_rows')
+
+    def __init__(self, identities, rows):
+        self._ids, self._rows = identities, rows
+
+    def __len__(self):
+        return len(self._ids)
+
+    def __iter__(self):
+        return (self._rows[identity] for identity in self._ids)
+
+    def __getitem__(self, index):
+        identities = self._ids[index]
+        if isinstance(index, slice):
+            return tuple(self._rows[identity] for identity in identities)
+        return self._rows[identities]
+
+
+class Unfreezable(TypeError):
+    pass
+
+
+_IMMUTABLE_LEAVES = (str, int, float, bool, type(None), bytes, dt.date, dt.time, dt.timedelta)
+
+
+def freeze(value):
+    """Return a deep-frozen copy of a JSON-like value (dict/list/tuple/scalars).
+
+    Already frozen subtrees are reused. Unknown leaf types raise Unfreezable so
+    a caller can keep the exact (content-comparing) path instead.
+    """
+    kind = type(value)
+    if kind is FrozenDict or kind is FrozenList or kind in _IMMUTABLE_LEAVES or isinstance(value, Path):
+        return value
+    if kind is dict:
+        return FrozenDict({key if type(key) is str else freeze(key): freeze(item) for key, item in value.items()})
+    if kind is list:
+        return FrozenList([freeze(item) for item in value])
+    if kind is tuple:
+        return tuple(freeze(item) for item in value)
+    if kind is frozenset:
+        return frozenset(freeze(item) for item in value)
+    raise Unfreezable(f'Cannot freeze published value of type {kind.__name__}')
+
+
+def _freeze_flat(value):
+    """Fast path for the common flat dict/list-of-flat-dicts shapes."""
+    kind = type(value)
+    if kind in _IMMUTABLE_LEAVES:
+        return value
+    if kind is list:
+        items = []
+        for item in value:
+            if type(item) is dict:
+                for leaf in item.values():
+                    if type(leaf) not in _IMMUTABLE_LEAVES:
+                        items.append(freeze(item))
+                        break
+                else:
+                    items.append(FrozenDict(item))
+            else:
+                items.append(_freeze_flat(item) if type(item) in (list, dict) else freeze(item))
+        return FrozenList(items)
+    return freeze(value)
+
+
+def _freeze_rows(rows, *, in_place=False):
+    """Freeze row mappings with one C-level copy per flat value.
+
+    ``in_place`` replaces each plain row in the caller's (owned) dict as it is
+    frozen, so the plain row is released immediately: publication never holds
+    two copies of every row. Only the top-level map is copied (references).
+    """
+    if any(type(row) not in (dict, FrozenDict) for row in rows.values()):
+        raise Unfreezable('Published row is not a plain mapping')
+    target = rows if in_place else {}
+    leaves = _IMMUTABLE_LEAVES
+    for key, row in rows.items():
+        if type(row) is FrozenDict:
+            frozen = row
+        else:
+            nested = [name for name, value in row.items() if type(value) not in leaves]
+            if not nested:
+                frozen = FrozenDict(row)
+            else:
+                copy_ = dict(row)
+                for name in nested:
+                    copy_[name] = _freeze_flat(row[name])
+                frozen = FrozenDict(copy_)
+        target[key] = frozen  # Assigning an existing key keeps iteration valid.
+    return FrozenDict(target)
+
+
+def publish_frozen(value, *, rows=False, in_place=False):
+    """Freeze a read-model map for publication; None when it cannot be proven.
+
+    ``in_place`` (rows only) is for a caller that owns ``value`` and discards it.
+    """
+    try:
+        return _freeze_rows(value, in_place=in_place) if rows else freeze(value)
+    except Unfreezable:
+        return None
+
+
+_PUBLICATIONS = __import__('itertools').count(1)
+
+
+# Read-model attributes whose every assignment advances the publication serial.
+# The serial is process-monotonic and never reused, so equal serials prove the
+# same published objects; with FrozenDict contents (which cannot be mutated in
+# place) an unchanged serial proves unchanged read-model content. Assignment is
+# intercepted in WorkspaceService.__setattr__ so reads stay plain attribute loads.
+# The explore publication token is not a proof map (it may be initialized lazily).
+PUBLISHED_ATTRIBUTES = frozenset(('rows', 'cells', 'protocols', '_fingerprints', 'details', 'disk_index',
+                                  'sources', 'manifests'))
+
+
+PUBLISHED_MAPS = ('rows', 'cells', 'protocols', '_fingerprints')
+
+
+def publication_serial(service):
+    """Monotonic serial of the current read-model publication, or None.
+
+    None unless every proof map (rows, cells, protocols, fingerprints) is a
+    deep-frozen FrozenDict. Callers must then fall back to comparing contents.
+    """
+    serial = getattr(service, '_publication_serial', None)
+    if serial is None:
+        return None
+    for name in PUBLISHED_MAPS:
+        if type(service.__dict__.get(name)) is not FrozenDict:
+            return None
+    return serial
 
 
 class _FrozenProtocolBinding:
@@ -79,7 +274,7 @@ def _readonly_binding_reader(service, protocol):
 def _protocol_summary_can_share(service, filters):
     """Reuse only pure canonical reads within this one summary response."""
     return (getattr(service, 'curation_provider', False) is None
-        and all(type(getattr(service, name, None)) is dict for name in ('rows', 'cells', 'protocols'))
+        and all(type(getattr(service, name, None)) in (dict, FrozenDict) for name in ('rows', 'cells', 'protocols'))
         and (filters is None or (type(filters) is dict and not set(filters) - {
             'epoch_uuid', 'cell_uuid', 'cell_type', 'group_label'}))
         and all(getattr(getattr(service, name, None), '__func__', getattr(service, name, None)) is method
@@ -95,7 +290,7 @@ def _summarize_cells(service, rows, *, current_protocol=None, current_query=None
         bins.setdefault(row['cell_uuid'], []).append(row)
     result = []
     memberships = {key: {member['uuid'] for member in (
-        current_query if current_query is not None and key == current_protocol else service.query_result(key))['epochs']}
+        current_query if current_query is not None and key == current_protocol else service.query_view(key))['epochs']}
         for key in service.protocols} if cross_protocols else {}
     for identity, items in bins.items():
         epoch_ids = {row['epoch_uuid'] for row in items}
@@ -313,6 +508,18 @@ from disco.operation_timing import elapsed
 
 
 class WorkspaceService:
+    def __setattr__(self, name, value):
+        # Every assignment of a published read-model attribute advances the
+        # process-monotonic publication serial (see publication_serial()).
+        object.__setattr__(self, name, value)
+        if name in PUBLISHED_ATTRIBUTES:
+            object.__setattr__(self, '_publication_serial', next(_PUBLICATIONS))
+
+    def __delattr__(self, name):
+        object.__delattr__(self, name)
+        if name in PUBLISHED_ATTRIBUTES:
+            object.__setattr__(self, '_publication_serial', next(_PUBLICATIONS))
+
     def __init__(self, project_dir, curation_provider=None):
         self.project_dir = Path(project_dir).resolve()
         if (self.project_dir / '.portable-restore.pending').exists():
@@ -382,7 +589,8 @@ class WorkspaceService:
         missing = [key for key in definitions if key not in cached]
         built = {}
         if missing:
-            ids = [row['epoch_uuid'] for row in self._tree_rows(None)]
+            # The cached eligible tuple lets tag fields reuse its universe and order.
+            ids = self._eligible()[1]
             built = {field['id']: field for field in TagPredicates(self).catalog_fields(ids, only=set(missing))}
             if built.keys() != set(missing):
                 raise ValueError('Annotation catalog fields changed while loading')
@@ -398,14 +606,26 @@ class WorkspaceService:
         index = getattr(self, 'disk_index', None)
         typed = getattr(self, 'typed_index', None)
         from disco.metadata.disk_index import DiskMetadataIndex
+        # The cached eligible ID tuple proves the scope is every active-source
+        # epoch of this publication: select by source instead of admitting
+        # each identity into a scratch table (B9), then keep eligible order.
+        cached = getattr(self, '_eligible_cache', None)
+        whole = cached is not None and ids is cached[1][1]
         if typed is not None and type(index) is DiskMetadataIndex and isinstance(ids, (list, tuple)):
             from disco.metadata.explore_queries import typed_reader
             with typed_reader(self) as reader:
                 validated = reader._validate(predicate)
-                matched = set(reader.iter_membership(validated, {'epoch_ids': iter(ids)}))
+                scope = ({'sources': list(cached[1][2]['active_source_revisions'])} if whole
+                         else {'epoch_ids': iter(ids)})
+                matched = set(reader.iter_membership(validated, scope))
             # The native contract keeps first-occurrence order and deduplicates IDs.
-            return validated, [identity for identity in dict.fromkeys(ids) if identity in matched]
+            return validated, [identity for identity in (ids if whole else dict.fromkeys(ids)) if identity in matched]
         if index:
+            if (whole and type(index) is DiskMetadataIndex and not cached[1][2]['excluded_source_revisions']
+                    and len(ids) == len(self.rows)):
+                validated, found = index.match(predicate)
+                matched = set(found)
+                return validated, [identity for identity in ids if identity in matched]
             return index.match(predicate, ids=ids)
         catalog, values = predicate_scope(*self._registered_tree_fields())
         validated = validate_predicate(predicate, catalog, values)
@@ -415,9 +635,20 @@ class WorkspaceService:
         """Return validated predicate, exact IDs and optional tag provenance."""
         self._ready()
         from disco.navigation.tag_predicates import TagPredicates
-        eligible = [row['epoch_uuid'] for row in self._tree_rows(None)] if ids is None else list(ids)
-        if set(eligible) - self.rows.keys():
-            raise ValueError('Predicate scope contains unavailable epochs')
+        if ids is None:
+            # Drawn from the published rows by construction; no membership recheck.
+            _, eligible, _, universe = self._eligible()
+            rows = self.rows
+            # Eligible order is exactly this unique tree key, so a sparse match is
+            # ordered by sorting it instead of scanning every eligible ID.
+            order = lambda found: sorted(found, key=lambda key: (rows[key]['date'], rows[key]['start_time'], key))
+            if getattr(self._filter_rows, '__func__', None) is not WorkspaceService._filter_rows:
+                order = None
+            return TagPredicates(self).match(predicate, eligible, universe=universe, order=order)
+        else:
+            eligible = list(ids)
+            if set(eligible) - self.rows.keys():
+                raise ValueError('Predicate scope contains unavailable epochs')
         return TagPredicates(self).match(predicate, eligible)
 
     def set_source_state_provider(self, provider):
@@ -460,6 +691,49 @@ class WorkspaceService:
             self._registered_predicate_cache = None
         return cached[1]
 
+    def preverify_sources(self, identities=None):
+        """Hash registered recordings outside any database lock (memory only).
+
+        For each source whose current stat signature is not yet verified, the
+        whole-file SHA-256 is computed and kept only if it equals the registered
+        identity and the stat signature (path, device, inode, size, mtime, ctime)
+        is identical before and after hashing. ``_verified_source`` accepts such a
+        result only when a fresh stat taken under its caller's lock still equals
+        that signature. Nothing is persisted; a restart starts unverified.
+        Returns the number of sources newly verified.
+        """
+        manifests = getattr(self, 'manifests', None) or {}
+        pending = self.__dict__.setdefault('_preverified_sources', {})
+        verified = 0
+        for identity in (list(manifests) if identities is None else list(identities)):
+            manifest = manifests.get(identity)
+            if manifest is None or manifest.get('source_sha256') != identity:
+                continue
+            try:
+                path = Path(manifest['source_path']).resolve()
+                stat = path.stat()
+                signature = (str(path), stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+                if (getattr(self, '_source_signatures', {}).get(identity) == signature
+                        or pending.get(identity) == signature or stat.st_size != manifest['source_size']):
+                    continue
+                if digest(path) != identity:
+                    continue  # Never trusted; the locked path refuses it with its own error.
+                after = path.stat()
+                if signature == (str(path), after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns):
+                    pending[identity] = signature
+                    verified += 1
+            except (OSError, KeyError, TypeError, ValueError):
+                continue
+        return verified
+
+    def preverify_epoch_source(self, epoch_uuid):
+        """Outside-lock first-access hash for the source owning one epoch, if needed."""
+        try:
+            row = getattr(self, 'rows', {}).get(_uuid(epoch_uuid))
+        except (TypeError, ValueError, AttributeError):
+            return 0
+        return self.preverify_sources([row['source_sha256']]) if row is not None and self._loaded else 0
+
     def _verified_source(self, manifest, signature_cache=None):
         signatures = self._source_signatures if signature_cache is None else signature_cache
         path = Path(manifest['source_path']).resolve()
@@ -468,6 +742,10 @@ class WorkspaceService:
         expected = manifest['source_sha256']
         if stat.st_size != manifest['source_size']:
             raise ValueError('Source recording size changed; import a new revision')
+        if signatures.get(expected) != signature and self.__dict__.get('_preverified_sources', {}).get(expected) == signature:
+            # Hashed outside the lock with an identical stat before/after; this
+            # fresh stat (taken under the caller's lock) still matches it.
+            signatures[expected] = signature
         if signatures.get(expected) != signature:
             if digest(path) != expected:
                 raise ValueError('Source recording checksum changed; refusing trace access')
@@ -672,50 +950,66 @@ class WorkspaceService:
                     pass  # An absent/invalid disposable index is rebuilt below.
             metrics['metadata_index_seconds'] = time.perf_counter() - index_started
             metrics['metadata_index_generation'] = generation
-        for source, metadata_path, key in prepared:
-            manifest, identity = source['manifest'], source['source_sha256']
-            cached = old_cache.get(identity)
-            # Even when one new source requires a new generation, unchanged
-            # sources can retain lazy detail views from the previous index.
-            reusable_index = disk_index or (previous_index if projection_store and cached is not None and cached['key'] == key else None)
-            if reusable_index is not None:
-                projection = reusable_index.source_projection(identity, lazy_details=True)
-                metrics['source_cache_hits'] += 1
-            else:
-                disk_projection = projection_store.read(key) if projection_store else None
-                if disk_projection is not None:
-                    projection = disk_projection
-                    metrics['source_cache_hits'] += 1
-                elif not projection_store and cached is not None and cached['key'] == key:
-                    projection = cached['projection']
+        # Unchanged published generation: every source key (DB record incl.
+        # manifest, metadata and recording stat signatures, projection contract)
+        # and the sealed index generation equal the last successful publication.
+        # The published frozen rows ARE that projection; skip decoding them.
+        # SQL protocol validation and the all-source final stat checks still run.
+        reuse_published = (projection_store is not None and disk_index is not None and disk_index is previous_index
+            and getattr(self, '_published_generation', None) == generation
+            and getattr(self, 'manager_error', None) is None
+            and publication_serial(self) is not None
+            and {key: entry['key'] for key, entry in old_cache.items()} == {key: entry['key'] for key, entry in next_cache.items()})
+        if reuse_published:
+            rows, cells, fingerprints = self.rows, self.cells, self._fingerprints
+            sources, manifests, details = self.sources, self.manifests, self.details
+            metrics['source_cache_hits'] += len(prepared)
+            metrics['published_read_model'] = 'reused'
+        else:
+            for source, metadata_path, key in prepared:
+                manifest, identity = source['manifest'], source['source_sha256']
+                cached = old_cache.get(identity)
+                # Even when one new source requires a new generation, unchanged
+                # sources can retain lazy detail views from the previous index.
+                reusable_index = disk_index or (previous_index if projection_store and cached is not None and cached['key'] == key else None)
+                if reusable_index is not None:
+                    projection = reusable_index.source_projection(identity, lazy_details=True)
                     metrics['source_cache_hits'] += 1
                 else:
-                    rebuild_started = time.perf_counter()
-                    document = json.loads(metadata_path.read_text())
-                    if document['uuid'] != source['experiment_uuid']:
-                        raise ValueError('Imported experiment identity disagrees with catalog')
-                    path, signature = self._verified_source(manifest, verified_signatures)
-                    projection = self._read_source_metadata(source, document, path, signature)
-                    if projection_store:
-                        pending_projections.append((key, projection))
+                    disk_projection = projection_store.read(key) if projection_store else None
+                    if disk_projection is not None:
+                        projection = disk_projection
+                        metrics['source_cache_hits'] += 1
+                    elif not projection_store and cached is not None and cached['key'] == key:
+                        projection = cached['projection']
+                        metrics['source_cache_hits'] += 1
                     else:
-                        projection = copy.deepcopy(projection)
-                    metrics['source_cache_rebuilt'] += 1
-                    metrics['timing_ms']['source_rebuild'] += (time.perf_counter() - rebuild_started) * 1000
-            if rows.keys() & projection['rows'].keys():
-                raise ValueError('Duplicate epoch UUID across source recordings')
-            snapshot = projection if projection_store else copy.deepcopy(projection)
-            rows.update(snapshot['rows'])
-            # Retain lazy details and dispatch by the independently validated
-            # source owner, without probing every preceding source mapping.
-            detail_maps[identity] = snapshot['details']
-            cells.update(snapshot['cells'])
-            fingerprints.update(snapshot['fingerprints'])
-            sources.append(snapshot['source'])
-            manifests[identity] = copy.deepcopy(manifest)
-            next_cache[identity] = {'key':key,'disk':True} if projection_store else {'key':key,'projection':projection}
-        details = _SourceDetails(rows, detail_maps)
-        number_block_epochs(rows)
+                        rebuild_started = time.perf_counter()
+                        document = json.loads(metadata_path.read_text())
+                        if document['uuid'] != source['experiment_uuid']:
+                            raise ValueError('Imported experiment identity disagrees with catalog')
+                        path, signature = self._verified_source(manifest, verified_signatures)
+                        projection = self._read_source_metadata(source, document, path, signature)
+                        if projection_store:
+                            pending_projections.append((key, projection))
+                        else:
+                            projection = copy.deepcopy(projection)
+                        metrics['source_cache_rebuilt'] += 1
+                        metrics['timing_ms']['source_rebuild'] += (time.perf_counter() - rebuild_started) * 1000
+                if rows.keys() & projection['rows'].keys():
+                    raise ValueError('Duplicate epoch UUID across source recordings')
+                snapshot = projection if projection_store else copy.deepcopy(projection)
+                rows.update(snapshot['rows'])
+                # Retain lazy details and dispatch by the independently validated
+                # source owner, without probing every preceding source mapping.
+                detail_maps[identity] = snapshot['details']
+                cells.update(snapshot['cells'])
+                fingerprints.update(snapshot['fingerprints'])
+                sources.append(snapshot['source'])
+                manifests[identity] = copy.deepcopy(manifest)
+                next_cache[identity] = {'key':key,'disk':True} if projection_store else {'key':key,'projection':projection}
+            details = _SourceDetails(rows, detail_maps)
+            number_block_epochs(rows)
         query_started = time.perf_counter()
         protocols = {}
         for file in sorted((self.project_dir / 'protocols').glob('*.protocol.json')):
@@ -760,6 +1054,10 @@ class WorkspaceService:
                 projection_store.write(key, projection)
             except OSError as error:
                 metrics.setdefault('cache_warnings', []).append('Source projection cache could not be saved: ' + str(error))
+        # Release written projections so publication can free each plain row
+        # as it is frozen in place (no second full copy of the rows).
+        pending_projections.clear()
+        projection = snapshot = None
         if projection_store:
             if disk_index is None:
                 self.last_refresh = {'status':'indexing', 'started_at':dt.datetime.now(dt.timezone.utc).isoformat()}
@@ -774,12 +1072,57 @@ class WorkspaceService:
         if disk_index is not None:
             from disco.metadata.typed_lifecycle import prepare as prepare_typed
             typed_started = time.perf_counter()
-            typed_index, metrics['typed_metadata_index'] = prepare_typed(disk_index, getattr(self, 'typed_index', None))
+            try:
+                typed_index, metrics['typed_metadata_index'] = prepare_typed(disk_index, getattr(self, 'typed_index', None))
+            except Exception as error:
+                # The typed sidecar only accelerates reads of this verified
+                # native generation. Without it, queries use the native index;
+                # refresh still publishes and health reports the reason.
+                typed_index, metrics['typed_metadata_index'] = None, 'unavailable'
+                metrics['typed_metadata_index_error'] = f'{type(error).__name__}: {error}'
             metrics['typed_metadata_index_seconds'] = time.perf_counter() - typed_started
             for path, signature in final_checks:
                 if self._input_signature(path) != signature:
                     raise ValueError('Recorded input changed while building typed metadata index')
         metrics['discovery_indexes_preserved'] = preserve_indexes
+        if reuse_published:
+            # Keep the previous published objects and publication serial so
+            # identity-keyed caches stay warm. Only a changed SQL protocol result
+            # is republished (which advances the serial).
+            if protocols != self.protocols:
+                frozen_protocols = publish_frozen(protocols)
+                self.protocols = frozen_protocols if frozen_protocols is not None else protocols
+                self._tree_page_scope_cache = None
+                self._tree_catalog_cache = {}
+                self._explore_publication = str(uuid.uuid4())
+                metrics['published_read_model'] = 'protocols-republished'
+            if typed_index is not getattr(self, 'typed_index', None):
+                # A reopened/rebuilt typed generation is always published; its
+                # token changes the explore publication like any republication.
+                self.typed_index = typed_index
+                self._explore_publication = str(uuid.uuid4())
+                metrics['published_read_model'] = 'typed-republished'
+                if typed_index is not None:
+                    try:
+                        metrics['cache_cleanup'] = {'typed_metadata': typed_index.publish()}
+                    except (OSError, ValueError) as error:
+                        metrics.setdefault('cache_warnings', []).append('Derived cache cleanup was deferred: ' + str(error))
+            self.project, self.config, self.dj, self.Event = project, config, dj, Event
+            self._source_metadata_cache = next_cache
+            self._source_signatures = verified_signatures
+            self._metadata_digests = verified_metadata
+            self._loaded = True
+            self.manager_error = None
+            if projection_leases is not None:projection_leases.close()
+            return {'sources': len(sources), 'epochs': len(rows), 'protocols': len(protocols)}
+        # Publish deep-frozen maps so the publication serial is a complete
+        # freshness proof. Unfreezable content keeps the content-comparing path.
+        freeze_started = time.perf_counter()
+        frozen = (publish_frozen(rows, rows=True, in_place=True), publish_frozen(cells), publish_frozen(protocols),
+                  publish_frozen(fingerprints))
+        if all(value is not None for value in frozen):
+            rows, cells, protocols, fingerprints = frozen
+        metrics['timing_ms']['publish_freeze'] = (time.perf_counter() - freeze_started) * 1000
         self.project, self.config, self.dj, self.Event = project, config, dj, Event
         self.rows, self.details, self.cells, self.sources = rows, disk_index.details if disk_index else details, cells, sources
         # Published rows/details changed even when the verified index was reused.
@@ -799,6 +1142,11 @@ class WorkspaceService:
             self._registered_predicate_cache = None
         elif registered_cache is not None:
             self._registered_tree_cache = ((id(rows), len(rows), id(self.details), len(self.details)), registered_cache[1])
+        self._published_generation = generation
+        from disco.navigation.tag_predicates import prepare_publication
+        prepare_started = time.perf_counter()
+        prepare_publication(self)
+        metrics['timing_ms']['prepare_tag_publication'] = (time.perf_counter() - prepare_started) * 1000
         self._loaded = True
         self.manager_error = None
         if projection_store and disk_index is not None:
@@ -811,9 +1159,39 @@ class WorkspaceService:
         if projection_leases is not None:projection_leases.close()
         return {'sources': len(sources), 'epochs': len(rows), 'protocols': len(protocols)}
 
+    def verify_sources(self):
+        """Pre-write source recheck without decoding or republishing the read model.
+
+        Compares every registered source's database record (including its
+        manifest) and the stat signatures of its recording and imported metadata
+        with the witnesses of the last successful refresh: O(sources), not
+        O(epochs). Any difference, or an unready/unfrozen read model, runs the
+        complete refresh (which revalidates or fails closed). Returns whether the
+        published read model was kept.
+        """
+        cache = getattr(self, '_source_metadata_cache', None)
+        if (not self._loaded or publication_serial(self) is None or not cache
+                or getattr(self, 'manager_error', None) is not None):
+            self.refresh()
+            return False
+        _, Source, _, _ = workspace_tables(self.dj)
+        records = {row['source_sha256']: row for row in (Source & {'project_uuid': self.project['project_uuid']}).to_dicts()}
+        try:
+            current = records.keys() == cache.keys() and all(
+                checksum(record) == cache[identity]['key'][0]
+                and self._input_signature(Path(record['manifest']['metadata_path']).resolve()) == cache[identity]['key'][1]
+                and self._input_signature(Path(record['manifest']['source_path']).resolve()) == cache[identity]['key'][3]
+                for identity, record in records.items())
+        except (OSError, ValueError, KeyError, TypeError):
+            current = False
+        if not current:
+            self.refresh()
+            return False
+        return True
+
     def _ready(self):
         if not self._loaded:
-            raise RuntimeError('Workspace validation did not complete; refresh required')
+            raise WorkspaceNotReady('Workspace validation did not complete; refresh required')
 
     def cell_rows(self, cell_uuid):
         """Registered cell rows, independent of protocol or source exclusions.
@@ -848,7 +1226,7 @@ class WorkspaceService:
         return {}
 
     def fingerprints(self, protocol_uuid):
-        result = self.query_result(protocol_uuid)
+        result = self.query_view(protocol_uuid)
         return {member['uuid']: self._fingerprints[member['uuid']] for member in result['epochs']}
 
     @staticmethod
@@ -911,9 +1289,83 @@ class WorkspaceService:
                         if self._fingerprints[member['uuid']] != member['metadata_hash']]})
             return original
 
+    def query_view(self, protocol_uuid):
+        """Read-only effective query result shared by every reader of one publication.
+
+        Equivalent to ``query_result`` but returns a deep-frozen value cached per
+        (publication serial, protocol, binding revision, binding version); a hit
+        costs one binding-header read and no copy. Custom service readers,
+        non-canonical binding providers and unfrozen read models return the
+        ordinary fresh ``query_result`` copy instead.
+        """
+        serial = publication_serial(self)
+        provider = getattr(self, 'binding_provider', None)
+        header_provider = getattr(self, 'binding_header_provider', None)
+        if (serial is None or getattr(self.query_result, '__func__', None) is not WorkspaceService.query_result
+                or getattr(self.binding, '__func__', None) is not _CANONICAL_BINDING_READ):
+            return self.query_result(protocol_uuid)
+        if provider is not None:
+            from disco.decisions.explorer import is_canonical_binding_reader, ExplorerHistory
+            owner = getattr(provider, '__self__', None)
+            if (not is_canonical_binding_reader(provider) or type(owner) is not ExplorerHistory
+                    or getattr(header_provider, '__self__', None) is not owner
+                    or getattr(header_provider, '__func__', None) is not ExplorerHistory.protocol_binding_header):
+                return self.query_result(protocol_uuid)
+        self._ready()
+        protocol_uuid = _uuid(protocol_uuid)
+        header = header_provider(protocol_uuid) if provider is not None else None
+        if header is None:
+            entry = self.protocols[protocol_uuid]
+            if entry['definition'].get('initial_revision_uuid'):
+                return self.query_result(protocol_uuid)  # Raises the interrupted-creation error.
+            return entry['result']
+        key = (serial, protocol_uuid, header.get('revision_uuid') if header else None,
+               header.get('version') if header else None)
+        cache = getattr(self, '_query_view_cache', None)
+        if cache is None or cache[0] != serial:
+            cache = self._query_view_cache = (serial, {})
+        hit = cache[1].get(protocol_uuid)
+        if hit is not None and hit[0] == key:
+            return hit[1]
+        result = self.query_result(protocol_uuid)
+        binding = result.get('dataset_binding')
+        observed = (serial, protocol_uuid, binding.get('revision_uuid') if binding else None,
+                    binding.get('version') if binding else None)
+        try:
+            view = freeze(result)
+        except Unfreezable:
+            return result
+        if observed == key and publication_serial(self) == serial:
+            cache[1][protocol_uuid] = (key, view)
+        return view
+
+    def query_members(self, protocol_uuid):
+        """Read-only effective member UUID set of ``query_view``, or None.
+
+        Shared per cached query view (same publication serial, binding revision
+        and version), so a repeated read costs one binding-header read. None
+        when the view is not a cached frozen publication value (custom readers,
+        unfrozen read models): callers keep their ``query_result`` path.
+        """
+        if publication_serial(self) is None:
+            return None
+        view = self.query_view(protocol_uuid)
+        if type(view) is not FrozenDict:
+            return None
+        cache = getattr(self, '_query_member_sets', None)
+        if cache is None:
+            cache = self._query_member_sets = {}
+        protocol_uuid = _uuid(protocol_uuid)
+        entry = cache.get(protocol_uuid)
+        if entry is not None and entry[0] is view:  # Holds the view: identity cannot be reused.
+            return entry[1]
+        members = frozenset(member['uuid'] for member in view['epochs'])
+        cache[protocol_uuid] = (view, members)
+        return members
+
     def filtered_rows(self, protocol_uuid, filters=None):
         filters = validate_filters(filters)
-        result = self.query_result(protocol_uuid)
+        result = self.query_view(protocol_uuid)
         curation = self._curation(protocol_uuid)
         rows = [self._decorate(self.rows[member['uuid']], curation) for member in result['epochs']]
         return self._filter_rows(rows, filters, protocol_uuid)
@@ -1004,7 +1456,7 @@ class WorkspaceService:
         for key, value in self.protocols.items():
             definition = value['definition']
             members = self.filtered_rows(key)
-            query = self.query_result(key)
+            query = self.query_view(key)
             protocols.append({'protocol_uuid': key, 'name': definition['name'],
                 'acquisition_protocol': value['result']['protocol_name'], 'counts': self._counts(members),
                 'query': query.get('effective_query', definition['query']), 'starter_query': definition['query'],
@@ -1024,7 +1476,7 @@ class WorkspaceService:
         shared = _protocol_summary_can_share(self, filters)
         if shared:
             filters = validate_filters(filters)
-            query = self.query_result(protocol_uuid)
+            query = self.query_view(protocol_uuid)
             all_rows = self._filter_rows([
                 self._decorate(self.rows[member['uuid']], {}) for member in query['epochs']
             ], {}, protocol_uuid)
@@ -1032,7 +1484,7 @@ class WorkspaceService:
         else:
             rows = self.filtered_rows(protocol_uuid, filters)
             all_rows = self.filtered_rows(protocol_uuid)
-            query = self.query_result(protocol_uuid)
+            query = self.query_view(protocol_uuid)
         definition = self.protocols[_uuid(protocol_uuid)]['definition']
         return {'definition': definition, 'starter_query': definition['query'],
                 'effective_query': query.get('effective_query', definition['query']),
@@ -1056,22 +1508,38 @@ class WorkspaceService:
                 for name, method in _PROTOCOL_BROWSE_READS.items())
                 or not _readonly_binding_reader(self, protocol_uuid)):
             return None
-        result = self.query_result(protocol_uuid)
+        result = self.query_view(protocol_uuid)
         definition = self.protocols[_uuid(protocol_uuid)]['definition']
-        rows = [self.rows[member['uuid']] for member in result['epochs']]
         scope = self.source_scope()
-        excluded = set(scope['excluded_source_revisions'])
-        affected = [row for row in rows if row['source_sha256'] in excluded]
+        # The aggregates depend only on the (frozen) member view and the source
+        # scope: reuse them for the same view object and scope revision.
+        serial = publication_serial(self)
+        memo = self.__dict__.get('_browse_aggregates')
+        if (serial is not None and memo is not None and memo[0] is result
+                and memo[1] == scope['revision'] and memo[2] == serial):
+            aggregates = memo[3]
+        else:
+            rows = [self.rows[member['uuid']] for member in result['epochs']]
+            excluded = set(scope['excluded_source_revisions'])
+            affected = [row for row in rows if row['source_sha256'] in excluded]
+            aggregates = {'cell_types': sorted({row['cell_type'] for row in rows if row.get('cell_type')}),
+                          'groups': sorted({row['group_label'] for row in rows}, key=str),
+                          'excluded_epoch_count': len(affected),
+                          'excluded_sources': sorted({row['source_sha256'] for row in affected})}
+            if serial is not None:
+                self.__dict__['_browse_aggregates'] = (result, scope['revision'], serial, aggregates)
         return {'definition': copy.deepcopy(definition), 'starter_query': copy.deepcopy(definition['query']),
                 'effective_query': copy.deepcopy(result.get('effective_query', definition['query'])),
                 'binding': copy.deepcopy(result.get('dataset_binding')),
-                'selection_options': {'cell_types': sorted({row['cell_type'] for row in rows if row.get('cell_type')})},
-                'groups': sorted({row['group_label'] for row in rows}, key=str),
-                'source_eligibility': {'excluded_epoch_count': len(affected),
-                    'excluded_sources': sorted({row['source_sha256'] for row in affected}),
-                    'propagation_required': bool(affected), 'source_scope_revision': scope['revision']}}
+                'selection_options': {'cell_types': list(aggregates['cell_types'])},
+                'groups': list(aggregates['groups']),
+                'source_eligibility': {'excluded_epoch_count': aggregates['excluded_epoch_count'],
+                    'excluded_sources': list(aggregates['excluded_sources']),
+                    'propagation_required': bool(aggregates['excluded_epoch_count']),
+                    'source_scope_revision': scope['revision']}}
 
-    def epoch_page(self, protocol_uuid, filters=None, offset=0, limit=100, anchor_uuid=None, *, include_curation=True, include_cells=False):
+    def epoch_page(self, protocol_uuid, filters=None, offset=0, limit=100, anchor_uuid=None, *, include_curation=True, include_cells=False,
+                   cells_page=None):
         with elapsed("workspace_service", "epoch_page"):
             if isinstance(offset, bool) or isinstance(limit, bool) or not isinstance(offset, int) or not isinstance(limit, int) or offset < 0 or not 1 <= limit <= 250:
                 raise ValueError('Epoch page requires nonnegative offset and limit 1–250')
@@ -1094,12 +1562,35 @@ class WorkspaceService:
                     **({'_shared_annotation_generation':shared_generation} if shared_generation is not None else {}),
                     **({'anchor_index': anchor_index, 'anchor_uuid': identity} if anchor_index is not None else {})}
             if include_cells:
-                counts={}
-                for identity in identities:
-                    cell=self.rows[identity]['cell_uuid']
-                    counts[cell]=counts.get(cell,0)+1
-                result['cells']=sorted(({**self.cells[cell],'epochs':count} for cell,count in counts.items()),
-                    key=lambda row:(row['cell_type'] or '',row['date'],row['label']))
+                # Cell counts depend only on the identity tuple, which the
+                # serial-keyed page cache returns as the same object.
+                memo = self.__dict__.get('_page_cell_counts')
+                serial = publication_serial(self)
+                if serial is not None and memo is not None and memo[0] is identities and memo[1] == serial:
+                    counts, ordered = memo[2], memo[3]
+                else:
+                    counts={}
+                    for identity in identities:
+                        cell=self.rows[identity]['cell_uuid']
+                        counts[cell]=counts.get(cell,0)+1
+                    # First-appearance order in this page order (dict order).
+                    ordered=tuple(counts.items())
+                    if publication_serial(self) is not None:
+                        self.__dict__['_page_cell_counts'] = (identities, publication_serial(self), counts, ordered)
+                if cells_page is None:
+                    result['cells']=sorted(({**self.cells[cell],'epochs':count} for cell,count in counts.items()),
+                        key=lambda row:(row['cell_type'] or '',row['date'],row['label']))
+                else:
+                    # A window of cells in first appearance along the epoch
+                    # order (the search contract); O(window) on a memo hit.
+                    cells_limit, cells_after = cells_page
+                    if (type(cells_limit) is not int or not 1 <= cells_limit <= 1000
+                            or type(cells_after) is not int or cells_after < 0):
+                        raise ValueError('cells_limit must be 1–1000 and cells_after a nonnegative position')
+                    window = ordered[cells_after:cells_after + cells_limit]
+                    result['cells']=[{**self.cells[cell],'epochs':count} for cell,count in window]
+                    result['cells_total']=len(ordered)
+                    result['cells_next']=(cells_after+len(window) if cells_after+len(window)<len(ordered) else None)
             return result
 
     def _epoch_page_identities(self, protocol_uuid, filters=None):
@@ -1121,7 +1612,11 @@ class WorkspaceService:
         if header is None and protocol['definition'].get('initial_revision_uuid'):
             raise ValueError('Pinned protocol creation was interrupted. Retry creating it from the same saved selection and name.')
         members = (binding['recipe']['epochs'] if binding else protocol['result']['epochs'])
-        signature = None if header_provider and header is not None else tuple(member['uuid'] for member in members)
+        # A frozen publication's serial proves unbound membership and every
+        # fingerprint, so hits need no per-member comparison.
+        serial = publication_serial(self)
+        signature = (None if (header_provider and header is not None) or serial is not None
+                     else tuple(member['uuid'] for member in members))
         key = (protocol_uuid, header and header['version'], header and header.get('revision_uuid'), tuple(sorted(ordinary.items())))
         from disco.metadata.disk_index import DiskMetadataIndex
         index = getattr(self, 'disk_index', None)
@@ -1130,7 +1625,8 @@ class WorkspaceService:
         overhead = 16 * 1024
         if isinstance(index, DiskMetadataIndex):
             index._check()
-            generation = (id(index),index.generation,id(self.rows),id(self.protocols),id(self._fingerprints))
+            generation = (('publication', serial, index.generation) if serial is not None else
+                          (id(index),index.generation,id(self.rows),id(self.protocols),id(self._fingerprints)))
             previous = getattr(cache_owner, '_epoch_page_cache', None)
             if overhead < EPOCH_PAGE_CACHE_BYTES:
                 if previous is None or previous[0] != generation:
@@ -1139,15 +1635,24 @@ class WorkspaceService:
             else:
                 cache_owner._epoch_page_cache = None
         entry = cache.get(key) if cache is not None else None
-        if (entry is not None and (signature is None or signature == entry[0])
-                and all(self._fingerprints.get(identity)==fingerprint for identity,fingerprint in entry[3].items())):
+        if (entry is not None and (serial is not None or (
+                (signature is None or signature == entry[0])
+                and all(self._fingerprints.get(identity)==fingerprint for identity,fingerprint in entry[3].items())))):
             cache.pop(key)
             cache[key] = entry
             identities = entry[1]
         else:
             if cache is not None:
                 cache.pop(key,None)
-            if header_provider and header is not None:
+            if serial is not None and (header is None or header_provider):
+                # Frozen publication: the shared read-only query view already
+                # holds the bound (or original) membership; no recipe copy.
+                view = self.query_view(protocol_uuid)
+                members = view['epochs']
+                bound = view.get('dataset_binding')
+                key = (protocol_uuid, bound and bound['version'], bound and bound.get('revision_uuid'), tuple(sorted(ordinary.items())))
+                binding = None
+            elif header_provider and header is not None:
                 # Re-read the binding together with its recipe on a cold scope.
                 # A concurrent bind may have changed since the header lookup.
                 binding = self.binding(protocol_uuid)
@@ -1160,7 +1665,16 @@ class WorkspaceService:
                 raise ValueError('Bound dataset contains unavailable epochs; explicit reconciliation is required')
             rows = self._filter_rows([self.rows[identity] for identity in signature], ordinary)
             identities = tuple(row['epoch_uuid'] for row in rows)
-            if cache is not None:
+            if cache is not None and serial is not None:
+                # The serial proves membership and fingerprints: retain only the
+                # ordered identity tuple (its strings are the published keys).
+                size = sys.getsizeof(identities)
+                if size + overhead <= EPOCH_PAGE_CACHE_BYTES:
+                    cache.pop(key,None)
+                    cache[key] = (None,identities,size,None)
+                    while len(cache) > 8 or overhead + sum(item[2] for item in cache.values()) > EPOCH_PAGE_CACHE_BYTES:
+                        cache.pop(next(iter(cache)))
+            elif cache is not None:
                 # Only UUID tuples are retained. Conservatively count their
                 # strings twice even if borrowed/shared, keeping admission cheap.
                 size = sum(sys.getsizeof(values) + sum(sys.getsizeof(value) for value in values)
@@ -1223,7 +1737,7 @@ class WorkspaceService:
         else:
             known = (self._tree_fields(protocol_uuid)[0]['fields'] if filters else
                      self._registered_tree_fields()[0]['fields'] if binding or protocol_uuid is None else None)
-            rows = self._tree_rows(protocol_uuid, filters)
+            rows = self._navigation_rows(protocol_uuid, filters)
             index = getattr(self, 'disk_index', None)
             if index:
                 ids = [row['epoch_uuid'] for row in rows]
@@ -1265,13 +1779,77 @@ class WorkspaceService:
         return {'fields':[{key:copy.deepcopy(field[key]) for key in names if key in field}
             for field in catalog['fields']]}
 
-    def _tree_rows(self, protocol_uuid, filters=None):
+    def _navigation_rows(self, protocol_uuid, filters=None):
+        """Scope rows for navigation/explore readers, which never read curation.
+
+        A replaced ``_tree_rows`` policy stays authoritative and is called with
+        its original signature.
+        """
+        if getattr(self._tree_rows, '__func__', None) is WorkspaceService._tree_rows:
+            return self._tree_rows(protocol_uuid, filters, curation=False)
+        return self._tree_rows(protocol_uuid, filters)
+
+    def _tree_rows(self, protocol_uuid, filters=None, *, curation=True):
         if protocol_uuid is not None:
-            return self.filtered_rows(protocol_uuid, filters)
+            if curation or getattr(self.filtered_rows, '__func__', None) is not WorkspaceService.filtered_rows:
+                return self.filtered_rows(protocol_uuid, filters)
+            # Navigation/explore scopes never read curation state: borrow the
+            # published rows of the cached member view (no recipe copy, no
+            # whole-protocol curation read or per-member decoration).
+            filters = validate_filters(filters)
+            result = self.query_view(protocol_uuid)
+            return self._filter_rows([self.rows[member['uuid']] for member in result['epochs']], filters, protocol_uuid)
         self._ready()
         filters = validate_filters(filters)
-        active = set(self.source_scope()['active_source_revisions'])
+        scope = self.source_scope()
+        if not filters:
+            return list(self._eligible(scope)[0])
+        active = set(scope['active_source_revisions'])
         return self._filter_rows([row for row in self.rows.values() if row['source_sha256'] in active], filters)
+
+    def _eligible_total(self, scope):
+        """Exact active-source cardinality without constructing ordered rows."""
+        prepared = getattr(self, '_prepared_tag_publication', None)
+        if (getattr(self._filter_rows, '__func__', None) is WorkspaceService._filter_rows
+                and publication_serial(self) is not None):
+            if not scope['excluded_source_revisions']:
+                return len(self.rows)
+            if prepared is not None and prepared.rows is self.rows and prepared.source_counts is not None:
+                return sum(prepared.source_counts.get(source, 0) for source in scope['active_source_revisions'])
+        return len(self._eligible(scope)[1])
+
+    def _eligible(self, scope=None):
+        """Active-source rows and IDs in tree order, kept per publication and source scope.
+
+        Exactly the unfiltered `_tree_rows(None)` result. The tuple of IDs is also
+        the proof object that a predicate scope is the whole eligible catalog.
+        """
+        scope = scope or self.source_scope()
+        active = set(scope['active_source_revisions'])
+        # A replaced filter policy keeps deciding unfiltered eligibility itself.
+        if getattr(self._filter_rows, '__func__', None) is not WorkspaceService._filter_rows:
+            rows = tuple(self._filter_rows([row for row in self.rows.values() if row['source_sha256'] in active], {}))
+            ids = tuple(row['epoch_uuid'] for row in rows)
+            return rows, ids, scope, frozenset(ids)
+        publication = getattr(self, '_explore_publication', None)
+        key = (publication, id(self.rows), len(self.rows), scope['revision'])
+        cached = getattr(self, '_eligible_cache', None)
+        if publication is not None and cached is not None and cached[0] == key:
+            return cached[1]
+        rows = tuple(sorted((row for row in self.rows.values() if row['source_sha256'] in active),
+                            key=lambda row: (row['date'], row['start_time'], row['epoch_uuid'])))
+        ids = tuple(row['epoch_uuid'] for row in rows)
+        # A private atomic-key dict retains the identical membership snapshot
+        # without a GC-traversed set table. Its read-only keys view supports the
+        # same membership and set operations; no owner can mutate the backing
+        # dict. Non-string custom identities retain their previous representation.
+        universe = dict.fromkeys(ids).keys() if all(type(identity) is str for identity in ids) else frozenset(ids)
+        if publication_serial(self) is not None:
+            rows = _EligibleRows(ids, self.rows)
+        value = (rows, ids, scope, universe)
+        if publication is not None:
+            self._eligible_cache = (key, value)
+        return value
 
     def validate_tree_splits(self, protocol_uuid, splits):
         fields = self.tree_fields(protocol_uuid)['fields']
@@ -1333,13 +1911,19 @@ class WorkspaceService:
             from disco.metadata.explore_queries import explore_page
             return explore_page(self, predicate, **options)
 
-    def explore_preview(self, predicate, splits='date,protocol,cell', *, include_tree=True, include_catalog_summary=True):
+    def explore_preview(self, predicate, splits='date,protocol,cell', *, include_tree=True, include_catalog_summary=True,
+                        include_membership=True):
         with elapsed("workspace_service", "explore_preview"):
             if type(include_catalog_summary) is not bool or (include_tree and not include_catalog_summary):
                 raise ValueError('A rendered tree requires catalog summaries; include_catalog_summary must be boolean')
+            if not (include_tree or include_catalog_summary or include_membership):
+                counted = self._counted_preview(predicate, splits)
+                if counted is not None:
+                    return counted
             scope = self.source_scope()
-            eligible = [row['epoch_uuid'] for row in self._tree_rows(None)]
-            validated, identities, annotation_scope = self.match_predicate(predicate, eligible)
+            self._ready()
+            eligible = self._eligible(scope)[1]
+            validated, identities, annotation_scope = self.match_predicate(predicate)
             index = getattr(self, 'disk_index', None)
             if not include_catalog_summary:
                 # Search-result navigation needs field identities, exact frozen
@@ -1380,6 +1964,518 @@ class WorkspaceService:
                     'metadata_fingerprint_version': 2,
                     **({'annotation_scope': annotation_scope} if annotation_scope else {}),
                     'membership': [{'uuid': key, 'metadata_hash': self._fingerprints[key]} for key in sorted(identities)]}
+
+    def _counted_preview(self, predicate, splits, *, defer_counts=False):
+        """Summary-only preview counted on the typed index, or None.
+
+        No IDs are collected and no membership is hashed: the count is one
+        typed COUNT over the active sources, and the revision is the frozen
+        publication identity (see tree_pages.predicate_publication). Results
+        that freeze membership (run, save, export) keep the exact path.
+        """
+        from disco.navigation.tag_predicates import referenced_fields
+        from disco.navigation.tree_pages import predicate_publication, selection_revision
+        from disco.metadata.explore_queries import typed_reader
+        if (referenced_fields(predicate) or getattr(self, 'typed_index', None) is None
+                or predicate_publication(self) is None):
+            return None
+        self._ready()
+        scope = self.source_scope()
+        # With no excluded source every typed epoch is eligible: count the whole
+        # typed table instead of joining each epoch to its source.
+        sources = {'sources': list(scope['active_source_revisions'])} if scope['excluded_source_revisions'] else None
+        serial = publication_serial(self)
+        with typed_reader(self) as reader:
+            validated = reader._validate(predicate)
+            matched = reader.single_field_count(validated) if sources is None else None
+            if matched is None and not defer_counts:
+                matched = reader.count(validated, sources)
+            cached = getattr(self, '_eligible_count', None)
+            key = (serial, scope['revision'])
+            if cached is None or cached[0] != key:
+                # Without an excluded source every published epoch is eligible.
+                cached = self._eligible_count = (key, len(self.rows) if sources is None else reader.count(None, sources))
+        registered = self.disk_index.catalog()
+        fields = [{key: field[key] for key in ('id', 'label', 'category', 'path', 'components') if key in field}
+                  for field in registered['fields']]
+        definitions = {field['id']: field for field in fields}
+        order = parse_splits(splits, definitions)
+        from disco.navigation.tree import joint_definition
+        fields.extend(joint_definition(field, definitions) for field in order if field not in definitions)
+        if publication_serial(self) != serial:
+            return None
+        return {'predicate': validated, 'splits': splits, 'tree': {'count': matched, 'split_order': order},
+                'catalog': {'fields': fields, 'total': matched, 'summary_available': False}, 'catalog_summary': False,
+                'tree_revision': selection_revision(self, None, validated, {}, order, None),
+                'total_source': cached[1], 'total_catalog': len(self.rows), 'matched_count': matched,
+                'source_scope': scope, 'source_revisions': scope['active_source_revisions'],
+                'metadata_fingerprint_version': 2}
+
+    def _tag_result(self, predicate, splits):
+        """Counted result of a predicate with annotation leaves, or None.
+
+        The match comes from the generation's tag states (TagPredicates over the
+        cached eligible universe); its tree revision binds the annotation
+        evidence revision and the frozen publication. Per revision the matches
+        are kept once in inspection chronology with their cell list, so pages
+        are slices and counts are sizes. Returns a dict with the preview fields,
+        `ids` (chronology order) and `cells`.
+        """
+        from disco.navigation.tag_predicates import referenced_fields
+        from disco.navigation.tree_pages import predicate_publication, selection_revision
+        if (not referenced_fields(predicate) or predicate_publication(self) is None
+                or getattr(self._filter_rows, '__func__', None) is not WorkspaceService._filter_rows):
+            return None
+        self._ready()
+        serial = publication_serial(self)
+        scope = self.source_scope()
+        # A repeated read of the same query is answered from the last result
+        # while every tag scope it reads, the publication and the source scope
+        # are unchanged (the tag-state witness; None always recomputes).
+        from disco.navigation.tag_predicates import TagPredicates
+        from disco.workbench.recipes import checksum
+        witness = TagPredicates(self)._witness(referenced_fields(predicate))
+        fast_key = (checksum(predicate), splits, serial, scope['revision'], witness) if witness is not None else None
+        fast = getattr(self, '_tag_result_fast', None)
+        if fast is None:
+            fast = self._tag_result_fast = {}
+        if fast_key is not None and fast_key in fast:
+            fast[fast_key] = fast.pop(fast_key)
+            return fast[fast_key]
+        validated, identities, annotation_scope = self.match_predicate(predicate)
+        registered = self.disk_index.catalog()
+        fields = [{key: field[key] for key in ('id', 'label', 'category', 'path', 'components') if key in field}
+                  for field in registered['fields']]
+        definitions = {field['id']: field for field in fields}
+        order = parse_splits(splits, definitions)
+        from disco.navigation.tree import joint_definition
+        fields.extend(joint_definition(field, definitions) for field in order if field not in definitions)
+        revision = selection_revision(self, None, validated, {}, order, None, annotation_scope=annotation_scope)
+        memo = getattr(self, '_tag_result_memo', None)
+        if memo is None:
+            memo = self._tag_result_memo = {}
+        entry = memo.pop(revision, None)
+        if entry is None:
+            rows = self.rows
+            ids = sorted(identities, key=lambda key: (rows[key]['date'], rows[key]['start_time'][11:], key))
+            cells = {}
+            for key in ids:
+                cell = rows[key]['cell_uuid']
+                found = cells.get(cell)
+                cells[cell] = (found[0] + 1, found[1]) if found else (1, key)
+            entry = {'ids': ids, 'cells': [(cell, amount, first) for cell, (amount, first) in cells.items()], 'positions': None}
+        memo[revision] = entry
+        while len(memo) > 8:
+            memo.pop(next(iter(memo)))
+        if publication_serial(self) != serial:
+            return None
+        matched = len(entry['ids'])
+        result = {'preview': {'predicate': validated, 'splits': splits, 'tree': {'count': matched, 'split_order': order},
+                            'catalog': {'fields': fields, 'total': matched, 'summary_available': False}, 'catalog_summary': False,
+                            'tree_revision': revision, 'total_source': self._eligible_total(scope),
+                            'total_catalog': len(self.rows), 'matched_count': matched, 'source_scope': scope,
+                            'source_revisions': scope['active_source_revisions'], 'metadata_fingerprint_version': 2,
+                            **({'annotation_scope': annotation_scope} if annotation_scope else {})},
+                'entry': entry, 'revision': revision}
+        if fast_key is not None and TagPredicates(self)._witness(referenced_fields(predicate)) == witness:
+            fast[fast_key] = result
+            while len(fast) > 8:
+                fast.pop(next(iter(fast)))
+        return result
+
+    @staticmethod
+    def _mixed_predicate(predicate):
+        """True when a predicate has both annotation leaves and recorded-metadata leaves."""
+        tags = metadata = False
+        pending = [predicate]
+        while pending:
+            node = pending.pop()
+            if 'field' in node:
+                if node['field'].startswith(('annotations/', 'curation/')):
+                    tags = True
+                else:
+                    metadata = True
+            pending.extend(node.get('all', []) + node.get('any', []) + ([node['not']] if 'not' in node else []))
+        return tags and metadata
+
+    def _chronology_ids(self, scope):
+        """Eligible IDs in inspection chronology, kept per publication and source scope."""
+        key = (publication_serial(self), scope['revision'])
+        cached = getattr(self, '_chronology_cache', None)
+        if cached is not None and cached[0] == key and key[0] is not None:
+            return cached[1]
+        rows = self.rows
+        ids = tuple(sorted(self._eligible(scope)[1], key=lambda item: (rows[item]['date'], rows[item]['start_time'][11:], item)))
+        self._chronology_cache = (key, ids)
+        return ids
+
+    def _mixed_context(self, predicate, splits):
+        """(validated, revision, scope, order) for a tag-plus-metadata predicate, without matching."""
+        from disco.navigation.tag_predicates import TagPredicates
+        from disco.navigation.tree_pages import predicate_publication, selection_revision
+        if (not self._mixed_predicate(predicate) or predicate_publication(self) is None
+                or getattr(self._filter_rows, '__func__', None) is not WorkspaceService._filter_rows
+                or getattr(self, 'typed_index', None) is None):
+            return None
+        self._ready()
+        scope = self.source_scope()
+        # Matching no epochs validates the whole AST and yields the generation's
+        # annotation evidence, exactly as a full match would.
+        validated, _, annotation_scope = TagPredicates(self).match(predicate, [])
+        definitions = {field['id']: field for field in self.disk_index.catalog()['fields']}
+        order = parse_splits(splits, definitions)
+        revision = selection_revision(self, None, validated, {}, order, None, annotation_scope=annotation_scope)
+        return validated, revision, scope, order, annotation_scope
+
+    def _mixed_counts(self, predicate, validated, revision, scope):
+        """Exact total and cell list of a tag-plus-metadata result from a counts job, or pending."""
+        from disco.workbench.recipes import checksum
+        jobs = getattr(self, '_summary_jobs', None)
+        memo = getattr(self, '_result_counts_memo', None)
+        if memo is None:
+            memo = self._result_counts_memo = {}
+        key = (revision, checksum(validated))
+        entry = memo.get(key)
+        status, result = jobs.job_result(entry['request_id']) if entry else ('missing', None)
+        if status == 'ready' and 'cells' in entry['holder']:
+            return {'total': result['matched_count'], 'cells': entry['holder']['cells'],
+                    'job': {'status': 'ready', 'request_id': entry['request_id']}}
+        if status != 'pending':
+            holder = {}
+
+            def compute(cancelled, predicate=predicate, holder=holder):
+                from disco.navigation.tag_predicates import TagPredicates
+                # Capture live annotation inputs only. Retaining the typed owner
+                # pins its native/derived leases; rows and tag entries are frozen.
+                # SummaryJobs fences this capture/calculation before and after.
+                with jobs.db_lock:
+                    rows, owner = self.rows, self.typed_index
+                    matcher = TagPredicates(self).snapshot_matcher(validated, rows, scope['active_source_revisions'])
+                    if matcher is None:
+                        # Custom/legacy time stores retain their canonical reader.
+                        _, identities, _ = self.match_predicate(predicate)
+                if matcher is not None:
+                    with owner.clone() as reader:
+                        reader.set_cancel_callback(cancelled)
+                        identities = matcher(reader, cancelled)
+                if cancelled():
+                    raise RuntimeError('Predicate count cancelled')
+                ordered = sorted(identities, key=lambda item: (rows[item]['date'], rows[item]['start_time'][11:], item))
+                cells = {}
+                for index, item in enumerate(ordered):
+                    if index % 2048 == 0 and cancelled():
+                        raise RuntimeError('Predicate count cancelled')
+                    cell = rows[item]['cell_uuid']
+                    found = cells.get(cell)
+                    cells[cell] = (found[0] + 1, found[1]) if found else (1, item)
+                holder['cells'] = [(cell, amount, first) for cell, (amount, first) in cells.items()]
+                return {'matched_count': len(ordered), 'cell_count': len(cells)}
+            context = {'predicate': validated, 'scope': {}, 'protocol_uuid': None, 'filters': {}}
+            entry = memo[key] = {'request_id': jobs.submit_counts(context, compute), 'holder': holder}
+            while len(memo) > 32:
+                memo.pop(next(iter(memo)))
+        return {'total': None, 'cells': None, 'job': {'status': 'pending', 'request_id': entry['request_id']}}
+
+    def _mixed_epoch_page(self, predicate, splits, expected_revision, offset, limit, anchor_uuid, cell_uuid, include_cells):
+        """First and later pages of a tag-plus-metadata predicate without matching every epoch.
+
+        Walks the eligible inspection chronology in bounded chunks, matching each
+        chunk with the canonical matcher (tag leaves from the tag states, metadata
+        leaves from the typed index over the chunk), until the page is full.
+        Each page boundary's chronology position is kept, so later pages resume
+        there. Totals and the cell list come from a counts job (pending first).
+        """
+        from disco.navigation.tag_predicates import TagPredicates
+        from disco.workbench.recipes import checksum
+        context = self._mixed_context(predicate, splits)
+        if context is None or getattr(self, '_summary_jobs', None) is None:
+            return None
+        validated, revision, scope, order, _ = context
+        if revision != expected_revision:
+            return {'stale': True, 'revision': revision}
+        serial = publication_serial(self)
+        counts = self._mixed_counts(predicate, validated, revision, scope)
+        cells = counts['cells']
+        active = frozenset(scope['active_source_revisions'])
+        # Inspection ranks are already sealed in the typed index. Seek bounded
+        # windows rather than constructing/sorting a whole-project UUID tuple.
+        # A direct cell scope restricts work to that cell even while counts run.
+        query_scope = {'cell': cell_uuid} if cell_uuid is not None else None
+        memo = getattr(self, '_mixed_page_memo', None)
+        if memo is None:
+            memo = self._mixed_page_memo = {}
+        key = (revision, checksum(validated), cell_uuid)
+        positions = memo.pop(key, None) or {0: 0}
+        memo[key] = positions
+        while len(memo) > 32:
+            memo.pop(next(iter(memo)))
+        matcher = TagPredicates(self)
+
+        def matches(start, wanted, stop=None):
+            """Matches after a sealed chronology rank: [(UUID, rank)]."""
+            from disco.metadata.explore_queries import typed_reader
+            if not active:
+                return []
+            chunk, position, out = 256, start, []
+            with typed_reader(self) as reader:
+                while len(out) < wanted:
+                    window = reader.chronology_page(scope=query_scope, after_rank=position, limit=chunk)
+                    if not window:
+                        break
+                    # Filter source eligibility inside the bounded window; an
+                    # all-source SQL membership subquery would scan the project.
+                    eligible = [item for item, _ in window if self.rows[item]['source_sha256'] in active]
+                    matched = set(matcher.match(predicate, eligible)[1])
+                    for item, rank in window:
+                        if item in matched:
+                            out.append((item, rank))
+                            if len(out) >= wanted or (stop is not None and item == stop):
+                                break
+                    if stop is not None and out and out[-1][0] == stop:
+                        break
+                    position = window[-1][1]
+                    chunk = min(chunk * 2, 8192)
+            return out
+        anchor_index = None
+        if anchor_uuid is not None:
+            walked = matches(0, len(self.rows), stop=anchor_uuid)
+            if not walked or walked[-1][0] != anchor_uuid:
+                raise ValueError('Epoch is outside this predicate')
+            anchor_index = len(walked) - 1
+            offset = anchor_index // limit * limit
+        start = positions.get(offset)
+        skip = 0
+        if start is None:
+            start, skip = 0, offset
+        window = matches(start, skip + limit + 1)[skip:]
+        more = len(window) > limit
+        window = window[:limit]
+        if window:
+            positions[offset + len(window)] = window[-1][1]
+        if publication_serial(self) != serial:
+            return None
+        total = counts['total']
+        if cell_uuid is not None:
+            total = None if cells is None else next((amount for cell, amount, _ in cells if cell == cell_uuid), 0)
+        listed = None
+        if include_cells and cells is not None:
+            listed = []
+            for cell, amount, first in cells:
+                row = self.rows[first]
+                listed.append({'cell_uuid': cell, 'label': row['cell_label'], 'date': row['date'],
+                               'cell_type': row.get('cell_type'), 'epochs': amount})
+        return {'rows': [self.rows[item] for item, _ in window], 'total': total, 'has_more': more, 'offset': offset,
+                'anchor_index': anchor_index, 'cells': listed, 'cells_pending': include_cells and cells is None,
+                'counts': counts['job'], 'revision': revision}
+
+    def _tag_epoch_page(self, predicate, splits, expected_revision, offset, limit, anchor_uuid, cell_uuid, include_cells):
+        if self._mixed_predicate(predicate):
+            return self._mixed_epoch_page(predicate, splits, expected_revision, offset, limit, anchor_uuid, cell_uuid, include_cells)
+        result = self._tag_result(predicate, splits)
+        if result is None:
+            return None
+        if result['revision'] != expected_revision:
+            return {'stale': True, 'revision': result['revision']}
+        entry = result['entry']
+        ids = entry['ids']
+        if cell_uuid is not None:
+            ids = entry.setdefault('by_cell', {}).get(cell_uuid)
+            if ids is None:
+                ids = entry['by_cell'][cell_uuid] = [key for key in entry['ids'] if self.rows[key]['cell_uuid'] == cell_uuid]
+        anchor_index = None
+        if anchor_uuid is not None:
+            positions = {key: index for index, key in enumerate(ids)}
+            anchor_index = positions.get(anchor_uuid)
+            if anchor_index is None:
+                raise ValueError('Epoch is outside this predicate')
+            offset = anchor_index // limit * limit
+        listed = None
+        if include_cells:
+            listed = []
+            for cell, amount, first in entry['cells']:
+                row = self.rows[first]
+                listed.append({'cell_uuid': cell, 'label': row['cell_label'], 'date': row['date'],
+                               'cell_type': row.get('cell_type'), 'epochs': amount})
+        window = ids[offset:offset + limit]
+        return {'rows': [self.rows[key] for key in window], 'total': len(ids), 'has_more': offset + limit < len(ids),
+                'offset': offset, 'anchor_index': anchor_index, 'cells': listed, 'cells_pending': False,
+                'counts': None, 'revision': result['revision']}
+
+    def _typed_query_context(self, predicate, splits):
+        """(validated, typed scope, order, revision) for a counted typed read, or None."""
+        from disco.navigation.tag_predicates import referenced_fields
+        from disco.navigation.tree_pages import predicate_publication, selection_revision
+        if (referenced_fields(predicate) or getattr(self, 'typed_index', None) is None
+                or predicate_publication(self) is None):
+            return None
+        scope = self.source_scope()
+        sources = {'sources': list(scope['active_source_revisions'])} if scope['excluded_source_revisions'] else None
+        definitions = {field['id']: field for field in self.disk_index.catalog()['fields']}
+        order = parse_splits(splits, definitions)
+        return scope, sources, order
+
+    def _result_counts(self, reader, validated, sources, revision):
+        """Exact total and ordered cell list of a query result, or a pending counts job.
+
+        A single-field predicate (no excluded source) is answered from the sealed
+        aggregates at once. Anything else is counted once per (revision,
+        predicate) by a server-owned job on the summary worker, with the same
+        generation fence; until it is ready the counts are pending.
+        Returns {'total', 'cells', 'job'}: total/cells are None while pending.
+        """
+        from disco.workbench.recipes import checksum
+        memo = getattr(self, '_result_counts_memo', None)
+        if memo is None:
+            memo = self._result_counts_memo = {}
+        key = (revision, checksum(validated))
+        entry = memo.get(key)
+        if entry is not None and 'aggregate' in entry:
+            return entry['aggregate']
+        cells = reader.single_field_cells(validated) if sources is None else None
+        if cells is not None:
+            result = {'total': sum(amount for _, amount, _ in cells), 'cells': cells, 'job': None}
+            memo[key] = {'aggregate': result}
+            while len(memo) > 32:
+                memo.pop(next(iter(memo)))
+            return result
+        jobs = getattr(self, '_summary_jobs', None)
+        if jobs is None:
+            return {'total': reader.count(validated, sources), 'cells': reader.chronology_cells(validated, sources), 'job': None}
+        status, result = jobs.job_result(entry['request_id']) if entry else ('missing', None)
+        if status == 'ready' and 'cells' in entry['holder']:
+            return {'total': result['matched_count'], 'cells': entry['holder']['cells'],
+                    'job': {'status': 'ready', 'request_id': entry['request_id']}}
+        if status != 'pending':
+            from disco.metadata.explore_queries import typed_reader
+            holder = {}
+
+            def compute(cancelled, validated=validated, sources=sources, holder=holder):
+                with typed_reader(self) as counter:
+                    total = counter.count(validated, sources)
+                    counted = counter.chronology_cells(validated, sources)
+                holder['cells'] = counted
+                return {'matched_count': total, 'cell_count': len(counted)}
+            context = {'predicate': validated, 'scope': {}, 'protocol_uuid': None, 'filters': {}}
+            entry = memo[key] = {'request_id': jobs.submit_counts(context, compute), 'holder': holder}
+            while len(memo) > 32:
+                memo.pop(next(iter(memo)))
+        return {'total': None, 'cells': None, 'job': {'status': 'pending', 'request_id': entry['request_id']}}
+
+    def counted_epoch_page(self, predicate, splits, expected_revision, *, offset=0, limit=60, anchor_uuid=None,
+                           cell_uuid=None, include_cells=False):
+        """One inspection page of a predicate's matches from the typed index, or None.
+
+        Same rows, order (date, start-time of day, UUID), totals, anchor and
+        cell list as the exact scope reader, without listing every match.
+        Single-field totals and cell lists come from sealed aggregates; other
+        predicates' totals and cell lists come from a counts job and are
+        reported pending (None) until it is ready. Pages are keyset seeks from
+        the previous page's last inspection rank. None means use the exact path.
+        """
+        from disco.metadata.explore_queries import typed_reader
+        from disco.navigation.tree_pages import selection_revision
+        from disco.workbench.recipes import checksum
+        self._ready()
+        context = self._typed_query_context(predicate, splits)
+        if context is None:
+            return self._tag_epoch_page(predicate, splits, expected_revision, offset, limit, anchor_uuid, cell_uuid, include_cells)
+        scope, sources, order = context
+        serial = publication_serial(self)
+        with typed_reader(self) as reader:
+            validated = reader._validate(predicate)
+            revision = selection_revision(self, None, validated, {}, order, None)
+            if revision != expected_revision:
+                return {'stale': True, 'revision': revision}
+            narrowed = {**(sources or {}), 'cell': cell_uuid} if cell_uuid is not None else sources
+            counts = self._result_counts(reader, validated, sources, revision)
+            cells = counts['cells']
+            if cell_uuid is None:
+                total = counts['total']
+            else:
+                total = None if cells is None else next((amount for cell, amount, _ in cells if cell == cell_uuid), 0)
+            memo = getattr(self, '_epoch_page_memo', None)
+            if memo is None:
+                memo = self._epoch_page_memo = {}
+            key = (revision, checksum(validated), cell_uuid)
+            ranks = memo.pop(key, None) or {0: 0}
+            memo[key] = ranks
+            while len(memo) > 32:
+                memo.pop(next(iter(memo)))
+            anchor_index = None
+            if anchor_uuid is not None:
+                anchor_index = reader.chronology_position(anchor_uuid, validated, narrowed)
+                if anchor_index is None:
+                    raise ValueError('Epoch is outside this predicate')
+                offset = anchor_index // limit * limit
+            # Dense results walk the chronology index; sparse ones gather their
+            # matches first. Either way the window seeks from a known rank.
+            dense = total is None or total * 20 >= len(self.rows)
+            window = reader.chronology_page(validated, narrowed, offset, limit + 1, after_rank=ranks.get(offset), local=dense)
+            more = len(window) > limit
+            window = window[:limit]
+            if window:
+                ranks[offset + len(window)] = window[-1][1]
+                while len(ranks) > 4096:
+                    ranks.pop(next(iter(ranks)))
+        if publication_serial(self) != serial:
+            return None
+        listed = None
+        if include_cells and cells is not None:
+            listed = []
+            for cell, amount, first in cells:
+                row = self.rows[first]
+                listed.append({'cell_uuid': cell, 'label': row['cell_label'], 'date': row['date'],
+                               'cell_type': row.get('cell_type'), 'epochs': amount})
+        return {'rows': [self.rows[key] for key, _ in window], 'total': total, 'has_more': more, 'offset': offset,
+                'anchor_index': anchor_index, 'cells': listed, 'cells_pending': include_cells and cells is None,
+                'counts': counts['job'], 'revision': revision}
+
+    def run_summary(self, predicate, splits):
+        """Counted run result, or None for the exact path.
+
+        Single-field predicates carry their exact count and distinct-cell count
+        at once. Other predicates return matched_count/cell_count None with a
+        pending counts job (`counts`); the job's result carries both.
+        """
+        mixed = self._mixed_context(predicate, splits) if self._mixed_predicate(predicate) else None
+        if mixed is not None and getattr(self, '_summary_jobs', None) is not None:
+            # Tag plus metadata: answer at once; exact counts follow from a job.
+            validated, revision, scope, order, annotation_scope = mixed
+            counts = self._mixed_counts(predicate, validated, revision, scope)
+            registered = self.disk_index.catalog()
+            fields = [{key: field[key] for key in ('id', 'label', 'category', 'path', 'components') if key in field}
+                      for field in registered['fields']]
+            definitions = {field['id']: field for field in fields}
+            from disco.navigation.tree import joint_definition
+            fields.extend(joint_definition(field, definitions) for field in order if field not in definitions)
+            total = counts['total']
+            preview = {'predicate': validated, 'splits': splits, 'tree': {'count': total, 'split_order': order},
+                       'catalog': {'fields': fields, 'total': total, 'summary_available': False}, 'catalog_summary': False,
+                       'tree_revision': revision, 'total_source': self._eligible_total(scope),
+                       'total_catalog': len(self.rows), 'matched_count': total, 'source_scope': scope,
+                       'source_revisions': scope['active_source_revisions'], 'metadata_fingerprint_version': 2,
+                       **({'annotation_scope': annotation_scope} if annotation_scope else {}),
+                       'cell_count': None if counts['cells'] is None else len(counts['cells'])}
+            if counts['job'] is not None:
+                preview['counts'] = counts['job']
+            return preview
+        tagged = self._tag_result(predicate, splits)
+        if tagged is not None:
+            return {**tagged['preview'], 'cell_count': len(tagged['entry']['cells'])}
+        preview = self._counted_preview(predicate, splits, defer_counts=True)
+        if preview is None:
+            return None
+        from disco.metadata.explore_queries import typed_reader
+        serial = publication_serial(self)
+        _, sources, _ = self._typed_query_context(predicate, splits)
+        with typed_reader(self) as reader:
+            validated = reader._validate(predicate)
+            counts = self._result_counts(reader, validated, sources, preview['tree_revision'])
+        preview['matched_count'] = preview['tree']['count'] = preview['catalog']['total'] = counts['total']
+        preview['cell_count'] = None if counts['cells'] is None else len(counts['cells'])
+        if counts['job'] is not None:
+            preview['counts'] = counts['job']
+        return preview if publication_serial(self) == serial else None
 
     def _render_tree(self, rows, catalog, values, splits):
         definitions = {field['id']: field for field in catalog['fields']}
@@ -1469,7 +2565,7 @@ class WorkspaceService:
         with elapsed("workspace_service", "epoch"):
             self._ready()
             identity = _uuid(epoch_uuid)
-            if protocol_uuid and identity not in {m['uuid'] for m in self.query_result(protocol_uuid)['epochs']}:
+            if protocol_uuid and identity not in {m['uuid'] for m in self.query_view(protocol_uuid)['epochs']}:
                 raise ValueError('Epoch is outside this protocol query')
             row = self.rows[identity]
             manifest = self.manifests[row['source_sha256']]

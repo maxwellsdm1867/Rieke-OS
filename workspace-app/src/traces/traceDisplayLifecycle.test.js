@@ -66,12 +66,18 @@ test('manual amplitude clipping draws every raw sample and exact gaps, including
  const render=async amplitude=>act(async()=>{const element=React.createElement(WorkspaceRequestProvider,{port},React.createElement(Trace,{epoch,viewPreference:{kind:'sample',start:0,count,amplitude},onViewPreference:()=>{}}));if(renderer)renderer.update(element);else renderer=TestRenderer.create(element,{createNodeMock:node=>node.type==='canvas'?(node.props.className==='tv-base'?base:overlay):{}});});
  const index=x=>Math.round((x-82)/(width-103)*(count-1));
  try{
-  await render({min:-2,max:2});const path=strokes.at(-1),expected=values.flatMap((value,i)=>typeof value==='number'&&Number.isFinite(value)?[i]:[]);
+  // A range chosen on another unit or device never applies to this stream.
+  for(const other of [{units:'mV',device:null},{units:'pA',device:'Amp2'}]){
+   await render({min:-2,max:2,...other});
+   assert.equal(renderer.root.findAllByProps({'aria-label':'Selected response bounds'}).length,0,JSON.stringify(other));
+   assert(strokes.at(-1).length<count/2,'unmatched range keeps automatic screen-resolution extent');
+  }
+  await render({min:-2,max:2,units:'pA',device:null});const path=strokes.at(-1),expected=values.flatMap((value,i)=>typeof value==='number'&&Number.isFinite(value)?[i]:[]);
   assert.deepEqual(path.map(point=>index(point.x)),expected,'clipped trace submits every original finite sample in order');
   for(const point of path){const i=index(point.x);assert.equal(point.move,i===0||typeof values[i-1]!=='number'||!Number.isFinite(values[i-1]),'only exact gap boundaries start a new path');}
   assert(isolated.some(x=>index(x)===301),'isolated finite point remains drawn');
   assert.match(renderer.root.findByProps({className:'tv-gap-notice'}).children.join(''),/^4 missing/);
-  await render({min:-100,max:100});assert(strokes.at(-1).length<expected.length,'nonclipping manual bounds retain screen-resolution rendering');
+  await render({min:-100,max:100,units:'pA',device:null});assert(strokes.at(-1).length<expected.length,'nonclipping manual bounds retain screen-resolution rendering');
   assert(strokes.at(-1).some(point=>index(point.x)===100),'the actual spike remains visible');
  }finally{await act(async()=>renderer?.unmount());await server.close();for(const name of names){if(previous[name]===undefined)delete globalThis[name];else globalThis[name]=previous[name];}}
 });

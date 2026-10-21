@@ -15,6 +15,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import threading
@@ -34,7 +35,57 @@ from disco.workbench.diff import summarize_diff
 from workspace_protocol_identity import selection_protocols, protocol_compatibility, require_protocol_compatibility
 from workspace_import_check import classify_source
 from workspace_audit import build_audit_payload, normalize_event, normalize_events, repeat_suggestions
-from workspace_export_artifacts import materialize_export_format
+from workspace_export_artifacts import stage_export
+
+
+class _ReadLeaseLock:
+    """The workspace RLock; GET/HEAD responses also hold the native read lease.
+
+    The outermost ``with db_lock`` of a GET/HEAD request opens the schema
+    response contract (lazily attested at its first native token read and
+    re-attested at close). A closing failure raises and discards the response.
+    Other methods, nested entries and plain acquire/release are unchanged.
+    """
+    def __init__(self, lock, contract):
+        self._lock, self._contract, self._local = lock, contract, threading.local()
+
+    def acquire(self, *args, **kwargs):
+        return self._lock.acquire(*args, **kwargs)
+
+    def release(self):
+        self._lock.release()
+
+    def _is_owned(self):
+        return self._lock._is_owned()
+
+    def __enter__(self):
+        self._lock.acquire()
+        depth = getattr(self._local, 'depth', 0)
+        self._local.depth = depth + 1
+        if depth == 0:
+            from flask import has_request_context
+            if has_request_context() and request.method in ('GET', 'HEAD'):
+                try:
+                    manager = self._contract()
+                    manager.__enter__()
+                except BaseException:
+                    self._local.depth = depth
+                    self._lock.release()
+                    raise
+                self._local.manager = manager
+        return self
+
+    def __exit__(self, *exc):
+        manager = None
+        if self._local.depth == 1:
+            manager, self._local.manager = getattr(self._local, 'manager', None), None
+        try:
+            if manager is not None:
+                manager.__exit__(*exc)
+        finally:
+            self._local.depth -= 1
+            self._lock.release()
+        return False
 
 
 class StaleWorkspace(ValueError):
@@ -137,13 +188,23 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 session_lock.close()
                 raise ValueError('Another app or state recovery owns this project; close it before opening') from None
         app.extensions['app_state_session_lock'] = session_lock
-    db_lock = threading.RLock()
+    db_lock = _ReadLeaseLock(threading.RLock(), lambda: read_contract())
+    app.extensions['workspace_db_lock'] = db_lock  # Ownership checks only (tests, diagnostics).
     importing = threading.Lock()
-    from workspace_import_progress import ProgressReporter, read_jobs, recover_jobs, progress_for, load_json
+    from workspace_import_progress import ProgressReporter, read_job, read_jobs, recover_jobs, progress_for, load_json
     owner_run_id = str(uuid.uuid4())
     active_jobs = set()
     app.extensions['project_active_writers'] = lambda: bool(active_jobs) or importing.locked()
     recover_jobs(log_dir(project_dir, 'app-jobs'), owner_run_id)
+    try:
+        # Crashed library copies leave unpublished staging folders. Only an
+        # uncontended recording lock proves no copy is running; never blocks.
+        from disco.projects.recording_files import sweep_incoming_staging
+        swept = sweep_incoming_staging(project_dir)
+        if swept:
+            app.logger.warning('Removed %d unpublished recording staging folder(s) left by an interrupted copy', len(swept))
+    except (OSError, ValueError):
+        app.logger.exception('Recording staging sweep was skipped')
     service = service or WorkspaceService(project_dir)
     # Index source descriptors once per published source list, not per protocol.
     # Values retain their recorded metadata; this index grants no read authority.
@@ -157,19 +218,35 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             rig_source_index = {source['source_sha256']: source for source in rig_source_owner}
         return rig_source_index
 
+    member_sources = {}
+
     def recording_rig_token(members):
+        # The member->source set is cached per immutable proof tuple and the
+        # published rows object; source rig metadata is read live (O(sources)).
+        cached = member_sources.get('value')
+        if cached is not None and cached[0] is members and cached[1] is service.rows:
+            identities = cached[2]
+        else:
+            identities = sorted({service.rows[identity]['source_sha256'] for identity in members})
+            from workspace_service import publication_serial
+            if isinstance(members, tuple) and publication_serial(service) is not None:
+                member_sources['value'] = (members, service.rows, identities)
         sources = recording_sources()
-        identities = sorted({service.rows[identity]['source_sha256'] for identity in members})
         return [(identity, recorded_source_rig(sources.get(identity, {}))) for identity in identities]
     store = store or CurationStore(service.dj, service.project["project_uuid"])
     storage = ManagedStorage(project_dir, service.project['project_uuid'], Path(__file__).resolve().parents[1])
     explorer_history = explorer_history or ExplorerHistory(service.dj, service.project['project_uuid'])
     app.extensions['explorer_history'] = explorer_history
     protocol_suggestions = protocol_suggestions or ProtocolSuggestions(service, explorer_history)
+    if type(protocol_suggestions) is ProtocolSuggestions:
+        from disco.navigation.predicates import reinterpretation_required as _suggestion_contract_check
+        protocol_suggestions.reinterpretation_required = _suggestion_contract_check
     app.extensions['protocol_suggestions'] = protocol_suggestions
     service.set_binding_provider(explorer_history.protocol_binding,
         header_provider=explorer_history.protocol_binding_header)
     store.binding_provider = explorer_history.protocol_binding
+    # Writes check only the binding version: never hydrate the frozen recipe.
+    store.binding_header_provider = explorer_history.protocol_binding_header
     data_stores = data_stores or DataStores(service, store, explorer_history)
     app.extensions["data_stores"] = data_stores
     if hasattr(service.dj, 'Schema'):
@@ -184,10 +261,16 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 except (OSError, ValueError) as error:
                     service.manager_recovery(error)
     service.set_source_state_provider(data_stores.source_states)
+    # Old-contract saved selections are skipped (visible reason), never re-run
+    # under predicate contract v2, by eligibility propagation and suggestions.
+    from disco.navigation.predicates import reinterpretation_required as _reinterpretation_required
+    data_stores.reinterpretation_required = _reinterpretation_required
     annotation_provider = None
     if hasattr(service, 'set_annotation_provider'):
         def annotation_provider(protocol_uuid, fingerprints):
             return store.read(protocol_uuid, list(fingerprints), fingerprints)
+        # Saved decisions only; absent epochs have read()'s default state.
+        annotation_provider.saved_states = lambda protocol_uuid, fingerprints: store.saved_states(protocol_uuid, fingerprints)
         service.set_annotation_provider(annotation_provider)
     page_curation_provider=service.curation_provider
     if shared_annotations is None and hasattr(service.dj,'Schema'):
@@ -237,6 +320,35 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
         return service.validate_metadata_filters(values, (request.view_args or {}).get('protocol_uuid'))
 
+    def cell_page():
+        """Optional cell-list window (same contract as POST /api/explore/epochs).
+
+        ``cells_limit`` (1–1000) and ``cells_after`` (cells already received,
+        default 0) return ``cells`` (that window), ``cells_total`` and
+        ``cells_next`` (the next ``cells_after``, or null at the end). Absent
+        parameters keep the full list for older clients.
+        """
+        if any(len(request.args.getlist(key))>1 for key in ('cells_limit','cells_after')):
+            raise ValueError('cells_limit and cells_after may be specified once')
+        if 'cells_limit' not in request.args:
+            if 'cells_after' in request.args:
+                raise ValueError('cells_after requires cells_limit and must be a nonnegative position')
+            return None
+        raw_limit=request.args['cells_limit'];raw_after=request.args.get('cells_after','0')
+        if not raw_limit.isascii() or not raw_limit.isdecimal() or len(raw_limit)>4 or not 1<=int(raw_limit)<=1000:
+            raise ValueError('cells_limit must be 1–1000')
+        if not raw_after.isascii() or not raw_after.isdecimal() or len(raw_after)>12:
+            raise ValueError('cells_after requires cells_limit and must be a nonnegative position')
+        return int(raw_limit),int(raw_after)
+
+    def window_cells(payload,page):
+        """Shallow copy of ``payload`` with its ``cells`` list windowed."""
+        if page is None:return payload
+        limit,after=page;cells=payload.get('cells') or []
+        window=cells[after:after+limit]
+        return {**payload,'cells':window,'cells_total':len(cells),
+                'cells_next':after+len(window) if after+len(window)<len(cells) else None}
+
     def legacy_state(protocol_uuid):
         result = service.query_result(protocol_uuid)
         fingerprints = service.fingerprints(protocol_uuid)
@@ -250,7 +362,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         revision = checksum({"query": {**result, "source_scope": {"revision": result["source_scope"]["revision"]}}, "curation": curation})
         return result, curation, revision
 
-    from workspace_protocol_state import PROTOCOL_STATE_CONTRACT, ProtocolStateReader, same_protocol_state
+    from workspace_protocol_state import PROTOCOL_STATE_CONTRACT, ProtocolStateReader, same_protocol_state, native_state_contract
     selected_state = ProtocolStateReader(service, store, shared_annotations, legacy_state)
 
     def annotation_generation(token=None):
@@ -285,7 +397,6 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         from workspace_state_generation import bootstrap
         generation=bootstrap(service.dj.conn(),service.project['project_uuid'])
         store.state_generation=generation
-        store.binding_header_provider=explorer_history.protocol_binding_header
         if shared_annotations is not None:shared_annotations.state_generation=generation
         app.extensions['state_generation']=generation
         service._explore_state_generation=generation
@@ -313,7 +424,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         shared=getattr(service,'shared_annotations',None)
         if provider is not None and (provider is not annotation_provider or type(store) is not CurationStore
                 or getattr(store,'state_generation',None) is not tracker
-                or not all(native_method(store,CurationStore,name) for name in ('read','_rows','_state'))):
+                or not all(native_method(store,CurationStore,name) for name in ('read','_rows','_state','saved_states'))):
             return None
         if shared is not None and (shared is not shared_annotations or type(shared) is not SharedAnnotations
                 or getattr(shared,'state_generation',None) is not tracker
@@ -345,6 +456,35 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             fields[f'curation/{protocol}/tags']=(token.protocol_uuid,token.protocol_epoch,token.protocol_generation)
         return common,fields
     service._annotation_catalog_generation=annotation_catalog_generation
+
+    def refuse_reinterpretation(recipe):
+        """Refuse silently re-running a saved predicate whose meaning changed (v1 → v2)."""
+        from disco.navigation.predicates import reinterpretation_required
+        if recipe is not None and reinterpretation_required(recipe.get('predicate', {}), recipe.get('predicate_version', 1)):
+            raise StaleWorkspace('This saved selection was made when built-in values recorded as empty counted as '
+                                 'recorded. Re-run its search to create a new revision; it is never reinterpreted.')
+
+    def refresh_service():
+        """Route-level refresh. A failure leaves the service not ready (manager
+        recovery exposes registrations only); the previous publication is never
+        served as current. The original error propagates to the caller."""
+        try:
+            return service.refresh()
+        except (OSError, ValueError) as error:
+            with contextlib.suppress(Exception):
+                service.manager_recovery(error)
+            raise
+
+    def verify_service_sources():
+        """Pre-write source recheck for targeted writes (approve, explorer save,
+        masks, exports): O(sources) stat/registration witnesses; any change runs
+        the complete refresh, whose failure leaves the service not ready."""
+        try:
+            return service.verify_sources() if hasattr(service, 'verify_sources') else service.refresh()
+        except (OSError, ValueError) as error:
+            with contextlib.suppress(Exception):
+                service.manager_recovery(error)
+            raise
 
     def read_contract():
         """Attest the native schema once at each end of a complete read response.
@@ -397,8 +537,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             'propagation_required': bool(affected),
             'source_scope_revision': result['source_scope']['revision']}
         payload["query_revision"] = revision
-        if revision.startswith(PROTOCOL_STATE_CONTRACT+':'):
-            payload['query_revision_contract']=PROTOCOL_STATE_CONTRACT
+        if native_state_contract(revision):
+            payload['query_revision_contract']=native_state_contract(revision)
             payload['annotation_generation']=annotation_generation()
         payload["expected_query_revision"] = revision
         payload["binding"] = compact_binding(result.get('dataset_binding'))
@@ -429,13 +569,17 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         return payload
 
     def native_protocol_summary(protocol_uuid, query_filters, *, overview_context=False, export_memberships=None,
-                                cross_protocols=True, exported_ids=None):
-        """Protocol UI summary without loading whole-dataset saved tag JSON."""
+                                cross_protocols=True, exported_ids=None, tag_counts=True):
+        """Protocol UI summary without loading whole-dataset saved tag JSON.
+
+        ``tag_counts=False`` (incremental overview) omits shared-tag counts, which
+        the caller derives separately under the shared-tag generation.
+        """
         from workspace_service import validate_filters
         query_filters=validate_filters(query_filters)
         context=selected_state.native_context(protocol_uuid)
         if context is None:return None
-        result=service.query_result(protocol_uuid)
+        result=service.query_view(protocol_uuid)
         identities=[row['uuid'] for row in result['epochs']]
         selected,shared_receipt=service._epoch_page_identities(protocol_uuid,query_filters)
         selected_set=set(selected)
@@ -455,7 +599,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         else:
             exported=exported_ids
         memberships=({key:set(identities if key==protocol_uuid else
-            [member['uuid'] for member in service.query_result(key)['epochs']]) for key in service.protocols}
+            [member['uuid'] for member in service.query_view(key)['epochs']]) for key in service.protocols}
             if not overview_context and cross_protocols else {})
         bins={}
         duration=0
@@ -495,9 +639,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 'excluded_sources':sorted({row['source_sha256'] for row in affected}),
                 'propagation_required':bool(affected),'source_scope_revision':scope['revision']},
             'query_revision':context['query_revision'],'expected_query_revision':context['query_revision'],
-            'query_revision_contract':PROTOCOL_STATE_CONTRACT,'expected_binding_version':context['binding_version'],
+            'query_revision_contract':context['query_revision_contract'],'expected_binding_version':context['binding_version'],
             'annotation_generation':annotation_generation(context['generation'])}
-        if shared_annotations:
+        if shared_annotations and tag_counts:
             summary=shared_annotations.summary(rows)
             counts.update({key:summary[key] for key in ('shared_tagged_cells','shared_tagged_epochs')})
             payload['annotation_summary']={key:summary[key] for key in ('tags','total_tags','truncated')}
@@ -509,21 +653,14 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise StaleWorkspace('Shared annotations changed while reading this protocol. Refresh and retry.')
         if overview_context:
             return payload,{'ids':ids,'approved':approved,'context':context,
+                'cells':frozenset(row['cell_uuid'] for row in rows),
                 'view':result.get('effective_view',definition.get('view',{}))}
         return payload
 
     overview_memo={}
 
-    def overview_witness():
-        """Generation key for the derived project overview, or None to rebuild.
-
-        Native SQL triggers advance every protocol's curation scope and the
-        shared-tag scope; binding headers, export headers and source scope are
-        read live. Published metadata is identified by the index generation,
-        publication and object identities that refresh replaces; small project,
-        source and cell descriptors are compared by content. Event and export
-        lists are always read live and never memoized.
-        """
+    def overview_guard():
+        """The verified native tracker when overview memos may apply, else None."""
         from workspace_state_generation import StateGenerationAuthority
         from disco.metadata.disk_index import DiskMetadataIndex
         tracker=getattr(store,'state_generation',None)
@@ -537,6 +674,21 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         index=getattr(service,'disk_index',None)
         if not isinstance(index,DiskMetadataIndex):return None
         index._check()
+        return tracker
+
+    def overview_witness():
+        """Generation key for the derived project overview, or None to rebuild.
+
+        Native SQL triggers advance every protocol's curation scope and the
+        shared-tag scope; binding headers, export headers and source scope are
+        read live. Published metadata is identified by the index generation,
+        publication and object identities that refresh replaces; small project,
+        source and cell descriptors are compared by content. Event and export
+        lists are always read live and never memoized.
+        """
+        tracker=overview_guard()
+        if tracker is None:return None
+        index=service.disk_index
         header_provider=getattr(service,'binding_header_provider',None)
         protocols=[]
         for identity,entry in sorted(service.protocols.items()):
@@ -564,9 +716,639 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     app.extensions['overview_memo']=overview_memo
     app.extensions['overview_memo_witness']=overview_witness
 
-    def native_overview():
-        """Project counts from exact decision projections, memoized per generation."""
+    overview_parts={}
+    app.extensions['overview_parts']=overview_parts
+
+    def overview_part_keys():
+        """Per-component generation keys for a frozen publication, or None.
+
+        The publication serial proves rows, cells, protocols and fingerprints;
+        each protocol's own curation token and binding header key its summary;
+        the shared-tag token keys tag counts; the export signature keys export
+        counts. A write therefore recomputes only the components it advanced.
+        """
+        from workspace_service import publication_serial
+        serial=publication_serial(service)
+        if serial is None:return None
+        tracker=overview_guard()
+        if tracker is None:return None
+        index=service.disk_index
+        header_provider=getattr(service,'binding_header_provider',None)
+        try:
+            descriptors=checksum({'project':service.project,'sources':service.sources,
+                'catalog':{key:value for key,value in service.config.items() if key!='connection'}})
+        except (TypeError,ValueError):
+            return None
+        scope=service.source_scope()
+        base=(serial,index.generation,descriptors,scope['revision'])
+        exports=store.export_signature()
+        protocols={}
+        for identity in service.protocols:  # Published protocol order, as the full overview.
+            token=tracker.token(identity)
+            if token is None:return None
+            header=header_provider(identity) if header_provider else None
+            protocols[identity]=(base,token.protocol_epoch,token.protocol_generation,
+                (header['revision_uuid'],header['version']) if header is not None else None,exports)
+        shared=tracker.token()
+        if shared is None:return None
+        return {'base':base,'scope':scope,'exports':(base,exports),'protocols':protocols,
+                'shared':(shared.authority,shared.shared_epoch,shared.shared_generation),'shared_token':shared}
+
+    def overview_cell_annotations(keys,base):
+        """Per-cell shared tag chips, re-reading only cells the change feed names.
+
+        Entries are immutable once cached (later responses share them). A tag
+        write on one target re-reads only that cell (an epoch write re-reads
+        none); an unavailable/overflowing feed or new publication reads all.
+        """
+        def read(ids,into):
+            for start in range(0,len(ids),1000):
+                records=shared_annotations.read_targets('cell',ids[start:start+1000])
+                for identity in ids[start:start+1000]:
+                    into[identity]={'cell_tags':records[identity]['tags'],'revisions':records[identity]['revisions']}
+            return into
+        cached=overview_parts.get('tag_cells')
+        if cached is not None and cached[0]==keys['base']:
+            if cached[1]==keys['shared_token']:return cached[2]
+            tracker=overview_guard()
+            change=tracker.shared_changes(cached[1]) if tracker is not None else None
+            if change is not None and change[1]==keys['shared_token']:
+                changed=sorted({row['target_uuid'] for row in change[0]
+                                if row['target_kind']=='cell' and row['target_uuid'] in base['cells']})
+                annotations=read(changed,dict(cached[2]))
+                overview_parts['tag_cells']=(keys['base'],keys['shared_token'],annotations)
+                return annotations
+        annotations=read(list(base['order']),{})
+        overview_parts['tag_cells']=(keys['base'],keys['shared_token'],annotations)
+        return annotations
+
+    def overview_base(keys):
+        cached=overview_parts.get('base')
+        if cached is not None and cached[0]==keys['base']:return cached[1]
+        bins={};duration=0
+        for row in service.rows.values():
+            duration+=row['duration_seconds']
+            cell=bins.setdefault(row['cell_uuid'],{'ids':set(),'duration_seconds':0,'groups':set(),'sources':set()})
+            cell['ids'].add(row['epoch_uuid']);cell['duration_seconds']+=row['duration_seconds']
+            cell['groups'].add(row['group_label']);cell['sources'].add(row['source_sha256'])
+        scope=keys['scope'];active=set(scope['active_source_revisions'])
+        active_rows=[row for row in service.rows.values() if row['source_sha256'] in active]
+        cells={identity:{'static':{**service.cells[identity],**recording_rig_summary(group['sources'],recording_sources())},
+                         'ids':frozenset(group['ids']),'duration_seconds':group['duration_seconds'],
+                         'group_labels':sorted(group['groups'],key=str)} for identity,group in bins.items()}
+        order=sorted(cells,key=lambda key:(cells[key]['static']['cell_type'] or '',cells[key]['static']['date'],
+                                            cells[key]['static']['label']))
+        base={'cells':cells,'order':order,'duration_seconds':duration,'epochs':len(service.rows),
+              'active_source_counts':{'cells':len({row['cell_uuid'] for row in active_rows}),
+                                      'epochs':len(active_rows),'sources':len(active)}}
+        overview_parts['base']=(keys['base'],base)
+        return base
+
+    def overview_protocol(identity,key,export_memberships):
+        cached=overview_parts.setdefault('protocols',{}).get(identity)
+        if cached is not None and cached[0]==key:return cached[1]
+        summary=native_protocol_summary(identity,{},overview_context=True,export_memberships=export_memberships(),
+                                        tag_counts=False)
+        if summary is None:return None
+        payload,proof=summary
+        entry=service.protocols[identity];definition=entry['definition']
+        value={'entry':{'protocol_uuid':identity,'name':definition['name'],
+                'acquisition_protocol':entry['result']['protocol_name'],'counts':payload['counts'],
+                'query':payload['effective_query'],'starter_query':definition['query'],
+                'binding':payload['binding'],'view':proof['view'],'query_revision':payload['query_revision']},
+               'ids':frozenset(proof['ids']),'not_approved':frozenset(proof['ids']-proof['approved']),
+               'cells':proof['cells']}
+        overview_parts['protocols'][identity]=(key,value)
+        return value
+
+    def incremental_overview(page=None):
+        """Overview assembled from separately keyed components (frozen publications).
+
+        With a cell ``page`` only that window of cells is assembled (O(window)
+        once components are current); the display cache is then refreshed only
+        when its cell or count inputs change (see ``paged_overview_display``).
+        """
+        keys=overview_part_keys()
+        if keys is None:return None
+        base=overview_base(keys)
+        memberships={}
+        def export_memberships():
+            if 'value' not in memberships:memberships['value']=store.export_memberships()
+            return memberships['value']
+        overview_parts['protocols']={identity:value for identity,value in overview_parts.get('protocols',{}).items()
+                                     if identity in keys['protocols']}
+        protocols={}
+        for identity,key in keys['protocols'].items():
+            value=overview_protocol(identity,key,export_memberships)
+            if value is None:return None
+            protocols[identity]=value
+        approval_key=(keys['base'],tuple(keys['protocols'][identity][1:4] for identity in sorted(protocols)))
+        cached=overview_parts.get('approval')
+        if cached is None or cached[0]!=approval_key:
+            covered=frozenset().union(*(value['ids'] for value in protocols.values()))
+            blocked=frozenset().union(*(value['not_approved'] for value in protocols.values()))
+            approved=covered-blocked
+            per_cell={identity:(len(cell['ids'] & approved),
+                                [key for key,value in protocols.items() if cell['ids'] & value['ids']])
+                      for identity,cell in base['cells'].items()}
+            cached=overview_parts['approval']=(approval_key,{'approved':approved,'per_cell':per_cell})
+        approval=cached[1]
+        cached=overview_parts.get('exports')
+        if cached is None or cached[0]!=keys['exports']:
+            exported=frozenset(export_memberships())&service.rows.keys()
+            cached=overview_parts['exports']=(keys['exports'],{'exported':exported,
+                'per_cell':{identity:len(cell['ids'] & exported) for identity,cell in base['cells'].items()}})
+        exports=cached[1]
+        assembled_key=(approval_key,keys['exports'],keys['shared'],tuple(keys['protocols'].items()))
+        display_key=(keys['base'],approval_key,keys['exports'])
+        cached=overview_parts.get('assembled')
+        if cached is not None and cached[0]==assembled_key:
+            payload={**cached[1],'events':service.events(25),'exports':store.list_dataset_revisions()}
+            if overview_part_keys()!=keys:
+                raise StaleWorkspace('Saved decisions changed while reading this project. Refresh and retry.')
+            if page is not None:
+                paged_overview_display(display_key,payload,lambda:payload['cells'])
+                payload=window_cells(payload,page)
+            return payload
+        tags=None
+        if shared_annotations:
+            tag_key=(keys['base'],keys['shared'],tuple(sorted((identity,keys['protocols'][identity][1:4]) for identity in protocols)))
+            cached=overview_parts.get('tags')
+            if cached is None or cached[0]!=tag_key:
+                scope_token=('overview-project-rows',keys['base'][0])
+                summary=shared_annotations.summary(lambda:list(service.rows.values()),scope_token=scope_token)
+                targets=shared_annotations.tagged_targets()
+                per_protocol={}
+                if targets is not None:
+                    tagged_cells=targets.get('cell',set())&base['cells'].keys()
+                    tagged=set(targets.get('epoch',set()))&service.rows.keys()
+                    for cell in tagged_cells:tagged|=base['cells'][cell]['ids']
+                    for identity,value in protocols.items():
+                        per_protocol[identity]={'shared_tagged_cells':len(tagged_cells & value['cells']),
+                                                'shared_tagged_epochs':len(value['ids'] & tagged)}
+                else:
+                    for identity,value in protocols.items():
+                        own=shared_annotations.summary([service.rows[key] for key in value['ids']])
+                        per_protocol[identity]={key:own[key] for key in ('shared_tagged_cells','shared_tagged_epochs')}
+                annotations=overview_cell_annotations(keys,base)
+                cached=overview_parts['tags']=(tag_key,{'summary':summary,'per_protocol':per_protocol,'cells':annotations})
+            tags=cached[1]
+        protocol_list=[]
+        for identity,value in protocols.items():
+            entry={**value['entry'],'counts':{**value['entry']['counts'],**(tags['per_protocol'][identity] if tags else {})}}
+            protocol_list.append(copy.deepcopy(entry))
+        cells=[]
+        order=base['order'] if page is None else base['order'][page[1]:page[1]+page[0]]
+        for identity in order:
+            cell=base['cells'][identity];reviewed,members_of=approval['per_cell'][identity]
+            item={**cell['static'],'epochs':len(cell['ids']),'duration_seconds':cell['duration_seconds'],
+                  'included':len(cell['ids']),'reviewed':reviewed,'unreviewed':len(cell['ids'])-reviewed,
+                  'exported':exports['per_cell'][identity],'protocol_uuids':list(members_of),
+                  'group_labels':list(cell['group_labels'])}
+            if tags is not None:item['annotations']=tags['cells'][identity]
+            cells.append(item)
+        approved=approval['approved'];exported=exports['exported']
+        counts={'cells':len(base['order']),'epochs':base['epochs'],'reviewed':len(approved),'included':base['epochs'],
+            'duration_seconds':base['duration_seconds'],'protocols':len(protocol_list),'sources':len(service.sources),
+            'exported':len(exported),'approved':len(approved),'unreviewed':base['epochs']-len(approved)}
+        payload={'active_source_counts':dict(base['active_source_counts']),'source_scope':copy.deepcopy(keys['scope']),
+            'project':copy.deepcopy(service.project),
+            'catalog':copy.deepcopy({key:value for key,value in service.config.items() if key!='connection'}),
+            'counts':counts,'protocols':protocol_list,'cells':cells,'sources':copy.deepcopy(service.sources)}
+        if tags is not None:
+            counts.update({key:tags['summary'][key] for key in ('shared_tagged_cells','shared_tagged_epochs')})
+            payload['annotation_summary']=copy.deepcopy({key:tags['summary'][key] for key in ('tags','total_tags','truncated')})
+        if page is not None:
+            # A window is never cached as the assembled (full) overview.
+            limit,after=page;total=len(base['order'])
+            payload.update(cells_total=total,cells_next=after+len(cells) if after+len(cells)<total else None,
+                           events=service.events(25),exports=store.list_dataset_revisions())
+            if overview_part_keys()!=keys:
+                raise StaleWorkspace('Saved decisions changed while reading this project. Refresh and retry.')
+            def display_cells():
+                rows=[]
+                for identity in base['order']:
+                    cell=base['cells'][identity]
+                    rows.append({**cell['static'],'epochs':len(cell['ids']),'duration_seconds':cell['duration_seconds'],
+                                 'protocol_uuids':list(approval['per_cell'][identity][1])})
+                return rows
+            paged_overview_display(display_key,payload,display_cells)
+            return payload
+        # The assembled payload is shared read-only by later identical requests
+        # (serialization and the presentation cache only read it).
+        overview_parts['assembled']=(assembled_key,payload)
+        payload={**payload}
+        payload['events']=service.events(25)
+        payload['exports']=store.list_dataset_revisions()
+        if overview_part_keys()!=keys:
+            raise StaleWorkspace('Saved decisions changed while reading this project. Refresh and retry.')
+        return payload
+
+    def paged_overview_display(display_key,payload,cells):
+        """Keep the startup display cache current from paged overview reads.
+
+        Its cells and counts depend only on the publication base, protocol and
+        approval components and exports, so it is rebuilt (O(cells)) only when
+        those change; the event list in that presentation-only cache may lag
+        until then or until a full overview read.
+        """
+        if overview_parts.get('display_key')==display_key:return
+        from disco.projects.presentation_cache import save_overview, display_overview
+        full={**payload,'cells':cells()}
+        for key in ('cells_total','cells_next'):full.pop(key,None)
+        try:
+            display=display_overview(full)
+        except (ValueError, TypeError, KeyError, AttributeError):
+            display=None
+        if display is None or display!=saved_overview.get('display'):
+            saved_overview['display']=display if save_overview(project_dir,full) else None
+        overview_parts['display_key']=display_key
+
+    # Exact Overview reads have an explicit publication phase. No GET prepares
+    # a missing projection or replays a whole cohort after a one-target write.
+    from disco.navigation.overview_durations import DurationPreparation
+    overview_durations=DurationPreparation()
+    app.extensions['overview_durations']=overview_durations
+    prepared_overview={}
+    app.extensions['prepared_overview']=prepared_overview
+
+    def overview_preparing(reason):
+        return jsonify(status='preparing',preparation={'status':'pending','resource':'overview','reason':reason}),202
+
+    def overview_publication_key(keys):
+        return (keys['base'],tuple(keys['protocols']),keys['exports'])
+
+    def prepare_overview_publication():
+        from disco.navigation.overview_projection import OverviewProjection
+        from disco.navigation.overview_tag_vocabulary import TagVocabulary
+        import sqlite3
+        started=time.perf_counter()
+        with db_lock:
+            keys=overview_part_keys();tracker=getattr(service,'_recovery_tracker',None)
+            if keys is None or tracker is None:
+                return {'status':'unavailable','reason':'Native publication and recovery authority are required'}
+            # Canonical payload construction is confined to this named, timed
+            # publication phase. The independent aggregate owner, not these
+            # payloads, supplies every changing count on subsequent reads.
+            protocol_payloads={};memberships={};headers={}
+            for protocol in service.protocols:
+                payload=native_protocol_summary(protocol,{},cross_protocols=False,tag_counts=False)
+                if payload is None:raise ValueError('Protocol publication cannot be prepared')
+                protocol_payloads[protocol]=payload
+                memberships[protocol]=[row['uuid'] for row in service.query_view(protocol)['epochs']]
+                binding=explorer_history.protocol_binding_header(protocol)
+                headers[protocol]=(binding,explorer_history.header(binding['revision_uuid']) if binding else None)
+            project_payload=build_native_overview()
+            if project_payload is None:raise ValueError('Project publication cannot be prepared')
+            with tracker.capture() as plan:
+                if plan is None:raise ValueError('Recovery authority is unavailable for preparation')
+                decisions=(store.Curation & {'project_uuid':store.project_uuid}).proj(
+                    'included','review_state','metadata_fingerprint').to_dicts()
+                records=[] if shared_annotations is None else list(shared_annotations._index_records(None))
+                exports=store.export_memberships()
+                plan.verify();watermark=plan.watermark
+            tag_values={}
+            for row in records:
+                key=(row['target_kind'],row['target_uuid'])
+                tag_values.setdefault(key,set()).update(row['tags'])
+            model=OverviewProjection.prepare(rows=service.rows,memberships=memberships,
+                fingerprints=service._fingerprints,decisions=decisions,
+                publication=overview_publication_key(keys),watermark=watermark,exports=exports,
+                tagged_cells=[key for (kind,key),tags in tag_values.items() if kind=='cell' and tags],
+                tagged_epochs=[key for (kind,key),tags in tag_values.items() if kind=='epoch' and tags])
+            vocab=TagVocabulary({key:(value[0],value[2]) for key,value in model.epochs.items()},
+                {None:{key:value['epochs'] for key,value in model.cells.items()},
+                 **{protocol:{key:value['epochs'] for key,value in cells.items()} for protocol,cells in model.protocol_cells.items()}})
+            pages=sqlite3.connect(':memory:',check_same_thread=False)
+            try:
+                for (kind,key),tags in tag_values.items():vocab.update(kind,key,tags)
+                pages.execute('CREATE TABLE cells(scope TEXT,cell TEXT,kind TEXT,date TEXT,label TEXT,ordinal INTEGER,first TEXT,PRIMARY KEY(scope,cell)) WITHOUT ROWID')
+                pages.execute('CREATE TABLE members(scope TEXT,cell TEXT,epoch TEXT,PRIMARY KEY(scope,cell,epoch)) WITHOUT ROWID')
+                pages.executemany('INSERT INTO members VALUES (?,?,?)',[(protocol,model.epochs[key][0],key) for protocol,ids in memberships.items() for key in ids])
+                pages.execute('CREATE INDEX cell_order ON cells(scope,kind,date,label,ordinal)')
+                pages.execute('CREATE INDEX canonical_cell_order ON cells(scope,kind,date,label,first)')
+                for protocol,cells in [(None,model.cells),*model.protocol_cells.items()]:
+                    pages.executemany('INSERT INTO cells VALUES (?,?,?,?,?,?,?)',
+                        [('' if protocol is None else protocol,key,service.cells[key]['cell_type'] or '',service.cells[key]['date'],service.cells[key]['label'],ordinal,
+                          '' if protocol is None else pages.execute('SELECT MIN(epoch) FROM members WHERE scope=? AND cell=?',(protocol,key)).fetchone()[0]) for ordinal,key in enumerate(cells)])
+                pages.commit()
+                if tracker.token()!=watermark or overview_part_keys()!=keys:
+                    raise StaleWorkspace('Overview changed during preparation. Prepare again.')
+            except BaseException:
+                pages.close();vocab.close();raise
+            old=dict(prepared_overview)
+            prepared_overview.clear();prepared_overview.update(model=model,vocab=vocab,pages=pages,tracker=tracker,
+                project=project_payload,protocols=protocol_payloads,headers=headers,protocol_order={key:index for index,key in enumerate(service.protocols)},
+                project_cells={row['cell_uuid']:row for row in project_payload['cells']},reason=None,
+                duration_orders={binding['revision_uuid']:model.duration_orders[protocol] for protocol,(binding,_) in headers.items() if binding},
+                initial_duration_orders=dict(model.duration_orders),
+                changed_epochs={protocol:set((payload.get('binding') or {}).get('changed_epoch_uuids',())) for protocol,payload in protocol_payloads.items()},
+                initial_bindings={protocol:(binding or {}).get('revision_uuid') for protocol,(binding,_) in headers.items()},
+                cell_ordinals={protocol:{key:index for index,key in enumerate(cells)} for protocol,cells in model.protocol_cells.items()})
+            if old:
+                old['pages'].close();old['vocab'].close()
+            # This full display-only checkpoint belongs to explicit preparation,
+            # never to page reads or target-delta catch-up. Cache failure cannot
+            # invalidate or roll back the separately witnessed canonical model.
+            from disco.projects.presentation_cache import save_overview,display_overview
+            display_payload={**project_payload,'events':service.events(25)}
+            try:
+                display=display_overview(display_payload)
+            except (ValueError,TypeError,KeyError,AttributeError):
+                display=None
+            if display is None or display!=saved_overview.get('display'):
+                saved_overview['display']=display if save_overview(project_dir,display_payload) else None
+            receipt={'status':'ready','publication_serial':keys['base'][0],
+                'elapsed_ms':(time.perf_counter()-started)*1000,'epochs':len(model.epochs),
+                'protocol_memberships':sum(map(len,model.memberships.values()))}
+            app.extensions['overview_preparation_receipt']=receipt
+            return receipt
+
+    app.extensions['prepare_overview_publication']=prepare_overview_publication
+
+    def prepare_published_views():
+        receipts={}
+        for name in ('overview','tree','workbench'):
+            prepare=app.extensions.get('prepare_'+name+'_publication')
+            if prepare is not None:receipts[name]=prepare()
+        app.extensions['publication_preparation_receipts']=receipts
+        return receipts
+
+    app.extensions['prepare_published_views']=prepare_published_views
+
+    def close_overview_publication():
+        # Drain callbacks before acquiring the lock they use to publish.
+        overview_durations.close()
+        with db_lock:
+            if prepared_overview:
+                prepared_overview['model'].invalidate()
+                prepared_overview['pages'].close();prepared_overview['vocab'].close()
+                prepared_overview.clear()
+
+    app.extensions['close_overview_publication']=close_overview_publication
+
+    def overview_capture_rows(plan):
+        from disco.navigation.publication_changes import PreparationRequired
+        if any(plan.keys.get(name) for name in ('source','dataset_revision','protocol_workspace','data_store_state')):
+            raise PreparationRequired('publication_changed')
+        changes=[];tag_changes=[];bindings=[]
+        expected=['project_uuid','protocol_uuid','epoch_uuid']
+        if plan.primary_keys.get('curation')!=expected:raise PreparationRequired('curation_identity_changed')
+        by_protocol={}
+        for project,protocol,identity in plan.keys.get('curation',[]):
+            if project!=store.project_uuid:raise PreparationRequired('curation_project_changed')
+            by_protocol.setdefault(protocol,[]).append(identity)
+        for protocol,ids in by_protocol.items():
+            rows=store._rows(protocol,ids,selected_only=True)
+            changes.extend((protocol,key,rows.get(key)) for key in ids)
+        if plan.keys.get('annotation_profile'):
+            # Author labels may change; page chips are read afresh. No tag
+            # membership or effective tag text changes with this identity row.
+            pass
+        shared_keys=plan.primary_keys.get('shared_annotation',[])
+        targets={}
+        for key in plan.keys.get('shared_annotation',[]):
+            row=dict(zip(shared_keys,key))
+            if row.get('project_uuid')!=store.project_uuid:raise PreparationRequired('annotation_project_changed')
+            targets.setdefault(row['target_kind'],set()).add(row['target_uuid'])
+        for kind,ids in targets.items():
+            records=shared_annotations.read_targets(kind,sorted(ids))
+            tag_changes.extend((kind,key,{chip['tag'] for chip in records[key]['tags']}) for key in ids)
+        model=prepared_overview['model']
+        for key in plan.keys.get('protocol_binding',[]):
+            row=dict(zip(plan.primary_keys['protocol_binding'],key));protocol=row['protocol_uuid']
+            old_binding,old_header=prepared_overview['headers'].get(protocol,(None,None))
+            binding=explorer_history.protocol_binding_header(protocol)
+            if binding==old_binding:continue
+            if binding is None or old_binding is None:raise PreparationRequired('binding_changed')
+            if binding['revision_uuid']==old_binding['revision_uuid']:
+                bindings.append((protocol,{},[],binding,old_header,set(),set(),model.duration_orders[protocol]))
+                continue
+            delta=explorer_history.prepared_delta(old_binding['revision_uuid'],binding['revision_uuid'])
+            if delta is None:raise PreparationRequired('binding_changed')
+            order=prepared_overview['duration_orders'].get(binding['revision_uuid'])
+            if binding['revision_uuid']==prepared_overview['initial_bindings'][protocol]:
+                order=prepared_overview['initial_duration_orders'][protocol]
+            if delta['order_kind']=='recipe' and order is None:
+                raise PreparationRequired('Canonical full-recipe duration order requires preparation')
+            added=delta['added'];removed=delta['removed']
+            states=store._rows(protocol,list(added),selected_only=True) if added else {}
+            changed={key for key,fingerprint in added.items() if fingerprint!=service._fingerprints[key]}
+            touched=set(added)|set(removed)
+            bindings.append((protocol,{key:states.get(key) for key in added},list(removed),
+                             binding,delta['metadata'],changed,touched,order))
+        return changes,tag_changes,bindings
+
+    def prepared_binding_witness(keys):
+        if keys is None:return False
+        return all(keys['protocols'][protocol][3]==((binding['revision_uuid'],binding['version']) if binding else None)
+                   for protocol,(binding,_) in prepared_overview['headers'].items())
+
+    def current_prepared_overview():
+        from disco.navigation.publication_changes import capture_changes,PreparationRequired
+        if not prepared_overview:return None,'not_prepared'
+        model=prepared_overview['model'];tracker=prepared_overview['tracker']
+        keys=overview_part_keys()
+        if keys is None or overview_publication_key(keys)!=model.publication:
+            model.invalidate();return None,'publication_changed'
+        if not model.ready:return None,prepared_overview.get('reason') or 'publication_changed'
+        try:
+            if tracker.token()!=model.watermark:
+                watermark,(changes,tags,bindings)=capture_changes(tracker,model.watermark,overview_capture_rows)
+                # All source reads and capture verification have completed. No
+                # owner is changed until the snapshot can be published.
+                duration_jobs=[]
+                for protocol,added,removed,binding,header,changed,touched,order in bindings:
+                    previous=prepared_overview['headers'][protocol][0]
+                    if not added and not removed and previous['revision_uuid']==binding['revision_uuid']:
+                        prepared_overview['headers'][protocol]=(binding,header)
+                        continue
+                    duration_jobs.append(protocol)
+                    model.apply_membership(protocol,added=added,removed=removed)
+                    prepared_overview['changed_epochs'][protocol].difference_update(touched)
+                    prepared_overview['changed_epochs'][protocol].update(changed)
+                    vocab=prepared_overview['vocab']
+                    for identity in removed:vocab.membership(protocol,identity,False)
+                    for identity in added:vocab.membership(protocol,identity,True)
+                    pages=prepared_overview['pages']
+                    pages.executemany('DELETE FROM members WHERE scope=? AND cell=? AND epoch=?',[(protocol,model.epochs[key][0],key) for key in removed])
+                    pages.executemany('INSERT INTO members VALUES (?,?,?)',[(protocol,model.epochs[key][0],key) for key in added])
+                    for cell in {model.epochs[key][0] for key in [*added,*removed]}:
+                        if cell in model.protocol_cells[protocol]:
+                            row=service.cells[cell]
+                            first=pages.execute('SELECT MIN(epoch) FROM members WHERE scope=? AND cell=?',(protocol,cell)).fetchone()[0]
+                            ordinal=prepared_overview['cell_ordinals'][protocol].get(cell,0)
+                            pages.execute('INSERT OR REPLACE INTO cells VALUES (?,?,?,?,?,?,?)',(protocol,cell,row['cell_type'] or '',row['date'],row['label'],ordinal,first))
+                        else:pages.execute('DELETE FROM cells WHERE scope=? AND cell=?',(protocol,cell))
+                    pages.commit();prepared_overview['headers'][protocol]=(binding,header)
+                    orders=prepared_overview['duration_orders'];revision=binding['revision_uuid']
+                    if order is not None:model.duration_orders[protocol]=order
+                    orders[revision]=model.duration_orders[protocol]
+                    while len(orders)>32:orders.pop(next(iter(orders)))
+                model.apply_decisions(changes,model.watermark,watermark)
+                model.apply_tags([(kind,key,bool(values)) for kind,key,values in tags])
+                for kind,key,values in tags:prepared_overview['vocab'].update(kind,key,values)
+                for protocol in duration_jobs:
+                    version=model.duration_versions[protocol]
+                    def publish(value,protocol=protocol,version=version,model=model):
+                        with db_lock:
+                            if prepared_overview.get('model') is model:model.publish_duration(protocol,version,value)
+                    def failed(error,protocol=protocol,version=version,model=model):
+                        app.logger.error('Overview duration preparation failed',exc_info=(type(error),error,error.__traceback__))
+                        with db_lock:
+                            if prepared_overview.get('model') is model:model.fail_duration(protocol,version)
+                    overview_durations.submit(model.duration_orders[protocol],model.rows,publish,key=protocol,on_error=failed)
+            if tracker.token()!=model.watermark or not prepared_binding_witness(overview_part_keys()):
+                raise PreparationRequired('state_changed')
+        except Exception as error:
+            model.invalidate();prepared_overview['reason']=str(error);return None,str(error)
+        return model,None
+
+    def prepared_cell_rows(model,protocol,page):
+        scope='' if protocol is None else protocol
+        total=len(model.cells if protocol is None else model.protocol_cells[protocol])
+        limit,after=page if page is not None else (total,0)
+        binding=prepared_overview['headers'].get(protocol,(None,None))[0]
+        canonical=protocol is not None and (binding or {}).get('revision_uuid')!=prepared_overview['initial_bindings'][protocol]
+        order='first' if canonical else 'ordinal'
+        identities=[row[0] for row in prepared_overview['pages'].execute(
+            'SELECT cell FROM cells WHERE scope=? ORDER BY kind,date,label,'+order+' LIMIT ? OFFSET ?',(scope,limit,after))]
+        result=[]
+        for identity in identities:
+            counts=model.cell_counts(identity,protocol)
+            if protocol is None:
+                row={**prepared_overview['project_cells'][identity],
+                     'protocol_uuids':sorted(model.cell_protocols.get(identity,()),key=prepared_overview['protocol_order'].__getitem__)}
+                fields=('epochs','duration_seconds','included','reviewed','unreviewed','exported')
+            else:
+                row={**service.cells[identity],
+                    **recording_rig_summary(model.cell_values(protocol,identity,'source_sha256'),recording_sources()),
+                    'group_labels':sorted(model.cell_values(protocol,identity,'group_label'),key=str)}
+                fields=('epochs','duration_seconds','included','reviewed','unreviewed','exported')
+            row.update({key:counts[key] for key in fields})
+            if counts.get('duration_status'):row['duration_status']=counts['duration_status']
+            result.append(row)
+        add_cell_annotations(result)
+        return result,{'cells_total':total,'cells_next':after+len(result) if after+len(result)<total else None} if page is not None else {}
+
+    def prepared_binding(protocol):
+        binding,header=prepared_overview['headers'][protocol]
+        if binding is None:return None
+        return {'revision_uuid':binding['revision_uuid'],'version':binding['version'],
+            **{key:header[key] for key in ('name','source_revisions','predicate','splits','tree_view')},
+            **({'annotation_scope':compact_annotations(header['annotation_scope'])} if header.get('annotation_scope') else {}),
+            'changed_epoch_uuids':sorted(prepared_overview['changed_epochs'][protocol])}
+
+    def prepared_overview_payload(protocol,page):
+        model,reason=current_prepared_overview()
+        if model is None:return None,reason
+        keys=overview_part_keys()
+        if not prepared_binding_witness(keys):return None,'binding_changed'
+        cells,paging=prepared_cell_rows(model,protocol,page)
+        if protocol is None:
+            payload={key:value for key,value in prepared_overview['project'].items() if key not in ('cells','protocols','counts')}
+            counts={**prepared_overview['project']['counts']}
+            current=model.project_counts()
+            counts.update({key:current[key] for key in counts if key in current})
+            protocols=[]
+            for entry in prepared_overview['project']['protocols']:
+                identity=entry['protocol_uuid'];context=selected_state.native_context(identity)
+                if context is None:return None,'protocol_authority_changed'
+                own=model.protocol_counts(identity)
+                protocols.append({**entry,'counts':{key:own.get(key,value) for key,value in entry['counts'].items()},
+                    'query_revision':context['query_revision'],'binding':prepared_binding(identity)})
+                binding=prepared_binding(identity)
+                if binding is not None:
+                    protocols[-1]['query']={'version':2,'kind':'source_predicate','predicate':binding['predicate']}
+                    protocols[-1]['view']={'group_by':binding['tree_view']['fields'],'layout':'landscape'}
+                if own.get('duration_status'):protocols[-1]['counts']['duration_status']=own['duration_status']
+            payload.update(counts=counts,protocols=protocols,events=service.events(25),exports=store.list_dataset_revisions())
+        else:
+            context=selected_state.native_context(protocol)
+            if context is None:return None,'protocol_authority_changed'
+            template=prepared_overview['protocols'][protocol]
+            current=model.protocol_counts(protocol)
+            payload={key:value for key,value in template.items() if key not in ('cells','counts','annotation_summary')}
+            payload['counts']={key:current.get(key,value) for key,value in template['counts'].items()}
+            if shared_annotations:
+                payload['counts'].update({key:current[key] for key in ('shared_tagged_cells','shared_tagged_epochs')})
+            if current.get('duration_status'):payload['counts']['duration_status']=current['duration_status']
+            retained=model.retained_counts(protocol)
+            payload['total_counts']={key:retained.get(key,value) for key,value in template['total_counts'].items()}
+            payload.update(query_revision=context['query_revision'],expected_query_revision=context['query_revision'],
+                query_revision_contract=context['query_revision_contract'],expected_binding_version=context['binding_version'],
+                annotation_generation=annotation_generation(context['generation']),binding=prepared_binding(protocol))
+            binding=prepared_binding(protocol)
+            if binding is not None:payload['effective_query']={'version':2,'kind':'source_predicate','predicate':binding['predicate']}
+            payload['selection_options']={'cell_types':sorted(value for value in model.protocol_values(protocol,'cell_type') if value)}
+            payload['groups']=sorted(model.protocol_values(protocol,'group_label'),key=str)
+            payload['source_sha256s']=sorted(model.protocol_values(protocol,'source_sha256'))
+            excluded=set(service.source_scope()['excluded_source_revisions'])
+            affected={key:count for key,count in model.attributes[protocol]['source_sha256'].items() if key in excluded}
+            payload['source_eligibility']={**template['source_eligibility'],'excluded_epoch_count':sum(affected.values()),
+                'excluded_sources':sorted(affected),'propagation_required':bool(affected)}
+        if shared_annotations:payload['annotation_summary']=prepared_overview['vocab'].summary(protocol)
+        payload.update(cells=cells,**paging)
+        if (protocol in model.duration_failures if protocol is not None else bool(model.duration_failures)):
+            payload['preparation']={'status':'failed','resource':'overview','reason':'duration_failed'}
+        if prepared_overview['tracker'].token()!=model.watermark or overview_part_keys()!=keys:
+            raise StaleWorkspace('Overview changed during the read. Refresh and retry.')
+        return payload,None
+
+    def prepared_search_memberships(identities):
+        """Reuse prepared reverse membership under the search response's read lease."""
+        from disco.navigation.publication_changes import PreparationRequired
+        # Custom and legacy readers keep their exact existing query_result path.
+        # A prepared native owner that loses authority must not turn into a scan.
+        if (not selected_state._native_contract()
+                or getattr(service.query_members,'__func__',None) is not WorkspaceService.query_members):
+            return None
+        if not prepared_overview and getattr(service,'_recovery_tracker',None) is None:
+            return None
+        model,reason=current_prepared_overview()
+        if model is None:raise PreparationRequired(reason)
+        keys=overview_part_keys()
+        if keys is None or not prepared_binding_witness(keys):raise PreparationRequired('state_changed')
+        result=model.protocols_for_epochs(identities)
+        if (prepared_overview['tracker'].token()!=model.watermark or overview_part_keys()!=keys
+                or not prepared_binding_witness(keys)):
+            raise StaleWorkspace('Search membership changed during the read. Refresh and retry.')
+        return result
+
+    def prepared_queue_new_cells(protocol, state, cells):
+        from disco.navigation.publication_changes import PreparationRequired
+        # Main's independent frozen fingerprint/source proof is checked before
+        # this display-only membership lookup. Blocked pools contain no epochs.
+        if not cells:return 0
+        model,reason=current_prepared_overview()
+        if model is None:raise PreparationRequired(reason)
+        keys=overview_part_keys()
+        binding=explorer_history.protocol_binding_header(protocol)
+        if (keys is None or not prepared_binding_witness(keys) or binding!=state['binding']
+                or prepared_overview['headers'][protocol][0]!=binding):
+            raise StaleWorkspace('Workbench membership changed. Refresh and retry.')
+        members=model.protocol_cells[protocol]
+        result=sum(identity not in members for identity in cells)
+        if (prepared_overview['tracker'].token()!=model.watermark or overview_part_keys()!=keys
+                or explorer_history.protocol_binding_header(protocol)!=binding):
+            raise StaleWorkspace('Workbench membership changed during the read. Refresh and retry.')
+        return result
+
+    @app.post('/api/overview/prepare')
+    def prepare_overview_route():
+        if request.args or request.get_json(silent=True) not in (None,{}):raise ValueError('Overview preparation takes no options')
+        return jsonify(prepare_overview_publication())
+
+
+    def native_overview(page=None):
+        """Project counts from exact decision projections, memoized per generation.
+
+        Only the incremental path windows cells itself (``page``); the memoized
+        fallback returns the full payload and the route windows it.
+        """
         if not service.protocols:return None
+        incremental=incremental_overview(page)
+        if incremental is not None:return incremental
         witness=overview_witness()
         if witness is not None and overview_memo.get('key')==witness:
             payload=copy.deepcopy(overview_memo['payload'])
@@ -687,6 +1469,12 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             return jsonify(error=str(error), code="stale_workspace"), 409
         if isinstance(error, TraceWorkerUnavailable):
             return jsonify(error=str(error), code='trace_worker_unavailable', retryable=True), 503
+        from workspace_service import WorkspaceNotReady, LockBusy
+        if isinstance(error, WorkspaceNotReady):
+            # Never served from the previous publication: reads stay refused.
+            return jsonify(error=str(error), code=error.code, retryable=True), 503
+        if isinstance(error, LockBusy) or (isinstance(error, RuntimeError) and getattr(type(error), 'code', None) == 'lock_busy'):
+            return jsonify(error=str(error), code=error.code, retryable=True), 409
         if isinstance(error, (ValueError, KeyError, FileNotFoundError)):
             return jsonify(error=str(error)), 400
         incident = str(uuid.uuid4())
@@ -701,7 +1489,14 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         from workspace_updates import release_metadata
         return jsonify(status="ready", project_uuid=service.project["project_uuid"],
                        app_release=release_metadata()['version'], project_path=str(project_dir),
-                       backup=backup_status())
+                       backup=backup_status(), typed_index=typed_index_status())
+
+    def typed_index_status():
+        """Whether the typed metadata sidecar serves reads; the fallback is the native index."""
+        if getattr(service, 'typed_index', None) is not None:
+            return {'status': 'available'}
+        refresh = getattr(service, 'last_successful_refresh', None) or {}
+        return {'status': 'unavailable', 'reason': refresh.get('typed_metadata_index_error') or 'not built'}
 
     def backup_status():
         scheduler=app.extensions.get('backup_scheduler')
@@ -716,7 +1511,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         return jsonify(status='ready' if service._loaded else 'needs_refresh',
                        last_refresh=getattr(service, 'last_successful_refresh', None),
                        latest_attempt=getattr(service, 'last_refresh', None),
-                       annotation_preparation=getattr(service,'annotation_preparation',None))
+                       annotation_preparation=getattr(service,'annotation_preparation',None),
+                       typed_index=typed_index_status())
 
     @app.get('/api/metadata/fields')
     def metadata_fields():
@@ -734,7 +1530,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         started = time.perf_counter()
         try:
             with db_lock, data_stores.registration_locks():
-                result = service.refresh()
+                result = refresh_service()
                 result = {**result, 'completed_at': now(),
                           'elapsed_seconds': round(time.perf_counter() - started, 3)}
                 service.last_refresh = result
@@ -749,7 +1545,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 if voltage_preparation['status']=='failed':warnings.append('Supporting voltage preparation failed; retry from Cell QC.')
                 preparation=prepare_annotations()
                 if preparation['status']=='failed':warnings.append('Annotation preparation failed: '+preparation.get('reason',''))
-                return jsonify(refresh=result, warnings=warnings, annotation_preparation=preparation)
+                views=prepare_published_views()
+                return jsonify(refresh=result, warnings=warnings, annotation_preparation=preparation,view_preparation=views)
         except Exception as error:
             with db_lock:
                 try:
@@ -886,6 +1683,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 try:
                     service.refresh()
                     prepare_annotations()
+                    result['view_preparation']=prepare_published_views()
                 except (OSError, ValueError) as error:
                     service.manager_recovery(error)
                     result['workspace_validation_error'] = str(error)
@@ -929,7 +1727,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 not isinstance(body['protocol_uuid'], str) or not isinstance(body['expected_preview_revision'], str)):
             raise ValueError('Propagation requires a protocol UUID and the exact preview revision')
         with db_lock, data_stores.registration_locks():
-            service.refresh()
+            refresh_service()
             plan = propagation_plan(source_sha256)
             item = next((item for item in plan['protocols'] if item['protocol_uuid'] == body['protocol_uuid']), None)
             if item is None or item['expected_preview_revision'] != body['expected_preview_revision']:
@@ -956,7 +1754,24 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     saved_overview = {}
 
+    overview_bytes = {}
+
     def overview_response(payload):
+        # An incremental overview shares its assembled cells list until any
+        # component changes; with identical live events/exports, the encoded
+        # response (and display projection) are identical too.
+        cached = overview_bytes.get('value')
+        if (cached is not None and payload.get('cells') is cached[0]
+                and payload.get('events') == cached[1] and payload.get('exports') == cached[2]):
+            return app.response_class(cached[3], mimetype=app.json.mimetype)
+        response = _overview_response(payload)
+        if isinstance(payload.get('cells'), list) and overview_parts.get('assembled') is not None \
+                and payload['cells'] is overview_parts['assembled'][1].get('cells'):
+            overview_bytes['value'] = (payload['cells'], copy.deepcopy(payload.get('events')),
+                                       copy.deepcopy(payload.get('exports')), response.get_data())
+        return response
+
+    def _overview_response(payload):
         # The display cache is rewritten only when its projection changes.
         from disco.projects.presentation_cache import save_overview, display_overview
         try:
@@ -969,9 +1784,18 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     @app.get("/api/overview")
     def overview():
+        cells_window=cell_page()
         with db_lock, read_contract():
-            native=native_overview()
-            if native is not None:return overview_response(native)
+            if overview_guard() is not None and getattr(service,'_recovery_tracker',None) is not None:
+                payload,reason=prepared_overview_payload(None,cells_window)
+                return overview_preparing(reason) if payload is None else jsonify(payload)
+            native=native_overview(cells_window)
+            if native is not None:
+                if cells_window is None:return overview_response(native)
+                if 'cells_total' in native:return jsonify(native)
+                # Memoized fallback: full payload (display cache as before), then a window.
+                overview_response(native)
+                return jsonify(window_cells(native,cells_window))
             payload = copy.deepcopy(service.overview())
             memberships = {}
             export_memberships = store.export_memberships()
@@ -995,7 +1819,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 payload['counts'].update({key:summary[key] for key in ('shared_tagged_cells','shared_tagged_epochs')})
                 payload['annotation_summary']={key:summary[key] for key in ('tags','total_tags','truncated')}
             payload["exports"] = store.list_dataset_revisions()
-            return overview_response(payload)
+            if cells_window is None:return overview_response(payload)
+            overview_response(payload)
+            return jsonify(window_cells(payload,cells_window))
 
     @app.get('/api/tags')
     def tags():
@@ -1018,6 +1844,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             with data_stores.registration_locks(identities):
                 return jsonify(data_stores.recording_sizes(identities))
 
+    protocol_overview_memo={}
+    app.extensions['protocol_overview_memo']=protocol_overview_memo
+
     @app.get('/api/protocols/<protocol_uuid>/overview')
     def protocol_overview(protocol_uuid):
         """Cohort-only summary, conditionally reused after exact freshness checks.
@@ -1027,8 +1856,16 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         keep their full policy and never issue a conditional reuse receipt.
         """
         protocol_uuid=str(uuid.UUID(protocol_uuid))
+        cells_window=cell_page()
         with db_lock:
-            query_filters=filters()
+            query_filters=filters({'cells_limit','cells_after'})
+            if not query_filters and overview_guard() is not None and getattr(service,'_recovery_tracker',None) is not None:
+                payload,reason=prepared_overview_payload(protocol_uuid,cells_window)
+                if payload is None:return overview_preparing(reason)
+                etag=checksum({'projection':'prepared-overview-v1','protocol':protocol_uuid,
+                    'query':payload['query_revision'],'watermark':prepared_overview['model'].watermark,'duration':prepared_overview['model'].duration_serial,'page':cells_window})
+                response=app.response_class(status=304) if request.headers.get('If-None-Match')=='"'+etag+'"' else jsonify(payload)
+                response.set_etag(etag);response.headers['Cache-Control']='no-store';return response
             native_exports=(type(store) is CurationStore
                 and getattr(store.export_memberships,'__func__',None) is CurationStore.export_memberships
                 and getattr(store.protocol_export_status,'__func__',None) is CurationStore.protocol_export_status)
@@ -1037,25 +1874,43 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if proof is None:context=None
             etag=None
             if context is not None:
-                members=proof['members']
-                exported,signature=store.protocol_export_status(protocol_uuid,members)
+                from workspace_protocol_state import proof_members
+                members=proof_members(proof)
+                # The export signature keys the ETag; the protocol's exported
+                # set (O(members)) is built only when the memo misses.
+                _,signature=store.protocol_export_status(protocol_uuid,())
                 rig_token=recording_rig_token(members)
                 # The summary shows tag counts; v4 revisions omit shared tags.
                 etag=checksum({'projection':'protocol-overview-v2','query':context['query_revision'],'recording_rigs':rig_token,
                                'exports':signature,'filters':query_filters,'annotations':annotation_generation(context['generation'])})
-                unchanged=request.headers.get('If-None-Match')=='"'+etag+'"'
-                payload=None if unchanged else native_protocol_summary(protocol_uuid,query_filters,
-                    cross_protocols=False,exported_ids=exported)
+                # Each cell window has its own validator; the memo keeps the full payload.
+                response_etag=etag if cells_window is None else checksum({'overview':etag,'cells_limit':cells_window[0],
+                                                                          'cells_after':cells_window[1]})
+                unchanged=request.headers.get('If-None-Match')=='"'+response_etag+'"'
+                # The ETag names every input of this payload (protocol revision,
+                # shared-tag generation, exports, rigs, filters): reuse it per tag.
+                memo=protocol_overview_memo.get(protocol_uuid)
+                payload=None if unchanged else memo[1] if memo is not None and memo[0]==etag else None
+                if payload is None and not unchanged:
+                    exported,current=store.protocol_export_status(protocol_uuid,members)
+                    if current!=signature:
+                        raise StaleWorkspace('Protocol summary changed while reading. Refresh and retry.')
+                    payload=native_protocol_summary(protocol_uuid,query_filters,cross_protocols=False,exported_ids=exported)
                 after=selected_state.native_context(protocol_uuid)
                 _,after_signature=store.protocol_export_status(protocol_uuid,())
                 if (not same_protocol_state(after,context) or after_signature!=signature or recording_rig_token(members)!=rig_token):
                     raise StaleWorkspace('Protocol summary changed while reading. Refresh and retry.')
-                response=app.response_class(status=304) if unchanged else jsonify(payload)
-                response.set_etag(etag)
+                if payload is not None:
+                    protocol_overview_memo.pop(protocol_uuid,None)
+                    protocol_overview_memo[protocol_uuid]=(etag,payload)
+                    while len(protocol_overview_memo)>8:
+                        protocol_overview_memo.pop(next(iter(protocol_overview_memo)))
+                response=app.response_class(status=304) if unchanged else jsonify(window_cells(payload,cells_window))
+                response.set_etag(response_etag)
             else:
                 payload=enrich_protocol(copy.deepcopy(service.protocol(protocol_uuid,query_filters)),protocol_uuid,query_filters)
                 for cell in payload.get('cells',[]):cell.pop('protocol_uuids',None)
-                response=jsonify(payload)
+                response=jsonify(window_cells(payload,cells_window))
             response.headers['Cache-Control']='no-store'
             return response
 
@@ -1081,7 +1936,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 payload={key:payload[key] for key in allowed if key in payload}
                 payload['binding']=compact_binding(binding)
                 payload.update(query_revision=before[0],expected_query_revision=before[0],expected_binding_version=before[1])
-                if before[0].startswith(PROTOCOL_STATE_CONTRACT+':'):payload['query_revision_contract']=PROTOCOL_STATE_CONTRACT
+                if native_state_contract(before[0]):payload['query_revision_contract']=native_state_contract(before[0])
                 if native is None and selected_state.read_selected(protocol_uuid,[])[1:]!=before:
                     raise StaleWorkspace('Protocol changed while opening this view. Refresh and retry.')
                 return jsonify(payload)
@@ -1136,13 +1991,17 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         include_cells=request.args.get('include_cells','false')
         if len(request.args.getlist('include_cells'))>1 or include_cells not in ('true','false'):
             raise ValueError('include_cells must be true or false')
+        cells_window=cell_page()
+        if cells_window is not None and include_cells!='true':
+            raise ValueError('cells_limit requires include_cells=true')
         with db_lock, selected_state.native_read(protocol_uuid,provider=page_curation_provider) as native:
             tracker=getattr(store,'state_generation',None)
             page_generation=tracker.token(protocol_uuid) if tracker and native is None else None
             arguments={'anchor_uuid':request.args.get('anchor_uuid')}
             if native is not None:arguments['include_curation']=False
             if include_cells=='true':arguments['include_cells']=True
-            query_filters=filters({'anchor_uuid','include_cells'})
+            if cells_window is not None:arguments['cells_page']=cells_window
+            query_filters=filters({'anchor_uuid','include_cells','cells_limit','cells_after'})
             from disco.metadata.explore_queries import generation
             scoped_context={'protocol_uuid':protocol_uuid,'filters':query_filters}
             scoped_generation=generation(service,scoped_context) if 'metadata_predicate' in query_filters else None
@@ -1173,7 +2032,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 row["export_count"] = export_counts[row["epoch_uuid"]]
             page["query_revision"] = revision
             page['expected_binding_version']=binding_version
-            if revision.startswith(PROTOCOL_STATE_CONTRACT+':'):page['query_revision_contract']=PROTOCOL_STATE_CONTRACT
+            if native_state_contract(revision):page['query_revision_contract']=native_state_contract(revision)
             if page_generation is not None and tracker.token(protocol_uuid)!=page_generation:
                 raise StaleWorkspace('Saved annotations changed while reading this page. Refresh and retry.')
             if shared_receipt is not None and (not native.accepts_shared(shared_receipt) if native is not None
@@ -1237,7 +2096,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     raise ValueError(key + ' must be a UUID string')
                 body[key] = str(uuid.UUID(body[key]))
         with db_lock, data_stores.registration_locks(), annotation_locks(service, body['predicate']):
-            preview = service.explore_preview(body['predicate'], body['splits'], include_tree=not body.get('summary_only', False), include_catalog_summary=body.get('catalog_summary', True))
+            # A plain summary-only preview needs no membership: it is counted.
+            membership = not body.get('summary_only', False) or 'baseline_revision_uuid' in body or 'focused_uuid' in body
+            preview = service.explore_preview(body['predicate'], body['splits'], include_tree=not body.get('summary_only', False),
+                include_catalog_summary=inline_catalog(body), include_membership=membership)
             if 'baseline_revision_uuid' in body:
                 baseline = explorer_history.get(body['baseline_revision_uuid'])['recipe']
                 before = {item['uuid']: item['metadata_hash'] for item in baseline['epochs']}
@@ -1251,6 +2113,17 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 preview['focused_in_scope'] = any(item['uuid'] == focused for item in preview['membership'])
                 preview['focused_uuid'] = focused
             return jsonify(compact_preview(preview) if body.get('summary_only') else preview)
+
+    def inline_catalog(body):
+        """Scoped catalog statistics only for rendered trees (summary_only false).
+
+        Summary-only results never compute statistics; one summary job follows
+        the query. ``catalog_summary`` is accepted as a deprecated boolean and
+        no longer changes a summary-only response.
+        """
+        if 'catalog_summary' in body and type(body['catalog_summary']) is not bool:
+            raise ValueError('catalog_summary must be a boolean')
+        return False if body.get('summary_only', False) else body.get('catalog_summary', True)
 
     def compact_annotations(scope):
         result={**scope, 'protocols': [{**{key:value for key,value in protocol.items() if key != 'records'},
@@ -1288,8 +2161,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if type(body.get('summary_only', False)) is not bool:
             raise ValueError('summary_only must be a boolean')
         with db_lock, data_stores.registration_locks(), annotation_locks(service, body['predicate']):
-            service.refresh()
-            preview = service.explore_preview(body['predicate'], body['splits'], include_tree=not body.get('summary_only', False), include_catalog_summary=body.get('catalog_summary', True))
+            verify_service_sources()
+            preview = service.explore_preview(body['predicate'], body['splits'], include_tree=not body.get('summary_only', False), include_catalog_summary=inline_catalog(body))
             result = explorer_history.create(preview, service.sources, project_dir / 'catalog.json',
                 os.environ.get('USER', 'local-user'), name=body.get('name'),
                 parent_revision_uuid=body.get('parent_revision_uuid'))
@@ -1301,7 +2174,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def search_preset_store():
         if 'search_presets' not in app.extensions:
             from disco.navigation.search_presets import SearchPresets
-            app.extensions['search_presets'] = SearchPresets(store)
+            from disco.navigation.predicates import reinterpretation_required
+            app.extensions['search_presets'] = SearchPresets(store, superseded=reinterpretation_required)
         return app.extensions['search_presets']
 
     @app.post('/api/search-presets/resolve')
@@ -1323,9 +2197,15 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def run_search_query():
         body = explorer_request({'predicate', 'splits', 'catalog_summary'}, {'predicate', 'splits'})
         with db_lock, data_stores.registration_locks(), annotation_locks(service, body['predicate']):
-            preview = service.explore_preview(body['predicate'], body['splits'], include_tree=False, include_catalog_summary=body.get('catalog_summary', True))
+            # A run records counts and the tree revision, not membership: count it
+            # on the typed index when it can be proven, else take the exact path.
+            counted = getattr(service, 'run_summary', None)
+            inline_catalog(body)  # validates the deprecated flag; runs never compute statistics
+            preview = counted(body['predicate'], body['splits']) if counted is not None else None
+            if preview is None:
+                preview = service.explore_preview(body['predicate'], body['splits'], include_tree=False, include_catalog_summary=False)
             result = search_preset_store().record_run(preview, service.rows, os.environ.get('USER', 'local-user'))
-            return jsonify(**compact_preview(preview), last_run=result)
+            return jsonify(**{key: value for key, value in compact_preview(preview).items() if key != 'cell_count'}, last_run=result)
 
     @app.route('/api/search-presets', methods=['GET', 'POST'])
     @app.route('/api/search-presets/<preset_uuid>', methods=['GET', 'PUT'])
@@ -1467,7 +2347,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         with db_lock:
             recipe = explorer_history.get(revision_uuid)['recipe']
             with data_stores.registration_locks(), annotation_locks(service, recipe['predicate']):
-                service.refresh()
+                refresh_service()
                 record, candidate = validated_candidate(revision_uuid)
                 if body['expected_recipe_sha256'] != record['recipe']['content_sha256']:
                     raise StaleWorkspace('The saved selection changed. Review it again before creating a protocol.')
@@ -1490,7 +2370,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if not isinstance(body['protocol_uuid'], str) or type(body['expected_binding_version']) is not int:
             raise ValueError('Protocol UUID and integer expected binding version are required')
         with db_lock, data_stores.registration_locks(), candidate_annotation_guard(revision_uuid, body['protocol_uuid']):
-            service.refresh()
+            refresh_service()
             comparison = compare_protocol_candidate(revision_uuid, body['protocol_uuid'])
             if (body['expected_binding_version'] != comparison['expected_binding_version'] or
                     body['expected_query_revision'] != comparison['expected_query_revision']):
@@ -1541,9 +2421,22 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 row['annotations']['cell_epoch_count']=service.cell_epoch_count(row['cell_uuid'])
             return jsonify(row)
 
+    def prewarm_source_signatures():
+        """Hash every registered recording in a background thread, off db_lock."""
+        if not hasattr(service, 'preverify_sources'):
+            return None
+        worker = threading.Thread(target=lambda: service.preverify_sources(), name='disco-source-prewarm', daemon=True)
+        worker.start()
+        return worker
+    app.extensions['prewarm_source_signatures'] = prewarm_source_signatures
+
     @app.get("/api/epochs/<epoch_uuid>/trace")
     def trace(epoch_uuid):
         stream = request.args["stream_uuid"]
+        if hasattr(service, 'preverify_epoch_source'):
+            # A first access after start-up hashes the whole recording here,
+            # outside db_lock; the locked read re-checks its stat signature.
+            service.preverify_epoch_source(epoch_uuid)
         start, count = int(request.args.get("start", 0)), int(request.args.get("count", 20000))
         if 'chunks' in request.args:
             if (request.args.keys() - {'stream_uuid', 'start', 'count', 'chunks'} or
@@ -1638,11 +2531,13 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def curate(protocol_uuid):
         body = request.get_json()
         ids = body["epoch_uuids"]
-        if not isinstance(ids, list) or not ids or len(ids) > 10000 or len(set(ids)) != len(ids):
-            raise ValueError("Choose a nonempty, unique list of epochs (at most 10,000).")
+        # No size cap: per-epoch expected revisions, query_revision and binding
+        # version are still exact, and CurationStore writes in batches.
+        if not isinstance(ids, list) or not ids or len(set(ids)) != len(ids):
+            raise ValueError("Choose a nonempty, unique list of epochs.")
         with db_lock:
             if body.get("changes", {}).get("review_state") == "approved":
-                service.refresh()
+                verify_service_sources()
             context=selected_state.native_context(protocol_uuid,ids)
             if context is None:
                 result, _, revision = state(protocol_uuid)
@@ -1669,14 +2564,21 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                                    audit_context={"query_revision": revision, "source_revisions": result["source_revisions"]},
                                    expected_binding_version=result.get("dataset_binding", {}).get("version", 0),
                                    generation_preflight=(lambda:selected_state.assert_context_locked(protocol_uuid,context)) if context else None)
-            return jsonify(changed)
+            # Receipt read after commit under the same db_lock: the exact
+            # tokens the next write must present (checks stay server-side).
+            current, new_revision, new_binding_version = selected_state.read_selected(protocol_uuid, ids)
+            expected = body["expected_revisions"]
+            return jsonify(**changed, query_revision=new_revision,
+                           expected_binding_version=new_binding_version,
+                           curation_revisions={key: current[key]["revision"] for key in ids
+                                               if current[key]["revision"] != expected[key]})
 
     @app.get("/api/protocols/<protocol_uuid>/masks/export")
     def export_mask(protocol_uuid):
         if request.args:
             raise ValueError("Masks cover the entire protocol query; filtered mask exports are unsupported")
         with db_lock:
-            service.refresh()
+            verify_service_sources()
             result, curation, _ = state(protocol_uuid)
             response = jsonify(format="recording-selection-mask", version=1,
                            protocol_uuid=protocol_uuid,
@@ -1705,8 +2607,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 or len(sources) != len(set(sources))):
             raise ValueError("Mask source revisions must be unique SHA256 strings")
         members = mask["epochs"]
-        if not isinstance(members, list) or not members or len(members) > 10000:
-            raise ValueError("A mask must contain 1–10,000 epochs and cover the complete protocol query")
+        # No size cap: export is unbounded, membership must equal the query
+        # exactly below, and CurationStore writes changed epochs in batches.
+        if not isinstance(members, list) or not members:
+            raise ValueError("A mask must contain at least one epoch and cover the complete protocol query")
         inclusion = {}
         for member in members:
             if (not isinstance(member, dict) or set(member) != {"epoch_uuid", "included"}
@@ -1717,7 +2621,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 raise ValueError("Mask has a noncanonical or duplicate epoch UUID")
             inclusion[identity] = member["included"]
         with db_lock:
-            service.refresh()
+            verify_service_sources()
             result, current, revision = state(protocol_uuid)
             if body["query_revision"] != revision:
                 raise StaleWorkspace("The query, source metadata, or curation changed. Refresh before importing the mask.")
@@ -1739,10 +2643,24 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     @app.post("/api/protocols/<protocol_uuid>/refresh")
     def refresh(protocol_uuid):
         with db_lock, data_stores.registration_locks():
-            service.refresh()
+            refresh_service()
             binding = explorer_history.protocol_binding(protocol_uuid)
             if binding:
                 recipe = binding['recipe']
+                refuse_reinterpretation(recipe)
+                # Membership first, without a tree. An unchanged rerun (same
+                # members, fingerprints and sources) persists no revision.
+                summary = service.explore_preview(recipe['predicate'], recipe['splits'], include_tree=False,
+                                                  include_catalog_summary=False)
+                saved = {member['uuid']: member['metadata_hash'] for member in recipe['epochs']}
+                rerun = {member['uuid']: member['metadata_hash'] for member in summary['membership']}
+                if (rerun == saved and len(summary['membership']) == len(recipe['epochs'])
+                        and sorted(summary.get('source_revisions', recipe['source_revisions'])) == sorted(recipe['source_revisions'])):
+                    _, _, working_revision = state(protocol_uuid)
+                    return jsonify(candidate_revision_uuid=None, diff={'added': [], 'removed': [], 'changed': []},
+                        diff_counts={'added': 0, 'removed': 0, 'changed': 0}, query_revision=working_revision,
+                        working_dataset_unchanged=True, up_to_date=True,
+                        message='Up to date. This protocol contains all matching recordings.')
                 preview = service.explore_preview(recipe['predicate'], recipe['splits'])
                 candidate = explorer_history.create(preview, service.sources, project_dir / 'catalog.json',
                     os.environ.get('USER', 'local-user'), name=recipe['name'],
@@ -1806,10 +2724,16 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise ValueError('Unsupported export format')
         managed_directory(project_dir, 'exports')  # Recheck live links before any query/publication work.
         with db_lock, data_stores.registration_locks(), (shared_annotations.lock() if shared_annotations else contextlib.nullcontext()):
-            service.refresh()  # Recheck source identity and live query before publication.
+            verify_service_sources()  # Recheck source identity (stat + registration) before publication.
             result, curation, revision = state(protocol_uuid)
             if body.get("query_revision") != revision:
                 raise StaleWorkspace("The query or curation changed. Refresh before exporting.")
+            bound = explorer_history.protocol_binding_header(protocol_uuid)
+            if bound and callable(getattr(explorer_history, 'verify_membership', None)):
+                # Membership becomes scientific truth here: re-hash it in full
+                # against the bound revision's sealed multiset hash and index.
+                explorer_history.verify_membership(bound['revision_uuid'],
+                    [(row['uuid'], row['metadata_hash']) for row in result['epochs']])
             require_protocol_compatibility(service, protocol_uuid, [row['uuid'] for row in result['epochs']])
             archived = set(result['source_scope']['excluded_source_revisions'])
             if any(service.rows[row['uuid']]['source_sha256'] in archived for row in result['epochs']):
@@ -1819,7 +2743,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             query_filters = service.validate_metadata_filters(body.get("filters", {}), protocol_uuid)
             if not isinstance(query_filters, dict):
                 raise ValueError("Export filters must be an object")
-            if (revision.startswith(PROTOCOL_STATE_CONTRACT+':') and annotation_dependent(query_filters)
+            if (native_state_contract(revision) and annotation_dependent(query_filters)
                     and body.get('annotation_generation') != annotation_generation()):
                 # Tag-filtered membership must match the previewed tags exactly.
                 raise StaleWorkspace("Tags changed since this export was previewed. Refresh before exporting.")
@@ -1847,39 +2771,30 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             from workspace_export_folder import prepare_export_root
             prepare_export_root(project_dir)
             output = managed_directory(project_dir, 'exports') / recipe["export_uuid"]
-            output.mkdir(parents=True, exist_ok=False)
-            save_snapshot(output / "recipe.json", recipe)
             eligible = {r["uuid"] for r in recipe["epochs"]}
-            package = {"format": "recording-reference-package", "version": 1,
-                       "recipe": recipe, "epochs": [{**service.epoch(r["epoch_uuid"]),
-                                    "curation": status(curation[r["epoch_uuid"]])} for r in rows
-                                    if r["epoch_uuid"] in eligible],
-                       "sources": [{"source_sha256": s["source_sha256"], "source_path": s["source_path"]}
-                                   for s in service.sources if s['source_sha256'] in snapshot['source_revisions']],
-                       "waveforms": "references-only; original H5 files must remain accessible"}
-            if shared_annotations:
-                annotations=shared_annotations.for_epochs([service.rows[item['epoch_uuid']] for item in package['epochs']])
-                for item in package['epochs']:item['annotations']=annotations[item['epoch_uuid']]
-            artifact = output / "recordings.json"
-            if export_format == 'linked-sqlite':
-                from workspace_linked_sqlite import prepare_linked_package
-                package = prepare_linked_package(package, service.manifests, service.project_dir,
-                                                 grouping_sources=service.sources)
-            else:
-                write_json(artifact, package)
-            try:
-                def matlab_writer(recipe, output_dir, *, epoch_records):
-                    from workspace_matlab import build_matlab_export
-                    return build_matlab_export(service, recipe, output_dir, epoch_records=epoch_records)
-                artifact = materialize_export_format(package, output, format=export_format,
-                    matlab_writer=matlab_writer, write_json=write_json)
-                saved = store.record_dataset_revision(recipe, actor=os.environ.get("USER", "local-user"),
+            def build_package():
+                package = {"format": "recording-reference-package", "version": 1,
+                           "recipe": recipe, "epochs": [{**service.epoch(r["epoch_uuid"]),
+                                        "curation": status(curation[r["epoch_uuid"]])} for r in rows
+                                        if r["epoch_uuid"] in eligible],
+                           "sources": [{"source_sha256": s["source_sha256"], "source_path": s["source_path"]}
+                                       for s in service.sources if s['source_sha256'] in snapshot['source_revisions']],
+                           "waveforms": "references-only; original H5 files must remain accessible"}
+                if shared_annotations:
+                    annotations=shared_annotations.for_epochs([service.rows[item['epoch_uuid']] for item in package['epochs']])
+                    for item in package['epochs']:item['annotations']=annotations[item['epoch_uuid']]
+                return package
+            def matlab_writer(recipe, output_dir, *, epoch_records):
+                from workspace_matlab import build_matlab_export
+                return build_matlab_export(service, recipe, output_dir, epoch_records=epoch_records)
+            def publish(artifact):
+                return store.record_dataset_revision(recipe, actor=os.environ.get("USER", "local-user"),
                     expected_revisions={k: v["revision"] for k, v in curation.items()},
                     artifact_path=str(artifact), artifact_sha256=digest(artifact))
-            except Exception as error:
-                write_json(output / "failure.json", {"at": now(), "status": "failed",
-                           "error": str(error), "artifact_published": False})
-                raise
+            saved = stage_export(output, recipe, format=export_format, build_package=build_package,
+                publish=publish, matlab_writer=matlab_writer, write_json=write_json,
+                save_snapshot=save_snapshot, now=now,
+                linked_sources=(service.manifests, service.project_dir, service.sources))
             saved["format"] = export_format
             saved["download_url"] = "/api/exports/" + saved["dataset_uuid"] + "/download"
             return jsonify(saved), 201
@@ -1917,9 +2832,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     candidate_revision_uuid=scope['candidate_revision_uuid'], accept_operation_uuid=scope.get('accept_operation_uuid'),
                     export_scope=scope, export_intent={'name': recipe['options']['name'], 'format': recipe['destination']},
                     source_export_uuid=dataset_uuid, review_required=True)
+            snapshot_contract = recipe.get('query_snapshot', {}).get('predicate_contract_version', 1)
             if scope and scope.get('kind') == 'explorer_candidate':
                 from disco.workbench.candidate_exports import candidate_scope_uuid
                 saved = explorer_history.get(scope['revision_uuid'])['recipe']
+                refuse_reinterpretation({'predicate': saved['predicate'], 'predicate_version': snapshot_contract})
                 expected_scope = candidate_scope_uuid(service.project['project_uuid'], scope['revision_uuid'])
                 if (recipe['protocol_uuid'] != expected_scope or scope.get('export_only_scope_uuid') != expected_scope
                         or saved['content_sha256'] != scope.get('candidate_recipe_sha256')
@@ -1932,6 +2849,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     export_intent={'name': recipe['options']['name'], 'format':recipe['destination']},
                     source_export_uuid=dataset_uuid, review_required=True)
             definition = service.protocol(recipe["protocol_uuid"])["definition"]
+            if recipe.get('query', {}).get('kind') == 'source_predicate':
+                # The frozen export records its predicate contract explicitly.
+                refuse_reinterpretation({'predicate': recipe['query'].get('predicate', {}),
+                                         'predicate_version': snapshot_contract})
             effective = service.query_result(recipe["protocol_uuid"]).get("effective_query", definition["query"])
             if checksum(effective) != recipe["query_sha256"]:
                 raise StaleWorkspace("This protocol's query definition changed. The saved export retains its original query; it cannot be silently replaced.")
@@ -2112,6 +3033,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                             'failures':job['voltage_preparation']['failures']})
                     preparation=prepare_annotations(progress=lambda phase:reporter.emit(phase))
                     job['annotation_preparation']=preparation
+                    job['view_preparation']=prepare_published_views()
                     if preparation['status']=='failed':
                         job['warnings'].append({'stage':'annotation_preparation','message':preparation.get('reason','Preparation failed')})
                 job['protocol_suggestions'] = proposals['counts']
@@ -2173,25 +3095,45 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 active_jobs.discard(job_file.stem)
                 importing.release()
 
+    def earlier_import_worker_alive():
+        # An interrupted parser may still own a catalog transaction. PID plus
+        # recorded creation time proves identity; a recycled PID does not block.
+        from disco.projects.runtime_state import import_worker_alive
+        return any(job.get('status') == 'interrupted' and import_worker_alive(job.get('progress'))
+                   for job in read_jobs(log_dir(project_dir, 'app-jobs'), owner_run_id, active_jobs))
+
+    @app.post('/api/jobs/<job_id>/acknowledge')
+    def acknowledge_interrupted_job(job_id):
+        # Dismisses an interrupted import from attention lists. It never
+        # changes catalog evidence and is refused while its worker may run.
+        if request.args or request.get_json(silent=True) != {}:
+            raise ValueError('Acknowledge accepts an empty object')
+        if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,127}', job_id):
+            raise ValueError('Unknown import job')
+        job_file = log_dir(project_dir, 'app-jobs') / (job_id + '.json')
+        if job_file.is_symlink() or not job_file.is_file():
+            return jsonify(error='Unknown import job'), 404
+        from disco.projects.runtime_state import import_worker_alive
+        current = read_job(job_file, owner_run_id, active_jobs)
+        if current.get('status') != 'interrupted' or (current.get('diagnostics') or {}).get('stage') == 'job_log':
+            return jsonify(error='Only a readable interrupted import job can be acknowledged'), 409
+        if import_worker_alive(current.get('progress')):
+            return jsonify(error='This import worker may still be running; it cannot be acknowledged yet'), 409
+        for key in ('heartbeat_at', 'monitor_alive', 'elapsed_seconds', 'stage_elapsed_seconds', 'progress_age_seconds', 'job_uuid'):
+            current.pop(key, None)
+        current.update(acknowledged=True, acknowledged_at=now())
+        write_json(job_file, current)
+        return jsonify(job=read_job(job_file, owner_run_id, active_jobs))
+
     def submit_inbox(source, identity):
         if not importing.acquire(blocking=False):
             return False
         try:
             # An interrupted parser may still own a catalog transaction. Apply
             # the same conservative block as manual import admission.
-            for previous in read_jobs(log_dir(project_dir, 'app-jobs'), owner_run_id, active_jobs):
-                if previous.get('status') == 'interrupted':
-                    progress = previous.get('progress') or {}
-                    pid = progress.get('pid')
-                    if type(pid) is int and pid > 0 and pid != os.getpid() and progress.get('stage') not in {'complete', 'failed', 'duplicate'}:
-                        try:
-                            os.kill(pid, 0)
-                        except ProcessLookupError:
-                            continue
-                        except PermissionError:
-                            pass
-                        importing.release()
-                        return False
+            if earlier_import_worker_alive():
+                importing.release()
+                return False
             job_file = log_dir(project_dir, 'app-jobs') / (identity + '.json')
             write_json(job_file, {'status': 'queued', 'source': str(source), 'created_at': now(),
                                  'origin': 'h5-inbox', 'managed_upload': False,
@@ -2225,19 +3167,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if not importing.acquire(blocking=False):
             raise StaleWorkspace("An import is already running. Its progress is shown in Imports.")
         try:
-            for old in read_jobs(log_dir(project_dir, 'app-jobs'), owner_run_id, active_jobs):
-                if old.get('status') != 'interrupted':
-                    continue
-                progress = old.get('progress') or {}
-                pid = progress.get('pid')
-                if type(pid) is int and pid > 0 and pid != os.getpid() and progress.get('stage') not in {'complete', 'failed', 'duplicate'}:
-                    try:
-                        os.kill(pid, 0)
-                    except ProcessLookupError:
-                        continue
-                    except PermissionError:
-                        pass
-                    raise StaleWorkspace('An earlier import child may still be running. Check Data stores and the interrupted job diagnostics before starting another import.')
+            if earlier_import_worker_alive():
+                raise StaleWorkspace('An earlier import child may still be running. Check Data stores and the interrupted job diagnostics before starting another import.')
             managed_upload, upload_directory_uuid = False, None
             if request.files:
                 if set(request.files) != {'file'} or len(request.files.getlist('file')) != 1 or request.form:
@@ -2299,7 +3230,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     register_qc_routes(app, service, db_lock)
     # Selected-cell preparation and import own QC work; opening never reads all cells.
     from disco.metadata.search import register_search_routes
-    register_search_routes(app, service, db_lock)
+    register_search_routes(app, service, db_lock, membership_lookup=prepared_search_memberships)
 
     from disco.navigation.tree_pages import register_tree_page_routes
     register_tree_page_routes(app, service, db_lock, data_stores.registration_locks)
@@ -2310,6 +3241,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     from disco.workbench.workbench import register_workbench_routes
     register_workbench_routes(app, service, explorer_history, protocol_suggestions, state, revision_guard,
                               db_lock, data_stores.registration_locks, read_revision=workbench_read_revision)
+    queue_manager=app.extensions['protocol_workbench']
+    queue_manager.queue_prepared_policy=lambda: (selected_state._native_contract()
+        and queue_manager._delta_reads()
+        and (getattr(service,'_recovery_tracker',None) is not None or bool(queue_manager._prepared_queue)))
+    queue_manager.queue_new_cells=prepared_queue_new_cells
     from disco.decisions.annotation_groups import register_group_annotation_routes
     register_group_annotation_routes(app, service, shared_annotations, db_lock, data_stores.registration_locks,
                                     revision_guard=revision_guard, receipt_table=annotation_group_receipts)
@@ -2326,6 +3262,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             save_app_state(project_dir, service.dj.conn(), service=service)
             if service._loaded:
                 prepare_annotations(reuse=True)
+                prepare_published_views()
         # The mirror is incremental (only rows changed since its watermark), so
         # each committed write updates it synchronously at its commit point;
         # there is no timer or background capture competing with requests.
@@ -2345,13 +3282,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if importing.locked() or active_jobs:
                 inbox.start()
                 raise ValueError('An inbox import started while closing; wait for it to finish')
-            if trace_workers is not None:
-                try:
-                    trace_workers.close()
-                except Exception as error:
-                    error.desktop_shutdown_stage = 'trace_workers'
-                    inbox.start()
-                    raise
+            # A failed recovery flush is a retryable close. Keep every read
+            # owner alive until this fallible preparation has succeeded.
             with db_lock:
                 scheduler=app.extensions.get('backup_scheduler')
                 try:
@@ -2361,6 +3293,19 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     error.desktop_shutdown_stage = 'recovery_snapshot'
                     inbox.start()
                     raise
+            # Completion callbacks take db_lock: never drain workers while
+            # holding it. The lifecycle boundary has already drained requests.
+            if trace_workers is not None:
+                try:
+                    trace_workers.close()
+                except Exception as error:
+                    error.desktop_shutdown_stage = 'trace_workers'
+                    inbox.start()
+                    raise
+            navigation=app.extensions.get('disco.navigation.prepared')
+            if navigation is not None:navigation.close()
+            close_overview_publication()
+            with db_lock:
                 with contextlib.suppress(Exception):
                     service.dj.conn().close()
                 from workspace_native_mysql import stop_native_database
@@ -2395,7 +3340,7 @@ def main():
     logging.getLogger('werkzeug').addHandler(handler)
     app.logger.setLevel(logging.INFO)
     app.logger.info('Workspace started; managed project directory: %s', args.project_dir.resolve())
-    from workspace_project_servers import write_server_record
+    from workspace_project_servers import release_server_record, write_server_record
     write_server_record(args.project_dir, app.extensions["workspace_service"].project["project_uuid"], args.port)
     from werkzeug.serving import make_server
     server = make_server('127.0.0.1', args.port, app, threaded=True)
@@ -2405,12 +3350,17 @@ def main():
         server.serve_forever()
     finally:
         app.extensions['h5_inbox'].stop()
+        navigation=app.extensions.get('disco.navigation.prepared')
+        if navigation is not None:navigation.close()
+        close_overview=app.extensions.get('close_overview_publication')
+        if close_overview is not None:close_overview()
         try:
             close_traces = app.extensions.get('close_trace_workers')
             if close_traces is not None:
                 close_traces()
         finally:
             server.server_close()
+            release_server_record(args.project_dir)
 
 
 if __name__ == "__main__":

@@ -48,3 +48,4 @@
 .inspector .inspection-cell-tree .cell-tree-epoch .annotation-row-pills{gap:3px;max-width:96px;line-height:1.2}
 
 .inspector .inspection-cell-tree .cell-tree-epoch.analysis-excluded strong{color:var(--ink-muted)}
+.pending-epoch-rows{padding:0 8px 8px;font-size:12px}.pending-epoch-rows>p{color:var(--ink-secondary);line-height:1.5;margin:8px 0}.pending-epoch-rows button{display:flex;gap:8px;width:100%;padding:5px 6px;text-align:left;border:0;background:transparent;color:var(--ink);border-radius:4px}.pending-epoch-rows button[aria-current="true"]{background:var(--surface-subtle);font-weight:550}.pending-epoch-rows time{color:var(--ink-secondary)}

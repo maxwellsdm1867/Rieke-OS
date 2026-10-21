@@ -56,8 +56,9 @@ declaration. Earlier runners without it retain their original flat schema paths
 and receipt keys; current runners use the metadata package paths. Neither lookup
 imports historical code or rewrites an existing receipt.
 
-The core receipt schema is unchanged. Registry suite version 1.0.7 includes the separate everyday-million and
-workflow-million tracks; core cases and sampling are unchanged, but
+The core receipt schema is unchanged. Registry suite version 1.0.7 added the separate everyday-million and
+workflow-million tracks 1.0.8 adds the diagnostic route-million track and 1.0.9 the diagnostic
+workflow-app track; core cases and sampling are unchanged, but
 the registry edit intentionally changes the core suite fingerprint. Retain older
 receipts as historical evidence and establish a matched current-suite baseline.
 A test relocation changes path keys
@@ -228,8 +229,9 @@ all-module coverage. Timings are optional diagnostics, not performance gates.
 
 Use `--browser-executable /absolute/path/to/chrome` when needed. Each source
 checkout needs its own matching dependency resolution. Reusing installed modules
-is allowed only after the corresponding package locks match; do not compare
-baseline code silently linked against different frontend dependencies.
+is allowed only after the full frontend lock and exact desktop Playwright closure
+match under the [versioned browser dependency policy](#browser-dependency-identity-after-the-0121-security-update);
+do not compare baseline code silently linked against different frontend dependencies.
 
 By default all one million project epochs belong to the active protocol: 999,900
 main epochs and 100 pending incoming epochs across 10,000 cells. Use
@@ -266,6 +268,36 @@ cleanup cannot qualify. Comparisons check ordinary action medians and trace
 endpoints using provisional review thresholds; retain improvements as well as
 regressions. Dirty-source runs remain development diagnostics; repeat the final
 committed source before delivery.
+
+### Full-App decoupling variants (diagnostic `--suite app`)
+
+`tools/benchmark_workflow.py run --suite app` uses the same runner, owned server,
+production build, raf-aligned click observer, two-frame readiness gate and
+request correlation as the fixed core. The browser loads the real product
+bootstrap (`src/main.jsx`), so the App's own change wiring
+(`useWorkspaceChanges`, typed events where a source has them, the merge-undo
+controller, focus/visibility listeners and retained tab panels) decides what
+each action re-reads. Only the launcher project inventory and a stored tag author
+are owned doubles, added by `server.py --suite app`. The core server and its
+fifteen variants are unchanged.
+
+Per sample, after untimed setup (open the protocol's Inspect tab and focus epoch
+2, which has no streams), the suite measures:
+
+- `curation.toggle` ×3: the focused row's include toggle, with exact `aria-pressed` state and a completed `POST …/curation`
+- `epoch.step`: Next epoch after those curation writes, and again after `tag.add` (adding an epoch tag); readiness is the focused row label and the epoch counter
+- `view.tab_return`: Overview, then back to Inspect, with nothing changed
+- `focus.return`: a synthetic hidden→visible `visibilitychange`, `blur` and `focus` while Edit Tree shows an explicit Cell 1 path; `path_kept` is recorded but does not gate readiness
+- `workbench.merge_all`: the Overview "Hold to merge all" gesture (the one-second hold is inside the elapsed time) through the merge receipt toast
+- `workbench.undo`: through "Merge undone"
+
+Every action reports elapsed time, in-action requests and bytes (from
+`Content-Length`), cancelled reads (`AbortError`, recorded and not counted as
+failures), and requests started within a fixed 1.5 s quiet window after
+readiness. Periodic App pollers are listed by path and counted separately in
+`trailing_foreground_counts`. `--smoke` uses 2,000 epochs. The track has its own
+registry entry (`workflow-app`, fixture `workflow-owned-v4+app-v1`); receipts
+compare only with the same suite, and it is not part of the required CI families.
 
 ## Harness compatibility before expensive comparisons
 
@@ -456,6 +488,108 @@ This is metadata-only **synthetic query stress evidence**. No waveform is read.
 It does not qualify native SQL/disk behavior, HTTP, renderer paint, UI interaction,
 startup, index build/sealing, mutation/recovery, import/export, packaged apps or
 release promotion. The existing core and native release blockers remain intact.
+
+## Million-epoch backend route track (diagnostic)
+
+`tools/benchmark_routes.py` measures request paths that the everyday query lanes
+do not exercise: the production Flask routes, `WorkspaceService`,
+`ProtocolStateReader`, `TreePages`, `CurationStore`, `SharedAnnotations` and the
+Workbench pending pool, over the owned workflow fixture
+(`benchmarks/workflow/server.py`) with its synthetic index replaced by a real
+sealed `DiskMetadataIndex` and the typed sidecar that production refresh prepares
+after sealing (`typed_lifecycle.prepare`). Request bodies mirror the UI: tree pages
+send `counts_only`, explicit filters and 60-row pages; previews and runs send
+`catalog_summary: false`. Full-statistics tree roots, catalog-summary previews and
+the untyped explore-page fallback are separately named cases. The service runs as the exact `WorkspaceService` class (the
+fixture subclass only overrode refresh and events, which stay counted doubles),
+and its read model is published the way refresh publishes it: deep-frozen maps
+via `publish_frozen` when the source revision has it, so publication-serial
+fast paths engage. The production `StateGenerationAuthority` runs with its leaf
+SQL replaced: schema attestation is a counted constant, and generation rows and
+the `app_annotation_changes` feed are in-memory doubles that SQL-double writes
+advance exactly as `trigger_manifest()` does (INSERT once, UPDATE twice, change
+rows upserted at the final generation), so `shared_changes` returns real deltas.
+The SQL double journals each transaction's own writes for rollback instead of
+deep-copying every table, and the route fixture skips the browser preparation
+reset snapshot; both previously doubled memory and write cost at a million
+epochs. No H5 file may be
+opened after fixture construction; traces are a separate path.
+
+```sh
+# Small composition check (seconds per case, never a million-row claim).
+.rieke-runtime/benchmark-python/bin/python -B tools/benchmark_routes.py run \
+  --profile smoke --source-root . --output benchmarks/results/routes-smoke-unique
+# Matched baseline then candidate at the registry default profiles.
+.rieke-runtime/benchmark-python/bin/python -B tools/benchmark_routes.py pair \
+  --baseline-source /absolute/path/to/clean-baseline --source-root . \
+  --output benchmarks/results/routes-pair-unique
+```
+
+Default profiles are 1,000,000 project epochs with a 1,000,000-member protocol,
+the same project with a 20,000-member protocol, and 100,000/100,000. Work that
+scales with the target stays flat across the first two and grows only with the
+protocol; work that grows from 100k to 1M with an unchanged target is project
+scaling. Cases cover epoch detail inside the protocol, protocol pages, overview,
+tree root/expand/next page/column batch/selection and a shared-tag filtered tree,
+text search, a selective UUID-prefix lookup (one row) and an explicitly named
+match-all prefix (linear by construction), predicate fields, explore page and preview for
+equality, `ne`, `exists`/`missing` on a built-in and on a partly missing recorded
+field, ranges, protocol tags, shared and effective tags, tag times and AND/OR,
+explore run, summary jobs with polling, curation toggle (with and without its
+batch read), curation and approval followed by the next epoch read, page and
+tree reads, epoch tag writes followed by reads and overview, and the Workbench
+queue, summary, merge-all (with paired undo), undo and the queue after undo.
+
+Each case records one cold/first request and three warm requests, response bytes
+and attestations per request, then one separate cProfile pass whose call counts
+(SQLite statements, deep copies, predicate row evaluations, protocol-state
+witness and metadata reads, refreshes, scope builds, SQL-double reads/writes and
+transactions) never touch the timed samples. No production class method is
+replaced, so identity-checked fast paths remain eligible. Receipts record the
+load average before and after each profile and every 30 seconds during it.
+
+`compare` flags medians and cold samples over the larger of baseline +25% or
++5 ms, lists count increases separately, and reports predicate-count changes on
+`expected_by_contract` labels (the missing-value semantics of B11) as contract
+changes rather than regressions. Fixture UUIDs are regenerated per run, so
+response hashes are not compared. SQL doubles copy rows on every transaction and
+scan linearly, so write latencies overstate native costs; use counts for writes.
+This is synthetic route evidence, not native MySQL, HTTP transport, renderer or
+release qualification, and it is not part of the required CI families.
+
+`run` and `pair` wait for the shared stress lock instead of failing: they log
+`waiting for stress lock held by …` every 30 seconds, record their own
+pid/start/command in the lock file while they hold it (clearing it on exit), and
+accept `--lock-timeout SECONDS`. The flock remains the only exclusion; the
+other runners still take it without waiting.
+
+Profiles marked `grouped` (1M/1M and `smoke-grouped`) run the registry
+`case_groups` (explore/search, workbench, reads and decisions) in separate
+worker processes with fresh fixtures, so each group stays under the 6 GiB cap
+and reports its own peak RSS; base and candidate share the grouping.
+
+Scaling evidence: run `--profile 10k-protocol-10k --profile 200k-protocol-200k
+--profile 200k-protocol-10k`, then `tools/benchmark_routes.py scaling RECEIPT
+--output scaling.json`. It reports per case the warm median and key counts at
+both sizes, the 200k/10k ratio, the inferred class from the ratio exponent (≈1×
+flat, ≈20× linear) and the project-only ratio (200k project, same 10k protocol).
+The counting pass also records `sqlite.vm_steps` (SQLite virtual-machine steps
+via a progress handler, a load-independent proxy for rows scanned and sorted),
+so work done inside one SQL statement is visible. Everyday clicks are expected
+flat; whole-project search predicates and exports (`scaling.linear_allowed`)
+may be linear. `/api/explore/page` (`explore.page.*`, `explore.page_next.*`) is used only by
+`tools/metadata_qualification`, not the UI, so it may be linear; its untyped tag-predicate
+loop is a known qualification-tool cost. The UI result path (`explore.run.*`,
+`explore.results_first/next.*`) is expected flat. The protocol-tag fixture seeds at least
+121 tagged epochs at every size so its result pages are full. A flat-expected case that
+grows in time or counts, or with project size alone, is flagged, as is any
+superlinear case; the command exits 2 when anything is flagged.
+
+At one million epochs the typed sidecar build exceeds its in-app RSS budget
+unless the measured source includes #110 (`claude/typed-index-budget`). Build
+1M candidate trees with #110 merged. A base that lacks it measures the untyped
+explore fallback at 1M; say so beside any 1M base comparison rather than
+treating the typed-path difference as the candidate's own gain.
 
 ## What the first slice measures
 
@@ -731,3 +865,47 @@ an explicit executable with `PREPARED_GEOMETRY_BROWSER`; paired qualification
 rejects an executable override and requires the lock-pinned Playwright Chromium
 headless-shell distribution. The two browser identities must be distinct and
 share that pinned launch configuration and version.
+
+### Browser dependency identity after the 0.1.21 security update
+
+Browser benchmarks run Playwright Chromium, not Electron. Their dependency
+comparison retains the entire frontend lock (excluding application version) and
+the exact transitive Playwright graph from the desktop lock, including resolved
+URLs, integrity, required/optional/peer edges and every selected package field.
+Missing required packages or linked packages fail closed. Electron and packaging
+tools outside that graph do not define the browser runtime. Raw full lock hashes
+remain source provenance; native/package checks still use the complete desktop
+lock. A Playwright or frontend change remains incomparable.
+
+This explicit harness policy replaces the former whole-desktop-lock comparison
+which rejected an Electron-only security update before browser sampling. It does
+not change timing thresholds, fixtures, pinned source revisions or passing
+requirements. Run every retained source afresh with the same current harness;
+old receipts cannot qualify this harness.
+
+Both workflow and prepared-geometry receipts declare the versioned policy
+`browser-dependencies-v2:frontend-full:desktop-playwright-closure-v1`. The workflow
+provenance binds it; both validators reject missing or earlier policy identifiers.
+No legacy receipt conversion or reinterpretation is supported.
+
+### Explicit prepared-publication qualification
+
+The default paired browser workflow keeps its historical SQL/index fixture and
+strict gates. `tools/benchmark_workflow.py run --prepared-publication` is a
+separate opt-in native-index publication track: the owned fixture freezes the
+canonical service, seals native/typed metadata, and uses real generation and
+recovery-capture owners over transactional SQL leaf doubles. It does not qualify
+native MySQL. Receipts have a distinct `workflow-owned-v5-prepared-native` fixture
+identity and separately timed publication preparation. Comparing this mode with
+the legacy browser fixture is rejected; no speedup across those admissions is
+claimed. Installed/native application checks remain separately required.
+
+Route track 1.12.0 retains native metadata/service admission on both old and new
+sources. New sources explicitly prepare default publications before first reads.
+The filtered tag layout separately times `POST /api/tree-pages/prepare`; its case
+records `preparation_ms` and `first_use_ms` (prepare plus first page), alongside
+subsequent bounded read samples/counts. A 202 preparation response is never a
+successful page, and preparation must report ready. Old sources keep the inline
+first-page contract. Publication and layout preparation are visible costs, not
+GET warmups. Owned route directories are recorded and removed after worker,
+reader, and fixture shutdown, including failure paths.

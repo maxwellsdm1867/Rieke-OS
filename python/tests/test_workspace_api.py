@@ -470,9 +470,123 @@ class WorkspaceAPITests(unittest.TestCase):
         for key, state in result['curation'].items():
             self.assertEqual(state['tags'], ['inspected'])
             self.assertEqual(state['review_state'], 'approved')
-            self.assertEqual(state['revision'], 2)
+            # Unchanged epochs keep their revision; only the excluded one is rewritten.
+            self.assertEqual(state['revision'], 2 if key == mask['epochs'][0]['epoch_uuid'] else 1)
         self.assertEqual(sum(row['included'] for row in result['curation'].values()), 1)
         self.assertEqual(self.mask(), mask)
+
+    def grow_protocol(self, count):
+        service = self.service
+        template_key = service.ids[0]
+        service.ids = [str(uuid.UUID(int=(7 << 64) | index)) for index in range(count)]
+        rows, details = {}, {}
+        for index, key in enumerate(service.ids):
+            rows[key] = {**service.rows[template_key], 'epoch_uuid': key,
+                         'cell_uuid': service.cell_ids[index % 2], 'block_uuid': str(uuid.UUID(int=(8 << 64) | index // 100))}
+            details[key] = {'parameters': {'example': index}, 'properties': {}, 'attributes': {},
+                            'metadata': {'epoch': {'uuid': key}}}
+        service.rows, service.details = rows, details
+        service._fingerprints = {key: 'b' * 64 for key in service.ids}
+        service.protocols[service.protocol_id]['result']['epochs'] = [
+            {'uuid': key, 'metadata_hash': 'b' * 64} for key in service.ids]
+
+    def test_mask_larger_than_ten_thousand_epochs_round_trips(self):
+        self.grow_protocol(10050)
+        mask = self.mask()
+        self.assertEqual(len(mask['epochs']), 10050)
+        excluded = {row['epoch_uuid'] for row in mask['epochs'][::3]}
+        for row in mask['epochs']:
+            row['included'] = row['epoch_uuid'] not in excluded
+        with patch.object(self.curation, 'insert1', side_effect=AssertionError('one statement per epoch')):
+            response = self.import_mask(mask)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual((response.get_json()['imported_count'], response.get_json()['included_count']),
+                         (10050, 10050 - len(excluded)))
+        # Only changed epochs are written, in batched statements.
+        self.assertEqual(len(self.curation.rows), len(excluded))
+        self.assertEqual(self.mask(), mask)
+
+    def test_curation_write_checks_binding_version_from_header_without_recipe_copy(self):
+        from unittest.mock import Mock
+        self.assertEqual(self.store.binding_header_provider, self.explorer_history.protocol_binding_header)
+        header = Mock(wraps=self.explorer_history.protocol_binding_header)
+        hydrate = Mock(side_effect=AssertionError('curation write hydrated the frozen binding recipe'))
+        with patch.object(self.store, 'binding_header_provider', header), \
+             patch.object(self.store, 'binding_provider', hydrate):
+            response = self.client.post(self.base + '/curation', json={
+                **self.curation_body({'tags_add': ['keep']}), 'expected_binding_version': 0}, headers=self.headers)
+            self.assertEqual(response.status_code, 200, response.get_json())
+            header.assert_called_with(self.service.protocol_id)
+            hydrate.assert_not_called()
+            # The version check itself is unchanged: a different header version is refused.
+            header.side_effect = lambda protocol: {'version': 3}
+            stale = self.client.post(self.base + '/curation', json={
+                **self.curation_body({'included': False}), 'expected_revisions': {key: 1 for key in self.service.ids},
+                'expected_binding_version': 0}, headers=self.headers)
+            self.assertEqual(stale.status_code, 409, stale.get_json())
+        self.assertTrue(all(row['included'] for row in self.curation.rows))
+
+    def test_curation_post_receipt_is_exact_and_chains_the_next_write(self):
+        first, second = self.service.ids
+        prior = self.curation_body({'tags_add': ['keep']}, ids=[first])
+        self.assertEqual(self.client.post(self.base + '/curation', json=prior, headers=self.headers).status_code, 200)
+        body = {**self.curation_body({'tags_add': ['keep']}), 'expected_revisions': {first: 1, second: 0},
+                'expected_binding_version': 0}
+        response = self.client.post(self.base + '/curation', json=body, headers=self.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        receipt = response.get_json()
+        # first already had the tag (no-op, unchanged revision); only second changed.
+        self.assertEqual(receipt['curation_revisions'], {second: 1})
+        fresh = self.client.post(self.base + '/curation/read', json={'epoch_uuids': [first, second],
+            'query_revision': receipt['query_revision'], 'expected_binding_version': receipt['expected_binding_version'],
+            'selection_scope': {'filters': {}, 'cell_uuid': None}}, headers=self.headers)
+        self.assertEqual(fresh.status_code, 200, fresh.get_json())
+        fresh = fresh.get_json()
+        self.assertEqual(receipt['query_revision'], fresh['query_revision'])
+        self.assertEqual(receipt['query_revision'], self.revision())
+        self.assertEqual(receipt['expected_binding_version'], fresh['expected_binding_version'])
+        self.assertEqual({row['epoch_uuid']: row['curation_revision'] for row in fresh['epochs']},
+                         {key: value['revision'] for key, value in receipt['curation'].items()})
+        # The receipt alone is enough for the next write; the old tokens are refused.
+        revisions = {first: 1, **receipt['curation_revisions']}
+        stale = {'epoch_uuids': [first, second], 'changes': {'included': False},
+                 'query_revision': body['query_revision'], 'expected_binding_version': 0,
+                 'expected_revisions': {first: 1, second: 0}}
+        self.assertEqual(self.client.post(self.base + '/curation', json=stale, headers=self.headers).status_code, 409)
+        chained = {**stale, 'query_revision': receipt['query_revision'],
+                   'expected_binding_version': receipt['expected_binding_version'], 'expected_revisions': revisions}
+        old_epoch_revisions = {**chained, 'expected_revisions': {first: 1, second: 0}}
+        self.assertEqual(self.client.post(self.base + '/curation', json=old_epoch_revisions,
+                                          headers=self.headers).status_code, 409)
+        response = self.client.post(self.base + '/curation', json=chained, headers=self.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()['curation_revisions'], {first: 2, second: 2})
+        self.assertNotEqual(response.get_json()['query_revision'], receipt['query_revision'])
+
+    def test_curation_post_larger_than_ten_thousand_epochs_keeps_exact_checks(self):
+        self.grow_protocol(10050)
+        ids = self.service.ids
+        stale = self.curation_body({'tags_add': ['bulk']})
+        stale['expected_revisions'][ids[-1]] = 1
+        response = self.client.post(self.base + '/curation', json=stale, headers=self.headers)
+        self.assertEqual(response.status_code, 409, response.get_json())
+        self.assertFalse(self.curation.rows)
+        stale_query = self.curation_body({'tags_add': ['bulk']})
+        stale_query['query_revision'] = 'stale'
+        response = self.client.post(self.base + '/curation', json=stale_query, headers=self.headers)
+        self.assertEqual(response.status_code, 409, response.get_json())
+        stale_binding = {**self.curation_body({'tags_add': ['bulk']}), 'expected_binding_version': 7}
+        response = self.client.post(self.base + '/curation', json=stale_binding, headers=self.headers)
+        self.assertEqual(response.status_code, 409, response.get_json())
+        self.assertFalse(self.curation.rows)
+        with patch.object(self.curation, 'insert1', side_effect=AssertionError('one statement per epoch')):
+            response = self.client.post(self.base + '/curation', json={
+                **self.curation_body({'tags_add': ['bulk']}), 'expected_binding_version': 0}, headers=self.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        result = response.get_json()['curation']
+        self.assertEqual(len(result), 10050)
+        self.assertTrue(all(state['tags'] == ['bulk'] and state['revision'] == 1 for state in result.values()))
+        self.assertEqual(len(self.curation.rows), 10050)
 
     def test_mask_rejects_malformed_duplicate_unknown_or_partial_membership(self):
         import copy
@@ -515,14 +629,11 @@ class WorkspaceAPITests(unittest.TestCase):
     def test_mask_write_failure_rolls_back_entire_mixed_selection(self):
         mask = self.mask()
         mask['epochs'][0]['included'] = False
-        original_insert = self.curation.insert1
-        calls = []
-        def fail_second(row):
-            calls.append(row)
-            if len(calls) == 2:
-                raise RuntimeError('simulated second row failure')
-            original_insert(row)
-        with patch.object(self.curation, 'insert1', side_effect=fail_second), \
+        original_insert = self.curation.insert
+        def fail_after_first(rows, replace=False):
+            original_insert(rows[:1], replace=replace)  # partial statement effect
+            raise RuntimeError('simulated second row failure')
+        with patch.object(self.curation, 'insert', side_effect=fail_after_first), \
              self.assertLogs(self.app.logger, level='ERROR'):
             response = self.import_mask(mask)
         self.assertEqual(response.status_code, 500)

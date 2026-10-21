@@ -64,8 +64,14 @@ class ServiceSupervisor {
     const port = await availablePort(); this.origin = `http://127.0.0.1:${port}`;
     const backendState = path.join(this.userData, 'backend');
     await fs.mkdir(backendState, {recursive: true, mode: 0o700});
+    // Use the hash-pinned bundled trust store, including CA distrust updates,
+    // rather than Python/OpenSSL defaults or the launching shell's CA overrides.
+    const certificateBundle = path.join(this.resourcesPath, 'runtime', 'python', 'lib',
+      'python3.11', 'site-packages', 'certifi', 'cacert.pem');
     const env = {HOME: process.env.HOME, TMPDIR: process.env.TMPDIR, LANG: 'en_US.UTF-8',
       PYTHONDONTWRITEBYTECODE: '1', PYTHONNOUSERSITE: '1', RIEKE_DESKTOP_CAPABILITY: this.capability,
+      SSL_CERT_FILE: certificateBundle, SSL_CERT_DIR: path.dirname(certificateBundle),
+      REQUESTS_CA_BUNDLE: certificateBundle, CURL_CA_BUNDLE: certificateBundle,
       RIEKE_PARSER_CONFIG: path.join(backendState, 'parser', 'config.ini')};
     if (process.env.DISCO_LAZY_ROOT_EXPERIMENT === '1') env.DISCO_LAZY_ROOT_EXPERIMENT = '1';
     if (process.env.DISCO_LIFECYCLE_DIAGNOSTIC_DIR) env.DISCO_LIFECYCLE_DIAGNOSTIC_DIR = process.env.DISCO_LIFECYCLE_DIAGNOSTIC_DIR;

@@ -1624,16 +1624,6 @@
           "group": "shared-ui"
         },
         {
-          "path": "workspace-app/src/components/SummaryPreferences.jsx",
-          "disposition": "move-proposed",
-          "target_path": "workspace-app/src/summary-jobs/ui/SummaryPreferences.jsx",
-          "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "summary-jobs",
-          "current_path": "workspace-app/src/summary-jobs/ui/SummaryPreferences.jsx",
-          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
-          "organization_increment": "frontend-finite-a-b-c"
-        },
-        {
           "path": "workspace-app/src/components/SummaryStatus.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/summary-jobs/ui/SummaryStatus.jsx",
@@ -2627,16 +2617,6 @@
           "organization_increment": "frontend-finite-a-b-c"
         },
         {
-          "path": "workspace-app/src/useProtocolSummaryPreferences.js",
-          "disposition": "move-proposed",
-          "target_path": "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
-          "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "summary-jobs",
-          "current_path": "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
-          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
-          "organization_increment": "frontend-finite-a-b-c"
-        },
-        {
           "path": "workspace-app/src/useProtocolTreeLayout.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js",
@@ -3396,23 +3376,19 @@
             "Multi-entry guard and CSS path policy must be explicitly supported; existing v2 single-entry policy cannot adopt these folders as-is"
           ],
           "public_entries": [
-            "workspace-app/src/components/SummaryPreferences.jsx",
             "workspace-app/src/components/SummaryStatus.jsx",
             "workspace-app/src/requestedSummaries.js",
             "workspace-app/src/summaryApi.js",
             "workspace-app/src/useFieldRegistry.js",
-            "workspace-app/src/useProtocolSummaryPreferences.js",
             "workspace-app/src/useRequestedSummaries.js"
           ],
           "current_state": "source composed; exact combined review and aggregate pending",
           "current_guidance": "workspace-app/src/summary-jobs/AGENTS.md",
           "current_public_entries": [
-            "workspace-app/src/summary-jobs/ui/SummaryPreferences.jsx",
             "workspace-app/src/summary-jobs/ui/SummaryStatus.jsx",
             "workspace-app/src/requestedSummaries.js",
             "workspace-app/src/summaryApi.js",
             "workspace-app/src/summary-jobs/useFieldRegistry.js",
-            "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
             "workspace-app/src/useRequestedSummaries.js"
           ]
         },
@@ -11874,7 +11850,6 @@
         "workspace-app/src/components/SelectionOverview.jsx": "workspace-app/src/protocol-overview/ui/SelectionOverview.jsx",
         "workspace-app/src/components/SourcePropagation.css": "workspace-app/src/protocol-overview/ui/SourcePropagation.css",
         "workspace-app/src/components/SourcePropagation.jsx": "workspace-app/src/protocol-overview/ui/SourcePropagation.jsx",
-        "workspace-app/src/components/SummaryPreferences.jsx": "workspace-app/src/summary-jobs/ui/SummaryPreferences.jsx",
         "workspace-app/src/components/SummaryStatus.jsx": "workspace-app/src/summary-jobs/ui/SummaryStatus.jsx",
         "workspace-app/src/components/TagExchange.css": "workspace-app/src/annotations/ui/TagExchange.css",
         "workspace-app/src/components/TagExchangeControls.jsx": "workspace-app/src/annotations/ui/TagExchangeControls.jsx",
@@ -11955,7 +11930,6 @@
         "workspace-app/src/useImportReviewStatus.js": "workspace-app/src/recording-import/useImportReviewStatus.js",
         "workspace-app/src/useMutationUndo.js": "workspace-app/src/undo/useMutationUndo.js",
         "workspace-app/src/useProjectPreference.js": "workspace-app/src/project-preferences/useProjectPreference.js",
-        "workspace-app/src/useProtocolSummaryPreferences.js": "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
         "workspace-app/src/useTreeCellSelection.js": "workspace-app/src/annotations/useTreeCellSelection.js",
         "workspace-app/src/workbenchExport.js": "workspace-app/src/exports/workbenchExport.js"
       },

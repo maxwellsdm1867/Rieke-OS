@@ -16,7 +16,8 @@ import benchmark_prepared_geometry as runner
 
 
 def receipt(role='candidate'):
-    result = {'status': 'passed', 'source_start': {'commit': 'a' * 40, 'tree': 'b' * 40, 'dirty': '', 'files': {'app.py': 'd' * 64}},
+    from benchmark_workflow import DEPENDENCY_POLICY
+    result = {'status': 'passed', 'dependency_policy': DEPENDENCY_POLICY, 'source_start': {'commit': 'a' * 40, 'tree': 'b' * 40, 'dirty': '', 'files': {'app.py': 'd' * 64}},
         'source_end': {'commit': 'a' * 40, 'tree': 'b' * 40, 'dirty': '', 'files': {'app.py': 'd' * 64}},
         'harness': {'test': 'fixture'}, 'environment': {'browser': {'click_dispatch_protocol': 'raf-aligned-click-v1', 'browser': 'pinned', 'sampling_protocol': runner.PAIRED_PROTOCOL, 'timing_mode': 'ordinary', 'browser_launch': {'distribution': 'playwright-chromium-headless-shell', 'playwright_version': '1.61.1', 'executable_override': False}}}, 'fixture': 'fixed', 'payload_sha256': 'fixed', 'dependencies': {'lock': 'fixed'},
         'cleanup': {'server_closed': True, 'fixture_closed': True},
@@ -48,7 +49,8 @@ class PreparedGeometryTests(unittest.TestCase):
                 (root / package).mkdir()
                 (root / package / 'package-lock.json').write_text(json.dumps({
                     'version': '0.1.14', 'lockfileVersion': 3,
-                    'packages': {'': {'version': '0.1.14'}, 'node_modules/example': {'version': '1.2.3'}}}))
+                    'packages': {'': {'version': '0.1.14', 'devDependencies': {'playwright': '1.2.3'}},
+                                 'node_modules/playwright': {'version': '1.2.3', 'resolved': 'https://example/playwright', 'integrity': 'sha512-original'}}}))
             (root / 'benchmarks').mkdir()
             (root / 'benchmarks/requirements-py311.txt').write_text('numpy==2.2.6\n')
             before = runner.dependency_fingerprints(root)
@@ -58,7 +60,7 @@ class PreparedGeometryTests(unittest.TestCase):
                 lock['version'] = lock['packages']['']['version'] = '0.1.15'
                 path.write_text(json.dumps(lock))
             self.assertEqual(before, runner.dependency_fingerprints(root))
-            lock['packages']['node_modules/example']['version'] = '1.2.4'
+            lock['packages']['node_modules/playwright']['version'] = '1.2.4'
             path.write_text(json.dumps(lock))
             self.assertNotEqual(before, runner.dependency_fingerprints(root))
             (root / 'benchmarks/requirements-py311.txt').write_text('numpy==2.3.0\n')
@@ -66,7 +68,7 @@ class PreparedGeometryTests(unittest.TestCase):
                                 runner.dependency_fingerprints(root)['benchmarks/requirements-py311.txt'])
 
     def test_missing_failed_dirty_changed_or_unclean_evidence_is_not_comparable(self):
-        for mutate in [lambda r: r.update(status='failed'), lambda r: r['samples'].pop(),
+        for mutate in [lambda r: r.pop('dependency_policy'), lambda r: r.update(dependency_policy='legacy'), lambda r: r.update(status='failed'), lambda r: r['samples'].pop(),
                        lambda r: r['samples'][0]['cursor'].clear(), lambda r: r['samples'][0]['exact'].clear(),
                        lambda r: r['source_end'].update(tree='c' * 40), lambda r: r.update(cleanup=None),
                        lambda r: (r['source_start'].update(dirty='M file'), r['source_end'].update(dirty='M file'))]:

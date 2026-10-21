@@ -202,7 +202,8 @@ async function launchTestingInstall({receiptPath,currentExecutable=process.execP
  try{await privateReceiptResult(resultPath);await fs.rm(resultPath);}catch(error){if(error.code!=='ENOENT')throw error;}
  const child=spawnHelper(prepared.executable,[script,'--apply',receiptPath],{detached:true,stdio:['ignore','pipe','pipe'],cwd:prepared.cache,
   env:{HOME:process.env.HOME,TMPDIR:process.env.TMPDIR,LANG:process.env.LANG||'en_US.UTF-8',PATH:'/usr/bin:/bin',ELECTRON_RUN_AS_NODE:'1'}});
- await new Promise((resolve,reject)=>{
+ let helperExited=false;child.once('exit',()=>{helperExited=true;});
+ try{await new Promise((resolve,reject)=>{
   let buffer='',done=false;
   const timer=setTimeout(()=>finish(new Error('Install helper readiness was not acknowledged; current app stays open')),readyTimeoutMs);
   const finish=error=>{if(done)return;done=true;clearTimeout(timer);if(error)reject(error);else resolve();};
@@ -228,7 +229,15 @@ async function launchTestingInstall({receiptPath,currentExecutable=process.execP
     }catch(error){finish(error);}
    }
   });
- });
+ });}
+ catch(error){
+  // Before readiness is accepted the parent stays open, so the helper has replaced
+  // nothing; it would only proceed after this app exits. Stop it politely so a
+  // later ordinary Quit cannot complete an installation this app declared failed.
+  // Never a force kill, and never a signal to the current app.
+  if(!helperExited&&Number.isInteger(child.pid))try{child.kill('SIGTERM');}catch{}
+  throw error;
+ }
  child.stdout.unref?.();child.stderr.unref?.();child.unref();
  return {ready:true,helperPid:child.pid,resultPath};
 }

@@ -21,6 +21,26 @@ language privacy, shrink capabilities or wrap broad service objects in a new fac
 
 ## Frozen membership and review
 
+Canonical queue reads use current-publication proofs prepared by
+`prepare_workbench_publication` during explicit startup/import/refresh preparation.
+`POST /api/workbench/prepare` explicitly prepares Overview and Workbench under the
+database and registration locks. Missing or stale proof returns HTTP 202 with
+`status: preparing`, `preparation.status: pending`, and `resource: workbench`, with
+no queue payload. Ordinary reads never repair main by scanning its membership.
+Unsupported custom/legacy readers retain their existing exact fallback.
+
+Each protocol retains its current and latest-undo pool/check proof independently
+of the 1,024-entry historical revision cache. Shared revision proofs are reference
+counted; additive merge derives checks from its delta and undo reuses the previous
+proof. Publication, published map identity, source scope, annotation dependency,
+query definition and binding checks still fence admission. Queue work is bounded
+by pending membership, the caught-up delta and sources, plus existing candidate
+history; it does not walk main epochs or clone all main cells. The fenced prepared
+Overview checks only pending cell identities and never substitutes for the frozen
+main fingerprint/source proof. Historical diff profiles keep their existing path.
+The eviction regression explicitly clears the historical cache after preparing
+more than 64 protocols; it does not claim production eviction at 65.
+
 Canonical Workbench context summaries use the explicit cohort-only
 `WorkspaceService.protocol(..., cross_protocols=False)` projection. Cells and
 counts describe pending membership after the requested filters. The unused
@@ -51,8 +71,31 @@ project/manager teardown releases the store. No cache eviction truncates a scope
 Canonical context derivation reads a binding header before freshly verifying its
 main recipe within the existing context-local read scope. It avoids a detached
 cached recipe that would be discarded. Custom binding/header/get overrides retain
-full binding reads. Opening/closing context, generation, transaction and acceptance
-checks are unchanged. This optimization does not claim page-size-only authority work:
+full binding reads. Generation, transaction and acceptance checks are unchanged.
+
+A read closes against the context it opened with
+(`context(..., closing=opened)`), not a second full derivation. The close reads
+fresh exactly what an opening reads for every mutable input: draft header and
+decisions, binding header (version and revision UUID), query revision (the
+captured transaction guard or a fresh native revision proof), source scope and
+the candidate/origin predicate annotation witnesses. It keeps the opened values
+only for immutable inputs: candidate/baseline recipes (insert-only, sealed with
+their UUIDs), main (the same binding revision UUID) and values derived from
+them. Current fingerprints are proven by the same published fingerprint map
+and rows objects plus the same publication token: a refresh replaces both,
+under the database lock every Workbench read holds, with a new token, and no
+code mutates them in place. Any other case (a changed main revision, custom
+binding or state readers, an unbound main, a replaced map or token) falls back
+to the full context. A stored recipe tampered with during a read is refused by
+the next opening context, which still verifies candidate, baseline and main.
+Mutations (accept, prepare) keep full closing contexts.
+
+Lock discovery and seen-recording reads use small facts (predicate, lineage
+pointer, source revisions, origin UUIDs) derived once per revision UUID from a
+verified recipe and kept in a bounded per-manager map; seen recordings are
+remembered per main revision. They never confer scope authority, so per-read
+recipe verification no longer grows with the number of imports. Custom recipe
+readers keep per-call reads. This optimization does not claim page-size-only authority work:
 candidate/main validation and persisted global annotation evidence still run.
 Single-epoch detail reads retain their membership check but hydrate curation only
 for that epoch, just as epoch pages already do; custom curation readers retain
@@ -111,18 +154,40 @@ seen that main's saved query matches, from active sources, under a protocol
 name the entry accepts (`pending_pool`). "Seen" recordings are those present
 when main was last defined (query save, pinned creation or baseline freeze);
 additive merges do not change it. A main-level blocker offers nothing. The pool
-is cached and recomputed only when main's binding, sources, fingerprints, the
-entry definition or tags its query uses change. Re-running a search predicate
+is cached and recomputed only when main's bound revision, sources, the service
+publication token (every refresh publishes a new one; map addresses are never a
+key), fingerprints, the entry definition or tags its query uses change. The
+binding version is not an input: an undo back to a revision reuses that
+revision's pool. An additive merge admits the pool of main' as the old pool
+minus the accepted epochs (main's query and seen recordings are unchanged), so
+neither merge nor undo re-runs main's query. Re-running a search predicate
 is the separate, explicit full-diff path.
 
 The combined review is one immutable candidate per main revision and pool
 (`prepare_pool_candidate`): main plus the whole pool, parented on main, with no
 origin proposals to re-prove. Left-out decisions carry forward for unchanged
-fingerprints; new epochs never inherit an earlier 'all' consent. A derived
+fingerprints; new epochs never inherit an earlier 'all' consent. The actor's
+latest combined-review draft is the one with the highest draft version (newest
+candidate on ties): carries start at the latest version and every edit adds
+one. When a pool returns to an earlier content (a recording excluded and
+included again) and reuses that candidate, its existing draft is brought up to
+the latest draft exactly as a fresh carry would be, at the latest version, so
+the queue fence is unchanged and the queue and `merge-all` read the same
+decisions. A derived
 prepare operation replays its receipt unless the queue is unchanged but its
 context went stale. `merge-all` adds every pending, not left-out epoch in one
 locked request fenced by the queue revision the scientist saw, and replays its
-receipt for the same operation UUID.
+receipt for the same operation UUID only when that receipt is an additive 'all'
+acceptance of the same protocol. It resolves 'all' for that request only: it
+never persists 'all' consent or advances the draft version, so a failed merge
+leaves the draft unchanged. An accepted-additions export refuses (409) once
+that merge is undone (code `workbench_merge_undone`) or main no longer holds
+every epoch it merged with the merged fingerprint (`workbench_conflict`); an
+unrelated later merge that keeps them does not block it, and the export is
+exactly the merge's frozen accepted membership. Merge receipts
+returned by accept, `merge-all` and the receipt read carry `undone` and
+`undone_by_operation_uuid` (the undo receipt's operation UUID, or null), read
+from the durable undo receipt, so a reloaded client can withdraw export.
 
 A successful preparation response that computed and closed its context during
 that request includes `X-Disco-Workbench-Context: fresh-v1` only after its SQL
@@ -134,6 +199,36 @@ use that one response's context for its initial display under matching local
 owner/lifetime checks; the header grants no new page, mutation or replay authority.
 The pending suite checks fresh 200/201 responses, byte-identical replay bodies,
 absent replay headers and failed-commit refusal using transactional doubles.
+
+## Delta merges (O(added), not O(main))
+
+With the canonical explorer reader, Workbench revisions are read as verified
+headers plus shared member views (`ExplorerHistory.header/members`); custom
+recipe readers keep full recipes. The combined review candidate is a
+membership delta over main (added = the pool), and an additive merge publishes
+main' as a delta over main (added = the accepted epochs), so neither writes,
+copies nor hashes main's membership. Context derivation for a candidate that is
+its baseline plus a sealed delta takes incoming, base conflicts and unavailable
+members from the delta. Main's changed-fingerprint and inactive-recording sets
+are computed once per (revision, publication token, the same published
+fingerprint map and rows, source scope) and derived for a delta from its
+parent in O(delta); a refresh publishes new maps and a new token under the
+database lock and nothing mutates them in place. `current_fingerprints_sha256`
+hashes the members whose current fingerprint differs (and those values), which
+together with the sealed recipes determines every current member fingerprint.
+merge-all builds one context and passes it to accept; the in-transaction check
+is the token close. `verify_sources` re-verifies the added epochs' recordings;
+main's carried members are proven by the context (sealed recipe, current
+fingerprints, active sources). The binding diff summary is derived from a
+cached per-revision profile (`summarize_additions`, equal to `summarize_diff`
+for additions). Lineage and undo read the delta: a delta over its exact parent
+that removes nothing is additive by construction, and undo rebinds the parent
+and retires the delta's index rows in the same binding-CAS transaction.
+Binding version fences, preview/draft/queue fences, source eligibility and
+fingerprint checks of added epochs are unchanged. Exports still freeze an
+explicit exact member list. The protocol query revision (protocol-state proof)
+is owned by the protocol-state reader and is still O(protocol) until its
+bound-main token (protocol-state-v5) lands.
 
 ## Recipes and separate publication
 
@@ -156,14 +251,25 @@ rolls back because an export fails. Filesystem artifacts stage separately from t
 native dataset/audit/receipt transaction; preserve failure reporting and publication
 order instead of claiming cross-resource atomicity.
 
-[workspace_export_artifacts.py](../../workspace_export_artifacts.py) stays flat as
-the adopted lazy format materialization seam. It already hides writer selection
-behind a caller-frozen package and caller-bound adapters, while callers retain locks,
-validation, staging, failure cleanup and publication. It returns an artifact Path,
-not an export-success receipt. Adapter exceptions propagate and partly staged files
-remain caller-owned. Its existing MATLAB/SQLite imports stay lazy; the workbench
-export tail remains separate. This wave neither universalizes that helper nor runs
-its adapters. See the existing [P05 contract](../../../docs/architecture/0.1.8-export-materialization-design.md).
+[workspace_export_artifacts.py](../../workspace_export_artifacts.py) stays flat and
+is the single owner of export staging for all three exports (protocol route,
+saved candidate, incoming workbench). `stage_export(output, recipe, *, format,
+build_package, publish, matlab_writer, write_json, save_snapshot, now,
+linked_sources=None, failure_fields=None)` creates the fresh folder outside its
+catch, then writes `recipe.json`, the reference JSON (or prepares the linked
+package), materializes the format through `materialize_export_format` and returns
+`publish(artifact)`. Any failure after the folder exists writes one `failure.json`
+shape (`at`, `status`, `error`, `artifact_published: false`, plus caller
+`failure_fields` such as `export_scope`) and re-raises the original error; an
+OSError while writing the marker never replaces it. Callers no longer own staging
+or the failure marker. They keep locks, validation, frozen membership and package
+contents (`build_package`), freshness/source/annotation rechecks and publication
+(`publish`: dataset revision, audit and receipts). Partly staged files are left in
+place for diagnosis; the helper does no cleanup, hashing or SQL itself. Format
+adapters and their imports stay lazy. See the existing
+[P05 contract](../../../docs/architecture/0.1.8-export-materialization-design.md)
+for the original format tail; the 2026-10-18 consolidation (user-approved) moved
+staging and the failure marker into this owner.
 
 ## Why these entries remain separate
 
@@ -234,7 +340,8 @@ scope and tokens), `workspace-app/src/treeTagCoverageWorkflow.test.js` and
 
 ## Response-local native attestation
 
-Read-only GET and existing preview, tree-page and candidate-summary POST routes
+Read-only GET and existing preview and tree-page POST routes (the candidate count-preview
+`POST .../candidates/<r>/summary` route was removed with query-building previews)
 reuse the exact native `response_contract` only while holding their annotation
 locks. Schema authority is attested at both boundaries, with live scope counters
 inside. A failed closing check discards the response. Custom authorities retain

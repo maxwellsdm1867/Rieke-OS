@@ -45,6 +45,9 @@ class GenerationReadScopeTests(unittest.TestCase):
         del self.authority._contract
         self.authority._attest_contract=lambda:self.contract_calls.append(True) or 'verified authority'
         with self.authority.response_contract():
+            # The lease opens lazily at the first native token read.
+            self.authority.token(self.protocol)
+            self.assertEqual(len(self.contract_calls),1)
             copied=contextvars.copy_context()
             worker=threading.Thread(target=lambda:copied.run(self.authority.token,self.protocol))
             worker.start();worker.join(5)
@@ -109,6 +112,79 @@ class GenerationReadScopeTests(unittest.TestCase):
         self.assertEqual(len(self.contract_calls),6)
 
 
+class AttestationCacheTests(unittest.TestCase):
+    """Read-path schema attestation is reused only while (connection epoch,
+    global DDL counters, InnoDB table ids) are unchanged; mutations always run
+    the complete attestation."""
+    def setUp(self):
+        self.project,self.protocol=str(uuid.uuid4()),str(uuid.uuid4())
+        self.connection=SimpleNamespace(_conn=object(),in_transaction=False)
+        self.authority=StateGenerationAuthority(self.connection,self.project)
+        self.authority.ready=True
+        self.ddl=[1];self.tables={SCHEMA+'/'+name:index for index,name in enumerate(
+            ('curation','shared_annotation','annotation_profile',GENERATION,CHANGES))}
+        self.full=[];self.queries=[]
+        authority=self.authority
+        def ddl():
+            self.queries.append('ddl');return (('Com_create_table',self.ddl[0]),)
+        def table_ids():
+            self.queries.append('tables');return dict(self.tables)
+        def guard():self.full.append('guard')
+        authority._ddl=ddl;authority._table_ids=table_ids;authority._active_ddl_guard=guard
+        authority._verify_authority_tables=lambda counters:None
+        authority._triggers=lambda:[dict(TRIGGER_NAME=name,EVENT_MANIPULATION=item['event'],
+            EVENT_OBJECT_TABLE=item['table'],ACTION_TIMING=item['timing'],ACTION_STATEMENT=item['body'],
+            CREATED='then') for name,item in MANIFEST.items()]
+        authority._rows=lambda sql,args=():[{'server_uuid':'s','version':'8.4.6','connection_id':1}]
+        authority._scope=lambda kind,identity:('epoch',1)
+
+    def full_attestations(self):
+        return len(self.full)//2  # Two active-DDL guards per complete attestation.
+
+    def test_unchanged_counters_reuse_and_any_change_reattests(self):
+        first=self.authority.token(self.protocol)
+        self.assertEqual(self.full_attestations(),1)
+        self.queries.clear()
+        for _ in range(3):self.assertEqual(self.authority.token(self.protocol),first)
+        self.assertEqual(self.full_attestations(),1)
+        self.assertEqual(len(self.queries),12)  # ddl + table ids, twice per token.
+        self.ddl[0]+=1
+        changed=self.authority.token(self.protocol)
+        self.assertEqual(self.full_attestations(),2)
+        self.assertNotEqual(changed.authority,first.authority)
+        self.tables[SCHEMA+'/curation']+=100
+        self.authority.token(self.protocol)
+        self.assertEqual(self.full_attestations(),3)
+        self.connection._conn=object()
+        self.authority.token(self.protocol)
+        self.assertEqual(self.full_attestations(),4)
+
+    def test_mutations_and_failed_witnesses_always_run_full_attestation(self):
+        token=self.authority.token(self.protocol)
+        self.connection.in_transaction=True
+        # assert_current_locked attests through _contract inside its transaction.
+        for _ in range(2):self.authority._contract()
+        self.assertEqual(self.full_attestations(),3)
+        self.connection.in_transaction=False
+        self.authority._ddl=lambda:(_ for _ in ()).throw(ValueError('status unavailable'))
+        self.assertIsNone(self.authority.token(self.protocol))
+        self.assertIsNone(self.authority._attestation)
+
+    def test_patched_attestation_never_seeds_the_cache(self):
+        calls=[]
+        self.authority._attest_contract=lambda:calls.append(1) or 'stub'
+        self.authority.token(self.protocol);self.authority.token(self.protocol)
+        self.assertEqual(len(calls),4)
+        self.assertIsNone(self.authority._attestation)
+
+    def test_lazy_response_lease_never_attests_without_a_token_read(self):
+        with self.authority.response_contract():pass
+        self.assertEqual(self.full_attestations(),0)
+        with self.authority.response_contract():
+            self.authority.token(self.protocol);self.authority.token(self.protocol)
+        self.assertEqual(self.full_attestations(),1)
+
+
 class NativeConnection:
     def __init__(self,connection):self._conn=connection;self.in_transaction=False
     @property
@@ -168,13 +244,18 @@ class NativeGenerationTests(unittest.TestCase):
                     self.connection.query('CREATE TABLE recording_workspace.response_contract_probe (id INT PRIMARY KEY) ENGINE=InnoDB')
             finally:
                 self.connection.query('DROP TABLE IF EXISTS recording_workspace.response_contract_probe')
+        # Read attestations are cached by (connection epoch, DDL counters,
+        # InnoDB table ids): disabling an observer and then running DDL changes
+        # the counters, so the closing full attestation sees the disabled witness.
         try:
             with self.assertRaisesRegex(ValueError,'disabled'):
                 with self.authority.response_contract():
                     self.assertIsNotNone(self.authority.token(self.protocol))
                     self.connection.query("UPDATE performance_schema.setup_consumers SET ENABLED='NO' WHERE NAME='events_statements_current'")
+                    self.connection.query('CREATE TABLE recording_workspace.response_contract_probe (id INT PRIMARY KEY) ENGINE=InnoDB')
         finally:
             self.connection.query("UPDATE performance_schema.setup_consumers SET ENABLED='YES' WHERE NAME='events_statements_current'")
+            self.connection.query('DROP TABLE IF EXISTS recording_workspace.response_contract_probe')
         self.assertIsNotNone(self.authority.token(self.protocol))
 
     def test_read_scope_defers_shared_rechecks_but_fresh_exit_observes_external_commit(self):
@@ -235,15 +316,21 @@ class NativeGenerationTests(unittest.TestCase):
 
     def test_disabled_witnesses_invalidate_and_transaction_lock_checks_reject_stale_tokens(self):
         before=self.token()
+        # Without DDL the cached read attestation stays valid (no DDL began);
+        # the complete attestation used by mutations still refuses.
         try:
             self.connection.query("UPDATE performance_schema.setup_consumers SET ENABLED='NO' WHERE NAME='events_statements_current'")
+            self.assertEqual(self.authority.token(self.protocol),before)
+            with self.assertRaisesRegex(ValueError,'disabled'):self.authority._attest_contract()
+            self.connection.query('CREATE TABLE recording_workspace.disabled_probe (id INT PRIMARY KEY) ENGINE=InnoDB')
             self.assertIsNone(self.authority.token(self.protocol))
         finally:
             self.connection.query("UPDATE performance_schema.setup_consumers SET ENABLED='YES' WHERE NAME='events_statements_current'")
+            self.connection.query('DROP TABLE IF EXISTS recording_workspace.disabled_probe')
         after=self.token();self.assertNotEqual(before.authority,after.authority)
         try:
             self.connection.query("UPDATE performance_schema.setup_instruments SET ENABLED='NO' WHERE NAME='statement/com/Execute'")
-            self.assertIsNone(self.authority.token(self.protocol))
+            with self.assertRaisesRegex(ValueError,'disabled'):self.authority._attest_contract()
         finally:
             self.connection.query("UPDATE performance_schema.setup_instruments SET ENABLED='YES' WHERE NAME='statement/com/Execute'")
         self.connection.query('INSERT INTO recording_workspace.curation VALUES (%s,%s,%s,%s,1)',

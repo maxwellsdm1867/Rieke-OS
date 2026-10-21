@@ -20,6 +20,9 @@ from workspace_audit import build_audit_payload
 from workspace_authored_json import write_row
 
 
+WRITE_BATCH = 1000  # Curation rows per multi-row INSERT/REPLACE statement.
+
+
 class RevisionConflict(ValueError):
     """The submitted revision no longer matches persisted curation."""
 
@@ -206,6 +209,22 @@ class CurationStore:
         rows = self._rows(protocol_uuid, ids)
         return {key: self._state(rows.get(key), fingerprints[key]) for key in ids}
 
+    def saved_states(self, protocol_uuid, fingerprints):
+        """read() restricted to epochs with a saved decision, without per-epoch defaults.
+
+        An epoch absent from the result has exactly read()'s default state. One
+        project/protocol-keyed read; cost follows saved decisions, not the cohort.
+        """
+        protocol_uuid = _uuid(protocol_uuid)
+        relation = self.Curation & {"project_uuid": self.project_uuid, "protocol_uuid": protocol_uuid}
+        result = {}
+        for row in relation.to_dicts():
+            key = row['epoch_uuid']
+            fingerprint = fingerprints.get(key)
+            if fingerprint is not None:
+                result[key] = self._state(row, _fingerprint(fingerprint))
+        return result
+
     def summary_decisions(self, protocol_uuid, epoch_ids, fingerprints):
         """Only decisions that differ from default summary counts; no tag JSON.
 
@@ -292,7 +311,7 @@ class CurationStore:
             before = {key: self._state(rows.get(key), fingerprints[key]) for key in ids}
             if any(before[key]["revision"] != expected_revisions[key] for key in ids):
                 raise RevisionConflict(before)
-            after = {}
+            after, inserted, replaced = {}, [], []
             for key in ids:
                 state = dict(before[key])
                 current_changes=per_epoch_changes[key] if per_epoch_changes is not None else changes
@@ -301,15 +320,28 @@ class CurationStore:
                 state["tags"] = sorted((set(state["tags"]) | set(current_changes.get("tags_add", []))) -
                                        set(current_changes.get("tags_remove", [])))
                 state["review_state"] = current_changes.get("review_state", state["review_state"])
+                saved = rows.get(key)
+                persisted = ({"included": bool(saved["included"]), "tags": list(saved["tags"]),
+                              "review_state": saved["review_state"],
+                              "metadata_fingerprint": saved["metadata_fingerprint"]} if saved is not None else
+                             {"included": True, "tags": [], "review_state": "unreviewed",
+                              "metadata_fingerprint": fingerprints[key]})
+                if all(state[field] == persisted[field] for field in persisted):
+                    # Nothing would change: keep the revision and write nothing.
+                    after[key] = before[key]
+                    continue
                 state["revision"] += 1
                 state["approval_stale"] = False
                 row = {"project_uuid": self.project_uuid, "protocol_uuid": protocol_uuid,
                        "epoch_uuid": key, **{k: v for k, v in state.items() if k != "approval_stale"}}
-                if key in rows:
-                    self.Curation.update1(row)
-                else:
-                    self.Curation.insert1(row)
+                (replaced if saved is not None else inserted).append(row)
                 after[key] = state
+            # Batched statements inside the same locked transaction. Existing
+            # rows are rewritten whole by primary key; nothing references them.
+            for start in range(0, len(inserted), WRITE_BATCH):
+                self.Curation.insert(inserted[start:start + WRITE_BATCH])
+            for start in range(0, len(replaced), WRITE_BATCH):
+                self.Curation.insert(replaced[start:start + WRITE_BATCH], replace=True)
             event_uuid = self._event(actor, "curation_updated", {
                 "protocol_uuid": protocol_uuid,
                 "changes": ({**changes, "inclusion_by_epoch": inclusion_by_epoch}

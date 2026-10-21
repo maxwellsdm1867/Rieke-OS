@@ -24,9 +24,11 @@ else:
 
 ROOT = Path(__file__).resolve().parents[1]
 FORMAT = 'disco-workflow-v1'
+DEPENDENCY_POLICY = 'browser-dependencies-v2:frontend-full:desktop-playwright-closure-v1'
 BROWSER_FORMAT = 'disco-workflow-browser-v1'
 PRODUCTION_RUNTIME = 'vite-proxy-react-production-v1'
-PROVENANCE_KEYS = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','module_timing','fixture','runtime','production_build')
+PROVENANCE_KEYS = ('dependency_policy','source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','module_timing','fixture','runtime','production_build','suite')
+SUITES = {'core': 'workflow-million', 'app': 'workflow-app'}
 
 
 def validate_runtime(runtime, profile):
@@ -87,11 +89,55 @@ def validate_production(raw, directory, samples):
                 raise ValueError('Unattested loaded workflow asset')
 
 
-def dependency_identity(path):
-    """Ignore only the application's version, never locked dependency data."""
+def dependency_identity(path, *, browser_only=False):
+    """Compare full frontend locks or the exact desktop Playwright closure."""
     value = json.loads(Path(path).read_text())
     if value.get('lockfileVersion') != 3 or not isinstance(value.get('packages', {}).get(''), dict):
         raise ValueError('Expected npm v3 lockfile with a root package')
+    if browser_only:
+        packages = value['packages']
+        declaration = packages[''].get('devDependencies', {}).get('playwright')
+        if not isinstance(declaration, str) or not declaration:
+            raise ValueError('Browser identity requires an explicit locked Playwright root')
+        selected = {}
+        def resolve(name, owner):
+            if not isinstance(name, str) or not name or '..' in name.split('/'):
+                raise ValueError('Invalid browser dependency name')
+            scope = owner
+            while True:
+                key = (scope + '/' if scope else '') + 'node_modules/' + name
+                if key in packages:
+                    return key
+                if not scope:
+                    return None
+                scope = scope.rsplit('/node_modules/', 1)[0] if '/node_modules/' in scope else ''
+        def visit(key):
+            if key in selected:
+                return
+            row = packages[key]
+            if (not isinstance(row, dict) or row.get('link') or
+                    any(not isinstance(row.get(field), str) or not row[field]
+                        for field in ('version', 'resolved', 'integrity'))):
+                raise ValueError('Browser closure requires sealed registry packages')
+            selected[key] = row
+            required = {**row.get('dependencies', {}), **row.get('peerDependencies', {})}
+            optional = row.get('optionalDependencies', {})
+            for name in required.keys() | optional.keys():
+                target = resolve(name, key)
+                allowed_missing = (name in optional or
+                    row.get('peerDependenciesMeta', {}).get(name, {}).get('optional') is True)
+                if target is None:
+                    if not allowed_missing:
+                        raise ValueError('Missing locked browser dependency: ' + name)
+                else:
+                    visit(target)
+        target = resolve('playwright', '')
+        if target is None:
+            raise ValueError('Missing locked Playwright package')
+        visit(target)
+        return json.dumps({'policy': 'desktop-playwright-closure-v1',
+                           'root': declaration, 'packages': selected},
+                          sort_keys=True, separators=(',', ':'))
     value.pop('version', None)
     value['packages'][''].pop('version', None)
     # JSON spelling also preserves type distinctions such as true versus 1.
@@ -346,8 +392,10 @@ def compare_metrics(baseline, candidate, policy):
     return {'status':'review_required' if findings else 'passed','review_required':findings,'metrics':rows}
 
 
-def config():
-    return json.loads((ROOT/'benchmarks/registry.json').read_text())['stress_tracks']['workflow-million']
+def config(suite='core'):
+    if suite not in SUITES:
+        raise ValueError('Unknown workflow suite')
+    return json.loads((ROOT/'benchmarks/registry.json').read_text())['stress_tracks'][SUITES[suite]]
 
 
 def harness():
@@ -448,6 +496,14 @@ def metrics(browser, requests, cfg):
             'profile_total_ms':statistics.median(s['total_ms'] for s in profile_samples) if profile_samples else None,
             'modules':{key:statistics.median(p.get(key,0) for p in profiles) for key in sorted(keys)},
             'request_counts':[len(s['requests']) for s in ordinary],
+            **({'request_bytes':[sum(r.get('bytes') or 0 for r in s['requests']) for s in ordinary],
+                'aborted_counts':[len(s.get('aborted',[])) for s in ordinary],
+                'trailing_request_counts':[len(s['trailing']['requests']) for s in ordinary],
+                'trailing_foreground_counts':[sum(1 for r in s['trailing']['requests'] if r['url'].split('?')[0] not in s['trailing']['background_paths']) for s in ordinary],
+                'trailing_bytes':[sum(r.get('bytes') or 0 for r in s['trailing']['requests']) for s in ordinary],
+                'request_paths':sorted({r['method']+' '+r['url'].split('?')[0] for s in ordinary for r in s['requests']+s['trailing']['requests']}),
+                'path_kept':[s['correctness'].get('path_kept') for s in ordinary] if any('path_kept' in s['correctness'] for s in ordinary) else None}
+               if all('trailing' in s for s in ordinary) else {}),
             'ordinary_samples_ms':[s['total_ms'] for s in ordinary],
             'profile_samples_ms':[s['total_ms'] for s in profile_samples],
             'module_timings':{key:{'median_call_ms':statistics.median(times),'calls':len(times)}
@@ -557,19 +613,19 @@ def stop_owned(child, identities):
     return not remaining
 
 
-def run(source_root, output, *, smoke=False, browser_executable=None, protocol_epochs=None, profile=False, module_timing=False, runtime='production'):
+def run(source_root, output, *, smoke=False, browser_executable=None, protocol_epochs=None, profile=False, module_timing=False, runtime='production', suite='core', prepared_publication=False):
     validate_runtime(runtime, profile)
-    cfg = config()
+    cfg = config(suite)
     source_root,output = source_root.resolve(),output.resolve()
     output.mkdir(parents=True,exist_ok=False)
-    epochs,samples = (1000,1) if smoke else (cfg['epochs'],cfg['samples'])
+    epochs,samples = (cfg.get('smoke_epochs',1000),1) if smoke else (cfg['epochs'],cfg['samples'])
     protocol_epochs = epochs if protocol_epochs is None else protocol_epochs
     if type(protocol_epochs) is not int or not 200 <= protocol_epochs <= epochs:
         raise ValueError('Protocol epochs must be 200..project epochs')
-    receipt = {'format':FORMAT,'status':'running','runtime':runtime,'production_build':None,'source_root':str(source_root),
-               'source_start':query_bench.source(source_root),'harness_start':harness(),
+    receipt = {'format':FORMAT,'dependency_policy':DEPENDENCY_POLICY,'status':'running','runtime':runtime,'production_build':None,'source_root':str(source_root),
+               'source_start':query_bench.source(source_root),'harness_start':harness(),'prepared_publication':prepared_publication,
                'environment':query_bench.environment(),'config':cfg,'epochs':epochs,
-               'samples':samples,'protocol_epochs':protocol_epochs,'profile':profile,'module_timing':module_timing,'smoke':smoke,'cleanup':{},'metrics':{},'limitations':[]}
+               'samples':samples,'protocol_epochs':protocol_epochs,'profile':profile,'module_timing':module_timing,'smoke':smoke,'suite':suite,'cleanup':{},'metrics':{},'limitations':[]}
     query_bench.write(output/'receipt.json',receipt)
     server=browser=None
     started = time.monotonic()
@@ -577,7 +633,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
     server_ids,browser_ids = {},{}
     try:
         server,stream,deadline = execute_owned([sys.executable,'-B',str(ROOT/'benchmarks/workflow/server.py'),
-            '--source-root',str(source_root),'--output',str(output/'server'),'--epochs',str(epochs),'--protocol-epochs',str(protocol_epochs)],
+            '--source-root',str(source_root),'--output',str(output/'server'),'--epochs',str(epochs),'--protocol-epochs',str(protocol_epochs)]+(['--suite',suite] if suite != 'core' else [])+(['--prepared-publication'] if prepared_publication else []),
             output/'server.log',cfg['max_startup_seconds'],cfg['max_rss_bytes'],server_ids)
         streams.append(stream)
         meta_path = output/'server/server.json'
@@ -593,7 +649,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
         receipt['fixture'] = metadata
         command = ['node',str(ROOT/'benchmarks/workflow/browser.mjs'),'--source-root',str(source_root),
                    '--server-json',str(meta_path),'--output',str(output/'browser'),'--samples',str(samples),
-                   '--profile',str(profile).lower(),'--module-timing',str(module_timing).lower(),'--runtime',runtime]
+                   '--profile',str(profile).lower(),'--module-timing',str(module_timing).lower(),'--runtime',runtime,'--suite',suite]
         if smoke:
             # Small-fixture compatibility checks must expose stale UI contracts
             # before the million-row lane, not consume its ten-minute action waits.
@@ -613,6 +669,8 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
                 break
             time.sleep(.25)
         browser_result = json.loads((output/'browser/browser.json').read_text())
+        if browser_result.get('suite', 'core') != suite:
+            raise ValueError('Browser suite differs from request')
         if browser_result.get('runtime') != runtime:
             raise ValueError('Browser runtime differs from request')
         if runtime == 'production':
@@ -679,6 +737,8 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
 
 def load_receipt(path, *, diagnostic=False):
     receipt = json.loads(path.read_text())
+    if receipt.get('dependency_policy') != DEPENDENCY_POLICY:
+        raise ValueError('Different browser dependency policy; rerun both sources')
     runtime = receipt.get('runtime')
     validate_runtime(runtime, receipt.get('profile'))
     allowed_status = 'diagnostic' if diagnostic and runtime == 'development' else 'passed'
@@ -686,13 +746,24 @@ def load_receipt(path, *, diagnostic=False):
         raise ValueError('Development workflow is diagnostic-only; production runtime required for qualification')
     if receipt.get('format') != FORMAT or receipt.get('status') != allowed_status or receipt.get('smoke') is not False:
         raise ValueError('Missing/failed/diagnostic workflow receipt')
-    if receipt.get('config') != config() or receipt.get('harness_start') != harness():
+    if receipt.get('config') != config(receipt.get('suite', 'core')) or receipt.get('harness_start') != harness():
         raise ValueError('Different workflow suite; rerun both sources with this harness')
     for boundary in ('source_start','source_end'):
         query_bench.validate_source(receipt.get(boundary))
     query_bench.validate_environment(receipt.get('environment'))
     if receipt['source_start'] != receipt['source_end'] or receipt['harness_start'] != receipt.get('harness_end'):
         raise ValueError('Source/harness changed during measurement')
+    prepared_mode = receipt.get('prepared_publication', False)
+    if type(prepared_mode) is not bool:
+        raise ValueError('Invalid publication fixture mode')
+    publication = receipt.get('fixture', {}).get('prepared_publication')
+    if prepared_mode:
+        if (not isinstance(publication, dict) or publication.get('native_metadata_index') is not True
+                or not publication.get('preparation')
+                or any(item.get('status') != 'ready' for item in publication['preparation'].values())):
+            raise ValueError('Prepared-native fixture lacks a ready explicit publication receipt')
+    elif publication is not None:
+        raise ValueError('Legacy fixture receipt contains native publication admission')
     cleanup = receipt.get('cleanup',{})
     if (cleanup.get('server_processes_closed') is not True or cleanup.get('browser_processes_closed') is not True
             or any(cleanup.get('backend',{}).get(key) is not True for key in ('server_closed','fixture_closed','instrumentation_restored'))
@@ -708,7 +779,7 @@ def load_receipt(path, *, diagnostic=False):
     provenance = path.parent/'provenance.json'
     keys = PROVENANCE_KEYS
     if (query_bench.sha(provenance.read_bytes()) != receipt.get('provenance_sha256')
-            or json.loads(provenance.read_text()) != {key:receipt[key] for key in keys}):
+            or json.loads(provenance.read_text()) != {key:receipt[key] for key in keys if key in receipt}):
         raise ValueError('Provenance evidence changed')
     required = {'browser/browser.json','server/requests.jsonl','server/server.json','server/cleanup.json'}
     if not required.issubset(receipt.get('evidence_sha256',{})):
@@ -745,6 +816,10 @@ def load_receipt(path, *, diagnostic=False):
 
 def compare(baseline_path, candidate_path, output):
     baseline,candidate = load_receipt(baseline_path),load_receipt(candidate_path)
+    if baseline.get('prepared_publication', False) != candidate.get('prepared_publication', False):
+        raise ValueError('Incomparable publication fixture modes; legacy and prepared-native tracks are separate')
+    if baseline.get('suite', 'core') != candidate.get('suite', 'core'):
+        raise ValueError('Incomparable workflow suite')
     for key in ('config','harness_start','environment','browser_environment','epochs','protocol_epochs'):
         if baseline[key] != candidate[key]:
             raise ValueError(f'Incomparable workflow {key}')
@@ -767,6 +842,7 @@ def main():
     dependencies = commands.add_parser('dependencies-match')
     dependencies.add_argument('baseline',type=Path)
     dependencies.add_argument('candidate',type=Path)
+    dependencies.add_argument('--browser-only', action='store_true')
     command = commands.add_parser('run')
     command.add_argument('--source-root',type=Path,default=ROOT)
     command.add_argument('--output',type=Path,required=True)
@@ -776,6 +852,8 @@ def main():
     command.add_argument('--runtime',choices=('production','development'),default='production',help='Production qualifies; explicit development is diagnostic-only')
     command.add_argument('--profile',action='store_true',help='Collect optional module diagnostics after ordinary samples; excluded from regression gate')
     command.add_argument('--module-timing',action='store_true',help='Collect built-in module elapsed timers during ordinary requests')
+    command.add_argument('--prepared-publication',action='store_true',help='Separate prepared-native publication track; never compare against the legacy fixture')
+    command.add_argument('--suite',choices=tuple(SUITES),default='core',help='core: fixed fifteen-variant shell; app: full-App decoupling variants')
     comparison = commands.add_parser('compare')
     comparison.add_argument('baseline',type=Path)
     comparison.add_argument('candidate',type=Path)
@@ -783,7 +861,7 @@ def main():
     args = parser.parse_args()
     try:
         if args.command == 'dependencies-match':
-            if dependency_identity(args.baseline) != dependency_identity(args.candidate):
+            if dependency_identity(args.baseline, browser_only=args.browser_only) != dependency_identity(args.candidate, browser_only=args.browser_only):
                 raise ValueError('Incomparable locked browser dependencies')
         elif args.command == 'run':
             validate_runtime(args.runtime, args.profile)
@@ -791,7 +869,7 @@ def main():
             import tempfile
             with (Path(tempfile.gettempdir())/'disco-everyday-million.lock').open('a') as lock:
                 fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-                print(run(args.source_root,args.output,smoke=args.smoke,browser_executable=args.browser_executable,protocol_epochs=args.protocol_epochs,profile=args.profile,module_timing=args.module_timing,runtime=args.runtime))
+                print(run(args.source_root,args.output,smoke=args.smoke,browser_executable=args.browser_executable,protocol_epochs=args.protocol_epochs,profile=args.profile,module_timing=args.module_timing,runtime=args.runtime,suite=args.suite,prepared_publication=args.prepared_publication))
         elif args.command == 'compare':
             result = compare(args.baseline,args.candidate,args.output)
             print(json.dumps({'status':result['status'],'review_required':result['review_required']}))

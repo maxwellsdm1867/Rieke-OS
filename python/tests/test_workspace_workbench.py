@@ -26,6 +26,10 @@ class WorkbenchTests(unittest.TestCase):
             Table(('project_uuid', 'operation_uuid')))
         self.case.connection.tables.extend(self.tables)
         self.manager._tables = self.tables
+        # Lineage membership index of bound delta revisions (rolled back with SQL).
+        self.membership = Table(('project_uuid', 'lineage_uuid', 'epoch_uuid', 'added_revision_uuid'))
+        self.case.connection.tables.append(self.membership)
+        self.case.explorer_history._membership = self.membership
         verified = patch.object(self.case.service, '_verified_source', return_value=(fixture.source, None))
         verified.start()
         self.addCleanup(verified.stop)
@@ -276,7 +280,10 @@ class WorkbenchTests(unittest.TestCase):
     def test_list_selection_custom_pages_and_closing_changes_fail_closed(self):
         context = self.get_context()
         original = self.manager.frozen_service
-        for change in ('partial', 'wrong-cell', 'draft', 'source', 'recipe'):
+        # A stored recipe is immutable and sealed with its UUID: the opening
+        # context verifies it and the close keeps that verified value. Stored
+        # tampering is refused by the next opening (test_context_rechecks_*).
+        for change in ('partial', 'wrong-cell', 'draft', 'source'):
             with self.subTest(change=change):
                 before_tables = [copy.deepcopy(table.rows) for table in self.case.connection.tables]
                 original_scope = self.case.service.source_scope
@@ -292,9 +299,6 @@ class WorkbenchTests(unittest.TestCase):
                                 version=99, selection_mode='selected', deferred=False))
                         elif change == 'source':
                             self.case.service.source_scope = lambda: {**original_scope(), 'revision': 'changed'}
-                        elif change == 'recipe':
-                            row = next(row for row in self.case.explorer_revisions.rows if row['revision_uuid'] == self.revision)
-                            row['recipe']['epochs'][0]['metadata_hash'] = 'f' * 64
                         return result
                     scoped.epoch_page = read
                     return scoped
@@ -305,6 +309,17 @@ class WorkbenchTests(unittest.TestCase):
                 self.case.service.source_scope = original_scope
                 for table, rows in zip(self.case.connection.tables, before_tables): table.rows[:] = rows
                 self.assertEqual(self.list_selection(context).status_code, 200, 'Failed read must not poison the next read')
+        row = next(row for row in self.case.explorer_revisions.rows if row['revision_uuid'] == self.revision)
+        original_recipe = copy.deepcopy(row['recipe'])
+        row['recipe']['epochs'][0]['metadata_hash'] = 'f' * 64
+        # A verified seal is reused within a process; tampering is refused by
+        # the first verification of that revision (here a cold process).
+        self.cold_revisions()
+        tampered = self.list_selection(context)
+        self.assertIn(tampered.status_code, (400, 409), tampered.get_json())
+        self.assertNotIn('epoch_uuids', tampered.get_json())
+        row['recipe'] = original_recipe
+        self.assertEqual(self.list_selection(context).status_code, 200)
 
     def test_optional_context_bootstrap_matches_fresh_context_and_page(self):
         plain = self.get_context()
@@ -342,12 +357,23 @@ class WorkbenchTests(unittest.TestCase):
         self.assertNotIn('bootstrap', response.get_json())
         self.assertNotIn('protocol', response.get_json())
 
+    def cold_revisions(self):
+        """Forget verified seals and views, as a new process starts."""
+        history = self.manager.history
+        history._headers.clear(), history._member_views.clear(), history._recipe_cache.clear()
+        self.manager._checks.clear(), self.manager._profiles.clear()
+
     def test_context_rechecks_warmed_main_recipe_storage(self):
         context = self.manager.context(self.protocol, self.revision, 'actor-one')
         self.manager.history.protocol_binding(self.protocol)
         row = next(row for row in self.case.explorer_revisions.rows if row['revision_uuid'] == context['main_revision_uuid'])
         original = copy.deepcopy(row['recipe'])
         row['recipe']['epochs'][0]['metadata_hash'] = 'f' * 64
+        # The verified root seal is reused in this process (sealed, insert-only);
+        # the first verification after a restart refuses the tampered root.
+        self.assertEqual(self.manager.context(self.protocol, self.revision, 'actor-one')['candidate_scope_revision'],
+                         context['candidate_scope_revision'])
+        self.cold_revisions()
         with self.assertRaisesRegex(ValueError, 'integrity'):
             self.manager.context(self.protocol, self.revision, 'actor-one')
         row['recipe'] = original
@@ -377,11 +403,30 @@ class WorkbenchTests(unittest.TestCase):
         self.manager.history.protocol_binding(self.protocol)
         rows = self.case.explorer_revisions.rows
         row = next(row for row in rows if row['revision_uuid'] == expected['main_revision_uuid'])
+        self.assertEqual(row['recipe']['storage'], 'membership-delta-v1')
         original = copy.deepcopy(row['recipe'])
-        row['recipe']['epochs'][0]['metadata_hash'] = 'f' * 64
+        row['recipe']['delta']['added'][0]['metadata_hash'] = 'f' * 64
+        self.cold_revisions()
+        with self.assertRaisesRegex(ValueError, 'integrity'):
+            self.manager.context(self.protocol, self.revision, 'actor-one')
+        # Resealing the tampered row alone still breaks the multiset chain.
+        from disco.workbench.recipes import checksum
+        resealed = {key: value for key, value in row['recipe'].items() if key != 'content_sha256'}
+        row['recipe'] = {**resealed, 'content_sha256': checksum(resealed)}
+        self.cold_revisions()
         with self.assertRaisesRegex(ValueError, 'integrity'):
             self.manager.context(self.protocol, self.revision, 'actor-one')
         row['recipe'] = original
+        self.cold_revisions()
+        # The indexed lineage rows verify against the sealed multiset hash.
+        self.assertEqual(set(self.manager.history.verify_lineage(expected['main_revision_uuid'])),
+                         set(expected['previous']))
+        member = next(item for item in self.membership.rows
+                      if item['added_revision_uuid'] == expected['main_revision_uuid'])
+        saved_hash, member['metadata_hash'] = member['metadata_hash'], 'f' * 64
+        with self.assertRaisesRegex(ValueError, 'integrity'):
+            self.manager.history.verify_lineage(expected['main_revision_uuid'])
+        member['metadata_hash'] = saved_hash
         rows.remove(row)
         with self.assertRaisesRegex(KeyError, 'Explorer revision not found'):
             self.manager.context(self.protocol, self.revision, 'actor-one')
@@ -423,7 +468,7 @@ class WorkbenchTests(unittest.TestCase):
             actual = self.manager.context(self.protocol, self.revision, 'actor-one')
         self.assertEqual(actual['candidate_scope_revision'], expected['candidate_scope_revision'])
         self.assertEqual(nested[0]['actor'], 'actor-two')
-        actual['candidate']['epochs'].clear()
+        actual['candidate'].clear()  # Canonical contexts hold recipe headers; members are shared views.
         self.assertEqual(self.manager.context(self.protocol, self.revision, 'actor-one')['candidate_scope_revision'], expected['candidate_scope_revision'])
 
     def test_tree_selection_matches_complete_pages_with_one_closing_check(self):
@@ -652,11 +697,10 @@ class WorkbenchTests(unittest.TestCase):
             self.assertFalse(page.get_json()['epochs'][0]['review_decision']['reviewed'])
             tree = self.case.client.post(self.root + '/tree/page', json={'candidate_scope_revision': token, 'splits': 'cell'}, headers=self.case.headers)
             self.assertEqual(tree.status_code, 200, tree.get_json())
-            summary = self.case.client.post(self.root + '/summary', json={'candidate_scope_revision': token,
-                'filters': {'cell_uuid': self.added}}, headers=self.case.headers)
-            self.assertEqual(summary.status_code, 200, summary.get_json())
-            self.assertEqual(summary.get_json()['matched_count'], 0)
-            self.assertFalse(summary.get_json()['distributions_available'])
+            # The candidate count-preview route was removed with query-building previews.
+            removed = self.case.client.post(self.root + '/summary', json={'candidate_scope_revision': token},
+                                            headers=self.case.headers)
+            self.assertIn(removed.status_code, (404, 405))
             for path in ('/epochs', '/tree', '/tree-fields', '/epochs/' + self.added, '/epochs/' + self.added + '/trace'):
                 self.assertEqual(self.case.client.get(self.root + path).status_code, 409, path)
             outside = self.case.client.get(self.root + '/epochs/' + self.fixture.before_ids[0], query_string={'candidate_scope_revision': token})
@@ -778,25 +822,6 @@ class WorkbenchTests(unittest.TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertNotIn('windows', response.get_json())
         self.assertEqual(len(calls), 2)
-
-    def test_candidate_summary_echoes_generation_and_rejects_a_changed_filter_authority(self):
-        context = self.get_context()
-        body = dict(candidate_scope_revision=context['candidate_scope_revision'], filters={'cell_uuid': self.added})
-        response = self.case.client.post(self.root + '/summary', json=body, headers=self.case.headers)
-        self.assertEqual(response.status_code, 200, response.get_json())
-        self.assertEqual(response.get_json()['filters'], body['filters'])
-        self.assertTrue(response.get_json()['generation'])
-        witness = ['before']
-        original = type(self.case.service).filtered_rows
-        def mutate_during_calculation(scoped, *args, **kwargs):
-            rows = original(scoped, *args, **kwargs)
-            witness[0] = 'after'
-            return rows
-        with patch('disco.metadata.explore_queries.generation', side_effect=lambda *args: {'annotation': witness[0]}), \
-                patch.object(type(self.case.service), 'filtered_rows', mutate_during_calculation):
-            response = self.case.client.post(self.root + '/summary', json=body, headers=self.case.headers)
-        self.assertEqual(response.status_code, 409, response.get_json())
-        self.assertNotIn('counts', response.get_json())
 
     def coverage_annotations(self):
         from disco.decisions.annotations import SharedAnnotations
@@ -1007,16 +1032,11 @@ class WorkbenchTests(unittest.TestCase):
             self.assertEqual(page.status_code, 200, page.get_json())
             self.assertEqual(page.get_json()['total'], count)
             self.assertTrue(all(row['epoch_uuid'] == self.added for row in page.get_json()['epochs']))
-            summary = self.case.client.post(self.root + '/summary', json=dict(candidate_scope_revision=token, filters=filters), headers=self.case.headers)
-            self.assertEqual(summary.status_code, 200, summary.get_json())
-            self.assertEqual(summary.get_json()['matched_count'], count)
-            self.assertEqual(json.loads(summary.get_json()['filters']['metadata_predicate']), predicate)
-            self.assertEqual(summary.get_json()['candidate_scope_revision'], token)
             tree = self.case.client.post(self.root + '/tree/page', json=dict(candidate_scope_revision=token, filters=filters, splits='cell'), headers=self.case.headers)
             self.assertEqual(tree.status_code, 200, tree.get_json())
             self.assertEqual(tree.get_json()['total_epochs'], count)
         foreign = {'field': 'curation/00000000-0000-4000-8000-000000000000/tags', 'operator': 'contains', 'value': 'QC'}
-        response = self.case.client.post(self.root + '/summary', json=dict(candidate_scope_revision=token, filters={'metadata_predicate': json.dumps(foreign)}), headers=self.case.headers)
+        response = self.case.client.get(self.root + '/epochs', query_string=dict(candidate_scope_revision=token, metadata_predicate=json.dumps(foreign)))
         self.assertEqual(response.status_code, 400, response.get_json())
 
     def test_draft_cas_atomic_validation_actor_isolation_and_epoch_fingerprint_invalidation(self):

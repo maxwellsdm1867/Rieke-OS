@@ -350,8 +350,8 @@
     },
     {
       "id": "export-materialization",
-      "purpose": "Materialize caller-frozen output while caller retains staging, validation and publication authority.",
-      "owner": "workspace_export_artifacts.materialize_export_format",
+      "purpose": "Stage and materialize caller-frozen output with one failure marker; callers retain validation, package contents and publication authority.",
+      "owner": "workspace_export_artifacts.stage_export",
       "interfaces": [
         "P05 adopted format tail"
       ],
@@ -372,8 +372,7 @@
       ],
       "unmeasured_gaps": [
         "native export qualification",
-        "materialization throughput and disk cost",
-        "workbench path retains separate format tail"
+        "materialization throughput and disk cost"
       ],
       "replacement_option": "No replacement work selected. H5/Ovation/native export explicitly deferred; mappings grant no permission to run.",
       "metrics": {
@@ -392,9 +391,9 @@
         "inputs": "Receives caller-owned package/output/format plus bound lazy matlab_writer and strict atomic write_json. reference-json returns existing recordings.json; wheeler-sqlite builds SQLite and annotation return folder; matlab-mat calls bound writer and emits report without internal path fields, returning actual artifact Path.",
         "outputs": "Selected artifact Path; reference JSON path refers to already staged file, SQLite/MAT paths follow adapter creation. Adapter exceptions propagate unchanged.",
         "identity_types_order_units_provenance": "Helper forwards original package/recipe/epoch_records without query reconstruction/copy or identity remapping. Output order, scientific types/units and provenance are caller package and adapter obligations. No scientific authority is inferred from returned Path.",
-        "errors_partial_success": "Unsupported format raises ValueError; adapter errors propagate unchanged. File may be partly staged on failure; caller owns failure report/cleanup/publication. Returning artifact path is not successful dataset publication.",
+        "errors_partial_success": "Unsupported format raises ValueError; adapter errors propagate unchanged. stage_export writes one failure.json shape (at, status, error, artifact_published false, plus caller failure_fields) for any failure after the fresh folder exists and re-raises the original error; an OSError writing the marker never replaces it. Partly staged files stay for diagnosis. Returning artifact path is not successful dataset publication; publication is the caller callback.",
         "freshness_invalidation": "No freshness policy inside helper; callers freeze selection and revalidate authority around materialization. Writer bindings preserve existing service/source context.",
-        "transactions_idempotency": "No locks, SQL transaction, replay receipt or cancellation protocol added. Output directory already exists and reference package already staged. Imports stay lazy; caller-bound adapter lifetime retained.",
+        "transactions_idempotency": "No locks, SQL transaction, replay receipt or cancellation protocol added. stage_export creates the fresh output directory outside its catch and stages recipe/reference JSON; materialize_export_format runs after that. Imports stay lazy; caller-bound adapter lifetime retained.",
         "cancellation_lifetime": "Synchronous helper has no cancellation handle or cleanup ownership. Caller owns directory/writer context lifetime and partial artifacts; lazy adapters load only for selected format.",
         "caller_dependencies": [
           "adopted protocol/candidate export callers",
@@ -403,8 +402,8 @@
           "caller MATLAB adapter",
           "strict JSON writer"
         ],
-        "integration_capabilities": "Keep helper authority narrow and preserve adapter call shape, lazy imports and unchanged errors. Current workbench export tail is separate; universal adoption must not be claimed.",
-        "change_rules": "Keep helper authority narrow and preserve adapter call shape, lazy imports and unchanged errors. Current workbench export tail is separate; universal adoption must not be claimed."
+        "integration_capabilities": "Protocol, saved-candidate and incoming-workbench exports all stage through stage_export (2026-10-18, user-approved). Keep helper authority to staging/materialization/marker; callers keep validation, package contents and publication.",
+        "change_rules": "Keep helper authority to staging, format materialization and the failure marker; preserve adapter call shape, lazy imports and unchanged errors. Scientific validation, membership and publication stay with callers."
       },
       "existing_tests": [
         "python/tests/test_workspace_export_artifacts.py",
@@ -3890,16 +3889,16 @@
       "id": "display-invalidation-clocks",
       "implementation_commits": [],
       "source_observed_at": "df40a19efbb13237cab2b7ff1bb4750313118854",
-      "purpose": "Separate immediate scientific display invalidation from structural refresh and deferred hidden summaries.",
+      "purpose": "Separate immediate scientific display invalidation from structural refresh, per-protocol membership/curation changes and deferred hidden summaries.",
       "owner": "useWorkspaceChanges/useSummaryRevision; App emits events and Protocol chooses summary visibility.",
       "status": "implemented",
       "interface": {
-        "inputs": "Change event kind and optional confirmed annotation delta; current revision, structural revision and visible flag.",
-        "outputs": "Monotonic local display/structure revisions, optional confirmed annotation event; deferred summary revision."
+        "inputs": "Change event kind ('membership'|'curation' with protocolId, 'structure', legacy untyped/annotations) and optional confirmed annotation delta; current revision, structural revision and visible flag.",
+        "outputs": "Monotonic local display/structure/review revisions, per-protocol clocks (protocolRevision, protocolReviewRevision, protocolMembershipRevision), content/membership counters, last typed change {seq,kind,protocolId}; deferred summary revision."
       },
       "scientific_contract": {
         "identities": "Local revisions are display clocks, never native query/binding/source receipts. Confirmed annotation payload requires version1 before propagation.",
-        "types": "annotations/curation increment display only; other/unspecified events increment structure too. Nonannotation events clear annotation delta.",
+        "types": "Typed membership/curation events advance only that protocol's clock plus content (and membership) counters; structure events advance every clock. Legacy: annotations/curation without protocolId increment display only; other/unspecified events increment structure too. Tag-channel and confirmed epoch/cell receipts advance nothing.",
         "order": "Hidden summary holds last committed display revision; any structural change or visibility refreshes it. Live pages/edit authority never use this deferred clock.",
         "units": "Integer counters only; no elapsed-time or scientific-unit meaning.",
         "provenance": "Events invalidate derived display; native command/source owners establish scientific facts."
@@ -3924,7 +3923,8 @@
         "existing_tests": [
           "workspace-app/src/inspectorCurationLifecycle.test.js",
           "workspace-app/src/inspectorTreeAuthority.test.js",
-          "workspace-app/src/presentationSessionsApp.test.js"
+          "workspace-app/src/presentationSessionsApp.test.js",
+          "workspace-app/src/workspaceChangesLedger.test.js"
         ],
         "execution_this_review": "Not run; source and existing test locations inspected. Listed tests are evidence surfaces, not a new pass receipt.",
         "deliberate_fault_ideas": [
@@ -3950,11 +3950,12 @@
         ]
       },
       "integration_capabilities": [
-        "Current two-clock invalidation implemented; no universal generation service for frontend authority."
+        "Typed change kinds (2026-10-18, PR F2): merge-all/undo/finish/accept/apply emit membership for one protocol; /projects, /jobs, /metadata/status and suggestions stay on the structure clock; overview cache invalidates per protocol; useWorkspaceChanges exports the pure applyWorkspaceChange reducer for full-App harnesses. No universal generation service for frontend authority."
       ],
       "change_rules": [
         "Do not merge clocks without proving every live/readiness and hidden-summary consumer.",
-        "Keep server receipts explicit despite local counter reuse."
+        "Keep server receipts explicit despite local counter reuse.",
+        "Typed events must name their protocol; untyped events keep the broad structural refresh. Writes keep their own expected revisions; these clocks never grant write authority."
       ],
       "inventory_reference_id": "FE10-display-invalidation-clocks",
       "depends_on": [],
@@ -3966,7 +3967,8 @@
       "existing_tests": [
         "workspace-app/src/inspectorCurationLifecycle.test.js",
         "workspace-app/src/inspectorTreeAuthority.test.js",
-        "workspace-app/src/presentationSessionsApp.test.js"
+        "workspace-app/src/presentationSessionsApp.test.js",
+        "workspace-app/src/workspaceChangesLedger.test.js"
       ],
       "not_newly_run_fault_ideas": [
         {
@@ -4545,7 +4547,7 @@
       "implementation_commits": [],
       "source_observed_at": "df40a19efbb13237cab2b7ff1bb4750313118854",
       "purpose": "Persist user view choices without treating layout as query authority or inferred summary preference.",
-      "owner": "createTreeLayoutSaver/useProtocolTreeLayout and useProtocolSummaryPreferences; appearance is separate app preference owner.",
+      "owner": "createTreeLayoutSaver/useProtocolTreeLayout; appearance is separate app preference owner.",
       "status": "implemented",
       "interface": {
         "inputs": "Protocol ID, saved split order/version, optional initial recipe order; project/protocol/view preference key and requested summary field IDs. Optional enabled=false defers the first saved-layout read until Inspect/Export demand; default remains enabled.",
@@ -4573,7 +4575,6 @@
       "source_paths": [
         "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
         "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js",
-        "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
         "workspace-app/src/requested-summaries/requestedSummaries.js"
       ],
       "verification": {
@@ -4621,7 +4622,6 @@
       "source_pointers": [
         "workspace-app/src/treeLayoutPersistence.js",
         "workspace-app/src/useProtocolTreeLayout.js",
-        "workspace-app/src/useProtocolSummaryPreferences.js",
         "workspace-app/src/requestedSummaries.js"
       ],
       "existing_tests": [

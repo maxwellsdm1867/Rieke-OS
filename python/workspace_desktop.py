@@ -177,7 +177,9 @@ class DesktopBoundary:
         def desktop_health():
             return jsonify(**self.identity, ready=not self.draining,
                            draining=self.draining,
-                           services=self.services.records() if self.services else [])
+                           services=self.services.records() if self.services else [],
+                           recovery_projects=self.services.recovery_records() if self.services else [],
+                           staging_attention=staging_attention() if self.services else [])
 
         def empty_control():
             return not request.args and request.get_json(silent=True) == {}
@@ -361,6 +363,12 @@ class DesktopBoundary:
         return ClosingIterator(response, finished)
 
 
+def staging_attention():
+    """Registered staging folders the last sweep could not prove abandoned."""
+    from disco.projects.staging import last_report
+    return [item for item in last_report()['retained'] if item['reason'] != 'owner_running']
+
+
 def validate_child_startup_receipt(line, record):
     if not line.startswith(('RIEKE_DESKTOP_BOUND=', 'RIEKE_DESKTOP_STARTUP_FAILED=')) or len(line) > 65536:
         raise ValueError('Malformed owned child bind receipt')
@@ -392,6 +400,7 @@ class DesktopServices:
         self.children = {}
         self.database_operations = {}
         self.draining = False
+        self.recovery = {}
         if self.path.exists():
             if self.path.is_symlink() or self.path.stat().st_size > 1024 * 1024:
                 raise ValueError('Desktop service registry is invalid')
@@ -420,13 +429,56 @@ class DesktopServices:
                 if not self._unused_database(record) and not self._clean_database(record):
                     if self._rejected_legacy_preflight(record):
                         continue
-                    raise ValueError('A previous project service has no clean database exit receipt; recovery is required before opening projects')
+                    self._mark_recovery(record, 'A previous project service has no clean database exit receipt')
             operations = previous.get('database_operations', [])
             if not isinstance(operations, list):
                 raise ValueError('Desktop database operation registry is invalid')
             for operation in operations:
-                if not isinstance(operation, dict) or not self._clean_database(operation):
-                    raise ValueError('A prior transfer database has no clean exit receipt; recovery is required before opening projects')
+                if not isinstance(operation, dict):
+                    raise ValueError('Desktop database operation registry is invalid')
+                if not self._clean_database(operation):
+                    self._mark_recovery(operation, 'A prior transfer database has no clean exit receipt')
+            marks = previous.get('recovery_required', [])
+            if not isinstance(marks, list) or any(not isinstance(item, dict) for item in marks):
+                raise ValueError('Desktop project recovery registry is invalid')
+            for mark in marks:
+                if not isinstance(mark.get('project_path'), str):
+                    raise ValueError('Desktop project recovery registry is invalid')
+                if str(Path(mark['project_path']).expanduser().resolve()) not in self.recovery:
+                    self._mark_recovery(mark, mark.get('reason') or 'Project recovery is required')
+        self._save()
+
+    def _mark_recovery(self, record, reason):
+        """Scope recovery to one project; only a live owned database blocks all.
+
+        The project's own native gate keeps refusing unclean copied/moved data.
+        """
+        from disco.projects.runtime_state import NEVER_STARTED, RUNNING_OWNED, STOPPED_CLEAN, project_runtime_state
+        if not isinstance(record.get('project_path'), str):
+            raise ValueError('Desktop service registry is invalid')
+        state = project_runtime_state(record['project_path'])
+        if state['state'] == RUNNING_OWNED:
+            raise ValueError('A previous project database is still running; recovery must close it before opening projects')
+        if state['state'] == NEVER_STARTED and record.get('phase') != 'failed_shutdown':
+            return  # No database evidence exists and no shutdown failure was reported.
+        if state['state'] == STOPPED_CLEAN and record.get('recovery_state'):
+            return  # A previously marked project has since closed cleanly.
+        self.recovery[str(Path(record['project_path']).expanduser().resolve())] = {
+            'project_path': record['project_path'], 'project_uuid': record.get('project_uuid'),
+            'recovery_state': True, 'state': state['state'], 'reason': reason + '; ' + str(state['reason'])}
+
+    def recovery_records(self):
+        with self.lock:
+            return [dict(item) for item in self.recovery.values()]
+
+    def _admit_recovered_project(self, key):
+        """Opening a marked project needs proof that no database process remains."""
+        from disco.projects.runtime_state import RUNNING, project_runtime_state
+        state = project_runtime_state(key)
+        if state['state'] in RUNNING:
+            raise ValueError('This project needs recovery: a database process from an earlier session is still '
+                             'running (' + str(state['reason']) + '). Other projects remain available.')
+        del self.recovery[key]
         self._save()
 
     @staticmethod
@@ -446,12 +498,21 @@ class DesktopServices:
     def _unused_database(self, record):
         if record.get('data_deferred') is not True:
             return False
-        from disco.projects.project_shell import unused_session
-        return unused_session(self.user_state, record)
+        from disco.projects.project_shell import released_session, unused_session
+        if unused_session(self.user_state, record):
+            return True
+        if not released_session(self.user_state, record):
+            return False
+        # The shell confirmed no owned database remained; recheck it now.
+        from disco.projects.runtime_state import RUNNING, project_runtime_state
+        return project_runtime_state(record['project_path'])['state'] not in RUNNING
 
     def _save(self):
-        _atomic_json(self.path, {'version': 1, 'services': [item['record'] for item in self.children.values()],
-                                'database_operations': list(self.database_operations.values())})
+        value = {'version': 1, 'services': [item['record'] for item in self.children.values()],
+                 'database_operations': list(self.database_operations.values())}
+        if getattr(self, 'recovery', None):
+            value['recovery_required'] = list(self.recovery.values())
+        _atomic_json(self.path, value)
 
     @staticmethod
     def _rejected_legacy_preflight(record):
@@ -588,6 +649,8 @@ class DesktopServices:
                 raise ValueError('Desktop services are draining')
             key = str(directory)
             self.records()
+            if key in self.recovery:
+                self._admit_recovered_project(key)
             if key in self.children:
                 record = self.children[key]['record']
                 if self.call(record, 'health').get('ready'):
@@ -709,6 +772,27 @@ class DesktopServices:
                 with self.lock:
                     self.draining = False
             return False
+
+
+def release_failed_project_database(project):
+    """Confirm a failed data load left no owned database process running.
+
+    Data cleanliness is deliberately not required here: a copied unclean
+    project or a server that exited during startup has nothing left to stop,
+    and its own native gate keeps deciding whether that data may be opened.
+    """
+    from workspace_native_mysql import stop_native_database
+    from disco.projects.runtime_state import RUNNING, project_runtime_state
+    failure = None
+    try:
+        stop_native_database(project)
+    except (OSError, ValueError) as error:
+        failure = error  # Decided below by the remaining process evidence.
+    state = project_runtime_state(project)
+    if state['state'] in RUNNING:
+        raise ValueError('Database cleanup could not be confirmed (' + str(state['reason'])
+                         + '); its files were preserved for recovery') from failure
+    return state
 
 
 def desktop_open_project(project_dir, identity, retinanalysis_dir, *, timeout=300, managed=False):
@@ -874,13 +958,13 @@ def main(argv=None):
                 application = create_app(project, retinanalysis, desktop_session_lock=session_lock, on_created=capture)
                 from workspace_process_heap import install as install_project_heap
                 install_project_heap(application)
+                prewarm = application.extensions.get('prewarm_source_signatures')
+                if prewarm is not None:
+                    prewarm()  # Background, memory-only first-access hashing off db_lock.
                 return application
 
             def cleanup_failed_project():
-                from workspace_native_mysql import stop_native_database
-                stop_native_database(project)
-                if not DesktopServices._clean_database(identity):
-                    raise ValueError('Database cleanup could not be confirmed; its files were preserved for recovery')
+                release_failed_project_database(project)
 
             from disco.projects.project_shell import create_project_shell
             app = create_project_shell(project, retinanalysis, user_state=user_state,
@@ -892,6 +976,8 @@ def main(argv=None):
             session_lock = lock_path.open('a')
             fcntl.flock(session_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             _SERVICES = DesktopServices(user_state, resources, manifest_path, session_id, capability, identity)
+            from disco.projects.staging import sweep_in_background
+            sweep_in_background()  # Owned crashed transfer/verify/migration staging only.
             os.environ['RIEKE_DESKTOP_LAUNCHER_PORT'] = str(args.port)
             from workspace_launcher import create_launcher
             app = create_launcher(runtime_config['managed_root'], retinanalysis,

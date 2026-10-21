@@ -18,7 +18,9 @@ retain the 20,000-sample transport bound. No samples are omitted or resampled.
 The active viewer defaults to Whole epoch:
 `readWholeTrace.js` sequentially demand-reads exact chunks and publishes only the
 complete trace after count, identity, source hash, rate and unit checks. Complete
-arrays are never put in the shared cache. Cancellation and publication belong to
+arrays never enter the JSON response cache; canonical global streams over 20k
+samples use the separate bounded decoded-stream store described under "Trace
+cache identity" below. Cancellation and publication belong to
 the existing useResource lifetime and supplied request owner. Direct Sample chooses start 0/count 200;
 its subsequent start/count preference survives epoch and layout changes, clamping to shorter
 streams without replacing the preference. `traceViewPreference.jsx` validates the
@@ -63,7 +65,8 @@ remain visible/retryable.
 
 The shared resource/cache owner retains freshness, cancellation, eviction and
 bounded lifetime. The viewer never prefetches an entire recording; full-stream reads are demand
-loads only for the currently inspected epoch. Memory and paint work for Whole
+loads for the inspected epoch plus at most one background warm of the next epoch's
+first response stream (see "Trace cache identity"). Memory and paint work for Whole
 epoch grow with stream length; native large-recording performance is unqualified. Backend trace
 reads establish source ownership/provenance; geometry does not qualify bytes or
 calibration. No scientific mutation belongs here.
@@ -291,3 +294,31 @@ Generic Trace callers preserve their previous null-epoch behavior.
 `preparedEmptyShell.test.js` exercises actual Viewer/Trace composition, no empty
 reads, capability arrival, current first-focus width, stale replies, source changes,
 error/retry, cursor-capture release, interaction reset and preference preservation.
+
+
+## Trace cache identity
+
+Recorded samples are keyed by epoch, stream UUID, source SHA-256, sample rate,
+units, sample count, window and frozen read context, under a trace revision that
+callers advance only for structure/source-registration events. Inspector passes
+its `structureRevision`; curation and tag receipts never change trace identity,
+so they send no trace reads. Every warm or retained response is still compared
+with the selected descriptor (source hash, rate, units, count); a mismatch reads
+fresh and never crosses source revisions. Scoped, imported and prepared reads keep
+their supplied owners and never use the global stores.
+
+`requestWholeTrace` (api.js) owns canonical global whole-stream demand above 20k
+samples. A complete validated stream enters the decoded-stream store in
+`resourceCache.js` (`WHOLE_TRACE_LIMITS`: 6 streams, 24 MiB of binary64 samples,
+no stream over half the budget). Windows inside a retained stream (whole or
+<=20k snapshot) are exact `subarray`/`slice` views: nothing is resampled and every
+transport read keeps its <=100k window. `useWholeTraceWarm` warms only the next
+row's first response stream when 20k < count <= 1,000,000, in the background, after
+the prefetch delay and while no demand read runs; it aborts on change. Global
+`invalidate()` clears the store (source deletion, undo); a related epoch
+invalidation drops that epoch's streams; annotation receipts leave it untouched.
+`#15`: a manual response range is stored with the units and device it was chosen
+on and applies only to a stream with equal units and device; older unbound ranges
+are dropped. Evidence: `traces/traceCacheIdentity.test.js` (Inspector request
+ledger), `traces/wholeTraceCache.test.js`, `resourceCache.test.js`,
+`traces/traceDisplayLifecycle.test.js`, `traces/traceViewPreference.test.js`.

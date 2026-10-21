@@ -35,11 +35,25 @@ def prepare_pool_candidate(manager, protocol, actor):
     table = manager.suggestions.Table
     rows = (table & dict(project_uuid=manager.project, suggestion_uuid=suggestion_uuid)).to_dicts()
     created = not rows
+    delta_reads = manager._delta_reads()
+    previous_count = len(state['members'])
     if rows:
         summary = rows[0]['summary']
-        recipe = manager.history.get(summary['candidate_revision_uuid'])['recipe']
+        revision = summary['candidate_revision_uuid']
+        recipe = manager.history.header(revision) if delta_reads else manager.history.get(revision)['recipe']
+    elif delta_reads:
+        # The combined review is main plus a sealed delta of the pool: O(pool).
+        fields = dict(total_source=len(manager.service.rows), source_scope=state['scope'],
+            source_revisions=sorted(set(main['source_revisions'])
+                                    | {manager.service.rows[key]['source_sha256'] for key in pool}),
+            pending_union_provenance=dict(kind='pending_pool', content_sha256=content, origins=[]))
+        if state['annotation']:
+            fields['annotation_scope'] = state['annotation']
+        record = manager.history.create_delta(main['revision_uuid'], pool, [], actor, name='Accumulated incoming',
+                                              fields=fields, _in_transaction=True)
+        recipe = record['recipe']
     else:
-        union = {row['uuid']: row['metadata_hash'] for row in main['epochs']}
+        union = dict(state['members'].items())
         union.update(pool)
         preview = dict(predicate=main['predicate'], splits=main['splits'],
             membership=[dict(uuid=key, metadata_hash=union[key]) for key in sorted(union)], matched_count=len(union),
@@ -51,6 +65,7 @@ def prepare_pool_candidate(manager, protocol, actor):
         record = manager.history.create(preview, manager.service.sources, manager.service.project_dir / 'catalog.json',
             actor, name='Accumulated incoming', parent_revision_uuid=main['revision_uuid'], _in_transaction=True)
         recipe = record['recipe']
+    if not rows:
         timestamp = now()
         summary = dict(kind='workbench_pending_union', suggestion_uuid=suggestion_uuid, protocol_uuid=protocol,
             protocol_name=manager.service.protocols[protocol]['definition']['name'], created_at=timestamp,
@@ -59,27 +74,75 @@ def prepare_pool_candidate(manager, protocol, actor):
             source_sha256='', source_scope_revision=state['scope']['revision'],
             diff_counts=dict(added=len(pool), removed=0, changed=0),
             incoming_cell_uuids={key: manager.service.rows[key]['cell_uuid'] for key in pool},
-            previous_count=len(main['epochs']), next_count=len(union))
+            previous_count=previous_count, next_count=previous_count + len(pool))
         table.insert1(dict(project_uuid=manager.project, suggestion_uuid=suggestion_uuid, protocol_uuid=protocol,
             created_at=dt.datetime.fromisoformat(timestamp).astimezone(dt.timezone.utc).replace(tzinfo=None),
             summary=summary))
     revision = summary['candidate_revision_uuid']
     key = manager.key(protocol, revision, actor)
     carried = dict(initialized=False, carried_from=[], carried_decision_count=0)
-    if not (manager.tables[0] & key).to_dicts():
+    if (manager.tables[0] & key).to_dicts():
+        carried = _synchronize_reused_draft(manager, protocol, actor, key, pool)
+    else:
         previous = manager.cumulative_draft(protocol, actor)
         header, decisions = manager.review_decisions(protocol, actor)
         manager.tables[0].insert1(dict(**key, version=max(1, header.get('version', 1)), selection_mode='selected',
                                        deferred=bool(header.get('deferred'))))
-        count = 0
-        for identity, saved in decisions.items():
-            if pool.get(identity) == saved['metadata_hash']:
-                manager.tables[1].insert1(dict(**key, epoch_uuid=identity, metadata_hash=saved['metadata_hash'],
-                    **{field: bool(saved[field]) for field in ('selected', 'reviewed', 'excluded')}))
-                count += 1
+        rows = [dict(**key, epoch_uuid=identity, metadata_hash=saved['metadata_hash'],
+                     **{field: bool(saved[field]) for field in _DECISION_FIELDS})
+                for identity, saved in decisions.items() if pool.get(identity) == saved['metadata_hash']]
+        if rows:
+            manager.tables[1].insert(rows)  # One statement for the whole carry.
+        count = len(rows)
         carried = dict(initialized=True, carried_decision_count=count, carried_from=[] if not previous else
             [dict(candidate_revision_uuid=header['candidate_revision_uuid'], draft_version=header['version'])])
     return summary, recipe, created, carried, content
+
+
+_DECISION_FIELDS = ('selected', 'reviewed', 'excluded')
+
+
+def _synchronize_reused_draft(manager, protocol, actor, key, pool):
+    """Bring a reused candidate's existing draft up to the actor's latest review.
+
+    A pool can return to an earlier content (a recording excluded and included
+    again), reusing that content's immutable candidate and its older draft.
+    Decisions made since then live in the latest draft; carrying them exactly as
+    a fresh candidate would makes queue and merge-all read the same decisions.
+    Epochs the latest draft has no decision for return to the default. The
+    draft version moves to the latest version, so this preparation keeps its
+    queue fence; new or changed decisions never inherit an earlier 'all'.
+    """
+    latest = manager.cumulative_draft(protocol, actor)
+    unchanged = dict(initialized=False, carried_from=[], carried_decision_count=0)
+    if not latest or latest[0]['candidate_revision_uuid'] == key['candidate_revision_uuid']:
+        return unchanged
+    header, decisions = latest
+    own, own_decisions = manager.draft(key)
+    desired = {identity: saved for identity, saved in decisions.items() if pool.get(identity) == saved['metadata_hash']}
+    relevant = set(desired) | {identity for identity, saved in own_decisions.items()
+                               if pool.get(identity) == saved['metadata_hash']}
+    rows = []
+    for identity in sorted(relevant):
+        value = {field: bool(desired[identity][field]) if identity in desired else False for field in _DECISION_FIELDS}
+        old = own_decisions.get(identity)
+        if (old and old['metadata_hash'] == pool[identity]
+                and all(bool(old[field]) == value[field] for field in _DECISION_FIELDS)):
+            continue
+        rows.append((old is not None, dict(**key, epoch_uuid=identity, metadata_hash=pool[identity], **value)))
+    deferred = bool(header.get('deferred'))
+    if not rows and bool(own['deferred']) == deferred and own['version'] >= header['version']:
+        return unchanged
+    manager.tables[0].update1(dict(**key, version=max(own['version'], header['version']),
+                                   selection_mode='selected', deferred=deferred))
+    for exists, row in rows:
+        if exists:
+            manager.tables[1].update1(row)
+    inserted = [row for exists, row in rows if not exists]
+    if inserted:
+        manager.tables[1].insert(inserted)
+    return dict(initialized=False, synchronized=True, carried_decision_count=len(desired),
+                carried_from=[dict(candidate_revision_uuid=header['candidate_revision_uuid'], draft_version=header['version'])])
 
 
 def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_context):
@@ -160,23 +223,26 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
             with guarded(protocol) as owner:
                 existing = manager.receipt(operation, owner)
                 if existing:
-                    from disco.workbench.workbench import public_receipt
-                    return jsonify(public_receipt(existing))
+                    # Replay only an additive 'all' acceptance of this protocol,
+                    # never a prepare, undo or export receipt with the same UUID.
+                    if (existing.get('protocol_uuid') != protocol or 'kind' in existing or 'format' in existing
+                            or existing.get('mode') != 'all' or 'accepted_epoch_uuids' not in existing):
+                        raise WorkbenchConflict('Operation UUID already used by another request')
+                    return jsonify(manager.public_merge_receipt(existing))
                 queue_fence(protocol, owner, value['expected_queue_revision'])
                 with manager.service.dj.conn().transaction:
                     summary = prepare_pool_candidate(manager, protocol, owner)[0]
                 revision = summary['candidate_revision_uuid']
                 context = manager.context(protocol, revision, owner)
-                if context['selection_mode'] != 'all':
-                    context = manager.patch(protocol, revision, owner, dict(expected_version=context['draft_version'],
-                        expected_candidate_scope_revision=context['candidate_scope_revision'], selection_mode='all'))
+                # 'all' is resolved for this request only. A failed merge never
+                # persists 'all' consent or advances the scientist's draft.
                 preview = manager.preview(context, dict(expected_candidate_scope_revision=context['candidate_scope_revision'],
-                    expected_draft_version=context['draft_version'], mode='all'))[0]
+                    expected_draft_version=context['draft_version'], mode='all'), merge_all=True)[0]
                 receipt = manager.accept(protocol, revision, owner, dict(
                     expected_candidate_scope_revision=context['candidate_scope_revision'],
                     expected_draft_version=context['draft_version'], mode='all', operation_uuid=operation,
-                    **{key: preview[key] for key in ('preview_sha256', 'expected_binding_version', 'expected_query_revision')}))
-                from disco.workbench.workbench import public_receipt
-                return jsonify(public_receipt(receipt))
+                    **{key: preview[key] for key in ('preview_sha256', 'expected_binding_version', 'expected_query_revision')}),
+                    merge_all=True, context=context)
+                return jsonify(manager.public_merge_receipt(receipt))
 
     manager.cumulative_pending_browse = True

@@ -29,6 +29,11 @@ def suggestion_table(dj):
 
 
 class ProtocolSuggestions:
+    # Composition-owned check: reinterpretation_required(predicate, version).
+    # Saved selections whose stored predicate contract could change meaning are
+    # skipped with a visible reason, never re-run under the new meaning.
+    reinterpretation_required = None
+
     def __init__(self, service, history, *, table=None):
         self.service, self.history = service, history
         self.project_uuid = service.project['project_uuid']
@@ -102,6 +107,13 @@ class ProtocolSuggestions:
             identity = baseline['protocol_uuid']
             try:
                 recipe = baseline['recipe']
+                check = self.reinterpretation_required
+                if check is not None and check(recipe['predicate'], recipe.get('predicate_version', 1)):
+                    counts['skipped_count'] = counts.get('skipped_count', 0) + 1
+                    warnings.append({'stage': 'protocol_query', 'protocol_uuid': identity, 'skipped': True,
+                                     'code': 'predicate_contract_rerun_required',
+                                     'message': "Saved selection uses the old 'missing' meaning; re-run it."})
+                    continue
                 preview = self.service.explore_preview(recipe['predicate'], recipe['splits'])
                 previous = {row['uuid']: row['metadata_hash'] for row in recipe['epochs']}
                 proposed = {row['uuid']: row['metadata_hash'] for row in preview['membership']}

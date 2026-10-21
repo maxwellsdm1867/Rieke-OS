@@ -1,7 +1,7 @@
 {
   "format": "rieke-benchmark-registry",
   "version": 1,
-  "suite_version": "1.0.7",
+  "suite_version": "1.0.9",
   "fixture_version": "native-truth-v1+mounted-workflow-500-v1",
   "samples": 4,
   "method": {
@@ -331,6 +331,185 @@
       "fixture_version": "workflow-owned-v4",
       "default_protocol_epochs": 1000000,
       "ci_protocol_epochs": 20000
+    },
+    "workflow-app": {
+      "version": "1.0.0",
+      "runner": "tools/benchmark_workflow.py --suite app",
+      "epochs": 1000000,
+      "samples": 3,
+      "smoke_epochs": 2000,
+      "max_startup_seconds": 600,
+      "max_browser_seconds": 7200,
+      "max_rss_bytes": 6442450944,
+      "comparison": {
+        "relative": 0.25,
+        "absolute_ms": 5.0
+      },
+      "cases": [
+        {
+          "id": "curation.toggle",
+          "variants": [
+            "focused-1",
+            "focused-2",
+            "focused-3"
+          ],
+          "trace": false
+        },
+        {
+          "id": "epoch.step",
+          "variants": [
+            "after-curation",
+            "after-tag"
+          ],
+          "trace": false
+        },
+        {
+          "id": "tag.add",
+          "variants": [
+            "focused-epoch"
+          ],
+          "trace": false
+        },
+        {
+          "id": "view.tab_return",
+          "variants": [
+            "inspect-unchanged"
+          ],
+          "trace": false
+        },
+        {
+          "id": "focus.return",
+          "variants": [
+            "edit-tree-open-path"
+          ],
+          "trace": false
+        },
+        {
+          "id": "workbench.merge_all",
+          "variants": [
+            "overview-hold"
+          ],
+          "trace": false
+        },
+        {
+          "id": "workbench.undo",
+          "variants": [
+            "toast"
+          ],
+          "trace": false
+        }
+      ],
+      "scope": "Real product bootstrap (src/main.jsx) and App change wiring in an owned production browser over the owned million-epoch workflow fixture; launcher inventory is an owned double. Click-to-correct elapsed time plus in-action and fixed-window trailing request counts and bytes. No measured action reads a waveform. Same SQL/index/source-verification doubles as workflow-million; not native, compositor or release qualification. Diagnostic: not part of the required CI families.",
+      "fixture_version": "workflow-owned-v4+app-v1",
+      "default_protocol_epochs": 1000000,
+      "ci_protocol_epochs": 20000
+    },
+    "route-million": {
+      "version": "1.12.0",
+      "runner": "tools/benchmark_routes.py",
+      "fixture_version": "route-owned-v8-prepared-publication",
+      "samples": 3,
+      "max_worker_seconds": 3600,
+      "max_rss_bytes": 6442450944,
+      "profiles": {
+        "1m-protocol-1m": {
+          "epochs": 1000000,
+          "protocol_epochs": 1000000,
+          "grouped": true
+        },
+        "1m-protocol-20k": {
+          "epochs": 1000000,
+          "protocol_epochs": 20000
+        },
+        "100k-protocol-100k": {
+          "epochs": 100000,
+          "protocol_epochs": 100000
+        },
+        "smoke": {
+          "epochs": 2000,
+          "protocol_epochs": 2000
+        },
+        "smoke-grouped": {
+          "epochs": 2000,
+          "protocol_epochs": 2000,
+          "grouped": true
+        },
+        "10k-protocol-10k": {
+          "epochs": 10000,
+          "protocol_epochs": 10000
+        },
+        "200k-protocol-200k": {
+          "epochs": 200000,
+          "protocol_epochs": 200000
+        },
+        "200k-protocol-10k": {
+          "epochs": 200000,
+          "protocol_epochs": 10000
+        }
+      },
+      "default_profiles": [
+        "1m-protocol-1m",
+        "1m-protocol-20k",
+        "100k-protocol-100k"
+      ],
+      "case_groups": {
+        "explore": [
+          "explore.",
+          "search."
+        ],
+        "workbench": [
+          "workbench."
+        ],
+        "reads_decisions": [
+          "epoch.",
+          "protocol.",
+          "overview",
+          "tree.",
+          "curation.",
+          "approve.",
+          "tag."
+        ]
+      },
+      "scaling_profiles": [
+        "10k-protocol-10k",
+        "200k-protocol-200k",
+        "200k-protocol-10k"
+      ],
+      "scaling": {
+        "linear_allowed": [
+          "explore.",
+          "search."
+        ],
+        "flat_floor_ms": 5.0,
+        "meaning": "Verdicts use load-independent counts and response bytes from the counting pass: exponent of large/small growth <0.25 flat, <0.75 sublinear, <1.3 linear, otherwise superlinear (quantities at or under count_floor, or bytes under 4 KiB, are flat). Everyday clicks are expected flat, also against project size alone; explore/search may be linear. Timing ratios are shown alongside and are diagnostic when the peak load average exceeds timing_load_limit. explore.page.* / explore.page_next.* measure POST /api/explore/page, the metadata-qualification API (tools/metadata_qualification), not the UI result path; they are whole-project search (linear allowed). The UI result path is explore.run.* + explore.results_first/next.* (POST /api/explore/epochs with cells_limit).",
+        "count_floor": 20,
+        "timing_load_limit": 10.0,
+        "flat_prefixes": [
+          "explore.run.",
+          "explore.results_first.",
+          "explore.results_next."
+        ],
+        "informational_prefixes": [
+          "explore.result_summary.",
+          "explore.summaries_poll"
+        ],
+        "vm_step_floor": 20000,
+        "flat_cases": [
+          "search.uuid_prefix"
+        ]
+      },
+      "comparison": {
+        "relative": 0.25,
+        "absolute_ms": 5.0,
+        "meaning": "Provisional per-case review trigger on warm medians and cold samples. Count increases are listed for review. Never average a regression away."
+      },
+      "expected_by_contract": [
+        "ne_cell_type",
+        "exists_cell_type",
+        "missing_cell_type",
+        "missing_recorded"
+      ],
+      "scope": "Production Flask routes, WorkspaceService, ProtocolStateReader, TreePages, CurationStore, SharedAnnotations, Workbench and a real sealed DiskMetadataIndex with its production typed sidecar (typed_lifecycle.prepare) over owned SQL doubles and an in-process client. The exact WorkspaceService class with a production-style frozen publication (publish_frozen when the source has it). Generation authority leaf SQL, its annotation change feed and schema attestation are counted doubles advanced by double writes exactly as the native triggers do; the SQL double journals transactions instead of copying every table. One cold and three warm samples per case plus one separate cProfile counting pass. No H5, traces, HTTP transport, renderer, native MySQL or release qualification."
     }
   }
 }

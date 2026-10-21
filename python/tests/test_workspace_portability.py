@@ -27,6 +27,10 @@ class PackageValidationTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name).resolve()
+        # Staging ownership records stay in this disposable profile.
+        isolated = patch.dict(os.environ, {'RIEKE_PROJECT_INDEX': str(self.root / 'profile/project-index.json')})
+        isolated.start()
+        self.addCleanup(isolated.stop)
         self.package = self.root / 'package'
         self.package.mkdir()
         self.identity = str(uuid.uuid4())
@@ -471,6 +475,13 @@ class NativeTransferCommandTests(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get('RIEKE_TEST_NATIVE_TRANSFER') == '1', 'opt-in disposable native MySQL integration')
 class NativeRoundTripTests(unittest.TestCase):
+    def setUp(self):
+        profile = tempfile.TemporaryDirectory()
+        self.addCleanup(profile.cleanup)
+        isolated = patch.dict(os.environ, {'RIEKE_PROJECT_INDEX': str(Path(profile.name) / 'project-index.json')})
+        isolated.start()
+        self.addCleanup(isolated.stop)
+
     def install_derived_authorities(self, root, identity):
         import datajoint as dj
         from workspace_native_mysql import connection_parameters
@@ -501,8 +512,12 @@ class NativeRoundTripTests(unittest.TestCase):
 import sys
 from workspace_api import create_app
 app = create_app(sys.argv[1], sys.argv[2])
+sys.excepthook = sys.__excepthook__  # Keep a failed child assertion visible after DataJoint import.
+authority = app.extensions['workspace_service']._explore_state_generation
+schema_before = authority._ddl()
 response = app.test_client().get('/api/overview')
 assert response.status_code == 200, response.get_json()
+assert authority._ddl() == schema_before, 'First overview must not install late recovery triggers'
 assert not app.extensions['workspace_service'].rows
 """
         with tempfile.TemporaryDirectory(prefix='rieke-empty-transfer-test-') as temporary:

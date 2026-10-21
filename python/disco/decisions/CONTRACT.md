@@ -20,6 +20,14 @@ must not rerun a changed query. Admission limits are not streaming guarantees.
 `disco.decisions.curation` owns versioned project curation and frozen reference records.
 A metadata fingerprint change makes old approval unreviewed; revision conflicts
 must expose current state. Acquisition data and raw recordings are immutable.
+`CurationStore.update` writes only epochs whose persisted decision changes, in
+batched multi-row statements inside its locked transaction; a no-op epoch keeps its
+revision but its expected revision is still checked. `POST /api/protocols/<id>/curation`
+returns a receipt read after commit under the same lock: `curation` (per-epoch state),
+`query_revision` and `expected_binding_version` (current tokens), and
+`curation_revisions` (new revision for each changed epoch only). The next write may
+present these tokens without re-reading; every check stays server-side and stale
+tokens get 409. Neither curation POST nor selection-mask import caps the epoch count.
 
 `disco.decisions.external_tags.ExternalTags.receive` owns immutable message identity
 and receipt replay. An identical message returns its existing receipt without
@@ -57,6 +65,15 @@ preserving all author chips and revision maps. The nonindexed `summary` fallback
 likewise queries only its supplied epochs/cells, including zero reads for an empty
 scope. Generation-fenced indexed summary behavior is unchanged. These are read
 projection changes, not new annotation authority or mutation batching rules.
+
+`summary(rows, scope_token=...)` accepts an optional caller-proven identity of
+`rows` (the overview passes the immutable publication serial). With the indexed
+reader, an equal token reuses the materialized summary scope and its incremental
+tag deltas without re-reading or re-validating every row; any other token, a
+rebuilt index or the nonindexed fallback reads `rows` as before. `tagged_targets()`
+returns the cell and epoch targets currently carrying a shared tag from the same
+generation-fenced index (None without it); the overview derives per-protocol
+shared-tag counts from it without re-scoping the summary per protocol.
 
 `CurationStore.export_link_counts(epoch_ids)` returns a fresh UUID-to-integer map
 for the caller's requested page UUIDs, including zero for unexported epochs.

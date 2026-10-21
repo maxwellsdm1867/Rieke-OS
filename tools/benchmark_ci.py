@@ -91,7 +91,8 @@ def prepare_sources(plan, worktrees, output, python, *, browser):
             if browser:
                 for package in ('workspace-app', 'desktop'):
                     if run_command([python, '-B', ROOT / 'tools/benchmark_workflow.py', 'dependencies-match',
-                                    path / package / 'package-lock.json', ROOT / package / 'package-lock.json'],
+                                    path / package / 'package-lock.json', ROOT / package / 'package-lock.json'] +
+                                   (['--browser-only'] if package == 'desktop' else []),
                                    output, role + '-' + package + '-dependencies'):
                         raise ValueError('Incomparable browser dependencies: ' + role)
                     (path / package / 'node_modules').symlink_to(ROOT / package / 'node_modules', target_is_directory=True)

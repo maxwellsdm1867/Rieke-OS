@@ -8,12 +8,14 @@ test('Workbench never requests a hidden main summary and Overview demands curren
  try{
   h.fixture.respond=(url,options,fallback)=>url.pathname==='/api/protocols/protocol-A/workbench'?{contract_version:1,protocol_uuid:'protocol-A',queue_revision:'queue',candidates:[],next_cursor:null,capabilities:{}}:fallback();
   await h.mount(h.Protocol,base);await h.settle(30);
-  const summaryCount=()=>h.fixture.requests.filter(record=>record.path==='/protocols/protocol-A/overview').length;
+  const summaryCount=()=>h.fixture.requests.filter(record=>record.path.split('?')[0]==='/protocols/protocol-A/overview').length;
   assert.equal(summaryCount(),0);
   for(let revision=1;revision<=5;revision++){await h.render(h.Protocol,{...base,revision});await h.settle(10);}
   assert.equal(summaryCount(),0,'five annotation revisions trigger no hidden main-summary reads');
   await h.act(()=>h.root.findByProps({'aria-label':'Overview'}).props.onClick());
   await h.waitFor(()=>summaryCount()===1);
+  const overview=h.fixture.requests.find(record=>record.path.split('?')[0]==='/protocols/protocol-A/overview');
+  assert.equal(new URL(overview.path,'http://disco.test').searchParams.get('cells_limit'),'200');
   await h.act(()=>h.root.findByProps({'aria-label':'Workbench'}).props.onClick());
   await h.render(h.Protocol,{...base,revision:6,structureRevision:1});
   await h.settle(20);assert.equal(summaryCount(),1,'structural refresh leaves invisible main summary idle');

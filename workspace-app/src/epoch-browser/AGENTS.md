@@ -41,11 +41,27 @@ view. Public entries and styles:
 - `inspectionNavigation.js`
 - `inspectionScope.js`
 - `inspectorInteraction.js`
+- `queryCounts.js`
 - `useEpochBrowserPage.js`
+- `useQueryCounts.js`
 
 ## Contract and authority
 
 Keep UUIDs, source-specific query revisions, predicate values, frozen candidate identity and branch scope exact. Invalid frozen context must refuse rather than fall back globally. Curation submission checks current selection and receipt authority; browsing or restored focus never grants consent. Page requests remain bounded and preserve anchor versus offset behavior. Preserve loading/error states, abort cleanup and stale-result fences.
+
+Pending counts and the bounded cell list (requires backend #118/#119): a
+multi-field query run or page may answer with null totals, `cells_pending: true`
+and `counts: {status: "pending", request_id}`. `queryCounts.js` reads that job and
+fills only the null totals from its exact ready result; nothing invents a count.
+`useQueryCounts.js` polls the one job through the summary poll route and cancels
+it when the query changes (hiding a view does not cancel). While pending,
+MatchingEpochs shows the first page's rows and "counting…" in place of totals and
+the cell list; navigation follows `has_more`. When ready, the first page is read
+again with exact totals and cells. Predicate pages request the cell list in
+windows of 200 (`cells_limit`), show `cells_total`, and load the next window
+(`cells_after: cells_next`) when its marker scrolls into view. Single-field
+queries keep instant totals and start no counts job. Ledger tests:
+`pendingQueryCounts.test.js`, `queryCounts.test.js`.
 
 Tree selection and tree-ancestor cache owners remain separate; trace samples and shared epoch cache lifetime remain with traces/shared resources. Metadata display does not attest provenance or terminal scientific membership.
 
@@ -225,3 +241,33 @@ guarded curation. It does not preload samples or borrow the empty canvas width:
 the existing trace owner measures the focused committed canvas before every read.
 Clearing focus retires reads and resets shell interactions; scientific context,
 curation scope, legacy views and SelectionOverview precedence remain unchanged.
+
+## Curation receipts (applied in place)
+
+`curationReceipts.js` holds this renderer's own confirmed main-protocol curation
+receipts (`POST /protocols/<id>/curation` with `query_revision`, PR #91). The
+Inspector overlays the post-write curation on rows and the focused epoch, sends
+the latest chained `query_revision` on the next write, and emits
+`{kind:'curation',protocolId,receipt:true}`, which re-keys no page or tree.
+Filters that depend on curation or tags (`annotationFilterNeedsRefresh`) keep the
+reload path, as do legacy replies without a receipt and frozen/candidate views.
+Main page revisions compare through the chain in `epochPageRevision`; a page
+carrying any token outside the chain retires it, so a view made stale by another
+actor still fails with the server's 409. Evidence: `curationReceipts.test.js`
+and the curation cases in `workspaceChangesLedger.test.js`.
+
+## Paged protocol cell lists (0.1.21)
+
+Ordinary protocol Inspector reads request `cells_limit=200`. The shared
+`useCellWindows` owner appends `cells_after` windows only while query revision,
+binding version, project/actor and local navigation scope agree. Each later
+window must advance its cursor with the same total; changed receipts or malformed
+windows fail visibly. A/B/A returns, Activity hide and unmount retire in-flight
+windows. Synchronous duplicate demand is coalesced. Incoming frozen/custom
+owners retain their existing full-list contract; #121 does not implement paging
+on those routes. Range selection spans loaded cells, as in predicate inspection.
+
+`CellsWindow` loads once per observed entry into view, avoiding a repeated
+autoload loop when type/date groups are collapsed; its button supports explicit
+load/retry. Tests: `useCellWindows.test.js`, `cellWindows.test.js`,
+`../inspectorNavigationLifecycle.test.js`, `../pagedOverviewLists.test.js`.

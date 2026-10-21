@@ -25,6 +25,10 @@ revision and generation stay distinct. Default 64 entries, 12 MiB estimated
 UTF-16 payload and 30-second TTL are limits, not measured heap. Only a valid
 metadata/initial-trace pair skips delay; trace failure can leave usable metadata.
 Candidate scope never falls back to global reads. Invalidation prevents late puts;
+annotation receipts evict and fence only epoch-detail metadata, never trace
+samples, decoded streams or in-flight trace prefetch. A separate decoded-stream
+store (6 streams, 24 MiB) holds complete canonical streams over 20k samples; see
+[trace cache identity](traces/AGENTS.md#trace-cache-identity);
 neighbor prefetch is serial and at most two distinct metadata reads, without traces.
 Trace geometry remains its own dependency.
 
@@ -43,8 +47,19 @@ close admission. They use the same exports as callers; no wrapper is needed.
 
 ## Display invalidation: keep the independent hook
 
-[useWorkspaceChanges.js](useWorkspaceChanges.js) exports `useWorkspaceChanges`
-and `useSummaryRevision`. Annotation/curation increments display revision only;
+[useWorkspaceChanges.js](useWorkspaceChanges.js) exports `useWorkspaceChanges`,
+`useSummaryRevision` and the pure `applyWorkspaceChange` reducer (for harnesses).
+Typed events are additive: `{kind:'membership',protocolId}` (merge-all, undo,
+finish, accept, apply) and `{kind:'curation',protocolId}` advance only that
+protocol's clock (`protocolRevision`, `protocolReviewRevision`; membership also
+`protocolMembershipRevision` and `membershipRevision`) plus `dataRevision` for
+project summaries; `{kind:'structure'}` advances every clock. /projects, /jobs,
+/metadata/status and suggestions follow structure only; the Workbench summary
+follows structure plus membership; the overview cache invalidates one protocol's
+summaries (mounted ones re-read). A curation receipt applied in place
+(`receipt:true`, see [curation receipts](epoch-browser/AGENTS.md#curation-receipts-applied-in-place))
+advances only that protocol's summary counter. Untyped events keep the original behavior:
+annotation/curation without a protocol increments display revision only;
 other events increment structure too. Only version-1 confirmed annotation deltas
 propagate. Hidden summaries defer display revision until visible, while structure
 changes refresh immediately. These are local integer clocks, never receipts or

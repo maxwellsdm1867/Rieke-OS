@@ -6,6 +6,11 @@ metadata's disposable assets. Its schema/trigger/connection incarnation proof,
 response_contract scope and assert_current_locked transaction checks remain exact.
 Read witnesses cannot cross threads, sockets, connections or autocommit response
 lifetimes; failed authority checks break continuity even if counters later match.
+Read paths reuse the last complete attestation only while (connection epoch, global
+DDL command counters, InnoDB table ids) are unchanged; any change, reconnect or
+failure runs the complete attestation again, and transaction/mutation checks always
+run it. Every GET/HEAD response holds one lazily opened response contract (through
+the workspace lock); responses that read no native token never attest.
 Keeping the named file avoids a misleading metadata-only authority or a one-file
 folder. The existing [state generation tests](../../tests/test_workspace_state_generation.py)
 remain central/native and are not executed by the metadata standard-library lane.
@@ -15,6 +20,15 @@ Its proof spans exact WorkspaceService, CurationStore, SharedAnnotations and nat
 binding-reader identities; unsupported/custom policies fall back to the full-state
 oracle. It preserves exact metadata types/order, membership, binding and generation,
 response-end attestation and locked mutation assertions. It owns no transaction.
+When WorkspaceService publishes deep-frozen read-model maps, a cached proof is keyed
+by the monotonic publication serial, binding header, source scope and index
+generation and retains only a digest and member set (no rows); unfrozen maps keep
+the exact content comparison. `DISCO_PROTOCOL_STATE_VERIFY=1` re-derives the digest
+on every key hit as a debug assertion. A bound main on a frozen publication uses
+`protocol-state-v5`: its revision hashes the binding revision/version, the frozen
+recipe's content seal, the process-unique publication token, the source scope
+revision and the curation generation (shared tags excluded, as in v4), with no
+per-member metadata digest. Unbound or unfrozen protocols keep v4.
 Moving it into metadata or decisions without that distinction would hide its
 cross-owner proof rather than simplify callers. The finite-path proposal for
 `disco/decisions/protocol_state.py` is explicitly replaced by this KEEP decision.
@@ -60,6 +74,11 @@ an exact bounded window in recorded order. It performs no resampling, decimation
 unit conversion or synthetic fallback. Start/count validation, legitimate empty
 end-of-stream slices and context-managed H5 closure remain unchanged. There is no
 per-read cancellation token; hash validation can precede a small read.
+The first-access whole-file SHA-256 runs off the workspace lock: the desktop project
+open starts a background `preverify_sources` pass and the trace route preverifies its
+epoch's source before taking the lock. A preverified result is accepted only when a
+fresh stat under the lock equals the signature observed before and after hashing;
+it lives in process memory only, so every restart verifies again.
 
 These composition/source-verification paths are stable and cross-owned. Extracting
 one trace function would not remove its provenance obligations and would cross the

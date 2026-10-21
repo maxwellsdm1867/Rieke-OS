@@ -59,3 +59,23 @@ test('old frozen contexts retain fresh per-page reads without batching',async()=
  const pages=await loadColumnTreePages({scope:old,path:[key],load:async(path,{body})=>{calls.push(body);return body.path.length?target:parent;}});
  assert.equal(pages.length,2);assert.equal(calls.length,2);assert.ok(calls.every(body=>!('include_ancestors' in body)));
 });
+test('incoming expand under displayed parents with the pinned fence reads only its target',async()=>{
+ const shown={...fence,generation:{...fence.generation},kind:'branches',path:[],offset:0};
+ const fresh={...fence,generation:{...fence.generation},kind:'epochs',path:[key],offset:0,ancestors:[{parent_offset:0}]};
+ const calls=[];
+ const pages=await loadColumnTreePages({scope,path:[key],revisionOverride:revision,retainedPages:[shown],columnPositions:[{offset:0}],load:async(path,{body})=>{calls.push(body);return structuredClone(fresh);}});
+ assert.equal(calls.length,1);assert.equal('include_ancestors' in calls[0],false,'no ancestor batch when retained parents match');
+ assert.deepEqual(pages,[shown,fresh]);
+});
+for(const [name,change] of Object.entries({generation:p=>p.generation.metadata='newer',binding:p=>p.expected_binding_version=2,query:p=>p.query_revision='other'}))test(`incoming expand re-reads ancestors in one batch when the target ${name} differs from displayed parents`,async()=>{
+ const shown={...fence,generation:{...fence.generation},kind:'branches',path:[],offset:0};
+ const fresh={...fence,generation:{...fence.generation},kind:'epochs',path:[key],offset:0,ancestors:[{parent_offset:0}]};change(fresh);
+ if(name==='query')fresh.candidate_scope_revision=token;
+ const calls=[];
+ const load=async(path,{body})=>{calls.push(body);const value=structuredClone(fresh);if(body.include_ancestors)value.ancestor_pages=[{...structuredClone(shown),generation:value.generation,expected_binding_version:value.expected_binding_version,query_revision:value.query_revision}];return value;};
+ const result=loadColumnTreePages({scope,path:[key],revisionOverride:revision,retainedPages:[shown],columnPositions:[{offset:0}],load});
+ if(name==='query'){await assert.rejects(result);assert.equal(calls.length,2);assert.equal(calls[1].include_ancestors,true);return;}
+ const pages=await result;
+ assert.equal(calls.length,2);assert.equal(calls[1].include_ancestors,true,'one bounded fresh batch');
+ assert.equal(pages[0].generation.metadata,fresh.generation.metadata);
+});

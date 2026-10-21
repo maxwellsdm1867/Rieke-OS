@@ -91,8 +91,14 @@ def query_run_table(dj):
 
 
 class SearchPresets:
-    def __init__(self, store, tables=None, runs=None):
+    # Predicate contract recorded with each run (disco.navigation.predicates.PREDICATE_VERSION).
+    PREDICATE_VERSION = 2
+
+    def __init__(self, store, tables=None, runs=None, *, superseded=None):
         self.store = store
+        # superseded(predicate, recorded_version) -> bool: whether a run recorded
+        # under an older predicate contract could differ now (composition-owned).
+        self.superseded = superseded
         self.Table, self.Version = preset_tables(store.dj) if tables is None else tables
         self.Runs = query_run_table(store.dj) if runs is None else runs
 
@@ -136,16 +142,26 @@ class SearchPresets:
         keys = [{'query_sha256': query_key(row['predicate'])} for row in rows]
         runs = (self.Runs & {'project_uuid': self.store.project_uuid} & keys).to_dicts()
         by_key = {row['query_sha256']: row['result'] for row in runs}
-        return [{**row, 'last_run': copy.deepcopy(by_key.get(query_key(row['predicate'])))} for row in rows]
+        result = []
+        for row in rows:
+            last = copy.deepcopy(by_key.get(query_key(row['predicate'])))
+            # A run recorded under an older predicate contract whose meaning can
+            # differ now is never shown as this preset's current result: re-run it.
+            superseded = (last is not None and self.superseded is not None and
+                          self.superseded(row['predicate'], last.get('predicate_version', 1)))
+            result.append({**row, 'last_run': None if superseded else last,
+                           **({'last_run_superseded': True} if superseded else {})})
+        return result
 
     def record_run(self, preview, rows, actor):
         key = query_key(preview['predicate'])
         result = dict(ran_at=dt.datetime.now(dt.timezone.utc).isoformat(),
                       predicate=copy.deepcopy(preview['predicate']), splits=preview.get('splits',''),
                       source_revisions=sorted(preview.get('source_revisions',preview['source_scope'].get('active_source_revisions',[]))),
-                      predicate_version=1, metadata_fingerprint_version=preview.get('metadata_fingerprint_version',2),
+                      predicate_version=self.PREDICATE_VERSION, metadata_fingerprint_version=preview.get('metadata_fingerprint_version',2),
                       epoch_count=preview['matched_count'],
-                      cell_count=len({rows[item['uuid']]['cell_uuid'] for item in preview['membership']}),
+                      cell_count=(preview['cell_count'] if 'membership' not in preview else
+                                  len({rows[item['uuid']]['cell_uuid'] for item in preview['membership']})),
                       tree_revision=preview['tree_revision'],
                       source_revision=preview['source_scope']['revision'], actor=actor)
         scope = dict(project_uuid=self.store.project_uuid, query_sha256=key)

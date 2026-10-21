@@ -13,9 +13,10 @@ import SelectionMaskDialog from '../../exports/ui/SelectionMaskDialog.jsx';
 import {NavigationLoadingProvider} from '../../components/NavigationLoading.jsx';
 import {advanceEpochIntent, epochIntentAt, epochAtIntent} from '../epochNavigationIntent.js';
 import {SourceEligibilityNotice} from '../../components/Common.jsx';
-import {useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore} from 'react';
+import {curationReceipts} from '../curationReceipts.js';
 import {GitBranch, Check, X, Eye, Upload, Download, FileJson} from 'lucide-react';
-import {api as defaultApi, useResource, useEpochResource, useEpochPrefetch, number, humanize, resolveCurationTargets} from '../../api.js';
+import {api as defaultApi, useResource, useEpochResource, useEpochPrefetch, useWholeTraceWarm, number, humanize, resolveCurationTargets} from '../../api.js';
 import {epochPrefetchPaths,wholeTracePrefetchPath} from '../../resourceCache.js';
 import {useEpochInspection} from '../useEpochInspection.js';
 import {Badge} from '../../components/Common.jsx';
@@ -33,10 +34,12 @@ import './Inspector.css';
 import {frozenReadPath,frozenReadQuery,frozenPresentationScope,frozenTreePresentationScope} from '../frozenReadContext.js';
 export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=Trace.supportsFrozenReadContext===true;
 
+import {CELL_WINDOW} from '../cellWindows.js';
+import {useCellWindows} from '../useCellWindows.js';
 import {inspectionSearches} from '../inspectionScope.js';
 import {saveCurationSelection} from '../curationSelection.js';
 import {useAnnotationReceipts} from '../../annotations/useAnnotationReceipts.js';
-import {stableTagAuthority} from '../../annotations/annotationReceipts.js';
+import {stableTagAuthority,annotationFilterNeedsRefresh} from '../../annotations/annotationReceipts.js';
 import {datedCellLabel} from '../../recording-import/recordingIdentity.js';
 import {restoredEpochFocus} from '../../workspace-navigation/workspaceNavigation.js';
 import Trace from '../../traces/ui/TraceViewer.jsx';
@@ -46,6 +49,9 @@ export {Trace};
 function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters:baseFilters,revision,structureRevision=revision,metadataPresentationRevision=structureRevision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,onReviewDetails,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null,readContext:incomingReadContext=null,onSelectionChange,onReviewDecision,draftSelection=null,draftSelectionTarget=null,readPaused:ownerReadPaused=false,browseRequest=0,initialPageRead=null,traceReadContext:contextTraceReadContext=undefined}) {
   const api=useWorkspaceRequest(defaultApi),requestScope=useWorkspaceRequestScope(),pageSize=requestScope?.pageSize??60;
   const inheritedTreeReadOwner=useTreeBranchReads(),treeReadOwner=requestScope?null:inheritedTreeReadOwner;
+  // Page/tree read keys follow the owner's presentation identity: focus and
+  // visibility revoke leases (checked live via active()) without re-reading.
+  const treeOwnerIdentity=treeReadOwner?(treeReadOwner.presentationIdentity??treeReadOwner.identity):undefined;
   const id=protocol.definition.protocol_uuid,annotationOrigin=useId();
   const selectedViewState=useSelectedEpochView({projectId,protocolId:id,context:incomingReadContext,filters:baseFilters,
     selected:draftSelection?.selected,paused:ownerReadPaused,disabled:!!draftSelection?.disabled,request:api});
@@ -122,24 +128,33 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   }
 
   useLayoutEffect(()=>{setTreeSelectionIntent(old=>old&&old.scope!==treeIntentScope?null:old);},[treeIntentScope]);
-  const cellScopeKey=JSON.stringify([projectId,treeReadOwner?.identity,readRoot,id,protocolSearch]),confirmedCells=useRef(null);
+  const cellScopeKey=JSON.stringify([projectId,treeOwnerIdentity,readRoot,id,protocolSearch]),confirmedCells=useRef(null);
   const navigationReadKey=JSON.stringify([cellScopeKey,focusCell,pageRevision,annotationState.kept?pageRevision:revision,structureRevision,protocol.query_revision,protocol.expected_binding_version]);
   // The all-cell list is identical for every offset/anchor page of one exact
   // scope and revision. Request it with the first page only; later page turns
   // reuse the confirmed list (same navigationReadKey) without a full-cell payload.
   const [cellRefresh,setCellRefresh]=useState(0);
   const includeCells=useMemo(()=>!focusCell&&confirmedCells.current?.key!==navigationReadKey,[focusCell,navigationReadKey,offset,pendingNavigation?.anchorUuid,cellRefresh]);
-  const rowsPath=`${readRoot}/epochs?${search}&${pendingNavigation?.anchorUuid?`anchor_uuid=${encodeURIComponent(pendingNavigation.anchorUuid)}`:`offset=${offset}`}&limit=${pageSize}${includeCells?'&include_cells=true':''}`;
+  const pagedCells=!readContext&&!requestScope,cellWindowQuery=pagedCells?`&cells_limit=${CELL_WINDOW}`:'';
+  const rowsPath=`${readRoot}/epochs?${search}&${pendingNavigation?.anchorUuid?`anchor_uuid=${encodeURIComponent(pendingNavigation.anchorUuid)}`:`offset=${offset}`}&limit=${pageSize}${includeCells?`&include_cells=true${cellWindowQuery}`:''}`;
   // A new owner or descriptor must obtain its own receipt, including at the
   // same URL. Keep the annotation idle delay except for explicit navigation.
-  const pageReadRevision=JSON.stringify([pageRevision,projectId,treeReadOwner?.identity,protocol.query_revision,protocol.expected_binding_version]);
-  const loadedRows=useResource(rowsPath,pageReadRevision,0,{paused:readPaused||annotationState.dirty&&!pendingNavigation,initialRead:initialPageRead});
+  const pageReadRevision=JSON.stringify([pageRevision,projectId,treeOwnerIdentity,protocol.query_revision,protocol.expected_binding_version]);
+  // A resolved off-page anchor already holds its whole page: offer it once to
+  // the identical offset read that follows, instead of reading it twice.
+  const anchorHandoff=useRef(null);
+  const loadedRows=useResource(rowsPath,pageReadRevision,0,{paused:readPaused||annotationState.dirty&&!pendingNavigation,initialRead:anchorHandoff.current??initialPageRead});
   const rows=resourceForPath(loadedRows,rowsPath);
   // The compact page receipt owns current curation authority and exact filtered
   // cell counts. A focused navigation page needs a separate all-cell receipt.
-  const cellRows=useResource(focusCell?`${readRoot}/epochs?${protocolSearch}&offset=0&limit=1&include_cells=true`:null,pageReadRevision,0,{paused:readPaused||annotationState.dirty&&!pendingNavigation});
+  const cellRows=useResource(focusCell?`${readRoot}/epochs?${protocolSearch}&offset=0&limit=1&include_cells=true${cellWindowQuery}`:null,pageReadRevision,0,{paused:readPaused||annotationState.dirty&&!pendingNavigation});
   const cellPage=focusCell?cellRows:rows;
   const queryRevision=rows.data?.query_revision,bindingVersion=rows.data?.expected_binding_version;
+  // Own curation receipts overlay rows in place; a page outside the receipt
+  // chain (another actor or a reload after other changes) retires the chain.
+  const curationVersion=useSyncExternalStore(curationReceipts.subscribe,curationReceipts.version,curationReceipts.version);
+  useEffect(()=>{if(!readContext&&typeof queryRevision==='string')curationReceipts.observe(id,queryRevision);},[readContext,id,queryRevision]);
+  const applyEpoch=useCallback(epoch=>{const tagged=annotationState.apply(epoch);return readContext?tagged:curationReceipts.apply(id,tagged);},[annotationState.apply,readContext,id,curationVersion]);
   const pageReady=!readPaused&&!annotationState.dirty&&!rows.loading&&!rows.error&&typeof queryRevision==='string'&&!!queryRevision&&Number.isSafeInteger(bindingVersion)&&bindingVersion>=0;
   const pageCellsReady=pageReady&&!cellPage.loading&&!cellPage.error&&cellPage.data?.query_revision===queryRevision&&cellPage.data?.expected_binding_version===bindingVersion;
   // A page without cells may reuse only a list confirmed at this exact key AND
@@ -149,13 +164,21 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   useLayoutEffect(()=>{if(reusedCellsStale){confirmedCells.current=null;setCellRefresh(value=>value+1);}},[reusedCellsStale]);
   const committedNavigationReadKey=useRef(null);
   useLayoutEffect(()=>{committedNavigationReadKey.current=navigationReadKey;},[navigationReadKey]);
+  const windowQueryRevision=queryRevision??(confirmedCells.current?.key===navigationReadKey?confirmedCells.current.queryRevision:null);
+  const windowBindingVersion=bindingVersion??(confirmedCells.current?.key===navigationReadKey?confirmedCells.current.bindingVersion:null);
+  const cellList=useCellWindows(JSON.stringify([navigationReadKey,windowQueryRevision,windowBindingVersion]),async (after,{signal})=>{
+    const data=await api(`${readRoot}/epochs?${protocolSearch}&offset=0&limit=1&include_cells=true&cells_limit=${CELL_WINDOW}&cells_after=${after}`,{signal});
+    if(data.query_revision!==queryRevision||data.expected_binding_version!==bindingVersion)throw Error('Cell membership changed. Refresh the list.');
+    return data;
+  },{enabled:pagedCells&&cellsReady});
+  useLayoutEffect(()=>{if(pagedCells&&cellsReady&&Array.isArray(cellPage.data?.cells))cellList.accept(cellPage.data);},[pagedCells,cellsReady,cellPage.data,navigationReadKey,queryRevision,bindingVersion]);
   const freshCells=cellsReady&&Array.isArray(cellPage.data?.cells)?cellPage.data.cells:null;
   useLayoutEffect(()=>{if(freshCells)confirmedCells.current={scope:cellScopeKey,presentationScope,key:navigationReadKey,cells:freshCells,queryRevision,bindingVersion};},[cellScopeKey,presentationScope,navigationReadKey,freshCells,queryRevision,bindingVersion]);
   // Keep expanded branches mounted during same-scope refresh, while their
   // controls remain disabled until both authority receipts agree again.
   // Summaries follow tag receipts in place (the frozen page is not re-read for a tag).
   const incomingTags=useMemo(()=>readContext&&pageReady?incomingTagSummary(Array.isArray(rows.data?.epochs)?{...rows.data,epochs:rows.data.epochs.map(annotationState.apply)}:rows.data):null,[readContext,pageReady,rows.data,annotationState.apply]);
-  const retainedCells=freshCells||(confirmedCells.current?.presentationScope===presentationScope?confirmedCells.current.cells:[]);
+  const retainedCells=(pagedCells?cellList.cells:null)||freshCells||(confirmedCells.current?.presentationScope===presentationScope?confirmedCells.current.cells:[]);
   const viewCells=useMemo(()=>readContext&&incomingTags?retainedCells.map(cell=>incomingTags.cellTags[cell.cell_uuid]?{...cell,annotations:{...cell.annotations,cell_tags:incomingTags.cellTags[cell.cell_uuid]}}:cell):retainedCells,[readContext,incomingTags,retainedCells]);
   const cellRevisionError=pageReady&&!cellPage.loading&&cellPage.data&&!cellsReady;
   // A navigation request does not change the membership of already loaded cell
@@ -182,10 +205,10 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const selectionOwnerReady=!treeReadOwner||treeReadOwner.available;
   const selectionAvailable=!readPaused&&!annotationState.dirty&&!busy&&!draftSelection?.disabled&&selectionOwnerReady&&
     selectionReceipt?.key===navigationReadKey&&(cellsReady||selectionNavigationPending)&&!cellPage.error;
-  const selectionIdentity=JSON.stringify([navigationReadKey,selectionReceipt?.queryRevision,selectionReceipt?.bindingVersion,treeReadOwner?.identity??null]);
+  const selectionIdentity=JSON.stringify([navigationReadKey,selectionReceipt?.queryRevision,selectionReceipt?.bindingVersion,treeOwnerIdentity??null]);
   const treeSelectionAuthority={identity:selectionIdentity,available:!!selectionAvailable,
     current:()=>committedNavigationReadKey.current===navigationReadKey&&(!treeReadOwner||treeReadOwner.available&&treeReadOwner.active())};
-  const designAuthorityKey=JSON.stringify([treeReadOwner?.identity,id,protocolSearch,splits,pageRevision,readContext,protocol.query_revision,protocol.expected_binding_version]);
+  const designAuthorityKey=JSON.stringify([treeOwnerIdentity,id,protocolSearch,splits,pageRevision,readContext,protocol.query_revision,protocol.expected_binding_version]);
   const treeReceiptCurrent=treeReceipt?.scope===designAuthorityKey;
   const designFocusReady=!focused||treeReceiptCurrent&&(treeReceipt.focused===focused||treePage?.epochs?.some(row=>row.epoch_uuid===focused));
   const designBlocked=designMode&&(treeStatus.scope!==designAuthorityKey||treeStatus.loading||!!treeStatus.error||!designFocusReady||treeReadOwner&&!treeReadOwner.active());
@@ -205,7 +228,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const inspection=useEpochInspection({focused,path:focused?(readContext?frozenReadPath(readContext,id,`/epochs/${focused}`):`/epochs/${focused}?protocol_uuid=${id}`):null,
     row:rows.data?.epochs?.find(row=>row.epoch_uuid===focused),scope:JSON.stringify([projectId,navigationReadKey,readContext]),revision:annotationState.epochRevision,cache:!readContext,paused:readPaused,readContext,reloadRow:loadedRows.reload});
   const epoch=inspection.resource;
-  const focusedEpoch=useMemo(()=>(!readContext&&!filters?.metadata_predicate||pageReady&&rows.data?.epochs?.some(row=>row.epoch_uuid===focused))&&epoch.data?.epoch_uuid===focused?annotationState.apply(epoch.data):null,[readContext,filters?.metadata_predicate,pageReady,rows.data,epoch.data,focused,annotationState.apply]);
+  const focusedEpoch=useMemo(()=>(!readContext&&!filters?.metadata_predicate||pageReady&&rows.data?.epochs?.some(row=>row.epoch_uuid===focused))&&epoch.data?.epoch_uuid===focused?applyEpoch(epoch.data):null,[readContext,filters?.metadata_predicate,pageReady,rows.data,epoch.data,focused,applyEpoch]);
   // Initial selected intent still holds its parent page until the manifest
   // arrives. That page cannot offer a selected capability. Renewals retain an
   // existing selected token/page for inert display and keep strict validation.
@@ -233,7 +256,12 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     else if(capturedDisplay.current?.key!==displayKey||capturedDisplay.current?.owner!==requestScope)capturedDisplay.current=null;
   },[displayKey,displayRow,requestScope]);
   const neighborIndex=rows.data?.epochs?.findIndex(row=>row.epoch_uuid===focused)??-1;
-  useEpochPrefetch(!readContext&&!annotationState.dirty&&!epoch.loading&&!rows.loading&&neighborIndex>=0?epochPrefetchPaths(rows.data.epochs,neighborIndex,wholeTracePrefetchPath,{progressive:true,activeCellOnly:true}):[],annotationState.epochRevision,180,{traces:true,traceOnly:true,progressive:true,concurrency:2});
+  // Trace samples follow structure/source events only: curation and tag
+  // receipts never re-read or re-warm unchanged recorded samples.
+  const traceRevision=structureRevision;
+  const traceWarm=!readContext&&!annotationState.dirty&&!epoch.loading&&!rows.loading&&neighborIndex>=0;
+  useEpochPrefetch(traceWarm?epochPrefetchPaths(rows.data.epochs,neighborIndex,wholeTracePrefetchPath,{progressive:true,activeCellOnly:true}):[],traceRevision,180,{traces:true,traceOnly:true,progressive:true,concurrency:2});
+  useWholeTraceWarm(traceWarm?rows.data.epochs[neighborIndex+1]??null:null,traceRevision);
   const metadataCatalog=useResource(metadataOpen&&!designMode?'/metadata/fields':null,structureRevision);
   const scopeIdentity=JSON.stringify([readRoot,id,requestedCellFocus,presentationScope,initialEpochUuid]);
   const attemptedFocusLocator=useRef(null);
@@ -345,7 +373,13 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     navigationIntent.current=target;
     if(!target){setFocused(null);setPendingNavigation(null);return;}
     const uuid=epochAtIntent(page,target);
-    if(uuid){setFocused(uuid);setOffset(page.offset);setPendingNavigation(null);}
+    if(uuid){
+      if(pendingNavigation.anchorUuid&&rows.path===rowsPath&&Number.isSafeInteger(page.offset)){
+        const path=rowsPath.replace(`anchor_uuid=${encodeURIComponent(pendingNavigation.anchorUuid)}`,`offset=${page.offset}`),revision=pageReadRevision;let offered=true;
+        anchorHandoff.current={claim:request=>{if(!offered||request.path!==path||request.revision!==revision)return undefined;offered=false;return page;}};
+      }
+      setFocused(uuid);setOffset(page.offset);setPendingNavigation(null);
+    }
     else{setOffset(target.offset);setPendingNavigation({offset:target.offset,targetIndex:target.index});}
   },[pendingNavigation,rows.data,rows.loading,rows.error,preserveCandidateView,focused,focusLocatorKey]);
   // Persist grouping only after the server has successfully built that tree.
@@ -361,17 +395,25 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     curationRequest.current=controller;
     const isCurrent=()=>mounted.current&&generation===curationGeneration.current&&committedCurationIdentity.current===curationIdentity;
     setBusy(true);setError('');setOperationMessage('Saving curation changes…');
+    let receiptApplied=false;
     try {
       if(readContext){
         if(!onReviewDecision)throw Error('Candidate review decisions are unavailable.');
         if(Object.keys(changes).some(key=>!['included','reviewed','review_state'].includes(key)))throw Error('Candidate protocol curation tags are unavailable; use shared tags.');
         await onReviewDecision({epoch_uuids:uuids,changes:{...('included' in changes?{included:changes.included}:{}),...(typeof changes.reviewed==='boolean'?{reviewed:changes.reviewed}:'review_state' in changes?{reviewed:changes.review_state==='approved'}:{})},query_revision:queryRevision,bindingVersion});
-      }else await saveCurationSelection({request:api,protocolId:id,queryRevision,
+      }else{
+        // Send the latest token of this renderer's own receipt chain.
+        const sentRevision=curationReceipts.latest(id,queryRevision);
+        const receipt=await saveCurationSelection({request:api,protocolId:id,queryRevision:sentRevision,
         bindingVersion,epochUuids:uuids,changes,
         selectionScope:{filters:filters||{},cell_uuid:epochUuid?null:focusCell},
         signal:controller.signal,isCurrent});
+        // Apply the receipt in place unless the view's membership depends on
+        // curation/tags; then the protocol's pages re-read as before.
+        receiptApplied=!annotationFilterNeedsRefresh(filters||{})&&curationReceipts.record(id,{sentRevision,bindingVersion,epochUuids:uuids,receipt});
+      }
       if(isCurrent())setTag('');
-      if(mounted.current)changedCallback.current?.({kind:'curation',protocolId:id});
+      if(mounted.current)changedCallback.current?.({kind:'curation',protocolId:id,...(receiptApplied?{receipt:true}:{})});
     }catch(e){if(mounted.current)setError(e.message);}finally{
       if(curationRequest.current===controller)curationRequest.current=null;
       if(mounted.current)setBusy(false);
@@ -496,10 +538,10 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     {error&&<div className="inspector-operation-error" role="alert">{error}<button className="icon-button" onClick={()=>setError('')} aria-label="Dismiss operation error"><X size={14}/></button></div>}
 </>}
     layout={{layoutRef,sizes:paneSizes,treeOpen,metadataOpen,onResize:changePane,onResizeCommit:savePane}} designMode={designMode}
-    builder={{projectId,treeSelectionIntent,onTreeSelectionIntentChange:setTreeSelectionIntent,onTreeSelectionFeedback:reportTreeSelectionFeedback,protocolId:id,readContext,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,actionsDisabled:designBlocked||busy||!!draftSelection?.disabled||!cellsReady,onAnnotationsChanged:annotationChanged,summaryEnabled:!readContext,catalogPath:readRoot+'/tree-fields',summaryContext:{predicate:{all:[]},protocol_uuid:id,filters},queryString:protocolSearch,revision:pageRevision,value:splits.split(',').filter(Boolean),onChange:changeSplits,preview:tree.data,loading:tree.loading,error:tree.error}} columnTree={{readPaused,...(readContext?{highlightedEpochs,setHighlightedEpochs}:{}),projectId,navigationDisabled:busy||readPaused||!!draftSelection?.disabled||!cellsReady,selectionSummaryPaused:readPaused,treeSelectionIntent,onTreeSelectionIntentChange:setTreeSelectionIntent,onTreeSelectionFeedback:reportTreeSelectionFeedback,selectionAuthority:designSelectionAuthority,readPending:designMode&&!treeStatus.error&&designBlocked,onAnnotationsChanged:annotationChanged,collapseRequest:collapseRequest,externalCollapseControl:true,actionsDisabled:designBlocked||busy||!!draftSelection?.disabled||!cellsReady,inclusionForEpoch:annotationState.apply,onToggleInclusion:(item,included)=>curate({included},'focused',item.epoch_uuid),cells:viewCells,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);if(!readContext)selectTargets([]);toggleMetadata(true);setDesignMode(false);setCellTagRequest((viewCells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},presentation:"columns",protocolId:id,readContext,filters:filters,splits:splits,revision:pageRevision,design:true,selected:treeFocused,initialNavigation:treeNavigation,onNavigationChange:setDesignNavigation,onMetadata:receiveTree,onStatus:receiveTreeStatus,onSelectEpoch:focusTreeEpoch}} treePane={{selectionTools:readContext?<><IncomingTagSummary summary={incomingTags} onFilter={onTagFilter} disabled={designBlocked||busy||!pageReady}/></>:null,treeMode:treeMode,onTreeMode:value=>{setTreeMode(value);if(value)changePane('tree',Math.max(420,paneSizes.tree));},onDesign:openTreeDesign,designDisabled:busy,collapseRequest:collapseRequest,onCollapse:()=>setCollapseRequest(value=>value+1),treeProps:{readPaused,...(readContext?{highlightedEpochs,setHighlightedEpochs}:{}),projectId,treeSelectionIntent,onTreeSelectionIntentChange:setTreeSelectionIntent,onTreeSelectionFeedback:reportTreeSelectionFeedback,selectionAuthority:treeSelectionAuthority,onAnnotationsChanged:annotationChanged,actionsDisabled:designBlocked||busy||!!draftSelection?.disabled||!cellsReady,inclusionForEpoch:annotationState.apply,onToggleInclusion:(item,included)=>curate({included},'focused',item.epoch_uuid),cells:viewCells,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);if(!readContext)selectTargets([]);toggleMetadata(true);setDesignMode(false);setCellTagRequest((viewCells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},protocolId:id,readContext,filters,splits,revision:pageRevision,selected:treeFocused,initialNavigation:treeNavigation,onNavigationChange:setDesignNavigation,onSelectEpoch:focusTreeEpoch,onMetadata:receiveTree,onStatus:receiveTreeStatus},listRef:epochListRef,listKey:presentationScope,listProps:{...(readContext?{highlightedEpochs,setHighlightedEpochs}:{}),revealEpoch:!rows.loading&&!rows.error?rows.data?.epochs?.find(row=>row.epoch_uuid===focused):null,navigationRequest:listNavigationRequest,navigationScope:JSON.stringify([projectId,presentationScope]),initialNavigation:listNavigation,onNavigationChange:setListNavigation,membershipReady:cellsReady,onAnnotationsChanged:annotationChanged,cells:viewCells||[],source:{kind:'protocol',protocolId:id,readContext,query:protocolSearch,queryRevision:listQueryRevision},revision:pageRevision,inclusionForEpoch:annotationState.apply,focused:cellTagRequest?null:focused,onFocus:focusTreeEpoch,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cell,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);if(!readContext)selectTargets([]);toggleMetadata(true);setCellTagRequest(cell);},focusedCell:focusedEpoch?.cell_uuid??null,onTargetCell:cell=>{if(!readContext)selectTargets([]);toggleMetadata(true);setCellTagRequest(cell);},targets,setTargets:selectOverviewTargets,disabled:busy||!!draftSelection?.disabled||!cellsReady,navigationDisabled:busy||!navigationReady,onToggleInclusion:(epoch,included)=>curate({included},'focused',epoch.epoch_uuid)}}}
+    builder={{projectId,treeSelectionIntent,onTreeSelectionIntentChange:setTreeSelectionIntent,onTreeSelectionFeedback:reportTreeSelectionFeedback,protocolId:id,readContext,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,actionsDisabled:designBlocked||busy||!!draftSelection?.disabled||!cellsReady,onAnnotationsChanged:annotationChanged,summaryEnabled:!readContext,catalogPath:readRoot+'/tree-fields',summaryContext:{predicate:{all:[]},protocol_uuid:id,filters},queryString:protocolSearch,revision:pageRevision,value:splits.split(',').filter(Boolean),onChange:changeSplits,preview:tree.data,loading:tree.loading,error:tree.error}} columnTree={{readPaused,...(readContext?{highlightedEpochs,setHighlightedEpochs}:{}),projectId,navigationDisabled:busy||readPaused||!!draftSelection?.disabled||!cellsReady,selectionSummaryPaused:readPaused,treeSelectionIntent,onTreeSelectionIntentChange:setTreeSelectionIntent,onTreeSelectionFeedback:reportTreeSelectionFeedback,selectionAuthority:designSelectionAuthority,readPending:designMode&&!treeStatus.error&&designBlocked,onAnnotationsChanged:annotationChanged,collapseRequest:collapseRequest,externalCollapseControl:true,actionsDisabled:designBlocked||busy||!!draftSelection?.disabled||!cellsReady,inclusionForEpoch:applyEpoch,onToggleInclusion:(item,included)=>curate({included},'focused',item.epoch_uuid),cells:viewCells,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);if(!readContext)selectTargets([]);toggleMetadata(true);setDesignMode(false);setCellTagRequest((viewCells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},presentation:"columns",protocolId:id,readContext,filters:filters,splits:splits,revision:pageRevision,design:true,selected:treeFocused,initialNavigation:treeNavigation,onNavigationChange:setDesignNavigation,onMetadata:receiveTree,onStatus:receiveTreeStatus,onSelectEpoch:focusTreeEpoch}} treePane={{selectionTools:readContext?<><IncomingTagSummary summary={incomingTags} onFilter={onTagFilter} disabled={designBlocked||busy||!pageReady}/></>:null,treeMode:treeMode,onTreeMode:value=>{setTreeMode(value);if(value)changePane('tree',Math.max(420,paneSizes.tree));},onDesign:openTreeDesign,designDisabled:busy,collapseRequest:collapseRequest,onCollapse:()=>setCollapseRequest(value=>value+1),treeProps:{readPaused,...(readContext?{highlightedEpochs,setHighlightedEpochs}:{}),projectId,treeSelectionIntent,onTreeSelectionIntentChange:setTreeSelectionIntent,onTreeSelectionFeedback:reportTreeSelectionFeedback,selectionAuthority:treeSelectionAuthority,onAnnotationsChanged:annotationChanged,actionsDisabled:designBlocked||busy||!!draftSelection?.disabled||!cellsReady,inclusionForEpoch:applyEpoch,onToggleInclusion:(item,included)=>curate({included},'focused',item.epoch_uuid),cells:viewCells,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);if(!readContext)selectTargets([]);toggleMetadata(true);setDesignMode(false);setCellTagRequest((viewCells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},protocolId:id,readContext,filters,splits,revision:pageRevision,selected:treeFocused,initialNavigation:treeNavigation,onNavigationChange:setDesignNavigation,onSelectEpoch:focusTreeEpoch,onMetadata:receiveTree,onStatus:receiveTreeStatus},listRef:epochListRef,listKey:presentationScope,listProps:{cellsMore:pagedCells?cellList.window:null,...(readContext?{highlightedEpochs,setHighlightedEpochs}:{}),revealEpoch:!rows.loading&&!rows.error?rows.data?.epochs?.find(row=>row.epoch_uuid===focused):null,navigationRequest:listNavigationRequest,navigationScope:JSON.stringify([projectId,presentationScope]),initialNavigation:listNavigation,onNavigationChange:setListNavigation,membershipReady:cellsReady,onAnnotationsChanged:annotationChanged,cells:viewCells||[],source:{kind:'protocol',protocolId:id,readContext,query:protocolSearch,queryRevision:listQueryRevision},revision:pageRevision,inclusionForEpoch:applyEpoch,focused:cellTagRequest?null:focused,onFocus:focusTreeEpoch,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cell,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);if(!readContext)selectTargets([]);toggleMetadata(true);setCellTagRequest(cell);},focusedCell:focusedEpoch?.cell_uuid??null,onTargetCell:cell=>{if(!readContext)selectTargets([]);toggleMetadata(true);setCellTagRequest(cell);},targets,setTargets:selectOverviewTargets,disabled:busy||!!draftSelection?.disabled||!cellsReady,navigationDisabled:busy||!navigationReady,onToggleInclusion:(epoch,included)=>curate({included},'focused',epoch.epoch_uuid)}}}
     resource={{scope:id,...epoch,loading:!epoch.error&&(!!pendingNavigation||(!!focused&&(epoch.loading||!focusedEpoch))),retry:epoch.reload}}
     epoch={focusedEpoch} targets={targets} navigation={{position:focusedPageIndex<0?-1:offset+focusedPageIndex,total:rows.data?.total||0,loading:!!pendingNavigation||rows.loading,disabled:busy,onMove:moveEpoch}}
-    readContext={readContext} traceReadContext={preparedTraceReadContext} traceEpoch={traceEpoch} traceRevision={annotationState.epochRevision} inclusion={{incoming:!!readContext,disabled:designBlocked||busy||!pageReady,scope:'pinned dataset',onToggle:(epoch,included)=>curate({included},'focused',epoch.epoch_uuid)}} detailDisabled={designBlocked||busy} onQC={onQC} tags={tagEntry}
+    readContext={readContext} traceReadContext={preparedTraceReadContext} traceEpoch={traceEpoch} traceRevision={traceRevision} inclusion={{incoming:!!readContext,disabled:designBlocked||busy||!pageReady,scope:'pinned dataset',onToggle:(epoch,included)=>curate({included},'focused',epoch.epoch_uuid)}} detailDisabled={designBlocked||busy} onQC={onQC} tags={tagEntry}
     detailExtras={focusedEpoch&&(readContext?<IncomingEpochReview epoch={focusedEpoch} disabled={designBlocked||busy||!pageReady} onReview={reviewed=>curate({reviewed},'focused')}/>:<>        {busy&&<p className="curation-progress" role="status">{operationMessage}</p>}
         <div className="tags"><span>Dataset-only tags:</span>
           {(focusedEpoch.curation?.tags||[]).map(t=><button key={t} disabled={designBlocked||busy} aria-label={`Remove tag ${t} from focused epoch only`} title="Remove from focused epoch only" onClick={()=>curate({tags_remove:[t]},'focused')}>{t}<X size={13}/></button>)}

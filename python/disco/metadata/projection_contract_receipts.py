@@ -263,4 +263,296 @@ COMPATIBILITY_RECEIPTS = {'version': 1,
                            'docs/dev/request-decoupling-audit.md',
                            'python/tests/test_workspace_slow_read_memos.py',
                            'python/tests/test_workspace_projection_contract.py',
-                           'python/tests/test_workspace_refresh_cache.py')})}
+                           'python/tests/test_workspace_refresh_cache.py')},
+             {'id': 'typed-sidecar-budget-fallback-projection-compatibility-2026-10-18',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 'ed92e4d91ba104d931ee5e22593b4c62d18752263232a65cc84caec7cf4d176a',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to a7aca9b (reviewed build tag-time-filter-and-catalog-memo-projection-compatibility-2026-10-17), workspace_service only '
+                           'catches a typed sidecar preparation failure during refresh, publishing the verified native '
+                           'generation without typed reads and recording typed_metadata_index unavailable with its error. '
+                           'Projection keys, codecs, membership, source validation and cache authority are unchanged; all '
+                           'other ordered owners and the resolver are byte-identical.',
+              'evidence': ('git:a7aca9b',
+                           'python/tests/test_workspace_typed_index_budget.py',
+                           'python/disco/metadata/CONTRACT.md',
+                           'python/tests/test_workspace_projection_contract.py')},
+             {'id': 'protocol-state-freshness-compatibility-2026-10-18',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 '0cd23c6f977e71b8d6be277328ff870554e70b0fe5ff16a54209f943174b5ba7',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to clean a7aca9b, workspace_service publishes the same refreshed rows, '
+                           'cells, protocols and fingerprints as deep-frozen FrozenDict/FrozenList copies '
+                           'after every projection, index and SQL check has completed (projection cache '
+                           'writes still receive the plain projections), counts every read-model assignment '
+                           'with a monotonic publication serial, adds the read-only query_view memo over '
+                           'query_result, and raises typed WorkspaceNotReady/LockBusy (RuntimeError '
+                           'subclasses). Refresh publication freezes rows in place, releasing each plain row '
+                           'as it is frozen. Projection keys, codecs, decoded values, membership, source '
+                           'validation, index generation and cache authority are unchanged; all other '
+                           'ordered owners and the resolver are byte-identical. Also merges '
+                           'claude/typed-index-budget (#110) unchanged.',
+              'evidence': ('git:a7aca9b',
+                           'python/tests/test_workspace_slow_read_memos.py',
+                           'python/tests/test_workspace_refresh_cache.py',
+                           'python/tests/test_workspace_projection_contract.py')},
+             {'id': 'refresh-scoping-compatibility-2026-10-18',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 'e89b33999a7bea49634e9458327739358542d445de4d1725f546b268b9b8e1c8',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to claude/protocol-state-freshness (receipt '
+                           'protocol-state-freshness-compatibility-2026-10-18), workspace_service only (1) '
+                           'skips re-decoding source projections in refresh when every source key (database '
+                           'record including manifest, metadata and recording stat signatures, projection '
+                           'contract) and the sealed index generation equal the last successful publication, '
+                           'reusing the already published frozen rows/cells/fingerprints while still running '
+                           'protocol SQL validation and the all-source final stat checks, keeping the '
+                           'previous objects and publication serial unless the SQL protocol result changed; '
+                           'and (2) adds verify_sources, an O(sources) registration/stat precheck that runs '
+                           'the complete refresh on any difference. Projection keys, codecs, decoded values, '
+                           'membership, index generation and cache authority are unchanged; all other '
+                           'ordered owners and the resolver are byte-identical. A reopened or rebuilt typed '
+                           'metadata generation is still published on the reuse path.',
+              'evidence': ('git:claude/protocol-state-freshness',
+                           'python/tests/test_workspace_refresh_cache.py',
+                           'python/tests/test_workspace_slow_read_memos.py',
+                           'python/tests/test_workspace_projection_contract.py',
+                           'python/tests/test_workspace_explore_queries.py')},
+             {'id': 'navigation-scope-cache-compatibility-2026-10-18',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 '160c0f63e502f4201f44038d2d9d417b606f008550742bd5cea7510b164d1b95',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to claude/refresh-scoping (receipt '
+                           'refresh-scoping-compatibility-2026-10-18), workspace_service only adds '
+                           'query_members (a read-only member set shared per cached query view) and stops '
+                           'counting the explore publication token as a published read-model attribute. '
+                           'Projection keys, codecs, decoded values, membership, index generation and cache '
+                           'authority are unchanged; all other ordered owners and the resolver are '
+                           'byte-identical.',
+              'evidence': ('git:claude/refresh-scoping',
+                           'python/tests/test_workspace_search.py',
+                           'python/tests/test_workspace_slow_read_memos.py',
+                           'python/tests/test_workspace_projection_contract.py')},
+             {'id': 'overview-incremental-compatibility-2026-10-18',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 '42cc153d702d0f016c7a188ab4d42010be52d7bf0907c70daceb1eefcfb6349a',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to claude/navigation-scope-cache (receipt '
+                           'navigation-scope-cache-compatibility-2026-10-18), workspace_service only adds '
+                           '_navigation_rows and a curation=False option of _tree_rows that filters the '
+                           'published rows of the cached query view without decorating curation '
+                           '(navigation/explore readers never read it), and uses it for scoped tree-field '
+                           'catalogs. It also keys the epoch-page identity cache on the publication serial, '
+                           'skipping per-member fingerprint comparison on hits for frozen publications. '
+                           'Projection keys, codecs, decoded values, membership, index generation and cache '
+                           'authority are unchanged; all other ordered owners and the resolver are '
+                           'byte-identical.',
+              'evidence': ('git:claude/navigation-scope-cache',
+                           'python/tests/test_workspace_slow_read_memos.py',
+                           'python/tests/test_workspace_tree_navigation_cache.py',
+                           'python/tests/test_workspace_projection_contract.py')},
+             {'id': 'source-signature-compatibility-2026-10-18',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 '69124309ea029c19ccf48a94b43091e64b63e301eee13ca5c7076cea12f53a5b',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to claude/overview-incremental (receipt '
+                           'overview-incremental-compatibility-2026-10-18), workspace_service only adds '
+                           'preverify_sources/preverify_epoch_source (memory-only whole-file hashing outside '
+                           'the workspace lock with an identical stat before and after) and lets '
+                           '_verified_source accept such a result when its fresh stat under the lock is '
+                           'identical. Projection keys, codecs, decoded values, membership, index '
+                           'generation, source identity checks and cache authority are unchanged; all other '
+                           'ordered owners and the resolver are byte-identical.',
+              'evidence': ('git:claude/overview-incremental',
+                           'python/tests/test_workspace_refresh_cache.py',
+                           'python/tests/test_workspace_slow_read_memos.py',
+                           'python/tests/test_workspace_projection_contract.py')},
+             {'id': 'predicate-path-eligibility-projection-compatibility-2026-10-18',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 'ad6065179b8722faca45f0603aa63750e82432ecb5560b919a5e7270b16ba412',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to gh/ms5 (reviewed build source-signature-compatibility-2026-10-18), workspace_service only adds cached unfiltered active-source eligibility per publication and source scope, whole-catalog predicate scopes selected by source, and the cached universe and tree order passed to tag predicates and annotation catalog fields. Projection keys, codecs, membership, source validation and cache authority are unchanged; all other ordered owners and the resolver are byte-identical.',
+              'evidence': ('git:gh/ms5',
+                           'python/tests/test_workspace_predicate_paths.py',
+                           'python/disco/navigation/CONTRACT.md',
+                           'python/tests/test_workspace_projection_contract.py')},
+             {'id': 'counted-preview-publication-revision-projection-compatibility-2026-10-18',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 '999198962be9f0f2bf13444413a9ac088e479c6d321cc0defe81bd3abeb74d71',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': "Relative to claude/query (reviewed build counted-preview-publication-revision-projection-compatibility-2026-10-18), workspace_service only adds the counted predicate paths: summary-only previews counted on the typed index with the publication-identity tree revision, query runs and inspection pages read from the typed index (sealed per-value/per-cell aggregates, keyset pages, server-owned pending counts jobs) and, for predicates with tag leaves, from the generation's tag states (mixed tag and metadata predicates page by chunked chronology walks with pending counts). Projection keys, codecs, membership, source validation and cache authority are unchanged; all other ordered owners and the resolver are byte-identical.",
+              'evidence': ('git:claude/query',
+                           'python/tests/test_workspace_counted_preview.py',
+                           'python/disco/navigation/CONTRACT.md',
+                           'python/tests/test_workspace_projection_contract.py')},
+             {'id': 'paged-cell-lists-compatibility-2026-10-19',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 '25838656ac4bf9e98099c182a689fb79477aa29be03d3b0069d0fa9a1850caeb',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Relative to claude/protocol-state-v5, workspace_service only lets epoch_page '
+                           'return an optional window of its include_cells list (cells_page=(limit, after)): '
+                           "cells in first appearance along the page's epoch order, with cells_total and "
+                           'cells_next, from the same serial-keyed per-cell count memo (which now also keeps '
+                           'that order). Without cells_page the sorted full list is unchanged. Projection '
+                           'keys, codecs, decoded values, membership, index generation, source identity '
+                           'checks and cache authority are unchanged; all other ordered owners and the '
+                           'resolver are byte-identical.',
+              'evidence': ('git:claude/protocol-state-v5',
+                           'python/tests/test_workspace_refresh_cache.py',
+                           'python/tests/test_workspace_slow_read_memos.py',
+                           'python/tests/test_workspace_projection_contract.py')},
+             {'id': 'robustness-0.1.21-integrated-projection-compatibility-2026-10-20',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 'dfb59806ca9119a3c39475907aaf73c4d238e7961d64feb56753970393ad7dde',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Compared with reviewed rehearsal 1a597b3, only workspace_service among the four ordered '
+                           'owners changes: optional protocol cell-list windows retain the full-list default; refresh '
+                           'prepares derived frozen row/cell/fingerprint lookup maps after publication; source '
+                           'cardinality reads use exact frozen counts; mixed-query count jobs capture immutable inputs '
+                           'under the request lock then compute with cloned typed leases outside it, retaining generation '
+                           'fences. Projection construction inputs, codecs, decoded values, membership, source identity '
+                           'and cache admission are unchanged. recording_workspace, projection_cache, metadata_objects '
+                           'and the resolver are byte-identical. Historical receipt vectors remain untouched; unknown '
+                           'builds still use the five-witness fallback.',
+              'evidence': ('git:1a597b3',
+                           'git:233ed7c',
+                           'python/tests/test_workspace_projection_contract.py',
+                           'python/tests/test_workspace_refresh_cache.py',
+                           'python/tests/test_workspace_slow_read_memos.py',
+                           'python/tests/test_workspace_predicate_publication.py',
+                           'python/tests/test_workspace_query_run.py',
+                           'python/disco/navigation/CONTRACT.md')},
+             {'id': 'robustness-0.1.21-cold-seek-projection-compatibility-2026-10-20',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 'c59942104925d95b13a8df87b0779c03ece575dbe0924087e51ef8da426a9e7c',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Compared with reviewed integrated build 8ce8684, only workspace_service among the four '
+                           'ordered owners changes: mixed predicate pages seek already sealed typed chronology ranks in '
+                           'bounded windows, apply active-source eligibility within each window and use direct cell scope '
+                           'before seeking. Existing exact matching, order, continuation, anchor and bounds checks '
+                           'remain. Projection construction inputs, codecs, decoded values, membership, source identity '
+                           'and cache admission are unchanged; recording_workspace, projection_cache, metadata_objects '
+                           'and resolver are byte-identical. Historical vectors remain intact and unknown builds keep the '
+                           'five-witness fallback.',
+              'evidence': ('git:8ce8684',
+                           'git:bb49ed8',
+                           'python/tests/test_workspace_projection_contract.py',
+                           'python/tests/test_workspace_refresh_cache.py',
+                           'python/tests/test_workspace_predicate_publication.py',
+                           'python/tests/test_workspace_query_run.py',
+                           'python/disco/navigation/CONTRACT.md')},
+             {'id': 'robustness-0.1.21-eligible-retention-projection-compatibility-2026-10-20',
+              'decision': 'compatible',
+              'reviewed_build': ('6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230',
+                                 'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                 '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                 '6a40853794d4483dac514af46cf8e9cca89da6e6d67264fe238d637b71779953',
+                                 '04faa42a70bbd6f63044df7b1e67640b4a0f49b919b8f8c86294557f5a2ba024'),
+              'legacy_owners': ('7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139',
+                                'a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9',
+                                '8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd',
+                                '1f7da71b300a2c617cc6f67cf70a2790d609f3d115828e1b092a518003178be8'),
+              'legacy_contract': 'd612c67e1297f3f64eb96339150a9b9a007d55003e8c5d38f21a8aa695d55f37',
+              'rationale': 'Compared with the reviewed cold-seek build, only workspace_service among the four '
+                           'ordered owners changes: canonical eligibility stores exact string UUIDs in a private '
+                           'dict.fromkeys(ids).keys() atomic membership snapshot for any active-source subset, '
+                           'preserving exact filtering, publication invalidation and the custom-filter frozenset '
+                           'fallback. Frozen query rows reference the same immutable '
+                           'published rows by ordered identities instead of retaining another complete row tuple. '
+                           'Projection construction inputs, codecs, decoded values, ordering, membership, source '
+                           'identity and cache admission are unchanged. recording_workspace, projection_cache, '
+                           'metadata_objects and the resolver are byte-identical. Historical vectors remain intact '
+                           'and unknown builds keep the five-witness fallback.',
+              'evidence': ('git:322e27d4fb562cc43388179f5e0985e85c09b167',
+                           'python/tests/test_workspace_eligible_retention.py',
+                           'python/tests/test_workspace_projection_contract.py',
+                           'python/tests/test_workspace_refresh_cache.py',
+                           'python/disco/navigation/CONTRACT.md')})}

@@ -23,28 +23,17 @@ with the service job on 2026-10-01. No Python/API files are changed here.
 - Navigation and field editing remain usable while summaries run. Missing
   summaries and truncated distinct counts are unavailable, rather than zero.
   Recorded nulls, arrays, numeric values, and text retain their source types.
-- Normal tree/filter views request active axes/conditions and explicitly pinned
-  field summaries. The normal all-fields-summary action has been removed.
-  Complete registry discovery, raw details, export and reconstruction remain
-  available regardless of summary selection. Missing saved axes/preferences
-  remain intact.
-- Predicate-dialog **Preview matches** explicitly sends `catalog_summary:false`
-  to the existing `/explore/run` route. Its authoritative `last_run.cell_count`
-  and `epoch_count` remain the displayed preview counts; epoch facet buckets
-  never substitute for unique-cell counts.
-- Existing complete catalog/derived suggestions remain an explicit action under
-  the closed **Advanced layout suggestions** disclosure. Opening that disclosure
-  or browsing the chooser does not fetch distributions. Only its load button
-  computes the full catalog. Changes to the scope/layout/generation resume
-  lightweight previews before request effects run.
-- New preferences are local to this browser/device, under
-  `workspace.summary-preferences.v1:<JSON [project UUID, protocol UUID, view]>`,
-  with payload `{version:1,fields:[exact IDs]}`. Tree and filter views are distinct.
-  This is a new schema, not an assumed existing protocol field. Saved layouts
-  seed requests through active axes; they are never overwritten by preferences.
+- Building a query (the predicate dialog) sends no request: there is no
+  preview, count or statistics call. The user runs the query; results load,
+  then one summary job covers that result set (metadata explorer).
+- Tree choosers outside the explorer request their active axes and predicate
+  fields only while a chooser is open. Complete registry discovery, raw details,
+  export and reconstruction remain available regardless of summary selection.
+- Result reads send no `catalog_summary` flag (a deprecated no-op server-side
+  since backend #117); there is no full-catalog mode.
+  Per-protocol summary preferences were removed (2026-10-19).
 - Protocol Inspector summaries use the protocol's frozen dataset plus existing
-  filters. Search/export target `initialProtocolId` supplies preference context
-  only; it does not narrow the search's scientific membership.
+  filters.
 - Older services fall back to the original field catalog only for missing routes
   (404/405). Validation/publication/server failures remain visible. Async summary
   controls stay unavailable with a legacy registry.
@@ -83,7 +72,7 @@ pass without a running HTTP service. No native timing or package build ran here.
 ## Current workflow versus legacy diagnostics
 
 For current-workflow comparisons, apply this same frontend patch to both backend
-arms. Measure explicit filter preview with `catalog_summary:false`, count receipt,
+arms. Measure the query run (no inline statistics), count receipt,
 active/pinned exact typed summaries, and relevant tree splitters separately from
 rendered completion. Keep the exact scientific predicate, native membership,
 source/frozen protocol context and field requests equal between arms.
@@ -103,7 +92,7 @@ under the same authoritative scope rather than use epoch facet bucket counts.
 This commit does **not** consume `/explore/page`. Ordinary search still invokes
 `/explore/run` or `/explore/preview` before mounting MatchingEpochs. Those legacy
 operations can materialize full membership/exact count even with
-`summary_only:true,catalog_summary:false`. MatchingEpochs then uses
+`summary_only:true`. MatchingEpochs then uses
 `useEpochBrowserPage` / `/explore/epochs` with `tree_revision`, offset/anchor,
 exact total, and cell aggregates; its tree/selection/export contracts remain
 unchanged. Inspector's existing protocol cell/row APIs are unchanged as well.
@@ -132,10 +121,9 @@ I/O, the service/frontend boundary needs these compatible receipts:
    range selection, cell traversal, and restored-focus behavior must retain exact
    semantics. Either support bounded server offset/anchor seeking or provide a
    compatible cursor/rank adapter; a next-only cursor is insufficient by itself.
-4. **Independent exact count:** `summary_fields:[]` is confirmed to produce
-   `matched_count` asynchronously without distributions. Rows must remain usable
-   while the count is pending/cancelled/stale/failed; total-dependent controls must
-   wait for a same-context exact count rather than substituting zero.
+4. **Exact count:** counts come with the query run/result read; count-only summary
+   jobs (`summary_fields` empty) were removed (backend #117). Total-dependent
+   controls must wait for a same-context exact count rather than substituting zero.
 5. **Revision and action compatibility:** define a service-issued authority usable
    by existing row/cell/tree readers without preliminary full membership
    materialization. If this is a new read token, version it and explicitly adapt

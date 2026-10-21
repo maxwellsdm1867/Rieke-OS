@@ -17,10 +17,11 @@ test('import review dialog shows per-protocol pending cards, holds to merge all,
  const old=globalThis.window;globalThis.window={...(old||{}),addEventListener(){},removeEventListener(){}};
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
  const {ImportSuggestions}=await server.ssrLoadModule('/src/protocol-overview/ui/ProtocolSuggestion.jsx');
- let renderer,merges=[],inspected=[];
+ let renderer,merges=[],inspected=[],reloads=0;
+ const reload=()=>{reloads++;};
  const protocols=[{protocol_uuid:'protocol-A',name:'flash_family',counts:{cells:3,epochs:40}},{protocol_uuid:'protocol-B',name:'noise',counts:{cells:1,epochs:5}}];
  let props={autoOpenJobUuid:'job',jobs:[{job_uuid:'job',status:'complete',filename:'2026-10-16_A.h5',finished_at:'2026-10-16T10:00:00Z'}],protocols,
-  workbenchSummary:summary(row('protocol-A',12,'q1'),row('protocol-B',0,'qb')),onMerge:async(...args)=>{merges.push(args);return true;},onProtocol:(...args)=>inspected.push(args)};
+  workbenchSummary:{...summary(row('protocol-A',12,'q1'),row('protocol-B',0,'qb')),reload},onMerge:async(...args)=>{merges.push(args);return true;},onProtocol:(...args)=>inspected.push(args)};
  const render=async()=>act(()=>{const node=React.createElement(ImportSuggestions,props);if(renderer)renderer.update(node);else renderer=TestRenderer.create(node);});
  const open=()=>renderer.root.findAllByProps({className:'import-readiness'}).length===1;
  const cards=()=>renderer.root.findAll(node=>node.type==='section'&&String(node.props.className).includes('import-ready-protocol'));
@@ -31,6 +32,7 @@ test('import review dialog shows per-protocol pending cards, holds to merge all,
  await render();t.mock.timers.enable({apis:['setTimeout']});
  try{
   assert.ok(open(),'a finished import opens the review');
+  assert.equal(reloads,1,'opening review renews the cached queue authority');
   assert.equal(cards().length,1,'one card per protocol with pending data; none at zero');
   assert.equal(cards()[0].props['aria-label'],'flash_family','titled by the protocol name');
   assert.match(text(),/12 new epochs from 2 cells not yet in Main/,'same subtitle as the Overview card');
@@ -39,8 +41,12 @@ test('import review dialog shows per-protocol pending cards, holds to merge all,
   await act(()=>renderer.root.findAllByType('button').find(node=>node.props.className==='primary').props.onClick());
   assert.deepEqual(inspected,[['protocol-A',{}]],'Inspect opens the protocol Workbench');assert.equal(open(),false,'inspecting closes the review');
   props={...props,autoOpenJobUuid:'job-2',jobs:[...props.jobs,{job_uuid:'job-2',status:'complete',filename:'next.h5'}]};await render();assert.ok(open());
+  assert.equal(reloads,2,'reopening review renews its authority again');
+  props={...props,workbenchSummary:{...props.workbenchSummary,loading:true}};await render();
+  assert.equal(hold().props.disabled,true,'stale queue cannot be accepted while renewal is pending');
+  props={...props,workbenchSummary:{...summary(row('protocol-A',12,'fresh-q2'),row('protocol-B',0,'qb')),reload}};await render();
   await act(()=>hold().props.onPointerDown(event));await tick(1000);await act(async()=>{});
-  assert.deepEqual(merges,[['protocol-A',{kind:'merge_all',queue_revision:'q1',origin:'protocol-overview'}]],'one hold sends one merge_all with the row queue revision');
+  assert.deepEqual(merges,[['protocol-A',{kind:'merge_all',queue_revision:'fresh-q2',origin:'protocol-overview'}]],'one hold sends one merge_all with the row queue revision');
   assert.equal(cards().length,0,'the verified merge retires the card it showed');assert.ok(open(),'the review stays open until the refreshed summary arrives');
   props={...props,workbenchSummary:{...props.workbenchSummary,loading:true}};await render();assert.ok(open());
   props={...props,workbenchSummary:summary(row('protocol-A',0,'q2'),row('protocol-B',0,'qb'))};await render();

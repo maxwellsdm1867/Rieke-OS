@@ -13,6 +13,8 @@ read the corresponding entry, then use its existing interface and examples.
 | Read project inventory | [project_inventory.py](project_inventory.py): `ProjectInventory.managed/current` reuse the retained discovery rules in a bounded read-only child. `pause/resume` control only those children; `ProjectInventoryUnavailable` is not an empty inventory. |
 | Persist preferences | [project_preferences.py](project_preferences.py): `ProjectPreferences`, `PreferenceConflict`, validation and route registration own portable shortcuts, not scientific membership or device geometry. |
 | Manage acquisitions | [datastores.py](datastores.py): `DataStores` separates freeze, archive and query eligibility. [datastore_deletion.py](datastore_deletion.py): `DataStoreDeletion` owns exact detachment and recoverable filesystem deletion. |
+| Ask whether a project database runs | [runtime_state.py](runtime_state.py): `project_runtime_state(root)` returns one of `never_started`, `stopped_clean`, `stopped_unclean`, `running_owned`, `running_foreign` from receipts plus PID + creation time + exact executable/argv proof. `recorded_process_alive` / `import_worker_alive` apply the same PID-reuse rule to service and import records. Read-only; never signals. |
+| Own transfer/migration staging | [staging.py](staging.py): `create_staging`, `release_owner`, `forget_staging`, `discard_staging`, `sweep_registered_staging`, `last_report`. Owner file + per-user registry; sweeps only provably abandoned registered folders. |
 | Migrate legacy source | [migration.py](migration.py) performs explicit source inspection/snapshot/restore into a separate owned destination. It delegates to the retained portability/native owners; it does not adopt the source database. |
 
 `recording_registry.library_directory` and `library_candidate` create/recover the
@@ -231,3 +233,36 @@ No source hashing, H5 reads or scientific-database opens are permitted here. The
 cache is not copied into project exports, and deleting it loses no scientific state.
 The focused cache/shell/API tests exercise process restart and failure fallback;
 those tests do not qualify installed-app startup latency.
+
+## Project runtime state and per-project recovery
+
+Desktop supervision, failed-load cleanup, inactive unmount and import admission
+use `runtime_state` instead of interpreting PIDs. A PID never counts without its
+recorded creation time (older records fall back to entry-point command-line proof).
+Only a live owned database (`running_owned`) of a crashed service or unfinished
+transfer refuses desktop startup for every project. A crashed service without a
+clean receipt otherwise marks only its project (`recovery_required` in the desktop
+service registry, `recovery_projects` in health); opening it again first requires
+that no database process remains. The native per-project gate still refuses
+copied/moved unclean data exactly as before.
+
+A failed data load needs only "no owned process alive" to finish cleanup. The
+shell then records `database_released`, a service-exit receipt (not a data-clean
+receipt) that the supervisor rechecks against the runtime state. A failed first
+`--initialize`/bootstrap stops its bootstrap server and removes only the new
+credentials and data directory it created; an existing owner receipt or a still
+running server preserves everything. Interrupted import jobs can be dismissed with
+`POST /api/jobs/<id>/acknowledge` once their worker is proven gone.
+
+Project activation sweeps `.incoming-*` library staging folders only while the
+shared recording lock is uncontended (copies hold that lock and publish by rename).
+Transfer, verify and migration staging (`.rieke-transfer-*`, `.rieke-verify-*`,
+`.rieke-migration-*`) is created by [staging.py](staging.py): each folder holds an
+owner file (PID, process creation time, operation id) and is recorded in
+`staging-registry.json` beside the project index. Launcher startup (in the
+background) and every new staging folder sweep only registered folders whose owner
+file matches the registry and whose owner is provably gone; a verify folder's
+database is stopped with `stop_native_database` first and the folder is kept if it
+cannot be stopped. Unregistered folders and folders without a matching owner file
+are never deleted; the desktop health reports them as `staging_attention`. The
+owner file is removed before a transfer package's inventory and publication.

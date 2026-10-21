@@ -16,7 +16,7 @@ from disco.navigation.predicates import OPERATORS, equality_key, kind
 from disco.workbench.recipes import checksum
 from workspace_service import validate_filters, metadata_filter_predicate
 from disco.navigation.tag_predicates import TagPredicates, referenced_fields, annotation_locks
-from disco.navigation.tree import predicate_scope
+from disco.navigation.tree import predicate_scope, StreamingValueView
 from disco.operation_timing import elapsed
 
 MAX_JOBS = 8
@@ -187,22 +187,33 @@ def field_registry(service):
     if before != generation(service):
         raise StaleQuery('Metadata generation changed while reading field definitions')
     return {'fields': fields, 'tree_fields': tree_fields, 'operators': list(OPERATORS),
-            'predicate_version': 1, 'generation': before, 'source_scope': service.source_scope(),
+            'predicate_version': 2, 'generation': before, 'source_scope': service.source_scope(),
             'summary_available': False}
 
 
+def _whole_catalog(service, context):
+    from workspace_service import WorkspaceService
+    return (context['protocol_uuid'] is None and not context['filters'] and not context['scope']
+            and getattr(service._tree_rows, '__func__', None) is WorkspaceService._tree_rows)
+
+
 def _native_rows(service, context):
-    rows = service._tree_rows(context['protocol_uuid'], context['filters'])
+    rows = service._navigation_rows(context['protocol_uuid'], context['filters'])
     return [row for row in rows if all(row.get(key) == value for key, value in context['scope'].items())]
 
 
 def _native_summaries(service, context, cancelled):
-    rows = _native_rows(service, context)
-    _, identities, _ = service.match_predicate(context['predicate'], (row['epoch_uuid'] for row in rows))
+    if _whole_catalog(service, context):
+        _, identities, _ = service.match_predicate(context['predicate'])
+    else:
+        rows = _native_rows(service, context)
+        _, identities, _ = service.match_predicate(context['predicate'], (row['epoch_uuid'] for row in rows))
     catalog, values = predicate_scope(*service._registered_tree_fields())
     definitions = {field['id'] for field in catalog['fields']}
     annotation_fields = {field for field in context['summary_fields'] if field.startswith(('annotations/', 'curation/'))}
-    annotations = TagPredicates(service).snapshot(annotation_fields)[0] if annotation_fields else {}
+    tags = TagPredicates(service)
+    entry = tags._entry(annotation_fields) if annotation_fields else None
+    annotations = entry.states if entry is not None else {}
     summaries, seen = {}, {}
     for field in context['summary_fields']:
         if field not in definitions and field not in annotations:
@@ -210,19 +221,45 @@ def _native_summaries(service, context, cancelled):
         summaries[field] = {'values': [], 'present_count': 0,
             'missing_count': len(identities), 'values_truncated': False}
         seen[field] = {}
+    if entry is not None and summaries:
+        # Every matched epoch has an annotation array (empty when untagged).
+        # Buckets come from the generation's distinct arrays in first-match
+        # order instead of one lookup per matched epoch.
+        universe = set(identities)
+        positions = {identity: position for position, identity in enumerate(identities)}
+        for field in annotations.keys() & summaries.keys():
+            if cancelled():
+                raise InterruptedError('Summary cancelled')
+            buckets = entry.buckets(field, identities, universe, positions.__getitem__)
+            summary = summaries[field]
+            summary.update(present_count=len(identities), missing_count=0, values_truncated=len(buckets) > 60,
+                           values=[{'value': copy.deepcopy(value), 'type': kind(value), 'count': amount}
+                                   for value, amount in buckets[:60]])
     metadata_fields = definitions.intersection(summaries) - annotations.keys()
     # The disk mapping has a small row LRU. Walking the entire identity scope
     # once per field evicts every row before its next use. Borrow one full native
     # value row at a time; keep only the first 60 buckets for each requested field.
-    for identity in identities if summaries else ():
+    # A native mapping streams exactly these identities in order from one read,
+    # instead of one SQLite lookup per epoch; a missing identity still raises.
+    stream = None
+    if (summaries and metadata_fields and isinstance(values, StreamingValueView) and hasattr(values.base, 'subset')
+            and len(set(identities)) == len(identities)):
+        stream = StreamingValueView(values.base.subset(identities), allowed=values.allowed,
+                                    combinations=values.combinations).items()
+    for identity in identities if metadata_fields else ():
         if cancelled():
             raise InterruptedError('Summary cancelled')
-        current = values[identity] if metadata_fields else {}
+        if stream is not None:
+            found, current = next(stream, (None, None))
+            if found != identity:
+                raise KeyError(identity)
+        else:
+            current = values[identity] if metadata_fields else {}
         for field, summary in summaries.items():
             if cancelled():
                 raise InterruptedError('Summary cancelled')
             if field in annotations:
-                value = annotations[field].get(identity, [])
+                continue
             elif field in current:
                 value = current[field]
             else:
@@ -323,6 +360,9 @@ class SummaryJobs:
         self._run()
 
     def _calculate(self, job, reader, predicate, scope, native):
+        if 'compute' in job:
+            # Server-owned exact counts for a query result (see submit_counts).
+            return job['compute'](job['cancel'].is_set)
         context = job['context']
         if reader is not None and not native:
             reader.set_cancel_callback(job['cancel'].is_set)
@@ -338,6 +378,9 @@ class SummaryJobs:
         if (not isinstance(fields, list) or any(not isinstance(field, str) for field in fields)
                 or len(set(fields)) != len(fields)):
             raise ValueError('summary_fields must be an array of unique field IDs')
+        if not fields:
+            # Counts come with every result; a job summarizes requested fields.
+            raise ValueError('Choose at least one summary field')
         context['summary_fields'] = list(fields)
         catalog = field_registry(self.service)
         if set(fields) - {field['id'] for field in catalog['fields']}:
@@ -366,6 +409,37 @@ class SummaryJobs:
                 self.worker = threading.Thread(target=self._run, daemon=True, name='metadata-summaries')
                 self.worker.start()
             return acknowledgement
+
+    def submit_counts(self, context, compute):
+        """Queue server-owned exact counts for a query result; returns the request ID.
+
+        `compute(cancelled)` returns a JSON-safe result. The job carries the same
+        generation fence as requested summaries: a stale result is refused.
+        """
+        context = {**context, 'summary_fields': []}
+        current = generation(self.service, context)
+        with self.lock:
+            while len(self.jobs) >= MAX_JOBS:
+                terminal = next((key for key, job in self.jobs.items() if job['status'] != 'pending' and not job.get('running')), None)
+                if terminal is None:
+                    raise SummaryCapacity('Too many pending summaries; cancel one before retrying')
+                del self.jobs[terminal]
+            request_id = str(uuid.uuid4())
+            self.jobs[request_id] = {'request_id': request_id, 'status': 'pending', 'generation': current,
+                                     'summary_fields': [], 'context': context, 'cancel': threading.Event(),
+                                     'running': False, 'compute': compute}
+            if self.autostart and (self.worker is None or not self.worker.is_alive()):
+                self.worker = threading.Thread(target=self._run, daemon=True, name='metadata-summaries')
+                self.worker.start()
+            return request_id
+
+    def job_result(self, request_id):
+        """Server-side read of a counts job: (status, result or None); never waits."""
+        with self.lock:
+            job = self.jobs.get(request_id)
+            if job is None:
+                return 'missing', None
+            return job['status'], job.get('result')
 
     def _fence(self, job):
         with self.db_lock, self.registration_locks():
@@ -420,7 +494,11 @@ class SummaryJobs:
     def poll(self, request_id):
         with self.lock:
             job = self.jobs[str(uuid.UUID(request_id))]
-        if job['status'] in ('pending', 'ready'):
+        status = job['status']
+        # Ready results are always fenced. A pending job is fenced by its worker
+        # before and after calculation, so a poll is a status read and never
+        # waits behind that worker; it fences early only when the lock is free.
+        if status in ('pending', 'ready') and self.db_lock.acquire(blocking=status == 'ready'):
             try:
                 self._fence(job)
             except Exception as error:
@@ -428,6 +506,8 @@ class SummaryJobs:
                     job['cancel'].set()
                     job.pop('result', None)
                     job.update(status='stale', error=str(error))
+            finally:
+                self.db_lock.release()
         with self.lock:
             return self._payload(job)
 
@@ -480,15 +560,24 @@ def explore_page(service, predicate, *, scope=None, protocol_uuid=None, filters=
                 combined, typed = typed_scope(service, context)
                 result = reader.page(combined, typed, limit=limit, cursor=rank)
             else:
-                rows = _native_rows(service, context)
-                _, identities, _ = service.match_predicate(predicate, (row['epoch_uuid'] for row in rows))
-                members = set(identities)
-                rows = sorted((row for row in rows if row['epoch_uuid'] in members),
-                              key=lambda row: (row['date'], row['start_time'][11:], row['epoch_uuid']))
-                membership = checksum(rows)
+                if _whole_catalog(service, context):
+                    # The unfiltered project scope is the service's cached eligible
+                    # catalog; match it directly instead of re-listing every row.
+                    _, identities, _ = service.match_predicate(predicate)
+                    rows = [service.rows[key] for key in identities]
+                else:
+                    rows = _native_rows(service, context)
+                    _, identities, _ = service.match_predicate(predicate, (row['epoch_uuid'] for row in rows))
+                    members = set(identities)
+                    rows = [row for row in rows if row['epoch_uuid'] in members]
+                rows.sort(key=lambda row: (row['date'], row['start_time'][11:], row['epoch_uuid']))
+                offset = rank or 0
+                # The membership witness binds continuations; a single complete
+                # page without a cursor has nothing to bind.
+                if token is not None or offset + limit < len(rows):
+                    membership = checksum(rows)
                 if token is not None and token.get('membership') != membership:
                     raise StaleQuery('Authoritative filtered membership changed during paging')
-                offset = rank or 0
                 result = {'rows': copy.deepcopy(rows[offset:offset+limit]),
                           'cursor': offset+limit if offset+limit < len(rows) else None}
         if before != generation(service, context):
@@ -503,6 +592,7 @@ def explore_page(service, predicate, *, scope=None, protocol_uuid=None, filters=
 def register_explore_query_routes(app, service, db_lock, registration_locks, read_request):
     from flask import jsonify, request
     jobs = SummaryJobs(service, db_lock, registration_locks)
+    service._summary_jobs = jobs
     app.extensions['metadata_summary_jobs'] = jobs
 
     @app.get('/api/explore/field-registry')

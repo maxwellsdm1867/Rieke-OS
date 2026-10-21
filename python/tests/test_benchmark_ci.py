@@ -273,6 +273,49 @@ class WorkflowWiringTests(unittest.TestCase):
         self.workflow = yaml.safe_load((ROOT / '.github/workflows/everyday-million.yml').read_text())
         self.jobs = self.workflow['jobs']
 
+    def test_geometry_preflight_uses_exact_browser_closure_only_for_desktop(self):
+        # Execute both workflow snippets, rather than only checking their text.
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate, baseline = root / 'candidate', root / 'trace-baseline'
+            for runtime in ('everyday-python', 'trace-python'):
+                (root / runtime / 'bin').mkdir(parents=True)
+                (root / runtime / 'bin/python').symlink_to(sys.executable)
+            for package in ('workspace-app', 'desktop'):
+                for destination in (candidate, baseline):
+                    (destination / package).mkdir(parents=True)
+                    shutil.copy2(ROOT / package / 'package-lock.json', destination / package / 'package-lock.json')
+            frontend = baseline / 'workspace-app/package-lock.json'
+            value = json.loads(frontend.read_text())
+            value['version'] = value['packages']['']['version'] = '0.1.19'
+            frontend.write_text(json.dumps(value))
+            desktop = baseline / 'desktop/package-lock.json'
+            value = json.loads(desktop.read_text())
+            value['packages']['']['devDependencies']['electron'] = '44.5.0'
+            value['packages']['node_modules/electron']['version'] = '44.5.0'
+            desktop.write_text(json.dumps(value))
+            environment = {**os.environ, 'RUNNER_TEMP': str(root), 'GITHUB_WORKSPACE': str(candidate),
+                           'geometry_baseline': str(baseline), 'source': 'trace-baseline'}
+            snippets = []
+            for job in ('browser', 'trace-macos'):
+                lines = '\n'.join(step.get('run', '') for step in self.jobs[job]['steps']).splitlines()
+                calls = [index for index, line in enumerate(lines) if ' dependencies-match ' in line]
+                self.assertEqual(len(calls), 1)
+                index = calls[0]
+                snippet = '\n'.join(line.strip() for line in lines[index - 2:index + 1])
+                snippets.append((job, snippet))
+                for package in ('workspace-app', 'desktop'):
+                    result = subprocess.run(['bash', '-e', '-c', snippet], cwd=ROOT,
+                        env={**environment, 'package': package}, capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 0, (job, package, result.stderr))
+            value['packages']['node_modules/playwright-core']['integrity'] = 'sha512-changed'
+            desktop.write_text(json.dumps(value))
+            for job, snippet in snippets:
+                result = subprocess.run(['bash', '-e', '-c', snippet], cwd=ROOT,
+                    env={**environment, 'package': 'desktop'}, capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0, job)
+                self.assertIn('Incomparable locked browser dependencies', result.stderr)
+
     def test_macos_trace_job_binds_candidate_and_preserves_failures(self):
         job = self.jobs['trace-macos']
         self.assertEqual(job['runs-on'], 'macos-15')

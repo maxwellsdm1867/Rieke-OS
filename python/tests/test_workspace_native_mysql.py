@@ -179,6 +179,120 @@ class NativeMysqlTests(unittest.TestCase):
             self.assertFalse(native.stop_native_database(self.root))
         self.assertFalse(native._read(self.root / 'database/native-owner.json')['clean_shutdown'])
 
+    def test_failed_initialize_removes_only_its_own_partial_files_so_retry_is_allowed(self):
+        data = self.root / 'database/mysql'
+        credential_path = self.root / self.descriptor['credentials_ref']
+        def failed_initialize(command, **kwargs):
+            # MySQL may leave partial system files before failing.
+            data.joinpath('ibdata1').write_bytes(b'partial')
+            return SimpleNamespace(returncode=1, stderr=b'failed')
+        for attempt in range(2):
+            with self.subTest(attempt=attempt), patch.object(native, 'native_binary', return_value=Path('/app/bin/mysqld')), \
+                 patch.object(native, '_machine_identity', return_value='machine-a'), \
+                 patch.object(native.subprocess, 'run', side_effect=failed_initialize), \
+                 patch.object(native, '_launch', side_effect=AssertionError('never launched')):
+                with self.assertRaisesRegex(ValueError, 'initialization failed'):
+                    native.ensure_native_database(self.root)
+            self.assertFalse(credential_path.exists())
+            self.assertFalse(data.exists() and any(data.iterdir()))
+            self.assertFalse((self.root / 'database/native-owner.json').exists())
+
+    def test_existing_orphan_files_are_never_removed_by_failed_initialize(self):
+        credential_path = self.root / self.descriptor['credentials_ref']
+        native._write(credential_path, {'version': 1, 'project_uuid': self.identity,
+            'instance_uuid': self.descriptor['instance_uuid'], 'password': 'x' * 40})
+        with patch.object(native, 'native_binary', return_value=Path('/app/bin/mysqld')), \
+             patch.object(native.subprocess, 'run', side_effect=AssertionError('never initialize')):
+            with self.assertRaisesRegex(ValueError, 'interrupted'):
+                native.ensure_native_database(self.root)
+        self.assertTrue(credential_path.exists())
+
+    def test_bootstrap_failure_stops_its_server_then_removes_partial_initialization(self):
+        import pymysql
+        data = self.root / 'database/mysql'
+        runtime = {'pid': 123456789, 'socket': '/private/test.sock'}
+        stopped = []
+        def initialize(command, **kwargs):
+            data.joinpath('ibdata1').write_bytes(b'initialized')
+            return SimpleNamespace(returncode=0, stderr=b'')
+        with patch.object(native, 'native_binary', return_value=Path('/app/bin/mysqld')), \
+             patch.object(native, '_machine_identity', return_value='machine-a'), \
+             patch.object(native.subprocess, 'run', side_effect=initialize), \
+             patch.object(native, '_launch', return_value=runtime), \
+             patch.object(native, '_unix_connection', side_effect=pymysql.err.OperationalError(2002, 'refused')), \
+             patch.object(native, '_shutdown', side_effect=lambda *args: stopped.append(args[-1]) or True):
+            with self.assertRaises(pymysql.err.OperationalError):
+                native.ensure_native_database(self.root)
+        self.assertEqual(stopped, [''])
+        self.assertFalse((self.root / self.descriptor['credentials_ref']).exists())
+        self.assertFalse(data.exists() and any(data.iterdir()))
+
+    def test_dead_runtime_from_previous_executable_is_stale_not_an_ownership_error(self):
+        import psutil
+        self._owned_fixture(clean=False)
+        me = psutil.Process()
+        old = '/old/app/bin/mysqld'
+        native._write(self.root / self.descriptor['runtime_ref'], {
+            'project_uuid': self.identity, 'instance_uuid': self.descriptor['instance_uuid'],
+            'project_path': str(self.root), 'pid': me.pid, 'process_created': me.create_time() - 100,
+            'executable': old, 'argv': [old], 'port': 3306, 'machine_id': 'machine-a'})
+        with patch.object(native, '_machine_identity', return_value='machine-a'), \
+             patch.object(native, 'native_binary', return_value=Path('/new/app/bin/mysqld')), \
+             patch.object(native, '_launch', return_value={'ready': True}) as launch:
+            self.assertEqual(native.ensure_native_database(self.root), {'ready': True})
+            launch.assert_called_once()
+        self.assertFalse((self.root / self.descriptor['runtime_ref']).exists())
+        # A live process from the previous executable still refuses attachment.
+        native._write(self.root / self.descriptor['runtime_ref'], {
+            'project_uuid': self.identity, 'instance_uuid': self.descriptor['instance_uuid'],
+            'project_path': str(self.root), 'pid': me.pid, 'process_created': me.create_time(),
+            'executable': old, 'argv': [old], 'port': 3306, 'machine_id': 'machine-a'})
+        with patch.object(native, '_machine_identity', return_value='machine-a'), \
+             patch.object(native, 'native_binary', return_value=Path('/new/app/bin/mysqld')), \
+             patch.object(native, '_owned_process', return_value=MagicMock()), \
+             patch.object(native, '_launch', side_effect=AssertionError('never launched')):
+            with self.assertRaisesRegex(ValueError, 'executable changed'):
+                native.ensure_native_database(self.root)
+
+    def test_project_runtime_state_has_one_answer_per_situation(self):
+        import psutil
+        from disco.projects import runtime_state as rs
+        state = lambda: rs.project_runtime_state(self.root)['state']
+        self.assertEqual(state(), rs.NEVER_STARTED)
+        self._owned_fixture(clean=True)
+        self.assertEqual(state(), rs.STOPPED_CLEAN)
+        self._owned_fixture(clean=False)
+        self.assertEqual(state(), rs.STOPPED_UNCLEAN)
+        me = psutil.Process()
+        runtime = {'project_uuid': self.identity, 'instance_uuid': self.descriptor['instance_uuid'],
+                   'project_path': str(self.root), 'pid': me.pid, 'process_created': me.create_time(),
+                   'executable': str(Path(me.exe()).resolve()), 'argv': me.cmdline(), 'machine_id': 'machine-a'}
+        with patch.object(native, '_machine_identity', return_value='machine-a'):
+            native._write(self.root / self.descriptor['runtime_ref'], runtime)
+            self.assertEqual(state(), rs.RUNNING_OWNED)
+            self.assertEqual(rs.project_runtime_state(self.root)['pid'], me.pid)
+            native._write(self.root / self.descriptor['runtime_ref'], {**runtime, 'process_created': me.create_time() - 100})
+            self.assertEqual(state(), rs.STOPPED_UNCLEAN)  # Recycled PID: never ours.
+            native._write(self.root / self.descriptor['runtime_ref'], {**runtime, 'executable': '/foreign/bin'})
+            self.assertEqual(state(), rs.RUNNING_FOREIGN)
+            native._write(self.root / self.descriptor['runtime_ref'], {**runtime, 'project_path': '/source/project'})
+            self.assertEqual(state(), rs.RUNNING_FOREIGN)  # A copy's source database.
+        with patch.object(native, '_machine_identity', return_value='machine-b'):
+            native._write(self.root / self.descriptor['runtime_ref'], runtime)
+            self.assertEqual(state(), rs.STOPPED_UNCLEAN)  # Never inspect another computer's PID.
+        (self.root / self.descriptor['runtime_ref']).unlink()
+        (self.root / 'database/native-owner.json').unlink()
+        self.assertEqual(state(), rs.STOPPED_UNCLEAN)  # Credentials without owner: interrupted initialization.
+
+    def test_recorded_process_identity_rejects_recycled_pids(self):
+        import psutil
+        from disco.projects.runtime_state import recorded_process_alive
+        parent = psutil.Process(os.getppid())
+        self.assertTrue(recorded_process_alive(parent.pid, parent.create_time()))
+        self.assertFalse(recorded_process_alive(parent.pid, parent.create_time() - 100))
+        self.assertFalse(recorded_process_alive(parent.pid, None, entry_points={'recording_workspace.py'}))
+        self.assertFalse(recorded_process_alive(999999999, None))
+
     def test_machine_identity_hashes_hardware_uuid_and_fails_closed(self):
         native._machine_identity.cache_clear()
         self.addCleanup(native._machine_identity.cache_clear)

@@ -62,6 +62,13 @@ public entry/import rules; run `python3 -B tools/architecture_guard.py check
 `RIEKE_TEST_DOM_MODULE` to be unset. No native qualification follows from these
 frontend checks.
 
+## Query building sends no previews
+
+No preview counts or statistics while a query is being built; results show on run;
+one after-query summary job follows. The only request allowed while editing is
+tag-name autocomplete (`/annotation-tags?q=`). See
+[typed-query](typed-query/AGENTS.md) and [metadata explorer](metadata-explorer/AGENTS.md).
+
 ## Selection and highlight styling
 
 Selection, active navigation and highlights use background fill, label emphasis

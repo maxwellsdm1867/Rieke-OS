@@ -7,6 +7,7 @@ import uuid
 from unittest.mock import patch
 
 from test_workspace_workbench import WorkbenchTests
+from disco.workbench.workbench import WorkbenchConflict
 
 
 class CumulativePendingTests(unittest.TestCase):
@@ -142,12 +143,12 @@ class CumulativePendingTests(unittest.TestCase):
         tracker=self.native_transaction_receipts()
         request=dict(expected_queue_revision=self.queue()['queue_revision'])
         before=copy.deepcopy([table.rows for table in self.case.connection.tables])
-        create=self.manager.history.create
+        create=self.manager.history.create_delta
         def race(*args,**kwargs):
             result=create(*args,**kwargs)
             tracker.generation+=1
             return result
-        with patch.object(self.manager.history,'create',side_effect=race):
+        with patch.object(self.manager.history,'create_delta',side_effect=race):
             response=self.case.client.post(self.case.base+'/workbench/prepare',json=request,headers=self.case.headers)
         self.assertEqual(response.status_code,409,response.get_json())
         self.assertEqual([table.rows for table in self.case.connection.tables],before)
@@ -341,7 +342,11 @@ class CumulativePendingTests(unittest.TestCase):
     def test_main_level_blocker_offers_nothing_and_names_the_reason(self):
         main = self.case.explorer_history.protocol_binding(self.protocol)['recipe']
         drifted = main['epochs'][0]['uuid']
-        self.case.service._fingerprints[drifted] = 'e' * 64
+        self.queue()  # Warm the per-publication main checks first.
+        # A refresh publishes a new fingerprint map under a new publication token.
+        service = self.case.service
+        service._fingerprints = {**service._fingerprints, drifted: 'e' * 64}
+        service._explore_publication = str(uuid.uuid4())
         queue = self.queue()
         self.assertEqual(queue['pending_epoch_count'], 0)
         self.assertIn('metadata changed', queue['main_blocked_reason'])
@@ -525,7 +530,9 @@ class CumulativePendingTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.get_json())
         self.assertEqual(response.get_json()['epoch_uuids'], expected)
         self.assertEqual([cell['cell_uuid'] for cell in response.get_json()['cells']], [cell['cell_uuid'] for cell in cells])
-        self.assertEqual(sum(row['operation'] == 'context' for row in timings), 2)
+        # One full opening context; the close compares current tokens against it.
+        self.assertEqual(sum(row['operation'] == 'context' for row in timings), 1)
+        self.assertEqual(sum(row['operation'] == 'closing_context' for row in timings), 1)
         canonical_reads = sum(row['operation'] == 'get' and row['module'] == 'disco.decisions.explorer' for row in timings)
         original = self.manager.history.get
         with patch.object(self.manager.history, 'get', side_effect=original), capture_timings() as custom_timings:
@@ -712,3 +719,197 @@ class CumulativePendingTests(unittest.TestCase):
         recipe = self.manager.history.get(fresh['candidate_revision_uuid'])['recipe']
         self.assertEqual({row['uuid']: row['metadata_hash'] for row in recipe['epochs']}[self.added], 'c' * 64)
 
+
+    def merge_all(self, queue=None, operation=None):
+        queue = queue or self.queue()
+        return self.case.client.post(self.case.base + '/workbench/merge-all', json=dict(
+            expected_queue_revision=queue['queue_revision'], operation_uuid=operation or str(uuid.uuid4())),
+            headers=self.case.headers)
+
+    def test_merge_all_never_merges_epochs_left_out_after_recording_exclude_and_reinclude(self):
+        # Excluding and re-including a recording returns the pool to an earlier
+        # content, so its earlier immutable candidate is reused. The leave-out
+        # made in between must carry into it: queue and merge-all read one draft.
+        first, _ = self.more_import()
+        self.assertEqual(self.queue()['pending_epoch_count'], 2)
+        earlier, _ = self.prepare()
+        source = self.case.service.rows[first]['source_sha256']
+        project = self.case.service.project['project_uuid']
+        self.case.data_store_states.insert1(dict(project_uuid=project, source_sha256=source, query_excluded=True,
+            archived=False, frozen=False, version=1, updated_at=None, actor='actor-one', server_actor='actor-one', reason='t'))
+        self.assertEqual(self.queue()['pending_epoch_count'], 1)
+        narrowed, _ = self.prepare()
+        self.assertNotEqual(narrowed['candidate_revision_uuid'], earlier['candidate_revision_uuid'])
+        self.patch_draft(narrowed, [dict(epoch_uuid=self.added, excluded=True)])
+        self.case.data_store_states.rows[:] = [row for row in self.case.data_store_states.rows if row['source_sha256'] != source]
+        queue = self.queue()
+        self.assertEqual((queue['pending_epoch_count'], queue['left_out_epoch_count']), (1, 1))
+        reused, _ = self.prepare()
+        self.assertEqual(reused['candidate_revision_uuid'], earlier['candidate_revision_uuid'])
+        self.assertTrue(reused['reused'])
+        decision = next(item for item in reused['context']['draft']['decisions'] if item['epoch_uuid'] == self.added)
+        self.assertTrue(decision['excluded'])
+        self.assertEqual(self.queue()['queue_revision'], queue['queue_revision'], 'preparation keeps its own fence')
+        merged = self.merge_all(queue)
+        self.assertEqual(merged.status_code, 200, merged.get_json())
+        self.assertEqual(merged.get_json()['accepted_epoch_uuids'], [first])
+        queue = self.queue()
+        self.assertEqual((queue['pending_epoch_count'], queue['left_out_epoch_count']), (0, 1))
+
+    def test_draft_edits_on_a_reused_candidate_stay_the_latest_review(self):
+        first, _ = self.more_import()
+        earlier, _ = self.prepare()
+        source = self.case.service.rows[first]['source_sha256']
+        project = self.case.service.project['project_uuid']
+        self.case.data_store_states.insert1(dict(project_uuid=project, source_sha256=source, query_excluded=True,
+            archived=False, frozen=False, version=1, updated_at=None, actor='actor-one', server_actor='actor-one', reason='t'))
+        narrowed, _ = self.prepare()
+        self.patch_draft(narrowed, [dict(epoch_uuid=self.added, excluded=True)])
+        self.case.data_store_states.rows[:] = [row for row in self.case.data_store_states.rows if row['source_sha256'] != source]
+        reused, _ = self.prepare()
+        # Re-allow the epoch and leave the other out on the reused candidate:
+        # the queue must follow that newer draft, not the newer-created one.
+        self.patch_draft(reused, [dict(epoch_uuid=self.added, excluded=False), dict(epoch_uuid=first, excluded=True)])
+        queue = self.queue()
+        self.assertEqual((queue['pending_epoch_count'], queue['left_out_epoch_count']), (1, 1))
+        self.assertEqual([item['source_sha256'] for item in queue['pending_recordings']],
+                         [self.case.service.rows[self.added]['source_sha256']])
+        merged = self.merge_all(queue)
+        self.assertEqual(merged.status_code, 200, merged.get_json())
+        self.assertEqual(merged.get_json()['accepted_epoch_uuids'], [self.added])
+
+    def test_failed_merge_all_persists_no_all_consent_or_draft_version(self):
+        self.more_import()
+        prepared, _ = self.prepare()
+        draft = prepared['context']['draft']
+        queue = self.queue()
+        self.case.app.config['TESTING'] = False
+        with patch.object(self.manager, 'verify_sources', side_effect=WorkbenchConflict('Source changed')):
+            failed = self.merge_all(queue)
+        self.assertEqual(failed.status_code, 409, failed.get_json())
+        context = self.get_context('/api' + prepared['root'])
+        self.assertEqual((context['draft']['selection_mode'], context['draft']['draft_version']),
+                         (draft['selection_mode'], draft['draft_version']))
+        self.assertEqual(self.queue()['queue_revision'], queue['queue_revision'])
+        # Nothing to merge (every epoch left out) also leaves the draft alone.
+        prepared = self.patch_draft(prepared, [dict(epoch_uuid=key, excluded=True) 
+            for key in self.manager.pending_pool(self.protocol)['pool']])
+        draft = prepared['context']['draft']
+        queue = self.queue()
+        empty = self.merge_all(queue)
+        self.assertEqual(empty.status_code, 400, empty.get_json())
+        context = self.get_context('/api' + prepared['root'])
+        self.assertEqual((context['draft']['selection_mode'], context['draft']['draft_version']),
+                         (draft['selection_mode'], draft['draft_version']))
+        self.assertEqual(self.queue()['queue_revision'], queue['queue_revision'])
+
+    def test_merge_all_replay_requires_a_merge_receipt_for_the_same_protocol(self):
+        self.more_import()
+        prepared, _ = self.prepare(dict(expected_queue_revision=self.queue()['queue_revision'],
+                                        operation_uuid=str(uuid.uuid4())))
+        # A prepare receipt's operation UUID never replays as a merge.
+        reused = self.merge_all(operation=prepared['operation_uuid'])
+        self.assertEqual(reused.status_code, 409, reused.get_json())
+        merged = self.merge_all()
+        self.assertEqual(merged.status_code, 200, merged.get_json())
+        other = str(uuid.uuid4())
+        self.case.service.protocols[other] = self.case.service.protocols[self.protocol]
+        response = self.case.client.post('/api/protocols/' + other + '/workbench/merge-all', json=dict(
+            expected_queue_revision='unused', operation_uuid=merged.get_json()['operation_uuid']), headers=self.case.headers)
+        self.assertEqual(response.status_code, 409, response.get_json())
+
+    def test_published_refresh_recomputes_the_pool_even_when_map_identity_and_size_repeat(self):
+        foreign, _ = self.more_import()
+        recorded = self.case.service.rows[self.added]['protocol_name']
+        self.case.service.rows[foreign]['protocol_name'] = 'other.lab.protocols.TripleHistory'
+        self.case.service._explore_publication = 'publication-one'
+        self.assertEqual(self.queue()['pending_epoch_count'], 1)
+        # A refresh publishes rows under a new publication token. The pool must
+        # not depend on fingerprint-map address reuse to notice it.
+        self.case.service.rows[foreign]['protocol_name'] = recorded
+        self.case.service._explore_publication = 'publication-two'
+        self.assertEqual(self.queue()['pending_epoch_count'], 2)
+
+    def recipe_reads(self, action):
+        """Stored recipe reads (ExplorerHistory.get fetches and re-hashes) by one action."""
+        log = self.case.explorer_revisions.read_log
+        start = len(log)
+        action()
+        return sum(entry['projected'] is None and any('revision_uuid' in restriction for restriction in entry['restrictions']
+                   if isinstance(restriction, dict)) for entry in log[start:])
+
+    def test_queue_and_candidate_recipe_reads_stay_flat_as_imports_grow(self):
+        queue_reads, page_reads = [], []
+        for _ in range(5):
+            self.more_import()
+            prepared, _ = self.prepare()
+            self.queue()  # Admit discovery facts once; later reads must not re-read them.
+            self.epochs(prepared)
+            queue_reads.append(self.recipe_reads(self.queue))
+            page_reads.append(self.recipe_reads(lambda: self.epochs(prepared)))
+        self.assertEqual(len(set(queue_reads)), 1, queue_reads)
+        self.assertEqual(len(set(page_reads)), 1, page_reads)
+        # A candidate read verifies candidate, baseline and main once each.
+        self.assertLessEqual(page_reads[0], 3, page_reads)
+
+    def test_candidate_read_builds_one_full_context_and_closes_with_tokens(self):
+        prepared, _ = self.prepare()
+        with patch.object(self.manager, 'proposal', wraps=self.manager.proposal) as proposals:
+            self.epochs(prepared)
+        self.assertEqual(proposals.call_count, 1)
+        revision, actor = prepared['candidate_revision_uuid'], prepared['actor']
+        opened = self.manager.context(self.protocol, revision, actor)
+        def closing():
+            return self.manager.context(self.protocol, revision, actor, closing=opened)['candidate_scope_revision']
+        def full():
+            return self.manager.context(self.protocol, revision, actor)['candidate_scope_revision']
+        with patch.object(self.manager, 'proposal', side_effect=AssertionError('closing must not rebuild')):
+            self.assertEqual(closing(), opened['candidate_scope_revision'])
+        service = self.case.service
+        original_scope = service.source_scope
+        changes = [
+            ('draft', lambda: self.patch_draft(prepared, deferred=True), None),
+            ('source', lambda: setattr(service, 'source_scope', lambda: {**original_scope(), 'revision': 'changed'}),
+             lambda: setattr(service, 'source_scope', original_scope)),
+            ('publication', lambda: setattr(service, '_explore_publication', 'replaced'), None),
+            ('fingerprint map', lambda: setattr(service, '_fingerprints', dict(service._fingerprints)), None),
+        ]
+        for name, change, restore in changes:
+            with self.subTest(change=name):
+                opened = self.manager.context(self.protocol, revision, actor)
+                change()
+                if name in ('publication', 'fingerprint map'):
+                    # Unprovable identity: the close rebuilds in full (same content here).
+                    with patch.object(self.manager, 'proposal', wraps=self.manager.proposal) as rebuilt:
+                        self.assertEqual(closing(), opened['candidate_scope_revision'])
+                    self.assertEqual(rebuilt.call_count, 1)
+                    changed = next(iter(opened['pending']))
+                    service._fingerprints[changed] = 'c' * 64
+                    self.assertNotEqual(closing(), opened['candidate_scope_revision'])
+                    service._fingerprints[changed] = opened['pending'][changed]
+                else:
+                    self.assertNotEqual(closing(), opened['candidate_scope_revision'])
+                self.assertEqual(closing(), full(), 'closing tokens agree with a full rebuild')
+                if restore:
+                    restore()
+        # A main rebound to another version of the same revision also refuses.
+        opened = self.manager.context(self.protocol, revision, actor)
+        binding = next(row for row in self.case.protocol_bindings.rows if row['protocol_uuid'] == self.protocol)
+        binding['version'] += 1
+        self.assertNotEqual(closing(), opened['candidate_scope_revision'])
+        binding['version'] -= 1
+
+    def test_finish_and_carry_write_decisions_in_one_statement(self):
+        first, _ = self.more_import()
+        prepared, _ = self.prepare()
+        root, context = '/api' + prepared['root'], prepared['context']
+        with patch.object(self.tables[1], 'insert1', side_effect=AssertionError('per-row insert')), \
+                patch.object(self.tables[1], 'insert', wraps=self.tables[1].insert) as inserts:
+            finished = self.case.client.post(root + '/finish', json=dict(expected_version=context['draft']['draft_version'],
+                expected_candidate_scope_revision=context['candidate_scope_revision']), headers=self.case.headers)
+            self.assertEqual(finished.status_code, 200, finished.get_json())
+            self.assertEqual(inserts.call_count, 1)
+            self.more_import()
+            carried, _ = self.prepare()
+            self.assertEqual(inserts.call_count, 2)
+        self.assertEqual(carried['draft_initialization']['carried_decision_count'], 2)

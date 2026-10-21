@@ -32,6 +32,14 @@ closing a review proves no rollback. UI labels never create recorded identities.
 
 ## Entry readiness
 
+Queue/summary HTTP 202 preparation responses are not queue authority. The compact
+Prepare view action explicitly POSTs `/workbench/prepare`, then requests a fresh
+queue/summary. `useWorkbenchPreparation` owns cancellation by project, protocol,
+revision, retained visibility and unmount; it never automatically retries or
+grants merge consent. Preparation and its subsequent fresh read keep actions
+unavailable. Overview review cards, Workbench and the import-review dialog expose
+the same preparation path; unavailable pending counts never display as no updates.
+
 App mounts Workbench independently of the main protocol summary and main tree
 layout. Incoming queue negotiation, preparation and fresh candidate context still
 gate the frozen browser. A pending or failed main summary cannot block incoming
@@ -152,8 +160,12 @@ Current selection uses selected UUIDs, independently of visible tree paths.
 `ui/IncomingSelectionSummary.jsx` owns the abortable candidate/binding/owner and
 pause-transition lifetime. The 52px status row marks verified selection counts Live and shows selected epochs, unique
 cells and recorded types; unclassified cells stay in the breakdown. Pending/error
-receipts never borrow old counts. `incomingSelectionSummaryRendering.test.js`
-covers first-paint pause/resume and A-B-A retirement. This is read presentation,
+receipts never borrow old counts. The first read is immediate; later selection
+changes settle for 250 ms, so a burst of toggles sends one read. A manifest token
+is reused only for the same exact sorted selection, scope and binding (pause/resume,
+retry); a refused cached token is dropped, never retried silently.
+`incomingSelectionSummaryRendering.test.js` covers first-paint pause/resume, A-B-A
+retirement and the burst/manifest-reuse ledger. This is read presentation,
 not a new selection or merge/export authority.
 
 Branch selection uses `incomingTreeSelection.js`: capable frozen contexts resolve
@@ -182,7 +194,11 @@ no focused-row fallback or replacement/removal is permitted. A revision, owner o
 availability change before submission retires the action. Once submitted, uncertain
 acceptance retains the exact preview and operation UUID for receipt recovery.
 Selection/navigation/session restoration alone never issues that consent. Export
-retains its separate review and confirmation workflow. Mounted one-action, lost
+retains its separate review and confirmation workflow. Once a merge is undone in
+this session (`mergeUndo.js` `subscribeMergeUndone`), its Export accepted / Merge &
+export actions are withdrawn at once. The undone set is session memory only;
+after a reload the backend refuses an accepted export of an undone merge (409), and
+the export dialog shows that refusal. Mounted one-action, lost
 reply, excluded selection, incomplete preview and interrupted-lifetime checks are
 in `incomingWorkbenchRendering.test.js`.
 

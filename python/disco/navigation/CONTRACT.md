@@ -19,7 +19,17 @@ and choices. Unknown fields and unsupported operators fail closed. Grouping uses
 opaque escaped field names and exact typed ordering; it does not select membership
 or read waveforms. Scalar built-in groupings treat both `None` and absence as
 the legacy missing branch; dynamic explicit null and joint component presence
-remain distinct. Saved methods and layouts retain optimistic versions and do
+remain distinct. Predicate contract version 2 applies the same meaning to
+predicates, the typed index and joint keys: a built-in field (`BASE_FIELDS`)
+recorded as `None` is absent, so `missing`/`exists`/`ne`/`not_in`/`is_null` count it
+exactly as the tree's "Not recorded" branch; recorded dynamic nulls stay values.
+Stored version-1 work whose result could differ (`reinterpretation_required`) is
+never reinterpreted: saved selections refuse "Check for updates" and export reuse
+until their search is re-run; import suggestions and source-eligibility propagation
+skip them with the visible reason "Saved selection uses the old 'missing' meaning;
+re-run it."; old-contract search-preset runs are reported as superseded instead of
+current. Frozen export snapshots of source predicates record
+`predicate_contract_version`; reuse refuses an older affected contract. The change rebuilds disposable metadata indexes once. Saved methods and layouts retain optimistic versions and do
 not replace immutable applied-query, source or native revision authority.
 
 Tree pages retain captured WorkspaceService/ExplorerHistory method identity,
@@ -168,3 +178,290 @@ Cell-level tree branches carry optional recorded `cell_type` from the existing
 representative rows. Paged branches and ancestors forward this display metadata.
 No new lookup, scope scan, summary request or membership authority is introduced.
 Other grouping levels do not gain cell identity metadata.
+
+## Search predicate paths
+
+Predicate meaning is unchanged; these are cost rules for the same results.
+
+- **Tag states per generation.** `TagPredicates` keeps tag states and evidence
+  per verified state generation, keyed by the predicate-catalog witness
+  (`service._annotation_catalog_generation`: StateGenerationAuthority tokens for
+  the shared scope and each referenced protocol's curation scope, native reader
+  identities, publication, index/typed generations, source scope and row/cell
+  identities). Tag-time fields use the shared token: their time rows are written
+  in the same transaction as their tags. A hit reads only those tokens. A memo is
+  stored only when the witness is unchanged after the build; an unavailable or
+  replaced reader/authority recomputes exactly as before. Callers receive
+  read-only state lookups and an independent deep copy of the evidence.
+- **Per-value leaves.** A tag leaf is evaluated once per distinct saved tag array
+  (plus once for the empty array), not once per epoch; set algebra combines them
+  over the eligible universe. Shared states are built only for epochs with a
+  direct record or a recorded cell. Evidence revisions stay byte-identical; the
+  publication keeps the cell-link hash state so a shared write does not re-sort
+  every epoch link.
+- **Tag times.** With a time table, matches come from the per-tag time rows (cached
+  per shared token). Without one, chips are read from scoped annotation records
+  (approximate update time), never by hydrating every epoch.
+- **Whole-catalog scope.** `WorkspaceService` keeps the unfiltered active-source
+  rows in tree order per publication and source scope. Its ID tuple proves a scope
+  is the whole eligible catalog: the typed reader then selects by source instead
+  of admitting each identity, the native index matches without a scratch scope,
+  and sparse tag results are ordered by the tree key instead of scanning every
+  ID. A replaced `_filter_rows` policy still decides eligibility itself.
+  Canonical string-ID scopes retain membership as the read-only keys view of a
+  private atomic dictionary, preserving the snapshot and set algebra without a
+  GC-traversed set table. Proven frozen publications keep ordered rows as a lazy
+  sequence over the captured map and shared ID tuple; replacing the publication
+  cannot retarget an older reader. Mutable rows retain their original row tuple,
+  and custom filter policies retain the tuple/frozenset fallback. No collector
+  threshold, collection scheduling, publication fence or eligibility rule changes.
+- **Catalog fields and summaries.** Annotation catalog fields and native summary
+  buckets for tag fields come from the generation's distinct tag arrays (counts
+  and first occurrence in scope order), with output identical to the shared
+  index and the per-epoch construction. Protocol tag states read only saved
+  decisions (`CurationStore.saved_states`); an absent epoch has the default
+  state. Text whose JSON spelling could differ between Python and SQLite is
+  answered by the shared index itself.
+- **Shared writes.** The latest entry for a field set is patched from the shared
+  change feed when the publication, protocol tokens and fields are unchanged,
+  the entry carries the exact shared token it was built at, and the feed
+  returns every changed record up to the current witness (at most 1000).
+  Changed records are re-read by key and validated; affected epochs are
+  recomputed and the evidence revision is rebuilt. Otherwise the entry is
+  rebuilt; a witness that changes during the patch stores nothing.
+- **Summary polls.** A pending poll is a status read and never waits behind the
+  worker (which fences before and after calculating); it fences early only when
+  the database lock is free. Ready results are always fenced.
+
+Coverage: `python/tests/test_workspace_predicate_paths.py`.
+
+Native refresh prepares the metadata-derived tag witnesses before exposing its
+new frozen publication: the exact fingerprint-universe digest, registered cell
+links hash prefix, cell membership and per-source cardinalities. Requests reuse
+these structures only while both captured immutable maps are the same objects;
+a mutable/custom publication keeps the conservative fallback. Canonical evidence
+bytes and live annotation-generation checks are unchanged. Mixed-query run totals
+use exact source cardinalities instead of constructing sorted eligible rows.
+Preparation is publication work, recorded separately from request timing by the
+route fixture; it is not a claim that import/startup became constant-time.
+
+## Counted previews and publication revisions
+
+A project-scope predicate tree over a frozen publication (`publication_serial`:
+rows, cells, protocols and fingerprints are deep-frozen and every republish
+advances the serial) is identified by version-2 `selection_revision`:
+predicate, filters, splits, annotation evidence, source scope and the
+publication identity (serial, native index generation, typed generation). No
+member is hashed. Frozen maps refuse in-place mutation, so an unchanged
+identity proves unchanged membership. Shared-tag filters, replaced membership
+policies, non-canonical indexes and unfrozen adapters keep the version-1
+membership hash. Protocol trees are unchanged.
+
+`POST /api/explore/preview` with `summary_only: true`, `catalog_summary: false`
+and no `baseline_revision_uuid`/`focused_uuid` is counted: one typed `COUNT`
+over the active sources (the whole typed table when no source is excluded; the eligible total is memoized per publication and
+source scope) and the version-2 revision, with no ID collection or membership
+list. Annotation predicates and anything else outside that contract use the
+exact path. Results that freeze membership (run, revisions, exports, baseline
+diffs) keep the exact membership. Coverage:
+`python/tests/test_workspace_counted_preview.py`.
+
+## Query runs and inspection pages
+
+Over a frozen publication with the typed index, a metadata predicate's query
+run (`POST /api/explore/run` with `catalog_summary: false`) records its counts
+without listing matches: the matched count (exact per-value sums for
+single-field predicates, otherwise one typed `COUNT`), the distinct cell count
+and the version-2 tree revision. Inspection pages (`POST /api/explore/epochs`)
+first check the revision, then read one typed window ordered by the inspection
+chronology `chronology_rank` (date, time of day of `start_time`, UUID: exactly
+`tree_pages._chronology`), with the total, anchor position (a count of earlier
+matches) and the cell list (per-cell counts in order of first appearance)
+computed in SQL. A single-field predicate (any AND/OR/NOT over one field, at most
+20,000 distinct values) takes its total, cell list and distinct-cell count from
+sealed per-(field, value), per-(field, value, cell) and per-(field, cell missing)
+aggregates (O(values x cells), never O(matches)). Totals and cell lists are kept
+per (revision, predicate, cell filter); later pages are keyset seeks from the
+previous page's last inspection rank (O(page)). Results equal the exact scope reader; annotation predicates,
+unfrozen adapters and replaced policies use the exact path. A run does not
+freeze membership; revisions and exports keep exact membership. Coverage:
+`python/tests/test_workspace_query_run.py`.
+
+### Pending counts and the paged cell list
+
+A multi-field predicate's run and pages answer at once without its totals:
+`matched_count`/`total`, `last_run.epoch_count`/`cell_count` and the page cell
+list are `null`, with `counts: {status: "pending", request_id}` (and
+`cells_pending: true` on pages that asked for cells). One server-owned job per
+(revision, predicate) counts them exactly on the summary worker under the same
+generation fence; `GET /api/explore/summaries/<request_id>` returns
+`{matched_count, cell_count}` when ready, and later pages then carry the exact
+total and cell list with `counts.status: "ready"`. `has_more` is always exact
+(one extra row is read). Single-field predicates answer their counts at once.
+
+`POST /api/explore/epochs` pages the cell list with `cells_limit` (1–1000) and
+`cells_after` (cells already received, default 0): the response carries `cells`
+(that window, in first-appearance order), `cells_total` and `cells_next` (the
+next `cells_after`, or `null` at the end). Without `cells_limit` the full list
+is returned as before.
+
+### Predicates with annotation leaves
+
+Runs and inspection pages of predicates with tag leaves (protocol curation
+tags, shared/effective tags, tag times, alone or with metadata leaves) take the
+match from the generation's tag states (`match_predicate` over the cached
+eligible universe). The tree revision binds the annotation evidence revision and
+the frozen publication. Per revision the matches are kept once in inspection
+chronology with their cell list: totals are sizes, pages are slices, anchors and
+cell filters index the kept list. Results equal the exact scope reader
+(`python/tests/test_workspace_query_run.py`).
+Predicates mixing tag leaves with recorded-metadata leaves answer runs and pages
+at once like other multi-field predicates: pages walk the eligible inspection
+chronology in bounded chunks matched by the canonical matcher (tag leaves from
+the tag states, metadata leaves from the typed index over the chunk) and resume
+from each page's kept position; totals and the cell list come from a pending
+counts job that runs the full match.
+
+## Background mixed-query counts
+
+`TagPredicates.snapshot_matcher` captures the validated AST, frozen row mapping,
+copy-on-write tag-state entry and validated canonical tag-time records while the
+caller holds the database lock. Its evaluator uses only these inputs and a leased
+worker-owned typed reader; it never calls live annotation or service readers. The
+live and captured paths share exact Boolean set semantics and metadata validation.
+Custom time stores without the canonical time table retain the conservative live
+locked fallback; display chip timestamps are not substituted for recorded times.
+
+Mixed-count jobs release the navigation lock before broad membership evaluation,
+chronology sorting and distinct-cell counting. Existing SummaryJobs opening and
+closing generation fences remain required; source/tag mutation or cancellation
+cannot publish a result. See test_workspace_query_run's held-worker navigation,
+source-staleness and exact tag/time/source-scope parity checks.
+
+`tag_predicates.prepare_publication` lazily imports the retained
+`workspace_service.publication_serial` witness to admit only the canonical frozen
+read model before precomputing metadata-derived tag lookup maps. This narrow
+reverse dependency reuses the existing publication proof; it neither constructs a
+second authority token nor changes mutable/custom fallback admission.
+The named `prepare_publication(service)` entry is public for the retained service
+and its synthetic route fixture; `_Publication` remains private. Regression tests
+observe the returned prepared witness rather than importing its private class.
+
+Mixed result pages seek the sealed typed index's inspection-chronology ranks in
+bounded windows. Their continuation is the last accepted rank; cell pages add
+the direct cell scope before seeking. Active-source eligibility is checked within
+each window, preserving exact matches without constructing a project-wide UUID
+list or sorting it on a first page. Explicit uncached offset/anchor searches may
+visit preceding matches; sparse predicates may visit multiple windows.
+
+## Explicit prepared navigation
+
+`prepared_tree.PreparedTree` holds caller-validated immutable metadata in ordered
+indexes. Preparation preserves canonical scope order for representatives and
+float sums; page, anchor and at-most-1,000 selection reads visit only indexed
+paths and returned rows. Persistent membership deltas preserve prior snapshots,
+update exact epoch/distinct-cell counts, and mark affected durations pending.
+`finish_durations` performs the exact canonical fold outside ordinary reads.
+
+`prepared_navigation.PreparedNavigation` owns native publication admission,
+explicit preparation and per-response closing fences. Initial default/saved
+layouts are prepared at project publication; other layouts use the explicit
+`POST /api/tree-pages/prepare` action. Unsupported custom/mutable adapters keep
+their existing reader. Missing projections, feed gaps, metadata/source changes,
+unretained scientific proofs or resource limits return HTTP 202 preparing with
+no stale count payload; GET never rebuilds them implicitly. Prepared views share
+a 768 MiB conservative structure budget and a 32-view limit. Preparation receipts
+report deferred/evicted views instead of claiming that every layout is ready.
+
+Only an ExplorerHistory-owned already-verified bounded delta chain may continue a
+bound scope, including undo. At most 64 cached links and 20,000 changed identities
+are traversed; no member cache is rebuilt or flattened during navigation. Its bounded accessor can require preparation when
+proofs are no longer retained. Navigation does not reimplement recipe seals or
+member authority. Catch-up publishes only after recovery capture has verified
+and exited; every prepared page/selection also checks its closing publication,
+binding and recovery watermark. Mixed-family labels use exact incremental
+family counts. Metadata/index registration locks and response attestations remain.
+
+One worker folds pending durations on detached immutable trees. Completion
+compares tree and membership identity, retaining a newer unrelated-write
+watermark; obsolete/evicted jobs cannot publish. Failure remains explicit rather
+than permanent pending. Shutdown drains this owner before acquiring the DB lock.
+The exact page/anchor/DFS, mutation, feed-gap and held-worker race checks are in
+`test_workspace_prepared_tree.py` and `test_workspace_prepared_navigation.py`.
+Unfrozen source adapters retain an exact fingerprint-dictionary witness and the
+historical 4 MiB grouping reservation. Canonical frozen publications may reserve
+up to 48 MiB for grouping. Both reservations and all retained containers still
+count against the same conservative 64 MiB scope-cache limit; oversized groups
+and scopes remain uncached. The larger frozen reservation must not evict a
+previously admissible mutable/subclass fixture scope.
+## Explicit prepared Overview publication
+
+`overview_projection.OverviewProjection` owns discardable counts over an immutable
+metadata publication and verified protocol memberships. `prepare` is explicitly
+linear in project epochs, memberships and saved decisions; the API exposes its
+elapsed time and cardinalities through `prepare_overview_publication`. Startup,
+metadata refresh, completed imports and deletion publish this model alongside the
+prepared tree views. A first page does not build a missing model.
+
+`publication_changes.capture_changes` reads complete bounded recovery-feed keys
+and canonical after-images under the existing recovery clock transaction, verifies
+capture, and checks the watermark after successful exit. It never publishes or
+mutates a derived owner. Metadata publication/binding identity remains a separate
+proof. The API applies only verified target deltas under its existing lock and
+retains response-end fences. Missing authority, incomplete coverage, unsupported
+binding changes and source/export publication changes return HTTP 202 with
+`status: preparing` and a `preparation` descriptor; `POST /api/overview/prepare`
+explicitly prepares again. No GET silently scans the cohort to recover.
+
+Curation updates adjust per-protocol and cell counters, and a project epoch is
+approved only when it belongs to at least one protocol and every containing
+protocol approves its current fingerprint. Inclusion is independent of approval.
+Deleted decisions restore defaults. Shared tags use exact inherited/direct unions;
+`overview_tag_vocabulary.TagVocabulary` retains per-cell direct counts and an
+indexed top-12 ranking, so changing a tag does not scan the cell's epochs or every
+unrelated protocol. It grants no annotation or membership authority.
+
+The canonical `ExplorerHistory.prepared_delta` public accessor supplies verified,
+bounded cached membership-delta chains (or their inverse), without membership
+hydration or private cache access. These update exact counts and
+cell/source/group coverage immediately. Their canonical ordered duration is null
+with `duration_status: pending` until `overview_durations` folds an immutable
+membership publication and frozen rows on one worker. Publication requires the same
+owner and membership version; a superseded result cannot overwrite a newer view.
+Duration completion changes the conditional response validator. Worker failure
+reports `duration_status: failed` and an explicit retryable preparation descriptor
+while preserving exact counts; it never leaves a permanent pending claim. Worker shutdown
+drains callbacks before taking their publication lock. The inert startup display
+cache is refreshed once during explicit preparation after the publication fences,
+using the existing best-effort display allowlist/save semantics. Cache write failure
+does not invalidate canonical data. It is not serialized or rewritten by page reads.
+
+The pure owner/capture/vocabulary tests in `navigation/tests` cover overlapping
+approval, stale fingerprints, tag inheritance, membership deltas, canonical fold
+order and superseded results. `test_workspace_prepared_overview.py` compares HTTP
+pages to canonical full construction and checks pending coverage, exact binding
+DTOs, immediate membership counts and duration completion. Its capture adapter is
+a test port; native trigger/feed and packaged performance qualification remain
+separate.
+
+Prepared navigation belongs to the exact live service object. Copied/frozen
+Workbench adapters never inherit its prepared membership, even if a shallow copy
+retains the owner attribute; they retain their own canonical/frozen policy.
+
+Explicit startup preparation matches the tree-layout endpoint's effective view:
+use a saved split order when present, otherwise bound revision splits, otherwise
+the protocol definition default. Only one effective protocol layout is retained;
+an invisible default must not evict the source view. Native bootstrap initializes
+the canonical layout store before recovery capture and publication preparation.
+This work stays in the explicit publication phase, never the first page read.
+
+Overview pins the initially prepared canonical duration order independently of
+its bounded recent-order cache. Undo to that recipe preserves the exact float
+fold after cache eviction. Returning to another full recipe without a retained
+canonical order requires explicit preparation; UUID ordering is used only for
+sealed delta revisions whose canonical reader already defines it.
+
+Retryable close preparation (recovery flush and annotation checkpoint) finishes
+before prepared read owners are disposed. A failed flush leaves Overview, tree
+reads and their workers available; successful disposal drains callbacks outside
+the database lock. Source-server shutdown also closes both new owners.

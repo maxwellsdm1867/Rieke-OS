@@ -374,3 +374,53 @@ test('column design keeps a trace-only pane beside terminal epochs and closes it
   assert.deepEqual(h.fixture.errors,[]);
  }finally{await h.close();}
 });
+
+test('window focus and visibility revoke read leases without remounting Edit Tree, re-reading or losing the open path',async()=>{
+ const h=await mountFixture({siblingBranch:true});try{
+  await h.retained({active:true,selected:'big-0'});
+  const col=()=>[...document.querySelectorAll('.column-tree [data-epoch-uuid]')].map(node=>node.dataset.epochUuid);
+  await h.wait(()=>col().includes('big-0')&&!document.querySelector('.column-tree [data-epoch-uuid="big-0"]').disabled,'initial anchored columns');
+  await h.click([...document.querySelectorAll('.column-tree .tp-branch')].find(node=>node.textContent.includes('Other')));
+  await h.wait(()=>col().includes('other-0')&&!document.querySelector('.column-tree [data-epoch-uuid="other-0"]').disabled,'sibling branch opened');
+  const tree=document.querySelector('.column-tree'),before=h.fixture.requests.length,retired=h.cache.stats().retired??null;
+  await act(async()=>{window.dispatchEvent(new window.Event('focus'));});
+  await act(async()=>{document.dispatchEvent(new window.Event('visibilitychange'));});
+  for(let i=0;i<5;i++)await h.settle();
+  assert.equal(document.querySelector('.column-tree'),tree,'presentation is not remounted');
+  assert.deepEqual(h.fixture.requests.slice(before).filter(request=>request.path==='/api/tree-pages').map(request=>request.body),[],'focus/visibility send zero tree reads');
+  assert.ok(col().includes('other-0')&&!col().includes('big-0'),'the open path stays on the user-opened branch, not the selected anchor');
+  assert.equal(document.querySelector('.column-tree [data-epoch-uuid="other-0"]').disabled,false,'controls stay usable; writes keep their own revision checks');
+  void retired;
+  // The next navigation reads fresh under the renewed owner.
+  await h.click([...document.querySelectorAll('.column-tree .tp-branch')].find(node=>node.textContent.includes('Big')));
+  await h.wait(()=>col().includes('big-0'),'navigation after focus');
+  assert.ok(h.fixture.requests.slice(before).some(request=>request.path==='/api/tree-pages'),'navigation after revoke re-reads fresh');
+  assert.deepEqual(h.fixture.errors,[]);
+ }finally{await h.close();}
+});
+
+test('collapsing a branch while its first-epoch read is pending keeps it collapsed',async()=>{
+ const h=await mountFixture();try{
+  await h.wait(()=>document.querySelector('.ht-branch > button'),'cell branch');
+  let release;const held=new Promise(resolve=>{release=resolve;});
+  h.fixture.hold=request=>request.body?.path?.[0]==='big-branch'?held:undefined;
+  const branch=()=>document.querySelector('.ht-branch > button');
+  await h.click(branch());assert.equal(branch().getAttribute('aria-expanded'),'true');
+  await h.click(branch());assert.equal(branch().getAttribute('aria-expanded'),'false');
+  h.fixture.hold=null;release();
+  for(let i=0;i<10;i++)await h.settle();
+  assert.equal(branch().getAttribute('aria-expanded'),'false','a late first-epoch selection cannot re-expand the collapsed branch');
+ }finally{await h.close();}
+});
+
+test('expanding a cell branch sends one tree page read and selects its first epoch from it',async()=>{
+ const h=await mountFixture();try{
+  await h.wait(()=>document.querySelector('.ht-branch > button'),'cell branch');
+  const before=h.fixture.requests.length;
+  await h.open();
+  for(let i=0;i<5;i++)await h.settle();
+  const reads=h.fixture.requests.slice(before).filter(request=>request.path==='/api/tree-pages'&&request.body?.path?.[0]==='big-branch');
+  assert.equal(reads.length,1,'the expanded page also supplies the first epoch: '+reads.map(request=>JSON.stringify(request.body)).join(' | '));
+  assert.deepEqual(h.fixture.errors,[]);
+ }finally{await h.close();}
+});

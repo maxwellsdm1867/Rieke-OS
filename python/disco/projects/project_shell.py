@@ -24,18 +24,33 @@ def session_receipt(user_state, session_id, pid):
 
 def unused_session(user_state, record):
     """Positive evidence that an exited shell never attempted database access."""
+    return _session_phase(user_state, record) == 'unused'
+
+
+def released_session(user_state, record):
+    """The shell confirmed that a failed data load left no owned database running.
+
+    This is a clean-exit receipt for the service, not for the data: the native
+    per-project gate still decides whether unclean data may be opened. Callers
+    recheck the project's runtime state before relying on it.
+    """
+    return _session_phase(user_state, record) == 'database_released'
+
+
+def _session_phase(user_state, record):
     try:
         path = session_receipt(user_state, record['session_id'], record['pid'])
         if (path.is_symlink() or path.parent.is_symlink() or not path.is_file()
                 or path.stat().st_size > 16384
                 or not path.resolve().is_relative_to(Path(user_state).resolve())):
-            return False
+            return None
         value = json.loads(path.read_text())
-        return (value.get('phase') == 'unused' and
-                all(value.get(key) == record.get(key) for key in
-                    ('session_id', 'pid', 'project_uuid', 'project_path', 'source_commit')))
+        if all(value.get(key) == record.get(key) for key in
+               ('session_id', 'pid', 'project_uuid', 'project_path', 'source_commit')):
+            return value.get('phase')
+        return None
     except (OSError, ValueError, KeyError, TypeError):
-        return False
+        return None
 
 
 class ProjectData:
@@ -129,6 +144,10 @@ class ProjectData:
                     close_heap()
         if self.attempted:
             self.cleanup_failed()
+            # No owned database remains: record a clean service-exit receipt
+            # so this project alone carries any data recovery obligation.
+            self._record('database_released')
+            self.attempted = False
         self.partial = None
         self.cleanup_error = None
 

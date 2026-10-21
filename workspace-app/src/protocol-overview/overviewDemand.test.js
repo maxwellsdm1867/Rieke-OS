@@ -26,3 +26,39 @@ test('failed summary refresh preserves inert display separately from current dat
   fail=true;await act(()=>cache.refresh(0));assert.equal(current.data,null);assert.equal(current.displayData.counts.epochs,12);assert.equal(current.error,'offline');
  }finally{await act(()=>tree?.unmount());cache.clear();globalThis.fetch=oldFetch;}
 });
+
+test('preparation is explicit, retries one read, and cancels on scope change',async()=>{
+ const cache=createOverviewCache(),oldFetch=globalThis.fetch,requests=[];let tree,current,scope='a',held;
+ const pending={status:'preparing',preparation:{status:'pending',resource:'overview'}};
+ globalThis.fetch=async(path,options)=>{requests.push({path,options});if(path.endsWith('/prepare'))return new Promise(resolve=>{held=resolve;});return new Response(JSON.stringify(pending),{status:202});};
+ function Probe(){current=useOverviewResource('/overview',0,{cache,scope});return null;}
+ try{
+  await act(()=>{tree=TestRenderer.create(React.createElement(Probe));});
+  assert.equal(current.data,null);assert.equal(current.preparation.resource,'overview');assert.equal(requests.length,1);
+  let work;await act(()=>{work=current.prepare();});assert.equal(requests.length,2);assert.equal(current.preparing,true);
+  scope='b';await act(()=>tree.update(React.createElement(Probe)));assert.equal(requests[1].options.signal.aborted,true);
+  await act(async()=>{held(new Response(JSON.stringify({status:'ready'})));await work;});
+  assert.equal(requests.length,3);assert.equal(current.preparing,false);assert.equal(current.data,null);
+  await act(()=>{work=current.prepare();});
+  await act(async()=>{held(new Response(JSON.stringify({status:'ready'})));await work;});
+  assert.equal(requests.length,5);assert.equal(current.preparation.status,'pending');assert.equal(current.preparing,false);
+ }finally{await act(()=>tree?.unmount());cache.clear();globalThis.fetch=oldFetch;}
+});
+
+test('visible nested pending durations poll once ready and stop when hidden',async()=>{
+ const cache=createOverviewCache(),oldFetch=globalThis.fetch,oldSet=globalThis.setTimeout,oldClear=globalThis.clearTimeout;
+ const timers=[];let tree,current,reads=0,active=true;
+ globalThis.setTimeout=(callback,delay,...args)=>{if(delay!==2000)return oldSet(callback,delay,...args);const timer={callback,cancelled:false};timers.push(timer);return timer;};
+ globalThis.clearTimeout=timer=>{if(timers.includes(timer))timer.cancelled=true;else oldClear(timer);};
+ globalThis.fetch=async()=>new Response(JSON.stringify({counts:{epochs:12,duration_seconds:reads++?3:null,...(reads===1?{duration_status:'pending'}:{})}}));
+ function Probe(){current=useOverviewResource('/overview',0,{cache,scope:'project',active});return null;}
+ try{
+  await act(()=>{tree=TestRenderer.create(React.createElement(Probe));});
+  assert.equal(current.data.counts.epochs,12);assert.equal(timers.length,1);
+  timers[0].fired=true;await act(async()=>timers[0].callback());
+  assert.equal(reads,2);assert.equal(current.data.counts.duration_seconds,3);
+  assert.ok(timers.every(timer=>timer.cancelled||timer.fired));
+  active=false;await act(()=>tree.update(React.createElement(Probe)));
+  assert.equal(reads,2);
+ }finally{await act(()=>tree?.unmount());cache.clear();globalThis.fetch=oldFetch;globalThis.setTimeout=oldSet;globalThis.clearTimeout=oldClear;}
+});

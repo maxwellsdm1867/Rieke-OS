@@ -129,3 +129,38 @@ test('whole-epoch prefetch warms only streams that fit the initial window',async
   assert.equal(wholeTracePrefetchPath(epoch(300000)),null,'Whole mode reads longer streams in one batch, never this window');
   assert.equal(wholeTracePrefetchPath({epoch_uuid:'e',streams:[]}),null);
 });
+test('a tag receipt evicts only tagged epoch metadata and never drops in-flight trace prefetch',async()=>{
+ const cache=createResourceCache();let release,calls=0;
+ const trace='/epochs/other/trace?stream_uuid=s&start=0&count=2',tagged='/epochs/tagged?protocol_uuid=p',untagged='/epochs/other?protocol_uuid=p';
+ cache.put(tagged,0,{epoch_uuid:'tagged'});cache.put(untagged,0,{epoch_uuid:'other'});
+ const inflight=cachedResourceRequest(trace,{request:()=>{calls++;return new Promise(resolve=>{release=()=>resolve({values:[1,2]});});},cache,speculative:true});
+ let releaseMeta;const lateMeta=cachedResourceRequest(tagged,{request:()=>new Promise(resolve=>{releaseMeta=()=>resolve({epoch_uuid:'tagged',stale:true});}),cache:createResourceCache()});
+ await sleep(0);
+ const metadataToken=cache.token(tagged),traceToken=cache.token(trace);
+ cache.invalidateAnnotations({targets:[{target_kind:'epoch',target_uuid:'tagged'}]});
+ release();releaseMeta();await inflight;await lateMeta;
+ assert.deepEqual(cache.peek(trace,0),{values:[1,2]},'in-flight trace prefetch is admitted after an unrelated receipt');
+ assert.equal(cache.peek(tagged,0),undefined,'tagged epoch detail is evicted');
+ assert.ok(cache.peek(untagged,0),'other epoch detail stays');
+ assert.equal(cache.put(tagged,0,{epoch_uuid:'tagged',stale:true},metadataToken),false,'late pre-receipt metadata is refused');
+ assert.equal(cache.put(trace,0,{values:[3]},traceToken),true,'trace admission token is unchanged');
+ await cachedResourceRequest(trace,{request:()=>{calls++;return Promise.resolve({values:[9]});},cache});
+ assert.equal(calls,1,'no second trace request');
+ cache.invalidateAnnotations({targets:[{target_kind:'cell',target_uuid:'cell'}]});
+ assert.equal(cache.peek(untagged,0),undefined,'cell receipts evict every epoch detail');
+ assert.ok(cache.peek(trace,0),'and still keep trace samples');
+});
+test('whole decoded traces are byte bounded, LRU and cleared by global or epoch invalidation',()=>{
+ const cache=createResourceCache({wholeTraces:{entries:3,bytes:8*100}});
+ const trace=n=>({values:new Float64Array(n)});
+ assert.equal(cache.putWholeTrace('big','e0',trace(51)),false,'a stream over half the byte budget is never retained');
+ assert.equal(cache.putWholeTrace('a','e1',trace(40)),true);assert.equal(cache.putWholeTrace('b','e2',trace(40)),true);
+ cache.getWholeTrace('a');assert.equal(cache.putWholeTrace('c','e3',trace(40)),true);
+ assert.equal(cache.peekWholeTrace('b'),undefined,'least recently used stream leaves first');
+ assert.ok(cache.peekWholeTrace('a'));assert.ok(cache.stats().wholeTraceBytes<=800);
+ const stale=cache.token();cache.invalidate('/epochs/e1',{related:true});
+ assert.equal(cache.peekWholeTrace('a'),undefined);assert.ok(cache.peekWholeTrace('c'));
+ assert.equal(cache.putWholeTrace('d','e4',trace(10),stale),false,'reads started before invalidation are refused');
+ cache.invalidateAnnotations({targets:[{target_kind:'cell',target_uuid:'cell'}]});assert.ok(cache.peekWholeTrace('c'),'tag receipts keep decoded samples');
+ cache.invalidate();assert.equal(cache.peekWholeTrace('c'),undefined);
+});

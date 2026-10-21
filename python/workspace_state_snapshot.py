@@ -24,8 +24,10 @@ LEGACY_TABLES = ('annotation_profile', 'shared_annotation', 'curation', 'protoco
           'data_store_state', 'protocol_tree_layout', 'search_preset', 'search_preset_version',
           'protocol_binding', 'explorer_revision', 'dataset_revision', 'search_query_last_run')
 WORKBENCH_TABLES = LEGACY_TABLES + ('protocol_suggestion', 'workbench_draft', 'workbench_decision', 'workbench_receipt')
+GROUP_TABLES = WORKBENCH_TABLES + ('annotation_group_receipt',)
 # Append only: compact recovery row IDs use this tuple's stable ordinal.
-TABLES = WORKBENCH_TABLES + ('annotation_group_receipt',)
+# protocol_membership indexes bound delta-revision lineages (explorer).
+TABLES = GROUP_TABLES + ('protocol_membership',)
 FORMAT = 'rieke-app-state'
 
 
@@ -64,7 +66,7 @@ def restore_table_order(tables):
 def migrate_restore_tables(state):
     """Append absent optional state without changing prior reviewed contents."""
     known = set(state.get('tables', {}))
-    if known in (set(LEGACY_TABLES), set(WORKBENCH_TABLES)):
+    if known in (set(LEGACY_TABLES), set(WORKBENCH_TABLES), set(GROUP_TABLES)):
         state['tables'].update({table: [] for table in TABLES if table not in known})
     elif known != set(TABLES):
         raise ValueError('Restore snapshot table set is unsupported')
@@ -197,7 +199,44 @@ def capture(project_dir, connection, *, include_tables=True, ordered=True):
         source_references.sort(key=lambda row:row['source_sha256'])
     state = dict(format=FORMAT, version=1, project=project, source_sha256s=sources,
                  source_references=source_references, protocols=protocols, tables=tables)
+    verify_lineage_state(tables)
     return state
+
+
+def verify_lineage_state(tables):
+    """Re-hash every indexed lineage membership a binding uses against its sealed hash.
+
+    App-state capture and restore make bound membership durable truth, so each
+    bound revision's indexed rows (added on its chain, not removed on it) must
+    hash to the revision's multiset ``membership_hash`` (for a full root, the
+    hash of its member list). O(indexed rows); raises on any mismatch.
+    """
+    rows = tables.get('protocol_membership') or []
+    if not rows:
+        return
+    from disco.decisions.explorer import membership_hash
+    revisions = {row['revision_uuid']: row['recipe'] for row in tables.get('explorer_revision', [])}
+    lineages = {}
+    for row in rows:
+        lineages.setdefault(row['lineage_uuid'], []).append(row)
+    for binding in tables.get('protocol_binding', []):
+        recipe = revisions.get(binding['revision_uuid'])
+        if recipe is None:
+            continue
+        lineage = recipe.get('lineage_uuid', recipe.get('revision_uuid'))
+        if lineage not in lineages:
+            continue
+        chain, link = set(), recipe
+        while link is not None:
+            chain.add(link['revision_uuid'])
+            link = revisions.get(link.get('parent_revision_uuid')) if link.get('storage') else None
+        members = [(row['epoch_uuid'], row['metadata_hash']) for row in lineages[lineage]
+                   if row['added_revision_uuid'] in chain and row.get('removed_revision_uuid') not in chain]
+        expected = recipe.get('membership_hash')
+        if expected is None and isinstance(recipe.get('epochs'), list):
+            expected = membership_hash((member['uuid'], member['metadata_hash']) for member in recipe['epochs'])
+        if expected is None or len({key for key, _ in members}) != len(members) or membership_hash(members) != expected:
+            raise ValueError('Indexed lineage membership failed integrity verification')
 
 
 def _column_value(value, json_column=False):
@@ -232,8 +271,13 @@ def compact_queries(state, service):
     """
     if any(state['tables'].get(table) for table in ('protocol_suggestion', 'workbench_draft', 'workbench_receipt')):
         return  # Requery/remapping would invalidate saved candidate scopes and receipts.
+    # A delta revision's chain seals its parent's exact identity and content,
+    # so neither deltas nor any lineage root they build on are re-queried.
+    lineage = {row['recipe'].get('lineage_uuid') for row in state['tables'].get('explorer_revision', [])
+               if row['recipe'].get('storage')}
     for row in state['tables'].get('explorer_revision', []):
-        if row['recipe'].get('membership_kind') == 'additive_union':
+        if (row['recipe'].get('membership_kind') == 'additive_union' or row['recipe'].get('storage')
+                or row['revision_uuid'] in lineage):
             continue
         recipe = row['recipe']
         try:
@@ -544,6 +588,7 @@ def _restore(project_dir, connection, snapshot):
     """
     root=Path(project_dir).resolve(); state=load(snapshot)
     migrate_restore_tables(state)
+    verify_lineage_state(state['tables'])
     current=capture(root,connection)
     if (state['project']['project_uuid'] != current['project']['project_uuid'] or
             state['source_sha256s'] != current['source_sha256s']):

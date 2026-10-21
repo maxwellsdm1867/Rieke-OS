@@ -275,3 +275,28 @@ test('clicking a cell row targets that cell for tags in browse and edit trees; b
   assert.deepEqual([targeted,selected,reads],[['cell-A'],[],0]);
  }finally{await h.close();}
 });
+
+test('focus, highlight and selection changes re-render only the cell branches whose loaded rows they touch',async()=>{
+ const h=await createInspectionHarness(),rendered=[];
+ const inclusionForEpoch=epoch=>{rendered.push(epoch.cell_uuid);return epoch;};
+ const props={...base,cells,inclusionForEpoch,onFocus(){},setTargets(){},focused:'cell-A-1',focusedCell:'cell-A'};
+ try{
+  await h.render(props);
+  for(const index of [0,1,2])await h.toggle(index,true);
+  await h.render(props);
+  const count=cell=>rendered.filter(value=>value===cell).length;
+  assert.ok(count('cell-A')>0&&count('cell-B')>0,'both cells rendered their rows');
+  rendered.length=0;
+  await h.render({...props,focused:'cell-A-2'});
+  assert.equal(count('cell-B'),0,'focus inside cell A does not re-render cell B rows');
+  assert.ok(count('cell-A')>0,'cell A re-renders for its own focus');
+  rendered.length=0;
+  await h.render({...props,focused:'cell-A-2',targets:['cell-B-1']});
+  assert.equal(count('cell-A'),0,'a selection in cell B does not re-render cell A rows');
+  assert.ok(count('cell-B')>0);
+  rendered.length=0;
+  // A data function change (tag/curation overlay) still re-renders every row.
+  await h.render({...props,focused:'cell-A-2',targets:['cell-B-1'],inclusionForEpoch:epoch=>{rendered.push(epoch.cell_uuid);return epoch;}});
+  assert.ok(count('cell-A')>0&&count('cell-B')>0);
+ }finally{await h.close();}
+});

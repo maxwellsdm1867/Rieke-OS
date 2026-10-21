@@ -30,6 +30,10 @@ FORMAT = 3  # Shared ancestors are referenced by source revision and exact UUID.
 CHUNK_SIZE = 256
 CACHE_SIZE = 64
 DETAIL_CACHE_BYTES = 8 * 1024 * 1024
+# Per-key value reads borrow one bounded, adaptively sized window of the scope
+# per connection. A window starts at one key and doubles while callers walk the
+# scope in order; random access stays at one key per read. Never the whole scope.
+VALUE_WINDOW_MAX = 512
 
 
 def _json(value):
@@ -47,6 +51,24 @@ def _sha(path):
 def _signature(path):
     stat = os.stat(path)
     return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns
+
+
+class _FrozenMapping(Mapping):
+    """Read-only mapping shared by every caller of one opened generation."""
+    __slots__ = ('_data',)
+    def __init__(self, data): self._data = data
+    def __getitem__(self, key): return self._data[key]
+    def __iter__(self): return iter(self._data)
+    def __len__(self): return len(self._data)
+    def __repr__(self): return f'_FrozenMapping({self._data!r})'
+
+
+def _freeze(value):
+    if isinstance(value, dict):
+        return _FrozenMapping({key: _freeze(item) for key, item in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze(item) for item in value)
+    return value
 
 
 def _raw_definition(field):
@@ -196,6 +218,10 @@ class DiskMetadataIndex:
                 instance._definitions=[json.loads(row[0]) for row in connection.execute('SELECT definition_json FROM fields ORDER BY field_no')]
                 instance._catalog_cache=metadata.get('catalog');instance._predicate_cache=metadata.get('predicate_catalog')
                 instance._epoch_count=connection.execute('SELECT COUNT(*) FROM epochs').fetchone()[0]
+                # Admission work belongs to verified opening, never the first
+                # interactive UUID probe. Keep SQLite's existing lower semantics.
+                instance._lowercase_identities=not connection.execute(
+                    'SELECT EXISTS(SELECT 1 FROM epochs WHERE epoch_uuid<>lower(epoch_uuid))').fetchone()[0]
             instance._detail_cache=OrderedDict();instance._detail_lock=threading.RLock();instance._details_reference=None
             instance._detail_cache_costs={};instance._detail_cache_bytes=0
             instance._metadata_decoder=MetadataDecoder()
@@ -234,11 +260,15 @@ class DiskMetadataIndex:
         if _signature(self.path)!=self._signature: raise ValueError('Metadata index changed; reopen a verified generation')
 
     @contextmanager
-    def _connect(self,ids=None):
+    def _connect(self,ids=None,start=None,limit=None):
         self._check()
         connection=sqlite3.connect(self.path.as_uri()+'?mode=ro&immutable=1',uri=True)
         try:
-            if ids is None:
+            if start is not None:
+                # A bounded run of the generation's order beginning at one identity.
+                connection.execute('CREATE TEMP TABLE scope(ordinal INTEGER PRIMARY KEY,epoch_id INTEGER UNIQUE)')
+                connection.execute('INSERT INTO scope(epoch_id) SELECT epoch_id FROM epochs WHERE epoch_id>=(SELECT epoch_id FROM epochs WHERE epoch_uuid=?) ORDER BY epoch_id LIMIT ?',(start,limit))
+            elif ids is None:
                 # Full generations already have an ordered identity index. A
                 # view preserves scope semantics without copying every identity
                 # into a new temporary table for each immutable read.
@@ -308,6 +338,38 @@ class DiskMetadataIndex:
                 cells[cell_uuid]=dict(cell_uuid=cell_uuid,label=row.get('cell_label'),cell_type=row.get('cell_type'),date=raw_date,start_time=cell.get('start_time'))
             if lazy_details: details=_ScopedDetails(self.details,rows)
             return dict(rows=rows,details=details,cells=cells,source=json.loads(source[0]),fingerprints=fingerprints)
+
+    def catalog_definitions(self):
+        """Read-only ``field id -> definition`` view of the full catalog.
+
+        Built once per opened generation and shared by every caller: no per-call
+        copy. Nested mappings and lists are frozen (read-only mappings, tuples), so
+        callers that need a mutable catalog must keep using ``catalog()``.
+        """
+        self._check()
+        view=getattr(self,'_definitions_view',None)
+        if view is None:
+            catalog=self._catalog_cache if getattr(self,'_catalog_cache',None) is not None else self.catalog()
+            view=self._definitions_view=_FrozenMapping({field['id']:_freeze(field) for field in catalog['fields']})
+        return view
+
+    def epoch_prefix(self,prefix,limit):
+        """Epoch UUIDs starting with a lowercase prefix: an index range probe.
+
+        Returns ``(first limit identities in UUID order, exact total)``, or None
+        when this generation holds non-lowercase identities (callers then use
+        their own case-insensitive scan).
+        """
+        if type(prefix) is not str or not prefix or prefix!=prefix.lower() or type(limit) is not int or limit<0:
+            raise ValueError('Epoch prefix lookup needs a lowercase prefix and a nonnegative limit')
+        upper=prefix[:-1]+chr(ord(prefix[-1])+1)
+        with self._connect([]) as connection:
+            if getattr(self,'_lowercase_identities',None) is not True:
+                return None
+            total=connection.execute('SELECT COUNT(*) FROM epochs WHERE epoch_uuid>=? AND epoch_uuid<?',(prefix,upper)).fetchone()[0]
+            identities=[row[0] for row in connection.execute(
+                'SELECT epoch_uuid FROM epochs WHERE epoch_uuid>=? AND epoch_uuid<? ORDER BY epoch_uuid LIMIT ?',(prefix,upper,limit))]
+        return identities,total
 
     def catalog(self,ids=None,known_fields=None):
         if ids is None and known_fields is None and self._catalog_cache is not None:
@@ -392,7 +454,7 @@ class DiskMetadataIndex:
                     elif len(buckets)<=predicates.MAX_CHOICES:
                         bucket=dict(value=value,type=kind,count=count);buckets.append(bucket);indexed[key]=bucket
                 field.update(types=sorted(types),choices=buckets[:predicates.MAX_CHOICES],choices_truncated=len(buckets)>predicates.MAX_CHOICES)
-        result.update(operators=list(predicates.OPERATORS),predicate_version=1,limits=dict(max_depth=predicates.MAX_DEPTH,max_nodes=predicates.MAX_NODES,max_choices=predicates.MAX_CHOICES))
+        result.update(operators=list(predicates.OPERATORS),predicate_version=2,limits=dict(max_depth=predicates.MAX_DEPTH,max_nodes=predicates.MAX_NODES,max_choices=predicates.MAX_CHOICES))
         if ids is None: self._predicate_cache=copy.deepcopy(result)
         return result
 
@@ -460,8 +522,10 @@ class DiskMetadataIndex:
 
 
 class _Values(Mapping):
-    def __init__(self,index,ids,fields):
+    def __init__(self,index,ids,fields,_start=None,_limit=None):
         self.index=index;self.ids=None if ids is None else tuple(ids);self.fields=None if fields is None else tuple(fields);self.idset=None if self.ids is None else frozenset(self.ids);self.cache=OrderedDict();self._length=None
+        self._window={};self._window_hits=0;self._window_size=1;self._next=None;self._positions=None
+        self._start=_start;self._limit=_limit
     def __len__(self):
         self.index._check()
         if self._length is None:
@@ -475,12 +539,41 @@ class _Values(Mapping):
     def __getitem__(self,key):
         self.index._check()
         if key not in self.cache:
-            if self.idset is not None and key not in self.idset: raise KeyError(key)
-            result=dict(_Values(self.index,[key],self.fields).items())
-            if key not in result: raise KeyError(key)
-            self.cache[key]=result[key]
+            if key in self._window: self._window_hits+=1
+            else:
+                if self.idset is not None and key not in self.idset: raise KeyError(key)
+                self._read_window(key)
+                if key not in self._window: raise KeyError(key)
+            self.cache[key]=self._window[key]
             if len(self.cache)>CACHE_SIZE: self.cache.popitem(last=False)
         self.cache.move_to_end(key);return copy.deepcopy(self.cache[key])
+    def _read_window(self,key):
+        # One connection reads this key and the scope rows that follow it.
+        # Double while the caller continues in scope order; halve otherwise.
+        if self._window:
+            onward=key==self._next or self._window_hits*2>=len(self._window)>1
+            self._window_size=min(VALUE_WINDOW_MAX,self._window_size*2) if onward else max(1,self._window_size//2)
+        self._window={};self._window_hits=0;self._next=None;size=self._window_size
+        if self.ids is not None:
+            if self._positions is None:
+                positions={}
+                for number,identity in enumerate(self.ids): positions.setdefault(identity,number)
+                self._positions=positions
+            start=self._positions[key]
+            if start+size<len(self.ids): self._next=self.ids[start+size]
+            self._window=dict(_Values(self.index,self.ids[start:start+size],self.fields).items())
+        else:
+            # One extra identity reveals whether the next miss continues in order.
+            found=list(_Values(self.index,None,self.fields,_start=key,_limit=size+1).items())
+            if len(found)>size: self._next=found[size][0]
+            self._window=dict(found[:size])
+    def subset(self,ids):
+        """A streaming view of these identities in their order: one read, not one per key."""
+        ids=tuple(ids)
+        if self.idset is not None:
+            missing=next((key for key in ids if key not in self.idset),None)
+            if missing is not None: raise KeyError(missing)
+        return _Values(self.index,ids,self.fields)
     def items(self):
         definitions={field['id']:field for field in self.index._definitions}
         joints={}
@@ -493,7 +586,7 @@ class _Values(Mapping):
                 if key.startswith('joint/'): joints[key]=tree.joint_components(key,definitions)
                 elif key not in definitions: raise ValueError('Unknown indexed field: '+key)
         required=None if requested is None else requested|{key for components in joints.values() for key in components}
-        with self.index._connect(self.ids) as connection:
+        with self.index._connect(self.ids,self._start,self._limit) as connection:
             connection.execute('CREATE TEMP TABLE wanted(field_no INTEGER PRIMARY KEY)')
             if required is None: connection.execute('INSERT INTO wanted SELECT field_no FROM fields')
             else: connection.executemany('INSERT INTO wanted SELECT field_no FROM fields WHERE field_id=?',[(key,) for key in required])

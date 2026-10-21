@@ -56,6 +56,22 @@ close is idempotent. Native index reading has no generic cancellation token.
 Query orchestration preserves generation, source eligibility, binding, publication
 and annotation fences; disposable metadata cannot stand in for those proofs.
 
+The existing SQLite lowercase-identity proof runs during verified native index
+opening. The first epoch-prefix lookup performs only its range count and bounded
+UUID read; it does not defer a whole-project lowercase scan to the first search.
+The query still uses SQLite's original `lower` semantics and returns the legacy
+fallback signal for uppercase or unadmitted generations. No stored format or seal
+field is added.
+
+UUID search labels may use the API's optional prepared membership lookup for at
+most fifty shown epoch IDs. It reads the existing Overview projection's reverse
+membership after fresh recovery/publication/binding checks and preserves canonical
+protocol order. Closing changes discard the response. A supported native owner
+that requires preparation returns HTTP 503 with `code: metadata_preparing` and
+an explicit retry message, without partial results or a whole-membership fallback.
+Existing search error handling keeps stale rows disabled. Custom and unsupported legacy
+readers retain their exact query-result path, including unavailable-member errors.
+
 ## Explicit membership query work
 
 `DiskMetadataIndex.cell_epoch_ids` and `cell_epoch_count` read the complete
@@ -114,6 +130,34 @@ files avoid cross-process publication and immutable-file repair races.
 
 The typed-index truth-table/facet tests now include explicit scopes, source
 intersections and empty cohorts; dictionary tests count evaluated values.
+
+## Bounded index reads
+
+`DiskMetadataIndex.catalog_definitions()` returns one read-only `field id ->
+definition` view per opened generation (nested values are read-only mappings and
+tuples). It is never copied per call; `catalog()` still returns an independent
+mutable copy for callers that edit it. Navigation callers that only build
+id-to-definition maps should use the view (a shallow `dict(view)` when they add
+derived joint definitions).
+
+Per-key `values()[key]` access reads an adaptive window of the scope per
+connection: it starts at one key, doubles to at most 512 while the caller keeps
+walking the scope in order, and halves otherwise, so random access stays one key
+per read. Each access still returns an independent copy and unknown or
+out-of-scope keys still raise KeyError. `values().subset(ids)` streams explicit
+identities in their order from one read.
+
+`epoch_prefix(prefix, limit)` answers a lowercase epoch-UUID prefix with one range
+probe on the unique `epoch_uuid` index: the first `limit` identities in UUID order
+and the exact total. A generation holding non-lowercase identities returns None.
+UUID search uses it only when the index row count equals the published row
+mapping and every returned identity is present there; otherwise it keeps its
+case-insensitive scan. Search labels hits from the service's shared read-only
+`query_members` set (one per publication serial and binding revision/version,
+backed by `query_view`); when the service cannot prove a frozen publication or a
+canonical binding reader it returns None and search keeps the `query_result` path. Changing
+`disk_index.py` changes the native generation recipe, so existing disposable
+indexes rebuild once.
 
 ## Lifetime and source witnesses
 
@@ -237,3 +281,39 @@ before any recovery attempt. No signature is rewritten on an old reader and no
 source or scientific metadata check is relaxed. The publication-cache examples
 cover identical seal bytes with changed file metadata, invalid-seal rebuild and
 unchanged rejection of a changed native generation.
+
+## Typed sidecar memory budget and fallback
+
+The typed sidecar builder budgets its **own** memory: the process peak resident
+size may grow by at most `max_rss_gib` (1 GiB by default) during the build,
+measured from the peak when the build starts. Memory the app already held for
+the published generation does not count, so a large project can build its
+sidecar. Time, free-disk and cancellation budgets are unchanged.
+
+The sidecar only accelerates reads of a verified native generation. When it
+cannot be prepared (budget refusal, verification or I/O failure), refresh still
+publishes the native generation with `typed_index` absent and reports
+`typed_metadata_index: "unavailable"` and `typed_metadata_index_error` in the
+refresh receipt. Queries use the native index. `/api/health` and
+`/api/metadata/status` report `typed_index: {"status": "available"}` or
+`{"status": "unavailable", "reason": ...}`. A later refresh retries the build.
+Coverage: `python/tests/test_workspace_typed_index_budget.py`.
+
+## Results carry no inline statistics
+
+`POST /api/explore/preview`, `/api/explore/run` and `/api/explore/revisions`
+with `summary_only: true` never compute scoped per-field statistics: they answer
+with registered field identities and `catalog_summary: false`. The
+`catalog_summary` flag is a deprecated boolean that no longer changes a
+summary-only response (clients may drop it); rendered trees
+(`summary_only: false`) still require it. After a query finishes, one
+`POST /api/explore/summaries` job summarizes the fields the view shows; a job
+must request at least one field. Coverage:
+`python/tests/test_workspace_preview_removal.py`.
+
+UUID cell-prefix searches bisect sorted registered cell identities retained by
+the immutable publication preparation. Only the requested limit of first cell
+rows is materialized; the range bounds retain the exact total. Mutable/custom
+publications and non-lowercase cell identities keep case-insensitive scanning.
+Exact UUID precedence, cell-before-epoch ordering and source-excluded identity
+visibility are unchanged. Preparation cost is paid with publication, not each keypress.

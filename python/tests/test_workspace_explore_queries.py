@@ -59,7 +59,7 @@ class RequestedSummaryTests(unittest.TestCase):
             'version': 1, 'bound_at': datetime.datetime(2026, 10, 1)})
         self.jobs.autostart = False
         with patch.object(self.jobs, '_calculate', return_value={'matched_count': 0, 'summaries': {}}), patch('disco.metadata.explore_queries.typed_scope', return_value=(None, None)):
-            response = self.submit(protocol_uuid=self.service.protocol_id, summary_fields=[])
+            response = self.submit(protocol_uuid=self.service.protocol_id, summary_fields=['parameters/example'])
             self.assertEqual(response.status_code, 202, response.get_json())
             ack = response.get_json()
             self.jobs.drive_worker()
@@ -451,26 +451,32 @@ class PublicationCacheTests(unittest.TestCase):
         self.addCleanup(self.fixture.doCleanups)
         self.service = self.fixture.service
 
-    def test_unchanged_refresh_discards_tree_scope_after_verified_publication(self):
+    def test_unchanged_refresh_keeps_verified_publication_and_tree_scope(self):
+        # Unchanged verified inputs keep the published objects and token, so
+        # caches derived from them stay current (refresh scoping, B7).
         cache = self.service._tree_page_scope_cache = object()
         before = self.service._explore_publication
         result = self.service.refresh()
         self.assertTrue(result['discovery_indexes_preserved'])
-        self.assertIsNone(self.service._tree_page_scope_cache)
-        self.assertNotEqual(before, self.service._explore_publication)
-
-    def test_typed_build_failure_does_not_publish_or_discard_prior_generation(self):
-        owner, rows, token = self.service.typed_index, self.service.rows, self.service._explore_publication
-        cache = self.service._tree_page_scope_cache = object()
-        with patch('disco.metadata.typed_lifecycle.prepare', side_effect=RuntimeError('typed build interrupted')):
-            with self.assertRaisesRegex(RuntimeError, 'typed build interrupted'):
-                self.service.refresh()
-        self.assertIs(self.service.typed_index, owner)
-        self.assertIs(self.service.rows, rows)
+        self.assertEqual(result['published_read_model'], 'reused')
         self.assertIs(self.service._tree_page_scope_cache, cache)
-        self.assertEqual(self.service._explore_publication, token)
+        self.assertEqual(before, self.service._explore_publication)
+
+    def test_typed_build_failure_publishes_native_generation_without_typed_reads(self):
+        # The typed sidecar only accelerates reads; refresh never fails for it.
+        token = self.service._explore_publication
+        with patch('disco.metadata.typed_lifecycle.prepare', side_effect=RuntimeError('typed build interrupted')):
+            result = self.service.refresh()
+        self.assertEqual(result['typed_metadata_index'], 'unavailable')
+        self.assertEqual(result['typed_metadata_index_error'], 'RuntimeError: typed build interrupted')
+        self.assertIsNone(self.service.typed_index)
+        self.assertTrue(self.service._loaded)
+        self.assertNotEqual(self.service._explore_publication, token)
+        page = self.service.explore_page({'all': []})
+        self.assertEqual(len(page['rows']), len(self.service.rows))
         self.service.refresh()
-        self.assertEqual(self.service.last_refresh['typed_metadata_index'], 'reused')
+        self.assertIn(self.service.last_refresh['typed_metadata_index'], ('reopened', 'built'))
+        self.service.typed_index._check()
 
     def test_refresh_reopens_changed_typed_seal_with_full_verification(self):
         from pathlib import Path
@@ -529,6 +535,38 @@ class PublicationCacheTests(unittest.TestCase):
         self.assertIs(self.service.rows, rows)
         self.assertIs(self.service._tree_page_scope_cache, cache)
         self.assertEqual(self.service._explore_publication, before)
+
+
+class NativeSummaryReadTests(unittest.TestCase):
+    """Index-only summaries stream the matched scope instead of one read per epoch."""
+    def test_native_summary_streams_values_in_bounded_reads(self):
+        import tempfile
+        from pathlib import Path
+        from disco.metadata.disk_index import DiskMetadataIndex
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        service = api_fixture.FixtureService(temp.name)
+        template = service.rows[service.ids[0]]
+        for n in range(600):
+            identity = f'00000000-0000-4000-8000-{n:012d}'
+            service.rows[identity] = {**template, 'epoch_uuid': identity, 'start_time': f'09/24/2026 13:{n // 60:02d}:{n % 60:02d}:000000'}
+            service.details[identity] = copy.deepcopy(service.details[service.ids[0]])
+            service.details[identity]['parameters']['example'] = n % 7
+            service._fingerprints[identity] = 'b' * 64
+        context = {'protocol_uuid': None, 'filters': {}, 'scope': {}, 'predicate': {'all': []},
+                   'summary_fields': ['parameters/example']}
+        expected = queries._native_summaries(service, context, lambda: False)
+        index = DiskMetadataIndex.build(Path(temp.name) / 'summary.sqlite', service.rows, service.details,
+                                        service.sources, 'summary-generation', service.project['project_uuid'])
+        self.addCleanup(index.close)
+        service.disk_index, service.details = index, index.details
+        service._registered_tree_cache = None
+        service._registered_tree_fields()
+        with patch.object(index, '_connect', wraps=index._connect) as connect:
+            result = queries._native_summaries(service, context, lambda: False)
+        self.assertEqual(result, expected)
+        self.assertEqual(result['matched_count'], 602)
+        self.assertLessEqual(connect.call_count, 4, connect.call_count)
 
 
 if __name__ == '__main__':

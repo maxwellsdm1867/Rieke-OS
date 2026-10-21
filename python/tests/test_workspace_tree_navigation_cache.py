@@ -168,7 +168,7 @@ class StructuralNavigationTests(unittest.TestCase):
         with self.assertRaises(StaleTreePage):
             self.pager.page({**body, 'revision': root['revision']})
 
-    def test_metadata_live_filters_and_custom_binding_keep_decorated_reader(self):
+    def test_metadata_live_filters_skip_curation_and_custom_binding_stays_authoritative(self):
         import cProfile
         self.index()
         body = {'protocol_uuid': self.service.protocol_id, 'splits': 'parameters/example'}
@@ -178,7 +178,9 @@ class StructuralNavigationTests(unittest.TestCase):
             with profile:
                 page = self.pager.page({**body, 'filters': filters})
             self.assertEqual(page['count'], count)
-            self.assertGreater(sum(entry.callcount for entry in profile.getstats()
+            # Navigation scopes never read curation: live filters evaluate on the
+            # published rows without whole-protocol curation decoration.
+            self.assertEqual(sum(entry.callcount for entry in profile.getstats()
                 if getattr(entry.code, 'co_name', '') == '_decorate'), 0)
         binding = self.binding(self.service.ids[0])
         self.service.set_binding_provider(lambda protocol: binding, header_provider=lambda protocol: None)
@@ -247,6 +249,46 @@ class StructuralNavigationTests(unittest.TestCase):
         self.pager.page(body)
         scope = next(iter(self.service._tree_page_scope_cache[1].values()))[0]
         self.assertEqual(scope[2].grouping_budget, 16*1024)
+
+    def test_legacy_large_scope_reserves_original_budget_and_keeps_exact_freshness(self):
+        from disco.navigation import tree_pages
+        from workspace_service import WorkspaceService, publish_frozen, publication_serial
+        # A smaller real scope at an equivalent admission boundary reproduces the
+        # 1M fixture cliff without a heavyweight timing benchmark.
+        class AdmittedSchema(DiskMetadataIndex):
+            def __init__(self):self.generation='legacy-budget-fixture'
+            def _check(self):pass
+            def catalog(self,*args,**kwargs):return {'fields':[{'id':'cell','label':'Cell','types':['string']}], 'total':110000}
+            def values(self,*args,**kwargs):raise AssertionError('structural matrix')
+        service=WorkspaceService.__new__(WorkspaceService)
+        service._loaded=True;service.project=self.service.project;service.curation_provider=None
+        row=next(iter(self.service.rows.values()))
+        service.rows={f'00000000-0000-0000-0000-{n:012x}':{**row,'epoch_uuid':f'00000000-0000-0000-0000-{n:012x}'} for n in range(110000)}
+        service._fingerprints=dict.fromkeys(service.rows,'b'*64)
+        service.sources=self.service.sources;service.cells={};service.protocols={};service.disk_index=AdmittedSchema()
+        self.assertIsNone(publication_serial(service))
+        pager=TreePages(service);body={'splits':'cell','counts_only':True,'limit':1}
+        scope=pager._build_scope(body)
+        retained=tree_pages._retained_scope_bytes(scope,service.rows,sys.maxsize)
+        legacy_reservation=4*1024*1024
+        budget=(tree_pages.TREE_SCOPE_CACHE_OVERHEAD+sys.getsizeof(service._fingerprints)+retained
+                -scope[2].grouping_budget+legacy_reservation)
+        self.assertLess(budget,tree_pages.TREE_SCOPE_BYTE_BUDGET)
+        with patch.object(tree_pages,'TREE_SCOPE_BYTE_BUDGET',budget),patch.object(pager,'_build_scope',wraps=pager._build_scope) as builds:
+            first=pager.page(body)
+            self.assertEqual(pager.page(body),first)
+            self.assertEqual(builds.call_count,1,'legacy reservation must not evict an otherwise admissible scope')
+            cached=service._tree_page_scope_cache
+            self.assertLessEqual(tree_pages.TREE_SCOPE_CACHE_OVERHEAD+sys.getsizeof(cached[2])+sum(e[2] for e in cached[1].values()),budget)
+            identity=next(iter(service.rows));service._fingerprints[identity]='c'*64
+            with self.assertRaises(StaleTreePage):pager.page({**body,'revision':first['revision']})
+            self.assertEqual(builds.call_count,2,'unfrozen in-place changes retain exact content checks')
+        # The identical canonical publication keeps its larger structural cache
+        # reservation; only the legacy witness path receives the compatibility cap.
+        for name in ('rows','cells','protocols','_fingerprints'):
+            setattr(service,name,publish_frozen(getattr(service,name),rows=name=='rows'))
+        self.assertIsNotNone(publication_serial(service))
+        self.assertGreater(pager._build_scope(body)[2].grouping_budget,legacy_reservation)
 
     def test_source_search_survives_protocol_navigation_with_freshness_checks(self):
         self.index()
@@ -449,22 +491,31 @@ class NavigationRefreshLifetimeTests(unittest.TestCase):
         self.addCleanup(self.fixture.doCleanups)
         self.service = self.fixture.service
 
-    def test_successful_publication_releases_previous_navigation_generation(self):
+    def test_unchanged_publication_keeps_navigation_generation_warm(self):
         TreePages(self.service).page({'splits':'date,cell,block'})
         cache = self.service._tree_page_scope_cache
-        values = next(iter(cache[1].values()))[0][2]
-        old_values = weakref.ref(values)
-        del values, cache
         old_rows = self.service.rows
         previous_index = self.service.disk_index
         result = self.service.refresh()
         self.assertEqual(result['metadata_index'], 'reused')
+        self.assertEqual(result['published_read_model'], 'reused')
         self.assertTrue(result['discovery_indexes_preserved'])
         self.assertEqual(self.service.disk_index.generation, previous_index.generation)
-        self.assertEqual(self.service.disk_index.path, previous_index.path)
+        # Same verified inputs and index: the published objects (and therefore
+        # their navigation projections) remain current and stay warm.
+        self.assertIs(self.service._tree_page_scope_cache, cache)
+        self.assertIs(self.service.rows, old_rows)
+        with patch.object(TreePages, '_build_scope', side_effect=AssertionError('warm scope rebuilt')):
+            TreePages(self.service).page({'splits':'date,cell,block'})
+
+    def test_republished_rows_release_previous_navigation_generation(self):
+        TreePages(self.service).page({'splits':'date,cell,block'})
+        old_values = weakref.ref(next(iter(self.service._tree_page_scope_cache[1].values()))[0][2])
+        self.service._published_generation = None  # Force a complete republication.
+        result = self.service.refresh()
+        self.assertEqual(result['metadata_index'], 'reused')
         self.assertTrue(self.service._tree_page_scope_cache is None,
-                        'Verified unchanged-index publication must release navigation cache')
-        self.assertIsNot(self.service.rows,old_rows)
+                        'Republished rows must release the navigation cache')
         gc.collect()
         self.assertIsNone(old_values())
 

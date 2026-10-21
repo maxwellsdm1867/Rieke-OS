@@ -133,7 +133,7 @@ async function main() {
   receipt.app_asar_sha256 = createHash('sha256').update(await fs.readFile(path.join(fixture.bundle, 'Contents/Resources/app.asar'))).digest('hex');
   receipt.app_icon_sha256 = createHash('sha256').update(await fs.readFile(path.join(runtime, 'frontend/disco-icon.png'))).digest('hex');
   assert.equal(receipt.app_icon_sha256, '7226c3d97a2a35cf9318c615afe20c21b6281af71a53ae22cf23ba215bc5e89e', 'Packaged renderer must include the default DISCO icon');
-  await check('cold packaged launcher and state isolation', async () => {const actual = await start(); assert.equal(actual.packaged, true); assert.equal(actual.electronVersion, '44.5.0'); return {isolated_user_state: true, packaged: true, electron_version: actual.electronVersion};});
+  await check('cold packaged launcher and state isolation', async () => {const actual = await start(); assert.equal(actual.packaged, true); assert.equal(actual.electronVersion, '44.9.2'); return {isolated_user_state: true, packaged: true, electron_version: actual.electronVersion};});
   await check('launcher actual app icon loads at upper right at normal and narrow native widths',
     () => verifyHeaderIcon('.onboarding-app-icon', '.project-onboarding>header', 'launcher-icon'));
   await check('renderer isolation, sandbox and CSP', async () => {

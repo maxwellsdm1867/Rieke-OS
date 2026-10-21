@@ -35,6 +35,12 @@ test('readiness validates owned process/release/session; launch never relies on 
   const [executable, args, options] = spawned();
   assert.ok(executable.startsWith(await fs.realpath(supervisor.resourcesPath))); assert.equal(args[0], '-B');
   assert.equal(options.env.PATH, undefined); assert.equal(options.env.PYTHONDONTWRITEBYTECODE, '1');
+  const certificateBundle = path.join(supervisor.resourcesPath, 'runtime', 'python', 'lib',
+    'python3.11', 'site-packages', 'certifi', 'cacert.pem');
+  assert.equal(options.env.SSL_CERT_FILE, certificateBundle);
+  assert.equal(options.env.SSL_CERT_DIR, path.dirname(certificateBundle));
+  assert.equal(options.env.REQUESTS_CA_BUNDLE, certificateBundle);
+  assert.equal(options.env.CURL_CA_BUNDLE, certificateBundle);
   assert.notEqual(supervisor.rendererCapability, supervisor.capability);
 });
 test('occupied port receives zero capability requests without private owned bind handshake', async t => {

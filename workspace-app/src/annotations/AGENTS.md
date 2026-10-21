@@ -75,7 +75,11 @@ Tags travel on their own channel (`tagStore.js`), not the App `revision` clock.
 A single-target save calls `begin()` synchronously so the chip paints in the
 click's frame (pending style), writes serially per target/author with the last
 confirmed revision, then `confirm()`s in place or `fail()`s with rollback and the
-draft restored. Pending operations are presentation only: never expected
+draft restored. `fail()` still cancels (never sends) later queued operations by the
+same author on that target, and returns them; the editor restores the first unsaved
+text to an empty composer and names every other one in the visible error. Selection
+writes take `turnMany()` over their targets, so single-target and selection writes
+on a shared target are ordered instead of racing to a revision conflict. Pending operations are presentation only: never expected
 revisions, never in exports or filters, never evicted. Confirmed epoch-only
 receipts do not tick `useWorkspaceChanges`; tag-dependent results (filters,
 legacy page tokens) renew once from `getConfirmedGeneration()` after a 75 ms idle

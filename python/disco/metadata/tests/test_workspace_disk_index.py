@@ -228,4 +228,97 @@ class DiskIndexTests(unittest.TestCase):
         with self.assertRaises(ValueError):index.cell_epoch_ids('cell-17')
         with self.assertRaises(ValueError):index.cell_epoch_count('cell-17')
 
+    def test_catalog_definitions_are_one_shared_read_only_view(self):
+        index=self.build(count=140)
+        self.addCleanup(index.close)
+        expected={field['id']:field for field in index.catalog()['fields']}
+        first=index.catalog_definitions();second=index.catalog_definitions()
+        self.assertIs(first,second,'One shared view per generation, never a per-call copy')
+        self.assertIs(first['epoch'],second['epoch'])
+        self.assertEqual(json.dumps(dict(first),default=dict,sort_keys=True),json.dumps(expected,sort_keys=True))
+        definition=first['parameters/frequencyCutoff']
+        with self.assertRaises(TypeError): first['new']={}
+        with self.assertRaises(TypeError): definition['label']='changed'
+        self.assertIsInstance(definition['examples'],tuple)
+        index.catalog()['fields'][0]['label']='caller copy'
+        self.assertEqual(index.catalog()['fields'],list(expected.values()),'catalog() keeps returning independent copies')
+        with self.path.open('ab') as stream:stream.write(b'changed')
+        with self.assertRaises(ValueError):index.catalog_definitions()
+
+    def test_per_key_values_read_bounded_windows_not_one_connection_per_epoch(self):
+        index=self.build(count=1100)
+        self.addCleanup(index.close)
+        expected=dict(index.values().items())
+        ids=[row['epoch_uuid'] for row in self.rows]
+        for scope in (None,ids[::-1]):
+            values=index.values(scope)
+            order=ids if scope is None else scope
+            with patch.object(index,'_connect',wraps=index._connect) as connect:
+                read={key:values[key] for key in order}
+            self.assertEqual(read,{key:expected[key] for key in order})
+            self.assertLessEqual(connect.call_count,(len(order)//512)+11,connect.call_count)
+            read[order[0]].clear()
+            self.assertEqual(values[order[0]],expected[order[0]],'Each access returns an independent copy')
+        scoped=index.values(ids[:3])
+        with self.assertRaises(KeyError): scoped[ids[5]]
+        with self.assertRaises(KeyError): index.values()['unknown']
+        self.assertEqual(scoped.get(ids[2]),expected[ids[2]])
+        # Random access shrinks the window: no worse than about one read per key.
+        values=index.values(ids)
+        jumps=ids[::97]
+        with patch.object(index,'_connect',wraps=index._connect) as connect:
+            self.assertEqual([values[key] for key in jumps],[expected[key] for key in jumps])
+        self.assertLessEqual(connect.call_count,len(jumps))
+        subset=index.values().subset(ids[5:1:-1])
+        self.assertEqual(list(subset.items()),[(key,expected[key]) for key in ids[5:1:-1]])
+        with self.assertRaises(KeyError): scoped.subset([ids[0],ids[9]])
+
+    def test_epoch_prefix_is_an_index_range_probe_with_exact_total(self):
+        index=self.build(count=1100)
+        self.addCleanup(index.close)
+        ids=sorted(row['epoch_uuid'] for row in self.rows)
+        with patch.object(index,'rows',side_effect=AssertionError('No complete row projection')):
+            for prefix in ('epoch-1','epoch-10','epoch-1099','epoch-','epoch-x'):
+                matches=[key for key in ids if key.startswith(prefix)]
+                self.assertEqual(index.epoch_prefix(prefix,5),(matches[:5],len(matches)))
+            self.assertEqual(index.epoch_prefix('epoch-2',0),([],len([key for key in ids if key.startswith('epoch-2')])))
+        with self.assertRaises(ValueError): index.epoch_prefix('Epoch-1',5)
+        with self.assertRaises(ValueError): index.epoch_prefix('',5)
+        with sqlite3.connect(self.path) as connection:
+            plan=connection.execute('EXPLAIN QUERY PLAN SELECT epoch_uuid FROM epochs WHERE epoch_uuid>=? AND epoch_uuid<? ORDER BY epoch_uuid LIMIT 5',('epoch-1','epoch-2')).fetchall()
+        self.assertTrue(any('USING COVERING INDEX' in item[-1] and 'epoch_uuid>? AND epoch_uuid<?' in item[-1].replace('=','') for item in plan),plan)
+        rows,details,sources=fixture(3)
+        rows[1]['epoch_uuid']='EPOCH-B';details['EPOCH-B']=details.pop('epoch-1')
+        mixed=DiskMetadataIndex.build(Path(self.temp.name)/'mixed.sqlite',rows,details,sources,'mixed','project')
+        self.addCleanup(mixed.close)
+        self.assertIsNone(mixed.epoch_prefix('epoch-',5),'Mixed-case identities use the caller scan')
+
+    def test_first_epoch_prefix_after_open_and_reopen_never_checks_whole_identity_case(self):
+        index=self.build(count=31)
+        index.close()
+        connect=sqlite3.connect
+        for _ in range(2):
+            opened=DiskMetadataIndex.open(self.path,'generation','project')
+            statements=[]
+            def traced(*args,**kwargs):
+                connection=connect(*args,**kwargs)
+                connection.set_trace_callback(statements.append)
+                return connection
+            try:
+                with patch.object(sqlite3,'connect',side_effect=traced):
+                    self.assertEqual(opened.epoch_prefix('epoch-2',2),(['epoch-2','epoch-20'],11))
+                self.assertFalse(any('lower(' in sql.lower() for sql in statements),statements)
+            finally:opened.close()
+
+    def test_prefix_admission_preserves_sqlite_non_ascii_case_semantics(self):
+        rows,details,sources=fixture(1)
+        rows[0]['epoch_uuid']='Époch-0';details['Époch-0']=details.pop('epoch-0')
+        index=DiskMetadataIndex.build(self.path,rows,details,sources,'unicode','project')
+        try:
+            # SQLite lower leaves this non-ASCII capital unchanged. Preserve the
+            # existing SQL proof rather than replacing it with Python.lower.
+            self.assertEqual(index.epoch_prefix('époch-',1),([],0))
+            self.assertEqual(index.epoch_prefix('x',1),([],0))
+        finally:index.close()
+
 if __name__=='__main__': unittest.main()

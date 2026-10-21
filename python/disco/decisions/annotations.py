@@ -307,6 +307,11 @@ class SharedAnnotations:
         if refresh and not previous.refresh():return None
         return previous
 
+    def tagged_targets(self):
+        """Targets carrying a shared tag from the generation-fenced index, or None."""
+        index=self._membership_index(())
+        return index.tagged_targets() if index is not None else None
+
     def generation_token(self):
         tracker=getattr(self,'state_generation',None)
         return tracker.token() if type(self) is SharedAnnotations and tracker is not None else None
@@ -353,6 +358,26 @@ class SharedAnnotations:
         for item in output.values():item['tags'].sort(key=lambda r:(r['tag'],r['author_name'],r['profile_uuid']))
         return output
 
+    def approximate_tag_times(self,tag,epoch_in_scope,cell_in_scope):
+        """(kind,target,added_at) of in-scope chips with this tag, or None.
+
+        Only for this native store without a time table: equal to hydrating every
+        scoped epoch's chips with for_epochs (approximate update times), read
+        from the project's annotation records instead of per epoch. Each scoped
+        record is validated exactly as hydration would.
+        """
+        native=all(getattr(type(self),name) is getattr(SharedAnnotations,name)
+                   for name in ('for_epochs','_rows','_validated_tags','_chips'))
+        if self.TagTime is not None or not native:return None
+        from disco.decisions.tag_times import chip_time
+        found=[]
+        for kind,in_scope in (('epoch',epoch_in_scope),('cell',cell_in_scope)):
+            for row in self._rows(kind):
+                if not in_scope(row['target_uuid']):continue
+                if tag in self._validated_tags(row):
+                    found.append((kind,row['target_uuid'],chip_time(row,tag,None)['added_at']))
+        return found
+
     def for_epochs(self,rows):
         if not rows:return {}
         ids=[r['epoch_uuid'] for r in rows];cells=sorted({r['cell_uuid'] for r in rows})
@@ -375,10 +400,21 @@ class SharedAnnotations:
                 'revisions':{'cell':dict(cell['revisions']),'epoch':dict(epoch['revisions'])}}
         return result
 
-    def summary(self,rows):
-        rows=list(rows)
+    def summary(self,rows,*,scope_token=None):
+        """Overview tag counts. ``scope_token`` optionally proves ``rows`` unchanged
+        (for example an immutable publication serial): with the generation-fenced
+        index, an already validated token skips re-reading every row."""
+        if (scope_token is not None and type(self) is SharedAnnotations
+                and getattr(self,'_summary_scope_token',None)==scope_token):
+            previous=self._membership_index(())
+            if previous is not None and previous.scope_tokens.get('summary')==scope_token:
+                return previous.summary(rows,scope_token=scope_token)
+        rows=list(rows() if callable(rows) else rows)
         previous=self._membership_index(rows)
-        if previous is not None:return previous.summary(rows)
+        if previous is not None:
+            result=previous.summary(rows,scope_token=scope_token)
+            self._summary_scope_token=scope_token
+            return result
         ids={row['epoch_uuid'] for row in rows};cells={row['cell_uuid'] for row in rows}
         cell_epochs={key:set() for key in cells};epoch_cell={row['epoch_uuid']:row['cell_uuid'] for row in rows}
         for row in rows:cell_epochs[row['cell_uuid']].add(row['epoch_uuid'])

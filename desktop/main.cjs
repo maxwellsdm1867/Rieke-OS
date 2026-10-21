@@ -62,7 +62,7 @@ if (bootstrap) {
   app.setPath('userData', installerState);
 }
 let supervisor, backendStartup, coordinator, quitAuthorized = false, startupInProgress = false, quitting;
-let draftStore, viewUnavailable = false, navigationGeneration = 0;
+let draftStore, viewUnavailable = false, retiredDraftsUnconfirmed = false, navigationGeneration = 0;
 let lifecycleStatus = {state: 'Starting', title: 'Starting DISCO', message: 'Opening your workspace.'};
 let applicationVerification, verificationController, verificationRecovery, verificationRecoveryResult;
 let integrityFailed=false;
@@ -163,6 +163,68 @@ function orderlyQuit() {
   return quitting.quit();
 }
 
+// Draft persistence outlives the backend: a crash clears supervisor.origins, but a
+// retained document still at the exact origin authenticated when it registered may
+// persist its view and acknowledge drafts. No other channel gains this origin.
+const DRAFT_CHANNELS=['desktop:drafts-ack','desktop:save-draft'];
+function draftOrigins(event){
+  const origins=new Set(supervisor?.origins||[]);
+  const owner=[...scientificWindows].find(item=>item.binding&&!item.isDestroyed()&&item.webContents===event?.sender);
+  if(owner)origins.add(owner.binding.origin);
+  return origins;
+}
+// One project = one draft writer. The writer for a project's saved-view scope is
+// the most recently registered owner for that project. A newer owner is admitted
+// to write only after the previous owner's final checkpoint completes or is
+// declared unconfirmed; afterwards the previous owner's saves are refused and it
+// is disposed. No two documents can ever interleave writes to one saved view.
+const draftWriters=new Map();
+const draftScope=binding=>binding.project_uuid==='launcher'?'launcher':JSON.stringify([binding.project_uuid,binding.project_path]);
+function claimDraftWriter(owner){
+  if(!owner.binding)return;
+  const scope=draftScope(owner.binding),previous=draftWriters.get(scope);
+  const entry={owner,previous:previous?.owner,settled:false};
+  entry.ready=(async()=>{
+    if(!entry.previous)return;
+    await previous.ready;
+    if(entry.previous.isDestroyed()||entry.previous.draftUnavailable)return;
+    entry.checkpointing=true;
+    try{const result=await draftBarrier.prepare([entry.previous],{purpose:'project-checkpoint',timeout:5000});if(!result.ready)retiredDraftsUnconfirmed=true;}
+    catch{retiredDraftsUnconfirmed=true;}
+    finally{entry.checkpointing=false;}
+  })().finally(()=>{
+    entry.settled=true;
+    const stale=entry.previous;
+    if(stale&&!stale.isDestroyed()&&stale.retired===undefined)projectViews.get(stale.parentWindow)?.dispose(stale);
+  });
+  draftWriters.set(scope,entry);
+}
+function releaseDraftWriter(owner){
+  if(!owner.binding)return;
+  const scope=draftScope(owner.binding);
+  if(draftWriters.get(scope)?.owner===owner)draftWriters.delete(scope);
+}
+// Resolves when this owner may write; rejects for a superseded owner.
+async function admitDraftWriter(owner){
+  if(!owner.binding)return;
+  const entry=draftWriters.get(draftScope(owner.binding));
+  if(entry?.owner===owner){await entry.ready;if(draftWriters.get(draftScope(owner.binding))===entry)return;}
+  else if(entry?.checkpointing&&entry.previous===owner)return; // Only the superseded owner's final checkpoint.
+  throw Error('Another document now owns this project\'s saved view.');
+}
+function retainedOwners(){return [...projectViews.values()].flatMap(views=>[...views.owners.values()].map(owner=>({views,owner})));}
+// After a failed backend, checkpoint retained documents while their old bindings
+// still authenticate; a replacement root invalidates every one of those bindings.
+async function checkpointRetainedOwners(){
+  const owners=retainedOwners().map(item=>item.owner);
+  if(!owners.length)return;
+  const result=await draftBarrier.prepare(owners,{purpose:'project-checkpoint',timeout:5000});
+  if(!result.ready)retiredDraftsUnconfirmed=true;
+}
+// Dispose owners whose backend is gone only after a successful replacement start.
+function disposeStaleOwners(){
+  for(const {views,owner} of retainedOwners())if(!ownerCurrent(owner))views.dispose(owner);
+}
 function ownerCurrent(owner){
   if(!owner.binding)return true;
   if(owner.binding.project_uuid==='launcher')return owner.binding.origin===supervisor?.origin;
@@ -218,8 +280,8 @@ function viewsFor(window){
   if(!projectViews.has(window))projectViews.set(window,new ProjectViews({window,
     createView:()=>new WebContentsView({webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,nodeIntegrationInWorker:false,webSecurity:true,allowRunningInsecureContent:false,webviewTag:false,spellcheck:false,partition:'rieke-desktop'}}),
     prepare:owners=>draftBarrier.prepare(owners,{purpose:'project-checkpoint'}),
-    onRegister:owner=>{scientificWindows.add(owner);secureContents(owner);},
-    onDispose:owner=>scientificWindows.delete(owner),
+    onRegister:owner=>{scientificWindows.add(owner);secureContents(owner);claimDraftWriter(owner);},
+    onDispose:owner=>{scientificWindows.delete(owner);releaseDraftWriter(owner);},
     onActivate:async owner=>{
       if(owner.binding.project_uuid!=='launcher')try{await startupSession.remember(owner.binding.project_uuid,owner.binding.project_path,'workspace');}catch{broadcast({...status(),message:'The project opened, but its startup preference could not be saved.'});}
       if(!preview){const title=owner.webContents.getTitle();if(title)window.setTitle(title);}
@@ -362,8 +424,13 @@ async function startScientificUI() {
       const health = await supervisor.api('/api/desktop/health');
       if (!matchesHealth(health, supervisor.expectedHealth())) throw new Error('Existing backend is not ready for recovery');
       origin = supervisor.origin; supervisor.ready = true; supervisor.origins.add(origin);
-    } else origin = await supervisor.start();
+    } else {
+      await checkpointRetainedOwners();
+      if (integrityFailed || quitting) return;
+      origin = await supervisor.start();
+    }
     if (integrityFailed || quitting) return;
+    disposeStaleOwners();
     if (!coordinator && !preview) {
       const createUpdateCoordinator = distribution.channel === 'unsigned-testing'
         ? require('./updates/testing-updater.cjs').createTestingUpdateCoordinator
@@ -396,7 +463,7 @@ async function startScientificUI() {
       window.draftUnavailable = false;if(!WebContentsView)scientificWindows.add(window);
     }
     lifecycleStatus = {state: 'Running'};
-    viewUnavailable = [...scientificWindows].some(owner=>owner.draftUnavailable||owner.isDestroyed());
+    viewUnavailable = retiredDraftsUnconfirmed || [...scientificWindows].some(owner=>owner.draftUnavailable||owner.isDestroyed());
     broadcast(supervisor.recoveredQuit?.drafts_saved === false
       ? {...status(),message:'The previous quit could not confirm the latest view. The last saved view is retained; accepted operations were reconciled before reopening.'}
       : status());
@@ -405,7 +472,7 @@ async function startScientificUI() {
 }
 function registerIPC() {
   const handle = (channel, action) => ipcMain.handle(channel, async (event, payload) => {
-    const window = validateSender(event, rendererOwners(), supervisor?.origins, [recoveryPage]);
+    const window = validateSender(event, rendererOwners(), DRAFT_CHANNELS.includes(channel) ? draftOrigins(event) : supervisor?.origins, [recoveryPage]);
     if(!ownerCurrent(window))throw Error('The project backend binding has changed.');
     if(window.active===false&&['desktop:choose-project-folder','desktop:prepare-project-close','desktop:confirm-project-closed','desktop:cancel-project-close'].includes(channel))throw Error('The project is not visible.');
     const recoveryHost=!window.parentWindow&&isOwnedURL(window.webContents?.getURL(),null,[recoveryPage]);
@@ -477,9 +544,13 @@ function registerIPC() {
     return draftBarrier.acknowledge(payload, window);
   });
   handle('desktop:save-draft', async (payload,window) => {
+    await admitDraftWriter(window);
     const {store,record}=await scopedDraftStore(window,payload?.projectId);
     const result=await store.save(payload);
-    if(record&&window.active!==false)await startupSession.remember(record.project_uuid,record.project_path,payload.value?.value?.route?.page);
+    // The startup preference is a separate convenience; its failure never turns
+    // a persisted view into a failed draft save. remember() skips unchanged values.
+    if(record&&window.active!==false)try{await startupSession.remember(record.project_uuid,record.project_path,payload.value?.value?.route?.page);}
+    catch{broadcast({...status(),message:'The view was saved, but its startup preference could not be saved.'});}
     return result;
   });
   handle('desktop:load-draft', async (projectId,window) => {

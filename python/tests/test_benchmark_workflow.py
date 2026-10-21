@@ -39,6 +39,56 @@ class WorkflowContractTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 bench.dependency_identity(path)
 
+    def test_browser_identity_follows_exact_transitive_playwright_graph(self):
+        def package(version, **extra):
+            return {'version': version, 'resolved': 'https://example/' + version,
+                    'integrity': 'sha512-' + version, **extra}
+        locked = {'lockfileVersion': 3, 'packages': {
+            '': {'devDependencies': {'playwright': '1.63.0', 'electron': '44.5.0'}},
+            'node_modules/playwright': package('1.63.0', dependencies={'playwright-core': '1.63.0'},
+                                               optionalDependencies={'watch': '1'}),
+            'node_modules/playwright-core': package('1.63.0'),
+            'node_modules/electron': package('44.5.0')}}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'package-lock.json'
+            def identity(value):
+                path.write_text(json.dumps(value))
+                return bench.dependency_identity(path, browser_only=True)
+            original = identity(locked)
+            changed = copy.deepcopy(locked)
+            changed['packages']['']['devDependencies']['electron'] = '44.9.2'
+            changed['packages']['node_modules/electron'] = package('44.9.2')
+            self.assertEqual(original, identity(changed))
+            for field in ('version', 'resolved', 'integrity', 'dependencies', 'dev'):
+                changed = copy.deepcopy(locked)
+                changed['packages']['node_modules/playwright-core'][field] = ({'watch': '1'} if field == 'dependencies' else 'changed')
+                if field == 'dependencies':
+                    changed['packages']['node_modules/watch'] = package('1')
+                self.assertNotEqual(original, identity(changed), field)
+            changed = copy.deepcopy(locked)
+            changed['packages']['node_modules/playwright/node_modules/playwright-core'] = package('nested')
+            self.assertNotEqual(original, identity(changed))
+            changed = copy.deepcopy(locked)
+            changed['packages']['node_modules/watch'] = package('1')
+            self.assertNotEqual(original, identity(changed))
+            for mutate in (
+                lambda rows: rows.pop('node_modules/playwright-core'),
+                lambda rows: rows['node_modules/playwright-core'].update(link=True),
+                lambda rows: rows['node_modules/playwright-core'].pop('integrity'),
+                lambda rows: rows[''].pop('devDependencies'),
+            ):
+                changed = copy.deepcopy(locked); mutate(changed['packages'])
+                with self.assertRaises(ValueError):
+                    identity(changed)
+
+    def test_receipts_without_current_dependency_policy_are_not_reinterpreted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'receipt.json'
+            for value in ({}, {'dependency_policy': 'whole-desktop-lock-v1'}):
+                path.write_text(json.dumps(value))
+                with self.assertRaisesRegex(ValueError, 'dependency policy'):
+                    bench.load_receipt(path)
+
     def span(self, identifier, owner, start, end, parent=None, clock='browser'):
         row = dict(id=identifier, module=owner, name=identifier,
                    start_ms=start, end_ms=end, clock=clock)
@@ -299,6 +349,34 @@ class WorkflowContractTests(unittest.TestCase):
             with self.subTest(endpoints=endpoints), self.assertRaisesRegex(ValueError, 'endpoint coverage'):
                 bench.compare_metrics(baseline, candidate, {'relative': .25, 'absolute_ms': 5})
 
+    def test_app_suite_config_is_separate_and_core_inventory_is_unchanged(self):
+        core, app = bench.config('core'), bench.config('app')
+        self.assertEqual(core, bench.config())
+        self.assertEqual(len([v for case in core['cases'] for v in case['variants']]), 15)
+        self.assertEqual(app['smoke_epochs'], 2000)
+        self.assertFalse(any(case['trace'] for case in app['cases']))
+        self.assertNotEqual(app['fixture_version'], core['fixture_version'])
+        with self.assertRaises(ValueError):
+            bench.config('full')
+
+    def test_app_metrics_count_bytes_cancellations_and_fixed_window_trailing_reads(self):
+        action = self.action()
+        for index, row in enumerate(action['samples']):
+            row['requests'] = []
+            row['aborted'] = [{'url': '/api/overview', 'error': 'AbortError'}] if index == 0 else []
+            row['correctness']['path_kept'] = index != 0
+            row['trailing'] = {'window_ms': 1500, 'background_paths': ['/api/jobs'], 'requests': [
+                {'method': 'GET', 'url': '/api/jobs', 'bytes': 10},
+                {'method': 'GET', 'url': '/api/protocols/p/epochs?limit=60', 'bytes': 90}]}
+        result = bench.metrics({'actions': [action]}, {}, {'cases': [{'id': 'inspect', 'trace': False}], 'samples': 2})
+        value = result['inspect/cold']
+        self.assertEqual(value['aborted_counts'], [1, 0])
+        self.assertEqual(value['trailing_request_counts'], [2, 2])
+        self.assertEqual(value['trailing_foreground_counts'], [1, 1])
+        self.assertEqual(value['trailing_bytes'], [100, 100])
+        self.assertEqual(value['path_kept'], [False, True])
+        self.assertEqual(value['request_paths'], ['GET /api/jobs', 'GET /api/protocols/p/epochs'])
+
     def test_trace_endpoint_medians_exclude_profile_and_appear_in_both_reports(self):
         action = self.action(True)
         action['samples'][0]['trace']['first_visible_ms'] = 20
@@ -416,7 +494,7 @@ class WorkflowReceiptTests(unittest.TestCase):
         cleanup = dict(server_closed=True, fixture_closed=True, instrumentation_restored=True)
         self.save(directory / 'server/cleanup.json', cleanup)
         value = dict(format=bench.FORMAT, status='diagnostic', runtime='development', production_build=None, smoke=False, profile=True, module_timing=False, config=self.cfg,
-                     epochs=1_000_000, protocol_epochs=1_000_000, samples=2, fixture={'epochs': 1_000_000, 'protocol_epochs': 1_000_000}, harness_start=self.manifest, harness_end=self.manifest,
+                     dependency_policy=bench.DEPENDENCY_POLICY, epochs=1_000_000, protocol_epochs=1_000_000, suite='core', samples=2, fixture={'epochs': 1_000_000, 'protocol_epochs': 1_000_000}, harness_start=self.manifest, harness_end=self.manifest,
                      source_start=copy.deepcopy(self.source), source_end=copy.deepcopy(self.source),
                      environment=copy.deepcopy(self.env), browser_environment=browser_env,
                      cleanup={'browser_processes_closed': True, 'server_processes_closed': True,

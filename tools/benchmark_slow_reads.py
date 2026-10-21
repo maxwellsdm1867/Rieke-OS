@@ -13,7 +13,14 @@ is counted, and scope generations come from in-memory counters. Attestation
 counts per request are reported; their SQL latency is not timed here.
 
 Run against any source tree with ``--source-root`` to compare revisions with
-identical harness bytes.
+identical harness bytes. When the source tree publishes deep-frozen read-model
+maps (``workspace_service.publish_frozen``), the fixture publishes them the same
+way production ``refresh`` does; older trees keep plain dictionaries.
+
+Load-independent counts are reported per request: schema attestations, proof
+rebuilds (``ProtocolStateReader._metadata``), ``query_result`` copies and
+marshalled witness bytes. ``--witness-check`` times ``native_context`` alone on
+one protocol holding every epoch (the per-call freshness proof).
 """
 import argparse
 import hashlib
@@ -148,9 +155,82 @@ def build(source_root, folder, epochs, protocols):
 
     def bump(kind, identity):
         generations[(kind, identity)] = generations.get((kind, identity), 0) + 1
+    import workspace_service as service_module
+    if hasattr(service_module, 'publish_frozen'):
+        service.rows = service_module.publish_frozen(service.rows, rows=True)
+        service.cells = service_module.publish_frozen(service.cells)
+        service.protocols = service_module.publish_frozen(service.protocols)
+        service._fingerprints = service_module.publish_frozen(service._fingerprints)
+    install_counters(counters)
     return SimpleNamespace(case=case, service=service, app=app, client=app.test_client(), index=index,
                            protocols=protocol_ids, counters=counters, bump=bump, project=project,
                            epoch=service.ids[len(service.ids) // 2])
+
+
+def install_counters(counters):
+    """Count proof rebuilds, query copies and marshalled witness bytes."""
+    import workspace_protocol_state as state
+    counters.update(metadata=0, query_result=0, marshal_bytes=0)
+    original_metadata = state.ProtocolStateReader._metadata
+
+    def metadata(self, *args, **kwargs):
+        counters['metadata'] += 1
+        return original_metadata(self, *args, **kwargs)
+    state.ProtocolStateReader._metadata = metadata
+    module_marshal = getattr(state, 'marshal', None)
+    if module_marshal is not None:
+        dumps = module_marshal.dumps
+
+        class CountingMarshal:
+            def __getattr__(self, name):
+                return getattr(module_marshal, name)
+
+            @staticmethod
+            def dumps(*args):
+                value = dumps(*args)
+                counters['marshal_bytes'] += len(value)
+                return value
+        state.marshal = CountingMarshal()
+
+
+def counted(fx, call):
+    # query_result copies are counted through its existing elapsed() timer,
+    # leaving every captured method identity (native contracts) untouched.
+    from disco.operation_timing import capture_timings
+    before = {key: fx.counters[key] for key in ('attest', 'metadata', 'marshal_bytes')}
+    with capture_timings() as timings:
+        begin = time.perf_counter()
+        value = call()
+        elapsed = (time.perf_counter() - begin) * 1000
+    delta = {key: fx.counters[key] - before[key] for key in before}
+    delta['query_result'] = sum(item['operation'] == 'query_result' for item in timings)
+    return value, elapsed, delta
+
+
+def witness_check(source_root, epochs, repeats):
+    """ms per native_context on one protocol of ``epochs`` members (warm)."""
+    with tempfile.TemporaryDirectory(prefix='disco-witness-benchmark-') as folder:
+        fx = build(source_root, folder, epochs, 1)
+        reader = fx.app.extensions['protocol_state_reader']
+        protocol = fx.protocols[0]
+        # None means the native proof was not admitted (for example above the
+        # proof byte budget): every call then rebuilds it and the caller falls
+        # back to the legacy full-state oracle. Its per-call cost is reported.
+        cold = counted(fx, lambda: reader.native_context(protocol))
+        samples, counts = [], []
+        for _ in range(repeats):
+            value, elapsed, delta = counted(fx, lambda: reader.native_context(protocol, [fx.epoch]))
+            if (value is None) != (cold[0] is None) or (value is not None and value['query_revision'] != cold[0]['query_revision']):
+                raise RuntimeError('revision changed between identical warm calls')
+            samples.append(elapsed)
+            counts.append(delta)
+        fx.index.close()
+        fx.case.doCleanups()
+        return {'epochs': epochs, 'protocol_members': epochs, 'native_proof_admitted': cold[0] is not None,
+                'cold_ms': round(cold[1], 2), 'cold_counts': cold[2],
+                'median_ms': round(statistics.median(samples), 3), 'min_ms': round(min(samples), 3),
+                'per_call_counts': {key: statistics.median(item[key] for item in counts) for key in counts[0]},
+                'samples_ms': [round(value, 3) for value in samples]}
 
 
 def run(source_root, epochs, protocols, repeats):
@@ -161,6 +241,11 @@ def run(source_root, epochs, protocols, repeats):
         main = fx.protocols[0]
         endpoints = {
             'search.keystroke': '/api/search?q=con',
+            # UUID lookups: exact, a narrow prefix (<=256 epochs) and a prefix
+            # every epoch shares (exact total over the whole project).
+            'search.uuid_exact': f'/api/search?q={fx.epoch}',
+            'search.uuid_prefix': f'/api/search?q={fx.epoch[:-2]}',
+            'search.uuid_prefix_all': f'/api/search?q={fx.epoch[:18]}',
             'explore.predicate_fields': '/api/explore/predicate-fields',
             'overview': '/api/overview',
             'epoch.detail': f'/api/epochs/{fx.epoch}',
@@ -180,15 +265,16 @@ def run(source_root, epochs, protocols, repeats):
             fx.bump('protocol_curation', main)
             fx.bump('shared_annotations', fx.project)
             begin = time.perf_counter(); call(); cold = (time.perf_counter() - begin) * 1000
-            samples, attest = [], []
+            samples, attest, counts = [], [], []
             for _ in range(repeats):
-                before = fx.counters['attest']
-                begin = time.perf_counter(); response = call()
-                samples.append((time.perf_counter() - begin) * 1000)
-                attest.append(fx.counters['attest'] - before)
+                response, elapsed, delta = counted(fx, call)
+                samples.append(elapsed)
+                attest.append(delta['attest'])
+                counts.append(delta)
             bodies[name] = hashlib.sha256(response.get_data()).hexdigest()
             results[name] = {'cold_after_write_ms': round(cold, 2), 'median_ms': round(statistics.median(samples), 2),
                              'min_ms': round(min(samples), 2), 'attestations_per_request': statistics.median(attest),
+                             'per_request_counts': {key: statistics.median(item[key] for item in counts) for key in counts[0]},
                              'samples_ms': [round(value, 2) for value in samples]}
         fx.index.close()
         fx.case.doCleanups()
@@ -203,13 +289,24 @@ if __name__ == '__main__':
     parser.add_argument('--protocols', type=int, default=7)
     parser.add_argument('--repeats', type=int, default=9)
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--witness-check', action='store_true', help='time native_context alone (one protocol)')
     args = parser.parse_args()
     source = args.source_root.resolve()
+    if args.witness_check:
+        results = [witness_check(source, n, args.repeats) for n in args.epochs]
+        text = json.dumps({'harness_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                           'source_root': str(source), 'python': sys.version.split()[0], 'witness_check': results}, indent=2)
+        if args.output:
+            args.output.write_text(text + '\n')
+        for item in results:
+            print(item['epochs'], 'admitted' if item['native_proof_admitted'] else 'NOT admitted', item['median_ms'],
+                  item['per_call_counts'], 'cold', item['cold_ms'], item['cold_counts'])
+        raise SystemExit(0)
     results = [run(source, n, args.protocols, args.repeats) for n in args.epochs]
     text = json.dumps({'harness_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                        'source_root': str(source), 'python': sys.version.split()[0], 'results': results}, indent=2)
     if args.output:
         args.output.write_text(text + '\n')
     for item in results:
-        print(item['epochs'], {k: (v['median_ms'], v['cold_after_write_ms'], v['attestations_per_request'])
+        print(item['epochs'], {k: (v['median_ms'], v['cold_after_write_ms'], v['per_request_counts'])
                                for k, v in item['endpoints'].items()})

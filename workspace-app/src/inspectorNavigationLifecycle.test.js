@@ -305,7 +305,8 @@ test('anchor-to-offset handoff preserves loaded cell rows and query identity wit
   await h.act(()=>h.root.findAllByType('button').find(n=>n.props.children==='Load more epochs').props.onClick());
   await h.waitFor(()=>!!row(h,70));
   const node=row(h,70),source=h.viewer.treePane.listProps.source,before=h.fixture.requests.length;
-  h.fixture.respond=(url,options,result)=>url.pathname.endsWith('/epochs')&&!url.searchParams.has('cell_uuid')&&url.searchParams.get('offset')==='60'?new Promise(resolve=>held.push(()=>resolve(result()))):result();
+  // The anchor page is the fresh receipt; its identical offset read is not repeated.
+  h.fixture.respond=(url,options,result)=>url.pathname.endsWith('/epochs')&&!url.searchParams.has('cell_uuid')&&url.searchParams.has('anchor_uuid')?new Promise(resolve=>held.push(()=>resolve(result()))):result();
   await h.act(()=>node.props.onClick({}));await h.waitFor(()=>held.length>0);
   assert.deepEqual(h.viewer.treePane.listProps.source,source);
   assert.equal(row(h,70),node);
@@ -314,6 +315,7 @@ test('anchor-to-offset handoff preserves loaded cell rows and query identity wit
   assert.equal(h.fixture.requests.slice(before).filter(r=>r.path.includes('cell_uuid=')).length,0);
   h.fixture.respond=(url,options,result)=>result();await h.act(()=>held.splice(0).forEach(release=>release()));
   await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);
+  assert.equal(h.fixture.requests.slice(before).filter(r=>r.path.includes('/epochs?')&&r.path.includes('offset=60')).length,0,'no second read of the anchored page');
   for(const ordinal of [71,69,70]){await h.act(()=>row(h,ordinal).props.onClick({}));assert.equal(row(h,70),node);}
   assert.equal(h.viewer.epoch.epoch_uuid,'epoch-69');
   await h.act(()=>h.viewer.navigation.onMove(1));
@@ -377,5 +379,26 @@ test('frozen same-page focus retains tree read scope and enabled actions with me
    assert.notEqual(h.viewer.tags.props.readSeparately,true,'metadata policy does not force a duplicate annotation reader');
   }
   assert(h.fixture.resources.filter(row=>row.path?.includes('/epochs?')).every(row=>row.path===request.path&&row.revision===request.revision));
+ }finally{await h.close();}
+});
+
+
+test('ordinary Inspector bounds cell lists, appends only matching receipts and fences filter changes',async()=>{
+ const h=await createInspectorHarness();try{
+  const a={cell_uuid:'cell-A',epochs:100},b={cell_uuid:'cell-B',epochs:10};
+  h.fixture.page={...page,cells:[a],cells_total:2,cells_next:1};
+  await h.render(props);
+  assert(h.fixture.resources.some(x=>x.path?.includes('include_cells=true&cells_limit=200')));
+  let path;
+  h.fixture.api=async p=>{path=p;return {...page,cells:[b],cells_total:2,cells_next:null};};
+  await h.act(()=>h.viewer.treePane.listProps.cellsMore.onMore());
+  assert.match(path,/cells_limit=200&cells_after=1/);
+  assert.deepEqual(h.viewer.treePane.listProps.cells.map(x=>x.cell_uuid),['cell-A','cell-B']);
+  assert.equal(h.viewer.treePane.listProps.cellsMore.loaded,2);
+  h.fixture.page={...page,cells:[a],cells_total:2,cells_next:1};await h.render({...props,revision:1});
+  h.fixture.api=async()=>({...page,query_revision:'foreign',cells:[b],cells_total:2,cells_next:null});
+  await h.act(()=>h.viewer.treePane.listProps.cellsMore.onMore());
+  assert.match(h.viewer.treePane.listProps.cellsMore.error,/membership changed/);
+  assert.deepEqual(h.viewer.treePane.listProps.cells.map(x=>x.cell_uuid),['cell-A']);
  }finally{await h.close();}
 });

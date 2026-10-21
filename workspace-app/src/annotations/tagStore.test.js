@@ -70,3 +70,30 @@ test('after a receipt-less change, shown epochs are verified once and fresh fact
   assert.equal(store.needsVerification('e1'),false);
   assert.deepEqual(store.apply(stale).annotations.epoch_tags.map(chip=>chip.tag),['single','from group'],'Fresh facts overlay the stale cached row');
 });
+
+test('fail() reports the later queued operations it cancelled so their typed text is not lost',()=>{
+  const store=createTagStore();
+  const first=store.begin({kind:'epoch',uuid:'e1',profile:'me',authorName:'Me',tag:'a'});
+  const second=store.begin({kind:'epoch',uuid:'e1',profile:'me',authorName:'Me',tag:'b'});
+  const third=store.begin({kind:'epoch',uuid:'e1',profile:'me',authorName:'Me',tag:'a',remove:true});
+  const other=store.begin({kind:'epoch',uuid:'e1',profile:'you',authorName:'You',tag:'c'});
+  const cancelled=store.fail(first,new Error('Annotation revision conflict'));
+  assert.deepEqual(cancelled.map(op=>[op.ticket,op.tag,op.remove]),[[second,'b',false],[third,'a',true]]);
+  assert.equal(store.isPending(other),true,'another author queue is independent');
+  assert.deepEqual(store.fail(other,new Error('x')),[]);
+});
+
+test('single-target and selection writes share per-target ordering',async()=>{
+  const store=createTagStore(),order=[];
+  const releaseSelection=await store.turnMany('epoch',['e1','e2'],'me');
+  const single=store.turn('epoch','e2','me').then(release=>{order.push('single');release();});
+  const unrelated=store.turn('epoch','e3','me').then(release=>{order.push('unrelated');release();});
+  await unrelated;await Promise.resolve();
+  assert.deepEqual(order,['unrelated'],'a write to a selected target waits for the selection write');
+  order.push('selection');releaseSelection();await single;
+  assert.deepEqual(order,['unrelated','selection','single']);
+  const releaseFirst=await store.turn('epoch','e1','me');let started=false;
+  const selection=store.turnMany('epoch',['e1','e4'],'me').then(release=>{started=true;release();});
+  await Promise.resolve();await Promise.resolve();assert.equal(started,false,'a selection waits for earlier single writes on its targets');
+  releaseFirst();await selection;assert.equal(started,true);
+});

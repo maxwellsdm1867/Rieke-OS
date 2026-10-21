@@ -11,12 +11,13 @@ import MetadataExplorer from '../../metadata-explorer/ui/MetadataExplorer.jsx';
 import FrozenIncomingReview from './FrozenIncomingReview.jsx';
 import CumulativeIncomingReview from './CumulativeIncomingReview.jsx';
 import useWorkbenchQueue from '../useWorkbenchQueue.js';
+import ViewPreparation from '../../protocol-overview/ui/ViewPreparation.jsx';
 import {pendingQueueCounts} from '../workbenchAuthority.js';
 import useIncomingMergeIntent from '../useIncomingMergeIntent.js';
 import './IncomingWorkbench.css';
 
 export default function IncomingWorkbench({projectId,protocolId,protocols=[],suggestions=[],loading=false,error,onRetry,onChange,onApplied,onQC,onInspect,revision,metadataPresentationRevision,session,onSession,initialCandidateId=null,initialExportIntent=null,initialAcceptOperation=null,authority=undefined,filterTarget=null,toolbarTarget=null,initialMergeIntent=null,onClaimMergeIntent,onMerged}){
-  const queue=useWorkbenchQueue(protocolId,revision,authority);
+  const queue=useWorkbenchQueue(protocolId,revision,authority,projectId);
   const cumulative=queue.data?.contract_version===1,counts=pendingQueueCounts(queue.data);
   const preparedSupported=queue.data?.capabilities?.cumulative_pending_browse===true;
   const saved=useRef(session||{}).current;
@@ -38,6 +39,7 @@ export default function IncomingWorkbench({projectId,protocolId,protocols=[],sug
   function startExport(item,accept){const key=reviewKey(item);if(exports[key]?.exported||exports[key]?.phase==='rejected')setExports(previous=>({...previous,[key]:nextWorkbenchWorkflow(previous[key])}));setDialog({key,item,accept});}
   const next=worklist.find(item=>item.candidate_revision_uuid!==active);
   const target=dialog&&(dialog.item||items.find(item=>reviewKey(item)===dialog.key));
+  if(queue.preparation||queue.preparing)return <div className="incoming-workbench"><ViewPreparation resource={queue}/></div>;
   return <div className="incoming-workbench">
     {mergeRequest.pending&&<p role="status">Preparing your merge preview… <button onClick={()=>mergeRequest.finish()}>Cancel merge request</button></p>}
     {mergeRequest.message&&<p role="status">{mergeRequest.message}</p>}

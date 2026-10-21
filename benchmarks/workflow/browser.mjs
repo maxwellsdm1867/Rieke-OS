@@ -5,8 +5,51 @@ import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
 import {fixtureSource,installObserver,installTraceControlReader,installBinaryTraceOracle} from './fixture-app.mjs';
 import {attachLedger} from '../navigation-probe.mjs';
+import {appInventory,appLimits,appFixtureSource,runAppSample,TRAILING_MS,BACKGROUND_PATHS} from './app-suite.mjs';
 
-export function options(argv){const value={samples:3,profile:false,module_timing:false,runtime:'production'};for(let i=0;i<argv.length;i+=2){if(!argv[i].startsWith('--')||argv[i+1]===undefined)throw Error('Expected --key value');value[argv[i].slice(2).replaceAll('-','_')]=argv[i+1];}for(const key of ['source_root','server_json','output'])if(!value[key])throw Error(`Missing --${key.replaceAll('_','-')}`);value.samples=Number(value.samples);if(!Number.isInteger(value.samples)||value.samples<1)throw Error('samples must be positive');value.profile=profileEnabled(value.profile);value.module_timing=moduleTimingEnabled(value.module_timing);value.runtime=runtimeOption(value.runtime,value.profile);return value;}
+// Both reviewed editor generations keep the same explicit Run boundary. The
+// legacy editor owns summaries before Run; current results own one job after it.
+export function predicateEditorMode(){
+  const dialog=document.querySelector('.predicate-dialog');
+  if(!dialog||!dialog.open)return false;
+  const button=[...dialog.querySelectorAll('button')].find(node=>node.textContent.trim()==='View matching epochs');
+  if(!button||button.disabled)return false;
+  return dialog.querySelector('.metadata-summary-status')?'legacy-before-query':'after-query';
+}
+
+/** Read actual consumed job replies, without making another product request.
+ * Called outside the headline action clock, after exact result membership has
+ * already passed. Never accept another action's summary or a stale generation. */
+export function predicateSummaryReady({startIndex,expectedCount,actionId=null}){
+  const requests=window.__workflow.requests.slice(startIndex);
+  const pathname=row=>new URL(row.url,'http://fixture').pathname;
+  const canonical=value=>JSON.stringify((function sort(item){return Array.isArray(item)?item.map(sort):item&&typeof item==='object'?Object.fromEntries(Object.keys(item).sort().map(key=>[key,sort(item[key])])):item;})(value));
+  const submissions=requests.filter(row=>row.method==='POST'&&pathname(row)==='/api/explore/summaries');
+  if(submissions.length>1)throw Error('Predicate summary created more than one job');
+  const submission=submissions[0];if(!submission)return false;
+  if(submission.error||submission.status>=400)throw Error('Predicate summary submission failed');
+  if(submission.end===undefined||!submission.result)return false;
+  if(actionId){
+    const run=requests.find(row=>row.action_id===actionId&&row.method==='POST'&&pathname(row)==='/api/explore/run');
+    if(!run||run.end===undefined)return false;
+    if(submission.start<run.end||!(submission.action_id===actionId||submission.after_action_id===actionId))throw Error('Predicate summary does not belong to the completed query');
+    if(run.result?.matched_count!==expectedCount)throw Error('Predicate run count differs from fixture');
+  }
+  const acknowledgement=submission.result,id=acknowledgement.request_id,fields=acknowledgement.summary_fields;
+  if(typeof id!=='string'||!id||!Array.isArray(fields)||!fields.length||new Set(fields).size!==fields.length||!acknowledgement.generation)throw Error('Invalid predicate summary acknowledgement');
+  const polls=requests.filter(row=>row.method==='GET'&&pathname(row)==='/api/explore/summaries/'+encodeURIComponent(id));
+  if(polls.some(row=>row.error||row.status>=400))throw Error('Predicate summary poll failed');
+  const latest=[submission,...polls].filter(row=>row.end!==undefined&&row.result).at(-1);
+  const result=latest.result;
+  if(result.request_id!==id||canonical(result.generation)!==canonical(acknowledgement.generation)||canonical(result.summary_fields)!==canonical(fields))throw Error('Predicate summary receipt identity changed');
+  if(['failed','stale','cancelled'].includes(result.status))throw Error('Predicate summary did not finish: '+result.status);
+  if(result.status!=='ready')return false;
+  if(result.result?.matched_count!==expectedCount)throw Error('Predicate summary count differs from fixture');
+  if(!result.result.summaries||fields.some(field=>!Object.hasOwn(result.result.summaries,field)))throw Error('Predicate summary omitted requested fields');
+  return {request_id:id,generation:result.generation,summary_fields:fields,matched_count:result.result.matched_count,status:'ready',ownership:actionId?'after-query':'legacy-before-query'};
+}
+
+export function options(argv){const value={samples:3,profile:false,module_timing:false,runtime:'production',suite:'core'};for(let i=0;i<argv.length;i+=2){if(!argv[i].startsWith('--')||argv[i+1]===undefined)throw Error('Expected --key value');value[argv[i].slice(2).replaceAll('-','_')]=argv[i+1];}for(const key of ['source_root','server_json','output'])if(!value[key])throw Error(`Missing --${key.replaceAll('_','-')}`);value.samples=Number(value.samples);if(!Number.isInteger(value.samples)||value.samples<1)throw Error('samples must be positive');value.profile=profileEnabled(value.profile);value.module_timing=moduleTimingEnabled(value.module_timing);value.runtime=runtimeOption(value.runtime,value.profile);if(!['core','app'].includes(value.suite))throw Error('suite must be core or app');return value;}
 
 
 /** Profiling is an explicit diagnostic pass, never implicit benchmark work. */
@@ -43,7 +86,9 @@ export function readiness(spec){
   const pending=()=>{a.frames=0;a.signature=null;return false;};
   const visible=el=>!!el&&el.getBoundingClientRect().width>0&&el.getBoundingClientRect().height>0&&getComputedStyle(el).visibility!=='hidden';
   const requests=w.requests.filter(r=>r.action_id===a.action_id);
-  if(requests.some(r=>r.error||r.status>=400))throw Error('Action API request failed: '+JSON.stringify(requests.filter(r=>r.error||r.status>=400).map(r=>({url:r.url,status:r.status,error:r.error}))));
+  // A superseded read may be cancelled before headers or while its body is consumed.
+  const aborted=r=>spec.allowAborted&&/AbortError/.test(r.error||'')&&(r.status===undefined||r.status<400);
+  if(requests.some(r=>!aborted(r)&&(r.error||r.status>=400)))throw Error('Action API request failed: '+JSON.stringify(requests.filter(r=>!aborted(r)&&(r.error||r.status>=400)).map(r=>({url:r.url,status:r.status,error:r.error}))));
   // A combined response is transport evidence for the same first page, not a
   // synthetic /epochs request. Keep this helper inside the serialized browser gate.
   const preparedPage=saved=>{
@@ -96,6 +141,12 @@ export function readiness(spec){
   if(spec.searchUuids){if(!document.querySelector('.matching-epochs .inspection-cell-tree[data-inspection-membership-ready="true"]'))return pending();const r=[...requests].reverse().find(r=>r.url.includes('/explore/epochs')&&Array.isArray(r.result?.epochs));if(!r)return pending();const got=r.result.epochs.map(e=>e.epoch_uuid);if(JSON.stringify(got)!==JSON.stringify(spec.searchUuids.slice(0,got.length))||r.result.total!==spec.searchUuids.length||got.length!==Math.min(60,spec.searchUuids.length))return pending();evidence.result_uuids=got;evidence.total=r.result.total;}
   if(spec.savedPrepared){const saved=w.incomingSession?.prepared;for(const key of ['candidate_revision_uuid','queue_revision','candidate_scope_revision'])if(saved?.[key]!==spec.savedPrepared[key])return pending();if(!document.querySelector('.incoming-browser .inspection-cell-tree[data-inspection-membership-ready="true"]'))return pending();const p=preparedPage(saved);if(!p||p.total!==spec.preparedUuids.length||JSON.stringify(p.epochs.map(e=>e.epoch_uuid))!==JSON.stringify(spec.preparedUuids.slice(0,60)))return pending();evidence.prepared=spec.savedPrepared;}
   if(spec.selected){const session=w.incomingSession;const draft=session?.drafts?.[session?.prepared?.candidate_revision_uuid];if(JSON.stringify(draft?.selected)!==JSON.stringify(spec.selected))return pending();evidence.selected_uuids=draft.selected;}
+  if(spec.pressed){const el=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-label')===spec.pressed.label);if(!el||el.disabled||el.getAttribute('aria-pressed')!==String(spec.pressed.value))return pending();evidence.pressed=spec.pressed;}
+  if(spec.requestDone){const r=requests.find(r=>r.method===spec.requestDone.method&&r.url.split('?')[0].endsWith(spec.requestDone.path)&&r.status>=200&&r.status<300&&r.end!==undefined);if(!r)return pending();evidence.request_done={method:r.method,path:spec.requestDone.path,status:r.status};}
+  if(spec.focusedLabel){const el=document.querySelector('[aria-current="true"]');if(!visible(el)||el.getAttribute('aria-label')!==spec.focusedLabel||document.body.textContent.includes('Loading epoch…'))return pending();evidence.focused=spec.focusedLabel;}
+  if(spec.bodyText){if(!document.body.textContent.includes(spec.bodyText))return pending();evidence.body_text=spec.bodyText;}
+  if(spec.enabledButton){const el=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-label')===spec.enabledButton||b.textContent.trim()===spec.enabledButton);if(!visible(el)||el.disabled)return pending();evidence.enabled_button=spec.enabledButton;}
+  if(spec.settledPath){const got=[...document.querySelectorAll(spec.settledPath.selector)].filter(visible).map(el=>el.getAttribute('data-epoch-uuid'));evidence.path_kept=JSON.stringify(got)===JSON.stringify(spec.settledPath.uuids);evidence.terminal_count=got.length;}
   if(spec.uuids){const got=current.map(el=>el.getAttribute('data-epoch-uuid'));if(JSON.stringify(got)!==JSON.stringify(spec.uuids))return pending();evidence.uuids=got;}
   if(spec.trace){
     const expected=spec.trace;a.trace_expected={...expected,end:expected.start+expected.count,...(spec.traceRoot?{root:spec.traceRoot,candidate_scope_revision:spec.traceRevision}:{})};
@@ -192,7 +243,7 @@ export function armAction(el,{action_id,phase,spec,timeoutMs}){
       clearTimeout(dispatchTimer);delete w.pending_action;
       a.intent=performance.now();a.dispatch_wait_ms=a.intent-requestedAt;
       timer=setTimeout(()=>fail(Error('Action readiness timed out')),timeoutMs);
-      try{el.click();resolve();}catch(error){fail(error);}
+      try{if(spec?.gesture==='hold'){a.gesture='hold';a.hold_ms=spec.holdMs;el.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,pointerId:1,pointerType:'mouse',isPrimary:true,button:0,buttons:1}));}else el.click();resolve();}catch(error){fail(error);}
     };
     dispatchTimer=setTimeout(()=>fail(Error('Action dispatch timed out')),dispatchTimeoutMs);
     launchFrame=requestAnimationFrame(dispatch);
@@ -208,7 +259,7 @@ export function observationFinished(action_id){
   return true;
 }
 
-export function snapshotAction(action_id){const w=window.__workflow,a=w.completed?.[action_id];if(!a)throw Error('Missing completed action');const requests=a.captured_requests;return {action_id:a.action_id,total_ms:a.ready-a.intent,phase:a.phase,...(a.observer_armed_at!==undefined?{observer:{clock:'browser',dispatch_protocol:a.dispatch_protocol,dispatch_requested_at:a.dispatch_requested_at,dispatch_frame_timestamp:a.dispatch_frame_timestamp,dispatch_wait_ms:a.dispatch_wait_ms,armed_at:a.observer_armed_at,intent_at:a.intent,first_raf_at:a.first_observer_raf_at,first_correct_at:a.first_correct_observation_at,ready_at:a.ready,driver_observed_at:a.driver_observed_at??null,armed_before_intent_ms:a.intent-a.observer_armed_at,first_raf_ms:a.first_observer_raf_at-a.intent,first_correct_ms:a.first_correct_observation_at-a.intent,driver_retrieval_lag_ms:a.driver_observed_at===undefined?null:a.driver_observed_at-a.ready,raf_callbacks:a.observer_raf_count,required_correct_raf_callbacks:2}}:{}),correctness:{passed:true,...a.evidence},...(a.first_trace_at?{trace:{expected:a.trace_expected,first:{...a.evidence.trace,end:a.evidence.trace.start+a.evidence.trace.count},complete:{...a.evidence.trace,end:a.evidence.trace.start+a.evidence.trace.count},first_visible_ms:a.first_trace_at-a.intent,complete_ms:a.ready-a.intent,observation:'post-stroke timestamp plus second stable DOM/RAF observation captured before that observation correctness work; first-frame oracle work can delay second RAF; no compositor claim',correctness_validation_after_observation_ms:Math.max(0,a.correctness_validation_finished_at-a.ready)}}:{}),requests:requests.map(({start,headers,end,result,binary,decode_start,...r})=>({...r,start_ms:start-a.intent,headers_ms:headers===undefined?null:headers-a.intent,end_ms:end===undefined?null:end-a.intent})),frontend_spans:requests.filter(r=>r.start<a.ready).flatMap((r,i)=>{const parent={id:'request-'+i,module:'api-transport',name:'request-through-consumption',request_id:r.request_id,start_ms:r.start-a.intent,end_ms:Math.min(r.end??a.ready,a.ready)-a.intent,clipped_at_ready:r.end===undefined||r.end>a.ready,clock:'browser',inclusive:true,interpretation:'HTTP wait plus response consumption; backend work is nested, not exclusive CPU'};return [parent,...(r.decode_start!==undefined&&r.decode_start<a.ready?[{id:'body-'+i,parent_id:parent.id,module:'api-response-consumption',name:'response-json-consumption',request_id:r.request_id,start_ms:r.decode_start-a.intent,end_ms:parent.end_ms,clipped_at_ready:parent.clipped_at_ready,clock:'browser',inclusive:true,interpretation:'Includes body wait and JSON decode, not exclusive CPU'}]:[])];}),react_renders:a.captured_renders,cache_classification:requests.length?'requests-observed':'no-request-observed'};}
+export function snapshotAction(action_id){const w=window.__workflow,a=w.completed?.[action_id];if(!a)throw Error('Missing completed action');const requests=a.captured_requests;return {action_id:a.action_id,total_ms:a.ready-a.intent,phase:a.phase,...(a.observer_armed_at!==undefined?{observer:{clock:'browser',dispatch_protocol:a.dispatch_protocol,dispatch_requested_at:a.dispatch_requested_at,dispatch_frame_timestamp:a.dispatch_frame_timestamp,dispatch_wait_ms:a.dispatch_wait_ms,armed_at:a.observer_armed_at,intent_at:a.intent,first_raf_at:a.first_observer_raf_at,first_correct_at:a.first_correct_observation_at,ready_at:a.ready,driver_observed_at:a.driver_observed_at??null,armed_before_intent_ms:a.intent-a.observer_armed_at,first_raf_ms:a.first_observer_raf_at-a.intent,first_correct_ms:a.first_correct_observation_at-a.intent,driver_retrieval_lag_ms:a.driver_observed_at===undefined?null:a.driver_observed_at-a.ready,raf_callbacks:a.observer_raf_count,required_correct_raf_callbacks:2}}:{}),correctness:{passed:true,...a.evidence},...(a.first_trace_at?{trace:{expected:a.trace_expected,first:{...a.evidence.trace,end:a.evidence.trace.start+a.evidence.trace.count},complete:{...a.evidence.trace,end:a.evidence.trace.start+a.evidence.trace.count},first_visible_ms:a.first_trace_at-a.intent,complete_ms:a.ready-a.intent,observation:'post-stroke timestamp plus second stable DOM/RAF observation captured before that observation correctness work; first-frame oracle work can delay second RAF; no compositor claim',correctness_validation_after_observation_ms:Math.max(0,a.correctness_validation_finished_at-a.ready)}}:{}),requests:requests.map(({start,headers,end,result,binary,decode_start,...r})=>({...r,start_ms:start-a.intent,headers_ms:headers===undefined?null:headers-a.intent,end_ms:end===undefined?null:end-a.intent})),frontend_spans:requests.filter(r=>r.start<a.ready).flatMap((r,i)=>{const parent={id:'request-'+i,module:'api-transport',name:'request-through-consumption',request_id:r.request_id,start_ms:r.start-a.intent,end_ms:Math.min(r.end??a.ready,a.ready)-a.intent,clipped_at_ready:r.end===undefined||r.end>a.ready,clock:'browser',inclusive:true,interpretation:'HTTP wait plus response consumption; backend work is nested, not exclusive CPU'};return [parent,...(r.decode_start!==undefined&&r.decode_start<a.ready?[{id:'body-'+i,parent_id:parent.id,module:'api-response-consumption',name:'response-json-consumption',request_id:r.request_id,start_ms:r.decode_start-a.intent,end_ms:parent.end_ms,clipped_at_ready:parent.clipped_at_ready,clock:'browser',inclusive:true,interpretation:'Includes body wait and JSON decode, not exclusive CPU'}]:[])];}),react_renders:a.captured_renders,cache_classification:requests.length?'requests-observed':'no-request-observed',...(a.gesture?{gesture:a.gesture,hold_ms:a.hold_ms}:{})};}
 
 export function assertFinalizedRequests(sample){
   const seen=new Set();
@@ -243,8 +294,8 @@ export async function run(config){
   const runtime=runtimeOption(config.runtime,profileEnabled(config.profile));
   await fs.mkdir(output,{recursive:true});const meta=JSON.parse(await fs.readFile(config.server_json,'utf8'));
   if(!Number.isInteger(meta.port)||meta.port<1||meta.port>65535)throw Error('Invalid owned backend port');
-  const receipt={runtime,diagnostic_only:runtime==='development',module_timing:moduleTimingEnabled(config.module_timing),profile:profileEnabled(config.profile),setup_receipts:[],format:'disco-workflow-browser-v1',status:'incomplete',epochs:meta.epochs,actions:inventory.map(([id,variant])=>({id,variant,samples:[]})),failures:[],gaps:[],limitations:limits.slice(0,3),unmeasured_variants:[limits[3]],cleanup:{},observation:'page-prearmed click handler capture to correct DOM on two distinct RAF callbacks; driver retrieval excluded; no compositor claim'};
-  receipt.limitations[2]=runtime==='production'?'Production React owned shell via Vite API proxy; not installed desktop performance.':'Development Vite/React diagnostic only; cannot qualify the production workflow gate.';
+  const receipt={runtime,diagnostic_only:runtime==='development',module_timing:moduleTimingEnabled(config.module_timing),profile:profileEnabled(config.profile),setup_receipts:[],format:'disco-workflow-browser-v1',status:'incomplete',epochs:meta.epochs,suite:config.suite||'core',actions:(config.suite==='app'?appInventory:inventory).map(([id,variant])=>({id,variant,samples:[]})),failures:[],gaps:[],limitations:config.suite==='app'?appLimits.slice():limits.slice(0,3),unmeasured_variants:config.suite==='app'?[]:[limits[3]],cleanup:{},observation:'page-prearmed click handler capture to correct DOM on two distinct RAF callbacks; driver retrieval excluded; no compositor claim'};
+  if(config.suite!=='app')receipt.limitations[2]=runtime==='production'?'Production React owned shell via Vite API proxy; not installed desktop performance.':'Development Vite/React diagnostic only; cannot qualify the production workflow gate.';
   let server,browser,context;
   const require=createRequire(path.join(workspace,'package.json'));
   let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=createRequire(path.join(root,'desktop/package.json'))('playwright'));}
@@ -252,10 +303,11 @@ export async function run(config){
     const {createServer}=await import(pathToFileURL(path.join(workspace,'src/test-support/isolatedVite.js')));
     const {default:react}=await import(pathToFileURL(path.join(workspace,'node_modules/@vitejs/plugin-react/dist/index.js')));
     const entry=path.join(workspace,'__workflow_owned__.jsx');
-    const production=runtime==='production'?await buildWorkflowProduction(root,meta,output):null;
+    const entrySource=config.suite==='app'?appFixtureSource():fixtureSource(meta);
+    const production=runtime==='production'?await buildWorkflowProduction(root,meta,output,entrySource):null;
     receipt.production_build=production;receipt.production_attestations=[];
     const serveProduction=production?await productionMiddleware(output,production):null;
-    server=await createServer({root:workspace,configFile:false,logLevel:'error',...(production?{optimizeDeps:{noDiscovery:true,include:[]}}:{}),plugins:[react(),{name:'owned-workflow-fixture',resolveId(id){if(id==='/__workflow_owned__.jsx')return entry;},load(id){if(id===entry)return fixtureSource(meta);},configureServer(s){s.middlewares.use(serveProduction||((req,res,next)=>{if(req.url!=='/__workflow__')return next();res.setHeader('Content-Type','text/html');res.end('<div id="root"></div><script type="module" src="/__workflow_owned__.jsx"></script>');}));}}],server:{host:'127.0.0.1',port:0,hmr:false,proxy:{'/api':{target:`http://127.0.0.1:${meta.port}`,changeOrigin:true,configure(proxy){proxy.on('proxyReq',req=>req.removeHeader('origin'));}}}}});
+    server=await createServer({root:workspace,configFile:false,logLevel:'error',...(production?{optimizeDeps:{noDiscovery:true,include:[]}}:{}),plugins:[react(),{name:'owned-workflow-fixture',resolveId(id){if(id==='/__workflow_owned__.jsx')return entry;},load(id){if(id===entry)return entrySource;},configureServer(s){s.middlewares.use(serveProduction||((req,res,next)=>{if(req.url!=='/__workflow__')return next();res.setHeader('Content-Type','text/html');res.end('<div id="root"></div><script type="module" src="/__workflow_owned__.jsx"></script>');}));}}],server:{host:'127.0.0.1',port:0,hmr:false,proxy:{'/api':{target:`http://127.0.0.1:${meta.port}`,changeOrigin:true,configure(proxy){proxy.on('proxyReq',req=>req.removeHeader('origin'));}}}}});
     await server.listen();receipt.frontend_port=server.httpServer.address().port;
     browser=await chromium.launch({headless:true,...((config.browser_executable||process.env.WORKFLOW_BROWSER_EXECUTABLE)?{executablePath:config.browser_executable||process.env.WORKFLOW_BROWSER_EXECUTABLE}:{}),args:['--no-first-run','--no-default-browser-check']});
     receipt.environment={click_dispatch_protocol:'raf-aligned-click-v1',node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},device_scale_factor:1,headless:true,runtime:production?productionRuntime:'vite-react-development'};
@@ -265,10 +317,12 @@ export async function run(config){
       await page.goto(`http://127.0.0.1:${receipt.frontend_port}/__workflow__`);
       if(production)receipt.production_attestations.push({phase,sample,stage:'loaded',...await attestProductionPage(page,production,`http://127.0.0.1:${receipt.frontend_port}`)});
       await page.evaluate(`window.__workflowReadiness = (${readiness.toString()})`);
-      await page.getByRole('button',{name:'Benchmark Main',exact:true}).waitFor();
+      if(config.suite!=='app')await page.getByRole('button',{name:'Benchmark Main',exact:true}).waitFor();
       const button=name=>page.getByRole('button',{name,exact:true});
       async function measure(id,variant,locator,spec){
         const action_id=`${phase}-${sample}-${id}-${variant}`;
+        // The full App cancels superseded reads; record them, never count them as failures.
+        if(config.suite==='app')spec={...spec,allowAborted:true};
         await locator.waitFor({state:'visible',timeout:15000});
         const timeoutMs=Number(config.action_timeout_ms||(phase==='profile'?900000:600000));
         try{
@@ -280,14 +334,21 @@ export async function run(config){
           const tailStarted=performance.now(),tailTimeout=Number(config.tail_timeout_ms||180000);
           await page.waitForFunction(action_id=>window.__workflow.completed[action_id].captured_requests.every(r=>r.end!==undefined||r.error),action_id,{timeout:tailTimeout});
           const result=await page.evaluate(snapshotAction,action_id);
+          if(config.suite==='app'){const cancelled=r=>/AbortError/.test(r.error||'')&&(r.status===undefined||r.status<400);result.aborted=result.requests.filter(cancelled);result.requests=result.requests.filter(r=>!cancelled(r));}
           result.tail={wait_ms:performance.now()-tailStarted,timeout_ms:tailTimeout,included_in_headline:false};
           assertFinalizedRequests(result);
+          if(config.suite==='app'){
+            // Fixed quiet window after readiness; no setup runs meanwhile.
+            await page.waitForTimeout(TRAILING_MS);
+            result.trailing={window_ms:TRAILING_MS,background_paths:BACKGROUND_PATHS,requests:await page.evaluate(({action_id,windowMs})=>{const w=window.__workflow,a=w.completed[action_id];return w.requests.filter(r=>r.after_action_id===action_id&&r.start<=a.ready+windowMs).map(({result,binary,decode_start,headers,end,start,...r})=>({...r,start_ms:start-a.intent,end_ms:end===undefined?null:end-a.intent}));},{action_id,windowMs:TRAILING_MS})};
+          }
           await fs.appendFile(path.join(output,'action-samples.jsonl'),JSON.stringify({id,variant,...result})+'\n');
           // React actualDuration is CPU accounting, deliberately not a wall span.
           receipt.actions.find(a=>a.id===id&&a.variant===variant).samples.push(result);console.log(JSON.stringify({action:id,variant,phase,total_ms:result.total_ms,status:'finalized'}));return result;
         }catch(error){receipt.failures.push({action_id,error:String(error)});await fs.appendFile(path.join(output,'action-failures.jsonl'),JSON.stringify({id,variant,action_id,phase,status:'failed',error:String(error)})+'\n');console.log(JSON.stringify({action:id,variant,phase,status:'failed',error:String(error)}));await fs.writeFile(path.join(output,`${action_id}.txt`),await page.locator('body').innerText());await page.screenshot({path:path.join(output,`${action_id}.png`)});await fs.writeFile(path.join(output,`${action_id}-requests.json`),JSON.stringify(await page.evaluate(()=>window.__workflow.requests.map(({result,binary,...row})=>row)),null,2));await page.evaluate(()=>{window.__workflow.active=null;});throw error;}
       }
       try{
+        if(config.suite==='app'){await runAppSample({page,measure,meta,config,sample});if(production)receipt.production_attestations.push({phase,sample,stage:'completed',...await attestProductionPage(page,production,`http://127.0.0.1:${receipt.frontend_port}`)});continue;}
         const edit={selector:'button',text:'Edit Tree',enabled:true,membership:meta.main_count};
         await measure('view.open','cold-component',button('Benchmark Main'),edit);
         await button('Benchmark Away').click();await measure('view.return','warm-resource',button('Benchmark Main'),edit);
@@ -306,7 +367,18 @@ export async function run(config){
         await page.locator('.cell-tree-date').first().evaluate(el=>{el.open=true;});
         await page.locator('.cell-tree-cell').first().evaluate(el=>{el.open=true;});
         try{await measure('trace.inspect','first-owned-waveform',page.getByRole('button',{name:`Inspect ${meta.date_label} · ${meta.cell_label} epoch 1`,exact:true}),{selector:'.tv-base',trace:meta.trace_expected});}catch{} // Retain failed trace evidence while exercising independent workflows.
-        await button('Benchmark Predicate').click();await page.getByText('Metadata summaries: ready',{exact:true}).waitFor({timeout:Number(config.action_timeout_ms||(phase==='profile'?900000:600000))});try{await measure('predicate.search','cell-equality',button('View matching epochs'),{selector:'.mx-results-workflow',requestPath:'/explore/run',expectedCount:expected.length,searchUuids:expected});}catch{}
+        const predicateRequestsStart=await page.evaluate(()=>window.__workflow.requests.length);
+        await button('Benchmark Predicate').click();
+        const predicateTimeout=Number(config.action_timeout_ms||(phase==='profile'?900000:600000));
+        const editorMode=await (await page.waitForFunction(predicateEditorMode,null,{timeout:predicateTimeout})).jsonValue();
+        if(editorMode==='legacy-before-query')await page.getByText('Metadata summaries: ready',{exact:true}).waitFor({timeout:predicateTimeout});
+        else if(await page.evaluate(start=>window.__workflow.requests.slice(start).some(row=>row.method==='POST'&&row.url.split('?')[0]==='/api/explore/summaries'),predicateRequestsStart))throw Error('Current predicate editor requested statistics before Run');
+        try{
+          const result=await measure('predicate.search','cell-equality',button('View matching epochs'),{selector:'.mx-results-workflow',requestPath:'/explore/run',expectedCount:expected.length,searchUuids:expected});
+          const summary=await (await page.waitForFunction(predicateSummaryReady,{startIndex:predicateRequestsStart,expectedCount:expected.length,actionId:editorMode==='after-query'?result.action_id:null},{timeout:predicateTimeout})).jsonValue();
+          receipt.setup_receipts.push({phase,sample,action:'predicate.summary-correctness',outside_headline_timing:true,...summary});
+          await fs.appendFile(path.join(output,'setup-receipts.jsonl'),JSON.stringify(receipt.setup_receipts.at(-1))+'\n');
+        }catch(error){receipt.failures.push({phase,sample,action:'predicate.summary-correctness',error:String(error)});}
         await button('Benchmark Away').click();
         // Restore the owned post-import state outside the action clock, only
         // after this browser's outstanding setup effects have drained.

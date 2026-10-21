@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSummaryController,fieldsWithSummaries,requestedSummaryFields,summaryPreferences,summaryPreferenceKey} from './requestedSummaries.js';
+import {createSummaryController,fieldsWithSummaries,requestedSummaryFields} from './requestedSummaries.js';
 import {jointId} from '../typed-query/jointGrouping.js';
 const generation={metadata:'M',source:'S',annotation:'A',publication:'P'};
 const request={predicate:{all:[]},summary_fields:['number'],generation};
@@ -15,22 +15,13 @@ function harness(){
 const pending=id=>({request_id:id,status:'pending',generation});
 const ready=id=>({request_id:id,status:'ready',generation,result:{matched_count:0,summaries:{number:{values:[],present_count:0,missing_count:0,values_truncated:false}}}});
 
-test('active axes, nested predicates and explicit preferences request exact IDs without a whitelist',()=>{
+test('active axes and nested predicates request exact IDs without a whitelist',()=>{
  const registry=Array.from({length:201},(_,i)=>({id:`parameters/new${i}`}));
  const axes=[jointId(['parameters/new150','parameters/new200']),'parameters/absent'];
- const preferences={version:1,fields:['parameters/new199','parameters/absent']};
  const predicate={not:{any:[{field:'parameters/new150'},{all:[{field:'parameters/new198'}]}]}};
- assert.deepEqual(requestedSummaryFields({registry,axes,predicate,preferences}),{fields:['parameters/new150','parameters/new200','parameters/new198','parameters/new199'],unavailable:['parameters/absent']});
+ assert.deepEqual(requestedSummaryFields({registry,axes,predicate}),{fields:['parameters/new150','parameters/new200','parameters/new198'],unavailable:['parameters/absent']});
  assert.equal(requestedSummaryFields({registry,all:true}).fields.length,201);
  assert.deepEqual(axes,[jointId(['parameters/new150','parameters/new200']),'parameters/absent']);
- assert.deepEqual(preferences.fields,['parameters/new199','parameters/absent']);
-});
-test('preferences are a new versioned protocol/view schema; layouts are never inferred preferences',()=>{
- assert.deepEqual(summaryPreferences({split_order:['history1']}),{version:1,fields:[]});
- assert.deepEqual(summaryPreferences({version:2,fields:['history1']}),{version:1,fields:[]});
- assert.deepEqual(summaryPreferences({version:1,fields:['history1','history1','missing',null]}),{version:1,fields:['history1','missing']});
- const keys=[summaryPreferenceKey('project-A','protocol-A','tree'),summaryPreferenceKey('project-B','protocol-A','tree'),summaryPreferenceKey('project-A','protocol-B','tree'),summaryPreferenceKey('project-A','protocol-A','filter')];
- assert.equal(new Set(keys).size,4);
 });
 test('missing summaries and pending/stale data never become zero counts or recorded choices',()=>{
  const fields=[{id:'number'},{id:'missing'}];
@@ -49,7 +40,8 @@ test('typed null/array/mixed-number summaries preserve exact source values; trun
 });
 test('A/B/A navigation cancels both old jobs and ignores late submission completions even with the same key',async()=>{
  const h=harness();h.client.start(request);h.client.start({...request,scope:{cell_uuid:'B'}});h.client.start(request);
- assert.equal(h.jobs[0].signal.aborted,true);assert.equal(h.jobs[1].signal.aborted,true);
+ // Submissions are never aborted; their late receipts are cancelled below.
+ assert.equal(h.jobs[0].signal,undefined);assert.equal(h.jobs[1].signal,undefined);
  h.jobs[2].work.resolve(ready('new-A'));await settle();assert.equal(h.state.request_id,'new-A');
  h.jobs[0].work.resolve(pending('old-A'));h.jobs[1].work.resolve(pending('old-B'));await settle();
  assert.equal(h.state.request_id,'new-A');assert.deepEqual(h.cancelled,['old-A','old-B']);h.client.dispose();
@@ -110,4 +102,28 @@ test('registry authority drift and missing authority witnesses reject initial jo
    const h=harness(),context={...registry,annotation:'scoped'};if(missing)delete context[witness];else context[witness]='changed';h.client.start({...request,generation:registry});h.jobs[0].work.resolve({...pending('invalid'),generation:context});await settle();assert.equal(h.state.status,'stale');assert.equal(h.state.result,null);assert.deepEqual(h.cancelled,['invalid']);h.client.dispose();
   }
  }
+});
+
+// Real fetch rejects once its signal aborts, so a receipt that the server has
+// already created can only be cancelled if the submit is never aborted.
+function honoringHarness(){
+ const h=harness(),jobs=h.jobs,submit=(request,signal)=>{const work=deferred();jobs.push({request,signal,work});
+  signal?.addEventListener('abort',()=>work.reject(Object.assign(Error('aborted'),{name:'AbortError'})));return work.promise;};
+ const states=h.states,timers=h.timers;let id=0;
+ const adapter={submit,poll:(jobId,signal)=>submit({poll:jobId},signal),cancel:jobId=>{h.cancelled.push(jobId);return Promise.resolve();}};
+ const client=createSummaryController({adapter,onState:state=>states.push(state),schedule:callback=>{timers.set(++id,callback);return id;},unschedule:key=>timers.delete(key)});
+ return {...h,client,get state(){return states.at(-1);}};
+}
+test('signal-honoring transport: cancel, replacement and unmount still cancel late server jobs',async()=>{
+ const h=honoringHarness();h.client.start(request);h.client.cancel();h.jobs[0].work.resolve(pending('late-cancel'));await settle();
+ assert.deepEqual(h.cancelled,['late-cancel']);assert.equal(h.state.status,'cancelled');h.client.dispose();
+ const r=honoringHarness();r.client.start(request);r.client.start({...request,scope:{cell_uuid:'B'}});r.jobs[0].work.resolve(pending('late-replaced'));await settle();
+ assert.deepEqual(r.cancelled,['late-replaced']);r.client.dispose();
+ const u=honoringHarness();u.client.start(request);u.client.dispose();u.jobs[0].work.resolve(pending('late-unmount'));await settle();
+ assert.deepEqual(u.cancelled,['late-unmount']);
+});
+test('retiring a run aborts its poll but cancels the acknowledged job',async()=>{
+ const h=honoringHarness();h.client.start(request);h.jobs[0].work.resolve(pending('polling'));await settle();h.tick();
+ assert.equal(h.jobs[1].signal.aborted,false);h.client.cancel();await settle();
+ assert.equal(h.jobs[1].signal.aborted,true);assert.deepEqual(h.cancelled,['polling']);assert.equal(h.state.status,'cancelled');h.client.dispose();
 });

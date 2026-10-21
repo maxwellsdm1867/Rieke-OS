@@ -20,33 +20,24 @@ async function harness(){
  const h={requests,Dialog,set respond(fn){respond=fn;},async render(props){await act(async()=>{const child=React.createElement(Dialog,{draft:predicateToDraft({all:[{field:'parameters/x',operator:'eq',value:1}]}),catalog,onSearch:async()=>{},onClose(){},...props});if(renderer)renderer.update(child);else renderer=TestRenderer.create(child,{createNodeMock:()=>({showModal(){},close(){},focus(){},getBoundingClientRect:()=>({left:0,top:0,bottom:0,width:300}),contains:()=>false})});});},button(text){return renderer.root.findAllByType('button').find(item=>item.children.some(child=>typeof child==='string'&&child.includes(text)));},text:()=>JSON.stringify(renderer.toJSON()),async act(fn){await act(fn);},async settle(){await act(async()=>{for(let i=0;i<12;i++)await Promise.resolve();});},async close(){await act(()=>renderer?.unmount());await server.close();Object.assign(globalThis,old);}};
  return h;
 }
-test('candidate previews discard late old token results even for the same AST',async()=>{
- const h=await harness(),late=deferred();
- try{
-  h.respond=(url,body)=>url.includes('/summary')?late.promise:{};
-  await h.render({readContext:{root,candidate_scope_revision:'scope-a',filters:{cell_type:'RGC'}}});
-  await h.act(()=>{void h.button('Preview matches').props.onClick();});
-  const requested=h.requests.find(item=>item.url.includes('/summary')).body;
-  await h.render({readContext:{root,candidate_scope_revision:'scope-b',filters:{cell_type:'RGC'}}});
-  late.resolve({...requested,counts:{epochs:777}});await h.settle();
-  assert.doesNotMatch(h.text(),/777 matching epochs/);
-  assert.equal(h.requests.some(item=>item.url.includes('/explore/run')||item.url.includes('/explore/summaries')),false);
-  h.respond=(url,body)=>url.includes('/summary')?{...body,counts:{epochs:2}}:{};
-  await h.act(()=>{void h.button('Preview matches').props.onClick();});await h.settle();
-  assert.match(h.text(),/2 matching epochs/);
- }finally{await h.close();}
-});
-test('candidate preview rejects unacknowledged filters and displays unsupported saved AST',async()=>{
+test('editing a candidate predicate sends no request of any kind and offers no preview',async()=>{
  const h=await harness();
  try{
   await h.render({readContext:{root,candidate_scope_revision:'scope-a',filters:{cell_type:'RGC'}}});
-  h.respond=(url,body)=>url.includes('/summary')?{...body,filters:{},counts:{epochs:0}}:{};
-  await h.act(()=>{void h.button('Preview matches').props.onClick();});await h.settle();
-  assert.match(h.text(),/Candidate preview authority changed/);
+  assert.equal(h.button('Preview matches'),undefined);assert.doesNotMatch(h.text(),/Preview matches|Preview counts|\d+ matching epochs/);
+  const before=h.requests.length;
+  for(const draft of [{all:[{field:'parameters/x',operator:'eq',value:2}]},{all:[{field:'parameters/x',operator:'gt',value:3}]}])
+   await h.render({draft:predicateToDraft(draft),readContext:{root,candidate_scope_revision:'scope-a',filters:{cell_type:'RGC'}}});
+  await h.settle();
+  assert.equal(h.requests.length-before,0,'no preview, count or summary request while editing');
+ }finally{await h.close();}
+});
+test('a restored unsupported saved AST stays visible',async()=>{
+ const h=await harness();
+ try{
   await h.render({key:'restored',draft:predicateToDraft({all:[{field:'curation/other/tags',operator:'contains',value:'QC'}]}),readContext:{root,candidate_scope_revision:'scope-c',filters:{}}});
   assert.match(h.text(),/curation\/other\/tags/);assert.match(h.text(),/not in the current metadata catalog/);
-  await h.close();
- }catch(error){await h.close();throw error;}
+ }finally{await h.close();}
 });
 
 import {createWorkflowHarness} from './test-support/workflowHarness.js';

@@ -28,6 +28,11 @@ ACTIONS = {'freeze': 'data_store_frozen', 'unfreeze': 'data_store_unfrozen',
            'exclude': 'data_store_query_excluded', 'include': 'data_store_query_included'}
 
 
+class DataStoreBusy(RuntimeError):
+    """Another exclusive data-store operation holds its lock; retryable (HTTP 409)."""
+    code = 'lock_busy'
+
+
 class DataStoreConflict(RevisionConflict):
     def __init__(self, current, message='Data store registration changed; reload before updating its lifecycle.'):
         super().__init__(current)
@@ -102,7 +107,7 @@ def migrate_query_eligibility(dj, event_table):
     table = '`recording_workspace`.`data_store_state`'
     lock = hashlib.sha256(b'recording_workspace:query_eligibility_migration:v1').hexdigest()
     if connection.query(f"SELECT GET_LOCK('{lock}', 10)").fetchone()[0] != 1:
-        raise RuntimeError('Another source eligibility schema upgrade is running')
+        raise DataStoreBusy('Another source eligibility schema upgrade is running')
     try:
         columns = connection.query(f"SHOW COLUMNS FROM {table} LIKE 'query_excluded'", as_dict=True).fetchall()
         if not columns:
@@ -211,7 +216,7 @@ class DataStores:
         connection = self.dj.conn()
         lock = hashlib.sha256(('source-eligibility:' + self.project_uuid).encode()).hexdigest()
         if connection.query(f"SELECT GET_LOCK('{lock}', 10)").fetchone()[0] != 1:
-            raise RuntimeError('Another source eligibility operation is running')
+            raise DataStoreBusy('Another source eligibility operation is running')
         try:
             yield
         finally:
@@ -222,7 +227,7 @@ class DataStores:
         """Rerun saved queries against eligible sources without changing any working set."""
         if identity is not None:
             self._source(identity)
-        items = []
+        items, skipped = [], []
         source_ids = {key for key, row in self.service.rows.items()
                       if identity is None or row['source_sha256'] == identity}
         for protocol_uuid, workspace in self.service.protocols.items():
@@ -231,6 +236,14 @@ class DataStores:
             if binding:
                 recipe = binding['recipe']
                 predicate, splits = recipe['predicate'], recipe['splits']
+                check = getattr(self, 'reinterpretation_required', None)
+                if check is not None and check(predicate, recipe.get('predicate_version', 1)):
+                    # Never re-run an old-contract saved selection under the new
+                    # meaning: report it as skipped with a visible reason.
+                    skipped.append({'protocol_uuid': protocol_uuid, 'name': workspace['definition']['name'],
+                                    'code': 'predicate_contract_rerun_required',
+                                    'reason': "Saved selection uses the old 'missing' meaning; re-run it."})
+                    continue
                 previous = {row['uuid']: row['metadata_hash'] for row in recipe['epochs']}
             else:
                 definition = workspace['definition']
@@ -265,7 +278,8 @@ class DataStores:
                 'diff': diff, 'diff_summary': summarize_diff(self.service.rows, previous, proposed),
                 'previous_count': len(previous), 'next_count': len(proposed),
                 'matched_count': preview['matched_count'], 'total_source': preview['total_source'], 'preview': preview})
-        return {'source_sha256': identity, 'source_scope': self.service.source_scope(), 'protocols': items}
+        return {'source_sha256': identity, 'source_scope': self.service.source_scope(), 'protocols': items,
+                **({'skipped_protocols': skipped} if skipped else {})}
 
     @staticmethod
     def _quantities(rows):

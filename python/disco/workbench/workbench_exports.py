@@ -6,7 +6,6 @@ one native transaction. A failed export never rebinds or rolls back acceptance.
 from __future__ import annotations
 
 import copy
-from pathlib import Path
 import uuid
 
 from recording_workspace import digest, now, write_json
@@ -14,6 +13,7 @@ from disco.workbench.candidate_exports import FORMATS, _default_curation
 from workspace_protocol_identity import require_protocol_compatibility
 from disco.workbench.recipes import checksum, prepare_export, save_snapshot, seal
 from disco.projects.storage import managed_directory
+from workspace_export_artifacts import stage_export
 from disco.workbench.workbench import WorkbenchConflict, public_receipt
 
 
@@ -39,6 +39,20 @@ def accepted_export_context(manager, protocol, operation, actor):
         raise WorkbenchConflict('Acceptance candidate recipe changed')
     if not fingerprints:
         raise ValueError('This acceptance added no new epochs to export')
+    # An accepted export claims its epochs are main's additions. An undone
+    # merge, or a main that changed since, no longer supports that claim.
+    if manager.undone_by(operation):
+        undone = WorkbenchConflict('This merge was undone, so its epochs are no longer in main and cannot be '
+                                   'exported as accepted additions.')
+        undone.code = 'workbench_merge_undone'
+        raise undone
+    # A later merge that keeps these epochs does not block export; main losing
+    # any of them (or holding a different fingerprint) does.
+    binding = manager.history.protocol_binding(protocol)
+    members = {row['uuid']: row['metadata_hash'] for row in binding['recipe']['epochs']} if binding else {}
+    if any(members.get(key) != value for key, value in fingerprints.items()):
+        raise WorkbenchConflict('Main no longer contains every epoch this merge added; '
+                                'its additions can no longer be exported as accepted')
     shared = getattr(manager.service, 'shared_annotations', None)
     scope = manager.service.source_scope()
     context = dict(protocol_uuid=protocol, actor=actor, candidate_revision_uuid=receipt['candidate_revision_uuid'],
@@ -97,7 +111,8 @@ def publish_incoming_export(manager, store, context, fingerprints, actor, option
         query=query, query_sha256=checksum(query), metadata_fingerprint_version=2,
         view=dict(group_by=candidate['tree_view']['fields'], layout='landscape'),
         source_revisions=source_revisions, source_scope=copy.deepcopy(context['source_scope']), export_scope=scope,
-        epochs=[dict(uuid=key, metadata_hash=value) for key, value in sorted(fingerprints.items())])
+        epochs=[dict(uuid=key, metadata_hash=value) for key, value in sorted(fingerprints.items())],
+        predicate_contract_version=2)
     shared = getattr(service, 'shared_annotations', None)
     if shared:
         snapshot['shared_annotations_revision'] = shared.snapshot()['revision']
@@ -111,10 +126,7 @@ def publish_incoming_export(manager, store, context, fingerprints, actor, option
         options=dict(name=name, filters={}, split_order=candidate['splits'], export_scope=scope,
             tree_view=candidate['tree_view']))
     output = managed_directory(service.project_dir, 'exports') / recipe['export_uuid']
-    output.mkdir(parents=True, exist_ok=False)
-    artifact = output / 'recordings.json'
-    try:
-        save_snapshot(output / 'recipe.json', recipe)
+    def build_package():
         records = []
         for key in sorted(fingerprints, key=lambda key: (service.rows[key]['date'], service.rows[key]['start_time'], key)):
             row = service.epoch(key)
@@ -124,29 +136,14 @@ def publish_incoming_export(manager, store, context, fingerprints, actor, option
             annotations = shared.for_epochs([service.rows[row['epoch_uuid']] for row in records])
             for row in records:
                 row['annotations'] = annotations[row['epoch_uuid']]
-        package = dict(format='recording-reference-package', version=1, recipe=recipe, epochs=records,
+        return dict(format='recording-reference-package', version=1, recipe=recipe, epochs=records,
             sources=[dict(source_sha256=source['source_sha256'], source_path=source['source_path'])
                 for source in service.sources if source['source_sha256'] in source_revisions],
             export_scope=scope, waveforms='references-only; original H5 files must remain accessible')
-        if format == 'linked-sqlite':
-            from workspace_linked_sqlite import prepare_linked_package, build_linked_export_bundle
-            package = prepare_linked_package(package, service.manifests, service.project_dir,
-                                             grouping_sources=service.sources)
-            artifact = build_linked_export_bundle(package, output)
-        else:
-            write_json(artifact, package)
-        if format == 'wheeler-sqlite':
-            from workspace_sqlite import build_sqlite_export
-            from disco.decisions.external_tags import prepare_return_folder
-            artifact = output / 'recordings.sqlite'
-            build_sqlite_export(package, artifact)
-            prepare_return_folder(output, package)
-        elif format == 'matlab-mat':
-            from workspace_matlab import build_matlab_export
-            result = build_matlab_export(service, recipe, output / 'matlab', epoch_records=records)
-            write_json(output / 'matlab/export-report.json', {key: value for key, value in result.items()
-                if key not in {'mat_path', 'recipe_path'}})
-            artifact = Path(result['mat_path'])
+    def matlab_writer(recipe, output_dir, *, epoch_records):
+        from workspace_matlab import build_matlab_export
+        return build_matlab_export(service, recipe, output_dir, epoch_records=epoch_records)
+    def publish(artifact):
         manager.verify_sources(context, fingerprints)
         if shared and shared.snapshot()['revision'] != snapshot['shared_annotations_revision']:
             raise WorkbenchConflict('Shared annotations changed while preparing incoming export')
@@ -167,13 +164,10 @@ def publish_incoming_export(manager, store, context, fingerprints, actor, option
         store.record_dataset_revision(recipe, actor=actor, expected_revisions={key: 0 for key in fingerprints},
             artifact_path=str(artifact), artifact_sha256=digest(artifact), publication_callback=commit_receipt)
         return receipt
-    except Exception as error:
-        try:
-            write_json(output / 'failure.json', dict(at=now(), status='failed', error=str(error),
-                artifact_published=False, export_scope=scope, acceptance_retained=bool(acceptance)))
-        except OSError:
-            pass
-        raise
+    return stage_export(output, recipe, format=format, build_package=build_package, publish=publish,
+        matlab_writer=matlab_writer, write_json=write_json, save_snapshot=save_snapshot, now=now,
+        linked_sources=(service.manifests, service.project_dir, service.sources),
+        failure_fields=dict(export_scope=scope, acceptance_retained=bool(acceptance)))
 
 
 def register_workbench_export_routes(app, manager, store, db_lock, guarded, actor, body):
@@ -197,7 +191,7 @@ def register_workbench_export_routes(app, manager, store, db_lock, guarded, acto
             receipt = manager.receipt(operation, actor())
             if not receipt or receipt.get('protocol_uuid') != protocol:
                 raise KeyError('Workbench receipt not found')
-            return jsonify(public_receipt(receipt))
+            return jsonify(manager.public_merge_receipt(receipt))
 
     @app.post(candidate_root + '/exports')
     def workbench_incoming_export(protocol, revision):

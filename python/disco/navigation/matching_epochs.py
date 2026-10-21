@@ -8,7 +8,8 @@ from disco.navigation.tree_pages import TreePages, _chronology
 def register_matching_epoch_routes(app, service, db_lock, registration_locks, read_request):
     @app.post('/api/explore/epochs')
     def matching_epochs():
-        body = read_request({'predicate','splits','offset','limit','revision','anchor_uuid','cell_uuid','include_cells'}, {'predicate','splits','revision'})
+        body = read_request({'predicate','splits','offset','limit','revision','anchor_uuid','cell_uuid','include_cells',
+                             'cells_limit','cells_after'}, {'predicate','splits','revision'})
         expected = body['revision']
         if not isinstance(expected,str) or not re.fullmatch('[0-9a-f]{64}',expected):
             raise ValueError('Matching epoch pages require a verified preview revision')
@@ -26,7 +27,52 @@ def register_matching_epoch_routes(app, service, db_lock, registration_locks, re
             cell = str(uuid.UUID(cell))
         include_cells = body.get('include_cells',False)
         if type(include_cells) is not bool:raise ValueError('include_cells must be boolean')
+        # Cell list paging: absent parameters keep the full list.
+        cells_limit, cells_after = body.get('cells_limit'), body.get('cells_after', 0)
+        if cells_limit is not None and (type(cells_limit) is not int or not 1 <= cells_limit <= 1000):
+            raise ValueError('cells_limit must be 1–1000')
+        if type(cells_after) is not int or cells_after < 0 or ('cells_after' in body and cells_limit is None):
+            raise ValueError('cells_after requires cells_limit and must be a nonnegative position')
+        def page_response(selected, offset, total, revision, anchor_index, cells, has_more=None, extra=None):
+            keys = ('epoch_uuid','cell_uuid','cell_label','cell_type','date','start_time','block_uuid','epoch_number','protocol_name','duration_seconds','streams')
+            paged = {}
+            if cells is not None and cells_limit is not None:
+                ordered = list(cells.values())
+                window = ordered[cells_after:cells_after + cells_limit]
+                paged = {'cells_total': len(ordered),
+                         'cells_next': cells_after + len(window) if cells_after + len(window) < len(ordered) else None}
+                cells = {item['cell_uuid']: item for item in window}
+            include_cells = cells is not None
+            shared=getattr(service,'shared_annotations',None)
+            annotations=shared.for_epochs(selected) if shared else {}
+            if shared and include_cells:
+                cell_ids=list(cells)
+                for start in range(0,len(cell_ids),1000):
+                    records=shared.read_targets('cell',cell_ids[start:start+1000])
+                    for key,record in records.items():
+                        cells[key]['annotations']={'cell_tags':record['tags'],'revisions':record['revisions']}
+            return jsonify(epochs=[{**{key:row.get(key) for key in keys},**({'annotations':annotations[row['epoch_uuid']]} if shared else {})} for row in selected],
+                           offset=offset,limit=limit,total=total,has_more=offset+limit<total if has_more is None else has_more,
+                           revision=revision,anchor_index=anchor_index,anchor_uuid=anchor,
+                           **({'cells':list(cells.values())} if include_cells else {}), **paged, **(extra or {}))
+
         with db_lock, registration_locks():
+            counted = getattr(service, 'counted_epoch_page', None)
+            plan = counted(body['predicate'], body['splits'], expected, offset=offset, limit=limit, anchor_uuid=anchor,
+                           cell_uuid=cell, include_cells=include_cells) if counted is not None else None
+            if plan is not None:
+                # One typed window; no match list is built.
+                if plan.get('stale'):
+                    return jsonify(error='Predicate results changed. Refresh the preview before inspecting or exporting.'), 409
+                extra = {}
+                if plan['counts'] is not None:
+                    # Totals of multi-field results arrive with this counts job.
+                    extra['counts'] = plan['counts']
+                if plan['cells_pending']:
+                    extra['cells_pending'] = True
+                return page_response(plan['rows'], plan['offset'], plan['total'], plan['revision'], plan['anchor_index'],
+                                     {item['cell_uuid']: item for item in plan['cells']} if plan['cells'] is not None else None,
+                                     has_more=plan['has_more'], extra=extra)
             rows, _, _, _, _, revision = TreePages(service)._scope({'predicate':body['predicate'],'splits':body['splits']})
             if expected != revision:
                 return jsonify(error='Predicate results changed. Refresh the preview before inspecting or exporting.'), 409
@@ -45,17 +91,6 @@ def register_matching_epoch_routes(app, service, db_lock, registration_locks, re
                 if anchor_index is None:
                     raise ValueError('Epoch is outside this predicate')
                 offset = anchor_index // limit * limit
-            keys = ('epoch_uuid','cell_uuid','cell_label','cell_type','date','start_time','block_uuid','epoch_number','protocol_name','duration_seconds','streams')
-            selected=rows[offset:offset+limit]
-            shared=getattr(service,'shared_annotations',None)
-            annotations=shared.for_epochs(selected) if shared else {}
-            if shared and include_cells:
-                cell_ids=list(cells)
-                for start in range(0,len(cell_ids),1000):
-                    records=shared.read_targets('cell',cell_ids[start:start+1000])
-                    for key,record in records.items():
-                        cells[key]['annotations']={'cell_tags':record['tags'],'revisions':record['revisions']}
-            return jsonify(epochs=[{**{key:row.get(key) for key in keys},**({'annotations':annotations[row['epoch_uuid']]} if shared else {})} for row in selected],
-                           offset=offset,limit=limit,total=len(rows),has_more=offset+limit<len(rows),
-                           revision=revision,anchor_index=anchor_index,anchor_uuid=anchor,
-                           **({'cells':list(cells.values())} if include_cells else {}))
+            return page_response(rows[offset:offset+limit], offset, len(rows), revision, anchor_index,
+                                 cells if include_cells else None)
+
