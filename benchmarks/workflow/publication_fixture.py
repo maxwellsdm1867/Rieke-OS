@@ -10,10 +10,22 @@ import copy
 import json
 from pathlib import Path
 import threading
+import tempfile
 import time
 from types import SimpleNamespace
 import uuid
 from unittest.mock import patch
+
+
+def setup_canonical_fixture(fixture):
+    """Construct every fixture owner with the same resolved project root.
+
+    Native read witnesses resolve project paths. macOS /var aliases otherwise
+    leave the browser's project identity different from its native witness.
+    Scope the tempfile override to construction; restore the caller's setting.
+    """
+    with patch.object(tempfile, 'tempdir', str(Path(tempfile.gettempdir()).resolve())):
+        fixture.setUp()
 
 
 def journal_transactions(fixture):
@@ -309,7 +321,7 @@ def publish_browser_fixture(fixture, app, output, journal):
         if close is not None:fixture.addCleanup(close)
     navigation = app.extensions.get('disco.navigation.prepared')
     if navigation is not None:fixture.addCleanup(navigation.close)
-    scenario = declare_saved_layout(fixture, app)
+    scenario = declare_saved_layout(fixture, app, fields=('date', 'cell'))
     return {'scenario_saved_layout': scenario, 'authority': 'production owners over transactional SQL leaf doubles',
             'native_sql_qualification': False, 'native_metadata_index': True, 'typed_index': typed,
             'preparation': prepare_views(app)}

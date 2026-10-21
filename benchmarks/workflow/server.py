@@ -88,7 +88,8 @@ def build(source, output, epochs, protocol_epochs=None, suite='core', retain_res
     from test_workspace_suggestions import ImportSuggestionTests
     import h5py
     import numpy as np
-    fixture = ImportSuggestionTests(); fixture.setUp()
+    from publication_fixture import setup_canonical_fixture
+    fixture = ImportSuggestionTests(); setup_canonical_fixture(fixture)
     case, service = fixture.case, fixture.case.service
     # Register actual annotation and saved-search owners against owned SQL doubles.
     # create_app captures these dependencies when declaring routes.

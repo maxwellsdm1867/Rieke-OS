@@ -739,3 +739,18 @@ test('summary proof cannot borrow an earlier editor visit or a failed HTTP respo
  rows[2].status=409;assert.throws(()=>predicateSummaryReady(spec),/poll failed/);rows[2].status=200;
  rows[1].status=503;assert.throws(()=>predicateSummaryReady(spec),/submission failed/);
 });
+
+
+test('observer completes bodyless replies at headers and waits for ordinary JSON consumption',async t=>{
+  const previous={window:globalThis.window,location:globalThis.location,CanvasRenderingContext2D:globalThis.CanvasRenderingContext2D};
+  t.after(()=>{for(const [key,value] of Object.entries(previous)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}});
+  globalThis.CanvasRenderingContext2D=class {stroke(){}};
+  globalThis.location={href:'http://127.0.0.1:1234/__workflow__'};
+  for(const [method,status] of [['GET',204],['GET',205],['GET',304],['HEAD',200],['GET',200]]){
+    globalThis.window={fetch:async()=>new Response(status===200&&method!=='HEAD'?'{}':null,{status})};
+    installObserver();
+    const response=await window.fetch('/api/overview',{method}), row=window.__workflow.requests[0];
+    if(method==='GET'&&status===200){assert.equal(row.end,undefined);await response.json();assert.ok(row.end>=row.headers);}
+    else {assert.equal(row.end,row.headers);assert.equal(row.decode_start,undefined);assert.equal(row.error,undefined);}
+  }
+});

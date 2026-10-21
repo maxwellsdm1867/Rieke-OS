@@ -97,3 +97,28 @@ class PublicationFixtureModeTests(unittest.TestCase):
 
 
 if __name__ == '__main__':unittest.main()
+
+
+class CanonicalFixturePathTests(unittest.TestCase):
+    def test_resolves_alias_before_constructing_fixture_and_restores_tempdir(self):
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        from benchmarks.workflow.publication_fixture import setup_canonical_fixture
+        with tempfile.TemporaryDirectory() as root:
+            target = Path(root) / 'canonical'; target.mkdir()
+            alias = Path(root) / 'alias'; alias.symlink_to(target, target_is_directory=True)
+            class Fixture:
+                def setUp(self):
+                    self.temp = tempfile.TemporaryDirectory()
+                    self.project_path = self.temp.name
+                    self.witness_path = str(Path(self.temp.name).resolve())
+            fixture = Fixture()
+            with patch.object(tempfile, 'tempdir', str(alias)):
+                try:
+                    setup_canonical_fixture(fixture)
+                    self.assertEqual(fixture.project_path, fixture.witness_path)
+                    self.assertEqual(Path(fixture.project_path).parent, target.resolve())
+                    self.assertEqual(tempfile.tempdir, str(alias))
+                finally:
+                    fixture.temp.cleanup()

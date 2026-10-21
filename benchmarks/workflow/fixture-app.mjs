@@ -96,6 +96,8 @@ export function installObserver(config={}) {
     if(state.module_timing)headers.set('X-Disco-Timing','1');
     if(action){headers.set('X-Benchmark-Action',action.action_id);headers.set('X-Benchmark-Profile',action.phase==='profile'?'1':'0');}
     try {const response=await original(input,{...options,headers});row.headers=absolute();row.status=response.status;{const length=Number(response.headers.get('Content-Length'));if(Number.isSafeInteger(length)&&length>=0)row.bytes=length;}row.request_id=response.headers.get('X-Benchmark-Request-Id');row.content_type=response.headers.get('Content-Type');
+      // Bodyless replies finish at headers; callers correctly skip body consumption.
+      if(row.method==='HEAD'||[204,205,304].includes(response.status))row.end=row.headers;
       // Observe the actual consumer, avoiding a cloned body/read in timed path.
       const json=response.json.bind(response);response.json=async()=>{try{row.decode_start=absolute();const value=await json();row.end=absolute();row.result=value;return value;}catch(e){row.end=absolute();row.error=String(e);throw e;}};
       if(typeof response.arrayBuffer==='function'){
