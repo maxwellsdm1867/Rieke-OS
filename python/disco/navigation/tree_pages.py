@@ -588,7 +588,7 @@ class TreePages:
         if anchor and (path or offset):
             raise ValueError('An epoch locator cannot also specify a path or offset')
         prepared = getattr(self.service, '_prepared_navigation', None)
-        if prepared is not None and self._canonical_reader():
+        if prepared is not None and prepared.service is self.service and self._canonical_reader():
             entry = prepared.read(body)
             if entry is not None:
                 if expected is not None and expected != entry.revision:
@@ -802,7 +802,7 @@ class TreePages:
             if not self._canonical_reader():
                 return self._selection_pages(body, expected_count)
             prepared = getattr(self.service, '_prepared_navigation', None)
-            entry = prepared.read(body) if prepared is not None else None
+            entry = prepared.read(body) if prepared is not None and prepared.service is self.service else None
             if entry is not None:
                 if entry.revision != expected:
                     raise StaleTreePage('Tree selection revision changed')

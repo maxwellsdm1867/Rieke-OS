@@ -69,7 +69,9 @@ export function useOverviewResource(path,revision,{cache,scope,active:requestedA
   }catch(error){if(!controller.signal.aborted&&preparationOwner.current===controller)setPrepareError(error.message);}
   finally{if(preparationOwner.current===controller){preparationOwner.current=null;setPreparing(false);}}
  };
- const durationPending=(enabled?entry?.data:fallback.data)?.duration_status==='pending';
+ const durationData=enabled?entry?.data:fallback.data;
+ const durationPending=durationData?.duration_status==='pending'||durationData?.counts?.duration_status==='pending'||
+  durationData?.cells?.some(cell=>cell.duration_status==='pending')||durationData?.protocols?.some(protocol=>protocol.counts?.duration_status==='pending');
  useEffect(()=>{
   if(!active||!durationPending)return;
   let cancelled=false,timer,attempts=0;

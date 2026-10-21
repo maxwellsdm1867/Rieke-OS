@@ -366,8 +366,9 @@ no stale count payload; GET never rebuilds them implicitly. Prepared views share
 a 768 MiB conservative structure budget and a 32-view limit. Preparation receipts
 report deferred/evicted views instead of claiming that every layout is ready.
 
-Only an ExplorerHistory-owned already-verified adjacent delta may continue a
-bound scope, including undo. Its bounded accessor can require preparation when
+Only an ExplorerHistory-owned already-verified bounded delta chain may continue a
+bound scope, including undo. At most 64 cached links and 20,000 changed identities
+are traversed; no member cache is rebuilt or flattened during navigation. Its bounded accessor can require preparation when
 proofs are no longer retained. Navigation does not reimplement recipe seals or
 member authority. Catch-up publishes only after recovery capture has verified
 and exited; every prepared page/selection also checks its closing publication,
@@ -435,3 +436,7 @@ pages to canonical full construction and checks pending coverage, exact binding
 DTOs, immediate membership counts and duration completion. Its capture adapter is
 a test port; native trigger/feed and packaged performance qualification remain
 separate.
+
+Prepared navigation belongs to the exact live service object. Copied/frozen
+Workbench adapters never inherit its prepared membership, even if a shallow copy
+retains the owner attribute; they retain their own canonical/frozen policy.

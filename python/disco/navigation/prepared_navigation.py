@@ -101,7 +101,7 @@ class PreparedNavigation:
         if body.get('protocol_uuid') is None:
             return legacy
         return checksum({'version': 3, 'project_uuid': self.service.project['project_uuid'],
-            'scope': body, 'publication': witness,
+            'scope': self.key(body), 'publication': witness,
             'binding': {key: binding.get(key) for key in ('version', 'revision_uuid')} if binding else None})
 
     def prepare(self, body):
@@ -261,7 +261,7 @@ class PreparedNavigation:
                 with self.lock:
                     current = self.entries.get(key)
                     if (not self.closed and current is not None and current.tree is entry.tree
-                            and current.witness == entry.witness and current.binding == entry.binding):
+                            and current.witness == entry.witness):
                         self.entries[key] = replace(current, tree=tree, duration_error=None)
             except Exception:
                 if not self.closed:
@@ -270,8 +270,9 @@ class PreparedNavigation:
                         if current is not None and current.tree is entry.tree:
                             self.entries[key] = replace(current, duration_error='Exact duration calculation failed. Prepare this view again.')
             finally:
-                if self.jobs.get(key) is job:
-                    self.jobs.pop(key, None)
+                with self.lock:
+                    if self.jobs.get(key) is job:
+                        self.jobs.pop(key, None)
         future.add_done_callback(completed)
 
     def reset(self):

@@ -87,6 +87,29 @@ class PreparedNavigationTests(unittest.TestCase):
             self.service._prepared_navigation = previous
             self.assertEqual(selected['epoch_uuids'], legacy['epoch_uuids'])
 
+    def test_unrelated_commit_does_not_change_revision_for_equivalent_scope_defaults(self):
+        body = {'protocol_uuid': self.service.protocol_id, 'splits': 'date'}
+        self.owner.prepare(body)
+        before = self.owner.read(body)
+        self.tracker.value += 1
+        after = self.owner.read({**body, 'filters': {}})
+        self.assertEqual(after.revision, before.revision)
+        self.assertIs(after.tree, before.tree)
+
+    def test_cloned_reader_never_borrows_the_live_services_prepared_membership(self):
+        body = {'protocol_uuid': self.service.protocol_id, 'splits': 'date'}
+        self.owner.prepare(body)
+        self.service._prepared_navigation = self.owner
+        clone = copy.copy(self.service)
+        identity = next(iter(clone.rows))
+        clone._tree_rows = lambda protocol, filters: [clone.rows[identity]]
+        cloned_pager = TreePages(clone)
+        page = cloned_pager.page(body)
+        self.assertEqual(page['count'], 1)
+        result = cloned_pager.selection({**body, 'revision': page['revision']}, 1)
+        self.assertEqual(result['epoch_uuids'], [identity])
+        self.assertEqual(self.pager.page(body)['count'], len(self.service.rows))
+
     def test_missing_layout_and_publication_change_never_rebuild_on_read(self):
         body = {'splits': 'date'}
         with self.assertRaises(PreparationRequired):
@@ -180,13 +203,14 @@ class PreparedNavigationTests(unittest.TestCase):
             binding.update(version=2, revision_uuid='second')
             self.tracker.value += 1
             with patch.object(type(self.owner.read.__self__.entries[self.owner.key(body)].tree), 'finish_durations', held), \
-                    patch.object(self.owner, '_delta', return_value=({}, [next(iter(self.service.rows))])):
+                    patch.object(self.owner, '_delta', side_effect=lambda entry, latest: ({}, [next(iter(self.service.rows))]) if entry.binding['revision_uuid'] != latest['revision_uuid'] else ({}, [])):
                 pending = self.pager.page(body)
                 self.assertEqual(pending['duration_status'], 'pending')
                 self.assertTrue(entered.wait(1))
                 future = self.owner.jobs[self.owner.key(body)]
                 future.add_done_callback(lambda job: done.set())
                 self.tracker.value += 1
+                binding['version'] += 1  # Rebinding the same immutable members is still the same duration input.
                 continued = self.pager.page(body)
                 self.assertEqual(continued['duration_status'], 'pending')
                 release.set()
