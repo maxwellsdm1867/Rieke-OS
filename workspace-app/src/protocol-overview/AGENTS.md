@@ -105,3 +105,13 @@ canonical duration folds finish. `duration_seconds: null` with
 cell summaries; it must not become zero or retain the prior cohort's duration.
 Missing duration without the pending marker remains unavailable. Counts and
 independent inclusion/review controls retain their existing semantics.
+
+
+Curation receipts advance the protocol review-card clock even when Inspector
+applies them without reloading its pages. Hidden Overview/Workbench queues defer
+that read until shown; their merge controls require the renewed queue revision.
+Shared tag receipts do not change this clock. Opening the import review dialog
+revalidates its cached project queue summary before enabling held merges.
+`workspaceChangesLedger.test.js` mounts the real suggestion card to verify
+curation -> hidden reads remain quiet -> reveal -> fresh held merge;
+`importReviewDialog.test.js` covers reopening and pending renewal.

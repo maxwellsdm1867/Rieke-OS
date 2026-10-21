@@ -161,3 +161,38 @@ test('without a receipt the toggle keeps the reload path',async()=>{
   assert.ok(sent.some(line=>line.startsWith('GET /protocols/protocol-A/epochs?')),sent.join('\n'));
  }finally{await h.close();}
 });
+
+
+test('curation refreshes visible review queues on return before merge without reloading hidden browsing',async()=>{
+ const h=await createWorkflowHarness({total:40,liveMetadata:false,realProtocolSuggestion:true});
+ const state={queue:'q1',pending:12};serve(h,state);
+ const props={id:'protocol-A',projectId:'project',revision:0,structureRevision:0,reviewRevision:0,curationRevision:0,onChange(){},
+  onMergeIncoming:async(id,options)=>{assert.equal(options.queue_revision,state.queue);await (await h.module('api.js')).api('/protocols/protocol-A/workbench/merge-all',{method:'POST',body:{expected_queue_revision:options.queue_revision,operation_uuid:'merge-one'}});return true;}};
+ const base=h.fixture.respond;
+ h.fixture.respond=async(url,options,fallback)=>{
+  const path=url.pathname.replace(/^\/api/,'');
+  if(path==='/protocols/protocol-A/workbench')return {contract_version:1,protocol_uuid:'protocol-A',queue_revision:state.queue,
+   pending_epoch_count:state.pending,pending_cell_count:1,eligible_pending_epoch_count:state.pending,eligible_pending_cell_count:1,
+   candidates:[],next_cursor:null,capabilities:{cumulative_pending_browse:true,frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true,merge_all:true}};
+  if(path==='/protocols/protocol-A/workbench/merge-all')assert.equal(JSON.parse(options.body).expected_queue_revision,state.queue,'merge must use the new curation fence');
+  return base(url,options,fallback);
+ };
+ const queueReads=lines=>lines.filter(line=>line.startsWith('GET /protocols/protocol-A/workbench?'));
+ const hold=()=>h.root.findAllByType('button').find(node=>visible(node)&&node.props['aria-label']==='Hold to merge all');
+ try{
+  await step(h,()=>h.mount(h.Protocol,props),800);assert.ok(hold());
+  await step(h,()=>tab(h,'Workbench').props.onClick());
+  await step(h,()=>tab(h,'Inspect').props.onClick(),800);
+  state.queue='q2';
+  const changed=await step(h,()=>h.render(h.Protocol,{...props,curationRevision:1}));
+  assert.deepEqual(changed,[],'applied receipt must not reload hidden queues or main browsing');
+  const review=await step(h,()=>tab(h,'Workbench').props.onClick());
+  assert.equal(queueReads(review).length,1,'Workbench renews its queue after receipt curation');
+  const overview=await step(h,()=>tab(h,'Overview').props.onClick());
+  assert.equal(queueReads(overview).length,1,'Overview merge card renews independently on reveal');
+  assert.ok(hold());
+  await h.act(()=>hold().props.onPointerDown({button:0,preventDefault(){}}));await h.settle(1200);
+  const merged=h.fixture.requests.filter(call=>call.path==='/protocols/protocol-A/workbench/merge-all');
+  assert.equal(merged.length,1);assert.equal(merged[0].body.expected_queue_revision,'q2');
+ }finally{await h.close();}
+});

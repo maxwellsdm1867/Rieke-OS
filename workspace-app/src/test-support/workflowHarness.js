@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 
-export async function createWorkflowHarness({total=500,baseline=false,delay=0,liveMetadata=true,enableUndo=false,portals=false,realTreePane=false,frozenTraces=false,baselineRoot:configuredBaselineRoot=process.env.RIEKE_WORKFLOW_BASELINE_ROOT}={}){
+export async function createWorkflowHarness({total=500,baseline=false,delay=0,liveMetadata=true,enableUndo=false,portals=false,realTreePane=false,frozenTraces=false,realProtocolSuggestion=false,baselineRoot:configuredBaselineRoot=process.env.RIEKE_WORKFLOW_BASELINE_ROOT}={}){
   const rootPath=fileURLToPath(new URL('../..',import.meta.url));
   const key=`__workflow${Math.random().toString(36).slice(2)}`;
   const baselineRoot=configuredBaselineRoot?path.resolve(configuredBaselineRoot):path.resolve(rootPath,'../docs/dev/scale-audit-2026-09-29/frozen-100000-dense-recovery/snapshot/workspace-app/src');
@@ -104,6 +104,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,li
       if(portals&&id==='react-dom')return '\0workflow-portals';
       if(id.endsWith('/annotationProfile.js')||id==="./annotations/annotationProfile.js"||id==='../annotationProfile.js')return '\0workflow-profile';
       if(importer?.endsWith('/App.jsx')){
+        if(realProtocolSuggestion&&id==='./protocol-overview/ui/ProtocolSuggestion.jsx')return;
         if(id==="./protocol-overview/ui/ProtocolInfographic.jsx")return '\0workflow-lazy';
         if(id==='./workspace-navigation/useWorkspaceNavigation.js')return '\0workflow-navigation';
         if(id==='./protocol-tree-layout/useProtocolTreeLayout.js')return '\0workflow-layout';

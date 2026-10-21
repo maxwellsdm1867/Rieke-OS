@@ -56,6 +56,9 @@ export default function ProtocolSuggestion({suggestion:given,pendingProtocol=nul
 export function ImportSuggestions({workbenchSummary=null,protocols=[],projectId,sources=[],jobs=[],onProtocol,onMerge,autoOpenJobUuid=null,dialogOnly=false,reviewLoading=false,reviewStatus=null}){
   const preferences=useProjectPreference(projectId,'protocol_shortcuts').value;
   const [open,setOpen]=useState(false);
+  // Pending counts may stay cached while editing Main; opening review renews
+  // the queue fence before its hold controls can submit an acceptance.
+  useEffect(()=>{if(open)workbenchSummary?.reload?.();},[open,workbenchSummary?.reload]);
   const dialogRef=useRef(null),reviewHadPending=useRef(false);
   const model=importReviewCards({summary:workbenchSummary?.data,protocols,preferences});
   const refreshing=reviewLoading||!!workbenchSummary?.loading;
