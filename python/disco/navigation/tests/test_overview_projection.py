@@ -95,6 +95,25 @@ class OverviewProjectionTests(unittest.TestCase):
         self.assertEqual(model.protocol_counts('p')['duration_seconds'],3.)
         self.assertNotIn('duration_status',model.protocol_counts('p'))
 
+    def test_duration_worker_coalesces_obsolete_queued_publications(self):
+        import threading
+        from disco.navigation.overview_durations import DurationPreparation
+        entered=threading.Event();release=threading.Event();published=threading.Event();seen=[]
+        class Rows(dict):
+            def __getitem__(self,key):
+                if key=='old':entered.set();release.wait(2)
+                seen.append(key)
+                return {'cell_uuid':'a','duration_seconds':1}
+        owner=DurationPreparation();self.addCleanup(owner.close)
+        try:
+            owner.submit(('old',),Rows(),lambda result:self.fail('obsolete running result'),key='p')
+            self.assertTrue(entered.wait(2))
+            owner.submit(('middle',),Rows(),lambda result:self.fail('obsolete queued result'),key='p')
+            owner.submit(('new',),Rows(),lambda result:published.set(),key='p')
+            release.set();self.assertTrue(published.wait(2))
+            self.assertEqual(seen,['old','new'])
+        finally:release.set()
+
     def test_stale_watermark_rejects_without_partial_changes(self):
         model=self.model()
         with self.assertRaises(ProjectionUnavailable):model.apply_decisions([('p','0',None)],4,5)

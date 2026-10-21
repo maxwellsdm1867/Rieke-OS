@@ -1188,7 +1188,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     def publish(value,protocol=protocol,version=version,model=model):
                         with db_lock:
                             if prepared_overview.get('model') is model:model.publish_duration(protocol,version,value)
-                    overview_durations.submit(model.duration_orders[protocol],model.rows,publish)
+                    overview_durations.submit(model.duration_orders[protocol],model.rows,publish,key=protocol)
             if tracker.token()!=model.watermark:raise PreparationRequired('state_changed')
         except Exception as error:
             model.invalidate();prepared_overview['reason']=str(error);return None,str(error)

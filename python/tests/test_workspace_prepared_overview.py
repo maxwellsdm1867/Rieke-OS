@@ -83,7 +83,7 @@ class PreparedOverviewTests(fixtures.MemoFixture):
         history.bind(delta['revision_uuid'],self.protocol,1,'fixture',{},2)
         path=f'/api/protocols/{self.protocol}/overview?cells_limit=1'
         expected=self.reference(path);jobs=[]
-        with patch.object(self.app.extensions['overview_durations'],'submit',side_effect=lambda *args:jobs.append(args)):
+        with patch.object(self.app.extensions['overview_durations'],'submit',side_effect=lambda *args,**kwargs:jobs.append(args)):
             response=self.client.get(path);self.assertEqual(response.status_code,200)
             pending=response.get_json();old_etag=response.headers['ETag']
         self.assertEqual(pending['counts']['epochs'],expected['counts']['epochs'])

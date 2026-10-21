@@ -1,6 +1,7 @@
 """Pure canonical duration folds over immutable membership publications."""
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+import threading
 
 
 @dataclass(frozen=True)
@@ -30,18 +31,27 @@ class DurationPreparation:
     """One worker; caller validates/publishes the result under its own lock."""
     def __init__(self):
         self.executor=ThreadPoolExecutor(max_workers=1,thread_name_prefix='overview-duration')
-        self.closed=False
+        self.closed=False;self.pending={};self.lock=threading.Lock()
 
-    def submit(self,order,rows,publish):
-        if self.closed:return
-        future=self.executor.submit(fold_duration,order,rows)
+    def submit(self,order,rows,publish,*,key=None):
+        with self.lock:
+            if self.closed:return
+            previous=self.pending.get(key)
+            # An obsolete queued fold need never run. Running pure folds retain
+            # their generation fence and cannot publish into a newer owner.
+            future=self.executor.submit(fold_duration,order,rows)
+            self.pending[key]=future
+        if previous is not None:previous.cancel()
         def done(job):
-            if not self.closed and not job.cancelled():
+            with self.lock:
+                current=self.pending.get(key) is job
+                if current:self.pending.pop(key,None)
+            if current and not self.closed and not job.cancelled():
                 try:result=job.result()
                 except Exception:return  # Pending stays truthful; explicit prepare retries.
                 publish(result)
         future.add_done_callback(done)
 
     def close(self):
-        self.closed=True
+        with self.lock:self.closed=True
         self.executor.shutdown(wait=True,cancel_futures=True)
