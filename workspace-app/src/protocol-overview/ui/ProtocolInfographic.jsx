@@ -11,7 +11,7 @@ import ProtocolTagSummary from "../../annotations/ui/ProtocolTagSummary.jsx";
 import './ProtocolInfographic.css';
 
 const countLabel=value=>validCellCount(value)?number(value):'Unavailable';
-const durationLabel=(value,status)=>status==='pending'?'Preparing…':validRecordedDuration(value)?duration(value):'Unavailable';
+const durationLabel=(value,status)=>status==='failed'?'Preparation failed':status==='pending'?'Preparing…':validRecordedDuration(value)?duration(value):'Unavailable';
 
 // Visual language follows the project Overview: a hero metric row, cells by type
 // beside recording dates, and a footer inventory strip.

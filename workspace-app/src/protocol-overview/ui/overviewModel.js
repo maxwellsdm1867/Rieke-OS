@@ -12,7 +12,8 @@ export function overviewModel(data) {
     group.epochs=group.epochs!==null&&validCellCount(epochs)&&validCellCount(group.epochs+epochs)?group.epochs+epochs:null;
     if(typeof cell.duration_seconds!=='number'||!Number.isFinite(cell.duration_seconds)||cell.duration_seconds<0){
       group.duration=null;
-      if(cell.duration_status==='pending'&&group.duration_status!=='unavailable')group.duration_status='pending';
+      if(cell.duration_status==='failed'&&group.duration_status!=='unavailable')group.duration_status='failed';
+      else if(cell.duration_status==='pending'){if(!['unavailable','failed'].includes(group.duration_status))group.duration_status='pending';}
       else group.duration_status='unavailable';
     }
     else if(group.duration!==null)group.duration+=cell.duration_seconds;

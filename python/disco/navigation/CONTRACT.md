@@ -413,12 +413,16 @@ Deleted decisions restore defaults. Shared tags use exact inherited/direct union
 indexed top-12 ranking, so changing a tag does not scan the cell's epochs or every
 unrelated protocol. It grants no annotation or membership authority.
 
-Verified cached membership-delta chains (or their inverse) update exact counts and
+The canonical `ExplorerHistory.prepared_delta` public accessor supplies verified,
+bounded cached membership-delta chains (or their inverse), without membership
+hydration or private cache access. These update exact counts and
 cell/source/group coverage immediately. Their canonical ordered duration is null
 with `duration_status: pending` until `overview_durations` folds an immutable
 membership publication and frozen rows on one worker. Publication requires the same
 owner and membership version; a superseded result cannot overwrite a newer view.
-Duration completion changes the conditional response validator. Worker shutdown
+Duration completion changes the conditional response validator. Worker failure
+reports `duration_status: failed` and an explicit retryable preparation descriptor
+while preserving exact counts; it never leaves a permanent pending claim. Worker shutdown
 drains callbacks before taking their publication lock. The inert startup display
 cache is not rewritten during these page reads.
 

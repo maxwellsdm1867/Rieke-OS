@@ -1105,45 +1105,24 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         model=prepared_overview['model']
         for key in plan.keys.get('protocol_binding',[]):
             row=dict(zip(plan.primary_keys['protocol_binding'],key));protocol=row['protocol_uuid']
-            old_binding,old_header=prepared_overview['headers'].get(protocol,(None,None))
+            old_binding,_=prepared_overview['headers'].get(protocol,(None,None))
             binding=explorer_history.protocol_binding_header(protocol)
             if binding==old_binding:continue
             if binding is None or old_binding is None:raise PreparationRequired('binding_changed')
-            # A locally published delta was already admitted by bind(). An
-            # unknown root must be explicitly prepared rather than decoded here.
-            cached=getattr(explorer_history,'_headers',{}).get(binding['revision_uuid'])
-            if cached is None:raise PreparationRequired('binding_changed')
-            header=explorer_history.header(binding['revision_uuid'])
-            def path_between(start,finish):
-                path=[];current=start
-                for _ in range(64):
-                    if current==finish:return path
-                    known=getattr(explorer_history,'_headers',{}).get(current)
-                    if known is None or known.get('storage')!='membership-delta-v1':return None
-                    verified=explorer_history.header(current);path.append(verified['delta'])
-                    current=verified['parent_revision_uuid']
-                return None
-            path=path_between(binding['revision_uuid'],old_binding['revision_uuid']);reverse=False
-            if path is not None:path=list(reversed(path))
-            else:path=path_between(old_binding['revision_uuid'],binding['revision_uuid']);reverse=True
-            if path is None:raise PreparationRequired('binding_changed')
-            added=set();removed=set();touched=set()
-            for delta in path:
-                plus=set(delta['removed']) if reverse else {item['uuid'] for item in delta['added']}
-                minus={item['uuid'] for item in delta['added']} if reverse else set(delta['removed'])
-                touched.update(plus|minus)
-                if len(touched)>20000:raise PreparationRequired('membership_delta_limit')
-                for identity in plus:
-                    if identity in removed:removed.remove(identity)
-                    else:added.add(identity)
-                for identity in minus:
-                    if identity in added:added.remove(identity)
-                    else:removed.add(identity)
+            delta=explorer_history.prepared_delta(old_binding['revision_uuid'],binding['revision_uuid'])
+            if delta is None:raise PreparationRequired('binding_changed')
+            added=delta['added'];removed=delta['removed']
             states=store._rows(protocol,list(added),selected_only=True) if added else {}
-            fingerprints=explorer_history.members(binding['revision_uuid'])
-            changed={key for key in touched if key in fingerprints and fingerprints[key]!=service._fingerprints[key]}
-            bindings.append((protocol,{key:states.get(key) for key in added},list(removed),binding,header,changed,touched))
+            changed={key for key,fingerprint in added.items() if fingerprint!=service._fingerprints[key]}
+            touched=set(added)|set(removed)
+            bindings.append((protocol,{key:states.get(key) for key in added},list(removed),
+                             binding,delta['metadata'],changed,touched))
         return changes,tag_changes,bindings
+
+    def prepared_binding_witness(keys):
+        if keys is None:return False
+        return all(keys['protocols'][protocol][3]==((binding['revision_uuid'],binding['version']) if binding else None)
+                   for protocol,(binding,_) in prepared_overview['headers'].items())
 
     def current_prepared_overview():
         from disco.navigation.publication_changes import capture_changes,PreparationRequired
@@ -1188,8 +1167,13 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     def publish(value,protocol=protocol,version=version,model=model):
                         with db_lock:
                             if prepared_overview.get('model') is model:model.publish_duration(protocol,version,value)
-                    overview_durations.submit(model.duration_orders[protocol],model.rows,publish,key=protocol)
-            if tracker.token()!=model.watermark:raise PreparationRequired('state_changed')
+                    def failed(error,protocol=protocol,version=version,model=model):
+                        app.logger.error('Overview duration preparation failed',exc_info=(type(error),error,error.__traceback__))
+                        with db_lock:
+                            if prepared_overview.get('model') is model:model.fail_duration(protocol,version)
+                    overview_durations.submit(model.duration_orders[protocol],model.rows,publish,key=protocol,on_error=failed)
+            if tracker.token()!=model.watermark or not prepared_binding_witness(overview_part_keys()):
+                raise PreparationRequired('state_changed')
         except Exception as error:
             model.invalidate();prepared_overview['reason']=str(error);return None,str(error)
         return model,None
@@ -1232,7 +1216,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def prepared_overview_payload(protocol,page):
         model,reason=current_prepared_overview()
         if model is None:return None,reason
-        keys=overview_part_keys();cells,paging=prepared_cell_rows(model,protocol,page)
+        keys=overview_part_keys()
+        if not prepared_binding_witness(keys):return None,'binding_changed'
+        cells,paging=prepared_cell_rows(model,protocol,page)
         if protocol is None:
             payload={key:value for key,value in prepared_overview['project'].items() if key not in ('cells','protocols','counts')}
             counts={**prepared_overview['project']['counts']}
@@ -1276,6 +1262,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 'excluded_sources':sorted(affected),'propagation_required':bool(affected)}
         if shared_annotations:payload['annotation_summary']=prepared_overview['vocab'].summary(protocol)
         payload.update(cells=cells,**paging)
+        if (protocol in model.duration_failures if protocol is not None else bool(model.duration_failures)):
+            payload['preparation']={'status':'failed','resource':'overview','reason':'duration_failed'}
         if prepared_overview['tracker'].token()!=model.watermark or overview_part_keys()!=keys:
             raise StaleWorkspace('Overview changed during the read. Refresh and retry.')
         return payload,None

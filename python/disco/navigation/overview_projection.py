@@ -35,7 +35,7 @@ class OverviewProjection:
         self.publication=publication;self.watermark=watermark;self.ready=True
         self.epochs={};self.memberships={};self.protocols={};self.cells={};self.protocol_cells={}
         self.cell_protocols={};self.rows=rows;self.exported_by_protocol={};self.attributes={};self.cell_attributes={}
-        self.duration_versions={};self.duration_results={};self.duration_orders={};self.duration_serial=0
+        self.duration_versions={};self.duration_results={};self.duration_orders={};self.duration_serial=0;self.duration_failures={}
         self.decisions={};self.total=_counts();self.tagged_cells=set(tagged_cells);self.tagged_epochs=set(tagged_epochs)
         self.direct_counts={};self.last_work={}
         exported=exports or {}
@@ -136,10 +136,9 @@ class OverviewProjection:
         Source publication must be unchanged; new source epochs require prepare.
         """
         self._check()
-        members=self.memberships[protocol];removed=tuple(removed)
-        if (len(set(removed))!=len(removed) or any(key not in members for key in removed)
-                or any(key in members or key not in self.epochs for key in added)
-                or set(added)&set(removed)):
+        members=self.memberships[protocol];removed=tuple(removed);removed_set=set(removed)
+        if (len(removed_set)!=len(removed) or any(key not in members for key in removed)
+                or any((key in members and key not in removed_set) or key not in self.epochs for key in added)):
             raise ValueError('Membership delta does not continue this publication')
         normalized={}
         for key,row in added.items():
@@ -185,7 +184,8 @@ class OverviewProjection:
         count['cells']=len(bins)
         from disco.navigation.overview_durations import MembershipOrder
         self.duration_orders[protocol]=MembershipOrder(self.duration_orders[protocol],tuple(added),frozenset(removed))
-        self.duration_versions[protocol]+=1;self.duration_results.pop(protocol,None)
+        self.duration_versions[protocol]+=1;self.duration_results.pop(protocol,None);self.duration_failures.pop(protocol,None)
+        count['duration_seconds']=None;count['duration_status']='pending'
         self.last_work={'membership_added':len(added),'membership_removed':len(removed)}
 
     def apply_tags(self, changes):
@@ -228,15 +228,24 @@ class OverviewProjection:
         self._check();value=_finish(self.protocols[protocol])
         if protocol in self.duration_results:
             value['duration_seconds']=self.duration_results[protocol][0];value.pop('duration_status',None)
+        if protocol in self.duration_failures:value['duration_seconds']=None;value['duration_status']='failed'
         return value
 
     def cell_counts(self, cell, protocol=None):
         self._check();value=_finish((self.cells if protocol is None else self.protocol_cells[protocol])[cell])
+        if protocol is not None and self.duration_versions[protocol]>0:
+            value['duration_seconds']=None;value['duration_status']='pending'
         if protocol in self.duration_results:
             value['duration_seconds']=self.duration_results[protocol][1][cell];value.pop('duration_status',None)
+        if protocol in self.duration_failures:value['duration_seconds']=None;value['duration_status']='failed'
         return value
 
     def publish_duration(self, protocol, version, value):
         if self.ready and self.duration_versions.get(protocol)==version:
-            self.duration_results[protocol]=value;self.duration_serial+=1;return True
+            self.duration_results[protocol]=value;self.duration_failures.pop(protocol,None);self.duration_serial+=1;return True
+        return False
+
+    def fail_duration(self, protocol, version):
+        if self.ready and self.duration_versions.get(protocol)==version:
+            self.duration_failures[protocol]=True;self.duration_serial+=1;return True
         return False

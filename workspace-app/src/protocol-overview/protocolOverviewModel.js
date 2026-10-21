@@ -47,7 +47,8 @@ export function aggregateCellTypes(cells=[]){
     const group=groups.get(type)||{type,count:0,cells:[],epochs:0,duration_seconds:0,exported:0,included:0,reviewed:0,withExports:0};
     group.cells.push(cell);group.count++;
     if(!validRecordedDuration(cell.duration_seconds)){
-      if(cell.duration_status==='pending'&&group.duration_status!=='unavailable')group.duration_status='pending';
+      if(cell.duration_status==='failed'&&group.duration_status!=='unavailable')group.duration_status='failed';
+      else if(cell.duration_status==='pending'){if(!['unavailable','failed'].includes(group.duration_status))group.duration_status='pending';}
       else group.duration_status='unavailable';
     }
     for(const field of ['epochs','duration_seconds','exported','included','reviewed']){

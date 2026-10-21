@@ -114,6 +114,16 @@ class OverviewProjectionTests(unittest.TestCase):
             self.assertEqual(seen,['old','new'])
         finally:release.set()
 
+    def test_replacement_membership_and_failed_duration_keep_exact_counts(self):
+        model=self.model()
+        model.apply_membership('p',added={'0':{'included':False,'review_state':'approved','metadata_fingerprint':'fresh'}},removed=['0'])
+        self.assertEqual(model.protocol_counts('p')['epochs'],3)
+        self.assertEqual(model.protocol_counts('p')['included'],2)
+        self.assertEqual(model.protocol_counts('p')['approved'],1)
+        self.assertTrue(model.fail_duration('p',model.duration_versions['p']))
+        self.assertEqual(model.protocol_counts('p')['duration_status'],'failed')
+        self.assertIsNone(model.cell_counts('b','p')['duration_seconds'])
+
     def test_stale_watermark_rejects_without_partial_changes(self):
         model=self.model()
         with self.assertRaises(ProjectionUnavailable):model.apply_decisions([('p','0',None)],4,5)

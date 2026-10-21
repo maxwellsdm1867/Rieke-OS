@@ -14,7 +14,7 @@ import { overviewModel } from './overviewModel.js';
 import './Overview.css';
 
 const countLabel=value=>validCellCount(value)?number(value):'Unavailable';
-const durationLabel=(value,status)=>status==='pending'?'Preparing…':validRecordedDuration(value)?duration(value):'Unavailable';
+const durationLabel=(value,status)=>status==='failed'?'Preparation failed':status==='pending'?'Preparing…':validRecordedDuration(value)?duration(value):'Unavailable';
 const colors=Array.from({length:6},(_,index)=>`var(--chart-${index+1})`);
 export default function Overview({data,overviewCache,revision=0,onProtocol,onImport,onExplore,projectName,onQC,presentationOnly=false}){
   const cellList=useOverviewCells(data,'/overview',revision,{enabled:!presentationOnly});

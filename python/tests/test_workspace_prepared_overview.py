@@ -82,10 +82,12 @@ class PreparedOverviewTests(fixtures.MemoFixture):
         delta=history.create_delta(root['revision_uuid'],{},[self.ids[0]],'fixture',name='Removed one')
         history.bind(delta['revision_uuid'],self.protocol,1,'fixture',{},2)
         path=f'/api/protocols/{self.protocol}/overview?cells_limit=1'
-        expected=self.reference(path);jobs=[]
-        with patch.object(self.app.extensions['overview_durations'],'submit',side_effect=lambda *args,**kwargs:jobs.append(args)):
+        jobs=[]
+        with patch.object(self.app.extensions['overview_durations'],'submit',side_effect=lambda *args,**kwargs:jobs.append(args)), \
+             patch('disco.decisions.explorer.MemberView.__iter__',side_effect=AssertionError('Full membership hydration')):
             response=self.client.get(path);self.assertEqual(response.status_code,200)
             pending=response.get_json();old_etag=response.headers['ETag']
+        expected=self.reference(path)
         self.assertEqual(pending['counts']['epochs'],expected['counts']['epochs'])
         self.assertEqual(pending['counts']['included'],expected['counts']['included'])
         self.assertIsNone(pending['counts']['duration_seconds'])
@@ -97,6 +99,27 @@ class PreparedOverviewTests(fixtures.MemoFixture):
         self.assertEqual(response.status_code,200)
         self.assertNotEqual(response.headers['ETag'],old_etag)
         self.assertEqual(response.get_json(),expected)
+
+    def test_unexplained_binding_change_cannot_use_a_matching_recovery_watermark(self):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        root=history.create(preview,self.service.sources,'catalog.json','fixture')
+        history.bind(root['revision_uuid'],self.protocol,0,'fixture',{},2)
+        self.prepare();watermark=self.capture.token()
+        history.Binding.rows[0]['version']+=1
+        with patch.object(self.capture,'token',return_value=watermark):
+            response=self.client.get('/api/overview?cells_limit=1')
+        self.assertEqual(response.status_code,202)
+        self.assertNotIn('counts',response.get_json())
+
+    def test_duration_failure_is_explicit_and_does_not_hide_counts(self):
+        self.prepare();model=self.app.extensions['prepared_overview']['model']
+        self.assertTrue(model.fail_duration(self.protocol,model.duration_versions[self.protocol]))
+        result=self.get(f'/api/protocols/{self.protocol}/overview?cells_limit=1')
+        self.assertEqual(result['preparation'],{'status':'failed','resource':'overview','reason':'duration_failed'})
+        self.assertEqual(result['counts']['epochs'],len(self.ids))
+        self.assertEqual(result['counts']['duration_status'],'failed')
+        self.assertIsNone(result['counts']['duration_seconds'])
 
     def test_incomplete_feed_returns_preparing_instead_of_rebuilding(self):
         self.prepare();self.capture.lost=True;self.save_curation(included=False)

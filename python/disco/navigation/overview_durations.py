@@ -33,7 +33,7 @@ class DurationPreparation:
         self.executor=ThreadPoolExecutor(max_workers=1,thread_name_prefix='overview-duration')
         self.closed=False;self.pending={};self.lock=threading.Lock()
 
-    def submit(self,order,rows,publish,*,key=None):
+    def submit(self,order,rows,publish,*,key=None,on_error=None):
         with self.lock:
             if self.closed:return
             previous=self.pending.get(key)
@@ -48,7 +48,9 @@ class DurationPreparation:
                 if current:self.pending.pop(key,None)
             if current and not self.closed and not job.cancelled():
                 try:result=job.result()
-                except Exception:return  # Pending stays truthful; explicit prepare retries.
+                except Exception as error:
+                    if on_error is not None:on_error(error)
+                    return
                 publish(result)
         future.add_done_callback(done)
 
