@@ -125,7 +125,7 @@ test('restored merge intent has no live consent; an explicit App request is cons
  const route={page:'protocol',protocol:'protocol-A',key:'restored-merge',workbench:{merge_intent:{kind:'preview_all',request_uuid:'old-consent',project_uuid:'project',protocol_uuid:'protocol-A'}}};
  const h=await createPresentationSessionHarness({saved:draft(checkpoint(route))});
  try{
-  await h.mount();await h.waitFor(()=>h.root.findAllByProps({role:'status'}).some(node=>node.children.join('').includes('No pending incoming recordings.')));
+  await h.mount();await h.waitFor(()=>h.root.findAllByProps({role:'status'}).some(node=>node.children.join('').includes('No pending cells.')));
   assert.ok(h.root.findAllByProps({role:'status'}).some(node=>node.children.join('').includes('no longer active')),'restored merge intent must be refused without live consent');
   assert.equal(h.route.workbench.merge_intent,undefined,'restored intent is consumed even though consent is refused');
   assert.equal(h.requests.some(row=>row.path.includes('preview')),false);assert.deepEqual(h.requests.filter(row=>row.method!=='GET'&&/\/(?:preview|accept|exports|draft|decisions)(?:\/|$)/.test(row.path)),[],'presentation restoration cannot preview, accept, export, or save scientific draft decisions');
