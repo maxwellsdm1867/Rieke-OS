@@ -45,8 +45,8 @@ class PreparedQueueTests(unittest.TestCase):
             self.service.protocols[protocol] = copy.deepcopy(original)
             record = self.history.create(preview, self.service.sources, 'catalog.json', 'fixture', name=str(index))
             self.history.bind(record['revision_uuid'], protocol, 0, 'fixture', {}, 2)
-        with patch('disco.workbench.workbench._DISCOVERY_LIMIT', 64):
-            self.manager.prepare_queue_publication()
+        self.manager.prepare_queue_publication()
+        self.manager._checks.clear()  # Deterministic historical-cache eviction.
         self.assertFalse(main['revision_uuid'] in self.manager._checks)
         with patch.object(MemberView, '__iter__', side_effect=AssertionError('main scan')):
             self.assertEqual(self.queue()['pending_epoch_count'], 1)

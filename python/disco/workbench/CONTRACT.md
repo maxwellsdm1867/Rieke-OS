@@ -38,8 +38,8 @@ by pending membership, the caught-up delta and sources, plus existing candidate
 history; it does not walk main epochs or clone all main cells. The fenced prepared
 Overview checks only pending cell identities and never substitutes for the frozen
 main fingerprint/source proof. Historical diff profiles keep their existing path.
-The eviction regression deliberately limits the historical cache to 64 while
-preparing more than 64 protocols; it does not claim production eviction at 65.
+The eviction regression explicitly clears the historical cache after preparing
+more than 64 protocols; it does not claim production eviction at 65.
 
 Canonical Workbench context summaries use the explicit cohort-only
 `WorkspaceService.protocol(..., cross_protocols=False)` projection. Cells and
