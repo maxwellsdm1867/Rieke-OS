@@ -1,3 +1,5 @@
+import {useRetainedModal} from '../../retainedWorkspaceViews.js';
+import FinishReviewConfirmation from '../../incoming-workbench/ui/FinishReviewConfirmation.jsx';
 import {useSemanticReset} from '../../useSemanticReset.js';
 import {useEffect,useRef,useState,useSyncExternalStore} from 'react';
 import {protocolMergeUndoVersion,subscribeMergeUndone} from '../../incoming-workbench/mergeUndo.js';
@@ -58,7 +60,7 @@ export default function ProtocolSuggestion({suggestion:given,pendingProtocol=nul
       {mergeAll&&!applied&&onMerge&&<button disabled={disabled||merging||queue.loading||!!queue.error} onClick={()=>setFinishIdentity(identity)}>Finish reviewing</button>}
       {!importView&&!applied&&<small>{stale?'Refresh the saved proposal in Workbench.':mergeAll?(holdMerge?'Hold to merge all new epochs into Main, or inspect them in Workbench to pick some. Existing Main recordings and draft exclusions are kept.':'Inspect in Workbench to review and merge these additions.'):holdMerge?`Hold to merge eligible additions from ${suggestion.source_filename||'this recording'} into Main. Main recordings and draft exclusions are kept; additions from other pending recordings stay in Workbench.`:'Inspect in Workbench to review and merge these additions.'}</small>}
     </div></div>
-    {finishIdentity===identity&&<section className="incoming-selection-review" aria-label="Finish reviewing"><strong>Leave out {number(suggestion.pending_epoch_count)} remaining epochs?</strong><span>This finishes this batch. Future updates show new arrivals; you can explicitly review left-out epochs again.</span><button className="primary" disabled={disabled||merging||queue.loading||!!queue.error} onClick={finish}>Leave out & finish</button><button disabled={merging} onClick={()=>setFinishIdentity(null)}>Keep reviewing</button></section>}
+    {finishIdentity===identity&&<FinishReviewConfirmation count={suggestion.pending_epoch_count} disabled={disabled||merging||queue.loading||!!queue.error} cancelDisabled={merging} onConfirm={finish} onCancel={()=>setFinishIdentity(null)}/>}
     {merging&&<p role="status">{finishIdentity===identity?'Finishing review…':mergeAll?'Merging all new epochs into Main…':'Merging eligible additions into Main…'}</p>}
     {error&&<p className="error" role="alert">{error}</p>}
   </section>;
@@ -67,7 +69,7 @@ export default function ProtocolSuggestion({suggestion:given,pendingProtocol=nul
 // Review imported data shows the same per-protocol pending pool as Overview and
 // Workbench: one Overview card (import view) per protocol with mergeable pending
 // epochs, from /workbench/summary. Its hold merges all of that protocol. The
-// dialog closes by itself only once a refreshed summary shows nothing pending.
+// dialog closes after a confirmed action to expose shared Undo, or when empty.
 export function ImportSuggestions({workbenchSummary=null,protocols=[],projectId,sources=[],jobs=[],onProtocol,onMerge,autoOpenJobUuid=null,dialogOnly=false,reviewLoading=false,reviewStatus=null}){
   const preferences=useProjectPreference(projectId,'protocol_shortcuts').value;
   const [open,setOpen]=useState(false);
@@ -85,11 +87,13 @@ export function ImportSuggestions({workbenchSummary=null,protocols=[],projectId,
   const catalogDelta=latest?.catalog_delta||latest?.progress?.catalog_delta;
   const source=sources.find(item=>item.source_sha256===latest?.source_sha256)||(latest?{filename:latest.source?.split?.('/').pop()||latest.filename||'Imported recording',counts:latest.progress?.counts}:null);
   useSemanticReset(autoOpenJobUuid,()=>{if(autoOpenJobUuid)setOpen(true);});
-  useEffect(()=>{if(open&&!dialogRef.current?.open)dialogRef.current?.showModal();else if(!open&&dialogRef.current?.open)dialogRef.current.close();},[open,latest?.job_uuid,model.ready]);
+  useRetainedModal(dialogRef,open);
   const pendingReview=Number.isSafeInteger(reviewStatus?.pendingProtocols)&&reviewStatus.pendingProtocols>0;
   const reviewLabel=importReviewStatusLabel(reviewStatus);
   if(!model.ready&&!latest&&!pendingReview&&!unavailable)return null;
-  const render=row=><ProtocolSuggestion key={`${projectId}:${row.protocol.protocol_uuid}`} projectId={projectId} pendingProtocol={row.protocol.protocol_uuid} queue={row.queue} main={row.main} protocolName={row.protocol.name} onProtocol={onProtocol?(id,options)=>{setOpen(false);onProtocol(id,options);}:undefined} onMerge={onMerge} importView disabled={refreshing}/>;
+  // Confirmed actions expose the App-owned Undo notice. Failures keep review open.
+  const reviewAction=onMerge?async(...args)=>{const confirmed=await onMerge(...args);if(confirmed===true)setOpen(false);return confirmed;}:undefined;
+  const render=row=><ProtocolSuggestion key={`${projectId}:${row.protocol.protocol_uuid}`} projectId={projectId} pendingProtocol={row.protocol.protocol_uuid} queue={row.queue} main={row.main} protocolName={row.protocol.name} onProtocol={onProtocol?(id,options)=>{setOpen(false);onProtocol(id,options);}:undefined} onMerge={reviewAction} importView disabled={refreshing}/>;
   const summary=<section className="import-readiness" aria-label="Import readiness summary"><header className="import-readiness-heading"><div><div className="eyebrow">IMPORT REVIEW</div><h2><FileCheck2 size={23}/> {model.pinnedReady>0?'Review your pinned protocol updates.':'Protocol matching summary.'}</h2></div><div className="import-heading-actions"><span className="import-ready-total">{unavailable?'Pending updates unavailable':`${model.pinnedReady} pinned updates pending`}</span></div></header>{source&&<div className="import-source-summary"><Database size={21}/><div><strong>{source.filename}</strong><small>Latest completed import · {time(latest.finished_at)}</small></div><span><strong>{number(source.counts?.cells)}</strong> cells in imported source</span><span><strong>{number(source.counts?.epochs)}</strong> epochs in imported source</span><span className="import-checked"><Check size={14}/> Imported</span></div>}{catalogDelta&&<div className="import-catalog-delta" aria-label="Added to overall data store"><h3><Database size={16}/> Added to the overall data store</h3><div>{[['sources_added','recordings'],['cells_added','cells'],['epochs_added','epochs'],['protocol_types_added','protocol types']].filter(([key])=>Number.isInteger(catalogDelta[key])).map(([key,label])=><span key={key}><strong>+{number(catalogDelta[key])}</strong> {label}</span>)}</div><p>New catalog records from this import. Merge new data into a protocol below.</p></div>}{managedMessage&&<p className="import-managed-copy"><Check size={15}/> {managedMessage}</p>}{latest?.warnings?.length>0&&<p className="error">Some post-import checks need attention. See import diagnostics below.</p>}
   {(reviewLoading||workbenchSummary?.loading)&&<p className="import-managed-copy" role="status"><LoaderCircle size={15} className="spin"/> Refreshing catalog totals and protocol matches…</p> }{model.pinned.length>0&&<div className="import-priority-group"><h3><Pin size={14}/> Pinned protocols · {model.pinnedReady} pending</h3>{model.pinned.map(render)}</div>}
   {model.other.length>0&&<div className="import-priority-group"><h3>Other pending updates · {model.other.length}</h3>{model.other.map(render)}</div>}

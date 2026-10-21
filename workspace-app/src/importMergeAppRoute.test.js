@@ -47,6 +47,7 @@ test('held import review card merges all pending epochs with one request and sho
   assert.deepEqual({...writes[0].body,operation_uuid:'op'},{expected_queue_revision:'q1',operation_uuid:'op'});
   const toast=h.root.findAll(node=>node.props?.controller&&Object.hasOwn(node.props,'projectId')&&node.props.controller.state!==undefined)[0];
   assert.equal(toast.props.controller.state?.phase,'merged','the corner Undo toast is shown for the verified receipt');assert.equal(toast.props.controller.state?.count,12);
+  assert.equal(h.fixture.route.page,'import','Merge all updates import review in place; only Inspect changes workspace');
   assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).filter(visible).length,0);
  }finally{release?.();await h.close();}
 });

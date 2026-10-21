@@ -668,7 +668,7 @@ test('Finish review asks for confirmation, then posts the cumulative fences and 
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'union'},scopeKind:'cumulative_pending',pendingCounts,onChange:()=>events.push('change'),onRefresh:()=>events.push('refresh'),capabilities:{drafts:true,frozen_browse:true,additive_accept:true}}));});
   const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
   await act(async()=>button('Finish reviewing').props.onClick());
-  assert.match(label(renderer.root),/Leave out 3 remaining new epochs\?/);assert.match(label(renderer.root),/They stay out until you re-allow them or change the query\./);
+  assert.match(label(renderer.root),/Leave out 3 remaining epochs\?/);assert.match(label(renderer.root),/Future updates show new arrivals; you can explicitly review left-out epochs again\./);
   assert.equal(posts.length,0,'opening the confirmation writes nothing');
   await act(async()=>button('Keep reviewing').props.onClick());assert.doesNotMatch(label(renderer.root),/Leave out 3/);
   await act(async()=>button('Finish reviewing').props.onClick());

@@ -54,13 +54,13 @@ function RetainedDestination({entry,active,identity,presentation,render}){
 
 export function useRetainedView(){return useContext(ViewContext);}
 
-export function useRetainedModal(dialog){
+export function useRetainedModal(dialog,open=true){
   const view=useContext(ViewContext),visible=view?.active!==false;
   useLayoutEffect(()=>{
-    if(!visible)return;
+    if(!visible||!open)return;
     const node=dialog.current;node?.showModal?.();
     return()=>node?.close?.();
-  },[dialog,visible]);
+  },[dialog,visible,open]);
 }
 
 export function RetainedWorkspacePanel({name,visible,children}){

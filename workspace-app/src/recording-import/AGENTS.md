@@ -83,3 +83,12 @@ Overview pending card per protocol (from `/workbench/summary`, see
 `importReviewCards`); the badge counts those same mergeable protocols. Choosing
 H5 files and the existing upload queue remain separate.
 `inspectImportButton.test.js` checks the threshold and cancellation lifetime.
+
+Overview and Import Review render the same ProtocolSuggestion card and issue the
+same held merge-all request. A confirmed merge stays on the current route; only
+Inspect in Workbench navigates. Import Review closes after confirmed Merge or
+Finish reviewing so the App-owned Undo notice is immediately usable. Failures
+keep review open. Its native modal uses the shared retained-visibility lifecycle,
+including cleanup when a busy retained route becomes hidden. Finish reviewing
+uses FinishReviewConfirmation in both cards and prepared Workbench; queue versus
+prepared-candidate command fences remain owned by their existing controllers.

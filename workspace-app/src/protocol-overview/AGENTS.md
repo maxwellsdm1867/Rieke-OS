@@ -132,3 +132,12 @@ fresh preparation and the guarded Finish endpoint. Queue replacement retires
 confirmation. Verified completion publishes the shared Undo notice and invalidates
 Overview/Workbench. Undo reopens only the completed pending review; it does not
 remove earlier Main merges. The same control is used in import review.
+
+Overview and Import Review render the same ProtocolSuggestion card and issue the
+same held merge-all request. A confirmed merge stays on the current route; only
+Inspect in Workbench navigates. Import Review closes after confirmed Merge or
+Finish reviewing so the App-owned Undo notice is immediately usable. Failures
+keep review open. Its native modal uses the shared retained-visibility lifecycle,
+including cleanup when a busy retained route becomes hidden. Finish reviewing
+uses FinishReviewConfirmation in both cards and prepared Workbench; queue versus
+prepared-candidate command fences remain owned by their existing controllers.

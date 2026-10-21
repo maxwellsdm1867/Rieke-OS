@@ -4,7 +4,7 @@
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
     "src/App.jsx": {
-      "fingerprint": "e9db082aa25b58f81a8f18b54fe7cd7499bccd438df0033589b38208456238b4",
+      "fingerprint": "0d7a1fd10c1febeb4ed3f11d3dc03f5b275f3d70c4af183c8fbf536cd48cfb03",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -48,7 +48,7 @@
         }
       ],
       "lifetime": "mixed-project-and-retained-composition",
-      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes. Independent review on 2026-10-15 confirmed project setup closes only after successful project activation; pending, refused and migration paths retain context. Callback return values changed; lifecycle hooks, dependencies and scientific owners are unchanged. Six actual App composition regression cases cover both setup callbacks. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Overview source-merge review (2026-10-16): the Overview card hold reuses the App source-merge owner; App adds presentation-only state that hides the exact project/protocol/candidate/recording card after a verified receipt until the existing structure refresh returns, plus a captured origin so a hold on the still-current same-protocol Overview does not push a duplicate route. No effect sites, dependencies, consent or recovery owners changed. Checkpoint size review (2026-10-16): disk checkpoints now prune unreachable cumulative candidates (keeping the current candidate and any draft that needs recovery or still offers export) and drop the oldest back/forward view snapshots only above 1.5 MiB, never the current route, protocol latest views or recovery sessions. Live sessions are not mutated; no effect sites, dependencies, consent or recovery owners changed. 2026-10-16 (pending card): Overview renders ProtocolSuggestion in queue mode (pendingProtocol) instead of the latest per-recording suggestion; merge_all routes to the same sourceMerge owner (startAll) with the same owner token, origin fence and recovery. persist uses flushBeforeSubmission (views-only failure is a quiet notice). A ref-held mergeUndo controller (no new effect sites) receives verified receipts from sourceMerged and Workbench onMerged; MergeUndoToast is mounted once in main-shell, filtered by current project. Effect sites unchanged. 2026-10-16 import review sync: both ImportSuggestions callers receive the existing workbenchSummary resource instead of suggestions/approved history; the dialog hold reaches the same mergeIncoming merge_all -> sourceMerge.startAll owner and announceMerge toast. Effect sites unchanged. Request-decoupling review (2026-10-17): passes structureRevision to CellQC only; effect sites unchanged. Tag decoupling review (2026-10-17): TreeBranchReadOwner, Cell QC live reads and Search epoch/preset reads follow readOwnerRevision, which ignores confirmed epoch-tag receipts; Cell QC passes confirmed receipts to changed(). Effect sites unchanged. Tag channel review (2026-10-17): confirmed epoch-tag receipts no longer change app state; overview summaries key on revision plus the confirmed tag generation read at render. Effect sites unchanged. Workbench tag-scope review (2026-10-17): Protocol forwards reviewRevision (default revision) to IncomingWorkbench only; no effect or lifetime changed. F2 typed-change-events review (2026-10-18): typed clocks routed: Protocol receives its own protocol/review/membership clocks; merge, undo, source merge and apply emit membership for one protocol; Workbench summary follows structure plus membership; project summaries follow dataRevision; overview cache gets the last typed change. F2 curation receipt channel review (2026-10-18): Protocol gets a per-protocol curation summary counter; curation receipts applied in place re-key no pages or trees. Reviewed 0.1.21 cell paging: bounded first/next windows, exact caller scope and receipt checks; request cleanup on hide/unmount, A/B/A and duplicate-demand fences; partial summaries are explicitly labeled. Final review: retain paging scope during anchor handoff, validate overview receipt identity and observe viewport entry without rearming on each loaded page. Integration wave 7: composed reviewed PR changes; ownership retained and scoped checks recorded. Prepared-view review (2026-10-20): Project and protocol overview composition render the explicit preparation owner; completed display stays inert until fresh authority returns. Preparation never dispatches during render or navigation restoration. Queue authority review (2026-10-20): Protocol review consumers renew on curation as well as review revisions; hidden owners defer reads to reveal and main browsing remains quiet. Workbench preparation review (2026-10-20): explicit preparation aborts on project/protocol/revision/visibility/unmount; held completion cannot reload another owner. Fresh GET remains required, held reads disable duplicate preparation and merge authority. Unavailable review counts do not become zero. 2026-10-21 independent workflow review: Finish-review completion uses the existing project-scoped notification and membership invalidation path; one Undo owner handles merge and review-completion receipts.",
+      "reason": "Route-matched shared card merges stay in their originating Overview or import route; verified receipt and invalidation remain App-owned.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/appLifecycleImports.test.js",
@@ -1873,7 +1873,7 @@
       ]
     },
     "src/incoming-workbench/ui/FrozenIncomingReview.jsx": {
-      "fingerprint": "7a496e68f3d569c8d258eecb4f79e7b2e378e945b45fbb8da7edb047d12ae816",
+      "fingerprint": "71e4ca4edfc8f3239cbb30e46b7cb6a7ef53c7a975620bd0bb3c6652f8113044",
       "sites": [
         {
           "owner": "FrozenIncomingReview",
@@ -1922,7 +1922,7 @@
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Prepared display capability passes from the frozen candidate without changing draft, selection, merge or publication ownership. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. 2026-10-16: acceptance awaits flushBeforeSubmission (views-only failure is a quiet note, accepted-write failure still refuses); Finish review is an explicit confirmed write under activeOwner/inFlight guards like save(); onMerged reports verified receipts. Effect sites unchanged. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed. F6 review (2026-10-18): Export accepted, Merge & export and the Inspector export callback are withdrawn once the receipt's merge is undone (useSyncExternalStore over mergeUndo); effect sites unchanged. 2 typed-change-events review (2026-10-18): accept/finish emit membership for their protocol. Integration wave 7: composed reviewed PR changes; ownership retained and scoped checks recorded. 2026-10-21 independent merge review: explicit preview confirmation replaces immediate acceptance; acceptance publication retains the claimed child token, while real owner/read changes still retire it. Empty verified queues stop preparation and retain receipt exports and recovery. Mounted StrictMode confirmation covers self-transition, single submission, partial and empty completion; existing profile/remount/recovery cases retained. Refresh review: retain the verified empty presentation during queue refresh/failure; retire only unsubmitted previews on load-owner transition, preserving uncertain/pending acceptance identity. Held refresh and reopen regressions cover this behavior. Combined Merge/Undo/refresh review (2026-10-21): verified membership events renew shared authority; actor-owned sessions isolate history and cumulative recovery and checkpoints traverse inactive actor recovery. Same-author inert presentation survives reads; blocked and empty are distinct. Durable undone receipts retire offers. Explicit frozen refresh refuses pending/uncertain scientific work. Independent workflow review findings addressed; transition and checkpoint regressions cover ownership. 2026-10-21 independent workflow review: Verified Finish completion publishes the existing Undo receipt and data invalidation even after local owner retirement; local context/selection updates remain fenced. Explicit epoch refresh refuses busy or uncertain operations.",
+      "reason": "Shared stateless Finish confirmation replaces duplicated presentation; current candidate fences and command lifetime remain unchanged.",
       "tests": [
         "src/importMergeWorkflow.test.js",
         "src/incomingWorkbenchRendering.test.js",
@@ -2898,7 +2898,7 @@
       ]
     },
     "src/protocol-overview/ui/ProtocolSuggestion.jsx": {
-      "fingerprint": "f8cbe21f03bbac9abdf62581f9f2c859ffb26c64ec153cac7fe02a0cf4d2c459",
+      "fingerprint": "238dde918e599cfd284db3e68a2029ee51ce88f9602af6f94140c157926accd4",
       "sites": [
         {
           "owner": "ImportSuggestions",
@@ -2914,15 +2914,10 @@
           "owner": "ImportSuggestions",
           "kind": "useSemanticReset",
           "fingerprint": "4fc075c7f37cfa6287cf7de5c46a1f036f70c4e4fa585c5bd9c84d5286b8041a"
-        },
-        {
-          "owner": "ImportSuggestions",
-          "kind": "useEffect",
-          "fingerprint": "2c4f7ff0b0138f07d3ba5de1e4dc7b87618cbb4462d14189ed942c9fbb94ab82"
         }
       ],
       "lifetime": "semantic-auto-open-intent + project-review-state",
-      "reason": "autoOpenJobUuid is an explicit open intent, consumed once per semantic transition; user dismissal survives reconnect. Review pending state/managed message and modal presentation retain existing behavior. 2026-10-16: the Overview card renders the shared hold control with the same source-scoped request instead of a click-to-navigate merge; existing ImportSuggestions effects are unchanged. 2026-10-16 review: queue mode (pendingProtocol) reads the protocol queue through useWorkbenchQueue (its own abort/generation fences; provided=null in import view, so no read there). A verified merge_all receipt retires the card only for the queue revision it showed, then reloads; uncertain outcomes keep it. No new effect sites; ImportSuggestions effects unchanged. 2026-10-16 import review sync review: ImportSuggestions renders one queue-mode card per protocol from summary rows (provided queue, so useWorkbenchQueue issues no read); the auto-close effect now keys on those cards and summary loading (closes only after a refreshed summary is empty, never on the merge itself), and the showModal effect re-runs on card count instead of suggestions length; same sites and cleanup. Queue authority review (2026-10-20): Import review renews its cached project queue on open; existing loading and queue fences disable held merges until the resource returns fresh authority. The effect owns no timer or subscription. Workbench preparation review (2026-10-20): explicit preparation aborts on project/protocol/revision/visibility/unmount; held completion cannot reload another owner. Fresh GET remains required, held reads disable duplicate preparation and merge authority. Unavailable review counts do not become zero. 2026-10-21 Undo review: successful receipt-bound Undo advances only its project/protocol retirement version. Overview subscribes through useSyncExternalStore and removes its old queue suppression; current authoritative pending data still controls whether a card exists. Same-revision restoration and unrelated-protocol tests cover behavior; failures do not mark an operation undone. 2026-10-21 independent workflow review: Finish reviewing is separate explicit confirmation under the displayed queue identity. Pending operations disable controls, verified completion retires that offer, and the shared Undo clock allows restored pending data to reappear.",
+      "reason": "Import dialog modal lifetime delegates to the shared retained hook; confirmed actions close it to expose global Undo, failure keeps review open. Cards share Finish confirmation without moving queue authority.",
       "tests": [
         "src/importMergeWorkflow.test.js",
         "src/importReviewDialog.test.js",
@@ -3303,7 +3298,7 @@
       ]
     },
     "src/retainedWorkspaceViews.js": {
-      "fingerprint": "c01df573c0a6eca751939ab9dc978737d38fd0d15337522cd6fbfe79a67deebb",
+      "fingerprint": "e44b4406e6899d8948fde5b952e2e13ae956b51d48a268dad5c70195a11d0644",
       "sites": [
         {
           "owner": "RetainedDestination",
@@ -3313,7 +3308,7 @@
         {
           "owner": "useRetainedModal",
           "kind": "useLayoutEffect",
-          "fingerprint": "c49c2cf2a299de437965d71b3871cee337713a675ab34623e4741333b7f1dd8c"
+          "fingerprint": "ba399f401a19576cad6442cefd8a769c29b64c24592e5041e8071bb5602b013a"
         },
         {
           "owner": "useRetainedViewProtection",
@@ -3322,12 +3317,13 @@
         }
       ],
       "lifetime": "retained-owner-and-visibility-boundary",
-      "reason": "Route/subpanel identity, soft eviction cap, busy/dirty/guard protection and active callback tokens belong to retained owner. Modal and portal visibility follows active owner even while write protection keeps effects mounted. Guard cleanup on hide cannot discard protection. F2 typed-change-events review (2026-10-18): canonical main protocol browse descriptor and epoch pages are retainable on unchanged tab return; writes keep their own revision checks.",
+      "reason": "Modal open intent combines with retained visibility; layout cleanup closes the native top layer on disable, departure or unmount, including busy owners. Default true preserves existing callers.",
       "tests": [
         "src/retainedWorkspaceViews.test.js",
         "src/retainedHiddenControls.test.js",
         "src/retainedControls.test.js",
-        "src/workspaceChangesLedger.test.js"
+        "src/workspaceChangesLedger.test.js",
+        "src/importReviewDialog.test.js"
       ]
     },
     "src/search-activation/GlobalSearch.jsx": {
@@ -4367,6 +4363,15 @@
       "reason": " Independent epoch-refresh source review (2026-10-21): Layout-owned object identity rejects departed/hidden/A-B-A callbacks; latest options gate active writes and paused reads. One auto renewal per known owner/update; explicit retry honors false owner refusal. No timer, metadata scan, mutation or gesture replay.",
       "tests": [
         "src/inspectorNavigationLifecycle.test.js"
+      ]
+    },
+    "src/incoming-workbench/ui/FinishReviewConfirmation.jsx": {
+      "fingerprint": "f1f6f6083161e100ad004ac6b5f0ff36222afc6c737a482414e2a55aaabbb856",
+      "sites": [],
+      "reason": "Stateless shared consent presentation; no requests, effects or command authority. Caller supplies fresh count and disabled state.",
+      "lifetime": "render-only",
+      "tests": [
+        "src/protocolSuggestionHold.test.js"
       ]
     }
   }

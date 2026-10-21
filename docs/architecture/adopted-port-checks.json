@@ -1576,7 +1576,8 @@
             "workspace-app/src/incoming-workbench/importedSelection.js",
             "workspace-app/src/desktopLifecycle.js",
             "workspace-app/src/retainedWorkspaceViews.js",
-            "workspace-app/src/incoming-workbench/mergeUndo.js"
+            "workspace-app/src/incoming-workbench/mergeUndo.js",
+            "workspace-app/src/incoming-workbench/ui/FinishReviewConfirmation.jsx"
           ]
         },
         {
@@ -1794,6 +1795,13 @@
             "react",
             "workspace-app/src/api.js",
             "workspace-app/src/retainedWorkspaceViews.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/ui/FinishReviewConfirmation.jsx",
+          "allow": [
+            "workspace-app/src/api.js"
           ]
         }
       ],
@@ -4210,6 +4218,12 @@
           },
           {
             "path": "workspace-app/src/incoming-workbench/useWorkbenchPreparation.js",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/ui/FinishReviewConfirmation.jsx",
             "exports": [
               "default"
             ]
