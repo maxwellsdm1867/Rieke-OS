@@ -659,6 +659,56 @@ class ExplorerHistory:
             raise ValueError('Frozen membership contains duplicate epoch identities')
         return MemberView(members)
 
+    def prepared_delta(self, previous, current, limit=20000):
+        """Return an already verified adjacent delta without hydrating membership.
+
+        None requests explicit preparation when the bounded cached proof is no
+        longer retained. This is a display projection, never new seal authority.
+        """
+        if type(limit) is not int or not 0 <= limit <= 20000:
+            raise ValueError('Prepared delta limit must be between 0 and 20000')
+        if type(self) is not ExplorerHistory or any(
+                getattr(getattr(self, name, None), '__func__', getattr(self, name, None)) is not method
+                for name, method in _PREPARED_DELTA_METHODS.items()):
+            return None
+        try:
+            previous, current = str(uuid.UUID(previous)), str(uuid.UUID(current))
+        except (ValueError, TypeError, AttributeError):
+            return None
+        before, after = self._headers.get(previous), self._headers.get(current)
+        if before is None or after is None:
+            return None
+        forward = after.get('storage') == DELTA_STORAGE and after.get('parent_revision_uuid') == previous
+        inverse = before.get('storage') == DELTA_STORAGE and before.get('parent_revision_uuid') == current
+        if not forward and not inverse:
+            return None
+        child, parent = (after, before) if forward else (before, after)
+        delta = child['delta']
+        if len(delta['added']) + len(delta['removed']) > limit:
+            return None
+        if child['parent_content_sha256'] != parent['content_sha256']:
+            return None
+        view = self._member_views.get(current) if inverse and delta['removed'] else None
+        if inverse and delta['removed'] and (type(view) is not MemberView or MemberView.get is not _PREPARED_MEMBER_GET):
+            return None
+        # The same projected existence checks as the cached header path. Do not
+        # call header: a cache miss can verify/hydrate an entire ancestor chain,
+        # and copying an unrelated predecessor header can exceed this delta bound.
+        for identity in (previous, current):
+            if not (self.Revision & {'project_uuid': self.project_uuid,
+                    'revision_uuid': identity}).proj().to_dicts():
+                return None
+        if forward:
+            return {'added': {row['uuid']: row['metadata_hash'] for row in delta['added']},
+                    'removed': list(delta['removed'])}
+        added = {}
+        for identity in delta['removed']:
+            fingerprint = view.get(identity, _MISSING)
+            if fingerprint is _MISSING:
+                return None
+            added[identity] = fingerprint
+        return {'added': added, 'removed': [row['uuid'] for row in delta['added']]}
+
     def members(self, revision_uuid):
         """Shared, read-only exact membership view of a verified revision."""
         revision_uuid = str(uuid.UUID(revision_uuid))
@@ -706,3 +756,10 @@ def is_canonical_binding_reader(provider):
         and getattr(provider, '__func__', None) is _QUERY_RESULT_BINDING_METHODS['protocol_binding']
         and all(getattr(getattr(owner, name, None), '__func__', None) is _QUERY_RESULT_BINDING_METHODS[name]
                 for name in ('protocol_binding', 'protocol_binding_header', 'get')))
+
+# Any custom verification or membership implementation declines the prepared
+# projection. It must use its own explicit preparation/fallback policy.
+_PREPARED_DELTA_METHODS = {name: getattr(ExplorerHistory, name) for name in (
+    'prepared_delta', 'header', 'members', 'get', '_row', '_verified_recipe', '_root_view')}
+
+_PREPARED_MEMBER_GET = MemberView.get
