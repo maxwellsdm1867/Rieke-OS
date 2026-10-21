@@ -1776,10 +1776,10 @@
       ]
     },
     "src/incoming-workbench/mergeUndo.js": {
-      "fingerprint": "50e905ddb527b86198786f1c69231639f46eec732d8ca963c68260e1dfbbc6c0",
+      "fingerprint": "cea209e7815113b92d74e06b15acf0be90362bb31c973bdbf1ff4bc6bfc0c1e7",
       "sites": [],
       "lifetime": "project-command-owner",
-      "reason": "2026-10-16: plain Undo-merge controller held by an App ref above route mounts. One toast at a time; a token fences late undo replies so an older undo cannot overwrite a newer merge notice. Undo is one explicit request bound to the receipt operation and binding version; 409 refuses without refresh, other failures refresh and never retry. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed. F6 review (2026-10-18): undo completion notifies subscribeMergeUndone listeners (session memory only); no effect sites.",
+      "reason": "2026-10-16: plain Undo-merge controller held by an App ref above route mounts. One toast at a time; a token fences late undo replies so an older undo cannot overwrite a newer merge notice. Undo is one explicit request bound to the receipt operation and binding version; 409 refuses without refresh, other failures refresh and never retry. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed. F6 review (2026-10-18): undo completion notifies subscribeMergeUndone listeners (session memory only); no effect sites. 2026-10-21 Undo review: successful receipt-bound Undo advances only its project/protocol retirement version. Overview subscribes through useSyncExternalStore and removes its old queue suppression; current authoritative pending data still controls whether a card exists. Same-revision restoration and unrelated-protocol tests cover behavior; failures do not mark an operation undone.",
       "tests": [
         "src/incoming-workbench/mergeUndo.test.js"
       ]
@@ -1807,7 +1807,7 @@
       ]
     },
     "src/incoming-workbench/ui/CumulativeIncomingReview.jsx": {
-      "fingerprint": "a71e624e869a520380d6f21ec3031fd64477edaadc9ba0ab1dbe4c58d7de64ba",
+      "fingerprint": "4bfeecd72c47af450efcb57b88e449eb93c0466061154a6f5fceb2688e956e05",
       "sites": [
         {
           "owner": "CumulativeIncomingReview",
@@ -1822,11 +1822,11 @@
         {
           "owner": "CumulativeIncomingReview",
           "kind": "useEffect",
-          "fingerprint": "4312f03b2acde39565076ab47d18a44ba5bd150c1b761a46d1e0fd182e3ae661"
+          "fingerprint": "67a26f1d6c824ce26e02dcd7d0a5d86ce65bf49ed9877eff13d0c6a085276ff6"
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination. 2026-10-16 review: the preparation effect now reads mergeable pending counts via pendingQueueCounts (eligible fields) instead of queue.data.pending_epoch_count; the dependency is the same primitive count, so preparation timing, owner/generation fences and the idempotent prepare rejoin are unchanged. requirePreparedWorkbench moved to workbenchAuthority.js. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed. F6 review (2026-10-18): subscribes to merge-undo completions via useSyncExternalStore so the earlier-merge export offer disappears at once; effect sites unchanged.",
+      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination. 2026-10-16 review: the preparation effect now reads mergeable pending counts via pendingQueueCounts (eligible fields) instead of queue.data.pending_epoch_count; the dependency is the same primitive count, so preparation timing, owner/generation fences and the idempotent prepare rejoin are unchanged. requirePreparedWorkbench moved to workbenchAuthority.js. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed. F6 review (2026-10-18): subscribes to merge-undo completions via useSyncExternalStore so the earlier-merge export offer disappears at once; effect sites unchanged. 2026-10-21 independent merge review: explicit preview confirmation replaces immediate acceptance; acceptance publication retains the claimed child token, while real owner/read changes still retire it. Empty verified queues stop preparation and retain receipt exports and recovery. Mounted StrictMode confirmation covers self-transition, single submission, partial and empty completion; existing profile/remount/recovery cases retained. Refresh review: retain the verified empty presentation during queue refresh/failure; retire only unsubmitted previews on load-owner transition, preserving uncertain/pending acceptance identity. Held refresh and reopen regressions cover this behavior.",
       "tests": [
         "src/workbenchSessionLifecycle.test.js",
         "src/incomingWorkbenchStrictMode.test.js",
@@ -1836,7 +1836,7 @@
       ]
     },
     "src/incoming-workbench/ui/FrozenIncomingReview.jsx": {
-      "fingerprint": "d46cd60751ff993ecbbbd846e5a3f4db7e94806f98eff7342d906b04017f0b86",
+      "fingerprint": "adec515d5dd25e576c0173c9d4479bb3998be2b5d9bdf9db8f48ed8eae5bad26",
       "sites": [
         {
           "owner": "FrozenIncomingReview",
@@ -1847,6 +1847,11 @@
           "owner": "FrozenIncomingReview",
           "kind": "useLayoutEffect",
           "fingerprint": "9c90b917cab900389703acd58ed836cc8459ea1c4d5ba73d7e98ac5eedc7f759"
+        },
+        {
+          "owner": "FrozenIncomingReview",
+          "kind": "useLayoutEffect",
+          "fingerprint": "c16a139bc595be5c9d0d801f94443ecc2ec7d54fc6ab6411f1109335e9e37a7d"
         },
         {
           "owner": "FrozenIncomingReview",
@@ -1866,11 +1871,11 @@
         {
           "owner": "FrozenIncomingReview",
           "kind": "useEffect",
-          "fingerprint": "39ae01d266c577d058ddd5bb1655adc2ea73b03296d8accbf9e16fc2d09b1d55"
+          "fingerprint": "4362d27aaba1277beb7ec597cc0c80908dade7d7b489155954a86f1ecc23d1f4"
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Prepared display capability passes from the frozen candidate without changing draft, selection, merge or publication ownership. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. 2026-10-16: acceptance awaits flushBeforeSubmission (views-only failure is a quiet note, accepted-write failure still refuses); Finish review is an explicit confirmed write under activeOwner/inFlight guards like save(); onMerged reports verified receipts. Effect sites unchanged. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed. F6 review (2026-10-18): Export accepted, Merge & export and the Inspector export callback are withdrawn once the receipt's merge is undone (useSyncExternalStore over mergeUndo); effect sites unchanged. 2 typed-change-events review (2026-10-18): accept/finish emit membership for their protocol. Integration wave 7: composed reviewed PR changes; ownership retained and scoped checks recorded.",
+      "reason": "Prepared display capability passes from the frozen candidate without changing draft, selection, merge or publication ownership. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. 2026-10-16: acceptance awaits flushBeforeSubmission (views-only failure is a quiet note, accepted-write failure still refuses); Finish review is an explicit confirmed write under activeOwner/inFlight guards like save(); onMerged reports verified receipts. Effect sites unchanged. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed. F6 review (2026-10-18): Export accepted, Merge & export and the Inspector export callback are withdrawn once the receipt's merge is undone (useSyncExternalStore over mergeUndo); effect sites unchanged. 2 typed-change-events review (2026-10-18): accept/finish emit membership for their protocol. Integration wave 7: composed reviewed PR changes; ownership retained and scoped checks recorded. 2026-10-21 independent merge review: explicit preview confirmation replaces immediate acceptance; acceptance publication retains the claimed child token, while real owner/read changes still retire it. Empty verified queues stop preparation and retain receipt exports and recovery. Mounted StrictMode confirmation covers self-transition, single submission, partial and empty completion; existing profile/remount/recovery cases retained. Refresh review: retain the verified empty presentation during queue refresh/failure; retire only unsubmitted previews on load-owner transition, preserving uncertain/pending acceptance identity. Held refresh and reopen regressions cover this behavior.",
       "tests": [
         "src/importMergeWorkflow.test.js",
         "src/incomingWorkbenchRendering.test.js",
@@ -2837,7 +2842,7 @@
       ]
     },
     "src/protocol-overview/ui/ProtocolSuggestion.jsx": {
-      "fingerprint": "62ee6086ce74d064276f08a9b6061ff7c0942c58088dc73559e4c7e651ad9249",
+      "fingerprint": "6f744e296ca24989c1865d95256dfb3b06fb3a143ab35a0fdfad54c91884c69e",
       "sites": [
         {
           "owner": "ImportSuggestions",
@@ -2861,7 +2866,7 @@
         }
       ],
       "lifetime": "semantic-auto-open-intent + project-review-state",
-      "reason": "autoOpenJobUuid is an explicit open intent, consumed once per semantic transition; user dismissal survives reconnect. Review pending state/managed message and modal presentation retain existing behavior. 2026-10-16: the Overview card renders the shared hold control with the same source-scoped request instead of a click-to-navigate merge; existing ImportSuggestions effects are unchanged. 2026-10-16 review: queue mode (pendingProtocol) reads the protocol queue through useWorkbenchQueue (its own abort/generation fences; provided=null in import view, so no read there). A verified merge_all receipt retires the card only for the queue revision it showed, then reloads; uncertain outcomes keep it. No new effect sites; ImportSuggestions effects unchanged. 2026-10-16 import review sync review: ImportSuggestions renders one queue-mode card per protocol from summary rows (provided queue, so useWorkbenchQueue issues no read); the auto-close effect now keys on those cards and summary loading (closes only after a refreshed summary is empty, never on the merge itself), and the showModal effect re-runs on card count instead of suggestions length; same sites and cleanup. Queue authority review (2026-10-20): Import review renews its cached project queue on open; existing loading and queue fences disable held merges until the resource returns fresh authority. The effect owns no timer or subscription. Workbench preparation review (2026-10-20): explicit preparation aborts on project/protocol/revision/visibility/unmount; held completion cannot reload another owner. Fresh GET remains required, held reads disable duplicate preparation and merge authority. Unavailable review counts do not become zero.",
+      "reason": "autoOpenJobUuid is an explicit open intent, consumed once per semantic transition; user dismissal survives reconnect. Review pending state/managed message and modal presentation retain existing behavior. 2026-10-16: the Overview card renders the shared hold control with the same source-scoped request instead of a click-to-navigate merge; existing ImportSuggestions effects are unchanged. 2026-10-16 review: queue mode (pendingProtocol) reads the protocol queue through useWorkbenchQueue (its own abort/generation fences; provided=null in import view, so no read there). A verified merge_all receipt retires the card only for the queue revision it showed, then reloads; uncertain outcomes keep it. No new effect sites; ImportSuggestions effects unchanged. 2026-10-16 import review sync review: ImportSuggestions renders one queue-mode card per protocol from summary rows (provided queue, so useWorkbenchQueue issues no read); the auto-close effect now keys on those cards and summary loading (closes only after a refreshed summary is empty, never on the merge itself), and the showModal effect re-runs on card count instead of suggestions length; same sites and cleanup. Queue authority review (2026-10-20): Import review renews its cached project queue on open; existing loading and queue fences disable held merges until the resource returns fresh authority. The effect owns no timer or subscription. Workbench preparation review (2026-10-20): explicit preparation aborts on project/protocol/revision/visibility/unmount; held completion cannot reload another owner. Fresh GET remains required, held reads disable duplicate preparation and merge authority. Unavailable review counts do not become zero. 2026-10-21 Undo review: successful receipt-bound Undo advances only its project/protocol retirement version. Overview subscribes through useSyncExternalStore and removes its old queue suppression; current authoritative pending data still controls whether a card exists. Same-revision restoration and unrelated-protocol tests cover behavior; failures do not mark an operation undone.",
       "tests": [
         "src/importMergeWorkflow.test.js",
         "src/importReviewDialog.test.js",

@@ -18,7 +18,7 @@ for(const entry of ['tab','restored session','reused Workbench route'])test(`Pro
   assert.equal(h.root.findByProps({'aria-label':'Protocol workspace views'}).findAllByProps({className:'protocol-view-filter'}).length,0,'Main filter is replaced by the incoming header slot');
   assert.equal(h.root.findByProps({className:'incoming-workbench'}).findAllByProps({className:'incoming-action-bar'}).length,1);
   assert.equal(h.root.findAllByProps({className:'incoming-header-filter'}).length,1);
-  assert.ok(h.root.findAllByProps({role:'status'}).some(n=>n.children.join('').includes('No pending incoming recordings')));
+  assert.ok(h.root.findAllByProps({role:'status'}).some(n=>n.children.join('').includes('No pending cells')));
  }finally{await h.close();}
 });
 
@@ -37,7 +37,7 @@ for(const mainState of ['pending','failed'])test(`Workbench queue loads while th
  try{
   await h.mount(h.Protocol,{id:'protocol-A',projectId:'project',revision:0,initialWorkbench:{},session:{filters:{tag:'saved-main-filter'}}});
   await h.waitFor(()=>h.root.findAllByProps({className:'incoming-workbench'}).length>0);
-  await h.waitFor(()=>h.root.findAllByProps({role:'status'}).some(n=>n.children.join('').includes('No pending incoming recordings')));
+  await h.waitFor(()=>h.root.findAllByProps({role:'status'}).some(n=>n.children.join('').includes('No pending cells')));
   assert.ok(h.fixture.requests.some(r=>r.path==='/protocols/protocol-A/workbench?limit=20'));
   assert.equal(h.fixture.requests.some(r=>r.path==='/protocols/protocol-A?tag=saved-main-filter'),false,'incoming scope does not need a filtered main summary');
   assert.equal(h.fixture.requests.some(r=>r.method!=='GET'),false,'opening the empty queue never changes scientific state');

@@ -15,12 +15,18 @@ export function mergeUndoTarget(receipt,{projectId,protocolName}={}){
 // Operations undone in this session; earlier-merge offers for them are stale.
 // This is session memory only: after a reload the server refuses (409) an
 // accepted export of an undone merge, and that refusal stays visible.
-const undoneOperations=new Set(),undoneListeners=new Set();
+const undoneOperations=new Set(),undoneListeners=new Set(),protocolUndos=new Map();
 export const mergeWasUndone=operationUuid=>undoneOperations.has(operationUuid);
 export const mergeUndoneVersion=()=>undoneOperations.size;
+export const protocolMergeUndoVersion=(projectId,protocolId)=>protocolUndos.get(JSON.stringify([projectId,protocolId]))||0;
 /** Subscribe to undo completions (for example useSyncExternalStore). */
 export function subscribeMergeUndone(listener){undoneListeners.add(listener);return()=>undoneListeners.delete(listener);}
-function markUndone(operationUuid){undoneOperations.add(operationUuid);for(const listener of [...undoneListeners])listener();}
+function markUndone({operationUuid,projectId,protocolId}){
+  if(undoneOperations.has(operationUuid))return;
+  undoneOperations.add(operationUuid);
+  const key=JSON.stringify([projectId,protocolId]);protocolUndos.set(key,(protocolUndos.get(key)||0)+1);
+  for(const listener of [...undoneListeners])listener();
+}
 
 export function createMergeUndo({request,onState=()=>{},refresh=()=>{}}){
   let state=null,token=0;const listeners=new Set();
@@ -43,7 +49,7 @@ export function createMergeUndo({request,onState=()=>{},refresh=()=>{}}){
       try{
         const value=await request(`/protocols/${encodeURIComponent(current.protocolId)}/workbench/undo`,{method:'POST',body:{operation_uuid:current.operationUuid,expected_binding_version:current.bindingVersion}});
         if(!text(value?.binding?.revision_uuid)||!Number.isSafeInteger(value.binding.version)||!text(value.restored_revision_uuid))throw Object.assign(Error('The undo reply was incomplete. Check Activity & logs before trying again.'),{uncertain:true});
-        markUndone(current.operationUuid);
+        markUndone(current);
         refresh(current.protocolId);
         if(mine===token)publish({...current,phase:'undone',message:'Merge undone',canUndo:false,removed:count(value.removed_epoch_count)?value.removed_epoch_count:null});
         return true;

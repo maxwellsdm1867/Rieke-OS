@@ -48,6 +48,18 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   const visible=contextFresh&&!busy&&!externalBusy?{context,revision}:displayed.current;
   selected.current=highlighted;current.current=contextFresh?context:null;snapshot.current={filters,selected:selected.current,selection_omitted_count:selectionOmitted,operation:operation.current,receipt,preview,unconfirmed,acceptPending,viewer:viewer.current,exportState};
   const publish=useCallback(value=>{onSession?.({...snapshot.current,...value});},[onSession]);
+  const previewOwner=useRef(loadOwner);
+  useLayoutEffect(()=>{
+    if(previewOwner.current===loadOwner)return;
+    previewOwner.current=loadOwner;
+    // A display refresh is not renewed consent to an old sealed preview.
+    // Submitted/uncertain operations retain their original recovery identity.
+    if(preview&&!unconfirmed&&!acceptPending&&!receipt){
+      setPreview(null);operation.current=null;
+      setViewNotice('The workspace refreshed. Choose Merge again to review the current additions.');
+      publish({preview:null,operation:null});
+    }
+  },[loadOwner,preview,unconfirmed,acceptPending,receipt,publish]);
   // Inspector publishes from an effect. Keep its callback stable when the
   // cumulative parent rerenders after saving this viewer snapshot.
   const rememberViewer=useCallback(value=>{viewer.current=value;publish({viewer:value});},[publish]);
@@ -103,7 +115,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   async function defer(){if(await save([],{deferred:true}))onDefer();}
   function beginSelected(ids,kind='merge'){
     if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||exportLocked||!contextFresh||receipt||preview||selectionIntent)return;
-    setError('');
+    setError('');setViewNotice('');
     try{
       const intent={...selectedReview(current.current,ids),kind,scope:current.current.candidate_scope_revision,version:current.current.draft.draft_version};
       if(intent.excluded.length){setError(`${intent.excluded.length} selected epochs are excluded. Adjust the selection or explicitly change those exclusions before continuing.`);return;}
@@ -124,11 +136,6 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
       if(intent.kind==='merge'){
         if(exportState.exported)setExportState(nextWorkbenchWorkflow(exportState));
         setPreview(value);operation.current=crypto.randomUUID();publish({preview:value,operation:operation.current});
-        if(value.accepted_epoch_count>0){
-          const merged=await submitAcceptance(value);
-          // In the combined review, merged epochs leave pending: show what remains.
-          if(merged&&scopeKind==='cumulative_pending'&&mergeLifetime.current===owner)reviewRemaining(merged);
-        }
       }else{
         const next={...nextWorkbenchWorkflow(exportState),mode:'selected',preview:value,phase:'previewed'};
         setExportState(next);publish({exportState:next});setExportDialog(intent.kind==='merge-export');
@@ -214,7 +221,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
       }).catch(error=>{if(isCurrent()){setError(error.message);onMergeRequestHandled?.('Imported additions could not be verified. Inspect this proposal before merging.');}}).finally(()=>{inFlight.current=false;if(mergeLifetime.current!==null){setBusy(false);if(mergeLifetime.current!==owner&&liveMergeRequest.current?.request_uuid===mergeRequest.request_uuid)onMergeRequestHandled?.('The incoming workspace changed. Hold the import button again to request a fresh merge.');}});
       return;
     }
-    onMergeRequestHandled?.('Select the epochs to merge, then choose Merge to add them to Main.');
+    onMergeRequestHandled?.('Select the epochs to merge, then choose Merge to preview the additions to Main.');
   },[mergeRequest,projectId,protocolId,scopeKind,externalBusy,busy,contextFresh,context,error,exportLocked,acceptPending,receipt,preview,capabilities.additive_accept,capabilities.drafts,onMergeRequestHandled]);
   function cancelPreview(){
     if(inFlight.current||unconfirmed||acceptPending||exportLocked)return;
@@ -253,7 +260,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
       </div>
         <p>{scopeKind==='cumulative_pending'?'Distinct pending cells and epochs across saved proposals. Review opens only the unmerged incoming set; original proposals remain in history.':'This browser shows one frozen proposal. Its pending counts may overlap other proposals; the queue totals count each identity once.'}</p>
         <p>Review marks and exclusions are saved to your draft. Shared tags publish immediately. Merge to main adds eligible epochs and preserves existing main recordings and curation. Opening this view does not mark anything reviewed.</p>
-        <p>Select marks exact epochs for Merge or Export. Merge marks that exact selection reviewed, checks a fresh preview, and adds eligible epochs to Main in one action. Shared tags and exclusions stay separate. Cancel keeps saved draft changes and does not undo a submitted operation.</p>
+        <p>Select marks exact epochs for Merge or Export. Merge marks that exact selection reviewed and opens a fresh preview. Confirm the preview to add those eligible epochs to Main. Shared tags and exclusions stay separate. Cancel keeps saved draft changes and does not undo a submitted operation.</p>
         {exportIntent&&<p>Reused incoming export settings. The previous artifact stays unchanged; export requires an explicit action.</p>}
         {contextFresh&&<p>Draft version {context.draft.draft_version} · scope <code>{context.candidate_scope_revision.slice(0,12)}</code> · proposal <code>{item.candidate_revision_uuid.slice(0,8)}</code></p>}
         {scopeKind!=='cumulative_pending'&&contextFresh&&context?.counts&&<p>{countLabel(context.counts.incoming_epochs)} proposal additions · {countLabel(context.counts.already_present_epochs)} already in main.</p>}

@@ -187,9 +187,9 @@ accumulate independent targets. Switch gestures change actual selected UUIDs,
 not highlights or trace focus; label gestures retain their separate highlight
 store. Scope retirement, concurrent selection changes, complete paging and the complete-membership requirement retain the existing all-or-nothing checks.
 
-The counted Merge action is explicit consent to review and add exactly its selected
-UUIDs. It performs versioned selected-draft save, a fresh sealed additive preview,
-and acceptance in one action. Excluded UUIDs refuse the operation before saving;
+The counted Merge action reviews exactly its selected UUIDs and opens confirmation.
+It performs a versioned selected-draft save and fresh sealed additive preview;
+only confirming that preview submits acceptance. Select all uses this same path. Excluded UUIDs refuse the operation before saving;
 no focused-row fallback or replacement/removal is permitted. A revision, owner or
 availability change before submission retires the action. Once submitted, uncertain
 acceptance retains the exact preview and operation UUID for receipt recovery.
@@ -198,7 +198,7 @@ retains its separate review and confirmation workflow. Once a merge is undone in
 this session (`mergeUndo.js` `subscribeMergeUndone`), its Export accepted / Merge &
 export actions are withdrawn at once. The undone set is session memory only;
 after a reload the backend refuses an accepted export of an undone merge (409), and
-the export dialog shows that refusal. Mounted one-action, lost
+the export dialog shows that refusal. Mounted confirmation, lost
 reply, excluded selection, incomplete preview and interrupted-lifetime checks are
 in `incomingWorkbenchRendering.test.js`.
 
@@ -363,3 +363,24 @@ Selected-view manifest renewal independently requires active retained visibility
 Hiding aborts/defer reads even when an unrelated accepted write keeps Activity
 mounted; old callbacks and late responses cannot change the hidden view. Reveal
 renews exact UUIDs under current authority without clearing selected intent.
+
+## Merge confirmation and completion
+
+Publishing acceptance-pending state must not invalidate the mounted child’s claimed
+prepared-context token. Recovery prevents any new context claim; project, actor,
+revision and queue read transitions still retire old authority. Fresh context remains
+unpersisted and single-use. A verified empty queue never prepares another candidate,
+even when proposal history exists. It shows completion after a confirmed receipt and
+keeps receipt export/download and uncertain-operation recovery available. The
+StrictMode confirmation tests cover single submission, partial refresh and empty
+completion; history remains the entry to saved excluded proposals.
+
+Refresh retires unsubmitted previews and asks for a new explicit Merge. Submitted
+or uncertain operations retain their sealed recovery identity. A completed empty
+view stays inert through queue refresh/failure and reopening, without mounting the
+obsolete candidate browser. Fresh nonempty queue receipts reopen pending review.
+
+The undo event store exposes a project/protocol version for Overview-card
+retirement. Successful receipt-bound Undo advances it once and notifies subscribers;
+failed/uncertain Undo never claims restored membership. Queue refresh still owns
+pending counts and action authority.

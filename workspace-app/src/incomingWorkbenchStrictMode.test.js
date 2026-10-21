@@ -375,3 +375,56 @@ test('fresh GET bootstrap for another resolved actor never enables the frozen vi
   assert.equal(view.container.querySelector('[data-inspector-scope]'),null);
  }finally{await view.close();}
 });
+
+for(const remaining of [0,1])test(`fresh cumulative confirmation accepts once and refreshes to ${remaining} pending epochs`,async()=>{
+ const value=livePrepared('one'),calls=[];let accepts=0,prepares=0;
+ let current={...value.context,draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false}};
+ const view=await harness(async(path,options={})=>{
+  const endpoint=String(path).replace(/^\/api/,'');calls.push(endpoint);
+  if(endpoint==='/annotation-profiles')return response(authorProfiles('actor-one'));
+  if(endpoint===base+'/prepare'){
+   prepares++;const token=JSON.parse(options.body).expected_queue_revision;
+   assert.ok(token==='one'||remaining>0,'an empty queue must never prepare another candidate');
+   return response({...livePrepared(token),context:{...current,candidate_revision_uuid:`union-${token}`,candidate_scope_revision:`scope-union-${token}`}},201,{'X-Disco-Workbench-Context':'fresh-v1'});
+  }
+  if(endpoint.endsWith('/draft')){const body=JSON.parse(options.body);current={...current,draft:{...current.draft,draft_version:2,decisions:body.decisions,decisions_total:body.decisions.length}};return response(current);}
+  if(endpoint.endsWith('/preview'))return response({preview_sha256:'sealed',expected_binding_version:1,expected_query_revision:'main',selected_epoch_count:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:2,next_epoch_count:3,accepted_cell_count:1});
+  if(endpoint.endsWith('/accept')){accepts++;return response({operation_uuid:JSON.parse(options.body).operation_uuid,candidate_revision_uuid:value.candidate_revision_uuid,event_uuid:'accepted',binding:{revision_uuid:'main-new',version:2},accepted_epoch_count:1});}
+  assert.ok(endpoint.endsWith('/context'));return response(current);
+ },{withProfile:true});
+ try{
+  await view.render({hidden:true,queue:queue('one')});await view.render({queue:queue('one')});
+  await act(async()=>view.container.querySelector('[data-preview-action]').click());
+  assert.equal(accepts,0,'Merge only opens the explicit confirmation');
+  assert.ok(view.container.querySelector('[aria-label="Additive acceptance preview"]'));
+  const confirm=[...view.container.querySelectorAll('button')].find(button=>button.textContent==='Add these additions to main');
+  assert.equal(confirm.disabled,false);
+  await act(async()=>{confirm.click();confirm.click();});
+  assert.equal(accepts,1,'double confirmation submits only one operation');
+  assert.equal(view.container.querySelector('[role="alert"]'),null);
+  assert.equal(calls.filter(path=>path.endsWith('/context')).length,0,'acceptPending does not invalidate its own fresh context');
+  const next=queue('two');next.data.pending_epoch_count=remaining;next.data.pending_cell_count=remaining;
+  await view.render({queue:next});
+  assert.equal(view.container.querySelector('[role="alert"]'),null);
+  assert.equal(prepares,remaining?2:1);
+  if(!remaining){
+   assert.match(view.container.textContent,/Merge complete, no pending cells\./);
+   assert.equal(view.container.querySelector('[data-preview-action]'),null);
+   assert.ok([...view.container.querySelectorAll('button')].some(button=>button.textContent==='Export those additions'));
+   const reads=calls.length;
+   await view.render({queue:{...next,loading:true}});
+   assert.match(view.container.textContent,/Merge complete, no pending cells\./);
+   assert.equal(view.container.querySelector('[data-preview-action]'),null);
+   await view.render({queue:{...next,error:'Refresh unavailable'}});
+   assert.equal(view.container.querySelector('[data-preview-action]'),null);
+   assert.equal(calls.length,reads,'refresh and its failure never read the completed candidate');
+   await view.render({queue:next});
+   assert.match(view.container.textContent,/Merge complete, no pending cells\./);
+   const saved=view.saved;
+   await view.unmount();view.remount();
+   await view.render({queue:next,session:saved});
+   assert.match(view.container.textContent,/Merge complete, no pending cells\./);
+   assert.equal(calls.filter(path=>path.endsWith('/context')).length,0,'reopening an empty queue does not load its old candidate');
+  }
+ }finally{await view.close();}
+});

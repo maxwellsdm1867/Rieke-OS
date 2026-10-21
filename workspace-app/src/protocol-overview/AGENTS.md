@@ -115,3 +115,10 @@ revalidates its cached project queue summary before enabling held merges.
 `workspaceChangesLedger.test.js` mounts the real suggestion card to verify
 curation -> hidden reads remain quiet -> reveal -> fresh held merge;
 `importReviewDialog.test.js` covers reopening and pending renewal.
+
+A verified Undo retires the merge-card suppression for that project/protocol.
+Only fresh queue membership supplies the restored banner/counts; an undo alone
+does not invent pending epochs. The same pre-merge queue revision may return, so
+revision equality alone cannot suppress the card after Undo.
+`protocolSuggestionHold.test.js` covers merge -> empty -> Undo -> restored original
+queue -> merge again, plus unrelated-protocol isolation.

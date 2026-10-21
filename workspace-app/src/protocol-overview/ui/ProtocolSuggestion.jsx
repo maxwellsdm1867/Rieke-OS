@@ -1,5 +1,6 @@
 import {useSemanticReset} from '../../useSemanticReset.js';
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState,useSyncExternalStore} from 'react';
+import {protocolMergeUndoVersion,subscribeMergeUndone} from '../../incoming-workbench/mergeUndo.js';
 import {importReviewCards,mergeAllRequest,pendingProtocolSuggestion,sourceMergeRequest} from '../protocolSuggestions.js';
 import useWorkbenchQueue from '../../incoming-workbench/useWorkbenchQueue.js';
 import {ArrowRight,Check,Info,LoaderCircle,Sparkles,Pin,Database,FileCheck2,X} from 'lucide-react';
@@ -19,10 +20,11 @@ import {importReviewStatusLabel} from "../../recording-import/useImportReviewSta
 export default function ProtocolSuggestion({suggestion:given,pendingProtocol=null,main=null,projectId,revision,queue:provided,protocolName,onMerge,onProtocol,importView=false,disabled=false}){
   const launching=useRef(false),[merging,setMerging]=useState(false),[error,setError]=useState(''),[retired,setRetired]=useState(null);
   const queue=useWorkbenchQueue(pendingProtocol||'',revision,pendingProtocol?provided:null,projectId);
+  const undoVersion=useSyncExternalStore(subscribeMergeUndone,()=>protocolMergeUndoVersion(projectId,pendingProtocol||given?.protocol_uuid));
   if(queue.preparation||queue.preparing)return <ViewPreparation resource={queue}/>;
   const pending=pendingProtocol&&!given?pendingProtocolSuggestion(queue.data,main,pendingProtocol):null;
   if(pending?.blocked)return <p className="protocol-merge-blocked" role="status"><Info size={14} aria-hidden="true"/> {pending.blocked}</p>;
-  const suggestion=given||(pending&&retired!==pending.queue_revision?pending:null);
+  const suggestion=given||(pending&&!(retired?.queueRevision===pending.queue_revision&&retired.undoVersion===undoVersion)?pending:null);
   if(!suggestion)return null;
   const mergeAll=suggestion.merge_all===true;
   const applied=suggestion.status==='applied',stale=suggestion.status==='stale';
@@ -34,7 +36,7 @@ export default function ProtocolSuggestion({suggestion:given,pendingProtocol=nul
   async function merge(options){
     if(launching.current||disabled||applied||stale||!hasAdditions||!onMerge||mergeAll&&(queue.loading||queue.error))return;
     launching.current=true;setMerging(true);setError('');
-    try{if(await onMerge(suggestion.protocol_uuid,options)!==true)throw Error('The destination is unavailable. Refresh the project before merging.');if(mergeAll){setRetired(suggestion.queue_revision);queue.reload();}}
+    try{if(await onMerge(suggestion.protocol_uuid,options)!==true)throw Error('The destination is unavailable. Refresh the project before merging.');if(mergeAll){setRetired({queueRevision:suggestion.queue_revision,undoVersion});queue.reload();}}
     catch(error){setError(error.message);}
     finally{launching.current=false;setMerging(false);}
   }

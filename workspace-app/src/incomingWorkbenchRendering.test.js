@@ -11,7 +11,7 @@ const root=fileURLToPath(new URL('..',import.meta.url));
 const create=(plugins=[])=>createServer({plugins,root,configFile:false,optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
 const frozenBrowserProbe={name:'frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['../../epoch-browser/ui/Inspector.jsx','../../typed-query/ui/ProtocolViewFilter.jsx'].includes(source))return `\0probe-${source}`;},load(id){if(id==='\0probe-../../epoch-browser/ui/Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector(props){return React.createElement('div',{'data-frozen-scope':props.readContext.candidate_scope_revision,'data-revision':props.revision});}`;if(id==='\0probe-../../typed-query/ui/ProtocolViewFilter.jsx')return `export default function Filter(){return null;}`;}};
 
-test('one explicit selected merge saves exact review, preserves exclusions and accepts with fresh preview fences',async()=>{
+test('confirmed selected merge saves exact review, preserves exclusions and accepts with fresh preview fences',async()=>{
  const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[];let renderer;
  let context={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected',decisions:[{epoch_uuid:'old',selected:true,reviewed:true,excluded:true}],decisions_total:1,decisions_truncated:false},counts:{pending_epochs:2,pending_cells:1},protocol:{definition:{protocol_uuid:'history'}}};
  globalThis.fetch=async(path,options={})=>{
@@ -29,6 +29,8 @@ test('one explicit selected merge saves exact review, preserves exclusions and a
   assert.equal(inspector().props.draftSelection.disabled,true);
   assert.deepEqual(calls[0].body.decisions,[{epoch_uuid:'old',selected:false},{epoch_uuid:'a',selected:true,reviewed:true},{epoch_uuid:'b',selected:true,reviewed:true}]);
   assert.deepEqual(context.draft.decisions[0],{epoch_uuid:'old',selected:false,reviewed:true,excluded:true});
+  assert.equal(calls.length,2,'Merge stops at confirmation');
+  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Add these additions to main').props.onClick());
   assert.equal(calls.length,3);assert.deepEqual(calls[2].body,{expected_candidate_scope_revision:'scope',expected_draft_version:2,mode:'selected',preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',operation_uuid:calls[2].body.operation_uuid});
   assert.match(label(renderer.root),/Merged (\d+ epochs )?into Main/);assert.equal(renderer.root.findAllByProps({'aria-label':'Review selected epochs'}).length,0);
   await act(async()=>renderer.unmount());
@@ -284,7 +286,7 @@ test('default cumulative Workbench prepares once per queue fence, refreshes afte
   await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Return to cumulative incoming review').props.onClick());
   assert.equal(preparedCalls,2,'resuming same prepared snapshot does not write again');
   await act(async()=>renderer.update(React.createElement(Workbench,{...props,authority:makeQueue('all-excluded',0)})));
-  assert.equal(preparedCalls,3,'history permits restoring excluded draft even when awaiting-review count is zero');
+  assert.equal(preparedCalls,2,'empty queues do not prepare another candidate even with history');
   assert.ok(renderer.root.findAllByType('span').some(node=>String(node.props.className||'').includes('incoming-bar-scope')));
   assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('Saved exclusions remain in your draft')));
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
@@ -514,7 +516,7 @@ test('single-proposal refresh holds the same inert Inspector until fresh authori
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
-test('single-action merge preserves the same acceptance identity after a lost reply',async()=>{
+test('confirmed merge preserves the same acceptance identity after a lost reply',async()=>{
  const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[];let renderer,saved,attempts=0;
  let context={candidate_scope_revision:'scope',draft:{draft_version:0,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},protocol:{definition:{protocol_uuid:'p'}}};
  globalThis.fetch=async(path,options={})=>{
@@ -528,13 +530,14 @@ test('single-action merge preserves the same acceptance identity after a lost re
   const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'p',item:{candidate_revision_uuid:'c'},capabilities:{drafts:true,frozen_browse:true,additive_accept:true},onSession:value=>{saved=value;}}));});
   await act(async()=>renderer.root.find(node=>node.type?.name==='Inspector').props.draftSelection.onMerge(['a']));
+  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Add these additions to main').props.onClick());
   assert.equal(saved.unconfirmed,true);assert.equal(calls.length,1);assert.equal(saved.preview.mode,'selected');
   await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Retry this merge').props.onClick());
   assert.equal(calls.length,2);assert.deepEqual(calls[0],calls[1]);assert.equal(saved.receipt.event_uuid,'event');assert.equal(saved.unconfirmed,false);
  }finally{if(renderer)await act(()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
-for(const transition of ['revision','unmount','draft-revision','draft-unmount','excluded','short-preview'])test(`single-action merge refuses acceptance after ${transition}`,async()=>{
+for(const transition of ['revision','unmount','draft-revision','draft-unmount','excluded','short-preview'])test(`confirmed merge refuses acceptance after ${transition}`,async()=>{
  const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[];let renderer,release,pending;
  let context={candidate_scope_revision:'scope',draft:{draft_version:0,selection_mode:'selected',decisions:transition==='excluded'?[{epoch_uuid:'a',excluded:true}]:[],decisions_total:transition==='excluded'?1:0,decisions_truncated:false},protocol:{definition:{protocol_uuid:'p'}}};
  globalThis.fetch=async(path,options={})=>{
@@ -576,11 +579,11 @@ for(const canceled of [false,true,'revision'])test(`source hold intent ${cancele
   const props={projectId:'project',protocolId:'p',item:{candidate_revision_uuid:'c'},capabilities:{drafts:true,frozen_browse:true,additive_accept:true},mergeRequest:request,onMergeRequestHandled:message=>handled.push(message)};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,props));});
   if(canceled){await act(async()=>renderer.update(React.createElement(Review,{...props,...(canceled==='revision'?{revision:1}:{mergeRequest:null})})));await act(async()=>release());assert.equal(writes.length,0);assert.equal(renderer.root.find(node=>node.type?.name==='Inspector').props.draftSelection.disabled,false);if(canceled==='revision')assert.match(handled.at(-1),/workspace changed/);}
-  else{assert.deepEqual(writes.map(call=>call.path.split('/').at(-1)),['draft','preview','accept']);assert.match(label(renderer.root),/Merged (\d+ epochs )?into Main/);}
+  else{assert.deepEqual(writes.map(call=>call.path.split('/').at(-1)),['draft','preview']);await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Add these additions to main').props.onClick());assert.deepEqual(writes.map(call=>call.path.split('/').at(-1)),['draft','preview','accept']);assert.match(label(renderer.root),/Merged (\d+ epochs )?into Main/);}
  }finally{if(renderer)await act(()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
-test('one explicit Merge handles 1691 selected epochs and a truncated saved draft through a sealed manifest',async()=>{
+test('confirmed Merge handles 1691 selected epochs and a truncated saved draft through a sealed manifest',async()=>{
  const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[],ids=Array.from({length:1691},(_,i)=>`00000000-0000-0000-0000-${String(i).padStart(12,'0')}`),uploaded=[];let renderer;
  const {createHash}=await import('node:crypto');
  let context={selection_manifests:true,expected_binding_version:2,candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:305,decisions_truncated:true},counts:{pending_epochs:1691,pending_cells:1},protocol:{definition:{protocol_uuid:'history'}}};
@@ -602,6 +605,8 @@ test('one explicit Merge handles 1691 selected epochs and a truncated saved draf
   const inspector=()=>renderer.root.find(node=>node.type?.name==='Inspector');
   await act(async()=>inspector().props.onSelectionChange(ids));assert.equal(calls.length,0);
   await act(async()=>inspector().props.draftSelection.onMerge(ids));
+  assert.equal(calls.some(call=>call.path.endsWith('/accept')),false);
+  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Add these additions to main').props.onClick());
   assert.deepEqual(uploaded,ids);assert.deepEqual(calls.map(call=>call.path.split('/').at(-1)),['selection-manifest','selection-manifest','selected-review','preview','accept']);assert.match(label(renderer.root),/Merged (\d+ epochs )?into Main/);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
@@ -624,7 +629,7 @@ for(const failure of ['view','accepted-write'])test(`Workbench acceptance waits 
   const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
   const {registerDraftSaver,trackWrite}=await server.ssrLoadModule('/src/desktopLifecycle.js');
   stop=registerDraftSaver(async()=>{assert.equal(snapshot.acceptPending,true);assert.equal(snapshot.preview.preview_sha256,'sealed');assert.ok(snapshot.operation);if(failure==='view')throw Error('disk full');});
-  if(failure==='accepted-write')trackWrite(new Promise((_resolve,reject)=>{fail=reject;})).catch(()=>{});
+
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'candidate'},session:{selected:[],selection_omitted_count:100000},onSession:value=>{snapshot=value;},capabilities:{drafts:true,frozen_browse:true,additive_accept:true}}));});
   assert.match(label(renderer.root),/100,000 epochs was too large to restore/);
   const inspector=()=>renderer.root.find(node=>node.type?.name==='Inspector');
@@ -632,6 +637,8 @@ for(const failure of ['view','accepted-write'])test(`Workbench acceptance waits 
   await act(async()=>inspector().props.onSelectionChange(['a']));
   assert.doesNotMatch(label(renderer.root),/too large to restore/);
   await act(async()=>inspector().props.draftSelection.onMerge(['a']));
+  if(failure==='accepted-write'){trackWrite(new Promise((_resolve,reject)=>{fail=reject;})).catch(()=>{});setTimeout(()=>fail(Error('lost')),5);}
+  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Add these additions to main').props.onClick());
   if(failure==='view'){
    assert.deepEqual(calls.map(path=>path.split('/').at(-1)),['preview','accept']);
    assert.match(label(renderer.root),/Merged (\d+ epochs )?into Main/);assert.match(label(renderer.root),/view could not be saved; the merge was still submitted/);
@@ -751,4 +758,28 @@ test('Export accepted is withdrawn as soon as its merge is undone',async()=>{
   assert.match(label(renderer.root),/This merge was undone/);assert.doesNotMatch(label(renderer.root),/Merged 2 epochs into Main/);
   await act(async()=>renderer.unmount());
  }finally{globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('refresh retires an unsubmitted confirmation instead of enabling stale counts',async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch;let renderer,release,saved;
+ let context={candidate_scope_revision:'before',draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},protocol:{definition:{protocol_uuid:'p'}}};
+ globalThis.fetch=async(path,options={})=>{
+  assert.equal(options.method,undefined,'refresh cannot accept or prepare automatically');
+  if(context.candidate_scope_revision==='after')await new Promise(resolve=>{release=resolve;});
+  return {ok:true,status:200,json:async()=>context};
+ };
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
+  const preview={expected_candidate_scope_revision:'before',expected_draft_version:1,mode:'selected',preview_sha256:'sealed',expected_binding_version:1,expected_query_revision:'main',selected_epoch_count:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:2,next_epoch_count:3,accepted_cell_count:1};
+  const props={protocolId:'p',item:{candidate_revision_uuid:'c'},capabilities:{drafts:true,frozen_browse:true,additive_accept:true},session:{preview,operation:'not-submitted'},onSession:value=>{saved=value;}};
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{...props,revision:0}));});
+  assert.equal(renderer.root.findAllByProps({'aria-label':'Additive acceptance preview'}).length,1);
+  context={...context,candidate_scope_revision:'after',draft:{...context.draft,draft_version:2}};
+  await act(async()=>renderer.update(React.createElement(Review,{...props,revision:1})));
+  assert.equal(renderer.root.findAllByProps({'aria-label':'Additive acceptance preview'}).length,0,'held refresh retires the old confirmation');
+  await act(async()=>release());
+  assert.equal(saved.preview,null);assert.equal(saved.operation,null);
+  assert.equal(renderer.root.findAllByProps({role:'alert'}).length,0);
+  assert.match(label(renderer.root),/Choose Merge again to review the current additions/);
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
