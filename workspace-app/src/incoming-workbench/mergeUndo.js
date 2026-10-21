@@ -12,6 +12,12 @@ export function mergeUndoTarget(receipt,{projectId,protocolName}={}){
     operationUuid:receipt.operation_uuid,bindingVersion:receipt.binding.version};
 }
 
+// The same Undo notice reverses review completion without changing Main.
+function reviewUndoTarget(receipt,{projectId,protocolName}={}){
+  if(receipt?.kind!=='workbench_review_completion'||!text(projectId)||!text(receipt.protocol_uuid)||!text(receipt.operation_uuid)||!text(receipt.candidate_revision_uuid)||!text(receipt.actor)||!Number.isSafeInteger(receipt.expected_draft_version)||!count(receipt.left_out_epoch_count))return null;
+  return {kind:'review',projectId,protocolId:receipt.protocol_uuid,protocolName:text(protocolName)?protocolName:'this protocol',count:receipt.left_out_epoch_count,operationUuid:receipt.operation_uuid,draftVersion:receipt.expected_draft_version};
+}
+
 // Operations undone in this session; earlier-merge offers for them are stale.
 // This is session memory only: after a reload the server refuses (409) an
 // accepted export of an undone merge, and that refusal stays visible.
@@ -48,24 +54,25 @@ export function createMergeUndo({request,onState=()=>{},refresh=()=>{}}){
     setRefresh(next){refresh=next;},
     // Returns false when the receipt cannot identify an undoable merge.
     show(receipt,details){
-      const target=mergeUndoTarget(receipt,details);
+      const target=reviewUndoTarget(receipt,details)||mergeUndoTarget(receipt,details);
       if(!target)return false;
-      changed(target,receipt.binding,'merge');
+      changed(target,receipt.binding,target.kind==='review'?'finish':'merge');
       token++;publish({...target,phase:'merged',message:'',canUndo:target.count>0});return true;
     },
     dismiss(){if(state?.phase==='undoing')return;token++;publish(null);},
     async undo(){
       if(!state||state.phase!=='merged'||!state.canUndo)return false;
       const current=state,mine=++token;
-      publish({...current,phase:'undoing',message:'Undoing merge…',canUndo:false});
+      publish({...current,phase:'undoing',message:current.kind==='review'?'Restoring pending review…':'Undoing merge…',canUndo:false});
       try{
-        const value=await request(`/protocols/${encodeURIComponent(current.protocolId)}/workbench/undo`,{method:'POST',body:{operation_uuid:current.operationUuid,expected_binding_version:current.bindingVersion}});
-        if(!text(value?.binding?.revision_uuid)||!Number.isSafeInteger(value.binding.version)||!text(value.restored_revision_uuid))throw Object.assign(Error('The undo reply was incomplete. Check Activity & logs before trying again.'),{uncertain:true});
+        const review=current.kind==='review';
+        const value=await request(`/protocols/${encodeURIComponent(current.protocolId)}/workbench/${review?'undo-review':'undo'}`,{method:'POST',body:review?{operation_uuid:current.operationUuid,expected_draft_version:current.draftVersion}:{operation_uuid:current.operationUuid,expected_binding_version:current.bindingVersion}});
+        if(review?value?.kind!=='workbench_review_undo'||value.undone_operation_uuid!==current.operationUuid||value.protocol_uuid!==current.protocolId||!count(value.restored_epoch_count):!text(value?.binding?.revision_uuid)||!Number.isSafeInteger(value.binding.version)||!text(value.restored_revision_uuid))throw Object.assign(Error('The undo reply was incomplete. Check Activity & logs before trying again.'),{uncertain:true});
         markUndone(current);
         changed(current,value.binding,'undo');
         // Read reconciliation cannot turn a verified Undo into a failed write.
         try{await refresh(current.protocolId);}catch{}
-        if(mine===token)publish({...current,phase:'undone',message:'Merge undone',canUndo:false,removed:count(value.removed_epoch_count)?value.removed_epoch_count:null});
+        if(mine===token)publish({...current,phase:'undone',message:current.kind==='review'?'Review reopened':'Merge undone',canUndo:false,removed:count(value.removed_epoch_count)?value.removed_epoch_count:null});
         return true;
       }catch(error){
         // 409: Main changed since this merge; nothing was undone. Any other

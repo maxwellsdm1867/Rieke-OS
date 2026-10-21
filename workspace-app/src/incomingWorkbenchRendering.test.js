@@ -653,9 +653,9 @@ for(const failure of ['view','accepted-write'])test(`Workbench acceptance waits 
 
 test('Finish review asks for confirmation, then posts the cumulative fences and reports left-out epochs',async()=>{
  const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,posts=[],events=[];let renderer;
- let context={candidate_revision_uuid:'union',candidate_scope_revision:'scope',draft:{draft_version:4,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:3,pending_cells:1,excluded_epochs:0},protocol:{definition:{protocol_uuid:'history'}}};
+ let context={actor:'author',candidate_revision_uuid:'union',candidate_scope_revision:'scope',draft:{draft_version:4,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:3,pending_cells:1,excluded_epochs:0},protocol:{definition:{protocol_uuid:'history'}}};
  globalThis.fetch=async(path,options={})=>{
-  if(options.method){posts.push({path:String(path),method:options.method,body:JSON.parse(options.body)});context={...context,draft:{...context.draft,draft_version:5},counts:{pending_epochs:0,pending_cells:0,excluded_epochs:3}};}
+  if(options.method){posts.push({path:String(path),method:options.method,body:JSON.parse(options.body)});context={...context,review_completion:{kind:'workbench_review_completion',operation_uuid:posts.at(-1).body.operation_uuid,protocol_uuid:'history',candidate_revision_uuid:'union',actor:'author',expected_draft_version:5,left_out_epoch_count:3},draft:{...context.draft,draft_version:5},counts:{pending_epochs:0,pending_cells:0,excluded_epochs:3}};}
   return {ok:true,status:200,json:async()=>context};
  };
  try{
@@ -663,13 +663,14 @@ test('Finish review asks for confirmation, then posts the cumulative fences and 
   const pendingCounts={contract_version:1,queue_revision:'q',pending_epoch_count:3,pending_cell_count:1,eligible_pending_epoch_count:3,eligible_pending_cell_count:1};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'union'},scopeKind:'cumulative_pending',pendingCounts,onChange:()=>events.push('change'),onRefresh:()=>events.push('refresh'),capabilities:{drafts:true,frozen_browse:true,additive_accept:true}}));});
   const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
-  await act(async()=>button('Finish review').props.onClick());
+  await act(async()=>button('Finish reviewing').props.onClick());
   assert.match(label(renderer.root),/Leave out 3 remaining new epochs\?/);assert.match(label(renderer.root),/They stay out until you re-allow them or change the query\./);
   assert.equal(posts.length,0,'opening the confirmation writes nothing');
   await act(async()=>button('Keep reviewing').props.onClick());assert.doesNotMatch(label(renderer.root),/Leave out 3/);
-  await act(async()=>button('Finish review').props.onClick());
+  await act(async()=>button('Finish reviewing').props.onClick());
   await act(async()=>button('Leave out & finish').props.onClick());
-  assert.deepEqual(posts,[{path:'/api/protocols/history/workbench/candidates/union/finish',method:'POST',body:{expected_candidate_scope_revision:'scope',expected_version:4}}]);
+  assert.match(posts[0].body.operation_uuid,/^[a-f0-9-]{36}$/);
+  assert.deepEqual(posts,[{path:'/api/protocols/history/workbench/candidates/union/finish',method:'POST',body:{expected_candidate_scope_revision:'scope',expected_version:4,operation_uuid:posts[0].body.operation_uuid}}]);
   assert.deepEqual(events,['change','refresh'],'queue, card and badge refresh after finishing');
   assert.match(label(renderer.root),/3 epochs left out · not pending/);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}

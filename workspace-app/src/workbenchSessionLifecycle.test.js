@@ -144,6 +144,28 @@ test('a freshly prepared scope keeps tree mode and focus without carrying select
  }finally{await h.close();}
 });
 
+for(const kind of ['accepted focus','remaining focus','truncated receipt','saved destination','completed receipt'])test(`partial merge handoff retires only safe navigation hints: ${kind}`,async()=>{
+ const h=await harness();try{
+  const receipt={operation_uuid:'merged-operation',accepted_epoch_count:1,accepted_epoch_uuids:['epoch-2'],accepted_epoch_uuids_total:kind==='truncated receipt'?251:1,accepted_epoch_uuids_truncated:kind==='truncated receipt'};
+  const focused=kind==='remaining focus'?'epoch-1':'epoch-2';
+  const viewer={treeOpen:true,focused,focusCell:null,offset:0};
+  const draft=kind==='completed receipt'?{exportState:{completed:[{receipt}]},viewer}:{receipt,viewer};
+  const drafts={[candidateId]:draft,...(kind==='saved destination'?{replacement:{viewer}}:{})};
+  await h.render({session:{prepared,drafts}});await h.settle();
+  const boundary=h.calls.length;
+  h.fixture.page=async(url,current)=>{
+   if(url.pathname.includes('/replacement/')&&url.searchParams.get('anchor_uuid')==='epoch-2')throw Error('Focused epoch is outside this protocol and filter scope');
+   return {epochs:[epochs[0]],cells,total:1,offset:0,limit:60,candidate_scope_revision:current.candidate_scope_revision,query_revision:current.candidate_scope_revision,expected_binding_version:1};
+  };
+  await h.render({revision:1,queue:nextScope(h)});await h.settle();
+  assert.equal(h.saved.drafts.replacement.viewer.focused,kind==='remaining focus'?'epoch-1':null);
+  assert.equal(h.saved.drafts.replacement.viewer.treeOpen,true);
+  assert.equal(h.calls.slice(boundary).some(call=>call.path.includes('/replacement/')&&call.query.includes('anchor_uuid=epoch-2')),false,'removed focus must not issue an invalid anchor read');
+  assert.doesNotMatch(h.container.textContent,/outside this protocol|Refresh epoch list/);
+  assert.deepEqual(h.errors,[]);
+ }finally{await h.close();}
+});
+
 test('tag-only preparation preserves expanded rows, selection, highlights, focus and scroll while authority refreshes',async()=>{
  const h=await harness({withTree:true});try{
   await h.render();await h.settle();

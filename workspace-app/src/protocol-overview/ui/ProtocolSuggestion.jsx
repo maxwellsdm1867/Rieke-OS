@@ -18,7 +18,7 @@ import {importReviewStatusLabel} from "../../recording-import/useImportReviewSta
 // all of it. A verified receipt retires the card for the queue revision it
 // showed; the refreshed queue then decides whether anything is still pending.
 export default function ProtocolSuggestion({suggestion:given,pendingProtocol=null,main=null,projectId,revision,queue:provided,protocolName,onMerge,onProtocol,importView=false,disabled=false}){
-  const launching=useRef(false),[merging,setMerging]=useState(false),[error,setError]=useState(''),[retired,setRetired]=useState(null);
+  const launching=useRef(false),[merging,setMerging]=useState(false),[error,setError]=useState(''),[retired,setRetired]=useState(null),[finishIdentity,setFinishIdentity]=useState(null);
   const queue=useWorkbenchQueue(pendingProtocol||'',revision,pendingProtocol?provided:null,projectId);
   const undoVersion=useSyncExternalStore(subscribeMergeUndone,()=>protocolMergeUndoVersion(projectId,pendingProtocol||given?.protocol_uuid));
   if(queue.preparation||queue.preparing)return <ViewPreparation resource={queue}/>;
@@ -40,15 +40,26 @@ export default function ProtocolSuggestion({suggestion:given,pendingProtocol=nul
     catch(error){setError(error.message);}
     finally{launching.current=false;setMerging(false);}
   }
+  async function finish(){
+    if(launching.current||disabled||merging||queue.loading||queue.error||finishIdentity!==identity||!onMerge)return;
+    launching.current=true;setMerging(true);setError('');
+    try{
+      if(await onMerge(suggestion.protocol_uuid,{kind:'finish_review',queue_revision:suggestion.queue_revision})!==true)throw Error('Review completion was not confirmed.');
+      setRetired({queueRevision:suggestion.queue_revision,undoVersion});setFinishIdentity(null);queue.reload();
+    }catch(error){setFinishIdentity(null);setError(error.message);queue.reload();}
+    finally{launching.current=false;setMerging(false);}
+  }
   const title=humanize(protocolName??suggestion.protocol_name);
   const mergeAllLabels=mergeAll?{mergeLabel:'Hold to merge all',mergeTitle:'Hold for one second to merge every new mergeable epoch into Main'}:{};
   return <section className={`protocol-new-data ${importView?'import-ready-protocol':''} ${applied?'is-added':''}`} aria-label={importView?title:'New data matching saved protocol query'}>
     <div className="protocol-new-data-heading"><Sparkles size={19}/><div><h2>{importView?title:applied?'Applied dataset update':stale?'Saved proposal needs a refresh':'New data matches your saved query'}</h2><p>{mergeAll?`${number(suggestion.pending_epoch_count)} new ${suggestion.pending_epoch_count===1?'epoch':'epochs'}${Number.isSafeInteger(suggestion.pending_cell_count)?` from ${number(suggestion.pending_cell_count)} ${suggestion.pending_cell_count===1?'cell':'cells'}`:''} not yet in Main${suggestion.recordings.length?` · from ${suggestion.recordings.join(', ')}${suggestion.more_recordings?' and more':''}`:''}`:<>{suggestion.source_filename||'Imported recording'} · {time(suggestion.created_at)}</>}</p></div></div>
     <div className="protocol-match-summary"><ProtocolDiff comparison={suggestion} showProtocolCount={!mergeAll}/><div className="protocol-match-actions">
       {importView?<InspectImportButton key={identity} identity={identity} disabled={disabled||merging||!onProtocol||mergeAll&&(queue.loading||!!queue.error)} onInspect={()=>onProtocol?.(suggestion.protocol_uuid,mergeAll?{}:{candidate_revision_uuid:suggestion.candidate_revision_uuid})} onMerge={holdMerge} {...mergeAllLabels}/>:!applied?<InspectImportButton key={identity} identity={identity} disabled={disabled||merging||!onProtocol||mergeAll&&(queue.loading||!!queue.error)} onInspect={()=>onProtocol?.(suggestion.protocol_uuid)} onMerge={holdMerge} {...mergeAllLabels}/>:<button disabled={disabled||!onProtocol} onClick={()=>onProtocol?.(suggestion.protocol_uuid)}>Inspect in Workbench <ArrowRight size={14}/></button>}
+      {mergeAll&&!applied&&onMerge&&<button disabled={disabled||merging||queue.loading||!!queue.error} onClick={()=>setFinishIdentity(identity)}>Finish reviewing</button>}
       {!importView&&!applied&&<small>{stale?'Refresh the saved proposal in Workbench.':mergeAll?(holdMerge?'Hold to merge all new epochs into Main, or inspect them in Workbench to pick some. Existing Main recordings and draft exclusions are kept.':'Inspect in Workbench to review and merge these additions.'):holdMerge?`Hold to merge eligible additions from ${suggestion.source_filename||'this recording'} into Main. Main recordings and draft exclusions are kept; additions from other pending recordings stay in Workbench.`:'Inspect in Workbench to review and merge these additions.'}</small>}
     </div></div>
-    {merging&&<p role="status">{mergeAll?'Merging all new epochs into Main…':'Merging eligible additions into Main…'}</p>}
+    {finishIdentity===identity&&<section className="incoming-selection-review" aria-label="Finish reviewing"><strong>Leave out {number(suggestion.pending_epoch_count)} remaining epochs?</strong><span>This finishes this batch. Future updates show new arrivals; you can explicitly review left-out epochs again.</span><button className="primary" disabled={disabled||merging||queue.loading||!!queue.error} onClick={finish}>Leave out & finish</button><button disabled={merging} onClick={()=>setFinishIdentity(null)}>Keep reviewing</button></section>}
+    {merging&&<p role="status">{finishIdentity===identity?'Finishing review…':mergeAll?'Merging all new epochs into Main…':'Merging eligible additions into Main…'}</p>}
     {error&&<p className="error" role="alert">{error}</p>}
   </section>;
 }

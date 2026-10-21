@@ -95,3 +95,24 @@ test('Overview card follows the cumulative queue, holds to merge all, and disapp
   assert.equal(hold(),undefined);assert.match(text(),/save the query again/,'a blocked Main shows one quiet sentence instead of the card');
  }finally{t.mock.timers.reset();}
 });
+
+test('Overview finish reviewing requires confirmation and the displayed queue identity',async t=>{
+ const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
+ const {default:Suggestion}=await server.ssrLoadModule('/src/protocol-overview/ui/ProtocolSuggestion.jsx');
+ let queue={contract_version:1,queue_revision:'finish-q1',pending_epoch_count:175,pending_cell_count:2,eligible_pending_epoch_count:175,eligible_pending_cell_count:2,capabilities:{cumulative_pending_browse:true,additive_accept:true,frozen_browse:true,drafts:true},candidates:[]};
+ const oldFetch=globalThis.fetch;globalThis.fetch=async()=>({ok:true,status:200,json:async()=>queue});
+ let renderer,requests=[];
+ const props=()=>({projectId:'finish-card-project',pendingProtocol:'protocol-A',main:{counts:{epochs:132},cells:[]},queue,onProtocol(){},onMerge:async(...args)=>{requests.push(args);return true;}});
+ const render=()=>act(()=>{if(renderer)renderer.update(React.createElement(Suggestion,props()));else renderer=TestRenderer.create(React.createElement(Suggestion,props()));});
+ const button=label=>renderer.root.findAllByType('button').find(node=>node.children.join('')===label);
+ t.after(async()=>{await act(()=>renderer?.unmount());globalThis.fetch=oldFetch;await server.close();});
+ await render();await act(()=>button('Finish reviewing').props.onClick());assert.deepEqual(requests,[]);
+ assert.match(JSON.stringify(renderer.toJSON()),/175/);
+ await act(()=>button('Keep reviewing').props.onClick());assert.equal(button('Leave out & finish'),undefined);assert.deepEqual(requests,[]);
+ await act(()=>button('Finish reviewing').props.onClick());
+ queue={...queue,queue_revision:'finish-q2',pending_epoch_count:176,eligible_pending_epoch_count:176};await render();
+ assert.equal(button('Leave out & finish'),undefined,'a new queue retires prior completion consent');
+ await act(()=>button('Finish reviewing').props.onClick());await act(()=>button('Leave out & finish').props.onClick());
+ assert.deepEqual(requests,[['protocol-A',{kind:'finish_review',queue_revision:'finish-q2'}]]);
+ assert.equal(renderer.toJSON(),null,'confirmed completion retires this batch');
+});

@@ -183,9 +183,8 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     inFlight.current=true;setBusy(true);setError('');
     try{
       const value=await finishWorkbenchReview(root,current.current,api);
-      if(activeOwner.current!==loadOwner)return false;
-      current.current=value;setContext(value);setFinishing(false);select([]);
-      onChange?.({kind:'membership',protocolId});onRefresh?.();return true;
+      if(activeOwner.current===loadOwner){current.current=value;setContext(value);setFinishing(false);select([]);}
+      try{onMerged?.(value.review_completion);onChange?.({kind:'membership',protocolId});onRefresh?.();}catch(error){setViewNotice(`Review finished. The view could not be refreshed. ${error.message}`);}return true;
     }catch(error){if(activeOwner.current===loadOwner){setFinishing(false);setError(`Finish review was not confirmed. Refresh the draft before continuing. ${error.message}`);setContext(null);}return false;}
     finally{inFlight.current=false;setBusy(false);}
   }
@@ -271,7 +270,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
       <div className="incoming-bar-actions">
         <div className="incoming-draft-host" ref={setDraftSelectionTarget}/>
         <button disabled={busy||externalBusy||!!selectionIntent||!!preview||unconfirmed||!contextFresh&&!receipt&&!exportLocked||!receipt&&!exportLocked&&!highlighted.length||!capabilities.incoming_export||receiptUndone} title={receiptUndone?'This merge was undone; there are no accepted additions to export':capabilities.incoming_export?(receipt?'Export accepted additions':'Export exact incoming additions'):'Incoming-only export service is not yet available'} onClick={()=>openExport(false)}><Download size={14} aria-hidden="true"/> {receipt?'Export accepted':'Export'}</button>
-        {scopeKind==='cumulative_pending'&&capabilities.drafts&&<button disabled={busy||externalBusy||!contextFresh||exportLocked||unconfirmed||acceptPending||!!preview||!!receipt||!!selectionIntent||finishing||!(epochs>0)} title="Leave the remaining new epochs out of Main and finish this review" onClick={()=>setFinishing(true)}><CheckCheck size={14} aria-hidden="true"/> Finish review</button>}
+        {scopeKind==='cumulative_pending'&&capabilities.drafts&&<button disabled={busy||externalBusy||!contextFresh||exportLocked||unconfirmed||acceptPending||!!preview||!!receipt||!!selectionIntent||finishing||!(epochs>0)} title="Leave the remaining new epochs out of Main and finish this review" onClick={()=>setFinishing(true)}><CheckCheck size={14} aria-hidden="true"/> Finish reviewing</button>}
         <button disabled={busy||externalBusy} title="Leave review; saved draft and pending operations remain available" onClick={onDefer}><X size={14} aria-hidden="true"/> Cancel</button>
 
       </div>

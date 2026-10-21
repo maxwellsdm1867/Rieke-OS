@@ -404,3 +404,21 @@ review. Explicit Inspector refresh asks the frozen owner to renew its reads and
 refuses while a scientific operation is pending or uncertain. Refresh never
 submits an acceptance. Verified write success remains success if a subsequent
 view callback fails.
+
+
+### Review completion and shared Undo (2026-10-21)
+
+Partial merge keeps remaining epochs in pending review. Finish reviewing is an
+explicit confirmed action available in Workbench and the Overview pending card.
+It leaves the remaining batch out; later default imports preserve those exclusions.
+Explicit review/re-allow remains available. Both surfaces use the same Undo notice:
+a merge receipt reverses Main additions, while a review-completion receipt reverses
+only that completion's exclusions and preserves prior Main membership. Fresh queue,
+actor, scope and draft fences apply; stale changes are refused without overwriting
+newer work. Completion and undo invalidate both Overview and Workbench reads.
+
+When a replacement pending cohort inherits navigation, confirmed accepted epochs
+must not become anchor reads. Sanitize the actual destination viewer, including
+saved destination views and receipts moved to completed export history. Preserve
+valid remaining focus and presentation; incomplete receipt membership retires
+focus conservatively. No selected epochs or command authority is transferred.

@@ -23,3 +23,24 @@ for(const scenario of ['retired-preview','moved-after-submit','unmounted-after-s
    for(const [,,receipt] of calls)assert.deepEqual([receipt.mode,receipt.source_sha256,receipt.candidate_revision_uuid,receipt.event_uuid],['source','s','c','event'],'completion carries its verified receipt');}
  }finally{release?.();if(view)await act(()=>view.unmount());}
 });
+
+for(const scenario of ['retired-before-submit','moved-after-submit','unmounted-after-submit'])test(`Finish review owner: ${scenario}`,async()=>{
+ let api,view,release,started,finishes=0,receipt;const held=new Promise(resolve=>started=resolve),reviewed=[],accepted=[];
+ const context={actor:'a',candidate_revision_uuid:'union',protocol:{definition:{protocol_uuid:'p'}},candidate_scope_revision:'scope',draft:{draft_version:1}};
+ const request=async(path,options={})=>{
+  if(path.endsWith('/prepare'))return {contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prep',candidate_revision_uuid:'union',candidate_scope_revision:'scope',queue_revision:'q',root:'/protocols/p/workbench/candidates/union',context};
+  if(path==='/annotation-profiles')return {selected_profile_uuid:'a'};
+  assert.ok(path.endsWith('/finish'));finishes++;started();await new Promise(resolve=>release=resolve);
+  receipt={kind:'workbench_review_completion',operation_uuid:options.body.operation_uuid,protocol_uuid:'p',candidate_revision_uuid:'union',actor:'a',expected_draft_version:2,left_out_epoch_count:2};
+  return {...context,draft:{draft_version:2},review_completion:receipt};
+ };
+ const persist=async()=>{if(scenario==='retired-before-submit'){started();await new Promise(resolve=>release=resolve);}};
+ function Probe({ownerKey}){api=useSourceMerge({projectId:'project',request,persist,ownerKey,onAccepted:(...args)=>accepted.push(args),onReviewed:(...args)=>reviewed.push(args)});return null;}
+ const render=async ownerKey=>act(()=>{const node=React.createElement(StrictMode,null,React.createElement(Probe,{ownerKey}));if(view)view.update(node);else view=Renderer.create(node);});
+ try{
+  await render('A');let pending;await act(()=>{pending=api.finish('p',{queue_revision:'q'});pending.catch(()=>{});});await held;
+  if(scenario==='unmounted-after-submit'){await act(()=>view.unmount());view=null;}else{await render('B');if(scenario==='retired-before-submit')await render('A');}
+  await act(async()=>{release();if(scenario==='retired-before-submit')await assert.rejects(pending,/workspace changed/);else assert.equal(await pending,true);});
+  assert.equal(finishes,scenario==='retired-before-submit'?0:1);assert.deepEqual(accepted,[]);assert.deepEqual(reviewed,scenario==='moved-after-submit'?[['p',receipt]]:[]);
+ }finally{release?.();if(view)await act(()=>view.unmount());}
+});

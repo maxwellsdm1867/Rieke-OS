@@ -122,3 +122,13 @@ does not invent pending epochs. The same pre-merge queue revision may return, so
 revision equality alone cannot suppress the card after Undo.
 `protocolSuggestionHold.test.js` covers merge -> empty -> Undo -> restored original
 queue -> merge again, plus unrelated-protocol isolation.
+
+
+### Finish reviewing (2026-10-21)
+
+The cumulative pending card also offers Finish reviewing. Opening confirmation
+writes nothing; confirming leaves out the displayed queue's remaining epochs via
+fresh preparation and the guarded Finish endpoint. Queue replacement retires
+confirmation. Verified completion publishes the shared Undo notice and invalidates
+Overview/Workbench. Undo reopens only the completed pending review; it does not
+remove earlier Main merges. The same control is used in import review.

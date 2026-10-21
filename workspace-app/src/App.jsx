@@ -240,7 +240,7 @@ export default function App(){
   const mergeUndo=useRef(null);if(!mergeUndo.current)mergeUndo.current=createMergeUndo({request:api});
   mergeUndo.current.setRefresh(protocolId=>changed({kind:'membership',protocolId}));
   function announceMerge(receipt){const name=data?.protocols?.find(item=>item.protocol_uuid===receipt?.protocol_uuid)?.name;mergeUndo.current.show(receipt,{projectId:sourceMergeProject,protocolName:name?humanize(name):undefined});}
-  const sourceMerge=useSourceMerge({projectId:sourceMergeProject,request:api,persist:flushBeforeSubmission,ownerKey:route.key,onAccepted:sourceMerged});
+  const sourceMerge=useSourceMerge({projectId:sourceMergeProject,request:api,persist:flushBeforeSubmission,ownerKey:route.key,onAccepted:sourceMerged,onReviewed:(protocolId,receipt)=>{announceMerge(receipt);changed({kind:'membership',protocolId});}});
   // Verified source receipts retire their exact suggestion card at once; the
   // structure refresh then replaces it with the authoritative list.
   const [mergedSources,setMergedSources]=useState([]),sourceMergeOrigin=useRef(null);
@@ -304,6 +304,7 @@ export default function App(){
   function openWorkbench(protocolId,options={}){navigation.go('protocol',{protocol:protocolId,workbench:{...(options.candidate_revision_uuid?{candidate_revision_uuid:options.candidate_revision_uuid}:{})}});}
   function mergeIncoming(protocolId,options){
     if(!projectId||!data?.protocols?.some(item=>item.protocol_uuid===protocolId))return false;
+    if(options?.kind==='finish_review')return sourceMerge.finish(protocolId,options);
     if(options?.kind==='merge_source'){
       // A hold on this protocol's own Overview card stays on that Overview.
       if(['idle','error'].includes(sourceMerge.state.phase))sourceMergeOrigin.current=options.origin==='protocol-overview'?{protocolId,routeKey:route.key}:null;

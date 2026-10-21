@@ -1097,6 +1097,12 @@ class ProtocolWorkbench:
         Left-out epochs keep their exclusion across later preparations until
         the user re-allows them; main is unchanged.
         """
+        operation = str(uuid.UUID(body['operation_uuid'])) if body.get('operation_uuid') else str(uuid.uuid4())
+        request_hash = checksum(dict(kind='workbench_review_completion', protocol_uuid=context['protocol_uuid'],
+            candidate_revision_uuid=context['candidate_revision_uuid'], actor=context['actor'], **body))
+        existing = self.receipt(operation, context['actor'], request_hash)
+        if existing:
+            return dict(context, review_completion=public_receipt(existing))
         if context['summary'].get('kind') != 'workbench_pending_union':
             raise ValueError('Finish review applies to the combined incoming review')
         self.check_scope(context, body['expected_candidate_scope_revision'])
@@ -1104,6 +1110,8 @@ class ProtocolWorkbench:
             raise WorkbenchConflict('Review draft version changed')
         key = self.key(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor'])
         remaining = sorted(identity for identity in context['pending'] if not self.decision(context, identity)['excluded'])
+        before = {identity: dict(metadata_hash=context['incoming'][identity], **self.decision(context, identity))
+                  for identity in remaining}
         with self.service.dj.conn().transaction:
             current, _ = self.draft(key)
             if current['version'] != context['draft_version']:
@@ -1122,10 +1130,66 @@ class ProtocolWorkbench:
                     new_rows.append(row)
             if new_rows:
                 self.tables[1].insert(new_rows)  # One statement, not one per left-out epoch.
+            receipt = dict(contract_version=1, kind='workbench_review_completion', operation_uuid=operation,
+                protocol_uuid=context['protocol_uuid'], candidate_revision_uuid=context['candidate_revision_uuid'],
+                actor=context['actor'], expected_draft_version=draft['version'], left_out_epoch_count=len(remaining),
+                binding=dict(revision_uuid=context['main']['revision_uuid'], version=context['expected_binding_version']),
+                review_before=before)
+            self.tables[2].insert1(dict(project_uuid=self.project, operation_uuid=operation,
+                protocol_uuid=context['protocol_uuid'], candidate_revision_uuid=context['candidate_revision_uuid'],
+                actor=context['actor'], request_sha256=request_hash, receipt=receipt))
             self._event(context['actor'], 'workbench_review_finished', dict(protocol_uuid=context['protocol_uuid'],
                 candidate_revision_uuid=context['candidate_revision_uuid'], left_out_epoch_count=len(remaining),
-                left_out_epoch_uuids=remaining), str(uuid.uuid4()))
-        return self.context(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor'])
+                left_out_epoch_uuids=remaining), operation)
+        return dict(self.context(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor']),
+                    review_completion=public_receipt(receipt))
+
+    def undo_review(self, protocol, actor, body):
+        """Reverse only this completion's exclusions; never alter Main membership."""
+        operation = str(uuid.UUID(body['operation_uuid']))
+        inverse = str(uuid.uuid5(uuid.UUID(self.project), 'workbench-undo-review:' + operation))
+        request_hash = checksum(dict(kind='workbench_review_undo', protocol_uuid=protocol, actor=actor, **body))
+        existing = self.receipt(inverse, actor, request_hash)
+        if existing:
+            return existing
+        completed = self.receipt(operation, actor)
+        if not completed or completed.get('kind') != 'workbench_review_completion' or completed['protocol_uuid'] != protocol:
+            raise ValueError('Undo review requires a completion receipt for this protocol')
+        version = body['expected_draft_version']
+        if type(version) is not int or version != completed['expected_draft_version']:
+            raise WorkbenchConflict('Review completion draft version does not match')
+        latest = self.cumulative_draft(protocol, actor)
+        if not latest or latest[0]['version'] != version:
+            raise WorkbenchConflict('Review changed after completion; it can no longer be undone safely')
+        header, decisions = latest
+        binding = self.history.protocol_binding_header(protocol)
+        if not binding or any(binding[field] != completed['binding'][field] for field in ('revision_uuid', 'version')):
+            raise WorkbenchConflict('Main changed after review completion; it can no longer be undone safely')
+        prior = completed['review_before']
+        for identity, saved in prior.items():
+            current = decisions.get(identity)
+            if (self.service._fingerprints.get(identity) != saved['metadata_hash'] or not current
+                    or current['metadata_hash'] != saved['metadata_hash'] or not current['excluded']
+                    or current['selected'] or bool(current['reviewed']) != bool(saved['reviewed'])):
+                raise WorkbenchConflict('Left-out epochs changed after completion; refresh the review')
+        key = self.key(protocol, header['candidate_revision_uuid'], actor)
+        with self.service.dj.conn().transaction:
+            current, _ = self.draft(key)
+            if current['version'] != version:
+                raise WorkbenchConflict('Review changed while undoing completion')
+            self.tables[0].update1(dict(**key, version=version + 1, selection_mode=header['selection_mode'],
+                                       deferred=header['deferred']))
+            for identity, saved in prior.items():
+                self.tables[1].update1(dict(**key, epoch_uuid=identity, **saved))
+            receipt = dict(contract_version=1, kind='workbench_review_undo', operation_uuid=inverse,
+                undone_operation_uuid=operation, protocol_uuid=protocol, actor=actor,
+                candidate_revision_uuid=header['candidate_revision_uuid'], restored_epoch_count=len(prior),
+                expected_draft_version=version + 1)
+            self.tables[2].insert1(dict(project_uuid=self.project, operation_uuid=inverse, protocol_uuid=protocol,
+                candidate_revision_uuid=header['candidate_revision_uuid'], actor=actor,
+                request_sha256=request_hash, receipt=receipt))
+            self._event(actor, 'workbench_review_undone', receipt, inverse)
+        return receipt
 
     def selection_manifest(self, context, token, *, complete=True):
         if not isinstance(token, str):
@@ -1592,7 +1656,7 @@ class ProtocolWorkbench:
 
 def public_receipt(receipt):
     result = copy.deepcopy({key: value for key, value in receipt.items()
-                           if key not in {'accepted_fingerprints', 'selected_epoch_uuids', 'accepted_epoch_uuids'}})
+                           if key not in {'accepted_fingerprints', 'selected_epoch_uuids', 'accepted_epoch_uuids', 'review_before'}})
     if 'accepted_epoch_uuids' not in receipt:
         return result
     ids = receipt['accepted_epoch_uuids']
@@ -1806,6 +1870,8 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             page.pop('_shared_annotation_generation', None)
             row_decisions(context, page['epochs'])
         result = finish(context, payload)
+        if context.get('review_completion'):
+            result['review_completion'] = context['review_completion']
         if page is None:
             return result
         page.update({key: result[key] for key in ('generation', 'candidate_scope_revision',
@@ -1927,9 +1993,15 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     @app.post(candidate + '/finish')
     def workbench_finish(protocol, revision):
-        value = body({'expected_version', 'expected_candidate_scope_revision'})
+        value = body({'expected_version', 'expected_candidate_scope_revision'}, {'operation_uuid'})
         with guarded(protocol, revision) as owner:
             return jsonify(public_context(manager.finish(manager.context(protocol, revision, owner), value)))
+
+    @app.post(root + '/undo-review')
+    def workbench_undo_review(protocol):
+        value = body({'operation_uuid', 'expected_draft_version'})
+        with guarded(protocol) as owner:
+            return jsonify(manager.undo_review(str(uuid.UUID(protocol)), owner, value))
 
     @app.post(candidate + '/preview')
     def workbench_preview(protocol, revision):

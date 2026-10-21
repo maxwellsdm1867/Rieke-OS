@@ -90,3 +90,43 @@ test('merge all restores and validates its saved recovery identity',async()=>{
  h.controller.restore(op);assert.equal(h.controller.state.phase,'unconfirmed');
  const other=mergeAllHarness().controller;assert.throws(()=>other.restore({...op,body:{...op.body,source_sha256:'x'}}),/invalid/);
 });
+
+for(const boundary of ['prepare','persist'])for(const transition of ['actor','owner'])test(`Finish refuses ${transition} change during ${boundary}`,async()=>{
+ let actor='a',owner={},finishes=0;
+ const change=()=>{if(transition==='actor')actor='b';else owner={};};
+ const context={actor:'a',candidate_revision_uuid:'union',protocol:{definition:{protocol_uuid:'p'}},candidate_scope_revision:'scope',draft:{draft_version:3}};
+ const request=async(path,options={})=>{
+  if(path.endsWith('/prepare')){if(boundary==='prepare')change();return {contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepared',candidate_revision_uuid:'union',candidate_scope_revision:'scope',queue_revision:options.body.expected_queue_revision,root:'/protocols/p/workbench/candidates/union',context};}
+  if(path==='/annotation-profiles')return {selected_profile_uuid:actor};
+  finishes++;throw Error('Finish must not be submitted');
+ };
+ const controller=createSourceMerge({projectId:'project',request,owner:()=>owner,persist:async()=>{if(boundary==='persist')change();}});
+ await assert.rejects(controller.finish('p',{queue_revision:'q'}),/author changed|workspace changed/);
+ assert.equal(finishes,0);assert.equal(controller.state.phase,'error');
+});
+test('Finish cannot replace an existing uncertain merge recovery operation',async()=>{
+ let requests=0;
+ const controller=createSourceMerge({projectId:'project',request:async()=>{requests++;}});
+ const operation={projectId:'project',protocolId:'p',mergeAll:true,body:{mode:'merge_all',operation_uuid:'saved-operation',expected_queue_revision:'q'}};
+ controller.restore(operation);await assert.rejects(controller.finish('p',{queue_revision:'q'}),/recover/);
+ assert.deepEqual(controller.snapshot(),operation);assert.equal(requests,0);
+});
+
+test('Finish returns the exact completion receipt for the shared Undo action',async()=>{
+ const calls=[];let receipt;
+ const context={actor:'a',candidate_revision_uuid:'union',protocol:{definition:{protocol_uuid:'p'}},candidate_scope_revision:'scope',draft:{draft_version:3}};
+ const request=async(path,options={})=>{
+  calls.push({path,body:options.body});
+  if(path.endsWith('/prepare'))return {contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prep',candidate_revision_uuid:'union',candidate_scope_revision:'scope',queue_revision:'q',root:'/protocols/p/workbench/candidates/union',context};
+  if(path==='/annotation-profiles')return {selected_profile_uuid:'a'};
+  assert.ok(path.endsWith('/finish'));receipt={kind:'workbench_review_completion',operation_uuid:options.body.operation_uuid,protocol_uuid:'p',candidate_revision_uuid:'union',actor:'a',expected_draft_version:4,left_out_epoch_count:2};
+  return {...context,draft:{draft_version:4},review_completion:receipt};
+ };
+ const controller=createSourceMerge({projectId:'project',request,persist:async()=>calls.push({path:'persist'})});
+ const result=await controller.finish('p',{queue_revision:'q'});
+ assert.deepEqual(result,{protocolId:'p',reviewFinished:true,receipt});
+ assert.deepEqual(calls.map(c=>c.path),['/protocols/p/workbench/prepare','persist','/annotation-profiles','/protocols/p/workbench/candidates/union/finish']);
+ assert.deepEqual(calls[0].body,{expected_queue_revision:'q'});
+ assert.deepEqual(calls.at(-1).body,{expected_candidate_scope_revision:'scope',expected_version:3,operation_uuid:receipt.operation_uuid});
+ assert.equal(controller.state.phase,'idle');
+});

@@ -58,3 +58,20 @@ test('receipts that cannot identify a merge show nothing; dismiss waits for a pe
   assert.equal(h.controller.state.phase,'undoing');h.release.resolve({binding:{revision_uuid:'r',version:8},restored_revision_uuid:'r'});
   await new Promise(resolve=>setTimeout(resolve,0));assert.equal(h.controller.state.phase,'undone');
 });
+
+
+test('the same Undo controller reverses Finish reviewing without undoing an earlier merge',async()=>{
+ const h=harness();h.controller.show(receipt({operation_uuid:'earlier-merge'}),details);
+ const completion={kind:'workbench_review_completion',protocol_uuid:'protocol-A',candidate_revision_uuid:'union',actor:'author',operation_uuid:'finished-review',expected_draft_version:5,left_out_epoch_count:332};
+ assert.equal(h.controller.show(completion,details),true);assert.equal(h.controller.state.kind,'review');
+ const undo=h.controller.undo();assert.equal(await h.controller.undo(),false);
+ assert.deepEqual(h.calls,[['/protocols/protocol-A/workbench/undo-review',{method:'POST',body:{operation_uuid:'finished-review',expected_draft_version:5}}]]);
+ h.release.resolve({kind:'workbench_review_undo',protocol_uuid:'protocol-A',operation_uuid:'undo-finished-review',undone_operation_uuid:'finished-review',restored_epoch_count:332});assert.equal(await undo,true);
+ assert.equal(h.controller.state.message,'Review reopened');assert.deepEqual(h.refreshes,['protocol-A']);
+});
+
+test('a stale review completion refusal does not claim restored pending epochs',async()=>{
+ const h=harness(async()=>{throw Object.assign(Error('Review changed after completion'),{status:409});});
+ h.controller.show({kind:'workbench_review_completion',protocol_uuid:'protocol-A',candidate_revision_uuid:'union',actor:'author',operation_uuid:'stale-review',expected_draft_version:5,left_out_epoch_count:332},details);
+ assert.equal(await h.controller.undo(),false);assert.equal(h.controller.state.phase,'error');assert.match(h.controller.state.message,/Review changed/);assert.deepEqual(h.refreshes,[]);
+});

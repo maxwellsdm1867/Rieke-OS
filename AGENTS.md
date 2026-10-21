@@ -89,3 +89,14 @@ See `docs/dev/local-package-default-epochs-2026-10-07.json`.
 These source commits are local ahead of last-verified GitHub main `95465c6`; verify
 live main and local Git status before further app changes. Public release assets
 are unchanged. Keep earlier package evidence attributed to its original source.
+
+
+## UI verification order (user policy, 2026-10-21)
+
+For UI changes, first click through the affected workflow in the native app and
+check its visible behavior, counts, navigation, and recovery. Fix failures and
+repeat that workflow before running baseline comparisons, million-epoch
+benchmarks, or final build/release qualification. A local test build/install and
+focused regression checks may be used to make the UI change testable. Passing
+source tests alone does not establish that the UI works. After the native
+workflow passes, complete the required qualification on the final source.

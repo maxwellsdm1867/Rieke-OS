@@ -1,4 +1,4 @@
-import {workbenchCandidateRoot,workbenchRoot,requireWorkbenchContext,requirePreparedWorkbench,previewWorkbench,workbenchPreviewCounts,acceptanceFailureKind} from './workbenchAuthority.js';
+import {workbenchCandidateRoot,workbenchRoot,requireWorkbenchContext,requirePreparedWorkbench,previewWorkbench,workbenchPreviewCounts,acceptanceFailureKind,finishWorkbenchReview} from './workbenchAuthority.js';
 
 // Hold consent belongs to one frozen source, or (mode 'all') to every mergeable
 // pending epoch of one protocol at the queue revision the scientist saw. The
@@ -84,6 +84,23 @@ export function createSourceMerge({projectId,request,persist=async()=>{},owner=(
     await saveRecovery(op,current);
     return await submit(op);
    }catch(error){if(!state.operation)publish({phase:'error',operation:null,message:error.message,notice:''});throw error;}
+   finally{running=false;}
+  },
+  async finish(protocolId,{queue_revision:queueRevision}={}){
+   if(running||state.operation)throw Error('Finish or recover the current merge first.');
+   if(!projectId||!protocolId||!queueRevision)throw Error('The current pending queue must be identified before finishing review.');
+   running=true;const captured=owner();let submitted=false;
+   const current=()=>{if(!alive||owner()!==captured)throw Error('The workspace changed. Confirm Finish reviewing again from the current Overview.');};
+   publish({phase:'preparing',operation:null,message:'Finishing review…'});
+   try{
+    const prepared=requirePreparedWorkbench(protocolId,await request(`${workbenchRoot(protocolId)}/prepare`,{method:'POST',body:{expected_queue_revision:queueRevision}}),queueRevision);current();
+    await persist();current();
+    const profiles=await request('/annotation-profiles');current();
+    if(!prepared.context.actor||(profiles.selected_profile_uuid||profiles.default_profile_uuid)!==prepared.context.actor)throw Error('The tag author changed. Confirm Finish reviewing again with the current author.');
+    submitted=true;
+    const finished=await finishWorkbenchReview(prepared.root,prepared.context,request);
+    publish({phase:'idle',operation:null,message:''});return {protocolId,reviewFinished:true,receipt:finished.review_completion};
+   }catch(error){const message=submitted?`Review completion could not be confirmed. Refresh the pending review before continuing. ${error.message}`:error.message;publish({phase:'error',operation:null,message});throw Error(message);}
    finally{running=false;}
   },
   async recover({retry=false}={}){if(running||!valid(state.operation))throw Error('No recoverable merge is available.');running=true;const op=state.operation,captured=owner();try{const profiles=op.mergeAll?null:await request('/annotation-profiles');if(!op.mergeAll&&(profiles.selected_profile_uuid||profiles.default_profile_uuid)!==op.actor){const name=profiles.profiles?.find(p=>p.profile_uuid===op.actor)?.display_name||op.actor;const message=`Choose tag author ${name} before recovering this merge receipt.`;publish({...state,phase:'unconfirmed',message});throw Error(message);}if(!alive||owner()!==captured)throw Error('The workspace changed before recovery submission. Recover again from the current view.');return await submit(op,true,!retry);}finally{running=false;}},

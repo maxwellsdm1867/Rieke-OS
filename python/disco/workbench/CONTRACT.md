@@ -1,5 +1,31 @@
 # Frozen review, recipes and export publication
 
+## Review completion and its inverse
+
+`POST /protocols/<protocol>/workbench/candidates/<candidate>/finish` accepts the
+existing draft/scope fences and an optional client `operation_uuid`. It preserves
+Main and pre-existing exclusions, marks remaining epochs left out, and atomically
+stores a `workbench_review_completion` receipt with the exact prior decisions.
+The returned context includes the public `review_completion` receipt; private
+inverse decisions never appear in public receipt responses. Reusing the same
+operation/body replays the completion rather than excluding epochs twice.
+
+`POST /protocols/<protocol>/workbench/undo-review` accepts the completion's
+`operation_uuid` and `expected_draft_version`. The current actor, protocol, latest
+cumulative draft version, Main binding and affected fingerprints must still agree.
+An unchanged draft carried into a newer prepared candidate remains eligible.
+Undo restores only the decisions changed by that completion, increments the draft,
+and stores a deterministic `workbench_review_undo` receipt. Its distinct
+`operation_uuid` identifies the inverse; `undone_operation_uuid` identifies Finish.
+Receipt replay is idempotent. New imports remain pending; earlier Main merges and
+earlier exclusions stay intact. Intervening draft/Main/affected-metadata changes
+refuse rather than overwriting newer work. This is separate from merge Undo.
+
+The isolated cumulative-pending tests cover imports and carried candidates,
+partial merges, explicit predicate replacement, receipt replay after manager
+restart, actor/staleness fences and atomic rollback. They do not qualify native
+database durability or installed-app interaction.
+
 The folder co-locates existing named owners. It changes discovery and import paths,
 not authority, scientific membership, transaction ordering or depth. Choose the
 public entry for the operation; do not import a combined facade.

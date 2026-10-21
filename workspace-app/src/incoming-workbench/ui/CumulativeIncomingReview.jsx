@@ -11,12 +11,21 @@ import {requireIncomingBootstrap} from '../incomingBootstrap.js';
 
 // A replacement frozen candidate may keep the way the scientist was browsing,
 // never its selected epochs, edit text, receipts or revision-bound tree pages.
-function viewerPresentation(viewer){
+function viewerPresentation(viewer,receipts=[]){
   if(!viewer)return null;
   const result={};
   for(const key of ['treeOpen','treeMode','designMode'])if(typeof viewer[key]==='boolean')result[key]=viewer[key];
   for(const key of ['focused','focusCell'])if(viewer[key]===null||typeof viewer[key]==='string')result[key]=viewer[key];
   if(Number.isSafeInteger(viewer.offset)&&viewer.offset>=0)result.offset=viewer.offset;
+  // A confirmed merge removes accepted epochs from the next pending cohort.
+  // Truncated/legacy receipts cannot prove that an omitted focus survived.
+  for(const receipt of receipts.filter(value=>value&&!value.undone&&!mergeWasUndone(value.operation_uuid))){
+    const ids=receipt.accepted_epoch_uuids;
+    const complete=Array.isArray(ids)&&receipt.accepted_epoch_uuids_truncated===false&&receipt.accepted_epoch_uuids_total===ids.length;
+    if(!complete||ids.includes(result.focused)||!result.focused&&result.focusCell){
+      result.focused=null;result.focusCell=null;result.offset=0;
+    }
+  }
   return result;
 }
 export default function CumulativeIncomingReview({queue,protocolId,session={},onSession,onHistory,onRefresh,onReviewProposal,refreshing=false,mergeRequest=null,onMergeRequestHandled,...reviewProps}){
@@ -86,10 +95,14 @@ export default function CumulativeIncomingReview({queue,protocolId,session={},on
         const currentBootstrap=queue.data.capabilities?.initial_page===true?requireIncomingBootstrap(bootstrap,{root:saved.root,protocolId,projectId:reviewProps.projectId,candidateRevision:saved.candidate_revision_uuid}):null;
         const offeredContext=currentBootstrap?{...currentBootstrap.context,bootstrap:currentBootstrap}:saved.context;
         const previous=snapshot.current?.prepared,priorProtocol=previous?.context?.protocol?.definition?.protocol_uuid||previous?.context?.protocol?.protocol_uuid;
-        const previousViewer=viewerPresentation(drafts.current[previous?.candidate_revision_uuid]?.viewer);
+        const previousDraft=drafts.current[previous?.candidate_revision_uuid];
+        const receipts=[previousDraft?.receipt,...(previousDraft?.exportState?.completed||[]).map(value=>value.receipt)];
         const destination=drafts.current[saved.candidate_revision_uuid];
-        if(previous?.candidate_revision_uuid!==saved.candidate_revision_uuid&&priorProtocol===protocolId&&presentationOwner.current.protocolId===protocolId&&presentationOwner.current.projectId===reviewProps.projectId&&previousViewer&&!Object.hasOwn(destination||{},'viewer')){
-          drafts.current={...drafts.current,[saved.candidate_revision_uuid]:{...destination,viewer:previousViewer}};
+        const hasDestinationViewer=Object.hasOwn(destination||{},'viewer');
+        const sourceViewer=hasDestinationViewer?destination.viewer:previousDraft?.viewer;
+        if(previous?.candidate_revision_uuid!==saved.candidate_revision_uuid&&priorProtocol===protocolId&&presentationOwner.current.protocolId===protocolId&&presentationOwner.current.projectId===reviewProps.projectId&&sourceViewer){
+          const viewer=viewerPresentation(sourceViewer,receipts);
+          drafts.current={...drafts.current,[saved.candidate_revision_uuid]:{...destination,viewer:hasDestinationViewer?{...sourceViewer,...viewer}:viewer}};
         }
         presentationOwner.current={protocolId,projectId:reviewProps.projectId};
         freshContext.current=(!!currentBootstrap||responseFresh)&&attempt.owner===owner&&latest.current.ready&&owner.profileReady&&(currentBootstrap?.actor||value.actor)===owner.profileUuid

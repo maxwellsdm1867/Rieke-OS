@@ -94,8 +94,11 @@ export function pendingQueueCounts(queue){
 // cumulative candidate out (excluded) under the current scope/draft fences.
 export async function finishWorkbenchReview(root,context,request){
   requireWorkbenchContext(context);
-  const value=await request(`${root}/finish`,{method:'POST',body:{expected_candidate_scope_revision:context.candidate_scope_revision,expected_version:context.draft.draft_version}});
-  return requireWorkbenchContext(value);
+  const operation=crypto.randomUUID();
+  const value=requireWorkbenchContext(await request(`${root}/finish`,{method:'POST',body:{expected_candidate_scope_revision:context.candidate_scope_revision,expected_version:context.draft.draft_version,operation_uuid:operation}}));
+  const receipt=value.review_completion;
+  if(receipt?.kind!=='workbench_review_completion'||receipt.operation_uuid!==operation||receipt.protocol_uuid!==decodeURIComponent(root.split('/').at(-4))||receipt.candidate_revision_uuid!==decodeURIComponent(root.split('/').at(-1))||!context.actor||receipt.actor!==context.actor||receipt.expected_draft_version!==value.draft.draft_version||!Number.isSafeInteger(receipt.left_out_epoch_count)||receipt.left_out_epoch_count<0)throw Error('Review completion receipt is incomplete. Refresh pending review before continuing.');
+  return value;
 }
 
 // The server refuses to export (or load the context of) an undone merge with

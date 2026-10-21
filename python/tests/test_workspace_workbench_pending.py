@@ -339,6 +339,64 @@ class CumulativePendingTests(unittest.TestCase):
         refused = self.case.client.post(original + '/finish', json=fences, headers=self.case.headers)
         self.assertEqual(refused.status_code, 400, refused.get_json())
 
+    def test_finished_epochs_stay_left_out_across_imports_merge_and_undo_until_explicitly_allowed(self):
+        old_second, _ = self.more_import()
+        old = {self.added, old_second}
+        prepared, _ = self.prepare()
+        context = prepared['context']
+        before = self.case.explorer_history.protocol_binding(self.protocol)
+        finished = self.case.client.post('/api' + prepared['root'] + '/finish', json=dict(
+            expected_version=context['draft']['draft_version'],
+            expected_candidate_scope_revision=context['candidate_scope_revision']), headers=self.case.headers)
+        self.assertEqual(finished.status_code, 200, finished.get_json())
+        self.assertEqual(self.case.explorer_history.protocol_binding(self.protocol), before)
+        queue = self.queue()
+        self.assertEqual((queue['pending_epoch_count'], queue['pending_cell_count'], queue['left_out_epoch_count']), (0, 0, 2))
+
+        # Explicit left-out inspection remains possible even with no eligible
+        # pending data; preparing it must neither clear exclusions nor merge.
+        left_out, _ = self.prepare()
+        self.assertEqual(self.epochs(left_out), old)
+        self.assertTrue(all(row['excluded'] for row in left_out['context']['draft']['decisions']))
+        self.assertEqual(self.queue()['pending_epoch_count'], 0)
+
+        new_cell, _ = self.more_import()
+        existing_cell, _ = self.more_import(same_cell=True)
+        new = {new_cell, existing_cell}
+        queue = self.queue()
+        self.assertEqual((queue['eligible_pending_epoch_count'], queue['eligible_pending_cell_count'],
+                          queue['pending_new_cell_count'], queue['left_out_epoch_count']), (2, 2, 1, 2))
+        self.assertEqual({row['source_sha256'] for row in queue['pending_recordings']},
+                         {self.case.service.rows[key]['source_sha256'] for key in new})
+        carried, _ = self.prepare()
+        decisions = {row['epoch_uuid']: row for row in carried['context']['draft']['decisions']}
+        # The immutable browser snapshot retains left-out identities for explicit
+        # recovery. Only new identities are eligible for normal merge actions.
+        self.assertEqual(self.epochs(carried), old | new)
+        self.assertEqual({key for key in old | new if not decisions.get(key, {}).get('excluded')}, new)
+        self.assertTrue(all(decisions[key]['excluded'] for key in old))
+        merged = self.merge_all()
+        self.assertEqual(merged.status_code, 200, merged.get_json())
+        self.assertEqual(set(merged.get_json()['accepted_epoch_uuids']), new)
+        self.assertEqual((self.queue()['pending_epoch_count'], self.queue()['left_out_epoch_count']), (0, 2))
+
+        # Undo restores the just-merged epochs, never previously finished ones.
+        undone = self.undo(merged.get_json())
+        self.assertEqual(undone.status_code, 200, undone.get_json())
+        self.assertEqual(undone.get_json()['removed_epoch_count'], len(new))
+        self.assertEqual(self.case.explorer_history.protocol_binding(self.protocol)['revision_uuid'], before['revision_uuid'])
+        self.assertEqual((self.queue()['pending_epoch_count'], self.queue()['left_out_epoch_count']), (2, 2))
+        restored, _ = self.prepare()
+        # Deterministic prepare may replay a historical receipt after Undo;
+        # a fresh context supplies the new binding/scope for explicit edits.
+        restored = {**restored, 'context': self.get_context('/api' + restored['root'])}
+        restored = self.patch_draft(restored, [dict(epoch_uuid=self.added, excluded=False)])
+        queue = self.queue()
+        self.assertEqual((queue['pending_epoch_count'], queue['left_out_epoch_count']), (3, 1))
+        decisions = {row['epoch_uuid']: row for row in restored['context']['draft']['decisions']}
+        self.assertFalse(decisions[self.added]['excluded'])
+        self.assertTrue(decisions[old_second]['excluded'])
+
     def test_main_level_blocker_offers_nothing_and_names_the_reason(self):
         main = self.case.explorer_history.protocol_binding(self.protocol)['recipe']
         drifted = main['epochs'][0]['uuid']
@@ -350,6 +408,147 @@ class CumulativePendingTests(unittest.TestCase):
         queue = self.queue()
         self.assertEqual(queue['pending_epoch_count'], 0)
         self.assertIn('metadata changed', queue['main_blocked_reason'])
+
+    def test_finish_undo_restores_only_completed_batch_after_prepare_and_import(self):
+        kept_out, _ = self.more_import()
+        remaining, _ = self.more_import()
+        prepared, _ = self.prepare()
+        prepared = self.patch_draft(prepared, [dict(epoch_uuid=kept_out, excluded=True),
+            dict(epoch_uuid=self.added, selected=True, reviewed=True)])
+        self.accept_selected(prepared)
+        main = self.case.explorer_history.protocol_binding(self.protocol)
+        prepared, _ = self.prepare()
+        context, root = prepared['context'], '/api' + prepared['root']
+        body = dict(expected_version=context['draft']['draft_version'],
+            expected_candidate_scope_revision=context['candidate_scope_revision'], operation_uuid=str(uuid.uuid4()))
+        response = self.case.client.post(root + '/finish', json=body, headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        completion = response.get_json()['review_completion']
+        self.assertEqual(completion['left_out_epoch_count'], 1)
+        self.assertNotIn('review_before', completion)
+        self.assertEqual((self.queue()['pending_epoch_count'], self.queue()['left_out_epoch_count']), (0, 2))
+        replay = self.case.client.post(root + '/finish', json=body, headers=self.case.headers)
+        self.assertEqual(replay.status_code, 200, replay.get_json())
+        self.assertEqual(replay.get_json()['review_completion'], completion)
+        late, _ = self.more_import()
+        carried, _ = self.prepare()
+        self.assertNotEqual(carried['candidate_revision_uuid'], prepared['candidate_revision_uuid'])
+        undo_body = dict(operation_uuid=completion['operation_uuid'], expected_draft_version=completion['expected_draft_version'])
+        undo_path = self.case.base + '/workbench/undo-review'
+        undone = self.case.client.post(undo_path, json=undo_body, headers=self.case.headers)
+        self.assertEqual(undone.status_code, 200, undone.get_json())
+        self.assertEqual(undone.get_json()['restored_epoch_count'], 1)
+        self.assertEqual(self.case.explorer_history.protocol_binding(self.protocol), main)
+        self.assertEqual((self.queue()['pending_epoch_count'], self.queue()['left_out_epoch_count']), (2, 1))
+        fresh, _ = self.prepare()
+        decisions = {row['epoch_uuid']: row for row in fresh['context']['draft']['decisions']}
+        self.assertFalse(decisions[remaining]['excluded'])
+        self.assertTrue(decisions[kept_out]['excluded'])
+        self.assertEqual(self.epochs(fresh), {remaining, kept_out, late})
+        self.assertEqual(self.case.client.post(undo_path, json=undo_body, headers=self.case.headers).get_json(), undone.get_json())
+
+    def test_explicit_saved_predicate_can_include_finished_epochs_in_main_again(self):
+        prepared, _ = self.prepare()
+        context = prepared['context']
+        response = self.case.client.post('/api' + prepared['root'] + '/finish', json=dict(
+            expected_version=context['draft']['draft_version'], expected_candidate_scope_revision=context['candidate_scope_revision']),
+            headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual((self.queue()['pending_epoch_count'], self.queue()['left_out_epoch_count']), (0, 1))
+        # Search predicate operates on matching scientific data, independently
+        # of automatic incoming-review exclusions. Explicit apply replaces Main.
+        revision = self.saved_query_revision()
+        self.assertIn(self.added, self.manager._revision(revision)[1])
+        self.apply_candidate(revision)
+        self.assertIn(self.added, self.manager._revision(revision)[1])
+        self.assertEqual(self.case.explorer_history.protocol_binding(self.protocol)['revision_uuid'], revision)
+        self.assertEqual((self.queue()['pending_epoch_count'], self.queue()['left_out_epoch_count']), (0, 0))
+        late, _ = self.more_import()
+        self.assertEqual(self.queue()['pending_epoch_count'], 1)
+        fresh, _ = self.prepare()
+        self.assertEqual(self.epochs(fresh), {late})
+
+    def test_finish_undo_refuses_intervening_draft_edit_and_wrong_actor(self):
+        prepared, _ = self.prepare()
+        context, root = prepared['context'], '/api' + prepared['root']
+        response = self.case.client.post(root + '/finish', json=dict(expected_version=context['draft']['draft_version'],
+            expected_candidate_scope_revision=context['candidate_scope_revision'], operation_uuid=str(uuid.uuid4())), headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        completion = response.get_json()['review_completion']
+        body = dict(operation_uuid=completion['operation_uuid'], expected_draft_version=completion['expected_draft_version'])
+        with patch('disco.decisions.author_preferences.selected_author', return_value={'profile_uuid': 'actor-two'}):
+            refused = self.case.client.post(self.case.base + '/workbench/undo-review', json=body, headers=self.case.headers)
+        self.assertEqual(refused.status_code, 409, refused.get_json())
+        self.patch_draft({**prepared, 'context': response.get_json()}, [dict(epoch_uuid=self.added, reviewed=True)])
+        before = copy.deepcopy([table.rows for table in self.tables])
+        refused = self.case.client.post(self.case.base + '/workbench/undo-review', json=body, headers=self.case.headers)
+        self.assertEqual(refused.status_code, 409, refused.get_json())
+        self.assertEqual([table.rows for table in self.tables], before)
+
+    def test_finish_receipt_and_undo_survive_manager_restart_and_native_transaction_checks(self):
+        from disco.workbench.workbench import ProtocolWorkbench, public_receipt
+        tracker = self.native_transaction_receipts()
+        prepared, _ = self.prepare()
+        context = self.manager.context(self.protocol, prepared['candidate_revision_uuid'], 'actor-one')
+        body = dict(expected_version=context['draft_version'],
+            expected_candidate_scope_revision=context['candidate_scope_revision'], operation_uuid=str(uuid.uuid4()))
+        finished = self.manager.finish(context, body)
+        completion = finished['review_completion']
+        reloaded = ProtocolWorkbench(self.case.service, self.case.explorer_history, self.case.protocol_suggestions,
+            self.manager.state, self.manager.revision_guard, tables=self.tables)
+        # Durable receipt lookup does not depend on in-memory context offers.
+        self.assertEqual(public_receipt(reloaded.receipt(body['operation_uuid'], 'actor-one')), completion)
+        replay = reloaded.finish(reloaded.context(self.protocol, prepared['candidate_revision_uuid'], 'actor-one'), body)
+        self.assertEqual(replay['review_completion'], completion)
+        undo_body = dict(operation_uuid=body['operation_uuid'], expected_draft_version=completion['expected_draft_version'])
+        undone = reloaded.undo_review(self.protocol, 'actor-one', undo_body)
+        before = copy.deepcopy([table.rows for table in self.tables])
+        self.assertEqual(self.manager.undo_review(self.protocol, 'actor-one', undo_body), undone)
+        self.assertEqual([table.rows for table in self.tables], before)
+        self.assertEqual(self.queue()['pending_epoch_count'], 1)
+        self.assertEqual(tracker.tx_token_attempts, 0)
+
+    def test_finish_and_undo_receipt_failure_roll_back_all_review_changes(self):
+        prepared, _ = self.prepare()
+        context, root = prepared['context'], '/api' + prepared['root']
+        body = dict(expected_version=context['draft']['draft_version'],
+            expected_candidate_scope_revision=context['candidate_scope_revision'], operation_uuid=str(uuid.uuid4()))
+        before = copy.deepcopy([table.rows for table in self.case.connection.tables])
+        with patch.object(self.tables[2], 'insert1', side_effect=RuntimeError('Completion receipt unavailable')):
+            refused = self.case.client.post(root + '/finish', json=body, headers=self.case.headers)
+        self.assertEqual(refused.status_code, 500)
+        self.assertEqual([table.rows for table in self.case.connection.tables], before)
+        completed = self.case.client.post(root + '/finish', json=body, headers=self.case.headers).get_json()['review_completion']
+        before = copy.deepcopy([table.rows for table in self.case.connection.tables])
+        with patch.object(self.tables[2], 'insert1', side_effect=RuntimeError('Undo completion receipt unavailable')):
+            refused = self.case.client.post(self.case.base + '/workbench/undo-review', json=dict(
+                operation_uuid=completed['operation_uuid'], expected_draft_version=completed['expected_draft_version']), headers=self.case.headers)
+        self.assertEqual(refused.status_code, 500)
+        self.assertEqual([table.rows for table in self.case.connection.tables], before)
+
+    def test_finish_undo_refuses_changed_main_or_recorded_metadata_without_mutation(self):
+        prepared, _ = self.prepare()
+        context = prepared['context']
+        completed = self.case.client.post('/api' + prepared['root'] + '/finish', json=dict(
+            expected_version=context['draft']['draft_version'], expected_candidate_scope_revision=context['candidate_scope_revision'],
+            operation_uuid=str(uuid.uuid4())), headers=self.case.headers).get_json()['review_completion']
+        body = dict(operation_uuid=completed['operation_uuid'], expected_draft_version=completed['expected_draft_version'])
+        before = copy.deepcopy([table.rows for table in self.tables])
+        original_binding = self.manager.history.protocol_binding_header
+        def changed_binding(protocol):
+            value = original_binding(protocol)
+            return {**value, 'version': value['version'] + 1}
+        with patch.object(self.manager.history, 'protocol_binding_header', side_effect=changed_binding):
+            refused = self.case.client.post(self.case.base + '/workbench/undo-review', json=body, headers=self.case.headers)
+        self.assertEqual(refused.status_code, 409, refused.get_json())
+        self.assertIn('Main changed', refused.get_json()['error'])
+        fingerprint = self.case.service._fingerprints[self.added]
+        self.case.service._fingerprints[self.added] = 'c' * 64
+        refused = self.case.client.post(self.case.base + '/workbench/undo-review', json=body, headers=self.case.headers)
+        self.case.service._fingerprints[self.added] = fingerprint
+        self.assertEqual(refused.status_code, 409, refused.get_json())
+        self.assertIn('epochs changed', refused.get_json()['error'])
+        self.assertEqual([table.rows for table in self.tables], before)
 
     def undo(self, receipt):
         return self.case.client.post(self.case.base + '/workbench/undo', json=dict(
