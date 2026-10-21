@@ -85,13 +85,19 @@ test('manifest creation refuses late cancellation and corrupt final membership r
  }
 });
 
-test('finish review posts the cumulative candidate fences and returns the fresh context',async()=>{
+test('finish review posts the cumulative candidate fences and requires its exact completion receipt',async()=>{
   const {finishWorkbenchReview}=await import('./workbenchAuthority.js');
   const calls=[];const root='/protocols/p/workbench/candidates/union';
-  const fresh={candidate_scope_revision:'scope',draft:{draft_version:8},counts:{pending_epochs:0,excluded_epochs:12}};
-  const value=await finishWorkbenchReview(root,{candidate_scope_revision:'scope',draft:{draft_version:7}},async(path,options)=>{calls.push([path,options]);return fresh;});
-  assert.deepEqual(calls,[[`${root}/finish`,{method:'POST',body:{expected_candidate_scope_revision:'scope',expected_version:7}}]]);
+  const context={actor:'author',candidate_scope_revision:'scope',draft:{draft_version:7}};
+  const fresh={actor:'author',candidate_scope_revision:'scope',draft:{draft_version:8},counts:{pending_epochs:0,excluded_epochs:12}};
+  const completion=operation=>({kind:'workbench_review_completion',operation_uuid:operation,protocol_uuid:'p',candidate_revision_uuid:'union',actor:'author',expected_draft_version:8,left_out_epoch_count:12});
+  const value=await finishWorkbenchReview(root,context,async(path,options)=>{calls.push([path,options]);fresh.review_completion=completion(options.body.operation_uuid);return fresh;});
+  assert.match(calls[0][1].body.operation_uuid,/^[a-f0-9-]{36}$/);
+  assert.deepEqual(calls,[[`${root}/finish`,{method:'POST',body:{expected_candidate_scope_revision:'scope',expected_version:7,operation_uuid:fresh.review_completion.operation_uuid}}]]);
   assert.equal(value,fresh);
   await assert.rejects(finishWorkbenchReview(root,{candidate_scope_revision:'scope',draft:{}},async()=>fresh),/complete frozen scope/);
-  await assert.rejects(finishWorkbenchReview(root,{candidate_scope_revision:'scope',draft:{draft_version:7}},async()=>({})),/complete frozen scope/);
+  await assert.rejects(finishWorkbenchReview(root,context,async()=>({})),/complete frozen scope/);
+  for(const invalid of [()=>undefined,op=>({...completion(op),operation_uuid:'other'}),op=>({...completion(op),actor:'other'})]){
+    await assert.rejects(finishWorkbenchReview(root,context,async(path,options)=>({...fresh,review_completion:invalid(options.body.operation_uuid)})),/completion receipt is incomplete/);
+  }
 });

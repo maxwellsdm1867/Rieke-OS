@@ -302,21 +302,25 @@ test('queue changes preserve in-flight acceptance and older confirmed receipt ke
  const makeQueue=token=>({data:{queue_revision:token,pending_epoch_count:2,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}},loading:false});
  globalThis.fetch=async(path,options={})=>{
   const endpoint=String(path).replace(/^\/api/,''),body=options.body?JSON.parse(options.body):null;let value,status=200;
-  if(endpoint.endsWith('/context'))value=context;
-  else if(endpoint===`${root}/accept`){if(attempts++===0){await new Promise(resolve=>{release=resolve;});status=503;value={error:'Reply lost'};}else value={operation_uuid:body.operation_uuid,candidate_revision_uuid:'old-union',event_uuid:'accepted-old',binding:{revision_uuid:'new-main',version:2}};}
-  else if(endpoint==='/protocols/history/workbench/receipts/same-operation')value={operation_uuid:'same-operation',candidate_revision_uuid:'old-union',event_uuid:'accepted-old',binding:{revision_uuid:'new-main',version:2}};
+  if(endpoint==='/annotation-profiles')value={selected_profile_uuid:'fixture-author',profiles:[{profile_uuid:'fixture-author',display_name:'Fixture'}]};
+  else if(endpoint.endsWith('/context'))value=context;
+  else if(endpoint===`${root}/accept`){if(attempts++===0){await new Promise(resolve=>{release=resolve;});status=503;value={error:'Reply lost'};}else value={operation_uuid:body.operation_uuid,candidate_revision_uuid:'old-union',protocol_uuid:'history',actor:'fixture-author',event_uuid:'accepted-old',binding:{revision_uuid:'new-main',version:2}};}
+  else if(endpoint==='/protocols/history/workbench/receipts/same-operation')value={operation_uuid:'same-operation',candidate_revision_uuid:'old-union',protocol_uuid:'history',actor:'fixture-author',event_uuid:'accepted-old',binding:{revision_uuid:'new-main',version:2}};
   else if(endpoint.endsWith('/prepare')){prepares++;value={...prepared,candidate_revision_uuid:'new-union',root:root.replace('old-union','new-union'),context:{...prepared.context,candidate_revision_uuid:'new-union'},queue_revision:body.expected_queue_revision};}
   else assert.fail(`Unexpected ${endpoint}`);
   return {ok:status===200,status,json:async()=>value};
  };
  try{
   const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/CumulativeIncomingReview.jsx');
-  const props={protocolId:'history',queue:makeQueue('old-queue'),session:{prepared,drafts:{'old-union':{preview,operation:'same-operation'}}},onSession:value=>{saved=value;}};
-  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,props));});
+  const {AnnotationProfileProvider,useAnnotationProfile}=await server.ssrLoadModule('/src/annotations/annotationProfile.js');
+  function AuthoredReview(props){const author=useAnnotationProfile();return author.loading?null:React.createElement(Review,props);}
+  const renderReview=props=>React.createElement(AnnotationProfileProvider,{projectId:'fixture-project'},React.createElement(AuthoredReview,props));
+  const props={projectId:'fixture-project',protocolId:'history',queue:makeQueue('old-queue'),session:{prepared,drafts:{'old-union':{preview,operation:'same-operation'}}},onSession:value=>{saved=value;}};
+  await act(async()=>{renderer=TestRenderer.create(renderReview(props));});
   let accepting;
   await act(async()=>{accepting=renderer.root.findAllByType('button').find(node=>label(node)==='Add these additions to main').props.onClick();});
   assert.equal(saved.drafts['old-union'].acceptPending,true);
-  await act(async()=>renderer.update(React.createElement(Review,{...props,queue:makeQueue('new-queue')})));
+  await act(async()=>renderer.update(renderReview({...props,queue:makeQueue('new-queue')})));
   assert.equal(prepares,0,'scope cannot switch during pending acceptance');
   await act(async()=>{release();await accepting;});assert.equal(saved.drafts['old-union'].unconfirmed,true);assert.equal(prepares,0);
   await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Recover acceptance receipt').props.onClick());
