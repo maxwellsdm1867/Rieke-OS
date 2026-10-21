@@ -208,6 +208,13 @@ Predicate meaning is unchanged; these are cost rules for the same results.
   of admitting each identity, the native index matches without a scratch scope,
   and sparse tag results are ordered by the tree key instead of scanning every
   ID. A replaced `_filter_rows` policy still decides eligibility itself.
+  Canonical string-ID scopes retain membership as the read-only keys view of a
+  private atomic dictionary, preserving the snapshot and set algebra without a
+  GC-traversed set table. Proven frozen publications keep ordered rows as a lazy
+  sequence over the captured map and shared ID tuple; replacing the publication
+  cannot retarget an older reader. Mutable rows retain their original row tuple,
+  and custom filter policies retain the tuple/frozenset fallback. No collector
+  threshold, collection scheduling, publication fence or eligibility rule changes.
 - **Catalog fields and summaries.** Annotation catalog fields and native summary
   buckets for tag fields come from the generation's distinct tag arrays (counts
   and first occurrence in scope order), with output identical to the shared

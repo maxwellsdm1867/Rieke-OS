@@ -15,7 +15,7 @@ import sys
 import time
 from pathlib import Path
 import uuid
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 from recording_workspace import (connect, digest, epochs, evaluate_protocol_file,
                                  validate_protocol_definition, workspace_tables)
@@ -80,6 +80,30 @@ class FrozenList(list):
 
     def __reduce__(self):
         return (list, (list(self),))
+
+
+class _EligibleRows(Sequence):
+    """Ordered rows of one captured immutable publication, without row references.
+
+    The ID tuple is shared with predicate scope admission. Keeping a reference
+    to its frozen row map preserves an older reader when the service republishes.
+    """
+    __slots__ = ('_ids', '_rows')
+
+    def __init__(self, identities, rows):
+        self._ids, self._rows = identities, rows
+
+    def __len__(self):
+        return len(self._ids)
+
+    def __iter__(self):
+        return (self._rows[identity] for identity in self._ids)
+
+    def __getitem__(self, index):
+        identities = self._ids[index]
+        if isinstance(index, slice):
+            return tuple(self._rows[identity] for identity in identities)
+        return self._rows[identities]
 
 
 class Unfreezable(TypeError):
@@ -1815,7 +1839,14 @@ class WorkspaceService:
         rows = tuple(sorted((row for row in self.rows.values() if row['source_sha256'] in active),
                             key=lambda row: (row['date'], row['start_time'], row['epoch_uuid'])))
         ids = tuple(row['epoch_uuid'] for row in rows)
-        value = (rows, ids, scope, frozenset(ids))
+        # A private atomic-key dict retains the identical membership snapshot
+        # without a GC-traversed set table. Its read-only keys view supports the
+        # same membership and set operations; no owner can mutate the backing
+        # dict. Non-string custom identities retain their previous representation.
+        universe = dict.fromkeys(ids).keys() if all(type(identity) is str for identity in ids) else frozenset(ids)
+        if publication_serial(self) is not None:
+            rows = _EligibleRows(ids, self.rows)
+        value = (rows, ids, scope, universe)
         if publication is not None:
             self._eligible_cache = (key, value)
         return value
