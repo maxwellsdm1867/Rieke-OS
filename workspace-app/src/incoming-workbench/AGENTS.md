@@ -422,3 +422,24 @@ must not become anchor reads. Sanitize the actual destination viewer, including
 saved destination views and receipts moved to completed export history. Preserve
 valid remaining focus and presentation; incomplete receipt membership retires
 focus conservatively. No selected epochs or command authority is transferred.
+
+### Review-cycle recovery (2026-10-21)
+
+Finish flushes pending accepted writes before preparing its fresh context. Both
+Overview's source command owner and frozen Workbench retain a compact completion
+operation (actor, candidate, scope, draft version and UUID) before submission.
+Lost replies and errors marked `saved:true` retain that identity across navigation
+and checkpoints; receipt lookup is read-only, and an explicit retry uses the same
+UUID and fences. A definitive pre-write rejection retires the operation. Finish
+recovery stays separate from merge preview/acceptance state and is protected by
+cumulative-session pruning. Successful receipt recovery can publish Undo even if
+the old candidate context cannot be read anymore.
+
+Refresh review renews cumulative preparation rather than repeatedly fetching an
+unusable candidate. Blocked publication prevents selected merging; finishing
+review keeps its separate backend draft authority. Preparation failures distinguish
+confirmed partial draft saves, definite rejection, and uncertain writes. Overview
+command errors have one App-owned dismissible notification, expiring after eight
+seconds; uncertain operations retain explicit recovery controls. Focused checks:
+`sourceMerge.test.js`, `incomingWorkbenchRendering.test.js` and
+`protocolSuggestionHold.test.js`. These do not replace native repeated-cycle tests.

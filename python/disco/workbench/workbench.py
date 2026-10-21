@@ -83,6 +83,18 @@ class WorkbenchConflict(ValueError):
     code = 'workbench_conflict'
 
 
+@contextlib.contextmanager
+def _committed_review_response(operation_uuid=None):
+    """A projection failure after SQL commit must not look like a refused write."""
+    try:
+        yield
+    except (ValueError, KeyError) as cause:
+        error = WorkbenchConflict(str(cause))
+        error.saved = True
+        error.operation_uuid = operation_uuid
+        raise error from cause
+
+
 # Candidate scope revisions omit project-wide shared tags (a separate witness).
 CANDIDATE_SCOPE_CONTRACT = 'workbench-candidate-scope-v2'
 
@@ -477,27 +489,30 @@ class ProtocolWorkbench:
         """A superset alone is insufficient: prove every actual parent transition."""
         seen = set()
         transitions = (self.tables[2] & dict(project_uuid=self.project, protocol_uuid=protocol)).to_dicts()
-        # An undo rebinds main to the exact revision it had before a merge.
-        # Rewind across it to that revision's original binding version.
+        # A binding is (revision, version), not just a recipe UUID. Walk each
+        # durable transition separately: a review may have been prepared at
+        # an intermediate Undo binding, which must not be rewound past.
         undos = {row['receipt']['binding']['version']: row['receipt'] for row in transitions
                  if row['receipt'].get('kind') == 'workbench_undo'}
-        def rewind(main, version):
-            for _ in range(1000):
-                undo = undos.get(version)
-                if not undo or undo['binding']['revision_uuid'] != main['revision_uuid']:
-                    break
-                version = undo['restored_binding_version']
-            return version
         while True:
-            if main['revision_uuid'] == baseline['revision_uuid'] and version == baseline_version:
-                break
-            version = rewind(main, version)
-            if main['revision_uuid'] == baseline['revision_uuid']:
-                break
             identity = main['revision_uuid']
-            if identity in seen or len(seen) >= 1000 or main.get('membership_kind') != 'additive_union':
+            if identity == baseline['revision_uuid'] and version == baseline_version:
+                return main['content_sha256'] == baseline['content_sha256']
+            state = (identity, version)
+            if state in seen or len(seen) >= 1000 or version <= baseline_version:
                 return False
-            seen.add(identity)
+            seen.add(state)
+            undo = undos.get(version)
+            if undo is not None:
+                restored = undo.get('restored_binding_version')
+                if (undo['binding']['revision_uuid'] != identity
+                        or undo.get('restored_revision_uuid') != identity
+                        or type(restored) is not int or not 0 <= restored < version):
+                    return False
+                version = restored
+                continue
+            if main.get('membership_kind') != 'additive_union':
+                return False
             parent = main.get('parent_revision_uuid')
             publication = main.get('additive_publication', {})
             if not parent or publication.get('previous_revision_uuid') != parent:
@@ -521,7 +536,6 @@ class ProtocolWorkbench:
                     return False
             main = previous
             version -= 1
-        return main['content_sha256'] == baseline['content_sha256'] and version == baseline_version
 
     def transaction_authority(self, protocol):
         """Capture native receipts before SQL, then attest them under its locks.
@@ -1089,7 +1103,8 @@ class ProtocolWorkbench:
             for item in parsed:
                 row = dict(**key, **item)
                 (self.tables[1].update1 if item['epoch_uuid'] in context['decisions'] else self.tables[1].insert1)(row)
-        return self.context(protocol, revision, actor)
+        with _committed_review_response():
+            return self.context(protocol, revision, actor)
 
     def finish(self, context, body):
         """Finish a cumulative review: leave out every epoch still pending.
@@ -1141,8 +1156,9 @@ class ProtocolWorkbench:
             self._event(context['actor'], 'workbench_review_finished', dict(protocol_uuid=context['protocol_uuid'],
                 candidate_revision_uuid=context['candidate_revision_uuid'], left_out_epoch_count=len(remaining),
                 left_out_epoch_uuids=remaining), operation)
-        return dict(self.context(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor']),
-                    review_completion=public_receipt(receipt))
+        with _committed_review_response(operation):
+            return dict(self.context(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor']),
+                        review_completion=public_receipt(receipt))
 
     def undo_review(self, protocol, actor, body):
         """Reverse only this completion's exclusions; never alter Main membership."""
@@ -1285,7 +1301,8 @@ class ProtocolWorkbench:
             (self.tables[0].update1 if context['draft_version'] else self.tables[0].insert1)(draft)
             for row in rows:
                 (self.tables[1].update1 if row['epoch_uuid'] in context['decisions'] else self.tables[1].insert1)(row)
-        return self.context(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor'])
+        with _committed_review_response():
+            return self.context(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor'])
 
     def preview(self, context, body, *, merge_all=False):
         self.check_scope(context, body['expected_candidate_scope_revision'])
@@ -1888,7 +1905,9 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     @app.errorhandler(WorkbenchConflict)
     def conflict(error):
-        return jsonify(error=str(error), code=error.code), 409
+        saved = ({'saved': True, **({'operation_uuid': error.operation_uuid} if error.operation_uuid else {})}
+                 if getattr(error, 'saved', False) else {})
+        return jsonify(error=str(error), code=error.code, **saved), 409
 
     root = '/api/protocols/<protocol>/workbench'
     candidate = root + '/candidates/<revision>'
@@ -1975,13 +1994,17 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         with guarded(protocol, revision) as owner:
             context = manager.context(protocol, revision, owner)
             ids = manager.selection_manifest(context, value['selection_token'])['ids']
-            return jsonify(public_context(manager.prepare_selection(context, ids, value)))
+            updated = manager.prepare_selection(context, ids, value)
+            with _committed_review_response():
+                return jsonify(public_context(updated))
 
     @app.patch(candidate + '/draft')
     def workbench_patch(protocol, revision):
         value = body({'expected_version', 'expected_candidate_scope_revision'}, {'decisions', 'selection_mode', 'deferred'})
         with guarded(protocol, revision) as owner:
-            return jsonify(public_context(manager.patch(protocol, revision, owner, value)))
+            updated = manager.patch(protocol, revision, owner, value)
+            with _committed_review_response():
+                return jsonify(public_context(updated))
 
     @app.post(root + '/undo')
     def workbench_undo(protocol):
@@ -1995,7 +2018,9 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
     def workbench_finish(protocol, revision):
         value = body({'expected_version', 'expected_candidate_scope_revision'}, {'operation_uuid'})
         with guarded(protocol, revision) as owner:
-            return jsonify(public_context(manager.finish(manager.context(protocol, revision, owner), value)))
+            updated = manager.finish(manager.context(protocol, revision, owner), value)
+            with _committed_review_response(updated['review_completion']['operation_uuid']):
+                return jsonify(public_context(updated))
 
     @app.post(root + '/undo-review')
     def workbench_undo_review(protocol):

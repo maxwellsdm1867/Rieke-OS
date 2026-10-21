@@ -92,10 +92,15 @@ export function pendingQueueCounts(queue){
 
 // Finish review leaves every remaining not-yet-excluded pending epoch of the
 // cumulative candidate out (excluded) under the current scope/draft fences.
-export async function finishWorkbenchReview(root,context,request){
+export async function finishWorkbenchReview(root,context,request,{operationUuid=crypto.randomUUID(),receiptOnly=false}={}){
   requireWorkbenchContext(context);
-  const operation=crypto.randomUUID();
-  const value=requireWorkbenchContext(await request(`${root}/finish`,{method:'POST',body:{expected_candidate_scope_revision:context.candidate_scope_revision,expected_version:context.draft.draft_version,operation_uuid:operation}}));
+  const operation=operationUuid;
+  let value;
+  if(receiptOnly){
+    const receipt=await request(`${root.replace(/\/candidates\/[^/]+$/,'')}/receipts/${encodeURIComponent(operation)}`);
+    value={...context,draft:{...context.draft,draft_version:receipt.expected_draft_version},review_completion:receipt};
+  }else value=requireWorkbenchContext(await request(`${root}/finish`,{method:'POST',body:{expected_candidate_scope_revision:context.candidate_scope_revision,expected_version:context.draft.draft_version,operation_uuid:operation}}));
+  requireWorkbenchContext(value);
   const receipt=value.review_completion;
   if(receipt?.kind!=='workbench_review_completion'||receipt.operation_uuid!==operation||receipt.protocol_uuid!==decodeURIComponent(root.split('/').at(-4))||receipt.candidate_revision_uuid!==decodeURIComponent(root.split('/').at(-1))||!context.actor||receipt.actor!==context.actor||receipt.expected_draft_version!==value.draft.draft_version||!Number.isSafeInteger(receipt.left_out_epoch_count)||receipt.left_out_epoch_count<0)throw Error('Review completion receipt is incomplete. Refresh pending review before continuing.');
   return value;

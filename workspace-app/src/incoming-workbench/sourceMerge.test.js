@@ -125,8 +125,25 @@ test('Finish returns the exact completion receipt for the shared Undo action',as
  const controller=createSourceMerge({projectId:'project',request,persist:async()=>calls.push({path:'persist'})});
  const result=await controller.finish('p',{queue_revision:'q'});
  assert.deepEqual(result,{protocolId:'p',reviewFinished:true,receipt});
- assert.deepEqual(calls.map(c=>c.path),['/protocols/p/workbench/prepare','persist','/annotation-profiles','/protocols/p/workbench/candidates/union/finish']);
- assert.deepEqual(calls[0].body,{expected_queue_revision:'q'});
+ assert.deepEqual(calls.map(c=>c.path),['persist','/protocols/p/workbench/prepare','/annotation-profiles','persist','/protocols/p/workbench/candidates/union/finish']);
+ assert.deepEqual(calls[1].body,{expected_queue_revision:'q'});
  assert.deepEqual(calls.at(-1).body,{expected_candidate_scope_revision:'scope',expected_version:3,operation_uuid:receipt.operation_uuid});
  assert.equal(controller.state.phase,'idle');
+});
+
+for(const failure of ['lost','saved-conflict','rejected'])test(`Finish ${failure} preserves only uncertain recovery identity`,async()=>{
+ const context={actor:'a',candidate_revision_uuid:'union',protocol:{definition:{protocol_uuid:'p'}},candidate_scope_revision:'scope',draft:{draft_version:3}};
+ let receipt,posts=0,saved;
+ const request=async(path,options={})=>{
+  if(path.endsWith('/prepare'))return {contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prep',candidate_revision_uuid:'union',candidate_scope_revision:'scope',queue_revision:'q',root:'/protocols/p/workbench/candidates/union',context};
+  if(path==='/annotation-profiles')return {selected_profile_uuid:'a'};
+  if(path.includes('/receipts/'))return receipt;
+  posts++;assert.equal(saved.body.operation_uuid,options.body.operation_uuid);
+  receipt={kind:'workbench_review_completion',operation_uuid:options.body.operation_uuid,protocol_uuid:'p',candidate_revision_uuid:'union',actor:'a',expected_draft_version:4,left_out_epoch_count:2};
+  throw Object.assign(Error('reply failed'),failure==='lost'?{}:{status:409,saved:failure==='saved-conflict'});
+ };
+ const controller=createSourceMerge({projectId:'project',request,persist:async()=>{saved=structuredClone(controller.snapshot());}});
+ await assert.rejects(controller.finish('p',{queue_revision:'q'}));
+ if(failure==='rejected'){assert.equal(controller.snapshot(),null);assert.equal(controller.state.phase,'error');controller.dismiss();assert.equal(controller.state.phase,'idle');}
+ else{assert.ok(controller.snapshot().finishReview);controller.dismiss();assert.equal(controller.state.phase,'unconfirmed');const restored=createSourceMerge({projectId:'project',request});restored.restore(controller.snapshot());const result=await restored.recover();assert.equal(result.reviewFinished,true);assert.deepEqual(result.receipt,receipt);assert.equal(posts,1);}
 });

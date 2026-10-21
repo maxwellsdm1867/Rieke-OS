@@ -35,7 +35,15 @@ test('Overview match card holds to merge its recording directly and never opens 
   assert.deepEqual(merges,[['protocol-A',{kind:'merge_source',candidate_revision_uuid:'candidate',source_sha256:'source',origin:'protocol-overview'}]],'one hold submits one exact source merge');
   outcome=()=>{throw Error('Merge may have completed. Recover this same receipt before trying another merge.');};
   await act(()=>hold().props.onPointerDown(event));await tick(1000);await act(()=>hold().props.onPointerUp());
-  assert.equal(merges.length,2);assert.match(text(),/Recover this same receipt/,'failure stays visible on the retained card');
+  assert.equal(merges.length,2);assert.match(text(),/Recover this same receipt/,'failure is announced on the retained card');
+  await tick(8000);assert.doesNotMatch(text(),/Recover this same receipt/,'one action notification expires without resubmitting');assert.equal(merges.length,2);
+  await act(()=>hold().props.onPointerDown(event));await tick(1000);await act(()=>hold().props.onPointerUp());
+  assert.match(text(),/Recover this same receipt/,'a new explicit attempt can announce its own failure');
+  await act(()=>buttons().find(node=>node.props['aria-label']==='Dismiss review notification').props.onClick());
+  assert.doesNotMatch(text(),/Recover this same receipt/,'notification can also be dismissed immediately');assert.equal(merges.length,3);
+  outcome=()=>{throw Object.assign(Error('Already reported by command owner'),{reported:true});};
+  await act(()=>hold().props.onPointerDown(event));await tick(1000);await act(()=>hold().props.onPointerUp());
+  assert.doesNotMatch(text(),/Already reported by command owner/,'the same failure is not duplicated in the card');assert.equal(merges.length,4);
   for(const change of [{status:'stale'},{source_sha256:undefined},{diff_counts:{added:0}}]){
    props={...props,suggestion:{...card,...change}};await render();assert.equal(hold(),undefined,JSON.stringify(change));
   }
@@ -101,8 +109,8 @@ test('Overview finish reviewing requires confirmation and the displayed queue id
  const {default:Suggestion}=await server.ssrLoadModule('/src/protocol-overview/ui/ProtocolSuggestion.jsx');
  let queue={contract_version:1,queue_revision:'finish-q1',pending_epoch_count:175,pending_cell_count:2,eligible_pending_epoch_count:175,eligible_pending_cell_count:2,capabilities:{cumulative_pending_browse:true,additive_accept:true,frozen_browse:true,drafts:true},candidates:[]};
  const oldFetch=globalThis.fetch;globalThis.fetch=async()=>({ok:true,status:200,json:async()=>queue});
- let renderer,requests=[];
- const props=()=>({projectId:'finish-card-project',pendingProtocol:'protocol-A',main:{counts:{epochs:132},cells:[]},queue,onProtocol(){},onMerge:async(...args)=>{requests.push(args);return true;}});
+ let renderer,requests=[],finishFailure=null;
+ const props=()=>({projectId:'finish-card-project',pendingProtocol:'protocol-A',main:{counts:{epochs:132},cells:[]},queue,onProtocol(){},onMerge:async(...args)=>{requests.push(args);if(finishFailure)throw Error(finishFailure);return true;}});
  const render=()=>act(()=>{if(renderer)renderer.update(React.createElement(Suggestion,props()));else renderer=TestRenderer.create(React.createElement(Suggestion,props()));});
  const button=label=>renderer.root.findAllByType('button').find(node=>node.children.join('')===label);
  t.after(async()=>{await act(()=>renderer?.unmount());globalThis.fetch=oldFetch;await server.close();});
@@ -112,7 +120,15 @@ test('Overview finish reviewing requires confirmation and the displayed queue id
  await act(()=>button('Finish reviewing').props.onClick());
  queue={...queue,queue_revision:'finish-q2',pending_epoch_count:176,eligible_pending_epoch_count:176};await render();
  assert.equal(button('Leave out & finish'),undefined,'a new queue retires prior completion consent');
+ finishFailure='Review was not finished. Refresh the pending review.';
+ t.mock.timers.enable({apis:['setTimeout']});
  await act(()=>button('Finish reviewing').props.onClick());await act(()=>button('Leave out & finish').props.onClick());
- assert.deepEqual(requests,[['protocol-A',{kind:'finish_review',queue_revision:'finish-q2'}]]);
+ assert.match(JSON.stringify(renderer.toJSON()),/Review was not finished/);assert.ok(button('Finish reviewing'));
+ await act(()=>t.mock.timers.tick(8000));
+ assert.doesNotMatch(JSON.stringify(renderer.toJSON()),/Review was not finished/,'finish warning expires independently of queue recovery');
+ assert.equal(requests.length,1,'expiry never repeats finish');
+ t.mock.timers.reset();finishFailure=null;
+ await act(()=>button('Finish reviewing').props.onClick());await act(()=>button('Leave out & finish').props.onClick());
+ assert.deepEqual(requests,[['protocol-A',{kind:'finish_review',queue_revision:'finish-q2'}],['protocol-A',{kind:'finish_review',queue_revision:'finish-q2'}]]);
  assert.equal(renderer.toJSON(),null,'confirmed completion retires this batch');
 });

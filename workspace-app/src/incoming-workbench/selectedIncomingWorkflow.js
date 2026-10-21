@@ -88,7 +88,7 @@ export function compactWorkbenchSelections(checkpoint,{selectionBytes=512*1024}=
 export function workbenchDraftNeedsRecovery(draft){
   if(!draft||typeof draft!=='object')return false;
   const exportState=draft.exportState;
-  return !!(draft.unconfirmed||draft.acceptPending||exportState?.pending
+  return !!(draft.finishOperation||draft.unconfirmed||draft.acceptPending||exportState?.pending
     ||exportState&&!exportState.exported&&(exportState.prepared||exportState.acceptOperation)
     ||draft.receipt&&!exportState?.exported);
 }

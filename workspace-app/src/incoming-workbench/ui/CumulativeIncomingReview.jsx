@@ -37,7 +37,7 @@ export default function CumulativeIncomingReview({queue,protocolId,session={},on
   const drafts=useRef(session.drafts||{}),scopes=useRef(session.scopes||(session.prepared?{[session.prepared.candidate_revision_uuid]:session.prepared}:{})),attempted=useRef(null),snapshot=useRef(null);
   const presentationOwner=useRef({protocolId,projectId:reviewProps.projectId});
   const draft=prepared?drafts.current[prepared.candidate_revision_uuid]:null;
-  const recovering=(!draft?.receipt&&(!!draft?.acceptPending||!!draft?.unconfirmed))||!!draft?.exportState?.pending||!!draft?.exportState&&!draft.exportState.exported&&!!(draft.exportState.prepared||draft.exportState.acceptOperation);
+  const recovering=!!draft?.finishOperation||(!draft?.receipt&&(!!draft?.acceptPending||!!draft?.unconfirmed))||!!draft?.exportState?.pending||!!draft?.exportState&&!draft.exportState.exported&&!!(draft.exportState.prepared||draft.exportState.acceptOperation);
   const profile=useAnnotationProfile();
   const pending=pendingQueueCounts(queue.data);
   // Keep the last verified empty presentation through refresh/failure. The
@@ -115,6 +115,10 @@ export default function CumulativeIncomingReview({queue,protocolId,session={},on
   },[protocolId,reviewProps.projectId,queue.data?.queue_revision,pending.epochs,queue.data?.total_candidate_count,queue.loading,queue.error,recovering,nonce,prepared?.queue_revision,owner,requestOwner,blocked,reviewLeftOut,leftOut]);
   // Restored archived receipts are history, not current export authority.
   // Recheck under the current actor/owner before offering an accepted export.
+  function refreshReview(options){
+    if(options?.renewCandidate&&!recovering){setPrepared(null);attempted.current=null;freshContext.current=null;setNonce(value=>value+1);}
+    onRefresh?.();
+  }
   const active=useRetainedView()?.active!==false;
   const archivedKey=JSON.stringify(Object.entries(drafts.current).filter(([key,value])=>(empty||key!==prepared?.candidate_revision_uuid)&&value.receipt&&!value.exportState?.exported&&!value.unconfirmed&&!value.acceptPending).map(([key,value])=>[key,value.receipt.operation_uuid]));
   const archiveOwner=useMemo(()=>({}),[owner,active,queue.loading,queue.error,archivedKey]);
@@ -160,7 +164,7 @@ export default function CumulativeIncomingReview({queue,protocolId,session={},on
     {blocked&&<p role="status">{blocked}</p>}
     {leftOut>0&&!blocked&&<p role="status">{number(leftOut)} epochs left out of Main. <button disabled={queue.loading||!!queue.error||recovering||busy} onClick={()=>setReviewLeftOut(value=>!value)}>{reviewLeftOut?'Return to pending additions':'Review left-out epochs'}</button></p>}
     {empty&&<p role="status">{merged?'Merge complete, no pending cells.':'No pending cells.'}{leftOut>0?' Saved exclusions remain in your draft.':''}</p>}
-    {!empty&&(!blocked||recovering)&&prepared?<FrozenIncomingReview {...reviewProps} revision={reviewRevision} preparedContextToken={freshContext.current?.token} takePreparedContext={takePreparedContext} mergeRequest={mergeRequest} onMergeRequestHandled={onMergeRequestHandled} onHistory={onHistory} onRefresh={onRefresh} refreshing={refreshing} preserveBrowser pendingCounts={queue.data} externalBusy={!!blocked&&!recovering||busy||!!(queue.loading||queue.error||authorityChanged)&&!recovering} key={prepared.candidate_revision_uuid} protocolId={protocolId} item={{candidate_revision_uuid:prepared.candidate_revision_uuid,protocol_uuid:protocolId}} scopeKind="cumulative_pending" capabilities={queue.data?.capabilities||{}} session={draft} onSession={remember}/>:!empty&&!blocked&&!busy&&!error&&pending.epochs>0&&<p role="status">Waiting for the authoritative pending queue.</p>}
+    {!empty&&(!blocked||recovering)&&prepared?<FrozenIncomingReview {...reviewProps} revision={reviewRevision} preparedContextToken={freshContext.current?.token} takePreparedContext={takePreparedContext} mergeRequest={mergeRequest} onMergeRequestHandled={onMergeRequestHandled} onHistory={onHistory} onRefresh={refreshReview} refreshing={refreshing} preserveBrowser pendingCounts={queue.data} externalBusy={!!blocked&&!recovering||busy||!!(queue.loading||queue.error||authorityChanged)&&!recovering} key={prepared.candidate_revision_uuid} protocolId={protocolId} item={{candidate_revision_uuid:prepared.candidate_revision_uuid,protocol_uuid:protocolId}} scopeKind="cumulative_pending" capabilities={queue.data?.capabilities||{}} session={draft} onSession={remember}/>:!empty&&!blocked&&!busy&&!error&&pending.epochs>0&&<p role="status">Waiting for the authoritative pending queue.</p>}
     {Object.entries(drafts.current).filter(([key])=>empty||key!==prepared?.candidate_revision_uuid).flatMap(([key,value])=>[...(value.exportState?.completed||[]),...(value.receipt||value.exportState?.exported?[{receipt:value.receipt,exported:value.exportState?.exported}]:[])]).filter(value=>value.exported).map((value,index)=><p key={value.exported?.dataset_uuid||value.receipt?.event_uuid||index}><a href={value.exported.download_url} download>{value.exported.name||'Download incoming export'}</a></p>)}
   </section>;
 }

@@ -27,6 +27,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   const root=workbenchCandidateRoot(protocolId,item.candidate_revision_uuid);
   const [draftSelectionTarget,setDraftSelectionTarget]=useState(null),[selectionIntent,setSelectionIntent]=useState(null);
   const [context,setContext]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[nonce,setNonce]=useState(0);
+  const [finishOperation,setFinishOperation]=useState(session?.finishOperation||null);
   const [finishing,setFinishing]=useState(false),[viewNotice,setViewNotice]=useState('');
   const [unconfirmed,setUnconfirmed]=useState(session?.unconfirmed||session?.acceptPending||false),[acceptPending,setAcceptPending]=useState(false);
   const [highlighted,setHighlighted]=useState(session?.selected||[]),[selectionOmitted,setSelectionOmitted]=useState(session?.selection_omitted_count||0);
@@ -43,11 +44,12 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   const mergeLifetime=useRef(null);
   useLayoutEffect(()=>{const owner={};mergeLifetime.current=owner;return()=>{if(mergeLifetime.current===owner)mergeLifetime.current=null;};},[loadOwner,externalBusy,capabilities.drafts,capabilities.additive_accept]);
   const contextFresh=context!==null&&loadedOwner.current===loadOwner;
+  const publicationBlocked=contextFresh&&!!context.publication_blocked;
   // A multi-batch draft save advances authority between batches. Keep the
   // browser on its inert committed view until the complete save settles.
   if(contextFresh&&!busy&&!externalBusy)displayed.current={context,revision};
   const visible=contextFresh&&!busy&&!externalBusy?{context,revision}:displayed.current;
-  selected.current=highlighted;current.current=contextFresh?context:null;snapshot.current={filters,selected:selected.current,selection_omitted_count:selectionOmitted,operation:operation.current,receipt,preview,unconfirmed,acceptPending,viewer:viewer.current,exportState};
+  selected.current=highlighted;current.current=contextFresh?context:null;snapshot.current={filters,selected:selected.current,selection_omitted_count:selectionOmitted,operation:operation.current,receipt,preview,unconfirmed,acceptPending,viewer:viewer.current,exportState,finishOperation};
   const publish=useCallback(value=>{onSession?.({...snapshot.current,...value});},[onSession]);
   const previewOwner=useRef(loadOwner);
   useLayoutEffect(()=>{
@@ -64,7 +66,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   // Inspector publishes from an effect. Keep its callback stable when the
   // cumulative parent rerenders after saving this viewer snapshot.
   const rememberViewer=useCallback(value=>{viewer.current=value;publish({viewer:value});},[publish]);
-  useEffect(()=>{publish({});},[filters,receipt,preview,unconfirmed,acceptPending,exportState,publish]);
+  useEffect(()=>{publish({});},[filters,receipt,preview,unconfirmed,acceptPending,exportState,finishOperation,publish]);
   useEffect(()=>{
     const controller=new AbortController();setContext(null);setError('');
     // Effect replay may reuse this component's claim. A real remount gets a
@@ -105,17 +107,18 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     return()=>controller.abort();
   },[loadOwner,receipt?.operation_uuid,unconfirmed,acceptPending]);
   async function save(decisions,{deferred,selectionMode}={}){
-    if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||unconfirmed||exportState.pending||!exportState.exported&&(exportState.acceptOperation||exportState.prepared)||!capabilities.drafts||!current.current)return false;
+    if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||finishOperation||unconfirmed||exportState.pending||!exportState.exported&&(exportState.acceptOperation||exportState.prepared)||!capabilities.drafts||publicationBlocked||!current.current)return false;
     inFlight.current=true;setBusy(true);setError('');setPreview(null);operation.current=null;
+    let committed=false;
     try{
       await saveWorkbenchDecisions({root,context:current.current,decisions,deferred,selectionMode},api,value=>{
-        if(activeOwner.current===loadOwner){current.current=value;setContext(value);}
+        committed=true;if(activeOwner.current===loadOwner){current.current=value;setContext(value);}
       });
       // The server may have committed the old owner's draft. Its reply cannot
       // replace a newer owner's read or navigate that owner out of review.
       if(activeOwner.current!==loadOwner)return false;
       publish({});return true;
-    }catch(error){if(activeOwner.current===loadOwner){setError(`Some decisions may already be saved. Refresh the draft before continuing. ${error.message}`);setContext(null);}return false;}
+    }catch(error){if(activeOwner.current===loadOwner){setError(`${committed?'Some decisions were saved.':acceptanceFailureKind(error)==='rejected'?'Changes were not saved.':'Changes may already be saved.'} Refresh the review before continuing. ${error.message}`);setContext(null);}return false;}
     finally{inFlight.current=false;setBusy(false);}
   }
   function select(next){selected.current=next;setHighlighted(next);setSelectionOmitted(0);publish({selected:next,selection_omitted_count:0});}
@@ -127,7 +130,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   }
   async function defer(){if(await save([],{deferred:true}))onDefer();}
   function beginSelected(ids,kind='merge'){
-    if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||exportLocked||!contextFresh||receipt||preview||selectionIntent)return;
+    if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||finishOperation||exportLocked||!contextFresh||publicationBlocked||receipt||preview||selectionIntent)return;
     setError('');setViewNotice('');
     try{
       const intent={...selectedReview(current.current,ids),kind,scope:current.current.candidate_scope_revision,version:current.current.draft.draft_version};
@@ -138,13 +141,13 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     }catch(error){setError(error.message);}
   }
   async function prepareSelection(intent,review){
-    if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||exportLocked||!current.current)return;
+    if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||finishOperation||exportLocked||!current.current||publicationBlocked)return;
     if(current.current.candidate_scope_revision!==intent.scope||current.current.draft.draft_version!==intent.version){setSelectionIntent(null);setError('The draft changed. Inspect the current selection and choose Merge or Export again.');return;}
-    const owner=mergeLifetime.current;
+    const owner=mergeLifetime.current;let committed=false;
     inFlight.current=true;setBusy(true);setError('');setPreview(null);operation.current=null;
     try{
       const ensureCurrent=()=>{if(!owner||mergeLifetime.current!==owner||activeOwner.current!==loadOwner)throw Error('The incoming workspace changed while preparing the merge. Choose Merge or Export again in the current workspace.');};
-      const value=await prepareSelectedIncoming({root,context:current.current,ids:intent.ids,review},(path,options)=>{ensureCurrent();return api(path,options);},value=>{ensureCurrent();current.current=value;setContext(value);});
+      const value=await prepareSelectedIncoming({root,context:current.current,ids:intent.ids,review},(path,options)=>{ensureCurrent();return api(path,options);},value=>{committed=true;ensureCurrent();current.current=value;setContext(value);});
       ensureCurrent();
       if(intent.kind==='merge'){
         if(exportState.exported)setExportState(nextWorkbenchWorkflow(exportState));
@@ -153,7 +156,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
         const next={...nextWorkbenchWorkflow(exportState),mode:'selected',preview:value,phase:'previewed'};
         setExportState(next);publish({exportState:next});setExportDialog(intent.kind==='merge-export');
       }
-    }catch(error){if(mergeLifetime.current===owner){setError(`Draft changes may already be saved. Refresh and inspect the selection before trying again. ${error.message}`);setContext(null);}}
+    }catch(error){if(mergeLifetime.current===owner){setError(`${committed?'The draft was saved; the merge was not submitted.':acceptanceFailureKind(error)==='rejected'?'The selection was not saved.':'Draft changes may already be saved.'} Refresh and inspect the selection before trying again. ${error.message}`);setContext(null);}}
     finally{inFlight.current=false;if(mergeLifetime.current!==null){setSelectionIntent(null);setBusy(false);}}
   }
   async function accept({retry=false}={}){
@@ -179,15 +182,31 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   }
   // Finish review: explicit, confirmed consent to leave every remaining pending
   // epoch of the cumulative candidate out, under its current scope/draft fences.
-  async function finishReview(){
-    if(scopeKind!=='cumulative_pending'||activeOwner.current!==loadOwner||externalBusy||inFlight.current||unconfirmed||acceptPending||exportLocked||preview||receipt||!capabilities.drafts||!current.current)return false;
+  async function finishReview({recover=false,retry=false}={}){
+    if(scopeKind!=='cumulative_pending'||activeOwner.current!==loadOwner||externalBusy||inFlight.current||unconfirmed||acceptPending||exportLocked||preview||receipt||!capabilities.drafts||(!recover&&(!current.current||finishOperation)))return false;
+    const op=recover?finishOperation:{context:{actor:current.current.actor,candidate_scope_revision:current.current.candidate_scope_revision,draft:{draft_version:current.current.draft.draft_version}},operationUuid:crypto.randomUUID()};
+    if(!op)return false;
     inFlight.current=true;setBusy(true);setError('');
+    let submitted=false;
     try{
-      const value=await finishWorkbenchReview(root,current.current,api);
-      if(activeOwner.current===loadOwner){current.current=value;setContext(value);setFinishing(false);select([]);}
+      setFinishOperation(op);publish({finishOperation:op});
+      await flushBeforeSubmission();
+      if(activeOwner.current!==loadOwner)throw Error('The workspace changed. Confirm Finish reviewing again.');
+      submitted=true;
+      const value=await finishWorkbenchReview(root,op.context,api,{operationUuid:op.operationUuid,receiptOnly:recover&&!retry});
+      setFinishOperation(null);publish({finishOperation:null});
+      if(activeOwner.current===loadOwner){setFinishing(false);if(!recover){current.current=value;setContext(value);}else setContext(null);}
       try{onMerged?.(value.review_completion);onChange?.({kind:'membership',protocolId});onRefresh?.();}catch(error){setViewNotice(`Review finished. The view could not be refreshed. ${error.message}`);}return true;
-    }catch(error){if(activeOwner.current===loadOwner){setFinishing(false);setError(`Finish review was not confirmed. Refresh the draft before continuing. ${error.message}`);setContext(null);}return false;}
-    finally{inFlight.current=false;setBusy(false);}
+    }catch(error){
+      const uncertain=recover||submitted&&acceptanceFailureKind(error)!=='rejected';
+      if(!uncertain){setFinishOperation(null);publish({finishOperation:null});}
+      if(activeOwner.current===loadOwner){setFinishing(false);setError(uncertain?'Review may have finished. Check its completion before continuing.':`Review was not finished. Refresh the review and confirm again. ${error.message}`);setContext(null);}return false;
+    }finally{inFlight.current=false;setBusy(false);}
+  }
+  function refreshReview(){
+    if(inFlight.current||finishOperation||unconfirmed||acceptPending||exportLocked)return;
+    setSelectionIntent(null);setFinishing(false);setPreview(null);operation.current=null;
+    publish({preview:null,operation:null});setError('');setNonce(value=>value+1);onRefresh?.({renewCandidate:true});
   }
   const pageOffers=useRef(new WeakMap());
   const pageOffer=useMemo(()=>{
@@ -270,13 +289,13 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
       </div>
       <div className="incoming-bar-actions">
         <div className="incoming-draft-host" ref={setDraftSelectionTarget}/>
-        <button disabled={busy||externalBusy||!!selectionIntent||!!preview||unconfirmed||!contextFresh&&!receipt&&!exportLocked||!receipt&&!exportLocked&&!highlighted.length||!capabilities.incoming_export||receiptUndone} title={receiptUndone?'This merge was undone; there are no accepted additions to export':capabilities.incoming_export?(receipt?'Export accepted additions':'Export exact incoming additions'):'Incoming-only export service is not yet available'} onClick={()=>openExport(false)}><Download size={14} aria-hidden="true"/> {receipt?'Export accepted':'Export'}</button>
-        {scopeKind==='cumulative_pending'&&capabilities.drafts&&<button disabled={busy||externalBusy||!contextFresh||exportLocked||unconfirmed||acceptPending||!!preview||!!receipt||!!selectionIntent||finishing||!(epochs>0)} title="Leave the remaining new epochs out of Main and finish this review" onClick={()=>setFinishing(true)}><CheckCheck size={14} aria-hidden="true"/> Finish reviewing</button>}
+        <button disabled={busy||externalBusy||!!finishOperation||publicationBlocked||!!selectionIntent||!!preview||unconfirmed||!contextFresh&&!receipt&&!exportLocked||!receipt&&!exportLocked&&!highlighted.length||!capabilities.incoming_export||receiptUndone} title={receiptUndone?'This merge was undone; there are no accepted additions to export':capabilities.incoming_export?(receipt?'Export accepted additions':'Export exact incoming additions'):'Incoming-only export service is not yet available'} onClick={()=>openExport(false)}><Download size={14} aria-hidden="true"/> {receipt?'Export accepted':'Export'}</button>
+        {scopeKind==='cumulative_pending'&&capabilities.drafts&&<button disabled={busy||externalBusy||!!finishOperation||!contextFresh||exportLocked||unconfirmed||acceptPending||!!preview||!!receipt||!!selectionIntent||finishing||!(epochs>0)} title="Leave the remaining new epochs out of Main and finish this review" onClick={()=>setFinishing(true)}><CheckCheck size={14} aria-hidden="true"/> Finish reviewing</button>}
         <button disabled={busy||externalBusy} title="Leave review; saved draft and pending operations remain available" onClick={onDefer}><X size={14} aria-hidden="true"/> Cancel</button>
 
       </div>
     </div>
-      <dialog ref={detailsDialog} className="incoming-review-dialog incoming-review-details" aria-labelledby={detailsTitle} onClose={()=>{if(detailsTrigger.current?.isConnected)detailsTrigger.current.focus();}}><header><h2 id={detailsTitle}>Review details</h2><button onClick={closeDetails} aria-label="Close review details"><X size={16}/></button></header><div>        <button disabled={busy||externalBusy||!!selectionIntent||!!preview||unconfirmed||!contextFresh&&!receipt&&!exportLocked||!receipt&&!exportLocked&&!highlighted.length||!capabilities.incoming_export||!capabilities.additive_accept||receiptUndone} onClick={()=>openExport(true)}><GitMerge size={14} aria-hidden="true"/> Merge & export</button>
+      <dialog ref={detailsDialog} className="incoming-review-dialog incoming-review-details" aria-labelledby={detailsTitle} onClose={()=>{if(detailsTrigger.current?.isConnected)detailsTrigger.current.focus();}}><header><h2 id={detailsTitle}>Review details</h2><button onClick={closeDetails} aria-label="Close review details"><X size={16}/></button></header><div>        <button disabled={busy||externalBusy||!!finishOperation||publicationBlocked||!!selectionIntent||!!preview||unconfirmed||!contextFresh&&!receipt&&!exportLocked||!receipt&&!exportLocked&&!highlighted.length||!capabilities.incoming_export||!capabilities.additive_accept||receiptUndone} onClick={()=>openExport(true)}><GitMerge size={14} aria-hidden="true"/> Merge & export</button>
 <div className="incoming-selection-tools">
       {onRefresh&&<button className="incoming-utility" disabled={refreshing} onClick={onRefresh}><RefreshCw size={13} aria-hidden="true"/> Refresh</button>}
       {onHistory&&<button className="incoming-utility" onClick={()=>{closeDetails();onHistory();}}><History size={13} aria-hidden="true"/> Proposal history</button>}
@@ -293,7 +312,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
       {context?.draft.deferred&&<button disabled={busy||externalBusy||exportLocked||!capabilities.drafts} onClick={()=>save([],{deferred:false})}>Resume deferred review</button>}
     {selectionOmitted>0&&<p role="status">The previous temporary selection of {number(selectionOmitted)} epochs was too large to restore. Use Select all or select the desired epochs again. Saved review decisions and merge recovery remain available.</p>}
     {exportLocked&&!unconfirmed&&!exportState.exported&&<p role="status">A saved export workflow is awaiting a receipt. Reopen Export to resume it before changing this draft.</p>}
-    {error&&<div className="error" role="alert">{error}<button disabled={busy||externalBusy} onClick={()=>setNonce(value=>value+1)}>Refresh draft</button></div>}
+    {(error||publicationBlocked&&!externalBusy&&!busy&&!refreshing||finishOperation&&!busy)&&<div className="error" role="alert">{error||(finishOperation?'Check the previous review completion before continuing.':'This review needs to be renewed before merging.')}{finishOperation?<><button disabled={busy||externalBusy} onClick={()=>finishReview({recover:true})}>Check review completion</button><button disabled={busy||externalBusy} onClick={()=>finishReview({recover:true,retry:true})}>Retry same finish</button></>:<button disabled={busy||externalBusy} onClick={refreshReview}>Refresh review</button>}</div>}
     {!contextFresh&&!error&&<p role="status">Loading frozen proposal…</p>}
     {selectionIntent&&<section className="incoming-selection-review" aria-label="Review selected epochs"><strong>{number(selectionIntent.ids.length)} selected epochs</strong><span>{number(selectionIntent.unreviewed.length)} need your review</span><button className="primary" disabled={busy||externalBusy||!contextFresh} onClick={()=>prepareSelection(selectionIntent,true)}>Mark selected reviewed & preview</button><button disabled={busy||externalBusy} onClick={()=>setSelectionIntent(null)}>Cancel review</button><p>Review marks are saved to your draft. Main changes only after the next preview is confirmed.</p></section>}
     {finishing&&<FinishReviewConfirmation count={epochs} disabled={busy||externalBusy||!contextFresh} cancelDisabled={busy} onConfirm={finishReview} onCancel={()=>setFinishing(false)}/>}
@@ -305,6 +324,6 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     {receipt&&!exportLocked&&<button disabled={busy||externalBusy} onClick={()=>reviewRemaining()}>Review remaining additions</button>}
     {(exportState.completed||[]).filter(value=>value.exported).map((value,index)=><p key={value.exported?.dataset_uuid||value.receipt?.event_uuid||index}>{value.exported&&<a href={value.exported.download_url} download>{value.exported.name||'Download earlier incoming export'}</a>}</p>)}
     {exportDialog!==null&&<WorkbenchExportDialog selectedOnly externalBusy={externalBusy||!contextFresh&&!exportLocked&&!receipt} protocolId={protocolId} item={item} accept={exportDialog} acceptReceipt={receipt} state={exportState} onState={value=>{setExportState(value);if(value.receipt)setReceipt(value.receipt);publish({exportState:value,...(value.receipt?{receipt:value.receipt}:{})});}} onClose={()=>{setExportDialog(null);setNonce(value=>value+1);}} onChanged={onChange}/>}
-    {visible&&adapterReady?<div className="incoming-browser" tabIndex={-1} aria-label="Incoming epoch browser">{filterTarget&&<RetainedPortal target={filterTarget}><ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked||!!selectionIntent||!!preview} onChange={setFilters}/></RetainedPortal>}<Inspector onRefreshEpochs={refreshEpochs} metadataPresentationRevision={metadataPresentationRevision} traceReadContext={visible.context.trace_read_context} onReviewDetails={openDetails} initialPageRead={initialPageRead} draftSelectionTarget={draftSelectionTarget} readPaused={busy||externalBusy||!contextFresh} draftSelection={{selected:highlighted,disabled:busy||externalBusy||exportLocked||!!selectionIntent||!!preview||!capabilities.drafts||!contextFresh||!!receipt,onMerge:capabilities.additive_accept?ids=>beginSelected(ids):null}} toolbarTarget={toolbarTarget} readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onTagFilter={predicate=>setFilters(current=>({...clearTagFilters(current),tag_predicate:JSON.stringify(predicate)}))} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={rememberViewer} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh&&!receiptUndone?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
+    {visible&&adapterReady?<div className="incoming-browser" tabIndex={-1} aria-label="Incoming epoch browser">{filterTarget&&<RetainedPortal target={filterTarget}><ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked||!!selectionIntent||!!preview} onChange={setFilters}/></RetainedPortal>}<Inspector onRefreshEpochs={refreshEpochs} metadataPresentationRevision={metadataPresentationRevision} traceReadContext={visible.context.trace_read_context} onReviewDetails={openDetails} initialPageRead={initialPageRead} draftSelectionTarget={draftSelectionTarget} readPaused={busy||externalBusy||!!finishOperation||!contextFresh} draftSelection={{selected:highlighted,disabled:busy||externalBusy||!!finishOperation||publicationBlocked||exportLocked||!!selectionIntent||!!preview||!capabilities.drafts||!contextFresh||!!receipt,onMerge:capabilities.additive_accept?ids=>beginSelected(ids):null}} toolbarTarget={toolbarTarget} readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onTagFilter={predicate=>setFilters(current=>({...clearTagFilters(current),tag_predicate:JSON.stringify(predicate)}))} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={rememberViewer} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh&&!receiptUndone?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
   </section>;
 }

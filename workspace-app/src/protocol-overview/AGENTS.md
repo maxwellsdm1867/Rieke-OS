@@ -146,3 +146,9 @@ Delayed project-wide prefetch visits only still-invalidated summaries. A visible
 owner that already refreshed (or is reading) with its own revision clock wins;
 background prefetch must not replace that clock or make the fresh view inert.
 The cache and actual-App overview switching tests cover the delayed startup path.
+
+Action failures appear once: the card does not duplicate a failure already reported
+by its command owner. Local notifications are dismissible, expire after eight
+seconds, and retire when their queue/candidate owner changes. Notification expiry
+never retries a command or changes recovery authority; uncertain-operation
+recovery remains owned by the command controller.

@@ -226,6 +226,31 @@ owner/lifetime checks; the header grants no new page, mutation or replay authori
 The pending suite checks fresh 200/201 responses, byte-identical replay bodies,
 absent replay headers and failed-commit refusal using transactional doubles.
 
+## Review recovery across repeated actions
+
+Lineage proof walks durable `(revision UUID, binding version)` states one
+transition at a time. An Undo can restore a binding that is itself an earlier
+Undo; a candidate prepared at that intermediate binding remains valid. Traversal
+stops only at its exact baseline revision/version/hash, never at equal contents
+alone. Unreceipted replacement bindings still refuse. Versions decrease and the
+existing bounded traversal guard remains in effect.
+
+Draft, selection preparation and Finish commit before projecting the returned
+context. A context/projection validation failure after that commit returns the
+existing conflict response with `saved: true`; Finish also returns its
+`operation_uuid`. Pre-write rejection does not carry this flag. Unexpected server
+or transport failures remain uncertain. The existing actor/protocol-fenced
+`GET /protocols/<protocol>/workbench/receipts/<operation>` independently recovers
+Finish's public completion receipt even when the current candidate context cannot
+be read. It excludes private inverse decisions. Retry uses the original Finish
+operation and request; no new completion is inferred from a failed projection.
+
+The cumulative-pending suite exercises three mixed rounds of merge-all/Undo,
+selected-two merge/Undo, and Finish/Undo, comparing exact Main and pending
+membership, epoch/cell counts and effective review decisions. It also exercises
+post-commit context failure, independent receipt recovery and pre-write rejection.
+These transactional doubles supplement, rather than qualify, native UI behavior.
+
 ## Delta merges (O(added), not O(main))
 
 With the canonical explorer reader, Workbench revisions are read as verified

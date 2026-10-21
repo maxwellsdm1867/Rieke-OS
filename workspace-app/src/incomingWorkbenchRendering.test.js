@@ -656,17 +656,19 @@ for(const failure of ['view','accepted-write'])test(`Workbench acceptance waits 
 });
 
 test('Finish review asks for confirmation, then posts the cumulative fences and reports left-out epochs',async()=>{
- const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,posts=[],events=[];let renderer;
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,posts=[],events=[];let renderer,snapshot;let contextReads=0;
  let context={actor:'author',candidate_revision_uuid:'union',candidate_scope_revision:'scope',draft:{draft_version:4,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:3,pending_cells:1,excluded_epochs:0},protocol:{definition:{protocol_uuid:'history'}}};
  globalThis.fetch=async(path,options={})=>{
   if(options.method){posts.push({path:String(path),method:options.method,body:JSON.parse(options.body)});context={...context,review_completion:{kind:'workbench_review_completion',operation_uuid:posts.at(-1).body.operation_uuid,protocol_uuid:'history',candidate_revision_uuid:'union',actor:'author',expected_draft_version:5,left_out_epoch_count:3},draft:{...context.draft,draft_version:5},counts:{pending_epochs:0,pending_cells:0,excluded_epochs:3}};}
+  if(!options.method)contextReads++;
   return {ok:true,status:200,json:async()=>context};
  };
  try{
   const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
   const pendingCounts={contract_version:1,queue_revision:'q',pending_epoch_count:3,pending_cell_count:1,eligible_pending_epoch_count:3,eligible_pending_cell_count:1};
-  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'union'},scopeKind:'cumulative_pending',pendingCounts,onChange:()=>events.push('change'),onRefresh:()=>events.push('refresh'),capabilities:{drafts:true,frozen_browse:true,additive_accept:true}}));});
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'union'},scopeKind:'cumulative_pending',pendingCounts,onSession:value=>{snapshot=value;},onChange:()=>events.push('change'),onRefresh:()=>events.push('refresh'),capabilities:{drafts:true,frozen_browse:true,additive_accept:true}}));});
   const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
+  await act(async()=>renderer.root.find(node=>node.type?.name==='Inspector').props.onSelectionChange(['epoch-a','epoch-b']));
   await act(async()=>button('Finish reviewing').props.onClick());
   assert.match(label(renderer.root),/Leave out 3 remaining epochs\?/);assert.match(label(renderer.root),/Future updates show new arrivals; you can explicitly review left-out epochs again\./);
   assert.equal(posts.length,0,'opening the confirmation writes nothing');
@@ -677,6 +679,15 @@ test('Finish review asks for confirmation, then posts the cumulative fences and 
   assert.deepEqual(posts,[{path:'/api/protocols/history/workbench/candidates/union/finish',method:'POST',body:{expected_candidate_scope_revision:'scope',expected_version:4,operation_uuid:posts[0].body.operation_uuid}}]);
   assert.deepEqual(events,['change','refresh'],'queue, card and badge refresh after finishing');
   assert.match(label(renderer.root),/3 epochs left out · not pending/);
+  assert.deepEqual(snapshot.selected,['epoch-a','epoch-b'],'finish retains presentation selection for same-candidate Undo');
+  const saved=structuredClone(snapshot),readsBefore=contextReads;
+  await act(async()=>renderer.unmount());
+  context={...context,candidate_scope_revision:'restored-scope',draft:{...context.draft,draft_version:6},counts:{pending_epochs:3,pending_cells:1,excluded_epochs:0}};
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'union'},scopeKind:'cumulative_pending',session:saved,capabilities:{drafts:true,frozen_browse:true,additive_accept:true}}));});
+  assert.equal(contextReads,readsBefore+1,'same-candidate reopen still requires fresh context');
+  assert.deepEqual(renderer.root.find(node=>node.type?.name==='Inspector').props.draftSelection.selected,['epoch-a','epoch-b']);
+  assert.equal(posts.length,1,'restored selection is presentation, not merge or finish consent');
+
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
@@ -787,5 +798,47 @@ test('refresh retires an unsubmitted confirmation instead of enabling stale coun
   assert.equal(saved.preview,null);assert.equal(saved.operation,null);
   assert.equal(renderer.root.findAllByProps({role:'alert'}).length,0);
   assert.match(label(renderer.root),/Choose Merge again to review the current additions/);
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('lost Finish response keeps one recoverable operation through remount and checks receipt without another write',async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch;let renderer,snapshot,completion;const posts=[],events=[];
+ const context={actor:'author',candidate_revision_uuid:'union',candidate_scope_revision:'scope',draft:{draft_version:4,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:3,pending_cells:1},protocol:{definition:{protocol_uuid:'history'}}};
+ globalThis.fetch=async(path,options={})=>{
+  if(options.method==='POST'){
+   const body=JSON.parse(options.body);posts.push(body);
+   completion={kind:'workbench_review_completion',operation_uuid:body.operation_uuid,protocol_uuid:'history',candidate_revision_uuid:'union',actor:'author',expected_draft_version:5,left_out_epoch_count:3};
+   throw Error('connection lost after commit');
+  }
+  return {ok:true,status:200,json:async()=>String(path).includes('/receipts/')?completion:context};
+ };
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
+  const props={protocolId:'history',item:{candidate_revision_uuid:'union'},scopeKind:'cumulative_pending',onSession:value=>{snapshot=value;},onMerged:value=>events.push(value),capabilities:{drafts:true,frozen_browse:true,additive_accept:true}};
+  const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,props));});
+  await act(async()=>button('Finish reviewing').props.onClick());await act(async()=>button('Leave out & finish').props.onClick());
+  assert.equal(posts.length,1);assert.equal(snapshot.finishOperation.operationUuid,posts[0].operation_uuid);assert.equal(button('Finish reviewing').props.disabled,true);
+  const saved=structuredClone(snapshot);await act(async()=>renderer.unmount());
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{...props,session:saved}));});
+  assert.ok(button('Check review completion'));assert.equal(button('Finish reviewing').props.disabled,true);
+  await act(async()=>button('Check review completion').props.onClick());
+  assert.deepEqual(events,[completion]);assert.equal(posts.length,1);assert.equal(snapshot.finishOperation,null);
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+
+test('blocked publication stays quietly gated during automatic review renewal',async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch;let renderer;
+ const context={candidate_scope_revision:'scope',publication_blocked:'stale base',draft:{draft_version:1,decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:3,pending_cells:1},protocol:{definition:{protocol_uuid:'history'}}};
+ globalThis.fetch=async()=>({ok:true,status:200,json:async()=>context});
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
+  const props={protocolId:'history',item:{candidate_revision_uuid:'union'},capabilities:{drafts:true,frozen_browse:true,additive_accept:true}};
+  const render=async extra=>act(async()=>{renderer?renderer.update(React.createElement(Review,{...props,...extra})):renderer=TestRenderer.create(React.createElement(Review,{...props,...extra}));});
+  await render({externalBusy:true});assert.doesNotMatch(label(renderer.root),/needs to be renewed/);
+  await render({refreshing:true});assert.doesNotMatch(label(renderer.root),/needs to be renewed/);
+  await render({});assert.match(label(renderer.root),/needs to be renewed/);
+  assert.equal(renderer.root.find(node=>node.type?.name==='Inspector').props.draftSelection.disabled,true);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });

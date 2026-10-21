@@ -4,7 +4,7 @@
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
     "src/App.jsx": {
-      "fingerprint": "0d7a1fd10c1febeb4ed3f11d3dc03f5b275f3d70c4af183c8fbf536cd48cfb03",
+      "fingerprint": "b42f79c2920500f4a383d658afff8690e971ccade7fd8ac385b894fa392e977e",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -48,7 +48,7 @@
         }
       ],
       "lifetime": "mixed-project-and-retained-composition",
-      "reason": "Route-matched shared card merges stay in their originating Overview or import route; verified receipt and invalidation remain App-owned.",
+      "reason": "Route-matched shared card merges stay in their originating Overview or import route; verified receipt and invalidation remain App-owned. Independent review 2026-10-21 (repeated review cycles): Adds dismiss only for definitive source-command errors; uncertain recovery controls remain persistent and retain command ownership.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/appLifecycleImports.test.js",
@@ -76,7 +76,9 @@
         "src/workbenchSessionLifecycle.test.js",
         "src/workbenchTagScope.test.js",
         "src/workspaceChangesLedger.test.js",
-        "src/incoming-workbench/useSourceMerge.test.js"
+        "src/incoming-workbench/useSourceMerge.test.js",
+        "src/protocolSuggestionHold.test.js",
+        "src/incoming-workbench/sourceMerge.test.js"
       ]
     },
     "src/annotations/annotationProfile.js": {
@@ -1809,30 +1811,35 @@
       ]
     },
     "src/incoming-workbench/selectedIncomingWorkflow.js": {
-      "fingerprint": "0c30deb309ae79b3d05e5597bfaff39d9b4e35d5de831ee23d8cb93754f25d12",
+      "fingerprint": "e707f162d59651ddac2f2f04eeb31707c1748a0d6e18b08ab4f1625de24c4feb",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Checkpoint size review (2026-10-16): disk checkpoints now prune unreachable cumulative candidates (keeping the current candidate and any draft that needs recovery or still offers export) and drop the oldest back/forward view snapshots only above 1.5 MiB, never the current route, protocol latest views or recovery sessions. Live sessions are not mutated; no effect sites, dependencies, consent or recovery owners changed. Combined Merge/Undo/refresh review (2026-10-21): verified membership events renew shared authority; actor-owned sessions isolate history and cumulative recovery and checkpoints traverse inactive actor recovery. Same-author inert presentation survives reads; blocked and empty are distinct. Durable undone receipts retire offers. Explicit frozen refresh refuses pending/uncertain scientific work. Independent workflow review findings addressed; transition and checkpoint regressions cover ownership.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Checkpoint size review (2026-10-16): disk checkpoints now prune unreachable cumulative candidates (keeping the current candidate and any draft that needs recovery or still offers export) and drop the oldest back/forward view snapshots only above 1.5 MiB, never the current route, protocol latest views or recovery sessions. Live sessions are not mutated; no effect sites, dependencies, consent or recovery owners changed. Combined Merge/Undo/refresh review (2026-10-21): verified membership events renew shared authority; actor-owned sessions isolate history and cumulative recovery and checkpoints traverse inactive actor recovery. Same-author inert presentation survives reads; blocked and empty are distinct. Durable undone receipts retire offers. Explicit frozen refresh refuses pending/uncertain scientific work. Independent workflow review findings addressed; transition and checkpoint regressions cover ownership. Independent review 2026-10-21 (repeated review cycles): Protects finishOperation from checkpoint/session pruning just like pending acceptance; no effect or authority transfer.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
         "src/incoming-workbench/selectedIncomingWorkflow.test.js",
-        "src/workbenchTransitionRendering.test.js"
-      ]
-    },
-    "src/incoming-workbench/sourceMerge.js": {
-      "fingerprint": "86df0851b721337c6effced35f8ea64a7f5e6e2f2dbac100a566162e88558818",
-      "sites": [],
-      "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds startAll (prepare -> draft all -> preview all -> accept) under the same owner token/current() checks and recovery identity; restore/validation accept mode all. Persist failure from accepted writes still refuses; view-only failure sets a notice. Single-request merge-all review (2026-10-16): Overview Hold to merge all submits one idempotent merge-all request fenced by the queue revision, saved before submission and recovered by receipt lookup or same-operation replay; no effect sites, dependencies or owners changed. 2026-10-21 independent workflow review: Explicit Finish confirmation prepares the shown queue, persists, rechecks route owner and selected author, then submits guarded completion. Verified completion returns its receipt; uncertain existing merge recovery cannot be replaced.",
-      "tests": [
-        "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js",
+        "src/workbenchTransitionRendering.test.js",
+        "src/protocolSuggestionHold.test.js",
+        "src/incomingWorkbenchRendering.test.js",
         "src/incoming-workbench/sourceMerge.test.js"
       ]
     },
+    "src/incoming-workbench/sourceMerge.js": {
+      "fingerprint": "bb5b476b01c79f623b567ab4d556e3cb402816cfb56f51a9e140701b1ac00e05",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds startAll (prepare -> draft all -> preview all -> accept) under the same owner token/current() checks and recovery identity; restore/validation accept mode all. Persist failure from accepted writes still refuses; view-only failure sets a notice. Single-request merge-all review (2026-10-16): Overview Hold to merge all submits one idempotent merge-all request fenced by the queue revision, saved before submission and recovered by receipt lookup or same-operation replay; no effect sites, dependencies or owners changed. 2026-10-21 independent workflow review: Explicit Finish confirmation prepares the shown queue, persists, rechecks route owner and selected author, then submits guarded completion. Verified completion returns its receipt; uncertain existing merge recovery cannot be replaced. Independent review 2026-10-21 (repeated review cycles): Finish now uses the existing command owner and pre-submission persistence with a stable operation UUID. GET recovery never submits; explicit retry keeps the same identity and actor fence. Definitive failures may dismiss, uncertain operations cannot.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js",
+        "src/incoming-workbench/sourceMerge.test.js",
+        "src/protocolSuggestionHold.test.js",
+        "src/incomingWorkbenchRendering.test.js"
+      ]
+    },
     "src/incoming-workbench/ui/CumulativeIncomingReview.jsx": {
-      "fingerprint": "f2101656925edc2d8c56de73a23fb6d07862a55f1457ffa023e3e9fb500ef028",
+      "fingerprint": "8c8b3eb5f9b0f3f07fbfcffae9ef992db9fd4ad78ba3d44559bcaa5a9baa09ed",
       "sites": [
         {
           "owner": "CumulativeIncomingReview",
@@ -1861,7 +1868,7 @@
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination. 2026-10-16 review: the preparation effect now reads mergeable pending counts via pendingQueueCounts (eligible fields) instead of queue.data.pending_epoch_count; the dependency is the same primitive count, so preparation timing, owner/generation fences and the idempotent prepare rejoin are unchanged. requirePreparedWorkbench moved to workbenchAuthority.js. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed. F6 review (2026-10-18): subscribes to merge-undo completions via useSyncExternalStore so the earlier-merge export offer disappears at once; effect sites unchanged. 2026-10-21 independent merge review: explicit preview confirmation replaces immediate acceptance; acceptance publication retains the claimed child token, while real owner/read changes still retire it. Empty verified queues stop preparation and retain receipt exports and recovery. Mounted StrictMode confirmation covers self-transition, single submission, partial and empty completion; existing profile/remount/recovery cases retained. Refresh review: retain the verified empty presentation during queue refresh/failure; retire only unsubmitted previews on load-owner transition, preserving uncertain/pending acceptance identity. Held refresh and reopen regressions cover this behavior. Combined Merge/Undo/refresh review (2026-10-21): verified membership events renew shared authority; actor-owned sessions isolate history and cumulative recovery and checkpoints traverse inactive actor recovery. Same-author inert presentation survives reads; blocked and empty are distinct. Durable undone receipts retire offers. Explicit frozen refresh refuses pending/uncertain scientific work. Independent workflow review findings addressed; transition and checkpoint regressions cover ownership. 2026-10-21 independent workflow review: Replacement pending cohorts sanitize both inherited and saved destination focus using active/completed receipts; truncated receipts cannot prove survival. Archived export offers require fresh matching operation/candidate/actor/event/binding receipts, with abort and render-visible project/actor/read-lifetime fences. Hidden reads suspend; restored receipts grant no freshness; server undone status is persisted without replacing unrelated draft state.",
+      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination. 2026-10-16 review: the preparation effect now reads mergeable pending counts via pendingQueueCounts (eligible fields) instead of queue.data.pending_epoch_count; the dependency is the same primitive count, so preparation timing, owner/generation fences and the idempotent prepare rejoin are unchanged. requirePreparedWorkbench moved to workbenchAuthority.js. Post-merge presentation review (2026-10-16): plain merged text without receipt identifiers, earlier-merge offers hidden for operations undone this session, and a successful combined-review merge continues with the remaining additions through the existing reviewRemaining path; no effect sites changed. F6 review (2026-10-18): subscribes to merge-undo completions via useSyncExternalStore so the earlier-merge export offer disappears at once; effect sites unchanged. 2026-10-21 independent merge review: explicit preview confirmation replaces immediate acceptance; acceptance publication retains the claimed child token, while real owner/read changes still retire it. Empty verified queues stop preparation and retain receipt exports and recovery. Mounted StrictMode confirmation covers self-transition, single submission, partial and empty completion; existing profile/remount/recovery cases retained. Refresh review: retain the verified empty presentation during queue refresh/failure; retire only unsubmitted previews on load-owner transition, preserving uncertain/pending acceptance identity. Held refresh and reopen regressions cover this behavior. Combined Merge/Undo/refresh review (2026-10-21): verified membership events renew shared authority; actor-owned sessions isolate history and cumulative recovery and checkpoints traverse inactive actor recovery. Same-author inert presentation survives reads; blocked and empty are distinct. Durable undone receipts retire offers. Explicit frozen refresh refuses pending/uncertain scientific work. Independent workflow review findings addressed; transition and checkpoint regressions cover ownership. 2026-10-21 independent workflow review: Replacement pending cohorts sanitize both inherited and saved destination focus using active/completed receipts; truncated receipts cannot prove survival. Archived export offers require fresh matching operation/candidate/actor/event/binding receipts, with abort and render-visible project/actor/read-lifetime fences. Hidden reads suspend; restored receipts grant no freshness; server undone status is persisted without replacing unrelated draft state. Independent review 2026-10-21 (repeated review cycles): A saved Finish operation keeps recovery mounted even for an empty queue. Explicit renewal retires prepared candidate/offer before current-queue preparation; no selections or command consent transfer to a replacement candidate.",
       "tests": [
         "src/workbenchSessionLifecycle.test.js",
         "src/incomingWorkbenchStrictMode.test.js",
@@ -1869,11 +1876,13 @@
         "src/importMergeWorkflow.test.js",
         "src/incomingWorkbenchRendering.test.js",
         "src/workbenchTransitionRendering.test.js",
-        "src/incoming-workbench/selectedIncomingWorkflow.test.js"
+        "src/incoming-workbench/selectedIncomingWorkflow.test.js",
+        "src/protocolSuggestionHold.test.js",
+        "src/incoming-workbench/sourceMerge.test.js"
       ]
     },
     "src/incoming-workbench/ui/FrozenIncomingReview.jsx": {
-      "fingerprint": "71e4ca4edfc8f3239cbb30e46b7cb6a7ef53c7a975620bd0bb3c6652f8113044",
+      "fingerprint": "1dce160a0f5592f6199df22e55fc72d81b4e7fa162151ab5a625e43b6a5ac682",
       "sites": [
         {
           "owner": "FrozenIncomingReview",
@@ -1893,7 +1902,7 @@
         {
           "owner": "FrozenIncomingReview",
           "kind": "useEffect",
-          "fingerprint": "58e691dc7de23a2fd8951994569ca63124ea60f0227cd2420393cf7451d5ec57"
+          "fingerprint": "6a0fe4c583efffb252f0502ea467d71a07e2d4f12c26bba0fae4080c000680c2"
         },
         {
           "owner": "FrozenIncomingReview",
@@ -1922,7 +1931,7 @@
         }
       ],
       "lifetime": "reconnecting-workbench-authority",
-      "reason": "Shared stateless Finish confirmation replaces duplicated presentation; current candidate fences and command lifetime remain unchanged.",
+      "reason": "Shared stateless Finish confirmation replaces duplicated presentation; current candidate fences and command lifetime remain unchanged. Independent review 2026-10-21 (repeated review cycles): Finish operation joins the existing snapshot publication effect and is persisted before submission. Scope-owner checks fence submission; uncertain completion retains exact recovery identity, GET recovery does not grant stale context. Publication-blocked contexts disable scientific actions and expose explicit renewal. Finish preserves local selection for Undo.",
       "tests": [
         "src/importMergeWorkflow.test.js",
         "src/incomingWorkbenchRendering.test.js",
@@ -1933,7 +1942,9 @@
         "src/workbenchRouteRendering.test.js",
         "src/workspaceChangesLedger.test.js",
         "src/workbenchTransitionRendering.test.js",
-        "src/incoming-workbench/selectedIncomingWorkflow.test.js"
+        "src/incoming-workbench/selectedIncomingWorkflow.test.js",
+        "src/protocolSuggestionHold.test.js",
+        "src/incoming-workbench/sourceMerge.test.js"
       ]
     },
     "src/incoming-workbench/ui/IncomingCellTypes.jsx": {
@@ -2136,21 +2147,28 @@
       ]
     },
     "src/incoming-workbench/useSourceMerge.js": {
-      "fingerprint": "0256e5e9bed9753fd06f764bc635f69beb53f3d0db57cd8b3b54239edb11c60b",
+      "fingerprint": "cc598b9b2cf8d4b2e622fe4b652d59bfdbcff170af0ef51a71eacf2010bf19ab",
       "sites": [
         {
           "owner": "useSourceMerge",
           "kind": "useLayoutEffect",
           "fingerprint": "10e8a38a41453dc64f5e184420c11700fb32be684b1f1f97775d553e02652ecf"
+        },
+        {
+          "owner": "useSourceMerge",
+          "kind": "useEffect",
+          "fingerprint": "550fa5f12ac918375492ab3f8cd012beb1f0d2744bc42c6ae056915c999c6ade"
         }
       ],
       "lifetime": "project-command-owner",
-      "reason": "App retains import/source merge orchestration outside Activity. Each request carries project/protocol/route intent and refuses stale completion navigation; pending or uncertain writes remain protected through flush/recovery. 2026-10-16: completion also passes the verified receipt to onAccepted; owner tokens, navigation fences and recovery are unchanged. 2026-10-16: exposes startAll through the same complete()/owner-token path as start. 2026-10-21 independent workflow review: Finish completion passes its verified receipt through onReviewed only for the still-mounted same project. Route retirement before submission refuses, while same-project completion after navigation invalidates without navigating.",
+      "reason": "App retains import/source merge orchestration outside Activity. Each request carries project/protocol/route intent and refuses stale completion navigation; pending or uncertain writes remain protected through flush/recovery. 2026-10-16: completion also passes the verified receipt to onAccepted; owner tokens, navigation fences and recovery are unchanged. 2026-10-16: exposes startAll through the same complete()/owner-token path as start. 2026-10-21 independent workflow review: Finish completion passes its verified receipt through onReviewed only for the still-mounted same project. Route retirement before submission refuses, while same-project completion after navigation invalidates without navigating. Independent review 2026-10-21 (repeated review cycles): One eight-second timer dismisses definitive error presentation only. Cleanup cancels the timer on controller/state replacement and unmount; controller refuses dismissal when any operation remains.",
       "tests": [
         "src/importMergeAppRoute.test.js",
         "src/importMergeWorkflow.test.js",
         "src/incoming-workbench/useSourceMerge.test.js",
-        "src/incoming-workbench/sourceMerge.test.js"
+        "src/incoming-workbench/sourceMerge.test.js",
+        "src/protocolSuggestionHold.test.js",
+        "src/incomingWorkbenchRendering.test.js"
       ]
     },
     "src/incoming-workbench/useWorkbenchQueue.js": {
@@ -2183,16 +2201,18 @@
       ]
     },
     "src/incoming-workbench/workbenchAuthority.js": {
-      "fingerprint": "38c40cc3994e6771f5400a6a0729ea1aaf7e5e61271e70902896803d32d21c27",
+      "fingerprint": "3aa5aa615a6fc4cfbba4ba33ba9837ed0a3cee4590e67e6bd92c19197631be9e",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds pendingQueueCounts, finishWorkbenchReview and hosts requirePreparedWorkbench (moved, unchanged). F2 typed-change-events review (2026-10-18): adds isMergeUndone/MERGE_UNDONE_MESSAGE. 2026-10-21 independent workflow review: Finish creates an operation UUID and validates the returned completion kind, operation, protocol, candidate, actor, draft version and count before granting the Undo offer.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds pendingQueueCounts, finishWorkbenchReview and hosts requirePreparedWorkbench (moved, unchanged). F2 typed-change-events review (2026-10-18): adds isMergeUndone/MERGE_UNDONE_MESSAGE. 2026-10-21 independent workflow review: Finish creates an operation UUID and validates the returned completion kind, operation, protocol, candidate, actor, draft version and count before granting the Undo offer. Independent review 2026-10-21 (repeated review cycles): Finish receipt-only recovery validates operation, protocol, candidate, actor and draft receipt; callers supply retained operation identity for retry. No new effects or read-to-consent conversion.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
         "src/incoming-workbench/workbenchAuthority.test.js",
         "src/workspaceChangesLedger.test.js",
-        "src/incoming-workbench/sourceMerge.test.js"
+        "src/incoming-workbench/sourceMerge.test.js",
+        "src/protocolSuggestionHold.test.js",
+        "src/incomingWorkbenchRendering.test.js"
       ]
     },
     "src/loadingNotice.js": {
@@ -2899,8 +2919,18 @@
       ]
     },
     "src/protocol-overview/ui/ProtocolSuggestion.jsx": {
-      "fingerprint": "238dde918e599cfd284db3e68a2029ee51ce88f9602af6f94140c157926accd4",
+      "fingerprint": "b293bdf33f5e3c96c70dd9a02793accbe12979ca56cfb1000e1e3d4e771c0e2b",
       "sites": [
+        {
+          "owner": "ProtocolSuggestion",
+          "kind": "useEffect",
+          "fingerprint": "494f44edb50230f61c0ec0b07142a17f0c12434ab52d4d7abdab1e4b186c8aed"
+        },
+        {
+          "owner": "ProtocolSuggestion",
+          "kind": "useEffect",
+          "fingerprint": "a0e9bc45acd3f41aad888ba1c598cca176c69e90fd53b449eb0cee8021b660d6"
+        },
         {
           "owner": "ImportSuggestions",
           "kind": "useEffect",
@@ -2918,7 +2948,7 @@
         }
       ],
       "lifetime": "semantic-auto-open-intent + project-review-state",
-      "reason": "Import dialog modal lifetime delegates to the shared retained hook; confirmed actions close it to expose global Undo, failure keeps review open. Cards share Finish confirmation without moving queue authority.",
+      "reason": "Import dialog modal lifetime delegates to the shared retained hook; confirmed actions close it to expose global Undo, failure keeps review open. Cards share Finish confirmation without moving queue authority. Independent review 2026-10-21 (repeated review cycles): Local action notices expire after eight seconds or dismissal, with timer cleanup and queue/owner reset. Already-reported command errors are not duplicated. Expiry never retries commands or removes controller recovery authority.",
       "tests": [
         "src/importMergeWorkflow.test.js",
         "src/importReviewDialog.test.js",
@@ -2927,7 +2957,9 @@
         "src/semanticPresentationControls.test.js",
         "src/useSemanticReset.test.js",
         "src/workbenchRouteRendering.test.js",
-        "src/workbenchTransitionRendering.test.js"
+        "src/workbenchTransitionRendering.test.js",
+        "src/incomingWorkbenchRendering.test.js",
+        "src/incoming-workbench/sourceMerge.test.js"
       ]
     },
     "src/protocol-overview/ui/SelectionOverview.jsx": {

@@ -23,6 +23,14 @@ export default function ProtocolSuggestion({suggestion:given,pendingProtocol=nul
   const launching=useRef(false),[merging,setMerging]=useState(false),[error,setError]=useState(''),[retired,setRetired]=useState(null),[finishIdentity,setFinishIdentity]=useState(null);
   const queue=useWorkbenchQueue(pendingProtocol||'',revision,pendingProtocol?provided:null,projectId);
   const undoVersion=useSyncExternalStore(subscribeMergeUndone,()=>protocolMergeUndoVersion(projectId,pendingProtocol||given?.protocol_uuid));
+  // Notifications describe one attempted action, not the current queue's
+  // authority. Recovery/operation ownership stays with the command controller.
+  useEffect(()=>{
+    if(!error)return;
+    const timer=setTimeout(()=>setError(''),8000);
+    return()=>clearTimeout(timer);
+  },[error]);
+  useEffect(()=>{setError('');},[projectId,pendingProtocol,given?.candidate_revision_uuid,given?.source_sha256,queue.data?.queue_revision,undoVersion]);
   if(queue.preparation||queue.preparing)return <ViewPreparation resource={queue}/>;
   const pending=pendingProtocol&&!given?pendingProtocolSuggestion(queue.data,main,pendingProtocol):null;
   if(pending?.blocked)return <p className="protocol-merge-blocked" role="status"><Info size={14} aria-hidden="true"/> {pending.blocked}</p>;
@@ -39,7 +47,7 @@ export default function ProtocolSuggestion({suggestion:given,pendingProtocol=nul
     if(launching.current||disabled||applied||stale||!hasAdditions||!onMerge||mergeAll&&(queue.loading||queue.error))return;
     launching.current=true;setMerging(true);setError('');
     try{if(await onMerge(suggestion.protocol_uuid,options)!==true)throw Error('The destination is unavailable. Refresh the project before merging.');if(mergeAll){setRetired({queueRevision:suggestion.queue_revision,undoVersion});queue.reload();}}
-    catch(error){setError(error.message);}
+    catch(error){if(!error.reported)setError(error.message);}
     finally{launching.current=false;setMerging(false);}
   }
   async function finish(){
@@ -48,7 +56,7 @@ export default function ProtocolSuggestion({suggestion:given,pendingProtocol=nul
     try{
       if(await onMerge(suggestion.protocol_uuid,{kind:'finish_review',queue_revision:suggestion.queue_revision})!==true)throw Error('Review completion was not confirmed.');
       setRetired({queueRevision:suggestion.queue_revision,undoVersion});setFinishIdentity(null);queue.reload();
-    }catch(error){setFinishIdentity(null);setError(error.message);queue.reload();}
+    }catch(error){setFinishIdentity(null);if(!error.reported)setError(error.message);queue.reload();}
     finally{launching.current=false;setMerging(false);}
   }
   const title=humanize(protocolName??suggestion.protocol_name);
@@ -62,7 +70,7 @@ export default function ProtocolSuggestion({suggestion:given,pendingProtocol=nul
     </div></div>
     {finishIdentity===identity&&<FinishReviewConfirmation count={suggestion.pending_epoch_count} disabled={disabled||merging||queue.loading||!!queue.error} cancelDisabled={merging} onConfirm={finish} onCancel={()=>setFinishIdentity(null)}/>}
     {merging&&<p role="status">{finishIdentity===identity?'Finishing review…':mergeAll?'Merging all new epochs into Main…':'Merging eligible additions into Main…'}</p>}
-    {error&&<p className="error" role="alert">{error}</p>}
+    {error&&<p className="error" role="alert">{error} <button className="icon-button" aria-label="Dismiss review notification" onClick={()=>setError('')}><X size={14} aria-hidden="true"/></button></p>}
   </section>;
 }
 
