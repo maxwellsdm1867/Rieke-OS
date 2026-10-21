@@ -1,5 +1,5 @@
 # ISOLATED DIAGNOSTIC BRANCH ONLY. Never merge this replacement into release/main.
-name: Disco performance diagnostics ONLY
+name: Headed foreground A/A diagnostic ONLY
 on:
   workflow_dispatch:
 permissions:
@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   trace-frame-diagnostic:
-    name: Diagnostic only — two fixed trace pairs
+    name: Diagnostic only — headed same-source A/A
     runs-on: macos-15
     timeout-minutes: 15
     defaults:
@@ -17,7 +17,6 @@ jobs:
         shell: bash
     env:
       CANDIDATE: 61881e87e2fe07f1d317ec92e42827243cfec9fa
-      BASELINE: 4de896f2e0b4ea966b5a428c3d2314f93fba935f
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
       - uses: actions/checkout@v4
@@ -29,22 +28,32 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/trace-frame-diagnostic"
           git diff --exit-code "$CANDIDATE" -- benchmarks/registry.json tools/benchmark_prepared_geometry.py tools/benchmark_workflow.py benchmarks/prepared_geometry/observer.mjs benchmarks/workflow/browser.mjs benchmarks/prepared_geometry/fixture.py benchmarks/prepared_geometry/server.py benchmarks/prepared_geometry/build.mjs
-          git worktree add --detach "$RUNNER_TEMP/trace-baseline" "$BASELINE"
           git worktree add --detach "$RUNNER_TEMP/trace-candidate" "$CANDIDATE"
           printf '/workspace-app/node_modules\n/desktop/node_modules\n' >> "$(git rev-parse --git-path info/exclude)"
           python3 - <<'PY'
           import hashlib,json,os,platform,subprocess
           from pathlib import Path
           root=Path.cwd(); output=Path(os.environ['RUNNER_TEMP'])/'trace-frame-diagnostic'
-          paths=['.github/workflows/everyday-million.yml','benchmarks/prepared_geometry/browser.mjs','benchmarks/prepared_geometry/paired.mjs','benchmarks/prepared_geometry/frame-diagnostic.mjs']
-          receipt={'format':'disco-trace-frame-diagnostic-v1','diagnostic_only':True,'qualification':False,'maximum_pairs':2,'samples_per_role':3,
-            'order':['B0','C0','C1','B1','B2','C2'],'pairs':[{'name':'aa','baseline':os.environ['CANDIDATE'],'candidate':os.environ['CANDIDATE'],'launch':['baseline','candidate']},{'name':'reversed','baseline':os.environ['BASELINE'],'candidate':os.environ['CANDIDATE'],'launch':['candidate','baseline']}],
+          paths=['.github/workflows/everyday-million.yml','benchmarks/prepared_geometry/browser.mjs','benchmarks/prepared_geometry/paired.mjs','benchmarks/prepared_geometry/frame-diagnostic.mjs','benchmarks/prepared_geometry/headed-focus.mjs','benchmarks/prepared_geometry/frontmost-app.swift']
+          receipt={'format':'disco-trace-frame-diagnostic-v1','diagnostic_only':True,'qualification':False,'maximum_pairs':1,'samples_per_role':3,
+            'order':['B0','C0','C1','B1','B2','C2'],'pairs':[{'name':'aa','baseline':os.environ['CANDIDATE'],'candidate':os.environ['CANDIDATE'],'launch':['baseline','candidate']}],
             'harness_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'harness_ref':os.environ['GITHUB_REF'],'workflow_sha':os.environ['GITHUB_WORKFLOW_SHA'],
             'host':{'platform':platform.platform(),'cpus':os.cpu_count()},'instrumentation_caps':{'frames':512,'readiness':128,'visibility':64,'longtasks':128},
-            'limits':['Launch-order crossover only, not same-process source crossover','Diagnostic predicate sampling adds overhead','No source, browser flags, warmups, thresholds or oracle changes','No automatic retries; no qualification artifacts'],
+            'condition':{'headless':False,'distribution':'playwright-chromium-headed','foreground':'bringToFront plus independent frontmost OS PID before and after observation','focus_admission_timeout_ms':5000},
+            'limits':['Diagnostic predicate sampling adds overhead','DOM focus is emulated; OS foreground is bracketed, not continuously sampled','No source, browser flags, warmups, thresholds or oracle changes','Exactly six same-source samples; no automatic retries or qualification artifacts'],
             'sha256':{name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in paths}}
           (output/'predeclared.json').write_text(json.dumps(receipt,indent=2)+'\n')
           PY
+      - name: Compile read-only AppKit foreground identity helper
+        run: |
+          set -euo pipefail
+          /usr/bin/swiftc benchmarks/prepared_geometry/frontmost-app.swift -o "$RUNNER_TEMP/trace-frontmost-app"
+          python3 - <<'PYHELPER'
+          import hashlib,json,os
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP']);source=Path('benchmarks/prepared_geometry/frontmost-app.swift')
+          (root/'trace-frame-diagnostic/foreground-helper.json').write_text(json.dumps({'api':'AppKit.NSWorkspace.shared.frontmostApplication','read_only':True,'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'executable_sha256':hashlib.sha256((root/'trace-frontmost-app').read_bytes()).hexdigest()},indent=2)+'\n')
+          PYHELPER
       - uses: actions/setup-node@v4
         with:
           node-version: '22.12.0'
@@ -57,7 +66,7 @@ jobs:
           npm ci --prefix workspace-app
           npm ci --prefix desktop --ignore-scripts
           desktop/node_modules/.bin/playwright install chromium
-          for source in trace-baseline trace-candidate; do
+          for source in trace-candidate; do
             for package in workspace-app desktop; do
               if [ "$package" = desktop ]; then
                 "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$RUNNER_TEMP/$source/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json" --browser-only
@@ -70,18 +79,15 @@ jobs:
           done
       - name: Check passive logger and unchanged observation contracts
         run: |
-          node --test benchmarks/prepared_geometry/frame-diagnostic.test.mjs benchmarks/prepared_geometry/paired.test.mjs benchmarks/prepared_geometry/observer.test.mjs benchmarks/workflow/browser-readiness.test.mjs
-      - name: Execute exactly two fixed diagnostic pairs without sampled retries
+          node --test benchmarks/prepared_geometry/headed-focus.test.mjs benchmarks/prepared_geometry/frame-diagnostic.test.mjs benchmarks/prepared_geometry/paired.test.mjs benchmarks/prepared_geometry/observer.test.mjs benchmarks/workflow/browser-readiness.test.mjs
+      - name: Execute one fixed headed A/A pair without sampled retries
         run: |
           set -euo pipefail
           unset RIEKE_TEST_DOM_MODULE PREPARED_GEOMETRY_TIMING PREPARED_GEOMETRY_BROWSER
-          for pair in aa reversed; do
+          export DISCO_DIAGNOSTIC_FRONTMOST_HELPER="$RUNNER_TEMP/trace-frontmost-app"
+          for pair in aa; do
             baseline="$RUNNER_TEMP/trace-candidate"
             export DISCO_DIAGNOSTIC_REVERSE_LAUNCH=0
-            if [ "$pair" = reversed ]; then
-              baseline="$RUNNER_TEMP/trace-baseline"
-              export DISCO_DIAGNOSTIC_REVERSE_LAUNCH=1
-            fi
             output="$RUNNER_TEMP/trace-frame-diagnostic/$pair"
             # The original comparison MUST refuse diagnostic timing. Exact
             # correctness, source integrity and cleanup are verified below.
@@ -90,26 +96,57 @@ jobs:
             result=$?
             set -e
             "$RUNNER_TEMP/trace-python/bin/python" -B - "$output" "$result" <<'PY'
-          import json,sys
+          import json,sys,os,re
           from pathlib import Path
           sys.path.insert(0,str(Path.cwd()/'tools'))
           import benchmark_prepared_geometry as owner
           path=Path(sys.argv[1]); rows={role:json.loads((path/role/'receipt.json').read_text()) for role in ('baseline','candidate')}
           for row in rows.values(): owner.validate(row,clean=True)
-          owner.validate_pair(rows['baseline'],rows['candidate'])
+          # Ordinary qualification remains headless-only and must refuse this
+          # diagnostic distribution. Independently bind the fixed A/A schedule.
+          pair=rows['baseline']['pair'];assert pair==rows['candidate']['pair']
+          assert pair['protocol']==owner.PAIRED_PROTOCOL and pair['order']==owner.PAIRED_ORDER
+          assert pair['completed']==[dict(value,execution_index=i) for i,value in enumerate(owner.PAIRED_ORDER)]
+          assert pair['sources']=={role:owner.source_binding(row['source_start']) for role,row in rows.items()}
+          assert pair['sources']['baseline']==pair['sources']['candidate']
+          assert pair['diagnostic_launch_order']==['baseline','candidate'] and pair['diagnostic_only'] is True
+          assert re.fullmatch(r'[0-9a-f]{32}',pair['id'])
+          assert len(set(pair['browser_instances'].values()))==2 and all(type(pid) is int and pid>1 for pid in pair['browser_instances'].values())
           comparison=json.loads((path/'comparison.json').read_text())
-          assert int(sys.argv[2])==1 and comparison=={'status':'failed','error':'Diagnostic geometry timing cannot qualify comparison'},comparison
-          report={'diagnostic_only':True,'qualification':False,'status':'complete','exact_correctness':'passed','ordinary_comparator':'refused_diagnostic_timing','roles':{}}
+          assert int(sys.argv[2])==1 and comparison=={'status':'failed','error':'Paired comparison requires the pinned Playwright browser'},comparison
+          report={'diagnostic_only':True,'qualification':False,'status':'complete','exact_correctness':'passed','ordinary_comparator':'refused_headed_diagnostic_distribution','roles':{}}
           for role,row in rows.items():
-            assert row['environment']['browser']['timing_mode']=='diagnostic'
+            environment=row['environment']['browser'];launch=environment['browser_launch']
+            assert environment['timing_mode']=='diagnostic' and environment['browser']==pair['browser_version']
+            assert launch['distribution']=='playwright-chromium-headed' and launch['headless'] is False and launch['executable_override'] is False
+            assert len(launch['executable_sha256'])==64
+            assert row['pair_role']==role and row['source_start']['commit']==os.environ['CANDIDATE']
+            for i,sample in enumerate(row['samples']):
+              assert sample['source_role']==role and sample['sample_index']==i and sample['browser_instance']==pair['browser_instances'][role]
+              assert sample['execution_index']==owner.PAIRED_ORDER.index({'role':role,'sample':i}) and sample['pair_id']==pair['id'] and sample['protocol']==owner.PAIRED_PROTOCOL
+              for observation in sample['foreground'].values():
+                assert observation['dom']=={'visibility':'visible','focus':True}
+                assert observation['native']['pid']==sample['browser_instance'] and observation['native']['active'] is True
+                assert observation['owner_pid']==sample['browser_instance']
             report['roles'][role]={'source':row['source_start']['commit'],'cleanup':row['cleanup'],'samples':[{'sample':s['sample_index'],'trace':s['trace'],'breakdown':s['breakdown']} for s in row['samples']]}
             for i in range(3):
               diagnostic=json.loads((path/role/'browser'/f'frame-diagnostic-{i}.json').read_text())
               assert diagnostic['diagnostic_only'] is True and diagnostic['frames'] and diagnostic['readiness']
+              assert all(value['visibility']=='visible' and value['focus'] is True for value in diagnostic['frames']+diagnostic['readiness'])
               assert len(diagnostic['frames'])<=512 and len(diagnostic['readiness'])<=128 and len(diagnostic['visibility'])<=64 and len(diagnostic['longtasks'])<=128
             launch=json.loads((path/role/'browser-process.json').read_text())
             assert isinstance(launch['pid'],int) and launch['args']
+          from benchmark_workflow import compare_metrics
+          from statistics import median
+          policy=json.loads(Path('benchmarks/registry.json').read_text())['stress_tracks']['workflow-million']['comparison']
+          def metrics(row):
+            samples=row['samples'];traces=[sample['trace'] for sample in samples]
+            return {'prepared.geometry.million':{'total_ms':median(t['complete_ms'] for t in traces),'endpoints':{'post_stroke':median(t['first_visible_ms'] for t in traces),'first_raf':median(t['first_raf_ms'] for t in traces),'max_post_stroke':max(t['first_visible_ms'] for t in traces),'max_first_raf':max(t['first_raf_ms'] for t in traces),'max_complete':max(t['complete_ms'] for t in traces)}}}
+          report['symmetric_control']={direction:compare_metrics(metrics(rows[left]),metrics(rows[right]),policy) for direction,left,right in [('forward','baseline','candidate'),('reverse','candidate','baseline')]}
+          report['environment_admission']='passed' if all(value['status']=='passed' for value in report['symmetric_control'].values()) else 'invalid'
           (path/'diagnostic-result.json').write_text(json.dumps(report,indent=2)+'\n')
+          assert report['environment_admission']=='passed','Headed A/A environment is unstable; no automatic retry'
+
           PY
           done
       - name: Preserve diagnostic-only evidence, including failures
@@ -121,6 +158,7 @@ jobs:
           retention-days: 14
           path: |
             ${{ runner.temp }}/trace-frame-diagnostic/predeclared.json
+            ${{ runner.temp }}/trace-frame-diagnostic/foreground-helper.json
             ${{ runner.temp }}/trace-frame-diagnostic/**/plan.json
             ${{ runner.temp }}/trace-frame-diagnostic/**/diagnostic-result.json
             ${{ runner.temp }}/trace-frame-diagnostic/**/comparison.json
@@ -132,92 +170,3 @@ jobs:
             ${{ runner.temp }}/trace-frame-diagnostic/**/cleanup.json
             ${{ runner.temp }}/trace-frame-diagnostic/**/*.log
             ${{ runner.temp }}/trace-frame-diagnostic/**/failure-*
-  linux-development-profile:
-    # Original Linux attribution is already running at832dab4; setup repair defaults off.
-    if: ${{ false }}
-    name: Diagnostic only — candidate development CPU attribution
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        shell: bash
-    env:
-      CANDIDATE: 61881e87e2fe07f1d317ec92e42827243cfec9fa
-      PYTHONDONTWRITEBYTECODE: '1'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-      - name: Predeclare development-only profile
-        run: |
-          set -euo pipefail
-          test -z "$(git status --porcelain)"
-          git diff --exit-code "$CANDIDATE" -- tools/benchmark_workflow.py tools/benchmark_everyday.py benchmarks/registry.json benchmarks/workflow/browser.mjs benchmarks/workflow/server.py benchmarks/workflow/fixture-app.mjs
-          git worktree add --detach "$RUNNER_TEMP/linux-candidate" "$CANDIDATE"
-          printf '/workspace-app/node_modules\n/desktop/node_modules\n' >> "$(git rev-parse --git-path info/exclude)"
-          mkdir -p "$RUNNER_TEMP/linux-profile"
-          python3 - <<'PY'
-          import hashlib,json,os,platform,subprocess
-          from pathlib import Path
-          root=Path.cwd();out=Path(os.environ['RUNNER_TEMP'])/'linux-profile'
-          paths=['tools/benchmark_workflow.py','benchmarks/registry.json','benchmarks/workflow/browser.mjs','benchmarks/workflow/server.py','benchmarks/workflow/backend_timing.py']
-          data={'format':'disco-linux-development-profile-v1','diagnostic_only':True,'qualification':False,
-            'source':os.environ['CANDIDATE'],'harness':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'workflow_sha':os.environ['GITHUB_WORKFLOW_SHA'],'workflow_ref':os.environ['GITHUB_REF'],
-            'epochs':1000000,'protocol_epochs':20000,'ordinary_samples':3,'runtime':'development','profile_passes':1,'maximum_invocations':1,'invocation_timeout_seconds':720,'kill_grace_seconds':30,'job_timeout_minutes':20,
-            'purpose':'CPU/module plus passive GC attribution only; development ordinary timings cannot be compared to production CI timings',
-            'gc_record_limit_per_request':64,'gc_policy_changes':False,
-            'host':{'platform':platform.platform(),'cpus':os.cpu_count()},'sha256':{name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in paths}}
-          (out/'predeclared.json').write_text(json.dumps(data,indent=2)+'\n')
-          PY
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22.12.0'
-      - uses: astral-sh/setup-uv@v6
-      - name: Install exact existing workflow runtime
-        run: |
-          set -euo pipefail
-          uv venv --python 3.11.13 "$RUNNER_TEMP/everyday-python"
-          uv pip install --python "$RUNNER_TEMP/everyday-python/bin/python" -r benchmarks/requirements-py311.txt
-          npm ci --prefix workspace-app
-          npm ci --prefix desktop --ignore-scripts
-          desktop/node_modules/.bin/playwright install --with-deps chromium
-          for package in workspace-app desktop; do
-            dependency_args=()
-            if [ "$package" = desktop ]; then dependency_args=(--browser-only); fi
-            "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$RUNNER_TEMP/linux-candidate/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json" "${dependency_args[@]}"
-            ln -s "$GITHUB_WORKSPACE/$package/node_modules" "$RUNNER_TEMP/linux-candidate/$package/node_modules"
-          done
-          test -z "$(git -C "$RUNNER_TEMP/linux-candidate" status --porcelain)"
-          test -z "$(git status --porcelain)"
-      - name: Check passive GC observer ownership and bounds
-        run: |
-          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s benchmarks/workflow -p test_backend_timing_diagnostic.py -q
-      - name: Run one fixed development attribution pass
-        run: |
-          set -euo pipefail
-          unset RIEKE_TEST_DOM_MODULE PREPARED_GEOMETRY_TIMING PREPARED_GEOMETRY_BROWSER
-          timeout --signal=INT --kill-after=30s 12m "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_workflow.py run --source-root "$RUNNER_TEMP/linux-candidate" --output "$RUNNER_TEMP/linux-profile/candidate" --protocol-epochs 20000 --runtime development --profile 2>&1 | tee "$RUNNER_TEMP/linux-profile/invocation.log"
-      - name: Preserve development-only diagnostics, including partial failure
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-development-DIAGNOSTIC-ONLY-${{ github.run_id }}-${{ github.run_attempt }}
-          if-no-files-found: error
-          retention-days: 14
-          path: |
-            ${{ runner.temp }}/linux-profile/predeclared.json
-            ${{ runner.temp }}/linux-profile/invocation.log
-            ${{ runner.temp }}/linux-profile/candidate/receipt.json
-            ${{ runner.temp }}/linux-profile/candidate/workflow.md
-            ${{ runner.temp }}/linux-profile/candidate/workflow.html
-            ${{ runner.temp }}/linux-profile/candidate/*.log
-            ${{ runner.temp }}/linux-profile/candidate/browser/browser.json
-            ${{ runner.temp }}/linux-profile/candidate/browser/*.json
-            ${{ runner.temp }}/linux-profile/candidate/browser/*.jsonl
-            ${{ runner.temp }}/linux-profile/candidate/browser/*.log
-            ${{ runner.temp }}/linux-profile/candidate/browser/*.txt
-            ${{ runner.temp }}/linux-profile/candidate/browser/*.png
-            ${{ runner.temp }}/linux-profile/candidate/server/requests.jsonl
-            ${{ runner.temp }}/linux-profile/candidate/server/server.json
-            ${{ runner.temp }}/linux-profile/candidate/server/cleanup.json

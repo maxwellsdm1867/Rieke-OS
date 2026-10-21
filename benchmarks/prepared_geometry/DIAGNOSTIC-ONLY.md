@@ -1,118 +1,70 @@
-# Isolated CI frame-scheduling diagnostic
+# Current experiment: one headed, foreground A/A pair
 
-This branch is disposable diagnostic infrastructure. **Never merge its replacement
-`everyday-million.yml` into main or the release branch.** Release application source
-remains clean `61881e87e2fe07f1d317ec92e42827243cfec9fa`; pinned comparison source is
-`4de896f2e0b4ea966b5a428c3d2314f93fba935f`. Both are separate immutable worktrees.
-The workflow checkout supplies only the diagnostic harness.
+This isolated branch is diagnostic infrastructure. Never merge its replacement
+`everyday-million.yml` into main or the release branch. Application source remains
+clean `61881e87e2fe07f1d317ec92e42827243cfec9fa` in a separate worktree; the workflow
+checkout supplies only the diagnostic harness. Nothing is published or qualified.
 
-The registered workflow path is reused only so manual dispatch on this branch is
-possible. It has no PR/push trigger, aggregate, publication, or qualification
-artifact. It runs one macos-15 job with a 15-minute wall limit and one separately hosted
-Linux candidate-only attribution job with a 20-minute limit. Approval of this diff
-is separate from push/dispatch. No automatic retries are configured.
+The workflow has one macos-15 job, a 15-minute wall limit, manual dispatch only,
+and no Linux job. It executes exactly one same-source A/A pair: B0,C0,C1,B1,B2,C2,
+including each role's first trace. Two independent browsers and three fresh page
+contexts per role remain unchanged. No source comparison, repeated pair, warmup,
+sleep, discarded sample or automatic retry is present.
 
-## Predeclared measurements
+## Changed environment, unchanged observation
 
-Two pairs, sequential, maximum 12 samples total. Each pair uses the unchanged
-B0,C0,C1,B1,B2,C2 order, including both first traces. Each role owns one independent
-persistent browser; each sample gets its normal fresh context.
+The browser uses `headless:false`. Pinned Playwright chooses its full Chromium
+binary rather than headless shell. Receipts explicitly record
+`playwright-chromium-headed`, `headless:false`, browser version, actual executable
+path/SHA256 and process arguments. No new Chromium flags or executable override
+are used. The existing viewport and DPR remain fixed.
 
-1. A/A: final618 in both roles; baseline-role browser launches first.
-2. Baseline/final: pinned4de versus final618; candidate browser launches first.
+Before setup and trace click intent, `page.bringToFront()` activates the tab. A
+five-second total admission deadline covers activation, bounded DOM focus/visibility
+checking and a read-only OS foreground query. No action clock has started. The
+original `armAction` then owns dispatch and all frame observations exactly as before.
+After observation, another read-only check verifies the same OS owner; it never
+activates a window after intent. No frames are requested or driven by the focus
+helper. Failure to acquire/retain the condition fails the sample, never retries it.
 
-The second pair reverses the browser launch slot relative to both failed CI runs.
-It is **not a same-process source crossover**. That remaining confound limits causal
-claims. No warmup omission, added sleep, browser flags, source modification, fixture
-change or threshold change is permitted. Exact source/dependency identities, all
-six geometry/cursor oracles, request counts and cleanup contracts remain enforced.
+Playwright emulates DOM focus, so `document.hasFocus()` alone is insufficient.
+`frontmost-app.swift` reads `NSWorkspace.shared.frontmostApplication` and reports
+PID/isActive using AppKit. It uses no NSApplication event loop, activation,
+Accessibility, System Events, shell UI automation or permissions workaround.
+The helper is compiled once during CI setup; its source/executable hashes are saved.
+The foreground PID must exactly match the browser owner PID before and after each
+action, with visible and DOM-focused page state. Existing bounded passive frame
+records must also retain visibility/DOM focus throughout. OS ownership is bracketed,
+not continuously polled during the timed interval; that limitation is explicit.
 
-## Instrumentation and evidence
+The original page-owned click/RAF, geometry, source, request-count and exact cursor
+oracles, Python receipt validator and comparator threshold function are byte-identical
+to618. The existing ordinary qualification comparator rejects the headed distribution.
+The diagnostic independently checks the fixed pair's source/schedule/PID bindings,
+full scientific receipt validation and foreground evidence, then computes symmetric
+A/A results with the unchanged six metrics/thresholds. Either direction failing is
+`environment_admission: invalid` and a nonzero job exit, not a green qualification.
+Even a passing A/A result is only evidence for reviewing a headed qualification
+condition with strict controls; it cannot waive the original headless CI failures.
 
-The original `armAction`, `geometryReadiness`, exact scientific oracles and Python
-validators/comparator are unchanged. A passive wrapper records existing RAF callback
-entry/exit, scheduled time, frame timestamp, action identity and visibility/focus;
-it schedules no additional callbacks. The original readiness function runs once,
-then the wrapper records request/control/draw/status/width predicates. These duplicate
-predicate reads introduce explicit diagnostic overhead and may cause layout work.
-Caps per page: 512 callback events, 128 readiness snapshots, 64 visibility entries,
-128 longtask entries. Failures retain partial logging. No CDP profiling or counters
-are added to this experiment; GPU/OS CPU time remains unmeasured. Actual process
-spawn arguments and PIDs are retained from the existing browser owner.
+Evidence includes every sample, passive frame history, foreground checks, process
+arguments, immutable source/harness identities and failure captures. Artifact names
+are diagnostic-only. Existing owner cleanup handles failures/signals; missing or
+incomplete cleanup/evidence cannot pass. A hard runner termination may prevent
+upload and remains missing evidence.
 
-Both arms explicitly declare `timing_mode: diagnostic`. The unchanged qualification
-comparator must refuse them. The workflow checks that exact refusal after separately
-validating complete correct clean-source receipts and the original paired ownership
-contract. `diagnostic-result.json` reports scientific correctness and completion;
-it does not report a release timing pass. Timing endpoints remain available in raw
-receipts. The artifact is named `trace-frame-DIAGNOSTIC-ONLY-*`, never a standard
-proof/family/aggregate name. Hashes, branch/commit, fixed protocol and limits are
-written before dependencies/builds/sampling.
+## Validation and history
 
-The existing fixture/server/browser owner handles orderly failures and signals;
-its tests cover detached browser cleanup and source-startup failure. A failed
-correctness, infrastructure, source integrity or cleanup check stops the schedule.
-The workflow preserves compact evidence with `if: always()`. A hard runner/job
-termination can still prevent upload, which remains missing evidence rather than
-success. Runner-owned generated data disappears with the job; no real project or
-installed application is touched.
+178 lightweight Node logger/scheduler/oracle/focus checks and18 existing Python
+receipt/refusal/lifetime checks passed. Swift source parsed; CI performs its actual
+AppKit compile. Combined YAML, shell and embedded Python syntax passed, including
+execution of the real dependency loop under macOS Bash3 with mocks. No browser,
+server, GUI helper or benchmark was launched locally for this implementation.
 
-## Predeclared interpretation
-
-- If identical final-source roles differ, source alone cannot explain that pair;
-  inspect role/PID/launch slot and callback cadence.
-- If the reversed-launch pair makes baseline slow, launch/process scheduling gains
-  support. If delay follows candidate, inspect the recorded predicate/task phase.
-- Timely callbacks with false predicates point to concrete readiness work. Missing
-  callbacks after a ready draw with no longtask support scheduling/graphics
-  starvation, but do not identify its OS/GPU cause.
-- No reproduction leaves the original two CI failures unresolved. It does not
-  authorize another automatic qualification rerun or waive the release gate.
-
-Local validation: 169 lightweight Node logger/scheduler/oracle checks and 18 existing
-Python receipt/refusal/lifetime checks passed. Workflow YAML, all shell blocks and
-embedded Python parse. These checks did not launch browsers, servers or benchmark
-builds while the separate million-row worker was active.
-
-## Separately approved Linux attribution job
-
-The second job checks out exact 618 as the application in a separate worktree.
-The diagnostic branch supplies the existing harness with a passive GC observer
-added only to `benchmarks/workflow/backend_timing.py`; all benchmark commands,
-source code, fixture definitions, action order and comparison policies stay fixed.
-It runs the existing 1M/20k workflow once with explicit `--runtime development
---profile`: three ordinary DEVELOPMENT samples followed by one profiling pass,
-not production timing. GNU timeout sends SIGINT after 12 minutes with 30 seconds
-to run the existing owner cleanup before force termination; overall job cap is
-20 minutes. This is backend/module CPU attribution only. No comparisons, repeated
-backend family, retries, upscaling or production-latency claims are authorized.
-The separate `linux-development-DIAGNOSTIC-ONLY-*` artifact retains raw action,
-request, module/profile and environment receipts/logs, including partial failure.
-Generated runtime/dist/H5/database bytes are omitted from uploads. This job does
-not use the modified macOS trace harness. The harness commit and GC observer hash
-are recorded separately from the immutable application source.
-
-The passive GC callback records each collection's generation, start/stop wall
-time, collector-thread CPU and process CPU for every request active at collection
-start. It names the collecting thread so other-thread GC cannot be confused with
-the HTTP thread's CPU. Each request stores at most 64 detailed intervals plus
-uncapped scalar generation totals and dropped counts; O(1) `gc.get_count()` and
-`gc.get_freeze_count()` snapshots accompany request wall/thread/process CPU.
-No `gc.collect`, enable/disable/freeze/unfreeze/threshold mutation or `get_objects`
-walk is performed. Callback errors and collections still active at request finish
-are explicit missing-attribution evidence. The existing install/restore owner
-registers/removes only its callback, preserving others; teardown retires request
-ownership. GC totals overlap request totals and concurrent requests, so they must
-not be added together. Six small tests cover intervals, cross-thread attribution,
-caps, pending/error evidence, teardown and callback/policy preservation.
-
-## Premeasurement macOS setup repair
-
-Run 39537973091 started the single Linux attribution job, but macOS stopped before
-any browser/sample at dependency setup: Bash 3 treats an empty array expansion as
-unbound under `set -u`. The repair uses explicit desktop/non-desktop commands,
-verified by executing the extracted loop under actual `/bin/bash` 3. No application
-or macOS observer code changes. Root authorized one macOS-only setup-repair
-dispatch; the Linux job is hard-disabled with `if: ${{ false }}`, so the
-original Linux job is not repeated. The original failed
-setup receipt and both CI timing failures remain retained.
+Earlier commits832dab4/299fe17 contain the completed headless frame and Linux GC
+attribution diagnostics. Original combined run39537973091's macOS setup failed
+before sampling due to Bash3 empty-array expansion under `set -u`; its single
+Linux profile succeeded. A separately authorized macOS-only setup repair ran the
+original two headless pairs in39538289672. Both failed qualification runs and all
+those diagnostic results remain retained. This headed experiment changes the
+environment; it does not repeat Linux or either headless pair.

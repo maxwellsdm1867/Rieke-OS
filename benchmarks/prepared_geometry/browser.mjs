@@ -1,3 +1,6 @@
+import {createHash} from 'node:crypto';
+import {createReadStream} from 'node:fs';
+import {acquireForeground,verifyForeground,requireObservedFocus} from './headed-focus.mjs';
 import {installFrameDiagnostic,wrapReadinessDiagnostic} from './frame-diagnostic.mjs';
 import {geometryReadiness,geometrySnapshot} from './observer.mjs';
 import fs from 'node:fs/promises';
@@ -11,13 +14,15 @@ import {readiness,snapshotAction,resetPreparation,armAction,observationFinished}
 export const standaloneProtocol='serial-source-three-fresh-contexts-v1';
 export async function launchBrowser(root,{processFile}={}){
  const {chromium}=createRequire(path.join(root,'desktop/package.json'))('playwright');
- const owner=await chromium.launchServer({headless:true,...(process.env.PREPARED_GEOMETRY_BROWSER?{executablePath:process.env.PREPARED_GEOMETRY_BROWSER}:{}),args:['--no-first-run','--no-default-browser-check']});
+ const owner=await chromium.launchServer({headless:false,...(process.env.PREPARED_GEOMETRY_BROWSER?{executablePath:process.env.PREPARED_GEOMETRY_BROWSER}:{}),args:['--no-first-run','--no-default-browser-check']});
  try{
   // Playwright owns Chromium in a separate POSIX process group. Retain that
   // explicit identity so the Python owner can clean up even if Node crashes.
   if(processFile){const child=owner.process();await fs.writeFile(processFile+'.tmp',JSON.stringify({pid:child.pid,args:child.spawnargs}));await fs.rename(processFile+'.tmp',processFile);}
   const browser=await chromium.connect(owner.wsEndpoint()),disconnect=browser.close.bind(browser);
-  browser.geometryOwner={pid:owner.process().pid,distribution:'playwright-chromium-headless-shell',playwright_version:createRequire(path.join(root,'desktop/package.json'))('playwright/package.json').version,executable_override:!!process.env.PREPARED_GEOMETRY_BROWSER};
+  const executable=await fs.realpath(owner.process().spawnfile),executableHash=createHash('sha256');
+  for await(const chunk of createReadStream(executable))executableHash.update(chunk);
+  browser.geometryOwner={pid:owner.process().pid,executable,executable_sha256:executableHash.digest('hex'),distribution:'playwright-chromium-headed',headless:false,playwright_version:createRequire(path.join(root,'desktop/package.json'))('playwright/package.json').version,executable_override:!!process.env.PREPARED_GEOMETRY_BROWSER};
   browser.close=async()=>{try{await disconnect();}finally{await owner.close();}};
   return browser;
  }catch(error){await owner.close();throw error;}
@@ -38,7 +43,7 @@ export async function createSourceSession({root,serverJson,output}){
   },
   async sample(browser,sample,observation={}){
    if(!prepared||finished||context||sample!==results.length||sample<0||sample>=3)throw Error('Invalid source sample lifecycle');
-   receipt.environment={click_dispatch_protocol:'raf-aligned-click-v1',node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},dpr:1,runtime:'production-react-direct-werkzeug',http_server:meta.http_server,vite_proxy:false,timing_mode:'diagnostic',sampling_protocol:observation.protocol??standaloneProtocol,browser_launch:{distribution:browser.geometryOwner.distribution,playwright_version:browser.geometryOwner.playwright_version,executable_override:browser.geometryOwner.executable_override}};
+   receipt.environment={click_dispatch_protocol:'raf-aligned-click-v1',node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},dpr:1,runtime:'production-react-direct-werkzeug',http_server:meta.http_server,vite_proxy:false,timing_mode:'diagnostic',sampling_protocol:observation.protocol??standaloneProtocol,browser_launch:{distribution:browser.geometryOwner.distribution,playwright_version:browser.geometryOwner.playwright_version,executable_override:browser.geometryOwner.executable_override,headless:browser.geometryOwner.headless,executable:browser.geometryOwner.executable,executable_sha256:browser.geometryOwner.executable_sha256}};
   context=await browser.newContext({viewport:{width:1500,height:1100},...(timingEnabled?{extraHTTPHeaders:{'X-Disco-Trace-Timing':'1'}}:{})});const page=await context.newPage();
   const displayTimings=new Map();
   if(timingEnabled)page.on('response',response=>{
@@ -66,9 +71,12 @@ export async function createSourceSession({root,serverJson,output}){
    // retrieves a completed result and cannot advance its frame count or clock.
    await page.evaluate(`window.__workflowReadiness = (${(spec.trace?geometryReadiness:readiness).toString()})`);
    if(spec.trace)await page.evaluate(wrapReadinessDiagnostic);
+   const focusBefore=await acquireForeground(page,browser.geometryOwner.pid,process.env.DISCO_DIAGNOSTIC_FRONTMOST_HELPER);
    await locator.evaluate(armAction,{action_id:id,phase:'ordinary',spec,timeoutMs:180000});
    await page.waitForFunction(observationFinished,id,{polling:'raf',timeout:195000});
-   return await page.evaluate(spec.trace?geometrySnapshot:snapshotAction,id);
+   const result=await page.evaluate(spec.trace?geometrySnapshot:snapshotAction,id);
+   const focusAfter=await verifyForeground(page,browser.geometryOwner.pid,process.env.DISCO_DIAGNOSTIC_FRONTMOST_HELPER);
+   return {...result,foreground:{before:focusBefore,after:focusAfter}};
   }
   const preparation=await clickAndObserve(page.getByRole('button',{name:'Benchmark Workbench',exact:true}),{selector:'button',text:'Select all',enabled:true,requestPath:'/prepare',prepared:true,preparedUuids:meta.incoming_epochs,expectedReused:false,expectedPrepareStatus:201},`setup-${sample}`);
   await page.locator('.incoming-browser .cell-tree-date').first().evaluate(el=>{el.open=true;});await page.locator('.incoming-browser .cell-tree-cell').first().evaluate(el=>{el.open=true;});
@@ -88,6 +96,7 @@ export async function createSourceSession({root,serverJson,output}){
   }
   const frameDiagnostic=await page.evaluate(()=>window.__traceFrameDiagnostic);
   await fs.writeFile(path.join(output,`frame-diagnostic-${sample}.json`),JSON.stringify({diagnostic_only:true,observation,...frameDiagnostic},null,2));
+  requireObservedFocus(frameDiagnostic);
   // Independent wire, source-index, exact point-byte and whole-statistics oracle.
   row.exact=await page.evaluate(({action_id,display,traceRoot,epoch,stream})=>{
    const fail=message=>{throw Error(message);},requests=window.__workflow.completed[action_id].captured_requests;
