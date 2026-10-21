@@ -129,15 +129,21 @@ append-only in the recovery state (`workspace_state_snapshot.TABLES`,
 re-query a delta or a root that a delta builds on, because the chain seals that
 root's exact identity. Injected (custom) revision storage declares no index.
 
-`ExplorerHistory.prepared_delta(previous, current, limit=20000)` projects only an
-already verified adjacent membership delta for prepared display owners. It
-requires both retained headers, their matching sealed parent link and at most
-20,000 changed members before probing either revision's project-scoped existence.
+`ExplorerHistory.prepared_delta(previous, current, limit=20000)` projects a chain
+of retained verified membership deltas for prepared display owners. It walks at
+most 64 cached parent links across forward/undo/redo paths; matching sealed parent
+links and at most 20,000 unique touched members are required before copying
+payloads or probing the participating revisions' project-scoped existence.
 Missing headers, deleted rows, custom readers and missing inverse fingerprints
-return `None`, requiring explicit preparation. Forward additions use the verified
-delta; inverse additions use only point reads from an already retained parent
-MemberView. Undo of a pure addition needs no membership view. This accessor never
-hydrates a recipe, builds/flattens a MemberView, enumerates unchanged membership
-or grants new scientific authority. Tests in `test_workspace_prepared_delta.py`
-exercise normal forward/inverse results, more than eight member-cache entries,
-missing headers, deletion, changed-reader fallback and overlay-depth boundaries.
+return `None`, requiring explicit preparation. Forward additions use verified
+deltas; inverse additions use point reads from an already retained parent
+MemberView only when their final value survives. Add-then-undo needs no such view.
+The detached result contains `added` UUID-to-fingerprint, `removed` UUIDs, and
+`metadata` with only name/source_revisions/predicate/splits/tree_view/annotation_scope.
+A removed-then-readded original member occurs in BOTH removed and added, preserving
+its final fingerprint; consumers must account for this replacement explicitly.
+This accessor never hydrates a recipe, builds/flattens a MemberView, enumerates
+unchanged membership or grants new scientific authority. Tests in
+`test_workspace_prepared_delta.py` cover forward/inverse/sibling chains, merge and
+undo, fingerprint replacement, touched/link limits, member/header eviction,
+deletion, changed-reader fallback and overlay-depth boundaries.

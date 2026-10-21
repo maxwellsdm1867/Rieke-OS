@@ -660,7 +660,7 @@ class ExplorerHistory:
         return MemberView(members)
 
     def prepared_delta(self, previous, current, limit=20000):
-        """Return an already verified adjacent delta without hydrating membership.
+        """Project a bounded cached delta chain without hydrating membership.
 
         None requests explicit preparation when the bounded cached proof is no
         longer retained. This is a display projection, never new seal authority.
@@ -675,39 +675,99 @@ class ExplorerHistory:
             previous, current = str(uuid.UUID(previous)), str(uuid.UUID(current))
         except (ValueError, TypeError, AttributeError):
             return None
+        if previous == current:
+            return None
         before, after = self._headers.get(previous), self._headers.get(current)
         if before is None or after is None:
             return None
-        forward = after.get('storage') == DELTA_STORAGE and after.get('parent_revision_uuid') == previous
-        inverse = before.get('storage') == DELTA_STORAGE and before.get('parent_revision_uuid') == current
-        if not forward and not inverse:
+        # Walk only retained verified headers, with a single 64-link budget.
+        # Either side may reach the common ancestor first (merge/undo/redo).
+        paths = [[(previous, before)], [(current, after)]]
+        positions = [{previous: 0}, {current: 0}]
+        stopped = [False, False]
+        common = None
+        traversed, turn = 0, 0
+        while traversed < 64:
+            side = turn % 2
+            turn += 1
+            if stopped[side]:
+                side = 1 - side
+            if stopped[side]:
+                break
+            identity, header = paths[side][-1]
+            parent_id = header.get('parent_revision_uuid')
+            parent = self._headers.get(parent_id)
+            if (header.get('storage') != DELTA_STORAGE or parent is None
+                    or header['parent_content_sha256'] != parent['content_sha256']
+                    or parent_id in positions[side]):
+                stopped[side] = True
+                continue
+            traversed += 1
+            positions[side][parent_id] = len(paths[side])
+            paths[side].append((parent_id, parent))
+            if parent_id in positions[1 - side]:
+                common = parent_id
+                break
+        if common is None:
             return None
-        child, parent = (after, before) if forward else (before, after)
-        delta = child['delta']
-        if len(delta['added']) + len(delta['removed']) > limit:
-            return None
-        if child['parent_content_sha256'] != parent['content_sha256']:
-            return None
-        view = self._member_views.get(current) if inverse and delta['removed'] else None
-        if inverse and delta['removed'] and (type(view) is not MemberView or MemberView.get is not _PREPARED_MEMBER_GET):
-            return None
-        # The same projected existence checks as the cached header path. Do not
-        # call header: a cache miss can verify/hydrate an entire ancestor chain,
-        # and copying an unrelated predecessor header can exceed this delta bound.
-        for identity in (previous, current):
+        backwards = paths[0][:positions[0][common]]
+        forwards = list(reversed(paths[1][:positions[1][common]]))
+        links = [(identity, header, True) for identity, header in backwards]
+        links.extend((identity, header, False) for identity, header in forwards)
+        touched = set()
+        for _, header, _ in links:
+            delta = header['delta']
+            if len(delta['added']) + len(delta['removed']) > limit:
+                return None
+            for row in delta['added']:
+                touched.add(row['uuid'])
+                if len(touched) > limit:
+                    return None
+            for identity in delta['removed']:
+                touched.add(identity)
+                if len(touched) > limit:
+                    return None
+        # Bound is established before copying delta payloads or probing storage.
+        # Same existence check as cached header(), without any cache-miss hydrate
+        # or deepcopy of an unrelated/large ancestor header.
+        required = {common, *(identity for identity, _, _ in links)}
+        for identity in required:
             if not (self.Revision & {'project_uuid': self.project_uuid,
                     'revision_uuid': identity}).proj().to_dicts():
                 return None
-        if forward:
-            return {'added': {row['uuid']: row['metadata_hash'] for row in delta['added']},
-                    'removed': list(delta['removed'])}
-        added = {}
-        for identity in delta['removed']:
-            fingerprint = view.get(identity, _MISSING)
+        # Each key records initial membership and its final fingerprint source.
+        # Point lookups for inverse additions are delayed until their final value
+        # survives; add-then-undo needs no retained parent membership at all.
+        states = {}
+        for _, header, inverse in links:
+            delta = header['delta']
+            additions = ((key, (header['parent_revision_uuid'], key)) for key in delta['removed']) if inverse else (
+                (row['uuid'], row['metadata_hash']) for row in delta['added'])
+            removals = (row['uuid'] for row in delta['added']) if inverse else delta['removed']
+            for identity in removals:
+                initial, _ = states.get(identity, (True, _MISSING))
+                states[identity] = initial, _MISSING
+            for identity, fingerprint in additions:
+                initial, _ = states.get(identity, (False, _MISSING))
+                states[identity] = initial, fingerprint
+        added, removed = {}, []
+        for identity, (initial, fingerprint) in states.items():
+            if initial:
+                removed.append(identity)
             if fingerprint is _MISSING:
-                return None
+                continue
+            if isinstance(fingerprint, tuple):
+                parent_id, key = fingerprint
+                view = self._member_views.get(parent_id)
+                if type(view) is not MemberView or MemberView.get is not _PREPARED_MEMBER_GET:
+                    return None
+                fingerprint = view.get(key, _MISSING)
+                if fingerprint is _MISSING:
+                    return None
             added[identity] = fingerprint
-        return {'added': added, 'removed': [row['uuid'] for row in delta['added']]}
+        metadata = {key: copy.deepcopy(after[key]) for key in (
+            'name', 'source_revisions', 'predicate', 'splits', 'tree_view', 'annotation_scope') if key in after}
+        return {'added': added, 'removed': removed, 'metadata': metadata}
 
     def members(self, revision_uuid):
         """Shared, read-only exact membership view of a verified revision."""

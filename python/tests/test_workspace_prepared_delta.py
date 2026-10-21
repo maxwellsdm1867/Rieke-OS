@@ -37,7 +37,12 @@ class PreparedDeltaTests(unittest.TestCase):
         prior = sys.getprofile()
         sys.setprofile(check)
         try:
-            return self.history.prepared_delta(previous, current, **kwargs)
+            result = self.history.prepared_delta(previous, current, **kwargs)
+            if result is not None:
+                self.assertEqual(set(result), {'added', 'removed', 'metadata'})
+                self.assertTrue(set(result['metadata']) <= {'name', 'source_revisions', 'predicate', 'splits', 'tree_view', 'annotation_scope'})
+                result.pop('metadata')
+            return result
         finally:
             sys.setprofile(prior)
 
@@ -92,3 +97,58 @@ class PreparedDeltaTests(unittest.TestCase):
             self.assertIsNone(self.history.prepared_delta(self.root, self.delta))
         with patch.object(ExplorerHistory, 'members', side_effect=AssertionError('custom members')):
             self.assertIsNone(self.history.prepared_delta(self.root, self.delta))
+
+    def test_multiple_merges_and_undo_have_exact_net_membership(self):
+        first, second = str(uuid.uuid4()), str(uuid.uuid4())
+        one = self.create(self.root, {first: '1' * 64})
+        two = self.create(one, {second: '2' * 64})
+        self.assertEqual(self.read(self.root, two), {'added': {first: '1' * 64, second: '2' * 64}, 'removed': []})
+        self.history._member_views.clear()
+        self.assertEqual(self.read(two, self.root), {'added': {}, 'removed': [second, first]})
+        self.assertEqual(self.read(two, one), {'added': {}, 'removed': [second]})
+
+    def test_remove_readd_keeps_replacement_fingerprint(self):
+        key = next(iter(self.original))
+        one = self.create(self.root, {}, [key])
+        two = self.create(one, {key: 'e' * 64})
+        self.assertEqual(self.read(self.root, two), {'added': {key: 'e' * 64}, 'removed': [key]})
+        self.assertEqual(self.read(two, self.root), {'added': {key: self.original[key]}, 'removed': [key]})
+
+    def test_sibling_chain_and_cancelled_addition(self):
+        key = str(uuid.uuid4())
+        one = self.create(self.root, {key: '1' * 64})
+        two = self.create(one, {}, [key])
+        self.assertEqual(self.read(self.root, two), {'added': {}, 'removed': []})
+        self.history._member_views.clear()
+        self.assertEqual(self.read(two, self.root), {'added': {}, 'removed': []})
+        # Restore proof explicitly for creating another branch, not in the read.
+        self.history.members(self.root)
+        other = str(uuid.uuid4())
+        branch = self.create(self.root, {other: '2' * 64})
+        self.assertEqual(self.read(one, branch), {'added': {other: '2' * 64}, 'removed': [key]})
+
+    def test_total_unique_touched_is_checked_before_storage(self):
+        one = self.create(self.root, {str(uuid.uuid4()): '1' * 64})
+        two = self.create(one, {str(uuid.uuid4()): '2' * 64})
+        with patch.object(type(self.history.Revision), '__and__', side_effect=AssertionError('storage read')):
+            self.assertIsNone(self.read(self.root, two, limit=1))
+        key = str(uuid.uuid4())
+        one = self.create(self.root, {key: '3' * 64})
+        two = self.create(one, {}, [key])
+        self.assertEqual(self.read(self.root, two, limit=1), {'added': {}, 'removed': []})
+
+    def test_chain_link_budget_and_evicted_intermediate_header(self):
+        current = self.root
+        for _ in range(64):
+            current = self.create(current, {})
+        self.assertEqual(self.read(self.root, current), {'added': {}, 'removed': []})
+        extra = self.create(current, {})
+        self.assertIsNone(self.read(self.root, extra))
+        self.history._headers.pop(current)
+        self.assertIsNone(self.read(self.root, extra))
+
+    def test_metadata_is_small_and_detached(self):
+        result = self.history.prepared_delta(self.root, self.delta)
+        self.assertEqual(result['metadata']['name'], 'Delta')
+        result['metadata']['tree_view']['fields'].clear()
+        self.assertTrue(self.history.prepared_delta(self.root, self.delta)['metadata']['tree_view']['fields'])
