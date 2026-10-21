@@ -1,3 +1,4 @@
+import {prepareTree} from '../prepareTree.js';
 import TreeBranchIcon from './TreeBranchIcon.jsx';
 import {epochIncluded} from '../../incoming-workbench/incomingReviewDecision.js';
 import EpochInclusionToggle from '../../epoch-browser/ui/EpochInclusionToggle.jsx';
@@ -46,12 +47,12 @@ export default function HierarchyTree(props){
       controller.current?.abort();if(scrollFrame.current)cancelAnimationFrame(scrollFrame.current);scrollFrame.current=null;
     };
   },[scopeKey]);
-  const load=useCallback(async({path=[],offset=0,reset=false,anchor=null,restore=null,keepPresentation=false}={})=>{
+  const load=useCallback(async({path=[],offset=0,reset=false,anchor=null,restore=null,keepPresentation=false,prepare=false}={})=>{
     if(props.readPaused||committedScope.current!==scopeKey)return;
     controller.current?.abort();const request=new AbortController();controller.current=request;const token=++serial.current;
     const startedScrollIntent=scrollIntent.current;
     restoreTop.current=reset&&!restore?0:null;restoreLeft.current=reset&&!restore?0:null;
-    commit(old=>({...(reset&&!keepPresentation?blank():cancelUnloadedExpansion(old,path)),loading:true,error:null,loadingPath:path}));callbacks.current.onStatus?.({loading:true,error:null});
+    commit(old=>({...(reset&&!keepPresentation?blank():cancelUnloadedExpansion(old,path)),loading:true,error:null,preparation:null,preparing:prepare,loadingPath:path}));callbacks.current.onStatus?.({loading:true,error:null});
     const scope=JSON.parse(scopeKey),root=current.current.pages.find(page=>!page.path.length);
     let pinned=scope.expectedRevision||restore?.revision||(!reset?root?.revision:null);
     async function fetchPage(pagePath,pageOffset=0,focus=null){
@@ -61,6 +62,7 @@ export default function HierarchyTree(props){
       pinned=result.revision;return result;
     }
     try{
+      if(prepare)await prepareTree(scope,{request:api,signal:request.signal,isCurrent:()=>token===serial.current});
       let result;
       if(restore){
         for(const savedPage of restore.pages){result=await fetchPage(savedPage.path,savedPage.offset);if(request.signal.aborted||token!==serial.current)return;commit(old=>mergeHierarchyPage(old,result));}
@@ -82,11 +84,11 @@ export default function HierarchyTree(props){
         commit(old=>{const next=mergeHierarchyPage(old,result);return {...next,notice:next.evicted?'Older branches were collapsed to keep the tree responsive. Reopen them when needed.':old.notice};});
       }
       if(request.signal.aborted||token!==serial.current)return;
-      initialized.current=true;commit(old=>({...old,loading:false,loadingPath:null,error:null,loadedScope:scopeKey}));callbacks.current.onStatus?.({loading:false,error:null});
+      initialized.current=true;commit(old=>({...old,loading:false,preparing:false,loadingPath:null,error:null,loadedScope:scopeKey}));callbacks.current.onStatus?.({loading:false,error:null});
       const receipt=current.current.pages.find(page=>!page.path.length)||result;
       callbacks.current.onMetadata?.({...receipt,count:receipt.total_epochs});
       return result;
-    }catch(error){if(!request.signal.aborted&&token===serial.current){commit(old=>({...old,loading:false,error:error.message,loadingPath:null}));callbacks.current.onStatus?.({loading:false,error:error.message});}}
+    }catch(error){if(!request.signal.aborted&&token===serial.current){commit(old=>({...old,loading:false,error:error.message,preparation:error.preparation||null,preparing:false,loadingPath:null}));callbacks.current.onStatus?.({loading:false,error:error.message});}}
   },[scopeKey,commit]);
   useEffect(()=>{
     if(props.readPaused){commit(old=>({...old,loading:true}));return;}
@@ -162,7 +164,8 @@ export default function HierarchyTree(props){
     {groupTags.dialog}{groupSelection.feedback}
     {props.design&&<header className="ht-heading"><strong>{root?`${number(root.total_epochs)} matching epochs`:'Loading hierarchy…'}</strong></header>}
     <div className="ht-splits" aria-label="Tree split sequence">{root?.levels.length?root.levels.map((field,index)=><span key={field.field}>{index>0&&<ChevronRight size={11}/>}<b>{index+1}</b>{readableField(field.label,field.field)}</span>):<span>Flat epoch list</span>}</div>
-    {state.error&&<div className="ht-error" role="alert">{state.error}<button onClick={()=>expectedRevision?callbacks.current.onRefreshPreview?.():load({reset:true})}><RefreshCw size={13}/> Refresh tree</button></div>}
+    {state.preparing&&<p role="status">Preparing view…</p>}
+    {state.error&&<div className="ht-error" role="alert">{state.error}<button disabled={state.loading} onClick={()=>expectedRevision?callbacks.current.onRefreshPreview?.():load({reset:true,prepare:!!state.preparation})}><RefreshCw size={13}/> {state.preparation?'Prepare view':'Refresh tree'}</button></div>}
     {state.notice&&<div className="ht-notice" role="status">{state.notice}</div>}
     <div className="ht-scroll" ref={scroll} aria-busy={state.loading} onWheel={cancelScrollRestore} onPointerDown={cancelScrollRestore} onTouchStart={cancelScrollRestore} onKeyDown={cancelScrollRestore} onScroll={()=>{if(!scrollFrame.current)scrollFrame.current=requestAnimationFrame(()=>{scrollFrame.current=null;remember();});}}>{root?renderPage(root,true):!state.error&&<p className="ht-loading" role="status">Loading tree…</p>}</div>
     {!props.externalCollapseControl&&<footer className="ht-footer"><button disabled={blocked||!state.expanded.length} onClick={collapseAll}>Collapse all</button></footer>}

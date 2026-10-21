@@ -659,6 +659,116 @@ class ExplorerHistory:
             raise ValueError('Frozen membership contains duplicate epoch identities')
         return MemberView(members)
 
+    def prepared_delta(self, previous, current, limit=20000):
+        """Project a bounded cached delta chain without hydrating membership.
+
+        None requests explicit preparation when the bounded cached proof is no
+        longer retained. This is a display projection, never new seal authority.
+        """
+        if type(limit) is not int or not 0 <= limit <= 20000:
+            raise ValueError('Prepared delta limit must be between 0 and 20000')
+        if type(self) is not ExplorerHistory or any(
+                getattr(getattr(self, name, None), '__func__', getattr(self, name, None)) is not method
+                for name, method in _PREPARED_DELTA_METHODS.items()):
+            return None
+        try:
+            previous, current = str(uuid.UUID(previous)), str(uuid.UUID(current))
+        except (ValueError, TypeError, AttributeError):
+            return None
+        if previous == current:
+            return None
+        before, after = self._headers.get(previous), self._headers.get(current)
+        if before is None or after is None:
+            return None
+        # Walk only retained verified headers, with a single 64-link budget.
+        # Either side may reach the common ancestor first (merge/undo/redo).
+        paths = [[(previous, before)], [(current, after)]]
+        positions = [{previous: 0}, {current: 0}]
+        stopped = [False, False]
+        common = None
+        traversed, turn = 0, 0
+        while traversed < 64:
+            side = turn % 2
+            turn += 1
+            if stopped[side]:
+                side = 1 - side
+            if stopped[side]:
+                break
+            identity, header = paths[side][-1]
+            parent_id = header.get('parent_revision_uuid')
+            parent = self._headers.get(parent_id)
+            if (header.get('storage') != DELTA_STORAGE or parent is None
+                    or header['parent_content_sha256'] != parent['content_sha256']
+                    or parent_id in positions[side]):
+                stopped[side] = True
+                continue
+            traversed += 1
+            positions[side][parent_id] = len(paths[side])
+            paths[side].append((parent_id, parent))
+            if parent_id in positions[1 - side]:
+                common = parent_id
+                break
+        if common is None:
+            return None
+        backwards = paths[0][:positions[0][common]]
+        forwards = list(reversed(paths[1][:positions[1][common]]))
+        links = [(identity, header, True) for identity, header in backwards]
+        links.extend((identity, header, False) for identity, header in forwards)
+        touched = set()
+        for _, header, _ in links:
+            delta = header['delta']
+            if len(delta['added']) + len(delta['removed']) > limit:
+                return None
+            for row in delta['added']:
+                touched.add(row['uuid'])
+                if len(touched) > limit:
+                    return None
+            for identity in delta['removed']:
+                touched.add(identity)
+                if len(touched) > limit:
+                    return None
+        # Bound is established before copying delta payloads or probing storage.
+        # Same existence check as cached header(), without any cache-miss hydrate
+        # or deepcopy of an unrelated/large ancestor header.
+        required = {common, *(identity for identity, _, _ in links)}
+        for identity in required:
+            if not (self.Revision & {'project_uuid': self.project_uuid,
+                    'revision_uuid': identity}).proj().to_dicts():
+                return None
+        # Each key records initial membership and its final fingerprint source.
+        # Point lookups for inverse additions are delayed until their final value
+        # survives; add-then-undo needs no retained parent membership at all.
+        states = {}
+        for _, header, inverse in links:
+            delta = header['delta']
+            additions = ((key, (header['parent_revision_uuid'], key)) for key in delta['removed']) if inverse else (
+                (row['uuid'], row['metadata_hash']) for row in delta['added'])
+            removals = (row['uuid'] for row in delta['added']) if inverse else delta['removed']
+            for identity in removals:
+                initial, _ = states.get(identity, (True, _MISSING))
+                states[identity] = initial, _MISSING
+            for identity, fingerprint in additions:
+                initial, _ = states.get(identity, (False, _MISSING))
+                states[identity] = initial, fingerprint
+        added, removed = {}, []
+        for identity, (initial, fingerprint) in states.items():
+            if initial:
+                removed.append(identity)
+            if fingerprint is _MISSING:
+                continue
+            if isinstance(fingerprint, tuple):
+                parent_id, key = fingerprint
+                view = self._member_views.get(parent_id)
+                if type(view) is not MemberView or MemberView.get is not _PREPARED_MEMBER_GET:
+                    return None
+                fingerprint = view.get(key, _MISSING)
+                if fingerprint is _MISSING:
+                    return None
+            added[identity] = fingerprint
+        metadata = {key: copy.deepcopy(after[key]) for key in (
+            'name', 'source_revisions', 'predicate', 'splits', 'tree_view', 'annotation_scope') if key in after}
+        return {'added': added, 'removed': removed, 'metadata': metadata}
+
     def members(self, revision_uuid):
         """Shared, read-only exact membership view of a verified revision."""
         revision_uuid = str(uuid.UUID(revision_uuid))
@@ -706,3 +816,10 @@ def is_canonical_binding_reader(provider):
         and getattr(provider, '__func__', None) is _QUERY_RESULT_BINDING_METHODS['protocol_binding']
         and all(getattr(getattr(owner, name, None), '__func__', None) is _QUERY_RESULT_BINDING_METHODS[name]
                 for name in ('protocol_binding', 'protocol_binding_header', 'get')))
+
+# Any custom verification or membership implementation declines the prepared
+# projection. It must use its own explicit preparation/fallback policy.
+_PREPARED_DELTA_METHODS = {name: getattr(ExplorerHistory, name) for name in (
+    'prepared_delta', 'header', 'members', 'get', '_row', '_verified_recipe', '_root_view')}
+
+_PREPARED_MEMBER_GET = MemberView.get

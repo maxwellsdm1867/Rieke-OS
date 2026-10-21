@@ -10,14 +10,19 @@ export function overviewModel(data) {
     group.cells += 1;
     const epochs=cell.epochs??cell.epoch_count;
     group.epochs=group.epochs!==null&&validCellCount(epochs)&&validCellCount(group.epochs+epochs)?group.epochs+epochs:null;
-    if(typeof cell.duration_seconds!=='number'||!Number.isFinite(cell.duration_seconds)||cell.duration_seconds<0)group.duration=null;
+    if(typeof cell.duration_seconds!=='number'||!Number.isFinite(cell.duration_seconds)||cell.duration_seconds<0){
+      group.duration=null;
+      if(cell.duration_status==='failed'&&group.duration_status!=='unavailable')group.duration_status='failed';
+      else if(cell.duration_status==='pending'){if(!['unavailable','failed'].includes(group.duration_status))group.duration_status='pending';}
+      else group.duration_status='unavailable';
+    }
     else if(group.duration!==null)group.duration+=cell.duration_seconds;
     dates.set(date,group);
     const type = recordedCellType(cell);
     types.set(type,(types.get(type)||0)+1);
   }
   return {
-    dates:[...dates.values()].sort((a,b)=>a.date.localeCompare(b.date)),
+    dates:[...dates.values()].map(group=>{if(group.duration_status==='unavailable')delete group.duration_status;return group;}).sort((a,b)=>a.date.localeCompare(b.date)),
     dateCount:[...dates.keys()].filter(key=>key!=='Not recorded').length,
     unknownDateCells:dates.get('Not recorded')?.cells || 0,
     types:[...types].map(([type,count])=>({type,count})).sort((a,b)=>b.count-a.count||a.type.localeCompare(b.type)),

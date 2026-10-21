@@ -98,3 +98,10 @@ revision. Hidden/inert presentations cannot request more. Total cells come from
 loaded cells until all windows arrive. Exact date/export-participation totals
 remain unavailable until complete. Export membership reads retain their separate
 full-response authority. See `../pagedOverviewLists.test.js`.
+
+Prepared Overview counts stay authoritative after membership edits while exact
+canonical duration folds finish. `duration_seconds: null` with
+`duration_status: pending` displays “Preparing…” in the protocol, date, type and
+cell summaries; it must not become zero or retain the prior cohort's duration.
+Missing duration without the pending marker remains unavailable. Counts and
+independent inclusion/review controls retain their existing semantics.

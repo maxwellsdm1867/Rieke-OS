@@ -116,6 +116,9 @@ export function useWholeTraceWarm(epoch,revision=0,delayMs=180){
   useEffect(()=>!active||owner||!identity?undefined:warmNextWholeTrace(latest.current,{revision,delayMs}),[identity,revision,delayMs,owner,active]);
 }
 
+export class PreparationRequiredError extends Error {
+  constructor(data){super('Prepare this view to continue.');this.name='PreparationRequiredError';this.status=202;this.data=data;this.preparation=data.preparation;}
+}
 export async function requestApi(path, options = {}) {
   const response = await fetch(`/api${path}`, {
     ...Object.fromEntries(Object.entries(options).filter(([key])=>key!=='undoOperation'&&key!=='background'&&key!=='onResponse'&&key!=='notModified')), headers: { 'Content-Type': 'application/json', 'X-Workspace-Request': '1', ...(options.background===true?{'X-Disco-Trace-Priority':'background'}:{}), ...options.headers },
@@ -134,6 +137,7 @@ export async function requestApi(path, options = {}) {
     throw Error('Unexpected trace response representation. No plot is shown.');
   const data = contentType===TRACE_GEOMETRY_TYPE?decodeTraceGeometry(await response.arrayBuffer()):contentType===TRACE_BINARY_TYPE?decodeTraceBinary(await response.arrayBuffer()):
     await response.json().catch(() => {decoded=false;return {};});
+  if(response.status===202&&data?.status==='preparing'&&data?.preparation?.status==='pending')throw new PreparationRequiredError(data);
   if (!response.ok) {const message=typeof data.error==='string'?data.error:typeof data.error?.message==='string'?data.error.message:typeof data.message==='string'?data.message:`Request failed (${response.status})`;const error=new Error(message);error.status=response.status;error.data=data;if(data.saved===true)error.saved=true;if(data.persistence)error.persistence=data.persistence;throw error;}
   if(decoded&&typeof options.onResponse==='function')options.onResponse({status:response.status,headers:response.headers});
   return data;
@@ -179,7 +183,7 @@ export function useResource(path, revision = 0, delayMs = 0, options = {}) {
     const request=cached?(url,{signal})=>(warmEpoch?requestEpochWithTrace:cachedResourceRequest)(url,{request:api,signal,revision}):transport;
     return startResourceRequest({path,delayMs,request,
       onData:data=>{const next={data,loading:false,error:null,path,revision,nonce,owner,initialRead,retentionIdentity};completedRead.current=next;setState(next);},
-      onError:error=>{completedRead.current=null;setState({data:null,loading:false,error:error.message,errorStatus:Number.isInteger(error.status)?error.status:null,path,revision,nonce,owner,initialRead,retentionIdentity});}});
+      onError:error=>{completedRead.current=null;setState({data:null,loading:false,error:error.message,preparation:error.preparation||null,errorStatus:Number.isInteger(error.status)?error.status:null,path,revision,nonce,owner,initialRead,retentionIdentity});}});
   }, [path, revision, nonce, delayMs,cached,warmEpoch,paused,active,owner,transport,initialRead,retained,retentionIdentity]);
   // Complete metadata/trace pairs publish in the same render; partial snapshots
   // start I/O immediately unless the caller explicitly requests a delay.
