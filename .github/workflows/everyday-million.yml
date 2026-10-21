@@ -178,7 +178,9 @@ jobs:
           geometry_baseline="$RUNNER_TEMP/geometry-baseline"
           git worktree add --detach "$geometry_baseline" 4de896f2e0b4ea966b5a428c3d2314f93fba935f
           for package in workspace-app desktop; do
-            "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$geometry_baseline/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json"
+            dependency_args=()
+            if [ "$package" = desktop ]; then dependency_args=(--browser-only); fi
+            "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$geometry_baseline/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json" "${dependency_args[@]}"
             ln -s "$GITHUB_WORKSPACE/$package/node_modules" "$geometry_baseline/$package/node_modules"
           done
           candidate=$(python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/performance-plan/source-plan.json")); r=p["canonical"]["candidate"]; print(os.environ["GITHUB_WORKSPACE"] if p["sources"][r]==p["harness"] else os.environ["RUNNER_TEMP"]+"/browser-sources/"+r)')
@@ -271,7 +273,9 @@ jobs:
           printf '/workspace-app/node_modules\n/desktop/node_modules\n' >> "$(git rev-parse --git-path info/exclude)"
           for source in trace-baseline trace-candidate; do
             for package in workspace-app desktop; do
-              "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$RUNNER_TEMP/$source/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json"
+              dependency_args=()
+              if [ "$package" = desktop ]; then dependency_args=(--browser-only); fi
+              "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$RUNNER_TEMP/$source/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json" "${dependency_args[@]}"
               ln -s "$GITHUB_WORKSPACE/$package/node_modules" "$RUNNER_TEMP/$source/$package/node_modules"
             done
           done
