@@ -1,3 +1,4 @@
+import {workbenchAuthorFixture} from './test-support/workbenchAuthorFixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {writeFile,mkdir} from 'node:fs/promises';
@@ -8,7 +9,7 @@ import TestRenderer,{act} from 'react-test-renderer';
 import {createServer} from './test-support/isolatedVite.js';
 const label=node=>node.children.map(child=>typeof child==='string'?child:label(child)).join('').trim();
 const root=fileURLToPath(new URL('..',import.meta.url));
-const create=(plugins=[])=>createServer({plugins,root,configFile:false,optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
+const create=(plugins=[])=>createServer({plugins:[...plugins,workbenchAuthorFixture],root,configFile:false,optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
 const frozenBrowserProbe={name:'frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['../../epoch-browser/ui/Inspector.jsx','../../typed-query/ui/ProtocolViewFilter.jsx'].includes(source))return `\0probe-${source}`;},load(id){if(id==='\0probe-../../epoch-browser/ui/Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector(props){return React.createElement('div',{'data-frozen-scope':props.readContext.candidate_scope_revision,'data-revision':props.revision});}`;if(id==='\0probe-../../typed-query/ui/ProtocolViewFilter.jsx')return `export default function Filter(){return null;}`;}};
 
 test('confirmed selected merge saves exact review, preserves exclusions and accepts with fresh preview fences',async()=>{

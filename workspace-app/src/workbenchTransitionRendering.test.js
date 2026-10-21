@@ -107,8 +107,8 @@ test('blocked discovery is distinct from empty completion and left-out epochs ha
  }finally{await h.close();}
 });
 
-test('proposal history isolates author recovery and restores it after switching back',async()=>{
- const name=`__actorHistory${Math.random().toString(36).slice(2)}`;globalThis[name]={profileUuid:'a',loading:false};
+for(const firstActor of ['a','b'])test(`legacy author recovery waits for startup identity, survives loading, and stays isolated when ${firstActor} resolves first`,async()=>{
+ const name=`__actorHistory${Math.random().toString(36).slice(2)}`;globalThis[name]={profileUuid:'',loading:true};
  const plugin={name:'actor-history',enforce:'pre',resolveId(source,importer){
   if(source.endsWith('/annotations/annotationProfile.js'))return '\0history-profile';
   if(importer?.endsWith('/IncomingWorkbench.jsx')&&source==='./FrozenIncomingReview.jsx')return '\0history-review';
@@ -118,15 +118,21 @@ test('proposal history isolates author recovery and restores it after switching 
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,plugins:[plugin],server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',esbuild:{jsx:'automatic'}});
  const {default:Workbench}=await server.ssrLoadModule('/src/incoming-workbench/ui/IncomingWorkbench.jsx');
  const oldFetch=globalThis.fetch;const queue={contract_version:1,queue_revision:'q',pending_epoch_count:2,pending_cell_count:1,candidates:[{candidate_revision_uuid:'same'}],capabilities:{frozen_browse:true,cumulative_pending_browse:true,drafts:true,additive_accept:true,incoming_export:true}};
- let release=null,reads=0;globalThis.fetch=async()=>{reads++;if(release)await release.promise;return response(queue);};
+ let release=null,reads=0;globalThis.fetch=async(_path,options={})=>{assert.equal(options.method||'GET','GET','restoration never submits scientific writes');reads++;if(release)await release.promise;return response(queue);};
  let renderer,saved;const original={unconfirmed:true,operation:'a-operation',preview:{preview_sha256:'a-preview'}};
- const props={projectId:'p',protocolId:'history',authority:queue,initialCandidateId:'same',session:{sessionActor:'a',history:true,active:'same',drafts:{same:original}},onSession:value=>{saved=value;}};
+ const props={projectId:'p',protocolId:'history',authority:queue,initialCandidateId:'same',session:{cumulative:{prepared:{actor:'a'}},history:true,active:'same',drafts:{same:original}},onSession:value=>{saved=value;}};
  const render=()=>act(async()=>{const view=React.createElement(Workbench,props);renderer?renderer.update(view):renderer=TestRenderer.create(view);});
  const review=()=>renderer.root.find(node=>node.type?.name==='HistoryReview');
  try{
-  await render();assert.deepEqual(review().props.session,original);
-  release=deferred();globalThis[name]={profileUuid:'b',loading:false};await render();
-  assert.equal(reads,1,'switching author retires the supplied summary even across the keyed remount');
+  await render();assert.equal(saved,undefined,'loading cannot checkpoint legacy recovery under a placeholder author');
+  globalThis[name]={profileUuid:'',loading:false,error:'Profile unavailable'};await render();assert.equal(saved,undefined,'a failed profile request cannot consume legacy recovery');
+  globalThis[name]={profileUuid:firstActor,loading:false};await render();
+  if(firstActor==='b'){assert.equal(review().props.session,undefined,'known A recovery is not assigned to first resolved B');globalThis[name]={profileUuid:'a',loading:false};await render();}
+  assert.deepEqual(review().props.session,original);
+  globalThis[name]={profileUuid:'',loading:true};await render();
+  globalThis[name]={profileUuid:'a',loading:false};await render();assert.deepEqual(review().props.session,original,'transient profile loading preserves the original recovery');
+  const readsBeforeSwitch=reads;release=deferred();globalThis[name]={profileUuid:'b',loading:false};await render();
+  assert.equal(reads,readsBeforeSwitch+1,'switching author retires the supplied summary even across the keyed remount');
   assert.equal(renderer.root.findAll(node=>node.type?.name==='HistoryReview').length,0,'old author summary stays inert while fresh read is held');
   await act(async()=>release.resolve());release=null;assert.equal(review().props.session,undefined,'B never receives A recovery');
   await act(async()=>review().props.onSession({selected:['b-epoch']}));
