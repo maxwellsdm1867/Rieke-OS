@@ -12,7 +12,7 @@ const countLabel=value=>value===null?'Unavailable':number(value);
 // One muted line of per-type quantities for the summary variant; each value keeps
 // the same unavailable rule as the default metric grid.
 function summaryDetail(group,showInclusion){
-  const parts=[countNoun(group.epochs,'epoch'),group.duration_seconds===null?'Unavailable duration':duration(group.duration_seconds),`${countLabel(group.exported)} exported`];
+  const parts=[countNoun(group.epochs,'epoch'),group.duration_status==='pending'?'Preparing duration…':group.duration_seconds===null?'Unavailable duration':duration(group.duration_seconds),`${countLabel(group.exported)} exported`];
   if(showInclusion)parts.push(`${countLabel(group.included)} included`,`${countLabel(group.reviewed)} reviewed`);
   return parts.map((part,index)=><span key={index}>{index?' · ':''}<span className="cell-type-summary-part">{part}</span></span>);
 }
@@ -41,7 +41,7 @@ function CellTypeGroup({group,total,onInspect,onQC,showInclusion,revealKey,summa
       </button></h3>
       <dl className="cell-type-metrics">
         <div><dt>Epochs</dt><dd>{countLabel(group.epochs)}</dd></div>
-        <div><dt>Recorded time</dt><dd>{group.duration_seconds===null?'Unavailable':duration(group.duration_seconds)}</dd></div>
+        <div><dt>Recorded time</dt><dd>{group.duration_status==='pending'?'Preparing…':group.duration_seconds===null?'Unavailable':duration(group.duration_seconds)}</dd></div>
         <div><dt title="Unique epochs appearing in saved exports; inclusion and review are independent.">Exported epochs</dt><dd>{countLabel(group.exported)}</dd></div>
       </dl>
       {showInclusion&&<dl className="cell-type-marks"><div><dt>Included epochs</dt><dd>{countLabel(group.included)}</dd></div><div><dt>Marked reviewed</dt><dd>{countLabel(group.reviewed)}</dd></div></dl>}

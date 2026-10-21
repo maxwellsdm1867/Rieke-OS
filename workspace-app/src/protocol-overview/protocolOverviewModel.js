@@ -46,6 +46,10 @@ export function aggregateCellTypes(cells=[]){
     const type=recordedCellType(cell);
     const group=groups.get(type)||{type,count:0,cells:[],epochs:0,duration_seconds:0,exported:0,included:0,reviewed:0,withExports:0};
     group.cells.push(cell);group.count++;
+    if(!validRecordedDuration(cell.duration_seconds)){
+      if(cell.duration_status==='pending'&&group.duration_status!=='unavailable')group.duration_status='pending';
+      else group.duration_status='unavailable';
+    }
     for(const field of ['epochs','duration_seconds','exported','included','reviewed']){
       const valid=field==='duration_seconds'?validRecordedDuration:validCellCount;
       group[field]=group[field]!==null&&valid(cell[field])&&valid(group[field]+cell[field])?group[field]+cell[field]:null;
@@ -53,7 +57,7 @@ export function aggregateCellTypes(cells=[]){
     group.withExports=group.withExports!==null&&validCellCount(cell.exported)?group.withExports+(cell.exported>0?1:0):null;
     groups.set(type,group);
   }
-  return [...groups.values()].sort((a,b)=>b.count-a.count||a.type.localeCompare(b.type));
+  return [...groups.values()].map(group=>{if(group.duration_status==='unavailable')delete group.duration_status;return group;}).sort((a,b)=>b.count-a.count||a.type.localeCompare(b.type));
 }
 
 // Count identities, not epoch totals or cell labels reused on different dates.

@@ -1,0 +1,47 @@
+"""Pure canonical duration folds over immutable membership publications."""
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class MembershipOrder:
+    parent: object
+    added: tuple = ()
+    removed: frozenset = frozenset()
+
+    def identities(self):
+        layers=[];base=self
+        while isinstance(base,MembershipOrder):layers.append(base);base=base.parent
+        identities=set(base)
+        for layer in reversed(layers):identities.difference_update(layer.removed);identities.update(layer.added)
+        return sorted(identities)
+
+
+def fold_duration(order,rows):
+    identities=order.identities() if isinstance(order,MembershipOrder) else order
+    total=0;cells={}
+    for identity in identities:
+        row=rows[identity];duration=row['duration_seconds'];cell=row['cell_uuid']
+        total+=duration;cells[cell]=cells.get(cell,0)+duration
+    return total,cells
+
+
+class DurationPreparation:
+    """One worker; caller validates/publishes the result under its own lock."""
+    def __init__(self):
+        self.executor=ThreadPoolExecutor(max_workers=1,thread_name_prefix='overview-duration')
+        self.closed=False
+
+    def submit(self,order,rows,publish):
+        if self.closed:return
+        future=self.executor.submit(fold_duration,order,rows)
+        def done(job):
+            if not self.closed and not job.cancelled():
+                try:result=job.result()
+                except Exception:return  # Pending stays truthful; explicit prepare retries.
+                publish(result)
+        future.add_done_callback(done)
+
+    def close(self):
+        self.closed=True
+        self.executor.shutdown(wait=True,cancel_futures=True)

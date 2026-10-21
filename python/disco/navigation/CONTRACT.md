@@ -386,3 +386,46 @@ up to 48 MiB for grouping. Both reservations and all retained containers still
 count against the same conservative 64 MiB scope-cache limit; oversized groups
 and scopes remain uncached. The larger frozen reservation must not evict a
 previously admissible mutable/subclass fixture scope.
+## Explicit prepared Overview publication
+
+`overview_projection.OverviewProjection` owns discardable counts over an immutable
+metadata publication and verified protocol memberships. `prepare` is explicitly
+linear in project epochs, memberships and saved decisions; the API exposes its
+elapsed time and cardinalities through `prepare_overview_publication`. Startup,
+metadata refresh, completed imports and deletion publish this model alongside the
+prepared tree views. A first page does not build a missing model.
+
+`publication_changes.capture_changes` reads complete bounded recovery-feed keys
+and canonical after-images under the existing recovery clock transaction, verifies
+capture, and checks the watermark after successful exit. It never publishes or
+mutates a derived owner. Metadata publication/binding identity remains a separate
+proof. The API applies only verified target deltas under its existing lock and
+retains response-end fences. Missing authority, incomplete coverage, unsupported
+binding changes and source/export publication changes return HTTP 202 with
+`status: preparing` and a `preparation` descriptor; `POST /api/overview/prepare`
+explicitly prepares again. No GET silently scans the cohort to recover.
+
+Curation updates adjust per-protocol and cell counters, and a project epoch is
+approved only when it belongs to at least one protocol and every containing
+protocol approves its current fingerprint. Inclusion is independent of approval.
+Deleted decisions restore defaults. Shared tags use exact inherited/direct unions;
+`overview_tag_vocabulary.TagVocabulary` retains per-cell direct counts and an
+indexed top-12 ranking, so changing a tag does not scan the cell's epochs or every
+unrelated protocol. It grants no annotation or membership authority.
+
+Verified cached membership-delta chains (or their inverse) update exact counts and
+cell/source/group coverage immediately. Their canonical ordered duration is null
+with `duration_status: pending` until `overview_durations` folds an immutable
+membership publication and frozen rows on one worker. Publication requires the same
+owner and membership version; a superseded result cannot overwrite a newer view.
+Duration completion changes the conditional response validator. Worker shutdown
+drains callbacks before taking their publication lock. The inert startup display
+cache is not rewritten during these page reads.
+
+The pure owner/capture/vocabulary tests in `navigation/tests` cover overlapping
+approval, stale fingerprints, tag inheritance, membership deltas, canonical fold
+order and superseded results. `test_workspace_prepared_overview.py` compares HTTP
+pages to canonical full construction and checks pending coverage, exact binding
+DTOs, immediate membership counts and duration completion. Its capture adapter is
+a test port; native trigger/feed and packaged performance qualification remain
+separate.

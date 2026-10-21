@@ -964,6 +964,328 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             saved_overview['display']=display if save_overview(project_dir,full) else None
         overview_parts['display_key']=display_key
 
+    # Exact Overview reads have an explicit publication phase. No GET prepares
+    # a missing projection or replays a whole cohort after a one-target write.
+    from disco.navigation.overview_durations import DurationPreparation
+    overview_durations=DurationPreparation()
+    app.extensions['overview_durations']=overview_durations
+    prepared_overview={}
+    app.extensions['prepared_overview']=prepared_overview
+
+    def overview_preparing(reason):
+        return jsonify(status='preparing',preparation={'status':'pending','resource':'overview','reason':reason}),202
+
+    def overview_publication_key(keys):
+        return (keys['base'],tuple(keys['protocols']),keys['exports'])
+
+    def prepare_overview_publication():
+        from disco.navigation.overview_projection import OverviewProjection
+        from disco.navigation.overview_tag_vocabulary import TagVocabulary
+        import sqlite3
+        started=time.perf_counter()
+        with db_lock:
+            keys=overview_part_keys();tracker=getattr(service,'_recovery_tracker',None)
+            if keys is None or tracker is None:
+                return {'status':'unavailable','reason':'Native publication and recovery authority are required'}
+            # Canonical payload construction is confined to this named, timed
+            # publication phase. The independent aggregate owner, not these
+            # payloads, supplies every changing count on subsequent reads.
+            protocol_payloads={};memberships={};headers={}
+            for protocol in service.protocols:
+                payload=native_protocol_summary(protocol,{},cross_protocols=False,tag_counts=False)
+                if payload is None:raise ValueError('Protocol publication cannot be prepared')
+                protocol_payloads[protocol]=payload
+                memberships[protocol]=[row['uuid'] for row in service.query_view(protocol)['epochs']]
+                binding=explorer_history.protocol_binding_header(protocol)
+                headers[protocol]=(binding,explorer_history.header(binding['revision_uuid']) if binding else None)
+            project_payload=build_native_overview()
+            if project_payload is None:raise ValueError('Project publication cannot be prepared')
+            with tracker.capture() as plan:
+                if plan is None:raise ValueError('Recovery authority is unavailable for preparation')
+                decisions=(store.Curation & {'project_uuid':store.project_uuid}).proj(
+                    'included','review_state','metadata_fingerprint').to_dicts()
+                records=[] if shared_annotations is None else list(shared_annotations._index_records(None))
+                exports=store.export_memberships()
+                plan.verify();watermark=plan.watermark
+            tag_values={}
+            for row in records:
+                key=(row['target_kind'],row['target_uuid'])
+                tag_values.setdefault(key,set()).update(row['tags'])
+            model=OverviewProjection.prepare(rows=service.rows,memberships=memberships,
+                fingerprints=service._fingerprints,decisions=decisions,
+                publication=overview_publication_key(keys),watermark=watermark,exports=exports,
+                tagged_cells=[key for (kind,key),tags in tag_values.items() if kind=='cell' and tags],
+                tagged_epochs=[key for (kind,key),tags in tag_values.items() if kind=='epoch' and tags])
+            vocab=TagVocabulary({key:(value[0],value[2]) for key,value in model.epochs.items()},
+                {None:{key:value['epochs'] for key,value in model.cells.items()},
+                 **{protocol:{key:value['epochs'] for key,value in cells.items()} for protocol,cells in model.protocol_cells.items()}})
+            pages=sqlite3.connect(':memory:',check_same_thread=False)
+            try:
+                for (kind,key),tags in tag_values.items():vocab.update(kind,key,tags)
+                pages.execute('CREATE TABLE cells(scope TEXT,cell TEXT,kind TEXT,date TEXT,label TEXT,ordinal INTEGER,first TEXT,PRIMARY KEY(scope,cell)) WITHOUT ROWID')
+                pages.execute('CREATE TABLE members(scope TEXT,cell TEXT,epoch TEXT,PRIMARY KEY(scope,cell,epoch)) WITHOUT ROWID')
+                pages.executemany('INSERT INTO members VALUES (?,?,?)',[(protocol,model.epochs[key][0],key) for protocol,ids in memberships.items() for key in ids])
+                pages.execute('CREATE INDEX cell_order ON cells(scope,kind,date,label,ordinal)')
+                pages.execute('CREATE INDEX canonical_cell_order ON cells(scope,kind,date,label,first)')
+                for protocol,cells in [(None,model.cells),*model.protocol_cells.items()]:
+                    pages.executemany('INSERT INTO cells VALUES (?,?,?,?,?,?,?)',
+                        [('' if protocol is None else protocol,key,service.cells[key]['cell_type'] or '',service.cells[key]['date'],service.cells[key]['label'],ordinal,
+                          '' if protocol is None else pages.execute('SELECT MIN(epoch) FROM members WHERE scope=? AND cell=?',(protocol,key)).fetchone()[0]) for ordinal,key in enumerate(cells)])
+                pages.commit()
+                if tracker.token()!=watermark or overview_part_keys()!=keys:
+                    raise StaleWorkspace('Overview changed during preparation. Prepare again.')
+            except BaseException:
+                pages.close();vocab.close();raise
+            old=dict(prepared_overview)
+            prepared_overview.clear();prepared_overview.update(model=model,vocab=vocab,pages=pages,tracker=tracker,
+                project=project_payload,protocols=protocol_payloads,headers=headers,protocol_order={key:index for index,key in enumerate(service.protocols)},
+                project_cells={row['cell_uuid']:row for row in project_payload['cells']},reason=None,
+                duration_orders={binding['revision_uuid']:model.duration_orders[protocol] for protocol,(binding,_) in headers.items() if binding},
+                changed_epochs={protocol:set((payload.get('binding') or {}).get('changed_epoch_uuids',())) for protocol,payload in protocol_payloads.items()},
+                initial_bindings={protocol:(binding or {}).get('revision_uuid') for protocol,(binding,_) in headers.items()},
+                cell_ordinals={protocol:{key:index for index,key in enumerate(cells)} for protocol,cells in model.protocol_cells.items()})
+            if old:
+                old['pages'].close();old['vocab'].close()
+            receipt={'status':'ready','publication_serial':keys['base'][0],
+                'elapsed_ms':(time.perf_counter()-started)*1000,'epochs':len(model.epochs),
+                'protocol_memberships':sum(map(len,model.memberships.values()))}
+            app.extensions['overview_preparation_receipt']=receipt
+            return receipt
+
+    app.extensions['prepare_overview_publication']=prepare_overview_publication
+
+    def prepare_published_views():
+        receipts={}
+        for name in ('overview','tree'):
+            prepare=app.extensions.get('prepare_'+name+'_publication')
+            if prepare is not None:receipts[name]=prepare()
+        app.extensions['publication_preparation_receipts']=receipts
+        return receipts
+
+    app.extensions['prepare_published_views']=prepare_published_views
+
+    def close_overview_publication():
+        # Drain callbacks before acquiring the lock they use to publish.
+        overview_durations.close()
+        with db_lock:
+            if prepared_overview:
+                prepared_overview['model'].invalidate()
+                prepared_overview['pages'].close();prepared_overview['vocab'].close()
+                prepared_overview.clear()
+
+    app.extensions['close_overview_publication']=close_overview_publication
+
+    def overview_capture_rows(plan):
+        from disco.navigation.publication_changes import PreparationRequired
+        if any(plan.keys.get(name) for name in ('source','dataset_revision','protocol_workspace','data_store_state')):
+            raise PreparationRequired('publication_changed')
+        changes=[];tag_changes=[];bindings=[]
+        expected=['project_uuid','protocol_uuid','epoch_uuid']
+        if plan.primary_keys.get('curation')!=expected:raise PreparationRequired('curation_identity_changed')
+        by_protocol={}
+        for project,protocol,identity in plan.keys.get('curation',[]):
+            if project!=store.project_uuid:raise PreparationRequired('curation_project_changed')
+            by_protocol.setdefault(protocol,[]).append(identity)
+        for protocol,ids in by_protocol.items():
+            rows=store._rows(protocol,ids,selected_only=True)
+            changes.extend((protocol,key,rows.get(key)) for key in ids)
+        if plan.keys.get('annotation_profile'):
+            # Author labels may change; page chips are read afresh. No tag
+            # membership or effective tag text changes with this identity row.
+            pass
+        shared_keys=plan.primary_keys.get('shared_annotation',[])
+        targets={}
+        for key in plan.keys.get('shared_annotation',[]):
+            row=dict(zip(shared_keys,key))
+            if row.get('project_uuid')!=store.project_uuid:raise PreparationRequired('annotation_project_changed')
+            targets.setdefault(row['target_kind'],set()).add(row['target_uuid'])
+        for kind,ids in targets.items():
+            records=shared_annotations.read_targets(kind,sorted(ids))
+            tag_changes.extend((kind,key,{chip['tag'] for chip in records[key]['tags']}) for key in ids)
+        model=prepared_overview['model']
+        for key in plan.keys.get('protocol_binding',[]):
+            row=dict(zip(plan.primary_keys['protocol_binding'],key));protocol=row['protocol_uuid']
+            old_binding,old_header=prepared_overview['headers'].get(protocol,(None,None))
+            binding=explorer_history.protocol_binding_header(protocol)
+            if binding==old_binding:continue
+            if binding is None or old_binding is None:raise PreparationRequired('binding_changed')
+            # A locally published delta was already admitted by bind(). An
+            # unknown root must be explicitly prepared rather than decoded here.
+            cached=getattr(explorer_history,'_headers',{}).get(binding['revision_uuid'])
+            if cached is None:raise PreparationRequired('binding_changed')
+            header=explorer_history.header(binding['revision_uuid'])
+            def path_between(start,finish):
+                path=[];current=start
+                for _ in range(64):
+                    if current==finish:return path
+                    known=getattr(explorer_history,'_headers',{}).get(current)
+                    if known is None or known.get('storage')!='membership-delta-v1':return None
+                    verified=explorer_history.header(current);path.append(verified['delta'])
+                    current=verified['parent_revision_uuid']
+                return None
+            path=path_between(binding['revision_uuid'],old_binding['revision_uuid']);reverse=False
+            if path is not None:path=list(reversed(path))
+            else:path=path_between(old_binding['revision_uuid'],binding['revision_uuid']);reverse=True
+            if path is None:raise PreparationRequired('binding_changed')
+            added=set();removed=set();touched=set()
+            for delta in path:
+                plus=set(delta['removed']) if reverse else {item['uuid'] for item in delta['added']}
+                minus={item['uuid'] for item in delta['added']} if reverse else set(delta['removed'])
+                touched.update(plus|minus)
+                if len(touched)>20000:raise PreparationRequired('membership_delta_limit')
+                for identity in plus:
+                    if identity in removed:removed.remove(identity)
+                    else:added.add(identity)
+                for identity in minus:
+                    if identity in added:added.remove(identity)
+                    else:removed.add(identity)
+            states=store._rows(protocol,list(added),selected_only=True) if added else {}
+            fingerprints=explorer_history.members(binding['revision_uuid'])
+            changed={key for key in touched if key in fingerprints and fingerprints[key]!=service._fingerprints[key]}
+            bindings.append((protocol,{key:states.get(key) for key in added},list(removed),binding,header,changed,touched))
+        return changes,tag_changes,bindings
+
+    def current_prepared_overview():
+        from disco.navigation.publication_changes import capture_changes,PreparationRequired
+        if not prepared_overview:return None,'not_prepared'
+        model=prepared_overview['model'];tracker=prepared_overview['tracker']
+        keys=overview_part_keys()
+        if keys is None or overview_publication_key(keys)!=model.publication:
+            model.invalidate();return None,'publication_changed'
+        if not model.ready:return None,prepared_overview.get('reason') or 'publication_changed'
+        try:
+            if tracker.token()!=model.watermark:
+                watermark,(changes,tags,bindings)=capture_changes(tracker,model.watermark,overview_capture_rows)
+                # All source reads and capture verification have completed. No
+                # owner is changed until the snapshot can be published.
+                for protocol,added,removed,binding,header,changed,touched in bindings:
+                    model.apply_membership(protocol,added=added,removed=removed)
+                    prepared_overview['changed_epochs'][protocol].difference_update(touched)
+                    prepared_overview['changed_epochs'][protocol].update(changed)
+                    vocab=prepared_overview['vocab']
+                    for identity in removed:vocab.membership(protocol,identity,False)
+                    for identity in added:vocab.membership(protocol,identity,True)
+                    pages=prepared_overview['pages']
+                    pages.executemany('DELETE FROM members WHERE scope=? AND cell=? AND epoch=?',[(protocol,model.epochs[key][0],key) for key in removed])
+                    pages.executemany('INSERT INTO members VALUES (?,?,?)',[(protocol,model.epochs[key][0],key) for key in added])
+                    for cell in {model.epochs[key][0] for key in [*added,*removed]}:
+                        if cell in model.protocol_cells[protocol]:
+                            row=service.cells[cell]
+                            first=pages.execute('SELECT MIN(epoch) FROM members WHERE scope=? AND cell=?',(protocol,cell)).fetchone()[0]
+                            ordinal=prepared_overview['cell_ordinals'][protocol].get(cell,0)
+                            pages.execute('INSERT OR REPLACE INTO cells VALUES (?,?,?,?,?,?,?)',(protocol,cell,row['cell_type'] or '',row['date'],row['label'],ordinal,first))
+                        else:pages.execute('DELETE FROM cells WHERE scope=? AND cell=?',(protocol,cell))
+                    pages.commit();prepared_overview['headers'][protocol]=(binding,header)
+                    orders=prepared_overview['duration_orders'];revision=binding['revision_uuid']
+                    if revision in orders:model.duration_orders[protocol]=orders[revision]
+                    else:orders[revision]=model.duration_orders[protocol]
+                    while len(orders)>32:orders.pop(next(iter(orders)))
+                model.apply_decisions(changes,model.watermark,watermark)
+                model.apply_tags([(kind,key,bool(values)) for kind,key,values in tags])
+                for kind,key,values in tags:prepared_overview['vocab'].update(kind,key,values)
+                for protocol,_,_,_,_,_,_ in bindings:
+                    version=model.duration_versions[protocol]
+                    def publish(value,protocol=protocol,version=version,model=model):
+                        with db_lock:
+                            if prepared_overview.get('model') is model:model.publish_duration(protocol,version,value)
+                    overview_durations.submit(model.duration_orders[protocol],model.rows,publish)
+            if tracker.token()!=model.watermark:raise PreparationRequired('state_changed')
+        except Exception as error:
+            model.invalidate();prepared_overview['reason']=str(error);return None,str(error)
+        return model,None
+
+    def prepared_cell_rows(model,protocol,page):
+        scope='' if protocol is None else protocol
+        total=len(model.cells if protocol is None else model.protocol_cells[protocol])
+        limit,after=page if page is not None else (total,0)
+        binding=prepared_overview['headers'].get(protocol,(None,None))[0]
+        canonical=protocol is not None and (binding or {}).get('revision_uuid')!=prepared_overview['initial_bindings'][protocol]
+        order='first' if canonical else 'ordinal'
+        identities=[row[0] for row in prepared_overview['pages'].execute(
+            'SELECT cell FROM cells WHERE scope=? ORDER BY kind,date,label,'+order+' LIMIT ? OFFSET ?',(scope,limit,after))]
+        result=[]
+        for identity in identities:
+            counts=model.cell_counts(identity,protocol)
+            if protocol is None:
+                row={**prepared_overview['project_cells'][identity],
+                     'protocol_uuids':sorted(model.cell_protocols.get(identity,()),key=prepared_overview['protocol_order'].__getitem__)}
+                fields=('epochs','duration_seconds','included','reviewed','unreviewed','exported')
+            else:
+                row={**service.cells[identity],
+                    **recording_rig_summary(model.cell_values(protocol,identity,'source_sha256'),recording_sources()),
+                    'group_labels':sorted(model.cell_values(protocol,identity,'group_label'),key=str)}
+                fields=('epochs','duration_seconds','included','reviewed','unreviewed','exported')
+            row.update({key:counts[key] for key in fields})
+            if counts.get('duration_status'):row['duration_status']=counts['duration_status']
+            result.append(row)
+        add_cell_annotations(result)
+        return result,{'cells_total':total,'cells_next':after+len(result) if after+len(result)<total else None} if page is not None else {}
+
+    def prepared_binding(protocol):
+        binding,header=prepared_overview['headers'][protocol]
+        if binding is None:return None
+        return {'revision_uuid':binding['revision_uuid'],'version':binding['version'],
+            **{key:header[key] for key in ('name','source_revisions','predicate','splits','tree_view')},
+            **({'annotation_scope':compact_annotations(header['annotation_scope'])} if header.get('annotation_scope') else {}),
+            'changed_epoch_uuids':sorted(prepared_overview['changed_epochs'][protocol])}
+
+    def prepared_overview_payload(protocol,page):
+        model,reason=current_prepared_overview()
+        if model is None:return None,reason
+        keys=overview_part_keys();cells,paging=prepared_cell_rows(model,protocol,page)
+        if protocol is None:
+            payload={key:value for key,value in prepared_overview['project'].items() if key not in ('cells','protocols','counts')}
+            counts={**prepared_overview['project']['counts']}
+            current=model.project_counts()
+            counts.update({key:current[key] for key in counts if key in current})
+            protocols=[]
+            for entry in prepared_overview['project']['protocols']:
+                identity=entry['protocol_uuid'];context=selected_state.native_context(identity)
+                if context is None:return None,'protocol_authority_changed'
+                own=model.protocol_counts(identity)
+                protocols.append({**entry,'counts':{key:own.get(key,value) for key,value in entry['counts'].items()},
+                    'query_revision':context['query_revision'],'binding':prepared_binding(identity)})
+                binding=prepared_binding(identity)
+                if binding is not None:
+                    protocols[-1]['query']={'version':2,'kind':'source_predicate','predicate':binding['predicate']}
+                    protocols[-1]['view']={'group_by':binding['tree_view']['fields'],'layout':'landscape'}
+                if own.get('duration_status'):protocols[-1]['counts']['duration_status']=own['duration_status']
+            payload.update(counts=counts,protocols=protocols,events=service.events(25),exports=store.list_dataset_revisions())
+        else:
+            context=selected_state.native_context(protocol)
+            if context is None:return None,'protocol_authority_changed'
+            template=prepared_overview['protocols'][protocol]
+            current=model.protocol_counts(protocol)
+            payload={key:value for key,value in template.items() if key not in ('cells','counts','annotation_summary')}
+            payload['counts']={key:current.get(key,value) for key,value in template['counts'].items()}
+            if shared_annotations:
+                payload['counts'].update({key:current[key] for key in ('shared_tagged_cells','shared_tagged_epochs')})
+            if current.get('duration_status'):payload['counts']['duration_status']=current['duration_status']
+            payload['total_counts']={key:current.get(key,value) for key,value in template['total_counts'].items()}
+            payload.update(query_revision=context['query_revision'],expected_query_revision=context['query_revision'],
+                query_revision_contract=context['query_revision_contract'],expected_binding_version=context['binding_version'],
+                annotation_generation=annotation_generation(context['generation']),binding=prepared_binding(protocol))
+            binding=prepared_binding(protocol)
+            if binding is not None:payload['effective_query']={'version':2,'kind':'source_predicate','predicate':binding['predicate']}
+            payload['selection_options']={'cell_types':sorted(value for value in model.protocol_values(protocol,'cell_type') if value)}
+            payload['groups']=sorted(model.protocol_values(protocol,'group_label'),key=str)
+            payload['source_sha256s']=sorted(model.protocol_values(protocol,'source_sha256'))
+            excluded=set(service.source_scope()['excluded_source_revisions'])
+            affected={key:count for key,count in model.attributes[protocol]['source_sha256'].items() if key in excluded}
+            payload['source_eligibility']={**template['source_eligibility'],'excluded_epoch_count':sum(affected.values()),
+                'excluded_sources':sorted(affected),'propagation_required':bool(affected)}
+        if shared_annotations:payload['annotation_summary']=prepared_overview['vocab'].summary(protocol)
+        payload.update(cells=cells,**paging)
+        if prepared_overview['tracker'].token()!=model.watermark or overview_part_keys()!=keys:
+            raise StaleWorkspace('Overview changed during the read. Refresh and retry.')
+        return payload,None
+
+    @app.post('/api/overview/prepare')
+    def prepare_overview_route():
+        if request.args or request.get_json(silent=True) not in (None,{}):raise ValueError('Overview preparation takes no options')
+        return jsonify(prepare_overview_publication())
+
+
     def native_overview(page=None):
         """Project counts from exact decision projections, memoized per generation.
 
@@ -1169,7 +1491,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 if voltage_preparation['status']=='failed':warnings.append('Supporting voltage preparation failed; retry from Cell QC.')
                 preparation=prepare_annotations()
                 if preparation['status']=='failed':warnings.append('Annotation preparation failed: '+preparation.get('reason',''))
-                return jsonify(refresh=result, warnings=warnings, annotation_preparation=preparation)
+                views=prepare_published_views()
+                return jsonify(refresh=result, warnings=warnings, annotation_preparation=preparation,view_preparation=views)
         except Exception as error:
             with db_lock:
                 try:
@@ -1306,6 +1629,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 try:
                     service.refresh()
                     prepare_annotations()
+                    result['view_preparation']=prepare_published_views()
                 except (OSError, ValueError) as error:
                     service.manager_recovery(error)
                     result['workspace_validation_error'] = str(error)
@@ -1408,6 +1732,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def overview():
         cells_window=cell_page()
         with db_lock, read_contract():
+            if overview_guard() is not None and getattr(service,'_recovery_tracker',None) is not None:
+                payload,reason=prepared_overview_payload(None,cells_window)
+                return overview_preparing(reason) if payload is None else jsonify(payload)
             native=native_overview(cells_window)
             if native is not None:
                 if cells_window is None:return overview_response(native)
@@ -1478,6 +1805,13 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         cells_window=cell_page()
         with db_lock:
             query_filters=filters({'cells_limit','cells_after'})
+            if not query_filters and overview_guard() is not None and getattr(service,'_recovery_tracker',None) is not None:
+                payload,reason=prepared_overview_payload(protocol_uuid,cells_window)
+                if payload is None:return overview_preparing(reason)
+                etag=checksum({'projection':'prepared-overview-v1','protocol':protocol_uuid,
+                    'query':payload['query_revision'],'watermark':prepared_overview['model'].watermark,'duration':prepared_overview['model'].duration_serial,'page':cells_window})
+                response=app.response_class(status=304) if request.headers.get('If-None-Match')=='"'+etag+'"' else jsonify(payload)
+                response.set_etag(etag);response.headers['Cache-Control']='no-store';return response
             native_exports=(type(store) is CurationStore
                 and getattr(store.export_memberships,'__func__',None) is CurationStore.export_memberships
                 and getattr(store.protocol_export_status,'__func__',None) is CurationStore.protocol_export_status)
@@ -2645,6 +2979,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                             'failures':job['voltage_preparation']['failures']})
                     preparation=prepare_annotations(progress=lambda phase:reporter.emit(phase))
                     job['annotation_preparation']=preparation
+                    job['view_preparation']=prepare_published_views()
                     if preparation['status']=='failed':
                         job['warnings'].append({'stage':'annotation_preparation','message':preparation.get('reason','Preparation failed')})
                 job['protocol_suggestions'] = proposals['counts']
@@ -2868,6 +3203,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             save_app_state(project_dir, service.dj.conn(), service=service)
             if service._loaded:
                 prepare_annotations(reuse=True)
+                prepare_published_views()
         # The mirror is incremental (only rows changed since its watermark), so
         # each committed write updates it synchronously at its commit point;
         # there is no timer or background capture competing with requests.
@@ -2894,6 +3230,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     error.desktop_shutdown_stage = 'trace_workers'
                     inbox.start()
                     raise
+            navigation=app.extensions.get('disco.navigation.prepared')
+            if navigation is not None:navigation.close()
+            close_overview_publication()
             with db_lock:
                 scheduler=app.extensions.get('backup_scheduler')
                 try:

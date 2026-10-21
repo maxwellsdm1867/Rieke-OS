@@ -40,7 +40,7 @@ export function CellList({cells = [], onInspect,onQC}) {
         <details className="cell-disclosure">
           <summary><div className="cell-identity"><span className="cell-glyph" style={{color:cellTypeColor(type)}}><CellTypeIcon type={type} size={24}/></span><span className="cell-recording-identity"><strong>{label}{cell.identity_qualifier&&<small> · {cell.identity_qualifier}</small>}</strong></span><ChevronDown className="cell-expand-cue" size={15} aria-hidden="true"/></div>
             <span className="cell-value cell-date"><small>Recording date</small>{date}</span><span className="cell-value cell-rig"><small>Rig</small>{rig}</span>
-            <span className="cell-value"><small>Epochs</small>{count(total)}</span><span className="cell-value"><small>Recorded time</small>{duration(cell.duration_seconds)}</span>
+            <span className="cell-value"><small>Epochs</small>{count(total)}</span><span className="cell-value"><small>Recorded time</small>{cell.duration_status==='pending'?'Preparing…':duration(cell.duration_seconds)}</span>
             <span className="cell-value"><small>Exported epochs</small><Badge kind={exported>0?'info':'neutral'}>{Number.isFinite(exported)?exported>0?number(exported):'None':'Unavailable'}</Badge></span>
             <span className="expand-hint">Details <ChevronDown size={14} aria-hidden="true"/></span>
           </summary>

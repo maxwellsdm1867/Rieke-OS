@@ -172,3 +172,11 @@ test('project and protocol overview show recording rig on the cell row before de
   assert.match(row.findByProps({className:'cell-qc-action'}).props['aria-label'],/Rig EF/);
  }
 });
+
+test('pending canonical duration keeps exact counts and never displays zero time',async t=>{
+ const h=await harness(t);
+ await h.render(h.ProtocolInfographic,{data:{binding:{revision_uuid:'main'},cells:[{cell_uuid:'a',cell_type:'ON parasol',date:'2026-10-20',epochs:8,included:7,exported:0,reviewed:3,duration_seconds:null,duration_status:'pending'}],counts:{epochs:8,included:7,excluded:1,duration_seconds:null,duration_status:'pending'}}});
+ const metrics=h.root.findByProps({className:'pi-metrics'}).findAllByType('strong').map(node=>node.children.join(''));
+ assert.equal(metrics[2],'8');assert.equal(metrics[3],'Preparing…');
+ assert.match(h.root.findByProps({className:'pi-date-list'}).findByType('small').children.join(''),/Preparing…/);
+});
