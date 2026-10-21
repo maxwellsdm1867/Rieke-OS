@@ -93,6 +93,16 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     }).catch(error=>{if(!controller.signal.aborted)setError(`Saved acceptance could not be loaded. ${error.message}`);});
     return()=>controller.abort();
   },[protocolId,acceptOperation,item.candidate_revision_uuid]);
+  useEffect(()=>{
+    if(!receipt?.operation_uuid||!profile.profileUuid||profile.loading||unconfirmed||acceptPending)return;
+    const controller=new AbortController(),operationId=receipt.operation_uuid;
+    api(`${workbenchRoot(protocolId)}/receipts/${encodeURIComponent(operationId)}`,{signal:controller.signal}).then(value=>{
+      if(controller.signal.aborted||activeOwner.current!==loadOwner)return;
+      if(value.operation_uuid!==operationId||!value.binding||!value.event_uuid)throw Error('The saved merge receipt did not match.');
+      setReceipt(value);
+    }).catch(error=>{if(!controller.signal.aborted&&activeOwner.current===loadOwner)setViewNotice(`Merge history could not be refreshed. ${error.message}`);});
+    return()=>controller.abort();
+  },[loadOwner,receipt?.operation_uuid,unconfirmed,acceptPending]);
   async function save(decisions,{deferred,selectionMode}={}){
     if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||unconfirmed||exportState.pending||!exportState.exported&&(exportState.acceptOperation||exportState.prepared)||!capabilities.drafts||!current.current)return false;
     inFlight.current=true;setBusy(true);setError('');setPreview(null);operation.current=null;
@@ -110,7 +120,9 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   function select(next){selected.current=next;setHighlighted(next);setSelectionOmitted(0);publish({selected:next,selection_omitted_count:0});}
   async function decide({epoch_uuids,changes}){
     const decisions=epoch_uuids.map(epoch_uuid=>({epoch_uuid,...(typeof changes.reviewed==='boolean'?{reviewed:changes.reviewed}:changes.review_state==='approved'?{reviewed:true}:changes.review_state==='unreviewed'?{reviewed:false}:{}),...(typeof changes.included==='boolean'?{excluded:!changes.included}:{})}));
-    return save(decisions);
+    const saved=await save(decisions);
+    if(saved&&typeof changes.included==='boolean')onChange?.({kind:'membership',protocolId});
+    return saved;
   }
   async function defer(){if(await save([],{deferred:true}))onDefer();}
   function beginSelected(ids,kind='merge'){
@@ -151,7 +163,9 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   async function submitAcceptance(acceptedPreview,{retry=false}={}){
     const owner=mergeLifetime.current,wasUnconfirmed=unconfirmed,receiptOnly=unconfirmed&&!retry;let submitted=false;
     setAcceptPending(true);publish({acceptPending:true,preview:acceptedPreview,operation:operation.current});
-    try{if(!receiptOnly){const flushed=await flushBeforeSubmission();setViewNotice(flushed.notice);if(!owner||mergeLifetime.current!==owner||activeOwner.current!==loadOwner)throw Error('The incoming workspace changed. Choose Merge again in the current workspace.');submitted=true;}const result=await acceptWorkbench(root,acceptedPreview,operation.current,api,{receiptOnly});setUnconfirmed(false);setReceipt(result);publish({receipt:result,unconfirmed:false,acceptPending:false,preview:null,operation:operation.current});setPreview(null);onChange?.({kind:'membership',protocolId});onMerged?.(result);return result;}
+    try{if(!receiptOnly){const flushed=await flushBeforeSubmission();setViewNotice(flushed.notice);if(!owner||mergeLifetime.current!==owner||activeOwner.current!==loadOwner)throw Error('The incoming workspace changed. Choose Merge again in the current workspace.');submitted=true;}const result=await acceptWorkbench(root,acceptedPreview,operation.current,api,{receiptOnly});setUnconfirmed(false);setReceipt(result);publish({receipt:result,unconfirmed:false,acceptPending:false,preview:null,operation:operation.current});setPreview(null);
+      try{onChange?.({kind:'membership',protocolId});onMerged?.(result);}catch(error){setViewNotice(`Merge completed. The view could not be refreshed. ${error.message}`);}
+      return result;}
     catch(error){
       if(receiptOnly){setError(`No acceptance receipt was confirmed. Use Retry this merge only to explicitly submit the original operation again. ${error.message}`);publish({acceptPending:false});}
       else if(!submitted){setError(`Merge was not submitted. Pending accepted changes were not confirmed or the workspace changed. ${error.message}`);publish({acceptPending:false});}
@@ -223,12 +237,21 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     }
     onMergeRequestHandled?.('Select the epochs to merge, then choose Merge to preview the additions to Main.');
   },[mergeRequest,projectId,protocolId,scopeKind,externalBusy,busy,contextFresh,context,error,exportLocked,acceptPending,receipt,preview,capabilities.additive_accept,capabilities.drafts,onMergeRequestHandled]);
+  function refreshEpochs(){
+    if(inFlight.current||unconfirmed||acceptPending||exportLocked||externalBusy||busy)return false;
+    setNonce(value=>value+1);onRefresh?.();return true;
+  }
   function cancelPreview(){
     if(inFlight.current||unconfirmed||acceptPending||exportLocked)return;
     setPreview(null);operation.current=null;publish({preview:null,operation:null});
   }
   // An undone merge has no accepted additions left to export.
-  const receiptUndone=useSyncExternalStore(subscribeMergeUndone,()=>!!receipt&&mergeWasUndone(receipt.operation_uuid));
+  const receiptUndone=useSyncExternalStore(subscribeMergeUndone,()=>!!receipt&&(receipt.undone===true||mergeWasUndone(receipt.operation_uuid)));
+  useEffect(()=>{
+    if(!receiptUndone||inFlight.current||unconfirmed||acceptPending||exportLocked)return;
+    select([]);reviewRemaining({...receipt,undone:true});setError('');
+    setViewNotice('Merge undone. Review the restored incoming additions.');
+  },[receiptUndone,unconfirmed,acceptPending,exportLocked]);
   function openExport(accept){closeDetails();if(!receipt&&!exportLocked){beginSelected(selected.current,accept?'merge-export':'export');return;}setExportDialog(accept);}
   function reviewRemaining(merged=receipt){const next=nextWorkbenchWorkflow({...exportState,receipt:merged});setExportState(next);setReceipt(null);setPreview(null);operation.current=null;publish({receipt:null,preview:null,operation:null,exportState:next});setNonce(value=>value+1);}
   const countLabel=value=>Number.isSafeInteger(value)&&value>=0?number(value):'Unavailable';
@@ -282,6 +305,6 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     {receipt&&!exportLocked&&<button disabled={busy||externalBusy} onClick={()=>reviewRemaining()}>Review remaining additions</button>}
     {(exportState.completed||[]).filter(value=>value.exported).map((value,index)=><p key={value.exported?.dataset_uuid||value.receipt?.event_uuid||index}>{value.exported&&<a href={value.exported.download_url} download>{value.exported.name||'Download earlier incoming export'}</a>}</p>)}
     {exportDialog!==null&&<WorkbenchExportDialog selectedOnly externalBusy={externalBusy||!contextFresh&&!exportLocked&&!receipt} protocolId={protocolId} item={item} accept={exportDialog} acceptReceipt={receipt} state={exportState} onState={value=>{setExportState(value);if(value.receipt)setReceipt(value.receipt);publish({exportState:value,...(value.receipt?{receipt:value.receipt}:{})});}} onClose={()=>{setExportDialog(null);setNonce(value=>value+1);}} onChanged={onChange}/>}
-    {visible&&adapterReady?<div className="incoming-browser" tabIndex={-1} aria-label="Incoming epoch browser">{filterTarget&&<RetainedPortal target={filterTarget}><ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked||!!selectionIntent||!!preview} onChange={setFilters}/></RetainedPortal>}<Inspector metadataPresentationRevision={metadataPresentationRevision} traceReadContext={visible.context.trace_read_context} onReviewDetails={openDetails} initialPageRead={initialPageRead} draftSelectionTarget={draftSelectionTarget} readPaused={busy||externalBusy||!contextFresh} draftSelection={{selected:highlighted,disabled:busy||externalBusy||exportLocked||!!selectionIntent||!!preview||!capabilities.drafts||!contextFresh||!!receipt,onMerge:capabilities.additive_accept?ids=>beginSelected(ids):null}} toolbarTarget={toolbarTarget} readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onTagFilter={predicate=>setFilters(current=>({...clearTagFilters(current),tag_predicate:JSON.stringify(predicate)}))} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={rememberViewer} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh&&!receiptUndone?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
+    {visible&&adapterReady?<div className="incoming-browser" tabIndex={-1} aria-label="Incoming epoch browser">{filterTarget&&<RetainedPortal target={filterTarget}><ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked||!!selectionIntent||!!preview} onChange={setFilters}/></RetainedPortal>}<Inspector onRefreshEpochs={refreshEpochs} metadataPresentationRevision={metadataPresentationRevision} traceReadContext={visible.context.trace_read_context} onReviewDetails={openDetails} initialPageRead={initialPageRead} draftSelectionTarget={draftSelectionTarget} readPaused={busy||externalBusy||!contextFresh} draftSelection={{selected:highlighted,disabled:busy||externalBusy||exportLocked||!!selectionIntent||!!preview||!capabilities.drafts||!contextFresh||!!receipt,onMerge:capabilities.additive_accept?ids=>beginSelected(ids):null}} toolbarTarget={toolbarTarget} readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onTagFilter={predicate=>setFilters(current=>({...clearTagFilters(current),tag_predicate:JSON.stringify(predicate)}))} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={rememberViewer} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh&&!receiptUndone?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
   </section>;
 }

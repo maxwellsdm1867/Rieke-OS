@@ -1660,7 +1660,8 @@
             "workspace-app/src/metadata-explorer/ui/MetadataExplorer.jsx",
             "workspace-app/src/protocol-overview/protocolSuggestions.js",
             "workspace-app/src/protocol-overview/ui/ViewPreparation.jsx",
-            "workspace-app/src/retainedWorkspaceViews.js"
+            "workspace-app/src/retainedWorkspaceViews.js",
+            "workspace-app/src/annotations/annotationProfile.js"
           ]
         },
         {
@@ -1678,7 +1679,9 @@
             "react",
             "workspace-app/src/api.js",
             "workspace-app/src/incoming-workbench/useWorkbenchPreparation.js",
-            "workspace-app/src/incoming-workbench/workbenchAuthority.js"
+            "workspace-app/src/incoming-workbench/workbenchAuthority.js",
+            "workspace-app/src/annotations/annotationProfile.js",
+            "workspace-app/src/incoming-workbench/mergeUndo.js"
           ]
         },
         {
@@ -4172,7 +4175,9 @@
               "mergeUndoneVersion",
               "mergeWasUndone",
               "protocolMergeUndoVersion",
-              "subscribeMergeUndone"
+              "protocolWorkbenchVersion",
+              "subscribeMergeUndone",
+              "subscribeWorkbenchChanges"
             ]
           },
           {

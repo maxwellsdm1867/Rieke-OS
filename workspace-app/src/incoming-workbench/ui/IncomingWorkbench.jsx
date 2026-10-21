@@ -1,3 +1,4 @@
+import {useAnnotationProfile} from '../../annotations/annotationProfile.js';
 import {useRetainedViewProtection} from '../../retainedWorkspaceViews.js';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {Activity,GitBranch,Info,Layers3,RefreshCw} from 'lucide-react';
@@ -16,19 +17,32 @@ import {pendingQueueCounts} from '../workbenchAuthority.js';
 import useIncomingMergeIntent from '../useIncomingMergeIntent.js';
 import './IncomingWorkbench.css';
 
-export default function IncomingWorkbench({projectId,protocolId,protocols=[],suggestions=[],loading=false,error,onRetry,onChange,onApplied,onQC,onInspect,revision,metadataPresentationRevision,session,onSession,initialCandidateId=null,initialExportIntent=null,initialAcceptOperation=null,authority=undefined,filterTarget=null,toolbarTarget=null,initialMergeIntent=null,onClaimMergeIntent,onMerged}){
+export default function IncomingWorkbench(props){
+  const profile=useAnnotationProfile(),actor=profile.profileUuid||props.session?.sessionActor||'default';
+  const suppliedOwner=useRef({actor,retired:false});
+  if(suppliedOwner.current.actor!==actor)suppliedOwner.current.retired=true;
+  const sessions=useRef(props.session?.sessionsByActor||{[props.session?.sessionActor||props.session?.cumulativeActor||actor]:props.session||{}});
+  const remember=useCallback(value=>{
+    sessions.current={...sessions.current,[actor]:value};
+    props.onSession?.({...value,sessionActor:actor,sessionsByActor:sessions.current});
+  },[actor,props.onSession]);
+  return <ActorWorkbench key={actor} {...props} session={sessions.current[actor]} authority={suppliedOwner.current.retired?undefined:props.authority} onSession={remember}/>;
+}
+
+function ActorWorkbench({projectId,protocolId,protocols=[],suggestions=[],loading=false,error,onRetry,onChange,onApplied,onQC,onInspect,revision,metadataPresentationRevision,session,onSession,initialCandidateId=null,initialExportIntent=null,initialAcceptOperation=null,authority=undefined,filterTarget=null,toolbarTarget=null,initialMergeIntent=null,onClaimMergeIntent,onMerged}){
   const queue=useWorkbenchQueue(protocolId,revision,authority,projectId);
   const cumulative=queue.data?.contract_version===1,counts=pendingQueueCounts(queue.data);
   const preparedSupported=queue.data?.capabilities?.cumulative_pending_browse===true;
   const saved=useRef(session||{}).current;
+  const profile=useAnnotationProfile(),actor=profile.profileUuid||'default';
   const [selected,setSelected]=useState(saved.selected||[]),[active,setActive]=useState(initialCandidateId||saved.active||null);
   const [exports,setExports]=useState(saved.exports||{}),[dialog,setDialog]=useState(null);
   const drafts=useRef(saved.drafts||{}),snapshot=useRef(null),cumulativeSession=useRef(saved.cumulative||{});
   const [history,setHistory]=useState(!!initialCandidateId||saved.history||false);
   const mergeRequest=useIncomingMergeIntent({intent:initialMergeIntent,claim:onClaimMergeIntent,projectId,protocolId,queue,onOpen:intent=>{setActive(intent.kind==='merge_source'?intent.candidate_revision_uuid:null);setHistory(intent.kind==='merge_source');}});
   useRetainedViewProtection({dirty:!!dialog||!!active||selected.length>0||Object.keys(drafts.current).length>0,busy:mergeRequest.pending});
-  // Only proposals with mergeable epochs are pending; nothing else is listed.
-  const items=cumulative?queue.data.candidates.filter(item=>Number.isSafeInteger(item.eligible_pending_epoch_count)&&item.eligible_pending_epoch_count>0):activeProtocolSuggestions({suggestions}).filter(item=>item.protocol_uuid===protocolId);
+  // Pending review filters eligibility; history also retains completed snapshots.
+  const items=cumulative?queue.data.candidates.filter(item=>history||Number.isSafeInteger(item.eligible_pending_epoch_count)&&item.eligible_pending_epoch_count>0):activeProtocolSuggestions({suggestions}).filter(item=>item.protocol_uuid===protocolId);
   const worklist=cumulative?items.filter(item=>selected.includes(reviewKey(item))):reviewWorklist({suggestions:items},selected);
   const current=items.find(item=>item.candidate_revision_uuid===active)||(cumulative&&active?{candidate_revision_uuid:active,protocol_uuid:protocolId}:null);
   snapshot.current={selected,active,exports,drafts:drafts.current,history,cumulative:cumulativeSession.current};
@@ -40,6 +54,7 @@ export default function IncomingWorkbench({projectId,protocolId,protocols=[],sug
   const next=worklist.find(item=>item.candidate_revision_uuid!==active);
   const target=dialog&&(dialog.item||items.find(item=>reviewKey(item)===dialog.key));
   if(queue.preparation||queue.preparing)return <div className="incoming-workbench"><ViewPreparation resource={queue}/></div>;
+  if(queue.loading&&!queue.data)return <div className="incoming-workbench"><p role="status">Updating incoming review…</p></div>;
   return <div className="incoming-workbench">
     {mergeRequest.pending&&<p role="status">Preparing your merge preview… <button onClick={()=>mergeRequest.finish()}>Cancel merge request</button></p>}
     {mergeRequest.message&&<p role="status">{mergeRequest.message}</p>}
@@ -52,13 +67,14 @@ export default function IncomingWorkbench({projectId,protocolId,protocols=[],sug
     {cumulative&&queue.data.capabilities.incoming_export&&dialog&&target&&<WorkbenchExportDialog key={dialog.key} protocolId={protocolId} item={target} accept={dialog.accept} state={exports[dialog.key]} onState={value=>setExports(previous=>({...previous,[dialog.key]:{...value,item:target}}))} onClose={()=>setDialog(null)} onChanged={onChange}/>}
     {cumulative&&Object.entries(exports).filter(([,state])=>state.receipt||state.acceptOperation||state.prepared||state.exported).map(([key,state])=><p key={key} role="status">{state.exported?<><a href={state.exported.download_url} download>{state.exported.name||'Download incoming export'}</a> · {number(state.exported.epoch_count)} new epochs</>:<>Saved incoming operation · {state.receipt?'acceptance confirmed; export pending':state.acceptOperation?'acceptance needs receipt recovery':'export needs receipt recovery'} <button disabled={!queue.data.capabilities.incoming_export} onClick={()=>setDialog({key,item:state.item,accept:!!state.receipt||!!state.acceptOperation})}>Resume export</button></>}</p>)}
     {cumulative&&Object.values(exports).flatMap(state=>state.completed||[]).filter(value=>value.exported).map(value=><p key={value.exported.dataset_uuid}><a href={value.exported.download_url} download>{value.exported.name||'Download earlier incoming export'}</a> · {number(value.exported.epoch_count)} new epochs</p>)}
-    {preparedSupported&&!history?<CumulativeIncomingReview onMerged={onMerged} metadataPresentationRevision={metadataPresentationRevision} onReviewProposal={id=>{mergeRequest.finish();setActive(id);setHistory(true);}} toolbarTarget={toolbarTarget} mergeRequest={mergeRequest.pending} onMergeRequestHandled={mergeRequest.finish} filterTarget={filterTarget} onRefresh={()=>{queue.reload();onRetry?.();}} refreshing={loading||queue.loading} queue={queue} protocolId={protocolId} projectId={projectId} revision={revision} onChange={onChange} onQC={onQC} onDefer={()=>setHistory(true)} onHistory={()=>setHistory(true)} session={cumulativeSession.current} onSession={rememberCumulative}/>:<>
-    {preparedSupported&&!active&&<button onClick={()=>{setActive(null);setHistory(false);}}>Return to cumulative incoming review</button>}
+    {preparedSupported&&!history?<CumulativeIncomingReview key={actor} onMerged={onMerged} metadataPresentationRevision={metadataPresentationRevision} onReviewProposal={id=>{mergeRequest.finish();setActive(id);setHistory(true);}} toolbarTarget={toolbarTarget} mergeRequest={mergeRequest.pending} onMergeRequestHandled={mergeRequest.finish} filterTarget={filterTarget} onRefresh={()=>{queue.reload();onRetry?.();}} refreshing={loading||queue.loading} queue={queue} protocolId={protocolId} projectId={projectId} revision={revision} onChange={onChange} onQC={onQC} onDefer={()=>setHistory(true)} onHistory={()=>setHistory(true)} session={cumulativeSession.current} onSession={rememberCumulative}/>:<>
+    {preparedSupported&&!active&&<button onClick={()=>{setActive(null);setHistory(false);}}>Return to pending review</button>}
     {!active?<>
+      {history&&<p>Saved proposals can overlap. Pending review shows the current combined incoming data and lets you change left-out decisions.</p>}
       {!!worklist.length&&<div className="incoming-worklist"><span>{worklist.length} selected proposals · each reviewed independently</span><button onClick={()=>setActive(worklist[0].candidate_revision_uuid)}>Review selected</button></div>}
-      {!items.length&&!loading&&!queue.loading&&!error&&<p>No current incoming proposals need review.</p>}
+      {!items.length&&!loading&&!queue.loading&&!error&&<p>{history?'No saved proposals.':'No current incoming proposals need review.'}</p>}
       {items.map(item=>{const key=reviewKey(item),counts=item.diff_counts||{},state=exports[key],recovering=!!(state?.acceptOperation||state?.prepared)&&!state?.exported;return <section className="incoming-proposal" key={key} aria-label={`Incoming update for ${humanize(item.protocol_name)}`}>
-        <header><label><input type="checkbox" checked={selected.includes(key)} onChange={()=>toggle(item)}/> {humanize(item.protocol_name)}</label><strong>{item.status==='stale'?'Refresh required':item.deferred||item.status==='deferred'?'Deferred':item.status==='accepted'?'Accepted':item.status==='covered'?'Already in main':item.status==='superseded'?'Replaced by newer query':item.status==='conflict'?'Conflict requires review':item.status==='source_blocked'?'Source unavailable':'Pending review'}</strong></header>
+        <header><label><input type="checkbox" checked={selected.includes(key)} onChange={()=>toggle(item)}/> {humanize(item.protocol_name)}</label><strong>{item.status==='stale'?'Refresh required':item.deferred||item.status==='deferred'?'Deferred':item.status==='accepted'?'Accepted':item.status==='covered'?'No mergeable additions':item.status==='superseded'?'Replaced by newer query':item.status==='conflict'?'Conflict requires review':item.status==='source_blocked'?'Source unavailable':'Pending review'}</strong></header>
         <p>{item.source_filename||'Imported recording'} · {time(item.created_at)}</p>
         {cumulative&&<p className="incoming-proposal-pending">{`${number(item.eligible_pending_epoch_count)} mergeable epochs`}</p>}
         <div className="incoming-counts"><span>+{number(counts.added)} epochs</span><span>−{number(counts.removed)} epochs</span><span>{number(counts.changed)} metadata changes</span></div>

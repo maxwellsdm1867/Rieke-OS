@@ -16,6 +16,17 @@ export function mergeUndoTarget(receipt,{projectId,protocolName}={}){
 // This is session memory only: after a reload the server refuses (409) an
 // accepted export of an undone merge, and that refusal stays visible.
 const undoneOperations=new Set(),undoneListeners=new Set(),protocolUndos=new Map();
+const changes=new Map(),changeListeners=new Set(),publishedChanges=new Set();
+export const protocolWorkbenchVersion=(projectId,protocolId)=>changes.get(JSON.stringify([projectId,protocolId]))?.version||0;
+export function subscribeWorkbenchChanges(listener){changeListeners.add(listener);return()=>changeListeners.delete(listener);}
+function changed({projectId,protocolId,operationUuid},binding,kind){
+  const event=JSON.stringify([projectId,protocolId,operationUuid,kind]);
+  if(publishedChanges.has(event))return;
+  publishedChanges.add(event);
+  const key=JSON.stringify([projectId,protocolId]),version=(changes.get(key)?.version||0)+1;
+  changes.set(key,{version,binding,kind,operationUuid});
+  for(const listener of [...changeListeners])listener();
+}
 export const mergeWasUndone=operationUuid=>undoneOperations.has(operationUuid);
 export const mergeUndoneVersion=()=>undoneOperations.size;
 export const protocolMergeUndoVersion=(projectId,protocolId)=>protocolUndos.get(JSON.stringify([projectId,protocolId]))||0;
@@ -39,6 +50,7 @@ export function createMergeUndo({request,onState=()=>{},refresh=()=>{}}){
     show(receipt,details){
       const target=mergeUndoTarget(receipt,details);
       if(!target)return false;
+      changed(target,receipt.binding,'merge');
       token++;publish({...target,phase:'merged',message:'',canUndo:target.count>0});return true;
     },
     dismiss(){if(state?.phase==='undoing')return;token++;publish(null);},
@@ -50,7 +62,9 @@ export function createMergeUndo({request,onState=()=>{},refresh=()=>{}}){
         const value=await request(`/protocols/${encodeURIComponent(current.protocolId)}/workbench/undo`,{method:'POST',body:{operation_uuid:current.operationUuid,expected_binding_version:current.bindingVersion}});
         if(!text(value?.binding?.revision_uuid)||!Number.isSafeInteger(value.binding.version)||!text(value.restored_revision_uuid))throw Object.assign(Error('The undo reply was incomplete. Check Activity & logs before trying again.'),{uncertain:true});
         markUndone(current);
-        refresh(current.protocolId);
+        changed(current,value.binding,'undo');
+        // Read reconciliation cannot turn a verified Undo into a failed write.
+        try{await refresh(current.protocolId);}catch{}
         if(mine===token)publish({...current,phase:'undone',message:'Merge undone',canUndo:false,removed:count(value.removed_epoch_count)?value.removed_epoch_count:null});
         return true;
       }catch(error){

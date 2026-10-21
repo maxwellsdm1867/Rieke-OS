@@ -58,3 +58,15 @@ test('oversized checkpoints drop oldest history views but never current, latest 
  const small={route:{key:'a'},sessions:[['a',view('a')]],protocolSessions:[]};
  assert.deepEqual(compactWorkspaceCheckpoint(small),small);
 });
+
+test('inactive author recovery survives checkpoint pressure and its large selections are compacted',async()=>{
+ const {compactWorkspaceCheckpoint}=await import('./selectedIncomingWorkflow.js');
+ const draft={selected:Array.from({length:4000},(_,i)=>`epoch-${i}`),unconfirmed:true,operation:'author-a-operation',preview:{preview_sha256:'sealed'}};
+ const checkpoint={route:{key:'current'},sessions:[['old',{workbench:{sessionActor:'b',sessionsByActor:{a:{drafts:{candidate:draft}},b:{drafts:{}}}}}],['current',{}]]};
+ const result=compactWorkspaceCheckpoint(checkpoint,{historyBytes:100,selectionBytes:100});
+ assert.equal(result.sessions.length,2,'inactive author recovery protects the old view');
+ const restored=result.sessions[0][1].workbench.sessionsByActor.a.drafts.candidate;
+ assert.deepEqual(restored.selected,[]);assert.equal(restored.selection_omitted_count,4000);
+ assert.equal(restored.operation,'author-a-operation');assert.deepEqual(restored.preview,draft.preview);assert.equal(restored.unconfirmed,true);
+ assert.equal(draft.selected.length,4000,'live selection remains intact');
+});

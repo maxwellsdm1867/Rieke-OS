@@ -384,3 +384,23 @@ The undo event store exposes a project/protocol version for Overview-card
 retirement. Successful receipt-bound Undo advances it once and notifies subscribers;
 failed/uncertain Undo never claims restored membership. Queue refresh still owns
 pending counts and action authority.
+
+### Combined review transitions (2026-10-21)
+
+Verified Merge and Undo receipts publish a per-project/protocol Workbench change.
+Queue display may stay inert during a same-author renewal, but supplied summaries
+retire after a membership event or author switch; actions require fresh authority.
+Blocked Main discovery is not a zero-pending result. Empty pending review offers
+an explicit path to saved left-out decisions; proposal history includes completed
+snapshots without claiming every covered epoch was merged.
+
+All cumulative, proposal-history, export and uncertain-operation sessions belong
+to one annotation author. Inactive author sessions stay checkpointed; selection
+compaction, cumulative pruning and recovery eviction protection traverse those
+sessions. Returning to an author restores that author's original recovery identity.
+
+A durable undone receipt retires the old merge offer and renews restored incoming
+review. Explicit Inspector refresh asks the frozen owner to renew its reads and
+refuses while a scientific operation is pending or uncertain. Refresh never
+submits an acceptance. Verified write success remains success if a subsequent
+view callback fails.

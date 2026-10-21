@@ -63,10 +63,13 @@ export function compactWorkbenchSelections(checkpoint,{selectionBytes=512*1024}=
     }
     return result;
   }
+  function workbenchSelections(workbench){
+    return {...workbench,drafts:drafts(workbench.drafts),...(workbench.cumulative?{cumulative:{...workbench.cumulative,drafts:drafts(workbench.cumulative.drafts)}}:{}),...(workbench.sessionsByActor?{sessionsByActor:Object.fromEntries(Object.entries(workbench.sessionsByActor).map(([actor,value])=>[actor,workbenchSelections(value)]))}:{})};
+  }
   function session(value){
     if(!value?.workbench||typeof value.workbench!=='object')return value;
     const workbench=value.workbench;
-    return {...value,workbench:{...workbench,drafts:drafts(workbench.drafts),...(workbench.cumulative?{cumulative:{...workbench.cumulative,drafts:drafts(workbench.cumulative.drafts)}}:{})}};
+    return {...value,workbench:workbenchSelections(workbench)};
   }
   const result={...checkpoint};
   for(const field of ['sessions','protocolSessions'])if(Array.isArray(checkpoint[field]))result[field]=checkpoint[field].map(([key,value])=>[key,session(value)]);
@@ -103,7 +106,7 @@ function sessionNeedsRecovery(value){
   const workbench=value?.workbench;
   if(!workbench||typeof workbench!=='object')return false;
   return [workbench.drafts,workbench.cumulative?.drafts].some(drafts=>drafts&&typeof drafts==='object'
-    &&Object.values(drafts).some(workbenchDraftNeedsRecovery));
+    &&Object.values(drafts).some(workbenchDraftNeedsRecovery))||Object.values(workbench.sessionsByActor||{}).some(workbench=>sessionNeedsRecovery({workbench}))||Object.values(workbench.exports||{}).some(exportState=>workbenchDraftNeedsRecovery({exportState}));
 }
 const checkpointBytes=value=>new TextEncoder().encode(JSON.stringify(value)).length;
 // The desktop draft store refuses checkpoints over 2 MiB, and merge submission
@@ -112,7 +115,8 @@ const checkpointBytes=value=>new TextEncoder().encode(JSON.stringify(value)).len
 // snapshots. The current route, each protocol's latest view and every session
 // that still owns recovery state are never dropped.
 export function compactWorkspaceCheckpoint(checkpoint,{historyBytes=1536*1024,selectionBytes}={}){
-  const prune=value=>value?.workbench?.cumulative?{...value,workbench:{...value.workbench,cumulative:pruneCumulativeSession(value.workbench.cumulative)}}:value;
+  const pruneWorkbench=workbench=>({...workbench,cumulative:pruneCumulativeSession(workbench.cumulative),...(workbench.sessionsByActor?{sessionsByActor:Object.fromEntries(Object.entries(workbench.sessionsByActor).map(([actor,value])=>[actor,pruneWorkbench(value)]))}:{})});
+  const prune=value=>value?.workbench?{...value,workbench:pruneWorkbench(value.workbench)}:value;
   const pruned={...checkpoint};
   for(const field of ['sessions','protocolSessions'])if(Array.isArray(checkpoint[field]))pruned[field]=checkpoint[field].map(([key,value])=>[key,prune(value)]);
   const result=compactWorkbenchSelections(pruned,selectionBytes===undefined?{}:{selectionBytes});

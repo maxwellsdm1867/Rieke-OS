@@ -283,12 +283,12 @@ test('default cumulative Workbench prepares once per queue fence, refreshes afte
   const historyButton=renderer.root.findAllByType('button').find(node=>label(node)==='Proposal history');
   await act(async()=>historyButton.props.onClick());
   assert.ok(renderer.root.findAllByType('code').some(node=>label(node)==='original-a'));assert.equal(preparedCalls,2);
-  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Return to cumulative incoming review').props.onClick());
+  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Return to pending review').props.onClick());
   assert.equal(preparedCalls,2,'resuming same prepared snapshot does not write again');
   await act(async()=>renderer.update(React.createElement(Workbench,{...props,authority:makeQueue('all-excluded',0)})));
   assert.equal(preparedCalls,2,'empty queues do not prepare another candidate even with history');
   assert.ok(renderer.root.findAllByType('span').some(node=>String(node.props.className||'').includes('incoming-bar-scope')));
-  assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('Saved exclusions remain in your draft')));
+  assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('No pending cells')));
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
@@ -407,11 +407,11 @@ test('actual queue hook retains Inspector through old-token loading, delayed que
   const {default:Workbench}=await server.ssrLoadModule('/src/incoming-workbench/ui/IncomingWorkbench.jsx');
   const props={protocolId:protocol,revision:0};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Workbench,props));});
-  const inspector=renderer.root.findAll(node=>node.type?.name==='Inspector')[0];assert.ok(inspector);assert.equal(prepares,1);
+  const inspector=renderer.root.findAll(node=>node.type?.name==='Inspector')[0];assert.ok(inspector);assert.equal(prepares,1);const initialRevision=inspector.props.revision;
   await act(async()=>renderer.update(React.createElement(Workbench,{...props,revision:1})));
   assert.equal(reads,2);assert.equal(prepares,1,'old token is retained while queue GET is pending');
   assert.equal(renderer.root.findAll(node=>node.type?.name==='Inspector')[0],inspector);
-  assert.equal(inspector.props.readContext.candidate_scope_revision,'scope-old-union');assert.equal(inspector.props.revision,'0:1');
+  assert.equal(inspector.props.readContext.candidate_scope_revision,'scope-old-union');assert.equal(inspector.props.revision,initialRevision);
   let compare=inspector.props.draftSelection;assert.equal(compare.disabled,true);
   await act(async()=>compare.onMerge(['epoch']));
   await act(async()=>releaseQueue());
@@ -419,7 +419,7 @@ test('actual queue hook retains Inspector through old-token loading, delayed que
   compare=inspector.props.draftSelection;assert.equal(compare.disabled,true);
   await act(async()=>releasePrepare());
   const replacement=renderer.root.findAll(node=>node.type?.name==='Inspector')[0];assert.notEqual(replacement,inspector);
-  assert.equal(replacement.props.readContext.candidate_scope_revision,'scope-new-union');assert.equal(replacement.props.revision,'1:1');
+  assert.equal(replacement.props.readContext.candidate_scope_revision,'scope-new-union');assert.notEqual(replacement.props.revision,initialRevision);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
@@ -753,9 +753,9 @@ test('Export accepted is withdrawn as soon as its merge is undone',async()=>{
   assert.equal(exportButton().props.disabled,false);assert.equal(typeof inspector().props.onExport,'function');
   const undo=createMergeUndo({request:api});undo.show(receipt,{projectId:'project',protocolName:'History'});
   await act(async()=>{await undo.undo();});
-  assert.equal(exportButton().props.disabled,true,'an undone merge has no accepted additions to export');
-  assert.match(exportButton().props.title,/undone/);assert.equal(inspector().props.onExport,undefined);
-  assert.match(label(renderer.root),/This merge was undone/);assert.doesNotMatch(label(renderer.root),/Merged 2 epochs into Main/);
+  assert.equal(exportButton(),undefined,'the undone receipt leaves active review');
+  assert.equal(inspector().props.draftSelection.disabled,false);
+  assert.match(label(renderer.root),/Merge undone/);assert.doesNotMatch(label(renderer.root),/Merged 2 epochs into Main/);
   await act(async()=>renderer.unmount());
  }finally{globalThis.fetch=oldFetch;await server.close();}
 });

@@ -14,12 +14,14 @@ test('Overview match card holds to merge its recording directly and never opens 
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
  const {default:Suggestion}=await server.ssrLoadModule('/src/protocol-overview/ui/ProtocolSuggestion.jsx');
  let renderer,merges=[],inspected=[],outcome=()=>true;
+ const oldFetch=globalThis.fetch;
+ globalThis.fetch=async()=>({ok:true,status:200,json:async()=>props.queue});
  let props={suggestion:card,onMerge:async(...args)=>{merges.push(args);return outcome();},onProtocol:(...args)=>inspected.push(args)};
  const render=async()=>act(()=>{const node=React.createElement(Suggestion,props);if(renderer)renderer.update(node);else renderer=TestRenderer.create(node);});
  const buttons=()=>renderer.root.findAllByType('button'),hold=()=>buttons().find(node=>node.props['aria-label']==='Hold to merge');
  const text=()=>JSON.stringify(renderer.toJSON());
  const event={button:0,preventDefault(){}},tick=ms=>act(async()=>{t.mock.timers.tick(ms);await Promise.resolve();});
- t.after(async()=>{await act(()=>renderer?.unmount());await server.close();});
+ t.after(async()=>{await act(()=>renderer?.unmount());globalThis.fetch=oldFetch;await server.close();});
  await render();t.mock.timers.enable({apis:['setTimeout']});
  try{
   assert.doesNotMatch(text(),/Merge matched data/,'the click-to-navigate merge button is gone');assert.equal(buttons().length,2);
@@ -51,12 +53,14 @@ test('Overview card follows the cumulative queue, holds to merge all, and disapp
   candidates:[{candidate_revision_uuid:'a',source_filename:'2026-10-12_F.h5',source_sha256:'sa',eligible_pending_epoch_count:500},{candidate_revision_uuid:'b',source_filename:'2026-10-13_A.h5',source_sha256:'sb',eligible_pending_epoch_count:255}]};
  const main={counts:{epochs:36},cells:[{cell_uuid:'x'},{cell_uuid:'y'}]};
  let renderer,merges=[],inspected=[],outcome=()=>true;
+ const oldFetch=globalThis.fetch;
+ globalThis.fetch=async()=>({ok:true,status:200,json:async()=>props.queue});
  let props={projectId:'undo-banner-project',pendingProtocol:'protocol-A',main,queue,onMerge:async(...args)=>{merges.push(args);return outcome();},onProtocol:(...args)=>inspected.push(args)};
  const render=async()=>act(()=>{const node=React.createElement(Suggestion,props);if(renderer)renderer.update(node);else renderer=TestRenderer.create(node);});
  const buttons=()=>renderer.root.findAllByType('button'),hold=()=>buttons().find(node=>node.props['aria-label']==='Hold to merge all');
  const text=()=>JSON.stringify(renderer.toJSON());
  const event={button:0,preventDefault(){}},tick=ms=>act(async()=>{t.mock.timers.tick(ms);await Promise.resolve();});
- t.after(async()=>{await act(()=>renderer?.unmount());await server.close();});
+ t.after(async()=>{await act(()=>renderer?.unmount());globalThis.fetch=oldFetch;await server.close();});
  await render();t.mock.timers.enable({apis:['setTimeout']});
  try{
   assert.match(text(),/New data matches your saved query/,'the existing card is reused');
@@ -75,10 +79,10 @@ test('Overview card follows the cumulative queue, holds to merge all, and disapp
   assert.equal(renderer.toJSON(),null,'nothing pending: no card');
   const {createMergeUndo}=await server.ssrLoadModule('/src/incoming-workbench/mergeUndo.js');
   const undo=createMergeUndo({request:async()=>({binding:{revision_uuid:'restored',version:4},restored_revision_uuid:'restored',removed_epoch_count:755})});
-  undo.show({protocol_uuid:'protocol-A',operation_uuid:'banner-merge',event_uuid:'merged',binding:{revision_uuid:'main',version:3},accepted_epoch_count:755},{projectId:'undo-banner-project'});
+  await act(()=>undo.show({protocol_uuid:'protocol-A',operation_uuid:'banner-merge',event_uuid:'merged',binding:{revision_uuid:'main',version:3},accepted_epoch_count:755},{projectId:'undo-banner-project'}));
   await act(async()=>undo.undo());
   assert.equal(renderer.toJSON(),null,'undo alone never invents pending membership from an empty queue');
-  props={...props,queue};await render();
+  props={...props,queue,revision:1};await render();
   assert.ok(hold(),'the restored original queue revision shows the banner after Undo');
   assert.match(text(),/755/);assert.match(text(),/2026-10-12_F\.h5/);
   await act(()=>hold().props.onPointerDown(event));await tick(1000);await act(async()=>{});
@@ -86,8 +90,8 @@ test('Overview card follows the cumulative queue, holds to merge all, and disapp
   undo.show({protocol_uuid:'other-protocol',operation_uuid:'other-banner-merge',event_uuid:'other',binding:{revision_uuid:'other-main',version:3},accepted_epoch_count:1},{projectId:'undo-banner-project'});
   await act(async()=>undo.undo());
   assert.equal(renderer.toJSON(),null,'another protocol undo cannot resurrect this banner');
-  props={...props,queue:{...queue,queue_revision:'q3'}};await render();assert.ok(hold(),'new pending data shows the card again');
-  props={...props,queue:{...queue,queue_revision:'q4',eligible_pending_epoch_count:0,main_blocked_reason:'Main contains epochs whose recorded metadata changed; save the query again to update main.'}};await render();
+  props={...props,revision:2,queue:{...queue,queue_revision:'q3'}};await render();assert.ok(hold(),'new pending data shows the card again');
+  props={...props,revision:3,queue:{...queue,queue_revision:'q4',eligible_pending_epoch_count:0,main_blocked_reason:'Main contains epochs whose recorded metadata changed; save the query again to update main.'}};await render();
   assert.equal(hold(),undefined);assert.match(text(),/save the query again/,'a blocked Main shows one quiet sentence instead of the card');
  }finally{t.mock.timers.reset();}
 });
