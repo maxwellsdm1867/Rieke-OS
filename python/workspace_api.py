@@ -1068,7 +1068,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     def prepare_published_views():
         receipts={}
-        for name in ('overview','tree'):
+        for name in ('overview','tree','workbench'):
             prepare=app.extensions.get('prepare_'+name+'_publication')
             if prepare is not None:receipts[name]=prepare()
         app.extensions['publication_preparation_receipts']=receipts
@@ -1313,6 +1313,25 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if (prepared_overview['tracker'].token()!=model.watermark or overview_part_keys()!=keys
                 or not prepared_binding_witness(keys)):
             raise StaleWorkspace('Search membership changed during the read. Refresh and retry.')
+        return result
+
+    def prepared_queue_new_cells(protocol, state, cells):
+        from disco.navigation.publication_changes import PreparationRequired
+        # Main's independent frozen fingerprint/source proof is checked before
+        # this display-only membership lookup. Blocked pools contain no epochs.
+        if not cells:return 0
+        model,reason=current_prepared_overview()
+        if model is None:raise PreparationRequired(reason)
+        keys=overview_part_keys()
+        binding=explorer_history.protocol_binding_header(protocol)
+        if (keys is None or not prepared_binding_witness(keys) or binding!=state['binding']
+                or prepared_overview['headers'][protocol][0]!=binding):
+            raise StaleWorkspace('Workbench membership changed. Refresh and retry.')
+        members=model.protocol_cells[protocol]
+        result=sum(identity not in members for identity in cells)
+        if (prepared_overview['tracker'].token()!=model.watermark or overview_part_keys()!=keys
+                or explorer_history.protocol_binding_header(protocol)!=binding):
+            raise StaleWorkspace('Workbench membership changed during the read. Refresh and retry.')
         return result
 
     @app.post('/api/overview/prepare')
@@ -3222,6 +3241,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     from disco.workbench.workbench import register_workbench_routes
     register_workbench_routes(app, service, explorer_history, protocol_suggestions, state, revision_guard,
                               db_lock, data_stores.registration_locks, read_revision=workbench_read_revision)
+    queue_manager=app.extensions['protocol_workbench']
+    queue_manager.queue_prepared_policy=lambda: (selected_state._native_contract()
+        and queue_manager._delta_reads()
+        and (getattr(service,'_recovery_tracker',None) is not None or bool(queue_manager._prepared_queue)))
+    queue_manager.queue_new_cells=prepared_queue_new_cells
     from disco.decisions.annotation_groups import register_group_annotation_routes
     register_group_annotation_routes(app, service, shared_annotations, db_lock, data_stores.registration_locks,
                                     revision_guard=revision_guard, receipt_table=annotation_group_receipts)

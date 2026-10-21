@@ -32,6 +32,14 @@ closing a review proves no rollback. UI labels never create recorded identities.
 
 ## Entry readiness
 
+Queue/summary HTTP 202 preparation responses are not queue authority. The compact
+Prepare view action explicitly POSTs `/workbench/prepare`, then requests a fresh
+queue/summary. `useWorkbenchPreparation` owns cancellation by project, protocol,
+revision, retained visibility and unmount; it never automatically retries or
+grants merge consent. Preparation and its subsequent fresh read keep actions
+unavailable. Overview review cards, Workbench and the import-review dialog expose
+the same preparation path; unavailable pending counts never display as no updates.
+
 App mounts Workbench independently of the main protocol summary and main tree
 layout. Incoming queue negotiation, preparation and fresh candidate context still
 gate the frozen browser. A pending or failed main summary cannot block incoming

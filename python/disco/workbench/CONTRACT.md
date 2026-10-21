@@ -21,6 +21,26 @@ language privacy, shrink capabilities or wrap broad service objects in a new fac
 
 ## Frozen membership and review
 
+Canonical queue reads use current-publication proofs prepared by
+`prepare_workbench_publication` during explicit startup/import/refresh preparation.
+`POST /api/workbench/prepare` explicitly prepares Overview and Workbench under the
+database and registration locks. Missing or stale proof returns HTTP 202 with
+`status: preparing`, `preparation.status: pending`, and `resource: workbench`, with
+no queue payload. Ordinary reads never repair main by scanning its membership.
+Unsupported custom/legacy readers retain their existing exact fallback.
+
+Each protocol retains its current and latest-undo pool/check proof independently
+of the 1,024-entry historical revision cache. Shared revision proofs are reference
+counted; additive merge derives checks from its delta and undo reuses the previous
+proof. Publication, published map identity, source scope, annotation dependency,
+query definition and binding checks still fence admission. Queue work is bounded
+by pending membership, the caught-up delta and sources, plus existing candidate
+history; it does not walk main epochs or clone all main cells. The fenced prepared
+Overview checks only pending cell identities and never substitutes for the frozen
+main fingerprint/source proof. Historical diff profiles keep their existing path.
+The eviction regression deliberately limits the historical cache to 64 while
+preparing more than 64 protocols; it does not claim production eviction at 65.
+
 Canonical Workbench context summaries use the explicit cohort-only
 `WorkspaceService.protocol(..., cross_protocols=False)` projection. Cells and
 counts describe pending membership after the requested filters. The unused

@@ -201,6 +201,10 @@ class ProtocolWorkbench:
         # UUID). Never scope authority: opening contexts verify fresh recipes.
         self._discovery, self._seen_sources = {}, {}
         self._checks, self._profiles = {}, {}
+        self._prepared_queue = {}
+        self._queue_check_refs = {}
+        self.queue_prepared_policy = lambda: False
+        self.queue_new_cells = None
 
     @property
     def tables(self):
@@ -332,8 +336,11 @@ class ProtocolWorkbench:
             changed, inactive = compute(members.items())
             return frozenset(changed), frozenset(inactive)
         entry = self._checks.get(revision)
+        if not valid(entry):entry = self._queue_check_refs.get(revision, (None, 0))[0]
         if not valid(entry):
             parent = self._checks.get(header.get('parent_revision_uuid')) if header.get('storage') else None
+            if header.get('storage') and not valid(parent):
+                parent = self._queue_check_refs.get(header.get('parent_revision_uuid'), (None, 0))[0]
             if header.get('storage') and valid(parent):
                 delta = header['delta']
                 removed = set(delta['removed'])
@@ -346,7 +353,7 @@ class ProtocolWorkbench:
                          changed=frozenset(changed), inactive=frozenset(inactive))
             _remember(self._checks, revision, entry)
         else:
-            self._checks.pop(revision)
+            self._checks.pop(revision, None)
             _remember(self._checks, revision, entry)
         return entry['changed'], entry['inactive']
 
@@ -814,7 +821,7 @@ class ProtocolWorkbench:
             _remember(self._seen_sources, start, value)
         return value
 
-    def pending_pool(self, protocol):
+    def pending_pool(self, protocol, *, prepared_only=False):
         """New data for main: epochs from recordings main has not seen that its
         saved query matches and a merge accepts.
 
@@ -841,6 +848,21 @@ class ProtocolWorkbench:
         if publication is None:
             publication = self.service._explore_publication = str(uuid.uuid4())
         key = self._pool_key(protocol, binding['revision_uuid'], scope, annotation)
+        if prepared_only:
+            from disco.navigation.publication_changes import PreparationRequired
+            # Current and latest-undo proofs are owned by each protocol, not
+            # the bounded historical-revision LRU. Never repair a lost proof
+            # by walking sealed main on an ordinary queue read.
+            proofs = self._prepared_queue.get(protocol, ())
+            for cached in proofs:
+                proof = cached.get('checks')
+                if (cached['key'] == key and proof is not None
+                        and proof['publication'] == publication and proof['fingerprints'] is fingerprints
+                        and proof['rows'] is self.service.rows and proof['scope'] == scope['revision']):
+                    if any(fingerprints.get(identity) != value for identity, value in cached['pool'].items()):
+                        raise PreparationRequired('pending_metadata_changed')
+                    return dict(cached, binding=binding)
+            raise PreparationRequired('workbench_publication_changed')
         changed, inactive = self._member_checks(main['revision_uuid'] if self._delta_reads() else None,
                                                 main, members, scope)
         # The pool depends on main's revision (membership, seen recordings),
@@ -848,6 +870,7 @@ class ProtocolWorkbench:
         cached = self._pool_cache.get(protocol, {}).get(key)
         if (cached and not changed
                 and all(fingerprints.get(identity) == value for identity, value in cached['pool'].items())):
+            cached = dict(cached, checks=self._checks.get(main['revision_uuid']))
             _remember_pool(self._pool_cache[protocol], key, cached)  # A hit is most recent (true LRU).
             return dict(cached, binding=binding)
         active = set(scope['active_source_revisions'])
@@ -865,9 +888,38 @@ class ProtocolWorkbench:
                         and protocol_key(row.get('protocol_name')) in allowed):
                     pool[identity] = fingerprints[identity]
         value = dict(pool=pool, main=main, members=members, binding=binding, reason=reason, annotation=annotation,
-                     scope=scope, key=key, main_cells=None)
+                     scope=scope, key=key, main_cells=None, checks=self._checks.get(main['revision_uuid']))
         _remember_pool(self._pool_cache.setdefault(protocol, {}), key, value)
         return value
+
+    def prepare_queue_publication(self):
+        """Prepare exact main proofs and pending pools at publication boundaries."""
+        for protocol in self.service.protocols:
+            state = self.pending_pool(protocol)
+            if state['main'] is not None:
+                state = dict(state, checks=self._checks[state['main']['revision_uuid']])
+            self._remember_prepared_queue(protocol, (state,))
+        for protocol in set(self._prepared_queue) - self.service.protocols.keys():
+            self._remember_prepared_queue(protocol, ())
+            del self._prepared_queue[protocol]
+        return {'status': 'ready', 'protocols': len(self._prepared_queue)}
+
+    def _remember_prepared_queue(self, protocol, states):
+        # At most current and latest undo per protocol. Reference counts also
+        # expose these proofs to merge/context validation after historical LRU
+        # eviction, without retaining every past revision.
+        for old in self._prepared_queue.get(protocol, ()):
+            if old.get('checks') is None:continue
+            revision = old['main']['revision_uuid']
+            entry = self._queue_check_refs[revision]
+            if entry[1] == 1:del self._queue_check_refs[revision]
+            else:self._queue_check_refs[revision] = (entry[0], entry[1] - 1)
+        self._prepared_queue[protocol] = states
+        for state in states:
+            if state.get('checks') is None:continue
+            revision = state['main']['revision_uuid']
+            count = self._queue_check_refs.get(revision, (None, 0))[1]
+            self._queue_check_refs[revision] = (state['checks'], count + 1)
 
     def _pool_key(self, protocol, revision, scope, annotation):
         fingerprints = self.service._fingerprints
@@ -894,6 +946,18 @@ class ProtocolWorkbench:
         key = self._pool_key(protocol, header['revision_uuid'], state['scope'], state['annotation'])
         value = dict(state, pool={key_: value for key_, value in state['pool'].items() if key_ not in accepted},
                      main=header, members=members, key=key, main_cells=None)
+        proof = state.get('checks')
+        if proof is not None:
+            removed = set(header['delta']['removed'])
+            changed, inactive = set(proof['changed']) - removed, set(proof['inactive']) - removed
+            active = set(state['scope']['active_source_revisions'])
+            for row in header['delta']['added']:
+                identity = row['uuid']
+                if self.service._fingerprints.get(identity) != row['metadata_hash']:changed.add(identity)
+                if identity in self.service.rows and self.service.rows[identity]['source_sha256'] not in active:inactive.add(identity)
+            value['checks'] = dict(proof, changed=frozenset(changed), inactive=frozenset(inactive))
+            if protocol in self._prepared_queue:
+                self._remember_prepared_queue(protocol, (value, state))
         _remember_pool(self._pool_cache.setdefault(protocol, {}), key, value)
 
     @staticmethod
@@ -1451,7 +1515,8 @@ class ProtocolWorkbench:
             protocol = str(uuid.UUID(protocol))
             if protocol not in self.service.protocols:
                 raise KeyError('Unknown protocol')
-            state = self.pending_pool(protocol)
+            prepared = self.queue_prepared_policy()
+            state = self.pending_pool(protocol, prepared_only=prepared)
             pool = state['pool']
             header, decisions = self.review_decisions(protocol, actor)
             left_out = sorted(identity for identity, saved in decisions.items()
@@ -1470,7 +1535,10 @@ class ProtocolWorkbench:
                     status=status, pending_epoch_count=len(mine), eligible_pending_epoch_count=len(mine)))
             rows = self.service.rows
             cells = {rows[identity]['cell_uuid'] for identity in pending}
-            if state['main'] is None:
+            if prepared:
+                new_cell_count = self.queue_new_cells(protocol, state, cells)
+                main_cells = None
+            elif state['main'] is None:
                 main_cells = set()
             else:
                 if state.get('main_cells') is None:
@@ -1507,10 +1575,14 @@ class ProtocolWorkbench:
                     raise ValueError('Malformed queue cursor') from error
             end = offset + limit
             next_cursor = base64.urlsafe_b64encode(json.dumps(dict(revision=revision, offset=end)).encode()).decode() if end < len(items) else None
+            if prepared:
+                closing = self.pending_pool(protocol, prepared_only=True)
+                if closing['key'] != state['key'] or closing['binding'] != state['binding']:
+                    raise WorkbenchConflict('Workbench changed during the read; reload the queue')
             return dict(contract_version=1, candidates=items[offset:end], pending_epoch_count=len(pending),
                 pending_cell_count=len(cells), pending_cell_count_available=True,
                 eligible_pending_epoch_count=len(pending), eligible_pending_cell_count=len(cells),
-                pending_new_cell_count=len(cells - main_cells), pending_recordings=recordings,
+                pending_new_cell_count=new_cell_count if prepared else len(cells - main_cells), pending_recordings=recordings,
                 left_out_epoch_count=len(left_out), main_blocked_reason=state['reason'],
                 queue_revision=revision, next_cursor=next_cursor, total_candidate_count=len(items),
                 capabilities=dict(frozen_browse=True, drafts=True, additive_accept=True,
@@ -1536,7 +1608,7 @@ _PREPARED_FROZEN_SERVICE = ProtocolWorkbench.frozen_service
 def register_workbench_routes(app, service, history, suggestions, state, revision_guard,
                               db_lock, registration_locks, *, read_revision=None):
     import os
-    from flask import jsonify, request
+    from flask import has_request_context, jsonify, request
     from workspace_service import validate_filters
     from disco.navigation.tag_predicates import annotation_locks
     from disco.navigation.tree_pages import TreePages, StaleTreePage
@@ -1627,8 +1699,8 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                 # retain their independent transaction authority checks.
                 from workspace_state_generation import StateGenerationAuthority
                 tracker = getattr(service, '_explore_state_generation', None)
-                readonly = request.method == 'GET' or request.endpoint in {
-                    'workbench_preview', 'workbench_tree_page', 'workbench_selection_summary', 'workbench_tree_selection', 'workbench_list_selection', 'workbench_selection_manifest'}
+                readonly = has_request_context() and (request.method == 'GET' or request.endpoint in {
+                    'workbench_preview', 'workbench_tree_page', 'workbench_selection_summary', 'workbench_tree_selection', 'workbench_list_selection', 'workbench_selection_manifest'})
                 contract = (tracker.response_contract() if readonly and type(tracker) is StateGenerationAuthority
                             else contextlib.nullcontext())
                 with contract:
@@ -1754,13 +1826,42 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
     root = '/api/protocols/<protocol>/workbench'
     candidate = root + '/candidates/<revision>'
 
+    def preparing(error):
+        return jsonify(status='preparing',
+            preparation={'status': 'pending', 'resource': 'workbench', 'reason': str(error)}), 202
+
+    def prepare_queue():
+        import time
+        started = time.perf_counter()
+        if not manager.queue_prepared_policy():return {'status': 'unavailable'}
+        with guarded(None):
+            if not manager.queue_prepared_policy():return {'status': 'unavailable'}
+            receipt = manager.prepare_queue_publication()
+        receipt['elapsed_ms'] = (time.perf_counter() - started) * 1000
+        app.extensions['workbench_preparation_receipt'] = receipt
+        return receipt
+
+    app.extensions['prepare_workbench_publication'] = prepare_queue
+
+    @app.post('/api/workbench/prepare')
+    def prepare_queue_route():
+        if request.args or request.get_json(silent=True) not in (None, {}):
+            raise ValueError('Workbench preparation takes no options')
+        with db_lock, registration_locks():
+            app.extensions['prepare_overview_publication']()
+            return jsonify(prepare_queue())
+
     @app.get(root)
     def workbench_queue(protocol):
         query_filters({'limit', 'cursor'})
         if request.args.keys() - {'limit', 'cursor'}:
             raise ValueError('Queue accepts pagination only')
         with guarded(protocol) as owner:
-            return jsonify(manager.queue(protocol, owner, int(request.args.get('limit', 20)), request.args.get('cursor')))
+            from disco.navigation.publication_changes import PreparationRequired
+            try:
+                return jsonify(manager.queue(protocol, owner, int(request.args.get('limit', 20)), request.args.get('cursor')))
+            except PreparationRequired as error:
+                return preparing(error)
 
     @app.get('/api/workbench/summary')
     def workbench_summary():
@@ -1768,8 +1869,12 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             raise ValueError('Project Workbench summary takes no options')
         counts = []
         with guarded(None) as owner:
+            from disco.navigation.publication_changes import PreparationRequired
             for protocol in service.protocols:
-                value = manager.queue(protocol, owner, 1)
+                try:
+                    value = manager.queue(protocol, owner, 1)
+                except PreparationRequired as error:
+                    return preparing(error)
                 # The same pending pool the Overview card and Workbench read, so
                 # the import review, badges and cards cannot disagree.
                 counts.append(dict(protocol_uuid=protocol, **{key: value[key] for key in
