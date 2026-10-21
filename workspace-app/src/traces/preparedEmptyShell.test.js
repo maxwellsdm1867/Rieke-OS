@@ -148,3 +148,14 @@ test('shared Viewer keeps the frozen raw-preview section inert through authority
   assert.equal(h.root.findAllByProps({className:'tree-trace-pane'}).length,0,'Live blocked preview retains its previous hide behavior');
  }finally{await h.close();}
 });
+
+
+test('cleared focus leaves an idle prepared shell rather than a perpetual navigation request',async()=>{
+ const h=await harness({detailOnly:true});try{
+  await h.render(null,context,{resource:{loading:false},traceRequested:false});
+  assert.equal(h.requests.length,0);
+  assert.equal(h.root.find(node=>node.type==='div'&&String(node.props.className).includes('prepared-trace-detail')).props['aria-busy'],false);
+  await h.render(null,context,{resource:{loading:true},traceRequested:true});
+  assert.equal(h.root.find(node=>node.type==='div'&&String(node.props.className).includes('prepared-trace-detail')).props['aria-busy'],true,'real pending focus still reports navigation loading');
+ }finally{await h.close();}
+});

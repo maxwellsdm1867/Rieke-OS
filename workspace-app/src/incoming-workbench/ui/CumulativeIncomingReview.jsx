@@ -6,6 +6,7 @@ import NeuronIcon from '../../components/NeuronIcon.jsx';
 import {pendingQueueCounts,requirePreparedWorkbench,workbenchRoot} from '../workbenchAuthority.js';
 import FrozenIncomingReview from './FrozenIncomingReview.jsx';
 import WorkbenchExportDialog from "../../exports/ui/WorkbenchExportDialog.jsx";
+import {useRetainedView} from '../../retainedWorkspaceViews.js';
 import {useAnnotationProfile} from '../../annotations/annotationProfile.js';
 import {requireIncomingBootstrap} from '../incomingBootstrap.js';
 
@@ -112,6 +113,39 @@ export default function CumulativeIncomingReview({queue,protocolId,session={},on
     }).catch(error=>{if(active&&attempted.current===attempt&&latest.current.owner===owner){setBusy(false);setError(error.message);}});
     return()=>{active=false;};
   },[protocolId,reviewProps.projectId,queue.data?.queue_revision,pending.epochs,queue.data?.total_candidate_count,queue.loading,queue.error,recovering,nonce,prepared?.queue_revision,owner,requestOwner,blocked,reviewLeftOut,leftOut]);
+  // Restored archived receipts are history, not current export authority.
+  // Recheck under the current actor/owner before offering an accepted export.
+  const active=useRetainedView()?.active!==false;
+  const archivedKey=JSON.stringify(Object.entries(drafts.current).filter(([key,value])=>(empty||key!==prepared?.candidate_revision_uuid)&&value.receipt&&!value.exportState?.exported&&!value.unconfirmed&&!value.acceptPending).map(([key,value])=>[key,value.receipt.operation_uuid]));
+  const archiveOwner=useMemo(()=>({}),[owner,active,queue.loading,queue.error,archivedKey]);
+  const liveArchiveOwner=useRef(archiveOwner);liveArchiveOwner.current=archiveOwner;
+  const [archived,setArchived]=useState(null),archiveSession=useRef(onSession);
+  archiveSession.current=onSession;
+  useEffect(()=>{
+    if(!active||!owner.profileReady||queue.loading||queue.error)return;
+    const entries=JSON.parse(archivedKey),controller=new AbortController();
+    if(!entries.length)return;
+    Promise.allSettled(entries.map(async([key,operation])=>{
+      const savedReceipt=drafts.current[key]?.receipt;
+      const value=await api(`${workbenchRoot(protocolId)}/receipts/${encodeURIComponent(operation)}`,{signal:controller.signal});
+      if(value.operation_uuid!==operation||value.candidate_revision_uuid!==key||value.protocol_uuid!==protocolId||value.actor!==owner.profileUuid||!value.event_uuid||value.event_uuid!==savedReceipt?.event_uuid||!value.binding?.revision_uuid||!Number.isSafeInteger(value.binding.version)||value.binding.revision_uuid!==savedReceipt?.binding?.revision_uuid||value.binding.version!==savedReceipt?.binding?.version)throw Error('The saved merge receipt did not match.');
+      return [key,value];
+    })).then(values=>{
+      if(controller.signal.aborted||liveArchiveOwner.current!==archiveOwner)return;
+      const verified={};let failed=false;
+      for(const result of values){
+        if(result.status!=='fulfilled'){failed=true;continue;}
+        const [key,receipt]=result.value;
+        if(drafts.current[key]?.receipt?.operation_uuid!==receipt.operation_uuid)continue;
+        drafts.current={...drafts.current,[key]:{...drafts.current[key],receipt}};
+        verified[key]=receipt.operation_uuid;
+      }
+      archiveSession.current?.({...snapshot.current,drafts:drafts.current});
+      setArchived({owner:archiveOwner,verified,failed});
+    }).catch(()=>{if(!controller.signal.aborted&&liveArchiveOwner.current===archiveOwner)setArchived({owner:archiveOwner,verified:{},failed:true});});
+    return()=>controller.abort();
+  },[archivedKey,owner,archiveOwner,active,queue.loading,queue.error,protocolId]);
+  const archiveVerified=(key,value)=>active&&!queue.loading&&!queue.error&&archived?.owner===archiveOwner&&archived.verified[key]===value.receipt?.operation_uuid;
   const eligibleProposals=(queue.data?.candidates||[]).filter(item=>['pending','pending_rebased','deferred'].includes(item.status)&&Number.isSafeInteger(item.eligible_pending_epoch_count)&&item.eligible_pending_epoch_count>0);
   const authorityChanged=!!queue.data?.queue_revision&&prepared?.queue_revision!==queue.data.queue_revision;
   const remember=useCallback(value=>{drafts.current={...drafts.current,[prepared.candidate_revision_uuid]:value};onSession?.({...snapshot.current,drafts:drafts.current});setDraftVersion(value=>value+1);},[prepared?.candidate_revision_uuid,onSession]);
@@ -121,7 +155,8 @@ export default function CumulativeIncomingReview({queue,protocolId,session={},on
     {busy&&!empty&&!blocked&&<p role="status">Preparing the cumulative unmerged snapshot…</p>}
     {error&&!empty&&!blocked&&<section className="incoming-preparation-error" aria-label="Cumulative review recovery"><div role="alert"><strong>Merge preview unavailable</strong><p>{error}</p></div><p>Combined review is unavailable. Proposal history keeps the original snapshots and saved decisions. An eligible proposal can be reviewed on its own; its own selections and exclusions apply.</p><div className="incoming-actions">{onHistory&&<button onClick={onHistory}>Review saved proposals</button>}<button disabled={busy||queue.loading} onClick={()=>setNonce(value=>value+1)}>Retry cumulative preparation</button></div>{onReviewProposal&&eligibleProposals.map(item=><div key={item.candidate_revision_uuid} className="incoming-actions"><button disabled={busy||queue.loading||!!queue.error||recovering} onClick={()=>onReviewProposal(item.candidate_revision_uuid)}>Review eligible proposal</button><span>{item.source_filename||'Saved incoming proposal'} · {time(item.created_at)} · {number(item.eligible_pending_epoch_count)} eligible epochs</span></div>)}</section>}
     {receiptExport&&<WorkbenchExportDialog protocolId={protocolId} item={{candidate_revision_uuid:receiptExport}} acceptReceipt={drafts.current[receiptExport].receipt} state={drafts.current[receiptExport].exportState||{}} onState={value=>{drafts.current={...drafts.current,[receiptExport]:{...drafts.current[receiptExport],exportState:value}};onSession?.({...snapshot.current,drafts:drafts.current});setDraftVersion(value=>value+1);}} onClose={()=>setReceiptExport(null)} onChanged={reviewProps.onChange}/>}
-    {Object.entries(drafts.current).filter(([key])=>empty||key!==prepared?.candidate_revision_uuid).map(([key,value])=><div key={key}>{value.unconfirmed||value.acceptPending?<p role="status">An earlier acceptance needs receipt recovery. <button disabled={!scopes.current[key]} onClick={()=>setPrepared(scopes.current[key])}>Recover earlier acceptance</button></p>:value.receipt&&!value.exportState?.exported&&!value.receipt.undone&&!mergeWasUndone(value.receipt.operation_uuid)?<p>{Number.isSafeInteger(value.receipt.accepted_epoch_count)?`Earlier merge of ${value.receipt.accepted_epoch_count} epochs`:'Earlier merge'} <button onClick={()=>setReceiptExport(key)}>Export those additions</button></p>:null}</div>)}
+    {Object.entries(drafts.current).filter(([key])=>empty||key!==prepared?.candidate_revision_uuid).map(([key,value])=><div key={key}>{value.unconfirmed||value.acceptPending?<p role="status">An earlier acceptance needs receipt recovery. <button disabled={!scopes.current[key]} onClick={()=>setPrepared(scopes.current[key])}>Recover earlier acceptance</button></p>:value.receipt&&archiveVerified(key,value)&&!value.exportState?.exported&&!value.receipt.undone&&!mergeWasUndone(value.receipt.operation_uuid)?<p>{Number.isSafeInteger(value.receipt.accepted_epoch_count)?`Earlier merge of ${value.receipt.accepted_epoch_count} epochs`:'Earlier merge'} <button onClick={()=>setReceiptExport(key)}>Export those additions</button></p>:null}</div>)}
+    {archived?.owner===archiveOwner&&archived.failed&&<p role="status">Earlier merge exports could not be checked. Refresh to try again.</p>}
     {blocked&&<p role="status">{blocked}</p>}
     {leftOut>0&&!blocked&&<p role="status">{number(leftOut)} epochs left out of Main. <button disabled={queue.loading||!!queue.error||recovering||busy} onClick={()=>setReviewLeftOut(value=>!value)}>{reviewLeftOut?'Return to pending additions':'Review left-out epochs'}</button></p>}
     {empty&&<p role="status">{merged?'Merge complete, no pending cells.':'No pending cells.'}{leftOut>0?' Saved exclusions remain in your draft.':''}</p>}

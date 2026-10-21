@@ -1548,7 +1548,8 @@
             "workspace-app/src/exports/ui/WorkbenchExportDialog.jsx",
             "workspace-app/src/annotations/annotationProfile.js",
             "workspace-app/src/incoming-workbench/incomingBootstrap.js",
-            "workspace-app/src/incoming-workbench/mergeUndo.js"
+            "workspace-app/src/incoming-workbench/mergeUndo.js",
+            "workspace-app/src/retainedWorkspaceViews.js"
           ]
         },
         {
@@ -1826,7 +1827,10 @@
           "workspace-app/src/incoming-workbench/sourceMerge.test.js",
           "workspace-app/src/incoming-workbench/useSourceMerge.test.js",
           "workspace-app/src/incoming-workbench/useSelectedEpochView.test.js",
-          "workspace-app/src/incoming-workbench/workbenchPreparation.test.js"
+          "workspace-app/src/incoming-workbench/workbenchPreparation.test.js",
+          "workspace-app/src/incoming-workbench/mergeUndo.test.js",
+          "workspace-app/src/protocolSuggestionHold.test.js",
+          "workspace-app/src/workbenchTransitionRendering.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"

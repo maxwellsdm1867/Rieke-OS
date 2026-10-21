@@ -377,7 +377,7 @@ test('fresh GET bootstrap for another resolved actor never enables the frozen vi
 });
 
 for(const remaining of [0,1])test(`fresh cumulative confirmation accepts once and refreshes to ${remaining} pending epochs`,async()=>{
- const value=livePrepared('one'),calls=[];let accepts=0,prepares=0;
+ const value=livePrepared('one'),calls=[];let accepts=0,prepares=0,acceptedReceipt;
  let current={...value.context,draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false}};
  const view=await harness(async(path,options={})=>{
   const endpoint=String(path).replace(/^\/api/,'');calls.push(endpoint);
@@ -389,7 +389,8 @@ for(const remaining of [0,1])test(`fresh cumulative confirmation accepts once an
   }
   if(endpoint.endsWith('/draft')){const body=JSON.parse(options.body);current={...current,draft:{...current.draft,draft_version:2,decisions:body.decisions,decisions_total:body.decisions.length}};return response(current);}
   if(endpoint.endsWith('/preview'))return response({preview_sha256:'sealed',expected_binding_version:1,expected_query_revision:'main',selected_epoch_count:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:2,next_epoch_count:3,accepted_cell_count:1});
-  if(endpoint.endsWith('/accept')){accepts++;return response({operation_uuid:JSON.parse(options.body).operation_uuid,candidate_revision_uuid:value.candidate_revision_uuid,event_uuid:'accepted',binding:{revision_uuid:'main-new',version:2},accepted_epoch_count:1});}
+  if(endpoint.endsWith('/accept')){accepts++;acceptedReceipt={operation_uuid:JSON.parse(options.body).operation_uuid,protocol_uuid:protocol,actor:'actor-one',candidate_revision_uuid:value.candidate_revision_uuid,event_uuid:'accepted',binding:{revision_uuid:'main-new',version:2},accepted_epoch_count:1};return response(acceptedReceipt);}
+  if(endpoint.includes('/receipts/'))return response(acceptedReceipt);
   assert.ok(endpoint.endsWith('/context'));return response(current);
  },{withProfile:true});
  try{
@@ -427,4 +428,46 @@ for(const remaining of [0,1])test(`fresh cumulative confirmation accepts once an
    assert.equal(calls.filter(path=>path.endsWith('/context')).length,0,'reopening an empty queue does not load its old candidate');
   }
  }finally{await view.close();}
+});
+
+for(const outcome of ['accepted','undone','mismatch'])test(`restored archived export waits for fresh ${outcome} receipt`,async()=>{
+ const receipt={operation_uuid:'archived-operation',protocol_uuid:protocol,candidate_revision_uuid:'archived',actor:'actor-one',event_uuid:'event',binding:{revision_uuid:'main',version:2},accepted_epoch_count:2,undone:false};
+ const held=deferred();let reads=0;
+ const view=await harness(async(path)=>{
+  const endpoint=String(path).replace(/^\/api/,'');
+  if(endpoint==='/annotation-profiles')return response(authorProfiles('actor-one'));
+  assert.equal(endpoint,base+'/receipts/archived-operation');reads++;await held.promise;
+  return response({...receipt,undone:outcome==='undone',...(outcome==='mismatch'?{candidate_revision_uuid:'wrong'}:{})});
+ },{withProfile:true});
+ const empty=queue('empty');empty.data.pending_epoch_count=0;empty.data.pending_cell_count=0;
+ const offer=()=>[...view.container.querySelectorAll('button')].find(button=>button.textContent==='Export those additions');
+ try{
+  await view.render({hidden:true,queue:empty});
+  await view.render({queue:empty,session:{drafts:{archived:{receipt}}}});
+  assert.equal(offer(),undefined,'disk receipt cannot offer export before GET completes');
+  await act(async()=>held.resolve());
+  assert.equal(!!offer(),outcome==='accepted');assert.ok(reads>0);
+  if(outcome==='undone')assert.equal(view.saved.drafts.archived.receipt.undone,true,'fresh undone status persists');
+  if(outcome==='mismatch')assert.match(view.container.textContent,/could not be checked/);
+ }finally{held.resolve();await view.close();}
+});
+
+test('retired archived receipt read cannot offer export or overwrite saved receipt',async()=>{
+ const receipt={operation_uuid:'old-operation',protocol_uuid:protocol,candidate_revision_uuid:'archived',actor:'actor-one',event_uuid:'event',binding:{revision_uuid:'main',version:2},accepted_epoch_count:2};
+ const held=deferred();let reads=0;
+ const view=await harness(async(path)=>{
+  const endpoint=String(path).replace(/^\/api/,'');
+  if(endpoint==='/annotation-profiles')return response(authorProfiles('actor-one'));
+  reads++;if(reads===1){await held.promise;return response({...receipt,undone:false});}
+  return response({...receipt,undone:true});
+ },{withProfile:true});
+ const empty=queue('empty');empty.data.pending_epoch_count=0;
+ try{
+  await view.render({hidden:true,queue:empty});await view.render({queue:empty,session:{drafts:{archived:{receipt}}}});
+  await view.render({queue:empty,revision:1});
+  assert.equal(view.saved.drafts.archived.receipt.undone,true);
+  await act(async()=>held.resolve());
+  assert.equal(view.saved.drafts.archived.receipt.undone,true);
+  assert.ok(![...view.container.querySelectorAll('button')].some(button=>button.textContent==='Export those additions'));
+ }finally{held.resolve();await view.close();}
 });

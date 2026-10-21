@@ -46,14 +46,14 @@ function PreparedTraceDetail({resource,epoch,trace,heading,navigation,curation})
   </div>;
 }
 
-export default function EpochViewer({className='epoch-inspector-mode',ariaLabel='Epoch inspection',onKeyDown,toolbar,toolbarChildren,viewFilters,onViewFilters,filterRevision,filterDisabled=false,hideFilterControl=false,before,layout,designMode=false,builder,columnTree,treePane,resource={},epoch,targets=[],navigation,traceRevision,tracePreference:providedTracePreference,onTracePreference,readContext=null,traceReadContext=undefined,traceEpoch=null,inclusion,detailDisabled=false,onQC,tags,detailExtras,metadata}){
+export default function EpochViewer({className='epoch-inspector-mode',ariaLabel='Epoch inspection',onKeyDown,toolbar,toolbarChildren,viewFilters,onViewFilters,filterRevision,filterDisabled=false,hideFilterControl=false,before,layout,designMode=false,builder,columnTree,treePane,resource={},epoch,targets=[],navigation,traceRevision,tracePreference:providedTracePreference,onTracePreference,readContext=null,traceReadContext=undefined,traceEpoch=null,traceRequested=true,inclusion,detailDisabled=false,onQC,tags,detailExtras,metadata}){
   const [tracePreference,setTracePreference]=useTraceViewPreference(providedTracePreference,onTracePreference);
   const [previewOpen,setPreviewOpen]=useState(true);
   const [tagsOpen,setTagsOpen]=useState(false);
   const cellSelection=useTreeCellSelection(designMode&&!readContext?columnTree:null);
   const independentTrace=traceReadContext!==undefined;
   const shownEpoch=independentTrace?traceEpoch:epoch;
-  const displayResource=independentTrace?{data:shownEpoch,loading:!shownEpoch,scope:JSON.stringify([traceReadContext,shownEpoch?.epoch_uuid,shownEpoch?.source_sha256])}:resource;
+  const displayResource=independentTrace?{data:shownEpoch,loading:!shownEpoch&&traceRequested,scope:JSON.stringify([traceReadContext,shownEpoch?.epoch_uuid,shownEpoch?.source_sha256])}:resource;
   // Historical display can advance while mutation receipts are refreshing.
   // Never retain another epoch's tags/review beneath the new recorded trace.
   const curationScope=JSON.stringify([resource.scope,readContext,traceReadContext,shownEpoch?.epoch_uuid,shownEpoch?.source_sha256]);
