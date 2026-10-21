@@ -339,3 +339,10 @@ second authority token nor changes mutable/custom fallback admission.
 The named `prepare_publication(service)` entry is public for the retained service
 and its synthetic route fixture; `_Publication` remains private. Regression tests
 observe the returned prepared witness rather than importing its private class.
+
+Mixed result pages seek the sealed typed index's inspection-chronology ranks in
+bounded windows. Their continuation is the last accepted rank; cell pages add
+the direct cell scope before seeking. Active-source eligibility is checked within
+each window, preserving exact matches without constructing a project-wide UUID
+list or sorting it on a first page. Explicit uncached offset/anchor searches may
+visit preceding matches; sparse predicates may visit multiple windows.

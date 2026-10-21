@@ -2165,9 +2165,11 @@ class WorkspaceService:
         serial = publication_serial(self)
         counts = self._mixed_counts(predicate, validated, revision, scope)
         cells = counts['cells']
-        ids = self._chronology_ids(scope)
-        if cell_uuid is not None:
-            ids = tuple(item for item in ids if self.rows[item]['cell_uuid'] == cell_uuid) if cells is None else ids
+        active = frozenset(scope['active_source_revisions'])
+        # Inspection ranks are already sealed in the typed index. Seek bounded
+        # windows rather than constructing/sorting a whole-project UUID tuple.
+        # A direct cell scope restricts work to that cell even while counts run.
+        query_scope = {'cell': cell_uuid} if cell_uuid is not None else None
         memo = getattr(self, '_mixed_page_memo', None)
         if memo is None:
             memo = self._mixed_page_memo = {}
@@ -2177,29 +2179,35 @@ class WorkspaceService:
         while len(memo) > 32:
             memo.pop(next(iter(memo)))
         matcher = TagPredicates(self)
-        found = []
 
         def matches(start, wanted, stop=None):
-            """Matches from chronology position `start`: (matched ids, next position)."""
-            chunk = 256
-            position = start
-            out = []
-            while position < len(ids) and len(out) < wanted:
-                window = list(ids[position:position + chunk])
-                matched = set(matcher.match(predicate, window)[1])
-                for index, item in enumerate(window):
-                    if item in matched and (cell_uuid is None or self.rows[item]['cell_uuid'] == cell_uuid):
-                        out.append((item, position + index + 1))
-                        if len(out) >= wanted or (stop is not None and item == stop):
-                            break
-                if stop is not None and out and out[-1][0] == stop:
-                    break
-                position += chunk
-                chunk = min(chunk * 2, 8192)
+            """Matches after a sealed chronology rank: [(UUID, rank)]."""
+            from disco.metadata.explore_queries import typed_reader
+            if not active:
+                return []
+            chunk, position, out = 256, start, []
+            with typed_reader(self) as reader:
+                while len(out) < wanted:
+                    window = reader.chronology_page(scope=query_scope, after_rank=position, limit=chunk)
+                    if not window:
+                        break
+                    # Filter source eligibility inside the bounded window; an
+                    # all-source SQL membership subquery would scan the project.
+                    eligible = [item for item, _ in window if self.rows[item]['source_sha256'] in active]
+                    matched = set(matcher.match(predicate, eligible)[1])
+                    for item, rank in window:
+                        if item in matched:
+                            out.append((item, rank))
+                            if len(out) >= wanted or (stop is not None and item == stop):
+                                break
+                    if stop is not None and out and out[-1][0] == stop:
+                        break
+                    position = window[-1][1]
+                    chunk = min(chunk * 2, 8192)
             return out
         anchor_index = None
         if anchor_uuid is not None:
-            walked = matches(0, len(ids), stop=anchor_uuid)
+            walked = matches(0, len(self.rows), stop=anchor_uuid)
             if not walked or walked[-1][0] != anchor_uuid:
                 raise ValueError('Epoch is outside this predicate')
             anchor_index = len(walked) - 1
