@@ -6,7 +6,7 @@ import uuid
 from types import SimpleNamespace
 
 from disco.navigation.prepared_tree import PreparedTree
-from disco.navigation.tree_pages import TreePages, TreePath, _group_buckets, _summary, _chronology
+from disco.navigation.tree_pages import TreePages, TreePath
 
 
 def fixture(count=180):
@@ -94,13 +94,19 @@ class PreparedTreeTests(unittest.TestCase):
         rows, values, definitions, ranks = fixture(350)
         order = ('parameters/value', 'block')
         tree = PreparedTree.build(rows, values, definitions, order, scope_keys=ranks)
-        structural = TreePath(order, definitions)
-        def visit(current, depth):
-            if depth == len(order):
-                return [row['epoch_uuid'] for row in sorted(current, key=_chronology)]
-            return [identity for bucket in _group_buckets(current, depth, order, structural, values, counts_only=True)
-                    for identity in visit(bucket['rows'], depth + 1)]
-        self.assertEqual(tree.select(), tuple(visit(rows, 0)))
+        oracle = legacy(rows, values, definitions, order)
+        def visit(path):
+            first = oracle(path=path, limit=100, counts_only=True)
+            result = []
+            for offset in range(0, first['total'], 100):
+                page = first if offset == 0 else oracle(path=path, offset=offset, limit=100, counts_only=True)
+                if page['kind'] == 'epochs':
+                    result.extend(row['epoch_uuid'] for row in page['epochs'])
+                else:
+                    for branch in page['branches']:
+                        result.extend(visit(branch['path']))
+            return result
+        self.assertEqual(tree.select(), tuple(visit([])))
         with self.assertRaises(ValueError):
             tree.select(max_count=100)
         with self.assertRaises(KeyError):
@@ -188,7 +194,6 @@ class PreparedTreeTests(unittest.TestCase):
         self.assertLess(work[1], work[0] * 3, work)
 
     def test_high_fanout_branch_offsets_and_deltas_are_bounded_and_balanced(self):
-        import disco.navigation.prepared_tree as core
         measured = []
         for count in (100, 10000):
             rows, values, definitions, ranks = fixture(count)
@@ -214,12 +219,14 @@ class PreparedTreeTests(unittest.TestCase):
                 if node is None or id(node) in seen:
                     return
                 seen.add(id(node))
-                if isinstance(node, core._Map):
-                    self.assertEqual(node.size, 1 + core._size(node.left) + core._size(node.right))
-                    self.assertEqual(node.height, 1 + max(core._height(node.left), core._height(node.right)))
-                    self.assertLessEqual(abs(core._height(node.left) - core._height(node.right)), 1)
+                if hasattr(node, 'height'):
+                    left_size, right_size = (node.left.size if node.left else 0), (node.right.size if node.right else 0)
+                    left_height, right_height = (node.left.height if node.left else 0), (node.right.height if node.right else 0)
+                    self.assertEqual(node.size, 1 + left_size + right_size)
+                    self.assertEqual(node.height, 1 + max(left_height, right_height))
+                    self.assertLessEqual(abs(left_height - right_height), 1)
                     verify(node.left); verify(node.right); verify(node.value)
-                elif isinstance(node, core._Group):
+                elif hasattr(node, 'children'):
                     for content in (node.children, node.lookup, node.leaves, node.cells):
                         verify(content)
             verify(changed._root)

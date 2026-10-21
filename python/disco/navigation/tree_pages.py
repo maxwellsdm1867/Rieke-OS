@@ -957,7 +957,8 @@ def register_tree_page_routes(app, service, db_lock, registration_locks):
         scopes = [{'splits': 'date,cell,block'}]
         store = app.extensions.get('tree_layouts')
         for identity, protocol in service.protocols.items():
-            default = protocol['definition'].get('view', {}).get('group_by', ['date', 'cell', 'block'])
+            bound = service.query_view(identity).get('dataset_binding', {}).get('splits')
+            default = bound.split(',') if bound is not None else protocol['definition'].get('view', {}).get('group_by', ['date', 'cell', 'block'])
             scopes.append({'protocol_uuid': identity, 'splits': ','.join(default)})
             saved = store.read(identity) if store is not None else None
             if saved and saved['split_order'] != default:

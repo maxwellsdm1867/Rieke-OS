@@ -1041,6 +1041,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 project=project_payload,protocols=protocol_payloads,headers=headers,protocol_order={key:index for index,key in enumerate(service.protocols)},
                 project_cells={row['cell_uuid']:row for row in project_payload['cells']},reason=None,
                 duration_orders={binding['revision_uuid']:model.duration_orders[protocol] for protocol,(binding,_) in headers.items() if binding},
+                initial_duration_orders=dict(model.duration_orders),
                 changed_epochs={protocol:set((payload.get('binding') or {}).get('changed_epoch_uuids',())) for protocol,payload in protocol_payloads.items()},
                 initial_bindings={protocol:(binding or {}).get('revision_uuid') for protocol,(binding,_) in headers.items()},
                 cell_ordinals={protocol:{key:index for index,key in enumerate(cells)} for protocol,cells in model.protocol_cells.items()})
@@ -1116,18 +1117,26 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         model=prepared_overview['model']
         for key in plan.keys.get('protocol_binding',[]):
             row=dict(zip(plan.primary_keys['protocol_binding'],key));protocol=row['protocol_uuid']
-            old_binding,_=prepared_overview['headers'].get(protocol,(None,None))
+            old_binding,old_header=prepared_overview['headers'].get(protocol,(None,None))
             binding=explorer_history.protocol_binding_header(protocol)
             if binding==old_binding:continue
             if binding is None or old_binding is None:raise PreparationRequired('binding_changed')
+            if binding['revision_uuid']==old_binding['revision_uuid']:
+                bindings.append((protocol,{},[],binding,old_header,set(),set(),model.duration_orders[protocol]))
+                continue
             delta=explorer_history.prepared_delta(old_binding['revision_uuid'],binding['revision_uuid'])
             if delta is None:raise PreparationRequired('binding_changed')
+            order=prepared_overview['duration_orders'].get(binding['revision_uuid'])
+            if binding['revision_uuid']==prepared_overview['initial_bindings'][protocol]:
+                order=prepared_overview['initial_duration_orders'][protocol]
+            if delta['order_kind']=='recipe' and order is None:
+                raise PreparationRequired('Canonical full-recipe duration order requires preparation')
             added=delta['added'];removed=delta['removed']
             states=store._rows(protocol,list(added),selected_only=True) if added else {}
             changed={key for key,fingerprint in added.items() if fingerprint!=service._fingerprints[key]}
             touched=set(added)|set(removed)
             bindings.append((protocol,{key:states.get(key) for key in added},list(removed),
-                             binding,delta['metadata'],changed,touched))
+                             binding,delta['metadata'],changed,touched,order))
         return changes,tag_changes,bindings
 
     def prepared_binding_witness(keys):
@@ -1148,7 +1157,13 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 watermark,(changes,tags,bindings)=capture_changes(tracker,model.watermark,overview_capture_rows)
                 # All source reads and capture verification have completed. No
                 # owner is changed until the snapshot can be published.
-                for protocol,added,removed,binding,header,changed,touched in bindings:
+                duration_jobs=[]
+                for protocol,added,removed,binding,header,changed,touched,order in bindings:
+                    previous=prepared_overview['headers'][protocol][0]
+                    if not added and not removed and previous['revision_uuid']==binding['revision_uuid']:
+                        prepared_overview['headers'][protocol]=(binding,header)
+                        continue
+                    duration_jobs.append(protocol)
                     model.apply_membership(protocol,added=added,removed=removed)
                     prepared_overview['changed_epochs'][protocol].difference_update(touched)
                     prepared_overview['changed_epochs'][protocol].update(changed)
@@ -1167,13 +1182,13 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                         else:pages.execute('DELETE FROM cells WHERE scope=? AND cell=?',(protocol,cell))
                     pages.commit();prepared_overview['headers'][protocol]=(binding,header)
                     orders=prepared_overview['duration_orders'];revision=binding['revision_uuid']
-                    if revision in orders:model.duration_orders[protocol]=orders[revision]
-                    else:orders[revision]=model.duration_orders[protocol]
+                    if order is not None:model.duration_orders[protocol]=order
+                    orders[revision]=model.duration_orders[protocol]
                     while len(orders)>32:orders.pop(next(iter(orders)))
                 model.apply_decisions(changes,model.watermark,watermark)
                 model.apply_tags([(kind,key,bool(values)) for kind,key,values in tags])
                 for kind,key,values in tags:prepared_overview['vocab'].update(kind,key,values)
-                for protocol,_,_,_,_,_,_ in bindings:
+                for protocol in duration_jobs:
                     version=model.duration_versions[protocol]
                     def publish(value,protocol=protocol,version=version,model=model):
                         with db_lock:
@@ -3222,6 +3237,19 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if importing.locked() or active_jobs:
                 inbox.start()
                 raise ValueError('An inbox import started while closing; wait for it to finish')
+            # A failed recovery flush is a retryable close. Keep every read
+            # owner alive until this fallible preparation has succeeded.
+            with db_lock:
+                scheduler=app.extensions.get('backup_scheduler')
+                try:
+                    if scheduler is not None:scheduler.flush()
+                    prepare_annotations()
+                except Exception as error:
+                    error.desktop_shutdown_stage = 'recovery_snapshot'
+                    inbox.start()
+                    raise
+            # Completion callbacks take db_lock: never drain workers while
+            # holding it. The lifecycle boundary has already drained requests.
             if trace_workers is not None:
                 try:
                     trace_workers.close()
@@ -3233,14 +3261,6 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if navigation is not None:navigation.close()
             close_overview_publication()
             with db_lock:
-                scheduler=app.extensions.get('backup_scheduler')
-                try:
-                    if scheduler is not None:scheduler.flush()
-                    prepare_annotations()
-                except Exception as error:
-                    error.desktop_shutdown_stage = 'recovery_snapshot'
-                    inbox.start()
-                    raise
                 with contextlib.suppress(Exception):
                     service.dj.conn().close()
                 from workspace_native_mysql import stop_native_database
@@ -3285,6 +3305,10 @@ def main():
         server.serve_forever()
     finally:
         app.extensions['h5_inbox'].stop()
+        navigation=app.extensions.get('disco.navigation.prepared')
+        if navigation is not None:navigation.close()
+        close_overview=app.extensions.get('close_overview_publication')
+        if close_overview is not None:close_overview()
         try:
             close_traces = app.extensions.get('close_trace_workers')
             if close_traces is not None:

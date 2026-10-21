@@ -767,7 +767,8 @@ class ExplorerHistory:
             added[identity] = fingerprint
         metadata = {key: copy.deepcopy(after[key]) for key in (
             'name', 'source_revisions', 'predicate', 'splits', 'tree_view', 'annotation_scope') if key in after}
-        return {'added': added, 'removed': removed, 'metadata': metadata}
+        return {'added': added, 'removed': removed, 'metadata': metadata,
+                'order_kind': 'uuid' if after.get('storage') == DELTA_STORAGE else 'recipe'}
 
     def members(self, revision_uuid):
         """Shared, read-only exact membership view of a verified revision."""

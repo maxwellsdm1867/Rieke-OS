@@ -4,7 +4,7 @@ import unittest
 import uuid
 from unittest.mock import patch
 import test_workspace_api as fixture
-from disco.decisions.explorer import ExplorerHistory, MemberView
+from disco.decisions.explorer import ExplorerHistory
 
 
 class PreparedDeltaTests(unittest.TestCase):
@@ -28,18 +28,18 @@ class PreparedDeltaTests(unittest.TestCase):
         return identity
 
     def read(self, previous, current, **kwargs):
-        forbidden = {getattr(ExplorerHistory, name).__code__ for name in
-                     ('header', 'members', '_row', '_verified_recipe')}
-        forbidden.update((MemberView.__init__.__code__, MemberView.flatten.__code__, MemberView.__iter__.__code__))
+        forbidden = {'header', 'members', '_row', '_verified_recipe', '__init__', 'flatten', '__iter__'}
         def check(frame, event, arg):
-            if event == 'call' and frame.f_code in forbidden:
+            if (event == 'call' and frame.f_globals.get('__name__') == 'disco.decisions.explorer'
+                    and frame.f_code.co_name in forbidden):
                 raise AssertionError('Prepared delta entered a hydrating/enumerating read')
         prior = sys.getprofile()
         sys.setprofile(check)
         try:
             result = self.history.prepared_delta(previous, current, **kwargs)
             if result is not None:
-                self.assertEqual(set(result), {'added', 'removed', 'metadata'})
+                self.assertEqual(set(result), {'added', 'removed', 'metadata', 'order_kind'})
+                self.assertEqual(result.pop('order_kind'), 'recipe' if current == self.root else 'uuid')
                 self.assertTrue(set(result['metadata']) <= {'name', 'source_revisions', 'predicate', 'splits', 'tree_view', 'annotation_scope'})
                 result.pop('metadata')
             return result
@@ -152,3 +152,7 @@ class PreparedDeltaTests(unittest.TestCase):
         self.assertEqual(result['metadata']['name'], 'Delta')
         result['metadata']['tree_view']['fields'].clear()
         self.assertTrue(self.history.prepared_delta(self.root, self.delta)['metadata']['tree_view']['fields'])
+
+    def test_order_kind_preserves_root_recipe_order_without_hydrating_it(self):
+        self.assertEqual(self.history.prepared_delta(self.root, self.delta)['order_kind'], 'uuid')
+        self.assertEqual(self.history.prepared_delta(self.delta, self.root)['order_kind'], 'recipe')

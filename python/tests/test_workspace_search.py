@@ -225,8 +225,13 @@ class WorkspaceSearchTests(unittest.TestCase):
                 return super().__getitem__(key)
 
         keys = publication.cell_identities = CountedKeys(publication.cell_identities)
-        with patch('disco.metadata.search._cell_rows', side_effect=AssertionError('full cell scan')), \
-                patch('disco.metadata.search._epoch_prefix_hits', return_value=([], 0)):
+        from types import SimpleNamespace
+        from workspace_service import FrozenDict
+        # This fixture's queried prefixes belong only to cells. Supply the
+        # ordinary bounded index port and forbid full frozen-row enumeration.
+        index = SimpleNamespace(_epoch_count=len(service.rows), epoch_prefix=lambda prefix, limit: ([], 0))
+        with patch.object(service, 'disk_index', index, create=True), \
+                patch.object(FrozenDict, 'values', side_effect=AssertionError('full cell scan')):
             for (query, limit), response in zip(queries, expected):
                 keys.reads = 0
                 self.assertEqual(search_workspace(service, query, limit), response)

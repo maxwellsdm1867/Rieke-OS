@@ -236,6 +236,32 @@ class PreparedNavigationTests(unittest.TestCase):
                 entry = self.owner.read(body)
             self.assertEqual(entry.catalog['protocol_family'], 'history-noise')
 
+    def test_publication_prepares_bound_default_and_saved_layout(self):
+        from flask import Flask
+        from disco.navigation.tree_pages import register_tree_page_routes
+        app = Flask(__name__)
+        service = SimpleNamespace(protocols={
+            'bound': {'definition': {'view': {'group_by': ['date', 'cell']}}},
+            'unbound': {'definition': {'view': {'group_by': ['block']}}}},
+            query_view=lambda identity: {'dataset_binding': {'splits': 'cell,block'}} if identity == 'bound' else {})
+        app.extensions['tree_layouts'] = SimpleNamespace(read=lambda identity:
+            {'split_order': ['date']} if identity == 'bound' else None)
+        register_tree_page_routes(app, service, threading.RLock(), contextlib.nullcontext)
+        owner = app.extensions['disco.navigation.prepared']
+        self.addCleanup(owner.close)
+        scopes = []
+        def prepare(body):
+            scopes.append(body)
+            owner.entries[owner.key(body)] = None
+            return {'status': 'ready'}
+        with patch.object(owner, 'supported', return_value=True), patch.object(owner, 'prepare', side_effect=prepare):
+            receipt = app.extensions['prepare_tree_publication']()
+        self.assertEqual(receipt['status'], 'ready')
+        self.assertEqual(scopes, [{'splits': 'date,cell,block'},
+            {'protocol_uuid': 'bound', 'splits': 'cell,block'},
+            {'protocol_uuid': 'bound', 'splits': 'date'},
+            {'protocol_uuid': 'unbound', 'splits': 'block'}])
+
 
 if __name__ == '__main__':
     unittest.main()

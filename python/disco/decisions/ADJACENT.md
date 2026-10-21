@@ -140,6 +140,9 @@ deltas; inverse additions use point reads from an already retained parent
 MemberView only when their final value survives. Add-then-undo needs no such view.
 The detached result contains `added` UUID-to-fingerprint, `removed` UUIDs, and
 `metadata` with only name/source_revisions/predicate/splits/tree_view/annotation_scope.
+`order_kind` is `uuid` for delta revisions and `recipe` for a full root; duration
+owners must preserve the original recipe order or explicitly prepare it, never
+substitute UUID order after a retained-order eviction.
 A removed-then-readded original member occurs in BOTH removed and added, preserving
 its final fingerprint; consumers must account for this replacement explicitly.
 This accessor never hydrates a recipe, builds/flattens a MemberView, enumerates

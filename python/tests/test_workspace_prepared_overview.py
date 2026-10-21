@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 import test_workspace_slow_read_memos as fixtures
 from disco.workbench.recipes import checksum
+from disco.decisions.explorer import MemberView
 
 
 class PreparedOverviewTests(fixtures.MemoFixture):
@@ -84,7 +85,7 @@ class PreparedOverviewTests(fixtures.MemoFixture):
         path=f'/api/protocols/{self.protocol}/overview?cells_limit=1'
         jobs=[]
         with patch.object(self.app.extensions['overview_durations'],'submit',side_effect=lambda *args,**kwargs:jobs.append(args)), \
-             patch('disco.decisions.explorer.MemberView.__iter__',side_effect=AssertionError('Full membership hydration')):
+             patch.object(MemberView,'__iter__',side_effect=AssertionError('Full membership hydration')):
             response=self.client.get(path);self.assertEqual(response.status_code,200)
             pending=response.get_json();old_etag=response.headers['ETag']
         expected=self.reference(path)
@@ -99,6 +100,82 @@ class PreparedOverviewTests(fixtures.MemoFixture):
         self.assertEqual(response.status_code,200)
         self.assertNotEqual(response.headers['ETag'],old_etag)
         self.assertEqual(response.get_json(),expected)
+
+    def test_undo_keeps_initial_recipe_duration_order_after_order_cache_eviction(self):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        root=history.create(preview,self.service.sources,'catalog.json','fixture')
+        history.bind(root['revision_uuid'],self.protocol,0,'fixture',{},2)
+        self.prepare();state=self.app.extensions['prepared_overview']
+        original=state['model'].duration_orders[self.protocol]
+        delta=history.create_delta(root['revision_uuid'],{},[self.ids[0]],'fixture',name='Removed one')
+        history.bind(delta['revision_uuid'],self.protocol,1,'fixture',{},2)
+        path=f'/api/protocols/{self.protocol}/overview?cells_limit=1';jobs=[]
+        with patch.object(self.app.extensions['overview_durations'],'submit',side_effect=lambda *args,**kwargs:jobs.append(args)):
+            self.get(path)
+            state['duration_orders'].clear()  # Exact LRU eviction outcome after many intervening revisions.
+            history.bind(root['revision_uuid'],self.protocol,2,'fixture',{},1)
+            pending=self.get(path)
+        self.assertEqual(pending['counts']['epochs'],len(self.ids))
+        self.assertIs(jobs[-1][0],original)
+        from disco.navigation.overview_durations import fold_duration
+        order,rows,publish=jobs[-1];publish(fold_duration(order,rows))
+        self.assertEqual(self.get(path),self.reference(path))
+
+    def test_return_to_an_unprepared_full_recipe_refuses_to_guess_its_duration_order(self):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        root=history.create(preview,self.service.sources,'catalog.json','fixture')
+        history.bind(root['revision_uuid'],self.protocol,0,'fixture',{},2)
+        delta=history.create_delta(root['revision_uuid'],{},[self.ids[0]],'fixture',name='Removed one')
+        history.bind(delta['revision_uuid'],self.protocol,1,'fixture',{},2)
+        self.prepare()
+        history.bind(root['revision_uuid'],self.protocol,2,'fixture',{},1)
+        response=self.client.get(f'/api/protocols/{self.protocol}/overview?cells_limit=1')
+        self.assertEqual(response.status_code,202)
+        self.assertNotIn('counts',response.get_json())
+        self.assertEqual(self.prepare()['status'],'ready')
+        self.assertEqual(self.get('/api/overview?cells_limit=1'),self.reference('/api/overview?cells_limit=1'))
+
+    def test_failed_close_does_not_dispose_prepared_reads_or_duration_worker(self):
+        import os
+        import threading
+        from unittest.mock import Mock
+        from workspace_api import create_app
+        self.service.config['connection']={'credential_provider':{'kind':'native-project'}}
+        with patch.dict(os.environ,{'RIEKE_DESKTOP_MODE':'1','RIEKE_DESKTOP_FRONTEND':self.case.temp.name}):
+            app=create_app(self.case.temp.name,self.case.temp.name,service=self.service,store=self.case.store,
+                explorer_history=self.case.explorer_history,data_stores=self.case.data_stores,
+                protocol_suggestions=self.case.protocol_suggestions,shared_annotations=self.shared)
+        self.addCleanup(app.extensions['close_overview_publication'])
+        self.addCleanup(app.extensions['close_trace_workers'])
+        self.addCleanup(app.extensions['disco.navigation.prepared'].close)
+        app.extensions['prepare_overview_publication']()
+        scheduler=Mock();scheduler.flush.side_effect=RuntimeError('held recovery failure')
+        app.extensions['backup_scheduler']=scheduler
+        with patch.object(app.extensions['h5_inbox'],'start') as resumed, self.assertRaises(RuntimeError):
+            app.extensions['desktop_stop_database']()
+        resumed.assert_called_once()
+        self.assertFalse(app.extensions['overview_durations'].closed)
+        self.assertFalse(app.extensions['disco.navigation.prepared'].closed)
+        response=app.test_client().get('/api/overview?cells_limit=1')
+        self.assertEqual(response.status_code,200,response.get_json())
+        completed=threading.Event();model=app.extensions['prepared_overview']['model']
+        app.extensions['overview_durations'].submit(model.duration_orders[self.protocol],model.rows,
+            lambda result:completed.set(),key=self.protocol)
+        self.assertTrue(completed.wait(2))
+
+    def test_same_revision_rebind_updates_version_without_recomputing_duration(self):
+        history=self.case.explorer_history
+        preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)
+        root=history.create(preview,self.service.sources,'catalog.json','fixture')
+        history.bind(root['revision_uuid'],self.protocol,0,'fixture',{},2)
+        self.prepare()
+        history.bind(root['revision_uuid'],self.protocol,1,'fixture',{},2)
+        with patch.object(self.app.extensions['overview_durations'],'submit',side_effect=AssertionError('Unchanged members need no fold')):
+            result=self.get(f'/api/protocols/{self.protocol}/overview?cells_limit=1')
+        self.assertEqual(result['binding']['version'],2)
+        self.assertNotEqual(result['counts'].get('duration_status'),'pending')
 
     def test_unexplained_binding_change_cannot_use_a_matching_recovery_watermark(self):
         history=self.case.explorer_history

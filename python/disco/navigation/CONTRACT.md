@@ -440,3 +440,19 @@ separate.
 Prepared navigation belongs to the exact live service object. Copied/frozen
 Workbench adapters never inherit its prepared membership, even if a shallow copy
 retains the owner attribute; they retain their own canonical/frozen policy.
+
+Explicit startup preparation uses the bound revision's split order when present,
+matching the tree-layout endpoint default; a separate saved layout is also
+prepared. Definition defaults apply only without bound splits. This work stays
+in the explicit publication phase, never the first page read.
+
+Overview pins the initially prepared canonical duration order independently of
+its bounded recent-order cache. Undo to that recipe preserves the exact float
+fold after cache eviction. Returning to another full recipe without a retained
+canonical order requires explicit preparation; UUID ordering is used only for
+sealed delta revisions whose canonical reader already defines it.
+
+Retryable close preparation (recovery flush and annotation checkpoint) finishes
+before prepared read owners are disposed. A failed flush leaves Overview, tree
+reads and their workers available; successful disposal drains callbacks outside
+the database lock. Source-server shutdown also closes both new owners.
