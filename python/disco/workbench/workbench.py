@@ -1615,6 +1615,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
     manager = ProtocolWorkbench(service, history, suggestions, state, revision_guard, read_revision=read_revision)
     if hasattr(service.dj, 'Schema'):
         manager.tables  # Additive DDL before startup recovery/checkpoint capture.
+        suggestions.Table  # Queue preparation reads this even in a new empty project.
         getattr(history, 'Membership', None)  # Lineage membership index, also before data transactions.
     app.extensions['protocol_workbench'] = manager
     from workspace_trace_views import TraceViews, TraceViewConflict

@@ -512,8 +512,12 @@ class NativeRoundTripTests(unittest.TestCase):
 import sys
 from workspace_api import create_app
 app = create_app(sys.argv[1], sys.argv[2])
+sys.excepthook = sys.__excepthook__  # Keep a failed child assertion visible after DataJoint import.
+authority = app.extensions['workspace_service']._explore_state_generation
+schema_before = authority._ddl()
 response = app.test_client().get('/api/overview')
 assert response.status_code == 200, response.get_json()
+assert authority._ddl() == schema_before, 'First overview must not install late recovery triggers'
 assert not app.extensions['workspace_service'].rows
 """
         with tempfile.TemporaryDirectory(prefix='rieke-empty-transfer-test-') as temporary:
