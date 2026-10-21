@@ -1,0 +1,114 @@
+name: Diagnostic 0.1.23 trace attribution (nonqualifying)
+on:
+  push:
+    branches: [codex/trace-023-diagnostic]
+    paths: [.github/workflows/trace-023-diagnostic.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: trace-023-diagnostic
+  cancel-in-progress: false
+jobs:
+  trace-macos:
+    name: Diagnostic trace attribution — not qualification
+    runs-on: macos-15
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Initialize trace failure evidence
+        run: |
+          mkdir -p "$RUNNER_TEMP/trace-macos"
+          printf 'Missing or failed trace evidence cannot qualify.\n' > "$RUNNER_TEMP/trace-macos/start.txt"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: workspace-app/package-lock.json
+      - uses: astral-sh/setup-uv@v6
+      - name: Install fixed trace runtime and browser
+        run: |
+          test "$(uname -s)" = Darwin
+          command -v cc
+          uv venv --python 3.11.13 "$RUNNER_TEMP/trace-python"
+          uv pip install --python "$RUNNER_TEMP/trace-python/bin/python" -r benchmarks/requirements-py311.txt
+          npm ci --prefix workspace-app
+          npm ci --prefix desktop --ignore-scripts
+          desktop/node_modules/.bin/playwright install chromium
+      - name: Bind exact baseline and candidate
+        run: |
+          candidate=4343509f4be6bf3437e252562f12bdfbd1dd1633
+          if ! git cat-file -e "$candidate^{commit}" 2>/dev/null; then
+            git fetch --no-tags origin "$candidate"
+          fi
+          git worktree add --detach "$RUNNER_TEMP/trace-baseline" 4de896f2e0b4ea966b5a428c3d2314f93fba935f
+          git worktree add --detach "$RUNNER_TEMP/trace-candidate" "$candidate"
+          # Directory-only ignore rules do not cover dependency symlinks.
+          # Exclude only these lockfile-verified, CI-owned links; retain the
+          # comparator's strict tracked/untracked source cleanliness check.
+          printf '/workspace-app/node_modules\n/desktop/node_modules\n' >> "$(git rev-parse --git-path info/exclude)"
+          for source in trace-baseline trace-candidate; do
+            for package in workspace-app desktop; do
+              dependency_args=()
+              if [ "$package" = desktop ]; then dependency_args=(--browser-only); fi
+              "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_workflow.py dependencies-match "$RUNNER_TEMP/$source/$package/package-lock.json" "$GITHUB_WORKSPACE/$package/package-lock.json" "${dependency_args[@]}"
+              ln -s "$GITHUB_WORKSPACE/$package/node_modules" "$RUNNER_TEMP/$source/$package/node_modules"
+            done
+          done
+      - name: Require candidate foreground scheduling and admission behavior
+        working-directory: ${{ runner.temp }}/trace-candidate
+        run: |
+          unset RIEKE_TEST_DOM_MODULE
+          PYTHONPATH=python "$RUNNER_TEMP/trace-python/bin/python" -B -m unittest discover -s python/tests -p test_trace_native.py -v 2>&1 | tee "$RUNNER_TEMP/trace-macos/native-tests.log"
+          PYTHONPATH=python "$RUNNER_TEMP/trace-python/bin/python" -B -m unittest discover -s python/tests -p test_trace_views.py -v 2>&1 | tee "$RUNNER_TEMP/trace-macos/admission-tests.log"
+      - name: Diagnose one fixed six-sample pair with existing server timing
+        run: |
+          unset RIEKE_TEST_DOM_MODULE PREPARED_GEOMETRY_BROWSER
+          export PREPARED_GEOMETRY_TIMING=1
+          node --test benchmarks/workflow/browser-readiness.test.mjs benchmarks/prepared_geometry/observer.test.mjs benchmarks/prepared_geometry/paired.test.mjs 2>&1 | tee "$RUNNER_TEMP/trace-macos/observer-tests.log"
+          "$RUNNER_TEMP/trace-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_prepared_geometry.py -v
+          {
+            sw_vers
+            sysctl hw.model hw.machine hw.ncpu hw.memsize vm.loadavg
+            sysctl machdep.cpu.brand_string || true
+            vm_stat
+          } > "$RUNNER_TEMP/trace-macos/host-before.log" 2>&1
+          (
+            while true; do
+              date -u '+%Y-%m-%dT%H:%M:%SZ'
+              sysctl vm.loadavg
+              vm_stat
+              ps -axo pid,ppid,pcpu,pmem,rss,comm
+              sleep 1
+            done
+          ) > "$RUNNER_TEMP/trace-macos/host-samples.log" 2>&1 &
+          telemetry_pid=$!
+          trap 'kill "$telemetry_pid" 2>/dev/null || true; wait "$telemetry_pid" 2>/dev/null || true' EXIT
+          "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_prepared_geometry.py pair --baseline-source "$RUNNER_TEMP/trace-baseline" --source-root "$RUNNER_TEMP/trace-candidate" --output "$RUNNER_TEMP/trace-macos/pair"
+      - name: Preserve diagnostic proof only
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-diagnostic-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/trace-macos/pair/baseline/receipt.json
+            ${{ runner.temp }}/trace-macos/pair/candidate/receipt.json
+            ${{ runner.temp }}/trace-macos/pair/comparison.json
+          if-no-files-found: error
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-diagnostic-raw-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/trace-macos/
+            !${{ runner.temp }}/trace-macos/**/node_modules/**
+          if-no-files-found: error
+          retention-days: 30
+
