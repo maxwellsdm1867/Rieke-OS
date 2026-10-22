@@ -1,19 +1,19 @@
-> **Disco 0.1.23 · Mac desktop testing build:** [Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.23/Disco-0.1.23-arm64.zip) · [Release details and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.23). Python and native MySQL are bundled; no Docker or Terminal setup is needed. Existing users can use **App Updates → Download update → Restart to update**. The original public 0.1.10 helper may require opening Disco normally once after replacement; no re-download or reimport is needed. For manual installation, extract the ZIP, quit Disco, replace **Disco.app**, and reopen it. Project folders remain separate. This unsigned, unnotarized Apple silicon testing build targets macOS 14+; macOS 14 runtime support remains unqualified and Intel is unsupported. macOS may require **Privacy & Security → Open Anyway**. This is a manual testing release with documented CI limitations, not a stable release.
+> **DISCO 0.1.23 · Mac desktop testing build:** [Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.23/Disco-0.1.23-arm64.zip) · [Release details and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.23). Python and native MySQL are bundled; no Docker or Terminal setup is needed. Existing users can use **App Updates → Download update → Restart to update**. The original public 0.1.10 helper may require opening DISCO normally once after replacement; no re-download or reimport is needed. For manual installation, extract the ZIP, quit DISCO, replace **Disco.app**, and reopen it. Project folders remain separate. This unsigned, unnotarized Apple silicon testing build targets macOS 14+; macOS 14 runtime support remains unqualified and Intel is unsupported. macOS may require **Privacy & Security → Open Anyway**. This is a manual testing release with documented CI limitations, not a stable release.
 
-# Disco
+# DISCO
 
 Data Inspection, Selection, Comparison Operations · A Rieke Lab OS
 
-The application is named Disco. Source, releases, updates and support remain in the existing `maxwellsdm1867/Rieke-OS` repository.
+The application is named DISCO. Source, releases, updates and support remain in the existing `maxwellsdm1867/Rieke-OS` repository.
 
-**Disco is a local research workspace for Symphony electrophysiology recordings.**
+**DISCO is a local research workspace for Symphony electrophysiology recordings.**
 It turns a folder of H5 files into an organized project where you can find cells
 and trials, inspect recorded responses, decide which epochs belong in an analysis,
 and export that exact selection with its metadata and history.
 
 The app is designed around retinal physiology workflows: a cell can have
 characterization recordings, several acquisition protocols, and many repeated
-trials. Disco keeps those relationships visible while you move between a
+trials. DISCO keeps those relationships visible while you move between a
 project overview, a cell's recordings, a metadata search, and individual traces.
 An **epoch** is one recorded trial; a **protocol** is the acquisition procedure
 recorded in the source file.
@@ -31,7 +31,7 @@ API key. MATLAB data export uses managed Python and SciPy.
 
 ## From recordings to an analysis dataset
 
-| Your task | What Disco provides |
+| Your task | What DISCO provides |
 | --- | --- |
 | Organize recordings | Import original Symphony H5 files by path or upload; browse dates, cells, acquisition protocols, blocks and epochs in a project catalog. |
 | Find the relevant trials | Search recorded metadata and authored tags with nested conditions; save reusable searches and inspect the matching epochs. |
@@ -59,7 +59,7 @@ projects, searches, working datasets, annotations and exports fit together.
 
 ## Reading and inspecting data
 
-Disco catalogs recorded metadata so you can search and organize epochs without loading every
+DISCO catalogs recorded metadata so you can search and organize epochs without loading every
 waveform. Response samples stay in the source H5 recordings and are read when you inspect a trace.
 Search-predicate results carry the lightweight stream information needed to open a response:
 **Live metadata can remain off while you inspect traces and move between matching epochs**.
@@ -150,7 +150,7 @@ You can also choose a version from
 its **Source code (zip)**. Extract the entire archive before installing. GitHub's
 **Code → Download ZIP** also downloads the current `main` branch.
 
-This is the complete **Disco browser application**, including its installer,
+This is the complete **DISCO browser application**, including its installer,
 backend and browser interface. Its application code is independent of EpicTreeGUI.
 MATLAB plotting, interactive GUI code and launchers are not included.
 The package includes the code needed to install the app; the installer downloads
@@ -180,7 +180,7 @@ The following commands apply only to a source checkout.
    sh start.sh
    ```
 
-4. Keep Terminal open and visit [Disco locally](http://127.0.0.1:8766).
+4. Keep Terminal open and visit [DISCO locally](http://127.0.0.1:8766).
    Choose a workspace folder, select **Add project**, and open the project.
    Use **Add data store** when you are ready to import a Symphony H5 recording.
    You can create and open an empty project without a recording.
@@ -272,9 +272,9 @@ Your workspace/                 Separate folder you choose in the app
 bytes into another project under the same parent reuses the managed recording,
 even if the selected filename differs. The app keeps the H5 bytes unchanged.
 
-After a successful import, Disco confirms: **“You can delete the original copy
-outside Disco, such as the file in Downloads. Keep the managed copy.”** Wait for
-that confirmation. Disco does not delete your external originals automatically.
+After a successful import, DISCO confirms: **“You can delete the original copy
+outside DISCO, such as the file in Downloads. Keep the managed copy.”** Wait for
+that confirmation. DISCO does not delete your external originals automatically.
 Failed or unconfirmed imports never grant that confirmation. Keep the `recordings/`
 folder intact and backed up; a managed copy on the same drive is not a backup.
 
@@ -335,7 +335,7 @@ RetinAnalysis evidence; it does not certify live database or current-main compat
 
 ## Dependencies and license
 
-Disco application source is available under the [MIT license](LICENSE). The installer
+DISCO application source is available under the [MIT license](LICENSE). The installer
 fetches [RetinAnalysis](https://github.com/DRezeanu/retinanalysis), DataJoint,
 MySQL, scientific Python libraries, and conda-forge tools under their respective
 licenses. Third-party packages are installed separately, not relicensed as part
