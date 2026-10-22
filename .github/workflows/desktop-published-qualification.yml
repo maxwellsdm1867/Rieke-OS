@@ -102,7 +102,9 @@ jobs:
           for source in desktop/*.cjs desktop/e2e/helpers.cjs desktop/package-lock.json; do
             cmp "$source" "$QUALIFICATION_ROOT/$source"
           done
-          ln -s "$GITHUB_WORKSPACE/desktop/dist" "$QUALIFICATION_ROOT/desktop/dist"
+          # Keep the test launcher inside its own physical output boundary.
+          # A dist symlink is correctly refused by packagedSource path checks.
+          ditto "$GITHUB_WORKSPACE/desktop/dist" "$QUALIFICATION_ROOT/desktop/dist"
           ln -s "$GITHUB_WORKSPACE/desktop/node_modules" "$QUALIFICATION_ROOT/desktop/node_modules"
           git -C "$QUALIFICATION_ROOT" rev-parse HEAD
       - name: Verify qualification helper observation tests
