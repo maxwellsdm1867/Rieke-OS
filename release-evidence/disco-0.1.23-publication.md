@@ -25,7 +25,24 @@ runtime resources, and the native database, then stopped before the upgrade test
 because its workflow symlinked the candidate output into the qualification checkout.
 The test path guard correctly rejected that symlink. A workflow-only follow-up copies
 the already verified output physically; application bytes, the tag, and path guards
-are unchanged. The follow-up result is recorded separately when complete.
+are unchanged. The corrected public-download audit is run 39703029939:
+https://github.com/maxwellsdm1867/Rieke-OS/actions/runs/39703029939.
+It cleared physical staging and reached native upgrade/recovery verification.
+This additional post-publication audit does not block access to the release.
+Run 39702495662 stopped at checkout because an abbreviated qualification SHA
+was supplied; run 39703029939 uses the full reviewed SHA.
 
 Earlier first-candidate evidence remains attributed to `4343509` and does not
 qualify this final release. No performance gates were relaxed.
+
+At the user's request, GitHub marks 0.1.23 as its Latest regular release. The title
+remains **Disco 0.1.23 testing**; unsigned, unnotarized, and non-production warnings
+remain. This changes GitHub listing metadata, not the immutable app or its
+`unsigned-testing` update descriptor. GitHub's Latest API was verified as 0.1.23.
+
+Cleanup retained the installed 0.1.23 app, source checkouts, compact verification
+receipts, and recovery evidence. Seven owned disposable artifacts were removed
+(two diagnostic downloads, the superseded updater app backup, installer download,
+empty staging directory, and two generated frontend output directories). The final
+cleanup operations observed approximately 2.62 GB more free space; this is a
+system-wide measurement, not a guaranteed APFS per-folder saving.
