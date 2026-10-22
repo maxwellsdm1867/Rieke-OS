@@ -108,9 +108,13 @@ export function createSourceMerge({projectId,request,persist=async()=>{},owner=(
    try{
     await persist();current();
     const prepared=requirePreparedWorkbench(protocolId,await request(`${workbenchRoot(protocolId)}/prepare`,{method:'POST',body:{expected_queue_revision:queueRevision}}),queueRevision);current();
+    // Preparation can replay an immutable receipt after Undo restores the same
+    // queue. Its stored context is historical; read current authority explicitly.
+    const context=requireWorkbenchContext(await request(`${workbenchCandidateRoot(protocolId,prepared.candidate_revision_uuid)}/context`));current();
+    if(context.candidate_revision_uuid!==prepared.candidate_revision_uuid||context.protocol?.definition?.protocol_uuid!==protocolId||context.actor!==prepared.context.actor)throw Error('The frozen review destination or author changed. Confirm Finish reviewing again.');
     const profiles=await request('/annotation-profiles');current();
-    if(!prepared.context.actor||(profiles.selected_profile_uuid||profiles.default_profile_uuid)!==prepared.context.actor)throw Error('The tag author changed. Confirm Finish reviewing again with the current author.');
-    const op={projectId,protocolId,candidateId:prepared.candidate_revision_uuid,actor:prepared.context.actor,finishReview:true,context:{actor:prepared.context.actor,candidate_scope_revision:prepared.context.candidate_scope_revision,draft:{draft_version:prepared.context.draft.draft_version}},body:{operation_uuid:crypto.randomUUID()}};
+    if(!context.actor||(profiles.selected_profile_uuid||profiles.default_profile_uuid)!==context.actor)throw Error('The tag author changed. Confirm Finish reviewing again with the current author.');
+    const op={projectId,protocolId,candidateId:prepared.candidate_revision_uuid,actor:context.actor,finishReview:true,context:{actor:context.actor,candidate_scope_revision:context.candidate_scope_revision,draft:{draft_version:context.draft.draft_version}},body:{operation_uuid:crypto.randomUUID()}};
     publish({phase:'preparing',operation:op,message:'Saving review recovery identity…'});
     await saveRecovery(op,current);
     return await submitFinish(op);

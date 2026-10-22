@@ -70,3 +70,35 @@ test('inactive author recovery survives checkpoint pressure and its large select
  assert.equal(restored.operation,'author-a-operation');assert.deepEqual(restored.preview,draft.preview);assert.equal(restored.unconfirmed,true);
  assert.equal(draft.selected.length,4000,'live selection remains intact');
 });
+
+test('repeated Undo checkpoints prune completed scopes while preserving current selection and independent recovery',async()=>{
+ const {compactWorkspaceCheckpoint,workbenchDraftNeedsRecovery}=await import('./selectedIncomingWorkflow.js');
+ const scope=id=>({candidate_revision_uuid:id,context:{draft:{decisions:Array.from({length:334},(_,i)=>({epoch_uuid:`epoch-${i}`,selected:true,reviewed:true,excluded:false}))}}});
+ const completed=Object.fromEntries(Array.from({length:20},(_,i)=>[`undone-${i}`,{receipt:{operation_uuid:`merge-${i}`,undone:true},selected:['old-epoch']} ]));
+ const independent={finish:{finishOperation:{operationUuid:'finish-op',context:{candidate_scope_revision:'exact-scope',draft:{draft_version:7}}}},
+  uncertain:{receipt:{undone:true},unconfirmed:true,operation:'accept-op',preview:{preview_sha256:'exact-preview'}},
+  accepting:{receipt:{undone:true},acceptPending:true,operation:'pending-op'},
+  exporting:{receipt:{undone:true},exportState:{pending:true,operation:'export-op'}},
+  preparedExport:{receipt:{undone:true},exportState:{prepared:{export_uuid:'prepared'}}},
+  acceptedExport:{receipt:{undone:true},exportState:{acceptOperation:'export-accept-op'}},
+  accepted:{receipt:{operation_uuid:'still-accepted'}},
+  unknown:{receipt:{operation_uuid:'not-proven-undone',undone:'true'}}};
+ const current={selected:['epoch-4','epoch-5'],viewer:{focused:'epoch-4'},receipt:{undone:true}};
+ const drafts={...completed,...independent,current},scopes=Object.fromEntries(Object.keys(drafts).map(key=>[key,scope(key)]));
+ const cumulative={prepared:scope('current'),drafts,scopes};
+ const actor={cumulative},workbench={...actor,sessionActor:'author',sessionsByActor:{author:actor}};
+ const checkpoint={route:{key:'current'},sessions:[['current',{workbench}]],protocolSessions:[['protocol',{workbench}]]};
+ const before=JSON.stringify(checkpoint),result=compactWorkspaceCheckpoint(checkpoint);
+ assert.ok(Buffer.byteLength(before)>2*1024*1024,'fixture exceeds native saved-view cap before pruning');
+ assert.ok(Buffer.byteLength(JSON.stringify(result))<1536*1024,'completed Undo scopes no longer exhaust the saved-view budget');
+ for(const [,value] of [...result.sessions,...result.protocolSessions])for(const saved of [value.workbench.cumulative,value.workbench.sessionsByActor.author.cumulative]){
+  assert.deepEqual(Object.keys(saved.drafts).sort(),[...Object.keys(independent),'current'].sort());
+  assert.deepEqual(Object.keys(saved.scopes).sort(),Object.keys(saved.drafts).sort());
+  assert.deepEqual(saved.drafts.current,current,'same-candidate selection remains intact');
+  for(const [key,draft] of Object.entries(independent))assert.deepEqual(saved.drafts[key],draft,'recovery fences and operations remain exact');
+ }
+ assert.equal(workbenchDraftNeedsRecovery({receipt:{undone:true}}),false);
+ assert.equal(JSON.stringify(checkpoint),before,'live sessions are not mutated');
+ const history=compactWorkspaceCheckpoint({route:{key:'current'},sessions:[['old',{padding:'x'.repeat(4000),workbench:{drafts:{old:{receipt:{undone:true}}}}}],['current',{}]]},{historyBytes:1000});
+ assert.deepEqual(history.sessions,[['current',{}]],'old undone history no longer blocks ordinary history eviction');
+});

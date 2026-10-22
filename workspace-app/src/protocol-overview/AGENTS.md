@@ -152,3 +152,14 @@ by its command owner. Local notifications are dismissible, expire after eight
 seconds, and retire when their queue/candidate owner changes. Notification expiry
 never retries a command or changes recovery authority; uncertain-operation
 recovery remains owned by the command controller.
+
+An active Overview renews an invalidated cache entry even when it retains display
+data and its descriptor revision has not changed. Otherwise aborting the old read
+can leave the page permanently inert at Updating. Hidden consumers remain quiet;
+activation renews their invalidated demand. `overviewDemand.test.js` covers populated
+same-descriptor invalidation, superseded replies and hidden/visible transitions.
+The App shell keeps root-summary initial/unfinished demand active off the Overview
+page, but passes `renewRetained:false` there to defer invalidation of a populated
+root snapshot. Returning to Overview renews it; changed descriptor revisions still
+read normally. Protocol summaries retain visible renewal. This preserves the
+external-annotation no-unrelated-summary-read contract in `workflowResponsiveness.test.js`.

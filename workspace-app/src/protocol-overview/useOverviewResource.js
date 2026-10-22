@@ -48,7 +48,7 @@ export function useOverviewCache(scope,revision,structureRevision=revision,chang
 }
 
 const subscribeNothing=()=>()=>{},zero=()=>0;
-export function useOverviewResource(path,revision,{cache,scope,active:requestedActive=true}={}){
+export function useOverviewResource(path,revision,{cache,scope,active:requestedActive=true,renewRetained=true}={}){
  const owner=useWorkspaceRequestScope(),view=useRetainedView(),enabled=!!cache&&!owner,active=requestedActive&&view?.active!==false;
  const [reloadNonce,setReloadNonce]=useState(0),pendingReload=useRef(null),visible=useRef(false);
  useLayoutEffect(()=>{visible.current=active;return()=>{visible.current=false;};},[active]);
@@ -82,10 +82,11 @@ export function useOverviewResource(path,revision,{cache,scope,active:requestedA
   };
   timer=setTimeout(poll,2000);return()=>{cancelled=true;clearTimeout(timer);};
  },[active,durationPending,enabled,cache,descriptor]);
- // A root summary may still be required by the shell after navigation hides
- // its page. Invalidating an unfinished read must not strand that demand just
- // because its deferred display revision did not change.
- const missingInvalidated=!!entry?.invalidated&&!entry.data;
+ // Active demand must renew invalidation even when retained display data and
+ // the descriptor revision are unchanged. Hidden consumers still wait for
+ // activation; retained data never substitutes for a fresh read. The App shell
+ // can keep initial root demand active while deferring its populated summary.
+ const invalidatedDemand=!!entry?.invalidated&&(!entry.data||renewRetained);
  const display=useRef(null);
  if(entry?.data&&!entry.error)display.current={cache,path,scope,data:entry.data};
  if(!enabled&&active&&fallback.data&&!fallback.error)display.current={cache,path,scope,data:fallback.data};
@@ -95,7 +96,7 @@ export function useOverviewResource(path,revision,{cache,scope,active:requestedA
   const force=pendingReload.current===descriptor;pendingReload.current=null;
   void cache.read(descriptor,{request:api,...(force?{force:true}:{})}).catch(()=>{});
   return()=>cache.release(descriptor);
- },[enabled,active,cache,descriptor,missingInvalidated,reloadNonce]);
+ },[enabled,active,cache,descriptor,invalidatedDemand,reloadNonce]);
  const displayData=display.current&&display.current.cache===cache&&display.current.path===path&&display.current.scope===scope?display.current.data:null;
  if(!enabled)return {...fallback,displayData,prepare,preparing,prepareError};
  return {data:entry?.data||null,displayData,prepare,preparing,prepareError,preparation:entry?.preparation||null,error:entry?.error||null,

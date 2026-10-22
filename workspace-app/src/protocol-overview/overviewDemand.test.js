@@ -62,3 +62,37 @@ test('visible nested pending durations poll once ready and stop when hidden',asy
   assert.equal(reads,2);
  }finally{await act(()=>tree?.unmount());cache.clear();globalThis.fetch=oldFetch;globalThis.setTimeout=oldSet;globalThis.clearTimeout=oldClear;}
 });
+
+test('populated active overview renews same-descriptor invalidation while hidden demand stays quiet',async()=>{
+ const cache=createOverviewCache(),oldFetch=globalThis.fetch,pending=[];let tree,current,active=true;
+ globalThis.fetch=(path,options)=>new Promise(resolve=>pending.push({path,options,resolve}));
+ function Probe(){current=useOverviewResource('/protocols/p/overview?cells_limit=200',0,{cache,scope:'project',active});return null;}
+ try{
+  await act(()=>{tree=TestRenderer.create(React.createElement(Probe));});
+  await act(()=>pending[0].resolve(new Response(JSON.stringify({counts:{epochs:2}}))));assert.equal(current.loading,false);
+  await act(()=>cache.invalidate());assert.equal(pending.length,2,'populated visible demand starts a replacement read without navigation');assert.equal(current.loading,true);assert.equal(current.displayData.counts.epochs,2);
+  await act(()=>cache.invalidate());assert.equal(pending[1].options.signal.aborted,true);assert.equal(pending.length,3);
+  await act(()=>pending[2].resolve(new Response(JSON.stringify({counts:{epochs:9}}))));
+  await act(()=>pending[1].resolve(new Response(JSON.stringify({counts:{epochs:3}}))));assert.equal(current.data.counts.epochs,9);assert.equal(current.loading,false);
+  active=false;await act(()=>tree.update(React.createElement(Probe)));
+  await act(()=>cache.invalidate());assert.equal(pending.length,3,'hidden populated demand does not start reads');
+  active=true;await act(()=>tree.update(React.createElement(Probe)));assert.equal(pending.length,4);
+  await act(()=>pending[3].resolve(new Response(JSON.stringify({counts:{epochs:2}}))));assert.equal(current.data.counts.epochs,2);assert.equal(current.loading,false);
+ }finally{await act(()=>tree?.unmount());cache.clear();globalThis.fetch=oldFetch;}
+});
+
+
+test('shell keeps unfinished root demand live but defers populated invalidation until Overview is visible',async()=>{
+ const cache=createOverviewCache(),oldFetch=globalThis.fetch,pending=[];let tree,current,renewRetained=false;
+ globalThis.fetch=(path,options)=>new Promise(resolve=>pending.push({path,options,resolve}));
+ function Probe(){current=useOverviewResource('/overview?cells_limit=200',0,{cache,scope:'project',renewRetained});return null;}
+ try{
+  await act(()=>{tree=TestRenderer.create(React.createElement(Probe));});assert.equal(pending.length,1,'hidden root still supplies initial shell data');
+  await act(()=>cache.invalidate());assert.equal(pending.length,2,'unfinished hidden root demand renews');
+  await act(()=>pending[1].resolve(new Response(JSON.stringify({counts:{epochs:2}}))));
+  await act(()=>cache.invalidate());assert.equal(pending.length,2,'populated root defers annotation-only invalidation while hidden');assert.equal(current.displayData.counts.epochs,2);
+  renewRetained=true;await act(()=>tree.update(React.createElement(Probe)));assert.equal(pending.length,3);
+  await act(()=>pending[2].resolve(new Response(JSON.stringify({counts:{epochs:9}}))));assert.equal(current.loading,false);assert.equal(current.data.counts.epochs,9);
+  await act(()=>pending[0].resolve(new Response(JSON.stringify({counts:{epochs:1}}))));assert.equal(current.data.counts.epochs,9);
+ }finally{await act(()=>tree?.unmount());cache.clear();globalThis.fetch=oldFetch;}
+});

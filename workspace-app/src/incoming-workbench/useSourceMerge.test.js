@@ -30,6 +30,7 @@ for(const scenario of ['retired-before-submit','moved-after-submit','unmounted-a
  const request=async(path,options={})=>{
   if(path.endsWith('/prepare'))return {contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prep',candidate_revision_uuid:'union',candidate_scope_revision:'scope',queue_revision:'q',root:'/protocols/p/workbench/candidates/union',context};
   if(path==='/annotation-profiles')return {selected_profile_uuid:'a'};
+  if(path.endsWith('/context'))return context;
   assert.ok(path.endsWith('/finish'));finishes++;started();await new Promise(resolve=>release=resolve);
   receipt={kind:'workbench_review_completion',operation_uuid:options.body.operation_uuid,protocol_uuid:'p',candidate_revision_uuid:'union',actor:'a',expected_draft_version:2,left_out_epoch_count:2};
   return {...context,draft:{draft_version:2},review_completion:receipt};
@@ -38,7 +39,7 @@ for(const scenario of ['retired-before-submit','moved-after-submit','unmounted-a
  function Probe({ownerKey}){api=useSourceMerge({projectId:'project',request,persist,ownerKey,onAccepted:(...args)=>accepted.push(args),onReviewed:(...args)=>reviewed.push(args)});return null;}
  const render=async ownerKey=>act(()=>{const node=React.createElement(StrictMode,null,React.createElement(Probe,{ownerKey}));if(view)view.update(node);else view=Renderer.create(node);});
  try{
-  await render('A');let pending;await act(()=>{pending=api.finish('p',{queue_revision:'q'});pending.catch(()=>{});});await held;
+  await render('A');let pending;await act(()=>{pending=api.finish('p',{queue_revision:'q'});pending.catch(()=>{});});await Promise.race([held,pending]);
   if(scenario==='unmounted-after-submit'){await act(()=>view.unmount());view=null;}else{await render('B');if(scenario==='retired-before-submit')await render('A');}
   await act(async()=>{release();if(scenario==='retired-before-submit')await assert.rejects(pending,/workspace changed/);else assert.equal(await pending,true);});
   assert.equal(finishes,scenario==='retired-before-submit'?0:1);assert.deepEqual(accepted,[]);assert.deepEqual(reviewed,scenario==='moved-after-submit'?[['p',receipt]]:[]);

@@ -425,7 +425,11 @@ focus conservatively. No selected epochs or command authority is transferred.
 
 ### Review-cycle recovery (2026-10-21)
 
-Finish flushes pending accepted writes before preparing its fresh context. Both
+Finish flushes pending accepted writes before preparing its candidate, then reads
+that exact candidate’s current context. Preparation receipt replay is historical: a
+merge/Undo can restore the same queue while advancing the binding and scope.
+The current-context read preserves candidate/protocol/actor identity; saved replay
+receipts are never rewritten to manufacture freshness. Both
 Overview's source command owner and frozen Workbench retain a compact completion
 operation (actor, candidate, scope, draft version and UUID) before submission.
 Lost replies and errors marked `saved:true` retain that identity across navigation
@@ -443,3 +447,11 @@ command errors have one App-owned dismissible notification, expiring after eight
 seconds; uncertain operations retain explicit recovery controls. Focused checks:
 `sourceMerge.test.js`, `incomingWorkbenchRendering.test.js` and
 `protocolSuggestionHold.test.js`. These do not replace native repeated-cycle tests.
+
+A receipt explicitly marked `undone:true` no longer protects an obsolete candidate
+or history view from checkpoint pruning. The current candidate and its local
+selection remain; unconfirmed/pending accepts, Finish recovery and unfinished
+exports retain their independent protection. Receipt absence or an unverified
+Undo never proves completion. `selectedIncomingWorkflow.test.js` covers repeated
+Undo scopes exceeding the native view limit, mirrored actor snapshots, exact
+recovery identities and non-mutating pruning. The native size limit is unchanged.

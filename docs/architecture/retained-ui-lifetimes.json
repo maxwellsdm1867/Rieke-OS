@@ -4,7 +4,7 @@
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
     "src/App.jsx": {
-      "fingerprint": "b42f79c2920500f4a383d658afff8690e971ccade7fd8ac385b894fa392e977e",
+      "fingerprint": "4a3edc487105ef46632c84394d38527fa55c36a2477ee0857a0a5e1259e778b4",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -48,7 +48,7 @@
         }
       ],
       "lifetime": "mixed-project-and-retained-composition",
-      "reason": "Route-matched shared card merges stay in their originating Overview or import route; verified receipt and invalidation remain App-owned. Independent review 2026-10-21 (repeated review cycles): Adds dismiss only for definitive source-command errors; uncertain recovery controls remain persistent and retain command ownership.",
+      "reason": "Route-matched shared card merges stay in their originating Overview or import route; verified receipt and invalidation remain App-owned. Independent review 2026-10-21 (repeated review cycles): Adds dismiss only for definitive source-command errors; uncertain recovery controls remain persistent and retain command ownership. Final root-demand review 2026-10-21: renewRetained permits populated root invalidation renewal only on Overview while initial missing root demand remains live for shell startup; protocol active-demand behavior and retained-visibility guards remain unchanged. Native startup restoration and merge/Undo/Finish renewal passed; no command is replayed.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/appLifecycleImports.test.js",
@@ -78,7 +78,8 @@
         "src/workspaceChangesLedger.test.js",
         "src/incoming-workbench/useSourceMerge.test.js",
         "src/protocolSuggestionHold.test.js",
-        "src/incoming-workbench/sourceMerge.test.js"
+        "src/incoming-workbench/sourceMerge.test.js",
+        "src/overviewSwitching.test.js"
       ]
     },
     "src/annotations/annotationProfile.js": {
@@ -1811,10 +1812,10 @@
       ]
     },
     "src/incoming-workbench/selectedIncomingWorkflow.js": {
-      "fingerprint": "e707f162d59651ddac2f2f04eeb31707c1748a0d6e18b08ab4f1625de24c4feb",
+      "fingerprint": "23c543add40562ba04f10a5a2428257bf52df1c3f7b8629cad40fcec126590e9",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Checkpoint size review (2026-10-16): disk checkpoints now prune unreachable cumulative candidates (keeping the current candidate and any draft that needs recovery or still offers export) and drop the oldest back/forward view snapshots only above 1.5 MiB, never the current route, protocol latest views or recovery sessions. Live sessions are not mutated; no effect sites, dependencies, consent or recovery owners changed. Combined Merge/Undo/refresh review (2026-10-21): verified membership events renew shared authority; actor-owned sessions isolate history and cumulative recovery and checkpoints traverse inactive actor recovery. Same-author inert presentation survives reads; blocked and empty are distinct. Durable undone receipts retire offers. Explicit frozen refresh refuses pending/uncertain scientific work. Independent workflow review findings addressed; transition and checkpoint regressions cover ownership. Independent review 2026-10-21 (repeated review cycles): Protects finishOperation from checkpoint/session pruning just like pending acceptance; no effect or authority transfer.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Checkpoint size review (2026-10-16): disk checkpoints now prune unreachable cumulative candidates (keeping the current candidate and any draft that needs recovery or still offers export) and drop the oldest back/forward view snapshots only above 1.5 MiB, never the current route, protocol latest views or recovery sessions. Live sessions are not mutated; no effect sites, dependencies, consent or recovery owners changed. Combined Merge/Undo/refresh review (2026-10-21): verified membership events renew shared authority; actor-owned sessions isolate history and cumulative recovery and checkpoints traverse inactive actor recovery. Same-author inert presentation survives reads; blocked and empty are distinct. Durable undone receipts retire offers. Explicit frozen refresh refuses pending/uncertain scientific work. Independent workflow review findings addressed; transition and checkpoint regressions cover ownership. Independent review 2026-10-21 (repeated review cycles): Protects finishOperation from checkpoint/session pruning just like pending acceptance; no effect or authority transfer. Independent post-native review 2026-10-21: Verified undone receipts no longer retain obsolete export offers; independent pending Finish, acceptance and export identities still protect their exact sessions. Current candidate and live selection are not pruned. Repeated Undo checkpoint tests cover capacity and recovery preservation.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -1826,10 +1827,10 @@
       ]
     },
     "src/incoming-workbench/sourceMerge.js": {
-      "fingerprint": "bb5b476b01c79f623b567ab4d556e3cb402816cfb56f51a9e140701b1ac00e05",
+      "fingerprint": "ccd9514e5cca629612ede84e8d1630cef5d70a9d3d5dadffc43d215a5b545193",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds startAll (prepare -> draft all -> preview all -> accept) under the same owner token/current() checks and recovery identity; restore/validation accept mode all. Persist failure from accepted writes still refuses; view-only failure sets a notice. Single-request merge-all review (2026-10-16): Overview Hold to merge all submits one idempotent merge-all request fenced by the queue revision, saved before submission and recovered by receipt lookup or same-operation replay; no effect sites, dependencies or owners changed. 2026-10-21 independent workflow review: Explicit Finish confirmation prepares the shown queue, persists, rechecks route owner and selected author, then submits guarded completion. Verified completion returns its receipt; uncertain existing merge recovery cannot be replaced. Independent review 2026-10-21 (repeated review cycles): Finish now uses the existing command owner and pre-submission persistence with a stable operation UUID. GET recovery never submits; explicit retry keeps the same identity and actor fence. Definitive failures may dismiss, uncertain operations cannot.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds startAll (prepare -> draft all -> preview all -> accept) under the same owner token/current() checks and recovery identity; restore/validation accept mode all. Persist failure from accepted writes still refuses; view-only failure sets a notice. Single-request merge-all review (2026-10-16): Overview Hold to merge all submits one idempotent merge-all request fenced by the queue revision, saved before submission and recovered by receipt lookup or same-operation replay; no effect sites, dependencies or owners changed. 2026-10-21 independent workflow review: Explicit Finish confirmation prepares the shown queue, persists, rechecks route owner and selected author, then submits guarded completion. Verified completion returns its receipt; uncertain existing merge recovery cannot be replaced. Independent review 2026-10-21 (repeated review cycles): Finish now uses the existing command owner and pre-submission persistence with a stable operation UUID. GET recovery never submits; explicit retry keeps the same identity and actor fence. Definitive failures may dismiss, uncertain operations cannot. Independent post-native review 2026-10-21: Explicit Finish obtains current candidate context after immutable preparation replay; candidate/protocol/actor and owner checks precede saving the exact fresh-scope operation. Same-queue Undo can advance binding without making the historical preparation authoritative. Recovery retains its original operation and never prepares a replacement.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -3003,7 +3004,7 @@
       ]
     },
     "src/protocol-overview/useOverviewResource.js": {
-      "fingerprint": "449f83ced52fe972ad87f21034fbceb96656a3e1951155d0a5ff2ab434871cfb",
+      "fingerprint": "dd86cfb1e080f926c77b66f51e43c6ca75c8b0ff27163cc8a829b00b91212180",
       "sites": [
         {
           "owner": "useOverviewCache",
@@ -3033,11 +3034,11 @@
         {
           "owner": "useOverviewResource",
           "kind": "useEffect",
-          "fingerprint": "08741d45644bc34682ba53dff3cfaae21d8038f49ef6173f12ff649785df5976"
+          "fingerprint": "8c86ae9322eb3b11204ba993243690c17a3e4ebf42bc9dc09b42e2935ec8b1bb"
         }
       ],
       "lifetime": "project-cache-and-active-demand",
-      "reason": "Hidden demand releases reads. Deferred reload remains stale; only committed visibility authorizes old reload closures. F2 typed-change-events review (2026-10-18): typed membership/curation invalidates only that protocol's summaries and /overview; structure keeps the full invalidate+prefetch. F2 curation receipt channel review (2026-10-18): applied curation receipts invalidate that protocol's summaries only. Prepared-view review (2026-10-20): Explicit preparation is scoped by descriptor/revision/visibility and an AbortController; stale handlers/completions cannot renew another destination. Pending canonical durations poll only while visible, every two seconds with at most fifteen attempts; nested pending statuses are included. No scientific membership or write authority is retained.",
+      "reason": "Hidden demand releases reads. Deferred reload remains stale; only committed visibility authorizes old reload closures. F2 typed-change-events review (2026-10-18): typed membership/curation invalidates only that protocol's summaries and /overview; structure keeps the full invalidate+prefetch. F2 curation receipt channel review (2026-10-18): applied curation receipts invalidate that protocol's summaries only. Prepared-view review (2026-10-20): Explicit preparation is scoped by descriptor/revision/visibility and an AbortController; stale handlers/completions cannot renew another destination. Pending canonical durations poll only while visible, every two seconds with at most fifteen attempts; nested pending statuses are included. No scientific membership or write authority is retained. Independent post-native review 2026-10-21: The existing active-demand read effect now responds to populated invalidation with unchanged descriptor. Hidden-view guard remains; cache owner/generation checks retire stale reads and unchanged current operations coalesce. The invalidation transition cannot treat retained display data as fresh authority. Final root-demand review 2026-10-21: renewRetained permits populated root invalidation renewal only on Overview while initial missing root demand remains live for shell startup; protocol active-demand behavior and retained-visibility guards remain unchanged. Native startup restoration and merge/Undo/Finish renewal passed; no command is replayed.",
       "tests": [
         "src/epoch-browser/curationReceipts.test.js",
         "src/preparedRead.test.js",
@@ -3046,7 +3047,8 @@
         "src/protocolBrowseEntry.test.js",
         "src/traces/retainedReadLifecycle.test.js",
         "src/tree-browser/preparedTreeMount.test.js",
-        "src/workspaceChangesLedger.test.js"
+        "src/workspaceChangesLedger.test.js",
+        "src/overviewSwitching.test.js"
       ]
     },
     "src/protocol-tree-layout/treeLayoutPersistence.js": {

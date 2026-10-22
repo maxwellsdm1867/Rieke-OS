@@ -231,7 +231,7 @@ export default function App(){
   const savedPresentation=useProjectPresentation(registry.data?.current_project_uuid,presentationRecord?.path,{enabled:projectReady&&!dataReady});
   const overviewScope=JSON.stringify([registry.data?.current_project_uuid,registry.data?.projects?.find(project=>project.current)?.path]);
   const overviewCache=useOverviewCache(overviewScope,summaryClock,structureRevision,lastChange);
-  const overview=useOverviewResource(dataReady?'/overview?cells_limit=200':null,overviewRevision,{cache:overviewCache,scope:overviewScope}),suggestionsResource=useResource(dataReady?'/protocol-suggestions':null,structureRevision);
+  const overview=useOverviewResource(dataReady?'/overview?cells_limit=200':null,overviewRevision,{cache:overviewCache,scope:overviewScope,renewRetained:page==='overview'}),suggestionsResource=useResource(dataReady?'/protocol-suggestions':null,structureRevision);
   // Pending counts follow structure and protocol membership only.
   const workbenchSummary=useWorkbenchPreparation(useResource(dataReady?'/workbench/summary':null,structureRevision+membershipRevision),registry.data?.current_project_uuid||overview.data?.project?.project_uuid,dataReady?'/workbench/summary':null,structureRevision+membershipRevision);
   const importReviewStatus=useImportReviewStatus(workbenchSummary,registry.data?.current_project_uuid||overview.data?.project?.project_uuid);

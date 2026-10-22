@@ -84,13 +84,14 @@ export function compactWorkbenchSelections(checkpoint,{selectionBytes=512*1024}=
 
 // A saved draft still owns an operation to recover or an offer to complete:
 // an unconfirmed/pending acceptance, an export in progress, or an accepted
-// receipt whose additions were not yet exported.
+// receipt whose additions remain accepted and were not yet exported. A verified
+// Undo ends that offer; independent pending operations still protect the draft.
 export function workbenchDraftNeedsRecovery(draft){
   if(!draft||typeof draft!=='object')return false;
   const exportState=draft.exportState;
   return !!(draft.finishOperation||draft.unconfirmed||draft.acceptPending||exportState?.pending
     ||exportState&&!exportState.exported&&(exportState.prepared||exportState.acceptOperation)
-    ||draft.receipt&&!exportState?.exported);
+    ||draft.receipt&&draft.receipt.undone!==true&&!exportState?.exported);
 }
 // Each cumulative preparation adds a scope and draft for its candidate. A
 // replacement candidate never inherits their selection, so only the current
