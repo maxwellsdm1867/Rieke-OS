@@ -64,14 +64,14 @@ import/build checks. Benchmark links in the ledger are historical/indirect;
 relocation establishes neither new performance nor native qualification. Browser
 layout/paint, native data reads and full backend qualification remain separate.
 
-Incoming Arrange tree reads field value/missing counts from the frozen candidate
-`tree-fields` endpoint with revision, filters and split recipe. The shared resource
-owner fences scope changes, cancellation and late responses. These counts are
-field values, not whole-level branch counts or selection membership. Ordinary
-requested-summary jobs remain disabled for frozen candidates. See
-`treeBuilderOverviewLifecycle.test.js`; no full recursive tree read is needed.
+Arrange tree and Combine fields use registry identities and labels only. Opening,
+searching or selecting fields does not request field counts, examples or summary
+jobs. Legacy services may use the registry's existing route-absence fallback;
+statistics in a supplied catalog are stripped before field presentation.
 
-The frozen catalog is now requested only while Add a split or Combine fields is
-open. Collapsed cards use registry labels; fallback definitions strip global
-statistics. Closing both choosers cancels the scoped catalog read. Existing scope
-fences remain in force across filters and candidate replacement.
+Combine fields uses TreeBuilder's existing split popup, including search, category
+filters, keyboard selection and pagination. Draft components exclude nested joints
+and duplicates; the tree changes only on Add combined level. The History shortcut
+fills this draft for review. Fields display their recorded path, without summary
+or unavailable-summary labels. See treeBuilderOverviewLifecycle.test.js and
+semanticPresentationControls.test.js.

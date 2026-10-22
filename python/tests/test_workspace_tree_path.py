@@ -110,8 +110,9 @@ class TreePathTests(unittest.TestCase):
             TreePath([],{},['a'*64])
         with self.assertRaisesRegex(ValueError,'unknown recorded field'):
             TreePath(['unknown'],{})
-        with self.assertRaisesRegex(ValueError,'unknown recorded field'):
-            TreePath(['joint'],{'joint':{'components':['unknown']}})
+        for parts in (['unknown'], ('unknown',), 'cell', {'cell': True}):
+            with self.subTest(parts=parts), self.assertRaisesRegex(ValueError,'unknown recorded field'):
+                TreePath(['joint'],{'joint':{'components':parts}, 'cell':{}})
         self.assertFalse(TreePath(['cell'],{'cell':{}},['a'*64]).matches({'cell':'real'}))
 
 

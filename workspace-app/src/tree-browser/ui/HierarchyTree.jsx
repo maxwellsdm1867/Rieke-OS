@@ -47,17 +47,25 @@ export default function HierarchyTree(props){
       controller.current?.abort();if(scrollFrame.current)cancelAnimationFrame(scrollFrame.current);scrollFrame.current=null;
     };
   },[scopeKey]);
-  const load=useCallback(async({path=[],offset=0,reset=false,anchor=null,restore=null,keepPresentation=false,prepare=false}={})=>{
-    if(props.readPaused||committedScope.current!==scopeKey)return;
+  const load=useCallback(async({path=[],offset=0,reset=false,anchor=null,restore=null,keepPresentation=false,prepare=false,prepareIfNeeded=false}={})=>{
+    if(props.active===false||props.readPaused||committedScope.current!==scopeKey)return;
     controller.current?.abort();const request=new AbortController();controller.current=request;const token=++serial.current;
     const startedScrollIntent=scrollIntent.current;
     restoreTop.current=reset&&!restore?0:null;restoreLeft.current=reset&&!restore?0:null;
     commit(old=>({...(reset&&!keepPresentation?blank():cancelUnloadedExpansion(old,path)),loading:true,error:null,preparation:null,preparing:prepare,loadingPath:path}));callbacks.current.onStatus?.({loading:true,error:null});
     const scope=JSON.parse(scopeKey),root=current.current.pages.find(page=>!page.path.length);
     let pinned=scope.expectedRevision||restore?.revision||(!reset?root?.revision:null);
+    let mayPrepare=prepareIfNeeded&&!prepare&&!scope.readContext&&!scope.expectedRevision;
     async function fetchPage(pagePath,pageOffset=0,focus=null){
-      const result=await api(scope.readContext?`${scope.readContext.root}/tree/page`:'/tree-pages',{method:'POST',signal:request.signal,
+      const read=()=>api(scope.readContext?`${scope.readContext.root}/tree/page`:'/tree-pages',{method:'POST',signal:request.signal,
         body:treePageRequest(scope,{path:pagePath,offset:pageOffset,anchor:focus,reset:!pinned,currentRevision:pinned})});
+      let result;
+      try{result=await read();}catch(error){
+        if(!mayPrepare||!error.preparation||request.signal.aborted||token!==serial.current)throw error;
+        mayPrepare=false;commit(old=>({...old,preparing:true}));
+        await prepareTree(scope,{request:api,signal:request.signal,isCurrent:()=>token===serial.current});
+        result=await read();
+      }
       if(pinned&&result.revision!==pinned)throw new Error('Tree revision changed. Refresh the preview before continuing.');
       pinned=result.revision;return result;
     }
@@ -88,8 +96,17 @@ export default function HierarchyTree(props){
       const receipt=current.current.pages.find(page=>!page.path.length)||result;
       callbacks.current.onMetadata?.({...receipt,count:receipt.total_epochs});
       return result;
-    }catch(error){if(!request.signal.aborted&&token===serial.current){commit(old=>({...old,loading:false,error:error.message,preparation:error.preparation||null,preparing:false,loadingPath:null}));callbacks.current.onStatus?.({loading:false,error:error.message});}}
-  },[scopeKey,commit]);
+    }catch(error){if(!request.signal.aborted&&token===serial.current){commit(old=>({...old,loading:false,error:error.message,preparation:error.preparation||null,preparing:false,loadingPath:null}));callbacks.current.onStatus?.({loading:false,error:error.message,preparation:error.preparation||null});}}
+  },[scopeKey,commit,props.active]);
+  useEffect(()=>{
+    if(props.active===false||props.readPaused)return;
+    const showTree=event=>{
+      if(event.defaultPrevented||event.repeat||event.altKey||event.shiftKey||!(event.metaKey||event.ctrlKey)||event.key.toLowerCase()!=='t'||document.visibilityState==='hidden'||container.current?.closest('[hidden],[inert]'))return;
+      event.preventDefault();if(current.current.loading)return;
+      if(expectedRevision)callbacks.current.onRefreshPreview?.();else load({reset:true,prepare:!!current.current.preparation,prepareIfNeeded:true});
+    };
+    window.addEventListener('keydown',showTree);return()=>window.removeEventListener('keydown',showTree);
+  },[props.active,props.readPaused,load,expectedRevision]);
   useEffect(()=>{
     if(props.readPaused){commit(old=>({...old,loading:true}));return;}
     const retained=retainedNavigation.current?.presentationScope===presentationScope?retainedNavigation.current.snapshot:null;
@@ -165,7 +182,7 @@ export default function HierarchyTree(props){
     {props.design&&<header className="ht-heading"><strong>{root?`${number(root.total_epochs)} matching epochs`:'Loading hierarchy…'}</strong></header>}
     <div className="ht-splits" aria-label="Tree split sequence">{root?.levels.length?root.levels.map((field,index)=><span key={field.field}>{index>0&&<ChevronRight size={11}/>}<b>{index+1}</b>{readableField(field.label,field.field)}</span>):<span>Flat epoch list</span>}</div>
     {state.preparing&&<p role="status">Preparing view…</p>}
-    {state.error&&<div className="ht-error" role="alert">{state.error}<button disabled={state.loading} onClick={()=>expectedRevision?callbacks.current.onRefreshPreview?.():load({reset:true,prepare:!!state.preparation})}><RefreshCw size={13}/> {state.preparation?'Prepare view':'Refresh tree'}</button></div>}
+    {state.error&&<div className={state.preparation?'ht-preparation':'ht-error'} role={state.preparation?'status':'alert'}>{state.preparation?'Show the tree with these splits.':state.error}<button disabled={state.loading} title="Show tree (⌘T / Ctrl+T)" aria-keyshortcuts="Meta+T Control+T" onClick={()=>expectedRevision?callbacks.current.onRefreshPreview?.():load({reset:true,prepare:!!state.preparation})}><RefreshCw size={13}/> Show tree</button></div>}
     {state.notice&&<div className="ht-notice" role="status">{state.notice}</div>}
     <div className="ht-scroll" ref={scroll} aria-busy={state.loading} onWheel={cancelScrollRestore} onPointerDown={cancelScrollRestore} onTouchStart={cancelScrollRestore} onKeyDown={cancelScrollRestore} onScroll={()=>{if(!scrollFrame.current)scrollFrame.current=requestAnimationFrame(()=>{scrollFrame.current=null;remember();});}}>{root?renderPage(root,true):!state.error&&<p className="ht-loading" role="status">Loading tree…</p>}</div>
     {!props.externalCollapseControl&&<footer className="ht-footer"><button disabled={blocked||!state.expanded.length} onClick={collapseAll}>Collapse all</button></footer>}

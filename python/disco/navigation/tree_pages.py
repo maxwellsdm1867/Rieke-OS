@@ -219,7 +219,7 @@ class TreePath:
             if field not in definitions:
                 raise ValueError('Tree path contains an unknown recorded field')
             parts=definitions[field].get('components')
-            if parts and (not isinstance(parts,list) or any(part not in definitions for part in parts)):
+            if parts and (not isinstance(parts,(list,tuple)) or any(part not in definitions for part in parts)):
                 raise ValueError('Joint grouping contains an unknown recorded field')
             self.components[field]=tuple(parts) if parts else ()
             fields.update(parts or [field])

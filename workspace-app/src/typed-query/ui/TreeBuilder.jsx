@@ -3,14 +3,13 @@ import {useSemanticReset} from '../../useSemanticReset.js';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, CircleMinus, GitBranch, GripVertical, Keyboard, LoaderCircle, Plus, Search, X } from 'lucide-react';
-import { number, useResource } from '../../api.js';
+import { number } from '../../api.js';
 import {useFieldRegistry} from '../../summary-jobs/useFieldRegistry.js';
-import {useRequestedSummaries} from '../../requested-summaries/useRequestedSummaries.js';
-import {fieldsWithSummaries,requestedSummaryFields} from '../../requested-summaries/requestedSummaries.js';
+import {requestedSummaryFields} from '../../requested-summaries/requestedSummaries.js';
 import './TreeBuilder.css';
 import { reorderIds } from '../../ordering.js';
 import { startPointerDrag } from '../../pointerDrag.js';
-import {COMMON_TREE_FIELDS,treeFieldLabel,treeFieldHint,treeFieldExamples,treeFieldMatches,groupingFieldRank} from '../../tree-browser/treeFieldPresentation.js';
+import {COMMON_TREE_FIELDS,treeFieldLabel,treeFieldHint,treeFieldMatches,groupingFieldRank} from '../../tree-browser/treeFieldPresentation.js';
 import {jointComponents,jointDefinition,shortFieldLabel,uncombineLevel} from '../jointGrouping.js';
 import JointGroupingEditor from './JointGroupingEditor.jsx';
 import {useDelayedLoading} from '../../components/NavigationLoading.jsx';
@@ -18,7 +17,6 @@ import {useDelayedLoading} from '../../components/NavigationLoading.jsx';
 const categories = ['Common', 'Parameters', 'Combinations', 'Conditions', 'Suggested', 'All'];
 const categoryLabel = category => category === 'Suggested' ? 'Recommended' : category === 'Parameters' ? 'Protocol settings' : category === 'All' ? 'All metadata' : category;
 const sameOrder = (a,b) => JSON.stringify(a) === JSON.stringify(b);
-const sampleText = treeFieldExamples;
 function Highlight({text, term}) {
   const value = String(text || '');
   const query = term.trim();
@@ -26,36 +24,30 @@ function Highlight({text, term}) {
   return index < 0 ? value : <>{value.slice(0,index)}<mark>{value.slice(index,index+query.length)}</mark>{value.slice(index+query.length)}</>;
 }
 
-export default function TreeBuilder({protocolId, projectId, catalogPath, catalogData, summaryContext=null, summaryEnabled=true, readContext=null, treeSelectionIntent,onTreeSelectionIntentChange,onTreeSelectionFeedback, selectedEpochs=[],setSelectedEpochs,onAnnotationsChanged, actionsDisabled=false, queryString='', revision=0, value, onChange, preview, loading, error}) {
+export default function TreeBuilder({protocolId, projectId, catalogPath, catalogData, summaryContext=null, summaryEnabled=true, readContext=null, treeSelectionIntent,onTreeSelectionIntentChange,onTreeSelectionFeedback, selectedEpochs=[],setSelectedEpochs,onAnnotationsChanged, actionsDisabled=false, queryString='', revision=0, value, onChange, preview, loading, error, preparation}) {
   const [order,setOrder] = useState(value);
   const retainedActive=useRetainedView()?.active!==false;
-  const [open,setOpen] = useState(false),[combineOpen,setCombineOpen]=useState(false);
+  const [open,setOpen] = useState(false);
+  const [pickerTarget,setPickerTarget]=useState(null);
+  const pickerAnchor=useRef(null);
   const catalogQuery=new URLSearchParams(queryString);
   if(readContext){catalogQuery.set('candidate_scope_revision',readContext.candidate_scope_revision);catalogQuery.set('splits',value.join(','));}
   const legacyPath=`${readContext?readContext.root+'/tree-fields':catalogPath || `/protocols/${protocolId}/tree-fields`}${catalogQuery.size?'?'+catalogQuery:''}`;
   const registry=useFieldRegistry(revision,legacyPath);
-  const fullCatalog=!!readContext&&(open||combineOpen);
-  const fetchedCatalog=useResource(!catalogData&&fullCatalog?legacyPath:null,revision);
-  // Registry fallback supplies identities/labels only, never global statistics
-  // presented as facts about this frozen candidate.
-  const registryDefinitions=useMemo(()=>!readContext?registry.data:registry.data?{fields:(registry.data.fields||[]).map(field=>{
-    const {distinct_count,recorded_distinct_count,missing_count,null_count,present_count,examples,choices,summary_available,...definition}=field;
-    return definition;
-  })}:null,[!!readContext,registry.data]);
-  const catalog=catalogData?{data:catalogData,loading:false,error:null,reload:()=>{}}:fullCatalog
-    ?{...fetchedCatalog,data:fetchedCatalog.data||registryDefinitions}:{...registry,data:registryDefinitions};
+  // Field selection needs registry identities, not scoped counts or value summaries.
+  const catalog=catalogData?{data:catalogData,loading:false,error:null,reload:()=>{}}:registry;
   const definitions=catalog.data?.tree_fields||catalog.data?.fields||[];
-  const context=summaryContext||{predicate:{all:[]},...(protocolId?{protocol_uuid:protocolId}:{}),...(queryString?{filters:Object.fromEntries(new URLSearchParams(queryString))}:{})};
-  const requested=requestedSummaryFields({registry:registry.data?.fields||definitions,axes:order,predicate:summaryContext?.filters?.metadata_predicate?{all:[summaryContext.predicate||{all:[]},JSON.parse(summaryContext.filters.metadata_predicate)]}:summaryContext?.predicate});
-  const summaries=useRequestedSummaries({...context,summary_fields:requested.fields,generation:registry.data?.generation},
-    {enabled:summaryEnabled&&(open||combineOpen)&&!!registry.supportsSummaries&&!!registry.data?.generation&&requested.fields.length>0});
+  const requested=requestedSummaryFields({registry:definitions,axes:order});
   const fields = useMemo(()=>{
-    const recorded=fieldsWithSummaries(definitions,summaries).map(field=>({...field,label:treeFieldLabel(field)}));
+    const recorded=definitions.map(field=>{
+      const {distinct_count,recorded_distinct_count,missing_count,null_count,present_count,examples,choices,summary_available,varying,...definition}=field;
+      return {...definition,label:treeFieldLabel(field)};
+    });
     for(const id of order)if(!recorded.some(field=>field.id===id)){
       const combined=jointDefinition(id,recorded);if(combined)recorded.push(combined);
     }
     return recorded;
-  },[definitions,summaries.status,summaries.result,JSON.stringify(order)]);
+  },[definitions,JSON.stringify(order)]);
   const fieldMap = useMemo(()=>new Map(fields.map(field=>[field.id,field])),[fields]);
   const suggestions = catalog.data?.suggestions || [];
   const presets=[{id:'acquisition-groups',label:'Date → Cell → Epoch group → Block',fields:['date','cell','group','block']},...(catalog.data?.presets || [])];
@@ -82,17 +74,17 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
     currentOrder.current=updated;setOrder(updated);onChange(updated);
   }
   const matches = useMemo(()=>{
-    return fields.filter(field=>treeFieldMatches(field,{order,category,suggestions,search}))
+    return fields.filter(field=>(!pickerTarget||!field.components&&!field.id.startsWith('joint/'))&&treeFieldMatches(field,{order:pickerTarget?.selected||order,category,suggestions,search}))
       .sort((a,b)=>category==='Common'?COMMON_TREE_FIELDS.indexOf(a.id)-COMMON_TREE_FIELDS.indexOf(b.id):category==='Suggested'?suggestions.indexOf(a.id)-suggestions.indexOf(b.id):groupingFieldRank(a)-groupingFieldRank(b) || (a.grouping_priority ?? 100)-(b.grouping_priority ?? 100) || a.label.localeCompare(b.label));
-  },[fields,orderKey,search,category,suggestions]);
+  },[fields,orderKey,search,category,suggestions,pickerTarget]);
   const suggestedLayout=catalog.data?.suggested_layout;
   const offerLayout=suggestedLayout&&!sameOrder(order,suggestedLayout.fields);
   const shown=matches.slice(0,visible);
-  useSemanticReset(JSON.stringify([search,category,orderKey]),()=>{setActive(0);setVisible(40);});
+  useSemanticReset(JSON.stringify([search,category,orderKey,pickerTarget?.selected]),()=>{setActive(0);setVisible(40);});
   useEffect(()=>{
     if(!open||!retainedActive)return;
     const reposition=()=>{
-      const box=trigger.current?.getBoundingClientRect();
+      const box=(pickerAnchor.current||trigger.current)?.getBoundingClientRect();
       if(!box)return;
       const width=Math.min(430,window.innerWidth-24);
       const availableBelow=window.innerHeight-box.bottom-14;
@@ -102,15 +94,16 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
       setPosition({left:Math.max(12,Math.min(box.left,window.innerWidth-width-12)),width,
         top:below?box.bottom+5:Math.max(8,box.top-height-5),height});
     };
-    const outside=event=>{if(!trigger.current?.contains(event.target)&&!popup.current?.contains(event.target))setOpen(false);};
+    const outside=event=>{if(!(pickerAnchor.current||trigger.current)?.contains(event.target)&&!popup.current?.contains(event.target))setOpen(false);};
     reposition();window.addEventListener('resize',reposition);window.addEventListener('scroll',reposition,true);
     document.addEventListener('pointerdown',outside);
     return()=>{window.removeEventListener('resize',reposition);window.removeEventListener('scroll',reposition,true);document.removeEventListener('pointerdown',outside);};
-  },[open,retainedActive]);
+  },[open,retainedActive,pickerTarget]);
   useSemanticReset(JSON.stringify([active,open,listId]),()=>{
     if(retainedActive&&open)document.getElementById(`${listId}-${active}`)?.scrollIntoView({block:'nearest'});
   });
   function add(field) {
+    if(pickerTarget){pickerTarget.onSelect(field);setSearch('');setOpen(false);pickerAnchor.current?.focus();return;}
     if(order.length>=8||order.includes(field.id))return;
     changeOrder(previous=>[...previous,field.id]);setSearch('');setOpen(false);trigger.current?.focus();
   }
@@ -176,7 +169,7 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
     return result;
   },[]);
   return <section className="tree-builder" aria-label="Tree builder">
-    <div className="tb-heading"><button className="tb-disclosure" onClick={()=>{setExpanded(!expanded);setOpen(false);setCombineOpen(false);}} aria-expanded={expanded}>
+    <div className="tb-heading"><button className="tb-disclosure" onClick={()=>{setExpanded(!expanded);setOpen(false);}} aria-expanded={expanded}>
       {expanded?<ChevronDown size={14}/>:<ChevronRight size={14}/>}<GitBranch size={15}/><strong>Arrange tree</strong>
     </button><span>{order.length} / 8 levels</span></div>
     <div className="tb-body">{!expanded?<button className="tb-collapsed-summary" onClick={()=>setExpanded(true)}>{heading || 'All epochs · flat view'}</button>:<>
@@ -212,8 +205,8 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
       {layoutError&&<p className="tb-error" role="alert">{layoutError}<button onClick={()=>setLayoutError('')}>Dismiss</button></p>}
       {order.length>1&&<button className="tb-move-controls-toggle" aria-pressed={showMoveControls} onClick={()=>setShowMoveControls(value=>!value)}><Keyboard size={13}/>{showMoveControls?'Hide move controls':'Show move controls'}</button>}
       {!order.length&&<div className="tb-flat"><span className="tb-flat-dot"/> All matching epochs in one list</div>}
-      <JointGroupingEditor fields={fields} order={order} onOpenChange={setCombineOpen} onChange={next=>{changeOrder(next);setOpen(false);setAnnouncement('Combined fields into one split. Every component must match.');}}/>
-      <button ref={trigger} className="tb-add-split" aria-haspopup="dialog" aria-expanded={open} disabled={order.length>=8 || catalog.loading&&!catalog.data} onClick={()=>{setSearch('');setCategory(suggestions.length?'Suggested':'Common');setOpen(value=>!value);}}><Plus size={16}/>{order.length>=8?'Eight-level limit reached':'Add a split'}<ChevronDown size={14}/></button>
+      <button ref={trigger} className="tb-add-split" aria-haspopup="dialog" aria-expanded={open} disabled={order.length>=8 || catalog.loading&&!catalog.data} onClick={()=>{pickerAnchor.current=trigger.current;setPickerTarget(null);setSearch('');setCategory(suggestions.length?'Suggested':'Common');setOpen(value=>!value);}}><Plus size={16}/>{order.length>=8?'Eight-level limit reached':'Add a split'}<ChevronDown size={14}/></button>
+      <JointGroupingEditor fields={fields} order={order} onRequestField={({selected,onSelect,anchor})=>{pickerAnchor.current=anchor;setPickerTarget({selected,onSelect});setSearch('');setCategory('Parameters');setOpen(true);}} onOpenChange={value=>{if(!value&&pickerTarget)setOpen(false);}} onChange={next=>{changeOrder(next);setOpen(false);setAnnouncement('Combined fields into one split. Every component must match.');}}/>
       <button className="tb-acquisition-preset" disabled={['date','cell','group','block'].some(id=>!fieldMap.has(id))} onClick={()=>usePreset({fields:['date','cell','group','block']})}><GitBranch size={14}/><span>Date → Cell → Epoch group → Block</span></button>
       <div className="tb-presets" aria-label="Tree presets">
         <label className="tb-quick-layout"><span>Quick layout</span>
@@ -230,16 +223,16 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
       {catalog.loading&&!catalog.data&&<p className="tb-note"><LoaderCircle size={12} className="spin"/> Reading available fields…</p>}
       <p className="tb-note">Source values only. Missing values remain in the tree.</p>
     </>}</div>
-    <div className={`tb-preview-status ${error?'tb-error-status':''}`} role="status">
-      {showPending?<LoaderCircle size={13} className="spin"/>:error?<X size={13}/>:<Check size={13}/>}
-      <span>{showPending?'Updating tree…':error?'Tree could not be updated. Your data is unchanged.':(preview?.count ?? catalog.data?.total)==null?(preview?.counting?'Counting matching epochs…':'Matching epoch count unavailable'):`${number(preview?.count ?? catalog.data?.total)} matching epochs · tree preview`}</span>
+    <div className={`tb-preview-status ${error&&!preparation?'tb-error-status':''}`} role="status">
+      {showPending?<LoaderCircle size={13} className="spin"/>:preparation?<GitBranch size={13}/>:error?<X size={13}/>:<Check size={13}/>}
+      <span>{showPending?'Updating tree…':preparation?'Show tree · ⌘T to retry.':error?'Tree could not be updated. Your data is unchanged.':(preview?.count ?? catalog.data?.total)==null?(preview?.counting?'Counting matching epochs…':'Matching epoch count unavailable'):`${number(preview?.count ?? catalog.data?.total)} matching epochs · tree preview`}</span>
     </div>
     {requested.unavailable.length>0&&<p className="tb-note">Saved fields unavailable in this registry: {requested.unavailable.join(', ')}. The layout is retained.</p>}
-    {open&&position&&retainedActive&&createPortal(<div ref={popup} className="tb-popup" role="dialog" aria-label="Add a split" style={{left:position.left,top:position.top,width:position.width,maxHeight:position.height}}
-      onKeyDown={event=>{if(event.key==='Escape'){setOpen(false);trigger.current?.focus();}}}>
-      <div className="tb-popup-title"><strong>Split on a recorded field</strong><button aria-label="Close split chooser" onClick={()=>{setOpen(false);trigger.current?.focus();}}><X size={14}/></button></div>
-      <div className="tb-search-wrap tb-popup-search"><Search size={15}/><input ref={input} autoFocus role="combobox" aria-label="Find a split field" aria-expanded={open} aria-controls={listId} aria-autocomplete="list" aria-activedescendant={shown[active]?`${listId}-${active}`:undefined} placeholder="Find a field to split on…" value={search} onChange={event=>{setSearch(event.target.value);setCategory(event.target.value.trim()?'All':suggestions.length?'Suggested':'Common');}} onKeyDown={keys}/></div>
-      <div className="tb-categories">{categories.map(name=><button key={name} className={category===name?'active':''}
+    {open&&position&&retainedActive&&createPortal(<div ref={popup} className="tb-popup" role="dialog" aria-label={pickerTarget?'Add a field to combination':'Add a split'} style={{left:position.left,top:position.top,width:position.width,maxHeight:position.height}}
+      onKeyDown={event=>{if(event.key==='Escape'){setOpen(false);(pickerAnchor.current||trigger.current)?.focus();}}}>
+      <div className="tb-popup-title"><strong>{pickerTarget?'Add a field to combination':'Split on a recorded field'}</strong><button aria-label="Close split chooser" onClick={()=>{setOpen(false);(pickerAnchor.current||trigger.current)?.focus();}}><X size={14}/></button></div>
+      <div className="tb-search-wrap tb-popup-search"><Search size={15}/><input ref={input} autoFocus role="combobox" aria-label="Find a split field" aria-expanded={open} aria-controls={listId} aria-autocomplete="list" aria-activedescendant={shown[active]?`${listId}-${active}`:undefined} placeholder="Find a field to split on…" value={search} onChange={event=>{setSearch(event.target.value);setCategory(event.target.value.trim()?'All':pickerTarget?'Parameters':suggestions.length?'Suggested':'Common');}} onKeyDown={keys}/></div>
+      <div className="tb-categories">{categories.filter(name=>!pickerTarget||name!=='Combinations').map(name=><button key={name} className={category===name?'active':''}
         onMouseDown={event=>event.preventDefault()} onClick={()=>{setCategory(name);input.current?.focus();}}>{categoryLabel(name)}</button>)}</div>
       <div id={listId} role="listbox" aria-label="Available split fields" className="tb-options">
         {groups.map(group=><div role="group" aria-label={categoryLabel(group.category)} key={group.category}>
@@ -247,15 +240,14 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
           {group.entries.map(({field,index})=><button id={`${listId}-${index}`} role="option" aria-selected={active===index} tabIndex={-1}
             className={`tb-option ${active===index?'active':''}`} key={field.id} title={field.path || field.id}
             onMouseDown={event=>event.preventDefault()} onMouseEnter={()=>setActive(index)} onClick={()=>add(field)}>
-            <div><strong><Highlight text={field.label} term={search}/></strong><span>{field.recorded_distinct_count===1?(field.missing_count||field.null_count?'1 non-null value':'Constant'):field.distinct_count==null?'Summary unavailable':`${number(field.distinct_count)} values`}</span></div>
-            {(COMMON_TREE_FIELDS.includes(field.id)||field.grouping_hint)&&<small className="tb-field-hint">{treeFieldHint(field)}</small>}<small><Highlight text={sampleText(field) || (field.summary_available?'No recorded values':'Recorded examples unavailable')} term={search}/></small>
-            {field.missing_count>0&&<small>{number(field.missing_count)} epochs have no recorded value</small>}
+            <div><strong><Highlight text={field.label} term={search}/></strong></div>
+            {(COMMON_TREE_FIELDS.includes(field.id)||field.grouping_hint)&&<small className="tb-field-hint">{treeFieldHint(field)}</small>}<small><Highlight text={field.path || field.id} term={search}/></small>
           </button>)}
         </div>)}
         {!matches.length&&<div className="tb-no-results"><p>{catalog.error?'Fields could not be loaded.':search?'No fields match this search. Try a parameter name or source value.':'All fields in this category are already in the tree.'}</p><button onMouseDown={event=>event.preventDefault()} onClick={()=>{setCategory('All');setSearch('');input.current?.focus();}}>Browse all metadata fields</button></div>}
       </div>
       {matches.length>visible&&<button className="tb-more" onMouseDown={event=>event.preventDefault()} onClick={()=>setVisible(count=>count+40)}>Show 40 more fields</button>}
-      {offerLayout&&!search&&<button className="tb-chooser-layout" onClick={()=>usePreset(suggestedLayout)} title={suggestedLayout.fields.map(id=>fieldMap.get(id)?.label || id).join(' → ')}><GitBranch size={14}/> Use suggested protocol layout</button>}
+      {!pickerTarget&&offerLayout&&!search&&<button className="tb-chooser-layout" onClick={()=>usePreset(suggestedLayout)} title={suggestedLayout.fields.map(id=>fieldMap.get(id)?.label || id).join(' → ')}><GitBranch size={14}/> Use suggested protocol layout</button>}
       <div className="tb-popup-footer">↑ ↓ to browse · Enter to add · Esc to close</div>
     </div>,document.body)}
   </section>;

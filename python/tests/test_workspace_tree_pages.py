@@ -302,6 +302,24 @@ class TreePageTests(unittest.TestCase):
             self.assertEqual(result['total'],10)
             self.assertEqual(self.service.disk_index.calls[-1][1],['parameters/other','parameters/value'])
 
+    def test_registered_history_joint_survives_frozen_disk_definitions(self):
+        from pathlib import Path
+        from disco.metadata.disk_index import DiskMetadataIndex
+        from disco.navigation.tree import HISTORY_JOINT
+        for i, detail in enumerate(self.service.details.values()):
+            detail['parameters'].update(history1=[0, i % 2], history2=[1, 2], target=[3, 4])
+        body = {'splits': HISTORY_JOINT, 'limit': 2}
+        expected = self.pager.page(body)
+        expected_members = self.collect(body)
+        index = DiskMetadataIndex.build(Path(self.temp.name)/'history.sqlite', list(self.service.rows.values()),
+            self.service.details, self.service.sources, 'history-generation', self.service.project['project_uuid'])
+        self.addCleanup(index.close)
+        self.assertIsInstance(index.catalog_definitions()[HISTORY_JOINT]['components'], tuple)
+        self.service.disk_index = index
+        self.pager = TreePages(self.service)
+        self.assertEqual(json.loads(json.dumps(self.pager.page(body))), json.loads(json.dumps(expected)))
+        self.assertEqual(self.collect(body), expected_members)
+
     def test_real_disk_index_pages_match_in_memory_tree_exactly(self):
         from pathlib import Path
         from disco.metadata.disk_index import DiskMetadataIndex

@@ -1,6 +1,6 @@
 // Presentation only: grouping still uses the exact registered field identity.
 export const COMMON_TREE_FIELDS=['date','cell','group','block','protocol','cell type','group label','block time'];
-const labels={date:'Recording date',cell:'Cell',group:'Epoch group',block:'Epoch block',protocol:'Acquisition protocol','cell type':'Cell type','group label':'Epoch group label','block time':'Block start time'};
+const labels={'parameters/history1':'History 1','parameters/history2':'History 2',date:'Recording date',cell:'Cell',group:'Epoch group',block:'Epoch block',protocol:'Acquisition protocol','cell type':'Cell type','group label':'Epoch group label','block time':'Block start time'};
 export const treeFieldLabel=field=>labels[field.id] || field.label || 'Saved metadata field';
 export const treeFieldHint=field=>field.grouping_hint || ({
  date:'Separate recording days',cell:'Keep individual cells separate',
@@ -21,7 +21,8 @@ export function treeFieldMatches(field,{order=[],category='Common',suggestions=[
  const query=search.trim().toLocaleLowerCase();
  if(order.includes(field.id))return false;
  if(category!=='All' && !(category==='Common'?COMMON_TREE_FIELDS.includes(field.id):category==='Suggested'?suggestions.includes(field.id):field.category===category))return false;
- return !query || [treeFieldLabel(field),treeFieldHint(field),field.id,field.path,field.category,treeFieldExamples(field)].join(' ').toLocaleLowerCase().includes(query);
+ const text=[treeFieldLabel(field),treeFieldHint(field),field.id,field.path,field.category,treeFieldExamples(field)].join(' ').toLocaleLowerCase();
+ return !query || text.includes(query) || text.replace(/\s+/g,'').includes(query.replace(/\s+/g,''));
 }
 
 export function groupingFieldRank(field) {

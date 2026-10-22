@@ -64,7 +64,8 @@ class PreparedNavigationTests(unittest.TestCase):
         return value
 
     def test_first_prepared_pages_labels_anchors_and_selection_equal_legacy_without_scope_rebuild(self):
-        for splits in ('', 'date,cell,block', 'parameters/value,block'):
+        for splits in ('', 'date,cell,block', 'parameters/value,block',
+                       'joint/parameters%2Fvalue+parameters%2Fother'):
             body = {'protocol_uuid': self.service.protocol_id, 'splits': splits, 'limit': 2}
             expected = self.canonical(body)
             self.owner.prepare(body)

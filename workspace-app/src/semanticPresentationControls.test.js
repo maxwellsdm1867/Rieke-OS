@@ -103,3 +103,38 @@ test('metadata copy feedback reconnects its expiry timer instead of persisting i
   await h.render(Metadata,props,'hidden');assert.equal(timers.size,0);await h.render(Metadata,props);assert.equal(timers.size,1);await h.act(()=>{for(const callback of [...timers.values()])callback();});assert.equal(h.root.findAllByProps({className:'metadata-copy-feedback '}).length,0);
  }finally{await h.close();globalThis.setTimeout=originalTimeout;globalThis.clearTimeout=originalClear;if(priorNavigator)Object.defineProperty(globalThis,'navigator',priorNavigator);else delete globalThis.navigator;}
 });
+
+
+test('combined fields reuse the split chooser with search, pagination and an explicit apply',async()=>{
+ const h=await harness(),changes=[];
+ const fields=[...Array.from({length:55},(_,i)=>({id:`properties/field${i}`,label:`Other ${i}`,category:'Properties'})),
+  ...['history1','history2','target'].map(id=>({id:`parameters/${id}`,label:id,category:'Parameters',examples:['[0,1]']}))];
+ h.respond=()=>({fields});
+ try{
+  const Tree=await h.component('/src/typed-query/ui/TreeBuilder.jsx');
+  await h.render(Tree,{value:['parameters/history1'],onChange:value=>changes.push(value),catalogData:{fields},summaryEnabled:false});
+  const openField=async()=>{const button=h.root.findAllByType('button').find(node=>['Add a field','Add another field'].includes(text(node)));await h.act(()=>button.props.onClick({currentTarget:{focus(){},contains:()=>false,getBoundingClientRect:()=>({left:20,top:100,bottom:130,width:200})}}));};
+  await openField();
+  assert.equal(h.root.findAllByProps({role:'option'}).length,3,'protocol settings come first, including an existing separate level');
+  const search=()=>h.root.findByProps({'aria-label':'Find a split field'});
+  await h.act(()=>search().props.onChange({target:{value:'history1'}}));
+  assert.equal(h.root.findAllByProps({role:'option'}).length,1);
+  await h.act(()=>search().props.onKeyDown({key:'Enter',preventDefault(){}}));
+  assert.equal(changes.length,0,'choosing a component does not change the tree');
+  assert.match(text(h.root.findByProps({'aria-label':'Fields to combine'})),/History 1/);
+  assert.equal(h.root.findAll(node=>typeof node.children?.[0]==='string'&&/Summary unavailable|Recorded examples unavailable/.test(node.children[0])).length,0);
+  await openField();
+  assert.equal(h.root.findAllByProps({role:'option'}).length,2,'selected components are omitted');
+  await h.act(()=>search().props.onChange({target:{value:'Other'}}));
+  assert.equal(h.root.findAllByProps({role:'option'}).length,40);
+  await h.act(()=>h.root.findByProps({className:'tb-more'}).props.onClick());
+  assert.equal(h.root.findAllByProps({role:'option'}).length,55,'the same show-more control reaches all fields');
+  await h.act(()=>search().props.onChange({target:{value:'history2'}}));
+  await h.act(()=>h.root.findByProps({role:'option'}).props.onClick());
+  await h.act(()=>h.root.findByProps({className:'tb-joint-apply'}).props.onClick());
+  assert.deepEqual(changes,[['joint/parameters%2Fhistory1+parameters%2Fhistory2']]);
+  assert.equal(h.requests.filter(path=>path.includes('tree-pages')).length,0,'field choice sends no tree preparation');
+  await h.act(()=>h.root.findByProps({className:'tb-add-split'}).props.onClick());
+  assert.equal(h.root.findByProps({role:'dialog'}).props['aria-label'],'Add a split');
+ }finally{await h.close();}
+});

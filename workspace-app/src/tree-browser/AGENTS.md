@@ -155,3 +155,13 @@ from `actionsDisabled`, which may depend on completing those reads. Resume uses
 fresh scoped receipts; a paused late completion cannot publish or start another
 request. `hierarchyRetention.test.js` and `pagedTreeLifecycle.test.js` cover this
 contract, including callers without a selection-authority prop.
+
+User-driven Arrange tree edits may prepare their new layout automatically after
+an initial read requests preparation. Inspector supplies one protocol/filter/split
+intent; only a current live read may consume it. Cached successful reads retire
+that intent. The operation is bounded to read, prepare, then one read; a failed
+preparation stays visible for explicit retry. No initial mount or ordinary 202
+starts automatic preparation. Frozen/expected-revision reads retain their owners.
+Show tree and Command/Ctrl-T use the existing retry path, restricted to the active,
+visible, unpaused tree. PreparedTreeMount tests cover explicit retry, one-shot
+edit preparation, stale responses, hidden/paused shortcuts and activation.

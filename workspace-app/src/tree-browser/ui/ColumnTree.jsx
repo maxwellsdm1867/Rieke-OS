@@ -84,11 +84,11 @@ export default function ColumnTree(props){
     element.addEventListener('wheel',wheel,{passive:false});
     return()=>element.removeEventListener('wheel',wheel);
   },[]);
-  const load=useCallback(async({path=[],offset=0,reset=false,revisionOverride=null,columnPositions=[],scrollTop=0,scrollLeft=null,anchor=null,freshContinuation=false,restorePresentation=null,prepare=false}={})=>{
+  const load=useCallback(async({path=[],offset=0,reset=false,revisionOverride=null,columnPositions=[],scrollTop=0,scrollLeft=null,anchor=null,freshContinuation=false,restorePresentation=null,prepare=false,prepareIfNeeded=false}={})=>{
     const readOwner=ownerRef.current;
     if(!active||props.readPaused||!visible.current||liveNavigation.current!==navigationIdentity||readOwner&&!readOwner.active())return;
     const observer=callbacks.current; // Completion belongs to the initiating scope.
-    retryIntent.current={scopeKey,options:{path:[...path],offset,anchor,columnPositions:columnPositions.map(position=>({...position})),scrollTop,scrollLeft},renew:{reset,revisionOverride,freshContinuation,restorePresentation}};
+    retryIntent.current={scopeKey,options:{path:[...path],offset,anchor,columnPositions:columnPositions.map(position=>({...position})),scrollTop,scrollLeft},renew:{reset,revisionOverride,freshContinuation,restorePresentation,prepareIfNeeded:prepareIfNeeded||prepare}};
     controller.current?.abort();const request=new AbortController();controller.current=request;const token=++serial.current;pending.current=true;navigationIntent.current={token,path:[...path],offset};
     const startedScrollIntent=scrollIntent.current;
     const prior=current.current,priorPositions=prior.map(page=>({offset:page.offset,scrollTop:panes.current.get(page.depth)?.scrollTop||0}));
@@ -99,12 +99,22 @@ export default function ColumnTree(props){
     const scope=JSON.parse(scopeKey);
     try{
       if(prepare)await prepareTree(scope,{request:api,signal:request.signal,isCurrent:()=>token===serial.current});
-      const columns=await loadColumnTreePages({scope,path,offset,anchor,revisionOverride:revisionOverride||(!reset?prior.at(-1)?.revision:null),columnPositions,freshContinuation,retainedPages:reset?[]:prior,readOwner,load:api,signal:request.signal,isCurrent:()=>token===serial.current});
+      const read=()=>loadColumnTreePages({scope,path,offset,anchor,revisionOverride:revisionOverride||(!reset?prior.at(-1)?.revision:null),columnPositions,freshContinuation,retainedPages:reset?[]:prior,readOwner,load:api,signal:request.signal,isCurrent:()=>token===serial.current});
+      let columns;
+      try{columns=await read();}
+      catch(error){
+        if(!error.preparation||prepare||request.signal.aborted||token!==serial.current||readOwner&&!readOwner.active()||scope.readContext||scope.expectedRevision||!(prepareIfNeeded||observer.takeLayoutPreparation?.(scope)))throw error;
+        retryIntent.current.renew.prepareIfNeeded=true;
+        setState(old=>({...old,preparing:true}));
+        await prepareTree(scope,{request:api,signal:request.signal,isCurrent:()=>token===serial.current});
+        columns=await read();
+      }
       const page=columns.at(-1);
       if(request.signal.aborted||token!==serial.current)return;
       const preserve=restorePresentation?.scope===presentationScope&&restorePresentation.selected===latestSelected.current&&restorePresentation.columns.length===columns.length&&columns.every((column,depth)=>{const old=restorePresentation.columns[depth];return (frozenPresentation||old.revision===column.revision)&&old.offset===column.offset&&JSON.stringify(old.path)===JSON.stringify(column.path);});
       const returnPositions=preserve?(scrollIntent.current!==startedScrollIntent?restorePresentation.columns.map((_,depth)=>({scrollTop:panes.current.get(depth)?.scrollTop||0})):restorePresentation.columns):null;
       const returnLeft=preserve?(scrollIntent.current!==startedScrollIntent?strip.current?.scrollLeft:restorePresentation.scrollLeft):null;
+      observer.takeLayoutPreparation?.(scope);
       current.current=columns;restored.current=true;
       scrollRestore.current=preserve?{vertical:returnPositions.map(position=>position.scrollTop),horizontal:returnLeft}:{vertical:columns.map((column,depth)=>depth===page.path.length?scrollTop:(columnPositions[depth]?.scrollTop??priorPositions[depth]?.scrollTop??0)),horizontal:scrollLeft};
       pending.current=false;setState({columns,loading:false,error:null,loadedScope:scopeKey,ownerIdentity,activation:props.presentationActivation,preservedSelection:preserve?latestSelected.current:undefined});observer.onStatus?.({loading:false,error:null});observer.onMetadata?.({...page,count:page.total_epochs});
@@ -126,8 +136,16 @@ export default function ColumnTree(props){
     const intent=retryIntent.current;
     if(intent?.scopeKey!==scopeKey)return;
     if(expectedRevision){callbacks.current.onRefreshPreview?.();return;}
-    load({...intent.options,prepare,reset:true,revisionOverride:null,freshContinuation:true});
+    load({...intent.options,prepare,prepareIfNeeded:true,reset:true,revisionOverride:null,freshContinuation:true});
   }
+  useEffect(()=>{
+    if(!active||props.readPaused)return;
+    const showTree=event=>{
+      if(event.defaultPrevented||event.repeat||event.altKey||event.shiftKey||!(event.metaKey||event.ctrlKey)||event.key.toLowerCase()!=='t'||document.visibilityState==='hidden'||strip.current?.closest('[hidden],[inert]'))return;
+      event.preventDefault();if(!pending.current)retry(!!state.preparation);
+    };
+    window.addEventListener('keydown',showTree);return()=>window.removeEventListener('keydown',showTree);
+  },[active,props.readPaused,load,state.preparation]);
   useLayoutEffect(()=>{liveNavigation.current=navigationIdentity;navigationIntent.current=null;visible.current=active;controller.current?.abort();serial.current++;return()=>{liveNavigation.current=null;navigationIntent.current=null;retryIntent.current=null;visible.current=false;permitted.current=false;controller.current?.abort();serial.current++;};},[navigationIdentity]);
   useEffect(()=>{
     if(!active||props.readPaused){pending.current=true;setState(old=>({...old,loading:true}));return;}
@@ -209,10 +227,10 @@ export default function ColumnTree(props){
   return <section className={`tree-preview column-tree${props.design?' is-edit-tree':''}`} aria-label="Tree column overview" aria-busy={state.loading||active&&!state.error&&ownerBlocked}>
     {active&&!ownerBlocked&&groupTags.dialog}{active&&groupSelection.feedback}
     {active&&!props.refreshingLabelOwned&&(state.loading||!state.error&&ownerBlocked)&&state.columns.length>0&&<p className="tree-transient-status" role="status">Refreshing — previous view. Actions are unavailable until validation completes.</p>}
-    {props.design&&(readContext?<IncomingSelectionSummary projectId={props.projectId} protocolId={protocolId} readContext={readContext} selected={props.selectedEpochs} paused={props.selectionSummaryPaused}/>:<header className="tp-total"><strong>{root?`Current view · ${number(root.total_epochs)} epochs`:'Loading tree…'}</strong><small>{last?.split_order.length??splits.split(',').filter(Boolean).length} split levels</small></header>)}
+    {props.design&&(readContext?<IncomingSelectionSummary projectId={props.projectId} protocolId={protocolId} readContext={readContext} selected={props.selectedEpochs} paused={props.selectionSummaryPaused}/>:<header className="tp-total"><strong>{root?`Current view · ${number(root.total_epochs)} epochs`:state.preparation?'Tree view':'Loading tree…'}</strong><small>{last?.split_order.length??splits.split(',').filter(Boolean).length} split levels</small></header>)}
     {props.design&&<nav className="tp-path" aria-label="Tree ancestry"><button disabled={!canNavigate()} onClick={()=>{if(canNavigate())load({path:[]});}}><Home size={14}/> All matching epochs</button>{ancestors.map((node,index)=><span key={node.key}><ChevronRight size={12}/><button disabled={!canNavigate()} onClick={()=>{const target=path.slice(0,index+1);if(canNavigatePath(target))load({path:target});}} title={branchTooltip(node)}>{branchLabel(node)}</button></span>)}</nav>}
     {state.preparing&&<p role="status">Preparing view…</p>}
-    {state.error&&<div className="pt-error" role="alert">{state.error}<button disabled={state.loading} onClick={()=>retry(!!state.preparation)}>{state.preparation?'Prepare view':'Reload tree overview'}</button></div>}
+    {state.error&&<div className={state.preparation?'pt-preparation':'pt-error'} role={state.preparation?'status':'alert'}>{state.preparation?'Show the tree with these splits.':state.error}<button disabled={state.loading} title="Show tree (⌘T / Ctrl+T)" aria-keyshortcuts="Meta+T Control+T" onClick={()=>retry(!!state.preparation)}>Show tree</button></div>}
     <div className="tp-columns" ref={strip} onScroll={()=>{scrollIntent.current++;remember();}} aria-busy={state.loading||active&&!state.error&&ownerBlocked}>
       {columns.map((page,depth)=>{
         const terminal=page.kind==='epochs',entries=terminal?page.epochs.map(item=>props.inclusionForEpoch?props.inclusionForEpoch(item):item):page.branches,field=page.levels?.[depth],combined=entries.some(item=>item.components?.length),blocked=state.loading||!!state.error||ownerBlocked;

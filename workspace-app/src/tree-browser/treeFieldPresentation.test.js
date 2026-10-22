@@ -35,3 +35,9 @@ test('varying scientific settings rank before alternatives, constants and acquis
  {id:'history1Mean',grouping_role:'alternative',varying:true},{id:'history1',grouping_role:'primary',varying:true}];
  assert.deepEqual(fields.sort((a,b)=>groupingFieldRank(a)-groupingFieldRank(b)).map(f=>f.id),['history1','history1Mean','history2','seed']);
 });
+
+test('history field search accepts either human spacing or the recorded parameter spelling',()=>{
+ const field={id:'parameters/history1',label:'History1',category:'Parameters'};
+ assert.equal(treeFieldLabel(field),'History 1');
+ for(const search of ['history1','history 1','History 1'])assert.equal(treeFieldMatches(field,{category:'All',search}),true);
+});

@@ -162,7 +162,7 @@ test('Edit Tree immediately follows sibling intent at every depth without exposi
   assert.equal(branch('0-1').props['aria-current'],'step');assert.equal(branch('1-0'),undefined);assert.equal(h.root.findAll(node=>node.props['data-epoch-uuid']).length,0);
   await h.act(()=>held[3].fail());await h.settle(15);
   assert.equal(branch('0-1').props['aria-current'],'step','failed destination stays identified');assert.equal(branch('1-0'),undefined,'failure must not restore unrelated descendants');
-  const retry=h.root.findAllByType('button').find(node=>node.children.includes('Reload tree overview'));
+  const retry=h.root.findAllByType('button').find(node=>node.children.includes('Show tree'));
   await h.act(()=>retry.props.onClick());await h.waitFor(()=>held.length===5);assert.deepEqual(held[4].body.path,[]);assert.equal(held[4].body.revision,undefined);
   await h.act(()=>held[4].resolve());await h.waitFor(()=>held.length===6);assert.deepEqual(held[5].body.path,['0-1']);assert.equal(held[5].body.revision,fence.revision);
   await h.act(()=>held[5].resolve());await h.settle(15);assert.ok(branch('1-0'));assert.equal(branch('0-1').props['aria-current'],'step');

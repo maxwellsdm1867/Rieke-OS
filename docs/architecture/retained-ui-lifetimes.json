@@ -1128,7 +1128,7 @@
       ]
     },
     "src/epoch-browser/ui/Inspector.jsx": {
-      "fingerprint": "0c06cfdca19bea880c503b7210b9e23f2d99d60d4560f84a774f8c571f8e9b52",
+      "fingerprint": "683ecb1410e35111b2b6ef1cedfc73e0f096cc2edf52a009362ad89cf949e444",
       "sites": [
         {
           "owner": "InspectorContent",
@@ -1272,7 +1272,7 @@
         }
       ],
       "lifetime": "focused-display-and-fresh-curation",
-      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal. Independently reviewed initial selected-manifest acquisition withholds only the parent page offer; same-selected renewal keeps its own inert trace and strict capability validation is unchanged. Frozen sidebar presentation keys include owner, cohort, focus, cell selection and structure revision, excluding Live metadata and annotation-dependent or unproven selected scopes. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Tag decoupling review (2026-10-17): v4 contract enables kept receipt authority; the all-cell key follows kept authority; neighbour prefetch uses wholeTracePrefetchPath. Effect sites unchanged. Tag channel review (2026-10-17): useAnnotationReceipts takes revision, v4 contract and filters only. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): group receipts and confirmed receipts within the selection limit are reported on the tag channel. Effect sites unchanged. Edit Tree tagging review (2026-10-17): any confirmed receipt within the selection limit is forwarded on the tag channel (the store holds it; navigation identity no longer gates it). Effect sites unchanged. Cell-row review (2026-10-17): list props add focusedCell and onTargetCell, which only set the cell tag target (no read, no focus change). Workbench tag-scope review (2026-10-17): page authority is stable for the advertised workbench-candidate-scope-v2 token as for protocol-state-v4; the frozen tag summary overlays tag-store receipts on the retained page (memo only). Effect sites unchanged. F1 review (2026-10-18): trace revision and neighbor/next-stream warming follow structureRevision, not the display clock; effect census unchanged. F2 typed-change-events review (2026-10-18): a resolved off-page anchor page is offered once to the identical offset read (no second page GET); effect census unchanged in kind. F2 curation receipt channel review (2026-10-18): curation writes send the chained token and apply PR #91 receipts in place (rows, focused epoch) unless filters depend on curation/tags; a page outside the chain retires it; new effect observes page tokens. 3 tree-presentation-identity review (2026-10-18): page/tree read keys use the owner presentation identity; activation (focus/visibility) no longer re-reads pages, leases are still checked live. Reviewed 0.1.21 cell paging: bounded first/next windows, exact caller scope and receipt checks; request cleanup on hide/unmount, A/B/A and duplicate-demand fences; partial summaries are explicitly labeled. Final review: retain paging scope during anchor handoff, validate overview receipt identity and observe viewport entry without rearming on each loaded page. Integration wave 7: composed reviewed PR changes; ownership retained and scoped checks recorded. Independent epoch-refresh source review (2026-10-21): Recovery nonce renews central/cell read authority together, preserves inert navigation/UUID intent, and excludes ordinary missing-cell demand from recovery. Failed anchor reads may renew; busy writes/readPaused refuse. Explicit frozen refresh delegates optional boolean owner callback; refusal has no fallback. Known owner/update scope bounds automatic attempts. 2026-10-21 independent workflow review: The frozen refresh callback respects its command owner; traceRequested follows focused UUID or pending navigation, so clearing a merged-out anchor leaves an idle shell rather than permanent loading.",
+      "reason": "Display requires current owner/navigation lifetime, exact prepared capability and row source. Central freshness still gates curation; selected pages cannot borrow parent authority. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed explicit owner readPaused propagation to both tree presentations; no stale-authority tree read is initiated during frozen renewal. Independently reviewed initial selected-manifest acquisition withholds only the parent page offer; same-selected renewal keeps its own inert trace and strict capability validation is unchanged. Frozen sidebar presentation keys include owner, cohort, focus, cell selection and structure revision, excluding Live metadata and annotation-dependent or unproven selected scopes. Independent source review: forward the genuine structural metadataPresentationRevision through both incoming routes to the Inspector sidebar identity only. Annotation/draft revisions still refresh catalog/page reads and scientific authority; no effects, subscriptions or command fences changed. Actual owner-chain held-response tests cover renewal and structural, recipe, binding, actor and focus retirement. Tag decoupling review (2026-10-17): v4 contract enables kept receipt authority; the all-cell key follows kept authority; neighbour prefetch uses wholeTracePrefetchPath. Effect sites unchanged. Tag channel review (2026-10-17): useAnnotationReceipts takes revision, v4 contract and filters only. Effect sites unchanged. Multi-selection/branch tag review (2026-10-17): group receipts and confirmed receipts within the selection limit are reported on the tag channel. Effect sites unchanged. Edit Tree tagging review (2026-10-17): any confirmed receipt within the selection limit is forwarded on the tag channel (the store holds it; navigation identity no longer gates it). Effect sites unchanged. Cell-row review (2026-10-17): list props add focusedCell and onTargetCell, which only set the cell tag target (no read, no focus change). Workbench tag-scope review (2026-10-17): page authority is stable for the advertised workbench-candidate-scope-v2 token as for protocol-state-v4; the frozen tag summary overlays tag-store receipts on the retained page (memo only). Effect sites unchanged. F1 review (2026-10-18): trace revision and neighbor/next-stream warming follow structureRevision, not the display clock; effect census unchanged. F2 typed-change-events review (2026-10-18): a resolved off-page anchor page is offered once to the identical offset read (no second page GET); effect census unchanged in kind. F2 curation receipt channel review (2026-10-18): curation writes send the chained token and apply PR #91 receipts in place (rows, focused epoch) unless filters depend on curation/tags; a page outside the chain retires it; new effect observes page tokens. 3 tree-presentation-identity review (2026-10-18): page/tree read keys use the owner presentation identity; activation (focus/visibility) no longer re-reads pages, leases are still checked live. Reviewed 0.1.21 cell paging: bounded first/next windows, exact caller scope and receipt checks; request cleanup on hide/unmount, A/B/A and duplicate-demand fences; partial summaries are explicitly labeled. Final review: retain paging scope during anchor handoff, validate overview receipt identity and observe viewport entry without rearming on each loaded page. Integration wave 7: composed reviewed PR changes; ownership retained and scoped checks recorded. Independent epoch-refresh source review (2026-10-21): Recovery nonce renews central/cell read authority together, preserves inert navigation/UUID intent, and excludes ordinary missing-cell demand from recovery. Failed anchor reads may renew; busy writes/readPaused refuse. Explicit frozen refresh delegates optional boolean owner callback; refusal has no fallback. Known owner/update scope bounds automatic attempts. 2026-10-21 independent workflow review: The frozen refresh callback respects its command owner; traceRequested follows focused UUID or pending navigation, so clearing a merged-out anchor leaves an idle shell rather than permanent loading. Tree editing review (2026-10-21): A user layout edit records one exact protocol/filter/split preparation intent; current reads consume it without changing membership authority.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/candidateContinuity.test.js",
@@ -1297,7 +1297,8 @@
         "src/workbenchSessionLifecycle.test.js",
         "src/workbenchTagScope.test.js",
         "src/workspaceChangesLedger.test.js",
-        "src/traces/preparedEmptyShell.test.js"
+        "src/traces/preparedEmptyShell.test.js",
+        "src/tree-browser/preparedTreeMount.test.js"
       ]
     },
     "src/epoch-browser/ui/InspectorActions.jsx": {
@@ -3735,17 +3736,18 @@
       ]
     },
     "src/tree-browser/treeFieldPresentation.js": {
-      "fingerprint": "1e9bf1bb93593b8f576d2880b37dc156896f08e64899dd8f7453576b55cddb40",
+      "fingerprint": "a7a76d6833c12dc7068a137ac05724ed955b6c87a786a24ed928b2922efabfb7",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Tree editing review (2026-10-21): Pure labels and whitespace-insensitive field search preserve exact registered IDs and grouping keys.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/tree-browser/treeFieldPresentation.test.js"
       ]
     },
     "src/tree-browser/ui/ColumnTree.jsx": {
-      "fingerprint": "55093442497f1ad29ff2732e1e82905874342b327c558474b75b2f9d54ce3270",
+      "fingerprint": "2349530b8d04a23c798cb144016859f32e8eb1d920a58ce7520b8f067afb35b4",
       "sites": [
         {
           "owner": "ColumnTree",
@@ -3756,6 +3758,11 @@
           "owner": "ColumnTree",
           "kind": "useEffect",
           "fingerprint": "c5065f0c646fbf5e88e61aec2d6c64db390c5331cb34fc4fcaa0583278243213"
+        },
+        {
+          "owner": "ColumnTree",
+          "kind": "useEffect",
+          "fingerprint": "c94cc9044b2fdadb12385fc19fbcc1da0b141cd9eb7c5e90cdb5d0dc72219965"
         },
         {
           "owner": "ColumnTree",
@@ -3794,7 +3801,7 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads. Explicit owner read pause blocks gestures and retires pending root or target reads while retaining inert presentation; fresh resume revalidates all authority. Independently reviewed trailing preview retention requires the same committed frozen presentation scope, selected UUID, pane key and terminal-page membership; the existing flex section remains inert through refresh and retry. Changed actor/cohort/selected view/focus and unrelated branch intent cannot borrow it; frozen freshness also checks the loaded scope before passive renewal. Independently reviewed frozen initial navigation treats saved revisions as history even when presentation scopes differ: fresh anchor or root establishes continuation authority, while explicit expectedRevision and live-navigation behavior remain unchanged. Multi-selection/branch tag review (2026-10-17): main (counts-only) trees no longer reload on group tag saves; Workbench trees keep the group-tag revision for coverage. Effect sites unchanged. Edit Tree tagging review (2026-10-17): Edit Tree epoch rows show Tag This Epoch outside Workbench too. Effect sites unchanged. Workbench tag-scope review (2026-10-17): frozen (readContext) scope keys add the settled tag coverage revision, so loaded pages re-read once per confirmed tag burst with the same frozen token; live trees unchanged. Effect sites unchanged. F3 tree-presentation-identity review (2026-10-18): scope keyed on presentation identity; reads use the latest owner via ref; new effect renews only a read interrupted by an activation change, on the same path. Prepared-view review (2026-10-20): Prepare view reuses the existing exact navigation scope, abort controller and serial fences before retrying requested pages. Old responses and stale callbacks cannot publish after scope/activation changes; retained rows stay inert.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads. Explicit owner read pause blocks gestures and retires pending root or target reads while retaining inert presentation; fresh resume revalidates all authority. Independently reviewed trailing preview retention requires the same committed frozen presentation scope, selected UUID, pane key and terminal-page membership; the existing flex section remains inert through refresh and retry. Changed actor/cohort/selected view/focus and unrelated branch intent cannot borrow it; frozen freshness also checks the loaded scope before passive renewal. Independently reviewed frozen initial navigation treats saved revisions as history even when presentation scopes differ: fresh anchor or root establishes continuation authority, while explicit expectedRevision and live-navigation behavior remain unchanged. Multi-selection/branch tag review (2026-10-17): main (counts-only) trees no longer reload on group tag saves; Workbench trees keep the group-tag revision for coverage. Effect sites unchanged. Edit Tree tagging review (2026-10-17): Edit Tree epoch rows show Tag This Epoch outside Workbench too. Effect sites unchanged. Workbench tag-scope review (2026-10-17): frozen (readContext) scope keys add the settled tag coverage revision, so loaded pages re-read once per confirmed tag burst with the same frozen token; live trees unchanged. Effect sites unchanged. F3 tree-presentation-identity review (2026-10-18): scope keyed on presentation identity; reads use the latest owner via ref; new effect renews only a read interrupted by an activation change, on the same path. Prepared-view review (2026-10-20): Prepare view reuses the existing exact navigation scope, abort controller and serial fences before retrying requested pages. Old responses and stale callbacks cannot publish after scope/activation changes; retained rows stay inert. Tree editing review (2026-10-21): One preparation fallback follows an explicit layout edit or retry; abort, serial, read-owner and frozen-scope checks remain. Activation renewal retains the pending permission. The shortcut listener cleans up and rejects hidden, paused or inactive contexts.",
       "tests": [
         "src/hierarchyRetention.test.js",
         "src/inspectionTreeLifecycle.test.js",
@@ -3813,12 +3820,17 @@
       ]
     },
     "src/tree-browser/ui/HierarchyTree.jsx": {
-      "fingerprint": "1ff095abe260546d4ae8b3ee994aa0688f06fcad5a0d3231e0863eba19438f30",
+      "fingerprint": "1db520035a9fd2d1da7655746917ffd3b8c5820e8a8d630e5298cc1e7f58dff1",
       "sites": [
         {
           "owner": "HierarchyTree",
           "kind": "useLayoutEffect",
           "fingerprint": "01b7ecd72a26b60eac97b1112b9e2b0fd52d5932c50d4aae6a156ce4314f284d"
+        },
+        {
+          "owner": "HierarchyTree",
+          "kind": "useEffect",
+          "fingerprint": "30ca9110e03757a960c2aefed1d970ee1cb9f5c38c1e9fec5822e7e463486186"
         },
         {
           "owner": "HierarchyTree",
@@ -3847,7 +3859,7 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Explicit owner read pause retains inert pages, aborts root and descendant reads, and refuses late publication until fresh resume. Multi-selection/branch tag review (2026-10-17): same scope-key change as ColumnTree. Effect sites unchanged. Workbench tag-scope review (2026-10-17): frozen (readContext) scope key adds the settled tag coverage revision (one page re-read per tag burst, same frozen token); live trees unchanged. Effect sites unchanged. F3 tree-presentation-identity review (2026-10-18): expansion page passed to first-epoch selection; collapse/collapse-all notify the selection owner. Prepared-view review (2026-10-20): Prepare view reuses committed scope and existing request serial/abort ownership. Preparation and refreshed page validation remain explicit; pending and failed states disable scientific actions.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Explicit owner read pause retains inert pages, aborts root and descendant reads, and refuses late publication until fresh resume. Multi-selection/branch tag review (2026-10-17): same scope-key change as ColumnTree. Effect sites unchanged. Workbench tag-scope review (2026-10-17): frozen (readContext) scope key adds the settled tag coverage revision (one page re-read per tag burst, same frozen token); live trees unchanged. Effect sites unchanged. F3 tree-presentation-identity review (2026-10-18): expansion page passed to first-epoch selection; collapse/collapse-all notify the selection owner. Prepared-view review (2026-10-20): Prepare view reuses committed scope and existing request serial/abort ownership. Preparation and refreshed page validation remain explicit; pending and failed states disable scientific actions. Tree editing review (2026-10-21): Explicit retry permits one preparation fallback. The shortcut listener cleans up and rejects hidden, paused or inactive contexts; load callback changes on activation.",
       "tests": [
         "src/hierarchyRetention.test.js",
         "src/inspectionTreeLifecycle.test.js",
@@ -3967,13 +3979,14 @@
       ]
     },
     "src/typed-query/ui/JointGroupingEditor.jsx": {
-      "fingerprint": "0bd538caf82a95a0fc6534707c3089df3a6de1967802a2e8e16f17a9693f4d1a",
+      "fingerprint": "9fb80df9b9464ae9cd36bd41f5bda018ccec9c5df50ef11fa964125cf74cf3d8",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Tree editing review (2026-10-21): Local component choices are drafts until explicit Apply; the existing split popup supplies choices. No effects or scientific requests.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/semanticPresentationControls.test.js"
       ]
     },
     "src/typed-query/ui/PredicateBuilder.jsx": {
@@ -4077,7 +4090,7 @@
       ]
     },
     "src/typed-query/ui/TreeBuilder.jsx": {
-      "fingerprint": "4045f9c8c776031036b8e53b6167ff5244ec8acf8cc65c51d118a1d7825fc3e1",
+      "fingerprint": "f42c163a42bafc64aec78e62957580f5df98efa500b3d40b686c7610ac265c4e",
       "sites": [
         {
           "owner": "TreeBuilder",
@@ -4092,12 +4105,12 @@
         {
           "owner": "TreeBuilder",
           "kind": "useSemanticReset",
-          "fingerprint": "dfcf7f10938a3f575782a3da3b91717f232b39998f63f73e65b39909e4ede4ce"
+          "fingerprint": "c5464e4f91aa52a267c3cb0c9dbb199937c1d759693d6efd1ceb066ea8f5011e"
         },
         {
           "owner": "TreeBuilder",
           "kind": "useEffect",
-          "fingerprint": "22fb79276532593971d85c750d77d8a828507acd9c2b78db803be25fdb5bb708"
+          "fingerprint": "0b6ea72e4ea1c806011e7c3e906617ef8e5bd83a5620de9981fef14e98671140"
         },
         {
           "owner": "TreeBuilder",
@@ -4106,7 +4119,7 @@
         }
       ],
       "lifetime": "semantic-order-and-chooser + active-global-handlers",
-      "reason": "External value key resets local order; search/category/order keys reset chooser limit/active option; keyboard identity controls scrolling. Active retained owner gates global listeners and popover. Drag cleanup and catalog/summary authority keep ordinary lifetimes. Preview removal (2026-10-19): summary preferences no longer feed requested chooser fields (axes plus predicate fields only); the unused full-catalog callback prop is removed. Effect sites unchanged. Pending counts and cell windows (2026-10-19, requires backend #118/#119): preview status reads 'Counting matching epochs…' while counts are pending. Effect sites unchanged.",
+      "reason": "External value key resets local order; search/category/order keys reset chooser limit/active option; keyboard identity controls scrolling. Active retained owner gates global listeners and popover. Drag cleanup and catalog/summary authority keep ordinary lifetimes. Preview removal (2026-10-19): summary preferences no longer feed requested chooser fields (axes plus predicate fields only); the unused full-catalog callback prop is removed. Effect sites unchanged. Pending counts and cell windows (2026-10-19, requires backend #118/#119): preview status reads 'Counting matching epochs…' while counts are pending. Effect sites unchanged. Tree editing review (2026-10-21): One popup serves single and combined choices with the existing placement, dismissal and keyboard ownership. Registry-only discovery strips statistics and starts no summary job; hidden portals and listeners remain gated.",
       "tests": [
         "src/useSemanticReset.test.js",
         "src/semanticPresentationControls.test.js",
