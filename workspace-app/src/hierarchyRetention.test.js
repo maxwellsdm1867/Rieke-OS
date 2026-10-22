@@ -269,7 +269,7 @@ test('frozen column trailing geometry keeps its exact section during pause and r
   assert.equal(document.querySelector('.tree-trace-pane'),before);assert.equal(before.hasAttribute('inert'),false);assert.equal(h.scroll().scrollLeft,135);
   h.state.mismatchLeaf=true;await h.render('visible',2,props);assertSame();assert.ok(document.querySelector('[role="alert"]'));
   h.state.mismatchLeaf=false;
-  const retry=[...document.querySelectorAll('button')].find(node=>node.textContent.includes('Reload tree overview'));assert.ok(retry);
+  const retry=[...document.querySelectorAll('button')].find(node=>node.textContent.includes('Show tree'));assert.ok(retry);
   await act(()=>retry.click());assert.equal(document.querySelector('.tree-trace-pane'),before);assert.equal(before.hasAttribute('inert'),false);assert.equal(h.scroll().scrollLeft,135);
   h.state.holdLeaf=true;await h.expand(0);assert.equal(document.querySelector('.tree-trace-pane'),null,'Sibling intent must remove an unrelated recording immediately');
   h.state.holdLeaf=false;await h.release();assert.equal(document.querySelector('.tree-trace-pane'),null);

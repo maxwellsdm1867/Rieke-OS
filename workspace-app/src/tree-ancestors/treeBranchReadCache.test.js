@@ -144,7 +144,8 @@ test('mounted current lease expiry clears loading and explicit retry obtains a f
    if(id==='\0lease-owner')return `export const useTreeBranchReads=()=>globalThis.${key}.owner;`;
    if(id==='\0lease-actions')return 'export const useTreeGroupTags=()=>({revision:0}),useIncomingTreeSelection=()=>({on:()=>false,pending:()=>null}),TreeGroupTagButton=()=>null,IncomingEpochSelect=()=>null;';}
  }]});let view;
- const oldRaf=globalThis.requestAnimationFrame,oldCancel=globalThis.cancelAnimationFrame;
+ const oldRaf=globalThis.requestAnimationFrame,oldCancel=globalThis.cancelAnimationFrame,oldWindow=globalThis.window;
+ globalThis.window={addEventListener(){},removeEventListener(){}};
  globalThis.requestAnimationFrame=()=>0;globalThis.cancelAnimationFrame=()=>{};
  try{
   const {default:ColumnTree}=await server.ssrLoadModule('/src/tree-browser/ui/ColumnTree.jsx');
@@ -175,7 +176,7 @@ test('mounted current lease expiry clears loading and explicit retry obtains a f
   const obsoleteFrozen=view.root.findByProps({role:'alert'}).findByType('button').props.onClick;
   await act(async()=>view.update(React.createElement(ColumnTree,{protocolId:protocol,splits:'date,cell',filters:{cell_type:'live'},onRefreshPreview:()=>frozenRefreshes++})));
   const beforeOldFrozen=retryBodies.length;await act(async()=>obsoleteFrozen());assert.equal(frozenRefreshes,1);assert.equal(retryBodies.length,beforeOldFrozen,'old frozen refresh cannot target a replacement scope');
- }finally{await act(async()=>view?.unmount());await server.close();delete globalThis[key];globalThis.requestAnimationFrame=oldRaf;globalThis.cancelAnimationFrame=oldCancel;}
+ }finally{await act(async()=>view?.unmount());await server.close();delete globalThis[key];globalThis.requestAnimationFrame=oldRaf;globalThis.cancelAnimationFrame=oldCancel;globalThis.window=oldWindow;}
 });
 
 test('one retained tree keeps mounted rows while hidden, aborts reads, fences actions, and freshly validates return',async()=>{
