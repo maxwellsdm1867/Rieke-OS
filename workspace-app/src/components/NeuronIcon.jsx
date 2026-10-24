@@ -19,6 +19,6 @@ export default function NeuronIcon({size=19,strokeWidth=1.7,compact=false,paraso
       <path transform={`translate(0 ${somaOffset})`} d="M12 14.5c-1.8 0-3 1.2-3 2.8s1.3 2.8 3 2.8 3-1.2 3-2.8-1.2-2.8-3-2.8Z"/>
       <path d={`M12 ${somaY+ry}c-.2 ${1.5-somaOffset} .7 ${2-somaOffset} 2.2 ${2-somaOffset}H22`}/>
     </>}
-    <circle cx="12" cy={somaY} r=".65" fill="currentColor" stroke="none"/>
+    <circle cx="12" cy={somaY} r={parasol?1.55:.65} fill="currentColor" stroke="none"/>
   </svg>;
 }
