@@ -30,6 +30,8 @@ export default function HierarchyTree(props){
   const groupSelection=useIncomingTreeSelection(props,state.loadedScope===scopeKey&&!state.loading&&!state.error?state.pages.find(page=>!page.path.length):null);
   const firstScope=useRef(scopeKey),saved=useRef(initialNavigation),initialized=useRef(false),restoreTop=useRef(null),restoreLeft=useRef(null),scrollFrame=useRef(null);
   const retainedNavigation=useRef(null),committedScope=useRef(null),scrollIntent=useRef(0);
+  const preparationScope=JSON.stringify({projectId:props.projectId,protocolId,readContext,predicate,filters,splits,revision,expectedRevision});
+  const preparationAttempt=useRef(null);
   const commit=useCallback(update=>{current.current=typeof update==='function'?update(current.current):update;setState(current.current);},[]);
   function captureNavigation(){
     if(current.current.loading||current.current.error||current.current.loadedScope!==scopeKey)return null;
@@ -47,38 +49,45 @@ export default function HierarchyTree(props){
       controller.current?.abort();if(scrollFrame.current)cancelAnimationFrame(scrollFrame.current);scrollFrame.current=null;
     };
   },[scopeKey]);
-  const load=useCallback(async({path=[],offset=0,reset=false,anchor=null,restore=null,keepPresentation=false,prepare=false,prepareIfNeeded=false}={})=>{
+  const load=useCallback(async({path=[],offset=0,reset=false,anchor=null,restore=null,keepPresentation=false,prepare=false,prepareIfNeeded=true}={})=>{
     if(props.active===false||props.readPaused||committedScope.current!==scopeKey)return;
     controller.current?.abort();const request=new AbortController();controller.current=request;const token=++serial.current;
     const startedScrollIntent=scrollIntent.current;
     restoreTop.current=reset&&!restore?0:null;restoreLeft.current=reset&&!restore?0:null;
-    commit(old=>({...(reset&&!keepPresentation?blank():cancelUnloadedExpansion(old,path)),loading:true,error:null,preparation:null,preparing:prepare,loadingPath:path}));callbacks.current.onStatus?.({loading:true,error:null});
+    commit(old=>({...(reset&&!keepPresentation?blank():cancelUnloadedExpansion(old,path)),loading:true,error:null,preparation:null,preparationFailed:false,preparing:prepare,loadingPath:path}));callbacks.current.onStatus?.({loading:true,error:null});
     const scope=JSON.parse(scopeKey),root=current.current.pages.find(page=>!page.path.length);
     let pinned=scope.expectedRevision||restore?.revision||(!reset?root?.revision:null);
-    let mayPrepare=prepareIfNeeded&&!prepare&&!scope.readContext&&!scope.expectedRevision;
+    let preparingRequest=false;
+    const attempted=preparationAttempt.current;
+    let mayPrepare=prepareIfNeeded&&!prepare&&!scope.readContext&&!(attempted?.scope===preparationScope&&(!attempted.signal||!attempted.signal.aborted));
+    async function prepareOnce(error){
+      if(!mayPrepare||!error.preparation||request.signal.aborted||token!==serial.current)throw error;
+      mayPrepare=false;preparationAttempt.current={scope:preparationScope,signal:request.signal};commit(old=>({...old,preparing:true}));
+      preparingRequest=true;await prepareTree(scope,{request:api,signal:request.signal,isCurrent:()=>token===serial.current});preparingRequest=false;
+    }
     async function fetchPage(pagePath,pageOffset=0,focus=null){
       const read=()=>api(scope.readContext?`${scope.readContext.root}/tree/page`:'/tree-pages',{method:'POST',signal:request.signal,
         body:treePageRequest(scope,{path:pagePath,offset:pageOffset,anchor:focus,reset:!pinned,currentRevision:pinned})});
       let result;
       try{result=await read();}catch(error){
-        if(!mayPrepare||!error.preparation||request.signal.aborted||token!==serial.current)throw error;
-        mayPrepare=false;commit(old=>({...old,preparing:true}));
-        await prepareTree(scope,{request:api,signal:request.signal,isCurrent:()=>token===serial.current});
+        await prepareOnce(error);
         result=await read();
       }
       if(pinned&&result.revision!==pinned)throw new Error('Tree revision changed. Refresh the preview before continuing.');
       pinned=result.revision;return result;
     }
     try{
-      if(prepare)await prepareTree(scope,{request:api,signal:request.signal,isCurrent:()=>token===serial.current});
+      if(prepare){preparationAttempt.current={scope:preparationScope,signal:request.signal};preparingRequest=true;await prepareTree(scope,{request:api,signal:request.signal,isCurrent:()=>token===serial.current});preparingRequest=false;}
       let result;
       if(restore){
         for(const savedPage of restore.pages){result=await fetchPage(savedPage.path,savedPage.offset);if(request.signal.aborted||token!==serial.current)return;commit(old=>mergeHierarchyPage(old,result));}
         commit(old=>({...old,expanded:restore.expanded}));
         if(scrollIntent.current===startedScrollIntent){restoreTop.current=restore.scrollTop;restoreLeft.current=restore.scrollLeft;}
       }else if(anchor){
-        const pages=await loadColumnTreePages({scope,anchor,revisionOverride:pinned,retainedPages:current.current.pages,
+        const readAnchor=()=>loadColumnTreePages({scope,anchor,revisionOverride:pinned,retainedPages:current.current.pages,
           load:api,signal:request.signal,isCurrent:()=>token===serial.current});
+        let pages;
+        try{pages=await readAnchor();}catch(error){await prepareOnce(error);pages=await readAnchor();}
         result=pages.at(-1);
         if(pinned&&result.revision!==pinned)throw new Error('Tree revision changed. Refresh the preview before continuing.');
         pinned=result.revision;
@@ -92,18 +101,25 @@ export default function HierarchyTree(props){
         commit(old=>{const next=mergeHierarchyPage(old,result);return {...next,notice:next.evicted?'Older branches were collapsed to keep the tree responsive. Reopen them when needed.':old.notice};});
       }
       if(request.signal.aborted||token!==serial.current)return;
+      preparationAttempt.current=null;
       initialized.current=true;commit(old=>({...old,loading:false,preparing:false,loadingPath:null,error:null,loadedScope:scopeKey}));callbacks.current.onStatus?.({loading:false,error:null});
       const receipt=current.current.pages.find(page=>!page.path.length)||result;
       callbacks.current.onMetadata?.({...receipt,count:receipt.total_epochs});
       return result;
-    }catch(error){if(!request.signal.aborted&&token===serial.current){commit(old=>({...old,loading:false,error:error.message,preparation:error.preparation||null,preparing:false,loadingPath:null}));callbacks.current.onStatus?.({loading:false,error:error.message,preparation:error.preparation||null});}}
-  },[scopeKey,commit,props.active]);
+    }catch(error){if(!request.signal.aborted&&token===serial.current){if(preparationAttempt.current?.signal===request.signal)preparationAttempt.current={scope:preparationScope,signal:null};commit(old=>({...old,loading:false,error:error.message,preparation:error.preparation||null,preparationFailed:preparingRequest,preparing:false,loadingPath:null}));callbacks.current.onStatus?.({loading:false,error:error.message,preparation:error.preparation||null});}}
+  },[scopeKey,commit,props.active,preparationScope]);
+  const retry=()=>{
+    if(props.active===false||props.readPaused||committedScope.current!==scopeKey||current.current.loading)return;
+    const prepare=!!(current.current.preparation||current.current.preparationFailed);
+    if(expectedRevision&&!prepare){callbacks.current.onRefreshPreview?.();return;}
+    preparationAttempt.current=null;load({reset:true,prepare,prepareIfNeeded:true});
+  };
   useEffect(()=>{
     if(props.active===false||props.readPaused)return;
     const showTree=event=>{
       if(event.defaultPrevented||event.repeat||event.altKey||event.shiftKey||!(event.metaKey||event.ctrlKey)||event.key.toLowerCase()!=='t'||document.visibilityState==='hidden'||container.current?.closest('[hidden],[inert]'))return;
       event.preventDefault();if(current.current.loading)return;
-      if(expectedRevision)callbacks.current.onRefreshPreview?.();else load({reset:true,prepare:!!current.current.preparation,prepareIfNeeded:true});
+      retry();
     };
     window.addEventListener('keydown',showTree);return()=>window.removeEventListener('keydown',showTree);
   },[props.active,props.readPaused,load,expectedRevision]);
@@ -182,7 +198,7 @@ export default function HierarchyTree(props){
     {props.design&&<header className="ht-heading"><strong>{root?`${number(root.total_epochs)} matching epochs`:'Loading hierarchy…'}</strong></header>}
     <div className="ht-splits" aria-label="Tree split sequence">{root?.levels.length?root.levels.map((field,index)=><span key={field.field}>{index>0&&<ChevronRight size={11}/>}<b>{index+1}</b>{readableField(field.label,field.field)}</span>):<span>Flat epoch list</span>}</div>
     {state.preparing&&<p role="status">Preparing view…</p>}
-    {state.error&&<div className={state.preparation?'ht-preparation':'ht-error'} role={state.preparation?'status':'alert'}>{state.preparation?'Show the tree with these splits.':state.error}<button disabled={state.loading} title="Show tree (⌘T / Ctrl+T)" aria-keyshortcuts="Meta+T Control+T" onClick={()=>expectedRevision?callbacks.current.onRefreshPreview?.():load({reset:true,prepare:!!state.preparation})}><RefreshCw size={13}/> Show tree</button></div>}
+    {state.error&&<div className={state.preparation?'ht-preparation':'ht-error'} role={state.preparation?'status':'alert'}>{state.preparation?'Show the tree with these splits.':state.error}<button disabled={state.loading} title="Show tree (⌘T / Ctrl+T)" aria-keyshortcuts="Meta+T Control+T" onClick={retry}><RefreshCw size={13}/> Show tree</button></div>}
     {state.notice&&<div className="ht-notice" role="status">{state.notice}</div>}
     <div className="ht-scroll" ref={scroll} aria-busy={state.loading} onWheel={cancelScrollRestore} onPointerDown={cancelScrollRestore} onTouchStart={cancelScrollRestore} onKeyDown={cancelScrollRestore} onScroll={()=>{if(!scrollFrame.current)scrollFrame.current=requestAnimationFrame(()=>{scrollFrame.current=null;remember();});}}>{root?renderPage(root,true):!state.error&&<p className="ht-loading" role="status">Loading tree…</p>}</div>
     {!props.externalCollapseControl&&<footer className="ht-footer"><button disabled={blocked||!state.expanded.length} onClick={collapseAll}>Collapse all</button></footer>}

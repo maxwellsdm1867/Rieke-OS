@@ -156,12 +156,19 @@ fresh scoped receipts; a paused late completion cannot publish or start another
 request. `hierarchyRetention.test.js` and `pagedTreeLifecycle.test.js` cover this
 contract, including callers without a selection-authority prop.
 
-User-driven Arrange tree edits may prepare their new layout automatically after
-an initial read requests preparation. Inspector supplies one protocol/filter/split
-intent; only a current live read may consume it. Cached successful reads retire
-that intent. The operation is bounded to read, prepare, then one read; a failed
-preparation stays visible for explicit retry. No initial mount or ordinary 202
-starts automatic preparation. Frozen/expected-revision reads retain their owners.
-Show tree and Command/Ctrl-T use the existing retry path, restricted to the active,
-visible, unpaused tree. PreparedTreeMount tests cover explicit retry, one-shot
-edit preparation, stale responses, hidden/paused shortcuts and activation.
+Visible tree demand (including first entry, selected-anchor reveal and Arrange
+tree edits) may prepare its exact layout once after a current 202, then re-read.
+Unchanged failure revisits and Activity/paused reconnects cannot loop preparation;
+a canceled in-flight attempt may resume, and an explicit Show tree/Command-T
+retry can recover a preparation network failure. Successful reads reset the
+attempt for a future known change. Hidden/inactive/paused trees never prepare.
+
+Predicate-preview trees may prepare display indexes while retaining the exact
+`expectedRevision` on every subsequent read. Preparation does not renew that
+revision; a changed result still fails and only the explicit owner refresh can
+renew its preview. Frozen `readContext` trees stay excluded and retain their
+review owner. Hierarchy anchors and restored pages share one preparation
+allowance for the entire load. `preparedTreeMount.test.js` covers initial demand,
+layout edits, failed/explicit retry, cancellation, hidden/paused revisits, predicate
+fences, mismatched replies, anchors and frozen exclusion. Native initial-entry
+and filtered-tree checks remain separately required.

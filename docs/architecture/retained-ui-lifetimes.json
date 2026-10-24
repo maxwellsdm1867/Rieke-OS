@@ -3743,7 +3743,7 @@
       ]
     },
     "src/tree-browser/ui/ColumnTree.jsx": {
-      "fingerprint": "2349530b8d04a23c798cb144016859f32e8eb1d920a58ce7520b8f067afb35b4",
+      "fingerprint": "a73938bdae5d277997a7a1240cbbe6bf15d672b211b921620d279b38a01edfdb",
       "sites": [
         {
           "owner": "ColumnTree",
@@ -3758,7 +3758,7 @@
         {
           "owner": "ColumnTree",
           "kind": "useEffect",
-          "fingerprint": "c94cc9044b2fdadb12385fc19fbcc1da0b141cd9eb7c5e90cdb5d0dc72219965"
+          "fingerprint": "1ff650914dbea264b274abf57dc423f861aa61ae2ce41c2d0bad4210c2b2d3a3"
         },
         {
           "owner": "ColumnTree",
@@ -3797,26 +3797,17 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Independently reviewed frozen continuation renewal obtains a fresh scoped root before restoring retained path and offsets; root and target revision, candidate, query, binding and generation must agree, and superseded roots cannot issue descendant reads. Explicit owner read pause blocks gestures and retires pending root or target reads while retaining inert presentation; fresh resume revalidates all authority. Independently reviewed trailing preview retention requires the same committed frozen presentation scope, selected UUID, pane key and terminal-page membership; the existing flex section remains inert through refresh and retry. Changed actor/cohort/selected view/focus and unrelated branch intent cannot borrow it; frozen freshness also checks the loaded scope before passive renewal. Independently reviewed frozen initial navigation treats saved revisions as history even when presentation scopes differ: fresh anchor or root establishes continuation authority, while explicit expectedRevision and live-navigation behavior remain unchanged. Multi-selection/branch tag review (2026-10-17): main (counts-only) trees no longer reload on group tag saves; Workbench trees keep the group-tag revision for coverage. Effect sites unchanged. Edit Tree tagging review (2026-10-17): Edit Tree epoch rows show Tag This Epoch outside Workbench too. Effect sites unchanged. Workbench tag-scope review (2026-10-17): frozen (readContext) scope keys add the settled tag coverage revision, so loaded pages re-read once per confirmed tag burst with the same frozen token; live trees unchanged. Effect sites unchanged. F3 tree-presentation-identity review (2026-10-18): scope keyed on presentation identity; reads use the latest owner via ref; new effect renews only a read interrupted by an activation change, on the same path. Prepared-view review (2026-10-20): Prepare view reuses the existing exact navigation scope, abort controller and serial fences before retrying requested pages. Old responses and stale callbacks cannot publish after scope/activation changes; retained rows stay inert. Tree editing review (2026-10-21): One preparation fallback follows an explicit layout edit or retry; abort, serial, read-owner and frozen-scope checks remain. Activation renewal retains the pending permission. The shortcut listener cleans up and rejects hidden, paused or inactive contexts.",
+      "reason": "Visible first demand and changed layouts may prepare their original display scope once after a current 202. Expected query revision is preserved on retry; frozen readContext remains excluded. One hierarchy allowance covers anchors and restored pages. Settled failures survive hide/pause without auto loops; explicit Retry recovers network failures. Cancellation and owner fences reject late completions.",
       "tests": [
-        "src/hierarchyRetention.test.js",
-        "src/inspectionTreeLifecycle.test.js",
-        "src/inspectorTreeAuthority.test.js",
-        "src/pagedTreeLifecycle.test.js",
-        "src/preparedRead.test.js",
-        "src/protocol-overview/overviewDemand.test.js",
-        "src/tree-ancestors/frozenColumnReads.test.js",
-        "src/tree-browser/frozenColumnMount.test.js",
         "src/tree-browser/preparedTreeMount.test.js",
-        "src/treeCellIdentityIcons.test.js",
-        "src/treeCombinedPresentation.test.js",
-        "src/treeGroupLifecycleWorkflow.test.js",
-        "src/treeTagCoverageWorkflow.test.js",
-        "src/workbenchTagScope.test.js"
+        "src/tree-browser/frozenColumnMount.test.js",
+        "src/pagedTreeLifecycle.test.js",
+        "src/hierarchyRetention.test.js",
+        "src/treeTagCoverageWorkflow.test.js"
       ]
     },
     "src/tree-browser/ui/HierarchyTree.jsx": {
-      "fingerprint": "1db520035a9fd2d1da7655746917ffd3b8c5820e8a8d630e5298cc1e7f58dff1",
+      "fingerprint": "7200b11c02ff34a2f15c93e4ac2af994ea1437a2261f8c41be18ae0a94ff62df",
       "sites": [
         {
           "owner": "HierarchyTree",
@@ -3826,7 +3817,7 @@
         {
           "owner": "HierarchyTree",
           "kind": "useEffect",
-          "fingerprint": "30ca9110e03757a960c2aefed1d970ee1cb9f5c38c1e9fec5822e7e463486186"
+          "fingerprint": "8cbde30f945b1db98993b4758f56772e2b41ebdf51b4cbc3d14b9280c10e160b"
         },
         {
           "owner": "HierarchyTree",
@@ -3855,20 +3846,13 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Annotation continuity source review: docs/dev/workbench-tagging-reset-audit-2026-10-15.md. Explicit owner read pause retains inert pages, aborts root and descendant reads, and refuses late publication until fresh resume. Multi-selection/branch tag review (2026-10-17): same scope-key change as ColumnTree. Effect sites unchanged. Workbench tag-scope review (2026-10-17): frozen (readContext) scope key adds the settled tag coverage revision (one page re-read per tag burst, same frozen token); live trees unchanged. Effect sites unchanged. F3 tree-presentation-identity review (2026-10-18): expansion page passed to first-epoch selection; collapse/collapse-all notify the selection owner. Prepared-view review (2026-10-20): Prepare view reuses committed scope and existing request serial/abort ownership. Preparation and refreshed page validation remain explicit; pending and failed states disable scientific actions. Tree editing review (2026-10-21): Explicit retry permits one preparation fallback. The shortcut listener cleans up and rejects hidden, paused or inactive contexts; load callback changes on activation.",
+      "reason": "Visible first demand and changed layouts may prepare their original display scope once after a current 202. Expected query revision is preserved on retry; frozen readContext remains excluded. One hierarchy allowance covers anchors and restored pages. Settled failures survive hide/pause without auto loops; explicit Retry recovers network failures. Cancellation and owner fences reject late completions.",
       "tests": [
-        "src/hierarchyRetention.test.js",
-        "src/inspectionTreeLifecycle.test.js",
-        "src/inspectorTreeAuthority.test.js",
-        "src/pagedTreeLifecycle.test.js",
-        "src/preparedRead.test.js",
-        "src/protocol-overview/overviewDemand.test.js",
         "src/tree-browser/preparedTreeMount.test.js",
-        "src/treeCellIdentityIcons.test.js",
-        "src/treeCombinedPresentation.test.js",
-        "src/treeGroupLifecycleWorkflow.test.js",
-        "src/treeTagCoverageWorkflow.test.js",
-        "src/workbenchTagScope.test.js"
+        "src/tree-browser/frozenColumnMount.test.js",
+        "src/pagedTreeLifecycle.test.js",
+        "src/hierarchyRetention.test.js",
+        "src/treeTagCoverageWorkflow.test.js"
       ]
     },
     "src/tree-browser/ui/PagedTree.jsx": {
@@ -4356,11 +4340,13 @@
       "fingerprint": "9a274c0608d2eb89065eb625338badd959780b8e553ddb842e352c1b68d1008b",
       "sites": [],
       "lifetime": "pure-request-adapter",
-      "reason": "Prepared-view review (2026-10-20): Only explicit caller intent posts the original semantic tree scope; one preparation response is checked against abort/current tokens before retry. It does not retry itself or grant selection authority.",
+      "reason": "Visible first demand and changed layouts may prepare their original display scope once after a current 202. Expected query revision is preserved on retry; frozen readContext remains excluded. One hierarchy allowance covers anchors and restored pages. Settled failures survive hide/pause without auto loops; explicit Retry recovers network failures. Cancellation and owner fences reject late completions.",
       "tests": [
-        "src/preparedRead.test.js",
-        "src/protocol-overview/overviewDemand.test.js",
-        "src/tree-browser/preparedTreeMount.test.js"
+        "src/tree-browser/preparedTreeMount.test.js",
+        "src/tree-browser/frozenColumnMount.test.js",
+        "src/pagedTreeLifecycle.test.js",
+        "src/hierarchyRetention.test.js",
+        "src/treeTagCoverageWorkflow.test.js"
       ]
     },
     "src/incoming-workbench/useWorkbenchPreparation.js": {
