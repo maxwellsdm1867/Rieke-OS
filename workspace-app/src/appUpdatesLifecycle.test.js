@@ -147,7 +147,7 @@ test('compact rail indicator follows update status and opens the existing dialog
   assert.doesNotMatch(entry().props.className,/has-update/);
   await h.emit({...testing,state:'Available',available:'0.1.4',can_download:true});
   assert.match(entry().props.className,/has-update/);
-  assert.equal(entry().findAll(node=>node.props.className==='app-update-dot').length,1);
+  assert.equal(entry().findAll(node=>node.props.className==='app-update-dot').length,0);
   assert.match(entry().props['aria-label'],/0\.1\.4 is available/);
   await h.open();assert.match(h.text,/Download update/);
   await h.click('Close updates');assert.match(entry().props.className,/has-update/);
@@ -155,7 +155,15 @@ test('compact rail indicator follows update status and opens the existing dialog
   assert.match(entry().props.title,/Restart to update/);
   await h.open();assert.match(h.text,/Restart to update/);
   assert.equal(h.fixture.downloads,0);assert.equal(h.fixture.restarts,0);
-  await h.click('Close updates');await h.emit(testing);
+  await h.click('Close updates');
+  for(const state of ['Current','Checking','Available','Downloading','Ready','Error']){
+   await h.emit({...testing,state,available:state==='Current'?undefined:'0.1.4'});
+   const glyph=entry().findByType('svg');
+   assert.match(glyph.props.className,/lucide-download/);
+   assert.equal(glyph.props.width,20);assert.equal(glyph.props.height,20);
+   assert.ok(!entry().props.disabled);
+  }
+  await h.emit(testing);
   assert.doesNotMatch(entry().props.className,/has-update/);
   assert.equal(entry().findAll(node=>node.props.className==='app-update-dot').length,0);
  }finally{await h.close();}

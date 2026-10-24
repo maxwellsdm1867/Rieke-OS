@@ -80,7 +80,7 @@
         }
       ],
       "category": "public.app-category.education",
-      "icon": "icon.png",
+      "icon": "icon-macos.icns",
       "minimumSystemVersion": "14.0",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,

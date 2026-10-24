@@ -3,3 +3,11 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {iconPath,applyAppIcon,savedAppIcon}=require('../app-icon.cjs');
 test('icon choice resolves only packaged assets and updates supported surfaces',()=>{const dock=[],windows=[];const app={dock:{setIcon:file=>dock.push(file)}};applyAppIcon(app,[{isDestroyed:()=>false,setIcon:file=>windows.push(file)},{isDestroyed:()=>true,setIcon:()=>assert.fail()}],'rieke');assert.equal(dock[0],iconPath('rieke'));assert.deepEqual(windows,dock);assert.throws(()=>iconPath('../../evil'));});
 test('startup uses default, remembered local preference, and safe corrupt fallback',async t=>{const root=await fs.mkdtemp(path.join(os.tmpdir(),'disco-icon-test-'));const old=process.env.RIEKE_PREFERENCES_DIR;process.env.RIEKE_PREFERENCES_DIR=root;t.after(async()=>{if(old===undefined)delete process.env.RIEKE_PREFERENCES_DIR;else process.env.RIEKE_PREFERENCES_DIR=old;await fs.rm(root,{recursive:true,force:true});});assert.equal(await savedAppIcon(),'disco');await fs.writeFile(path.join(root,'appearance.json'),JSON.stringify({format:'disco-appearance',version:1,icon:'rieke'}));assert.equal(await savedAppIcon(),'rieke');await fs.writeFile(path.join(root,'appearance.json'),'broken');assert.equal(await savedAppIcon(),'disco');});
+test('packaged macOS keeps its native startup icon and restores it after an alternate',{skip:process.platform!=='darwin'},()=>{
+ const calls=[],original={isEmpty:()=>false},app={isPackaged:true,dock:{setIcon:image=>calls.push(image)}};
+ let captures=0;const nativeImage={createFromNamedImage:name=>{assert.equal(name,'NSApplicationIcon');captures++;return original;}};
+ applyAppIcon(app,[],'disco',nativeImage);assert.deepEqual(calls,[]);
+ applyAppIcon(app,[],'rieke',nativeImage);assert.deepEqual(calls,[iconPath('rieke')]);
+ applyAppIcon(app,[],'disco',nativeImage);assert.deepEqual(calls,[iconPath('rieke'),original]);
+ applyAppIcon(app,[],'disco',nativeImage);assert.equal(calls.length,2);assert.equal(captures,1);
+});

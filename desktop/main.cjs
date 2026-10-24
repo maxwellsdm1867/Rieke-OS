@@ -1,5 +1,5 @@
 'use strict';
-const {app, BrowserWindow, WebContentsView, ipcMain, dialog, session, shell, Menu, powerMonitor} = require('electron');
+const {app, BrowserWindow, WebContentsView, ipcMain, dialog, session, shell, Menu, powerMonitor, nativeImage} = require('electron');
 let preview;
 try { preview = require('./local-preview.cjs').localPreview({app}); }
 catch (error) { dialog.showErrorBox('Open DISCO Preview', error.message); app.exit(1); throw error; }
@@ -484,7 +484,7 @@ function registerIPC() {
     if (payload !== undefined) throw new TypeError('This desktop operation accepts no payload');
     return action(window);
   });
-  handle('desktop:app-icon', variant=>{const result=applyAppIcon(app,windows,variant);appIcon=variant;return result;});
+  handle('desktop:app-icon', variant=>{const result=applyAppIcon(app,windows,variant,nativeImage);appIcon=variant;return result;});
   noPayload('desktop:undo-text', window=>{if(window.active===false)throw Error('The project is not visible.');return window.webContents.undo();});
   handle('desktop:activate-retained-project',(identity,owner)=>activateRetainedProject(owner,identity));
   handle('desktop:activate-project',(url,owner)=>{if(owner.active===false)throw Error('The project is not visible.');return activateProject(owner.parentWindow||owner,url);});
@@ -587,7 +587,7 @@ else {
     // Backend ownership/readiness can progress while the native window and its
     // presentation preferences initialize. Store rejection until UI can show it.
     if(!bootstrap)backendStartup=supervisor.start().then(origin=>({origin}),error=>({error}));
-    appIcon=await savedAppIcon();applyAppIcon(app,windows,appIcon);
+    appIcon=await savedAppIcon();applyAppIcon(app,windows,appIcon,nativeImage);
     draftStore = new DraftStore(app.getPath('userData'));
     startupSession=new StartupSession(app.getPath('userData'),VIEW_COMPATIBILITY);
     await startupSession.load();
