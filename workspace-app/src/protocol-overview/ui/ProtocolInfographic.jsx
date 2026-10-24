@@ -10,7 +10,6 @@ import RecordingSize from "../../components/RecordingSize.jsx";
 import ProtocolTagSummary from "../../annotations/ui/ProtocolTagSummary.jsx";
 import './ProtocolInfographic.css';
 import {protocolDatasetStatus} from '../protocolDatasetStatus.js';
-import ProtocolDatasetStatus from './ProtocolDatasetStatus.jsx';
 
 const countLabel=value=>validCellCount(value)?number(value):'Unavailable';
 const durationLabel=(value,status)=>status==='failed'?'Preparation failed':status==='pending'?'Preparing…':validRecordedDuration(value)?duration(value):'Unavailable';
@@ -25,7 +24,6 @@ export default function ProtocolInfographic({data,revision,overviewCache,onFilte
   const exported=completeCellSummary?groupTotal(types,'exported'):null;
   const maxDateCells=Math.max(1,...model.dates.map(date=>date.cells));
   return <section className="protocol-infographic" aria-label="Protocol dataset infographic">
-    <ProtocolDatasetStatus data={data} pendingReviewCells={pendingReviewCells}/>
 
     <div className="pi-cohort-summary"><div className="pi-metrics">
       <div><span><CellsIcon size={16}/> Cells</span><strong>{countLabel(total)}</strong><small>Each cell UUID counted once</small></div>

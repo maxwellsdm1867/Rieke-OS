@@ -4,18 +4,6 @@
 .protocol-infographic{container-type:inline-size;border:1px solid var(--border);border-radius:10px;margin:0 0 20px;background:var(--surface);min-width:0;overflow:hidden}
 .protocol-infographic small{color:var(--ink-muted);font-size:11px}
 
-/* Dataset meaning and read-only query disclosure; no internal state badge. */
-.protocol-dataset-description{padding:16px 24px;font-size:13px;color:var(--ink-secondary)}
-.protocol-dataset-description p{margin:0 0 8px;max-width:85ch;line-height:1.5}
-.protocol-dataset-description strong{color:var(--ink)}
-.protocol-query-details>summary{cursor:pointer;color:var(--accent);font-weight:600;width:fit-content;padding:4px 0}
-.protocol-query-details[open]>summary{margin-bottom:8px}
-.protocol-query-details pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto}
-.protocol-query-details code{overflow-wrap:anywhere}
-.protocol-query-group{padding:6px 0}
-.protocol-query-group ul{padding-left:24px;margin:4px 0}
-.protocol-query-group li{padding:3px 0}
-
 /* Hero metric row (matches .ov-metric-ribbon). */
 .pi-cohort-summary{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,.3fr);border-bottom:1px solid var(--border);align-items:stretch;background:linear-gradient(115deg,var(--surface-subtle),var(--surface))}
 .pi-cohort-summary:not(:has(.pi-pending-review)){grid-template-columns:minmax(0,1fr)}

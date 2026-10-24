@@ -181,29 +181,3 @@ test('pending canonical duration keeps exact counts and never displays zero time
  assert.match(h.root.findByProps({className:'pi-date-list'}).findByType('small').children.join(''),/Preparing…/);
 });
 
-test('protocol status shows the current predicate and distinguishes missing binding from an explicit live query',async t=>{
- const h=await harness(t);
- const query={version:2,kind:'source_predicate',predicate:{all:[{field:'protocol',operator:'eq',value:'Current protocol'},{not:{field:'parameters/control',operator:'eq',value:true}}]}};
- const main={...data,definition:{protocol_uuid:'p',query:{all:[{field:'protocol',op:'eq',value:'Old starter'}]}},binding:{revision_uuid:'saved',version:3},expected_binding_version:3,effective_query:query};
- await h.render(h.ProtocolInfographic,{data:main,pendingReviewCells:2});
- let description=h.root.findByProps({className:'protocol-dataset-description'});
- assert(description.findAllByType('p').some(node=>node.children.join('').includes('not added automatically')));
- assert.deepEqual(JSON.parse(description.findAllByType('pre')[0].children.join('')),query);
- assert.equal(description.findAllByType('button').length,0,'query disclosure cannot edit or run the predicate');
- assert(description.findAllByType('summary').some(node=>node.children.join('')==='Show query'));
- await h.render(h.ProtocolInfographic,{data:{...main,binding:null,expected_binding_version:0},pendingReviewCells:0});
- description=h.root.findByProps({className:'protocol-dataset-description'});
- assert(description.findAllByType('p').some(node=>node.children.join('').includes('Before the next import')));
- assert.equal(h.root.findAllByProps({className:'pi-pending-review'}).length,0);
- for(const altered of [{binding:undefined},{binding:{revision_uuid:'saved',version:2}}]){
-  await h.render(h.ProtocolInfographic,{data:{...main,...altered},pendingReviewCells:null});
-  description=h.root.findByProps({className:'protocol-dataset-description'});
-  assert(description.findAllByType('p').some(node=>node.children.join('').includes('could not be verified')));
-  assert(description.findAllByType('p').some(node=>node.children.join('').includes('current protocol query is unavailable')));
- }
- await h.render(h.ProtocolInfographic,{data:{...main,effective_query:undefined},pendingReviewCells:null});
- description=h.root.findByProps({className:'protocol-dataset-description'});
- assert(description.findAllByType('p').some(node=>node.children.join('').includes('current protocol query is unavailable')));
- assert(description.findAllByType('summary').some(node=>node.children.join('')==='Protocol preset'));
- assert(description.findAllByType('p').some(node=>node.children.join('').includes('review status is unavailable')));
-});
