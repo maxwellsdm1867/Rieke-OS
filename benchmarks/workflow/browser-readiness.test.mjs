@@ -1,7 +1,7 @@
 /** Readiness fault tests. Fake DOM only; no browser/server/large fixtures. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {predicateEditorMode,predicateSummaryReady,readiness,snapshotAction,assertFinalizedRequests,resetPreparation,options,phasePlan,moduleTimingEnabled,armAction,observationFinished} from './browser.mjs';
+import {TREE_VIEW_SELECTOR,predicateEditorMode,predicateSummaryReady,readiness,snapshotAction,assertFinalizedRequests,resetPreparation,options,phasePlan,moduleTimingEnabled,armAction,observationFinished} from './browser.mjs';
 import {installObserver,installTraceControlReader,installBinaryTraceOracle} from './fixture-app.mjs';
 
 function element(text='', attributes={}) {
@@ -21,21 +21,25 @@ function setup(t, selectors={}, streams=[{uuid:'response',device:'Amp1',units:'p
   return w;
 }
 
-test('disabled matching button cannot borrow enabled state from shell button',t=>{
-  setup(t,{button:[element('Edit Tree',{disabled:true}),element('Benchmark Main')]});
-  assert.equal(readiness({selector:'button',text:'Edit Tree',enabled:true}),false);
-});
-
-test('correct result needs two observations and current nonbusy tree',t=>{
-  const selectors={button:[element('Edit Tree')]};setup(t,selectors);
-  const spec={selector:'button',text:'Edit Tree',enabled:true};
+for(const label of ['Edit Tree','View tree']){
+ test(`disabled ${label} cannot borrow enabled state from shell button`,t=>{
+  setup(t,{[TREE_VIEW_SELECTOR]:[element(label,{disabled:true})],button:[element('Benchmark Main')]});
+  assert.equal(readiness({selector:TREE_VIEW_SELECTOR,enabled:true}),false);
+ });
+ test(`${label} requires two observations and a current nonbusy tree`,t=>{
+  const selectors={[TREE_VIEW_SELECTOR]:[element(label)]};setup(t,selectors);
+  const spec={selector:TREE_VIEW_SELECTOR,enabled:true};
   assert.equal(readiness(spec),false);
   selectors['.column-tree[aria-busy="true"]']=[element()];
   assert.equal(readiness(spec),false);
   selectors['.column-tree[aria-busy="true"]']=[];
-  // A busy observation must invalidate the earlier readiness streak.
   assert.equal(readiness(spec),false);
   assert.equal(readiness(spec),true);
+ });
+}
+test('unrelated enabled shell button cannot replace either tree entry',t=>{
+ setup(t,{button:[element('Benchmark Main')], [TREE_VIEW_SELECTOR]:[]});
+ assert.equal(readiness({selector:TREE_VIEW_SELECTOR,enabled:true}),false);
 });
 
 test('old split labels cannot satisfy remove grouping action',t=>{

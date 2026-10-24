@@ -7,6 +7,10 @@ import {fixtureSource,installObserver,installTraceControlReader,installBinaryTra
 import {attachLedger} from '../navigation-probe.mjs';
 import {appInventory,appLimits,appFixtureSource,runAppSample,TRAILING_MS,BACKGROUND_PATHS} from './app-suite.mjs';
 
+// Same public tree entry across the reviewed label rename; neither alias relaxes
+// visibility, enabled state, membership, or the two-frame readiness oracle.
+export const TREE_VIEW_SELECTOR='button[aria-label="Edit Tree"],button[aria-label="View tree"]';
+
 // Both reviewed editor generations keep the same explicit Run boundary. The
 // legacy editor owns summaries before Run; current results own one job after it.
 export function predicateEditorMode(){
@@ -349,10 +353,10 @@ export async function run(config){
       }
       try{
         if(config.suite==='app'){await runAppSample({page,measure,meta,config,sample});if(production)receipt.production_attestations.push({phase,sample,stage:'completed',...await attestProductionPage(page,production,`http://127.0.0.1:${receipt.frontend_port}`)});continue;}
-        const edit={selector:'button',text:'Edit Tree',enabled:true,membership:meta.main_count};
+        const edit={selector:TREE_VIEW_SELECTOR,enabled:true,membership:meta.main_count};
         await measure('view.open','cold-component',button('Benchmark Main'),edit);
         await button('Benchmark Away').click();await measure('view.return','warm-resource',button('Benchmark Main'),edit);
-        await measure('tree.open','main-columns',button('Edit Tree'),{selector:'.tp-column .tp-branch',enabled:true});
+        await measure('tree.open','main-columns',page.locator(TREE_VIEW_SELECTOR),{selector:'.tp-column .tp-branch',enabled:true});
         // Removal must preserve all fixture membership, then navigate date/cell.
         await measure('tree.split_change','remove-epoch-block',button('Remove Epoch block grouping'),{selector:'.tb-steps',splitLabels:['Reorder Recording date, level 1','Reorder Cell, level 2'],totalText:`Current view · ${meta.main_count.toLocaleString('en-US')} epochs`});
         const branches=page.locator('.tp-column .tp-branch');await branches.first().click();
