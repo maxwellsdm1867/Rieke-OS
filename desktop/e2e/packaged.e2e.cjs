@@ -271,8 +271,29 @@ async function main() {
     receipt.test_project_draft_path=await projectDraftPath(fixture,current[0]);
     await page.screenshot({path: path.join(output, 'project.png')});
   });
-  await check('workspace actual app icon loads at upper right without overlap at normal and narrow native widths',
-    () => verifyHeaderIcon('.header-app-icon', '.app-header', 'workspace-icon'));
+  await check('workspace sidebar keeps Appearance and App Updates without duplicate header controls at native widths', async () => {
+    const measurements=[];
+    try {
+      for(const width of [1440,960]) {
+        await application.evaluate(({BrowserWindow},width)=>BrowserWindow.getAllWindows()[0].setContentSize(width,900),width);
+        await page.waitForFunction(width=>window.innerWidth===width,width);
+        assert.equal(await page.locator('.header-app-icon').count(),0);
+        const rail=page.locator('.rail');
+        const appearance=rail.getByRole('button',{name:'Appearance',exact:true});
+        const updates=rail.getByRole('button',{name:/^App Updates/});
+        assert.equal(await appearance.count(),1);assert.equal(await updates.count(),1);
+        assert.equal(await appearance.isVisible(),true);assert.equal(await updates.isVisible(),true);
+        const a=await appearance.boundingBox(),u=await updates.boundingBox();
+        assert.ok(a&&u&&a.width>0&&u.width>0&&a.x>=0&&u.x>=0&&a.x+a.width<=width&&u.x+u.width<=width);
+        assert.ok(a.y+a.height<=u.y||u.y+u.height<=a.y,'Sidebar controls must not overlap');
+        await updates.click();await page.getByRole('dialog',{name:'App Updates',exact:true}).waitFor();
+        await page.getByRole('button',{name:'Close updates',exact:true}).click();
+        await page.screenshot({path:path.join(output,`workspace-sidebar-${width}.png`)});
+        measurements.push({viewport:width,appearance:a,updates:u});
+      }
+    } finally {await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1440,900));}
+    return {duplicate_header_removed:true,sidebar_controls_visible:true,updates_dialog_opened:true,native_window_widths:measurements};
+  });
   await check('retained warm navigation preserves the current view and ordinary active autosave', async () => {
     const secondName = projectName + ' second';
     await page.getByRole('button', {name: 'Add project', exact: true}).click();
