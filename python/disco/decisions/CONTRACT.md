@@ -17,6 +17,17 @@ reads are not a coherent snapshot.
 operation identity and durable actor/request receipts, including no-ops. A retry
 must retain the same request identity; inverse facts cover changed members and
 must not rerun a changed query. Admission limits are not streaming guarantees.
+Group preview compares the client's revision against the same service-owned
+prepared navigation authority used by the displayed tree, when that authority
+is applicable. The existing bounded canonical scope still resolves exact targets;
+prepared authority is verified after resolution and again before retaining the
+preview. Copied/custom readers retain their canonical revision policy. A missing
+or changed prepared view refuses the preview with HTTP 409 and an instruction to
+reopen the group, rather than silently preparing a different target set. Apply,
+receipt replay and changed-only undo keep their existing generation/source/author
+checks. The prepared-tree regression cases in `test_workspace_annotation_groups`
+cover protocol/source groups, cell paths, 1,857-target apply/undo, stale tokens,
+closing-fence refusal, copied readers and HTTP preparation refusal.
 `disco.decisions.curation` owns versioned project curation and frozen reference records.
 A metadata fingerprint change makes old approval unreviewed; revision conflicts
 must expose current state. Acquisition data and raw recordings are immutable.

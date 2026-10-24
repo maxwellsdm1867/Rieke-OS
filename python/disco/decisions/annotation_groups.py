@@ -23,6 +23,7 @@ from disco.metadata.explore_queries import context_annotation_fields, context_an
 from disco.workbench.recipes import checksum, parse_splits
 from disco.navigation.tree import joint_definition
 from disco.navigation.tree_pages import TreePages, TreePath, _retained_scope_bytes, validate_tree_path
+from disco.navigation.publication_changes import PreparationRequired
 
 PROJECT_LIMIT=10_000
 SCOPE_BYTES=64*1024*1024
@@ -30,6 +31,13 @@ RETAINED_BYTES=8*1024*1024
 OPERATION_BYTES=32*1024*1024
 PREVIEW_SECONDS=600
 MAX_PREVIEWS=4
+
+
+class GroupPreviewConflict(RevisionConflict):
+    """A refused read preview; no group operation has been created or saved."""
+    def __init__(self,current):
+        super().__init__(current)
+        self.args=('This tag group changed; close it and reopen it from the current tree before tagging.',)
 
 
 class RetainedBudget:
@@ -167,11 +175,21 @@ class AnnotationGroups:
                 profiles=self.annotations.list_profiles()['profiles']
                 if profile not in {row['profile_uuid'] for row in profiles}:raise ValueError('Choose an existing tag author profile')
                 before=generation(self.service,context)
-                result=TreePages(self.service)._scope(scope)
+                pager=TreePages(self.service)
+                prepared=getattr(self.service,'_prepared_navigation',None)
+                prepared_entry=(prepared.read(scope) if prepared is not None
+                    and prepared.service is self.service and pager._canonical_reader() else None)
+                # Protocol pages use the prepared publication revision, not the
+                # legacy membership hash. Resolve targets with the existing
+                # bounded oracle, but fence it with the displayed authority.
+                result=pager._scope(scope)
                 if _retained_scope_bytes(result,self.service.rows,SCOPE_BYTES)>SCOPE_BYTES:
                     raise ValueError('Tree scope exceeds the supported 64 MiB retained scope budget')
                 rows,_,values,definitions,order,revision=result
-                if revision!=scope['revision']:raise RevisionConflict({'tree':'Tree changed; reopen the group'})
+                if prepared_entry is not None:
+                    prepared.verify(prepared_entry)
+                    revision=prepared_entry.revision
+                if revision!=scope['revision']:raise GroupPreviewConflict({'tree':'Tree changed; reopen the group'})
                 path=TreePath(order,definitions,scope.get('path',[]))
                 vector=self._vector(context)
                 targets=[];budget=RetainedBudget()
@@ -193,7 +211,8 @@ class AnnotationGroups:
                 guard=self.revision_guard(scope['protocol_uuid']) if scope.get('protocol_uuid') and self.revision_guard else None
                 fences=self._seals(context)
                 if self._vector(context)!=vector or generation(self.service,context)!=before:
-                    raise RevisionConflict({'tree':'Scope changed while capturing the group'})
+                    raise GroupPreviewConflict({'tree':'Scope changed while capturing the group'})
+                if prepared_entry is not None:prepared.verify(prepared_entry)
                 key=str(uuid.uuid4())
                 entry=dict(scope=scope,context=context,profile=profile,actor=actor,targets=targets,
                     vector=vector,fences=fences,guard=guard,expires=now+PREVIEW_SECONDS,bytes=budget.used)
@@ -340,7 +359,12 @@ def register_group_annotation_routes(app,service,shared_annotations,db_lock,regi
         except RecursionError as error:raise ValueError('Tree group JSON nesting is too deep') from error
     def actor():return getpass.getuser() or 'Local workspace user'
     @app.post('/api/annotations/group-preview')
-    def group_annotation_preview():return jsonify(groups.preview(body(),actor()))
+    def group_annotation_preview():
+        try:return jsonify(groups.preview(body(),actor()))
+        except PreparationRequired as error:
+            # Unlike a navigation page, a tag preview must not prepare or
+            # silently switch membership under the user's chosen group.
+            raise GroupPreviewConflict({'tree':str(error)}) from error
     @app.post('/api/annotations/group')
     def group_annotation_apply():return jsonify(groups.apply(body(),actor()))
     @app.post('/api/annotations/group-preview-release')

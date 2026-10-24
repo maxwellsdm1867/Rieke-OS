@@ -6,6 +6,7 @@ from threading import RLock
 import unittest
 from unittest.mock import patch
 import uuid
+from pathlib import Path
 
 import test_workspace_annotation_batch_guard as guard_fixture
 from test_workspace_curation import Table
@@ -57,6 +58,98 @@ class GroupTests(unittest.TestCase):
 
     def body(self,preview,tag='server group'):
         return dict(selection_uuid=preview['selection_uuid'],profile_uuid=self.profile,tag=tag,operation_uuid=str(uuid.uuid4()))
+
+    def prepare_navigation(self,scope):
+        from disco.metadata.disk_index import DiskMetadataIndex
+        from disco.navigation.prepared_navigation import PreparedNavigation
+        from test_workspace_prepared_navigation import Tracker
+        from workspace_service import publish_frozen
+        index=DiskMetadataIndex.build(Path(self.case.case.case.temp.name)/'group-prepared.sqlite',
+            self.service.rows,self.service.details,self.service.sources,'prepared',self.service.project['project_uuid'])
+        self.addCleanup(index.close);self.service.disk_index=index
+        for name in ('rows','cells','protocols','_fingerprints'):
+            setattr(self.service,name,publish_frozen(getattr(self.service,name),rows=name=='rows'))
+        self.service._recovery_tracker=Tracker()
+        owner=PreparedNavigation(TreePages(self.service),RLock());self.addCleanup(owner.close)
+        self.assertTrue(owner.supported());owner.prepare(scope)
+        self.service._prepared_navigation=owner
+        return owner
+
+    def test_prepared_protocol_group_uses_displayed_revision_and_keeps_large_group_apply_undo(self):
+        self.grow(1857)
+        scope={'protocol_uuid':self.service.protocol_id,'splits':'date,protocol,cell'}
+        self.prepare_navigation(scope)
+        page=TreePages(self.service).page(scope)
+        self.assertNotEqual(page['revision'],TreePages(self.service)._scope(scope)[-1])
+        preview=self.preview(scope)
+        self.assertEqual((preview['tree_revision'],preview['count']),(page['revision'],1857))
+        body=self.body(preview);result=self.groups.apply(body,'OS actor')
+        self.assertEqual(result['changed'],1857)
+        self.assertEqual({row['target_uuid'] for row in self.case.case.records.rows},set(self.service.rows))
+        undone=self.groups.undo(body['operation_uuid'],{'operation_uuid':str(uuid.uuid4())},'OS actor')
+        self.assertEqual(undone['changed'],1857)
+
+    def test_prepared_cell_branch_tags_only_matching_epochs(self):
+        scope={'protocol_uuid':self.service.protocol_id,'splits':'cell'}
+        self.prepare_navigation(scope)
+        page=TreePages(self.service).page(scope)
+        branch=page['branches'][0]
+        preview=self.preview({**scope,'path':branch['path']})
+        expected=TreePages(self.service).selection({**scope,'path':branch['path'],'revision':page['revision']},1)
+        result=self.groups.apply(self.body(preview),'OS actor')
+        self.assertEqual(result['changed'],1)
+        self.assertEqual([row['target_uuid'] for row in self.case.case.records.rows],expected['epoch_uuids'])
+
+    def test_prepared_source_scope_preserves_legacy_revision(self):
+        scope={'splits':''};self.prepare_navigation(scope)
+        page=TreePages(self.service).page(scope)
+        self.assertEqual(page['revision'],TreePages(self.service)._scope(scope)[-1])
+        self.assertEqual(self.preview(scope)['count'],2)
+
+    def test_prepared_preview_stale_token_and_authority_change_refuse_without_retaining_selection(self):
+        from disco.navigation.publication_changes import PreparationRequired
+        scope={'protocol_uuid':self.service.protocol_id,'splits':''}
+        self.prepare_navigation(scope)
+        revision=TreePages(self.service).page(scope)['revision']
+        with self.assertRaises(RevisionConflict):
+            self.groups.preview({'scope':{**scope,'revision':'0'*64},'profile_uuid':self.profile},'OS actor')
+        original=self.groups._verify_sources
+        def changed(targets):
+            original(targets)
+            self.service._recovery_tracker.value+=1
+        with patch.object(self.groups,'_verify_sources',side_effect=changed),self.assertRaises(PreparationRequired):
+            self.groups.preview({'scope':{**scope,'revision':revision},'profile_uuid':self.profile},'OS actor')
+        self.assertEqual(self.groups.selections,{})
+        self.assertEqual(self.case.case.records.rows,[])
+
+    def test_copied_service_does_not_accept_live_prepared_revision(self):
+        scope={'protocol_uuid':self.service.protocol_id,'splits':''}
+        self.prepare_navigation(scope)
+        revision=TreePages(self.service).page(scope)['revision']
+        self.groups.service=copy.copy(self.service)
+        with self.assertRaises(RevisionConflict):
+            self.groups.preview({'scope':{**scope,'revision':revision},'profile_uuid':self.profile},'OS actor')
+        self.assertEqual(self.groups.selections,{})
+
+    def test_http_preview_missing_preparation_and_stale_token_are_actionable_conflicts(self):
+        scope={'protocol_uuid':self.service.protocol_id,'splits':''}
+        owner=self.prepare_navigation(scope)
+        revision=TreePages(self.service).page(scope)['revision']
+        client=self.case.case.client;headers=self.case.case.headers
+        valid=client.post('/api/annotations/group-preview',json={
+            'scope':{**scope,'revision':revision},'profile_uuid':self.profile},headers=headers)
+        self.assertEqual(valid.status_code,200,valid.get_json())
+        client.post('/api/annotations/group-preview-release',json={
+            'selection_uuid':valid.get_json()['selection_uuid']},headers=headers)
+        for token,discard in [('0'*64,False),(revision,True)]:
+            if discard:owner.entries.clear()
+            refused=client.post('/api/annotations/group-preview',json={
+                'scope':{**scope,'revision':token},'profile_uuid':self.profile},headers=headers)
+            self.assertEqual(refused.status_code,409,refused.get_json())
+            self.assertEqual(refused.get_json()['code'],'stale_workspace')
+            self.assertIn('reopen',refused.get_json()['error'])
+            self.assertNotIn('Curation changed',refused.get_json()['error'])
+        self.assertEqual(self.case.case.records.rows,[])
 
     def test_1857_complete_server_targets_small_response_replay_and_changed_only_undo(self):
         self.grow(1857)

@@ -2126,6 +2126,7 @@
             "disco.decisions.annotations",
             "disco.decisions.curation",
             "disco.metadata.explore_queries",
+            "disco.navigation.publication_changes",
             "disco.navigation.tree",
             "disco.navigation.tree_pages",
             "disco.workbench.recipes",
