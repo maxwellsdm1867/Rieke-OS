@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
-import {ArrowUpCircle,RefreshCw,X} from 'lucide-react';
+import {ArrowUpCircle,RefreshCw,X,CheckCircle2,Download,AlertCircle,ArrowRight,Clock3,ShieldCheck} from 'lucide-react';
 import {api} from '../../api.js';
 import {updateNotice,releaseLink,watchAppUpdates,mergeUpdateCheck,claimUpdateDiscovery} from '../appUpdates.js';
 import './AppUpdates.css';
@@ -32,25 +32,36 @@ function UpdateDialog({status,busy,operation,error,onCheck,onClose,onDownload,on
   const progress=progressing?(status?.state==='Downloading'?percent(status.progress)??percent(status.phase_progress):percent(status?.phase_progress)):undefined;
   const readyMessage=desktop?'Update ready. Choose Restart to update when your work is saved.':download?.result?.message||'Update ready. Close DISCO and all project services; the next launch will use this version.';
   const message=progressing?stage:ready?readyMessage:notice?.message||status?.message||'Check for a published DISCO release.';
+  const failed=!!error||download?.state==='failed'||['error','Error','Failed'].includes(status?.state);
+  const current=['Current','up_to_date'].includes(status?.state);
+  const headline=failed?'Update needs attention':progressing?stage:ready?'Ready to update':notice?'Update available':current?'You’re up to date':'Check for updates';
+  const StatusIcon=failed?AlertCircle:progressing?RefreshCw:ready?ShieldCheck:notice?Download:current?CheckCircle2:RefreshCw;
   return createPortal(<dialog ref={dialog} className="app-update-dialog" aria-labelledby="app-update-title" onCancel={event=>{event.preventDefault();onClose();}}>
     <header><h2 id="app-update-title">App Updates</h2><button autoFocus className="icon-button" aria-label="Close updates" onClick={onClose}><X size={18}/></button></header>
-    <p>DISCO app version: <strong>{installed||'Development checkout'}</strong></p>
-    {testing&&<p><strong>Unsigned testing</strong> · Install only releases you trust from the DISCO GitHub repository.</p>}
-
-    <p className="app-update-automatic">{testing?'Updates are checked automatically at startup and about once an hour. You choose when to download and restart to update.':desktop?'Updates are checked automatically at startup and about once an hour. Available updates download quietly.':'Updates are checked automatically when you open the app and every 15 minutes while it is visible. Available updates appear here quietly.'}</p>
-    {!testing&&(desktop||status?.can_stage)&&<p>{desktop?'New versions download quietly. Choose Restart to update after verification; ordinary Quit closes the current app.':'After you close DISCO and its project services, the next launch applies the prepared update.'}</p>}
+    <div className="app-update-versions"><span>Installed <strong>{installed||'Development checkout'}</strong></span>{notice&&<><ArrowRight size={15} aria-hidden="true"/><span>Available <strong>{notice.version}</strong></span></>}{testing&&<span className="app-update-channel">Unsigned testing</span>}</div>
+    <section className={`app-update-summary ${failed?'needs-attention':notice?'update-available':current?'is-current':''}`} aria-label="Update status">
+      <span className="app-update-status-icon"><StatusIcon size={26} aria-hidden="true" className={progressing?'spin':''}/></span>
+      <div><h3>{headline}</h3>
     <div className="app-update-progress">
       <div className="app-update-progress-label"><p role="status" aria-live="polite" aria-atomic="true">{message}</p>{progress!==undefined&&<span className="app-update-progress-percent" aria-hidden="true">{progress}%</span>}</div>
-      <div className="app-update-progress-track">{progressing&&<progress max={100} value={progress} aria-label={stage.replace(/…$/,'')} aria-valuetext={progress===undefined?'In progress':`${progress}%`}/>}</div>
+      {progressing&&<div className="app-update-progress-track"><progress max={100} value={progress} aria-label={stage.replace(/…$/,'')} aria-valuetext={progress===undefined?'In progress':`${progress}%`}/></div>}
     </div>
 
+      </div>
+    </section>
+    <p className="app-update-schedule"><Clock3 size={15} aria-hidden="true"/><span>{desktop?'Automatic checks · About every hour':'Automatic checks · Every 15 minutes while visible'}</span></p>
+    <details className="app-update-details"><summary>How updates work</summary>
+      {testing&&<p>Install only releases you trust from the DISCO GitHub repository.</p>}
+      <p className="app-update-automatic">{testing?'Updates are checked automatically at startup and about once an hour. You choose when to download and restart to update.':desktop?'Updates are checked automatically at startup and about once an hour. Available updates download quietly.':'Updates are checked automatically when you open the app and every 15 minutes while it is visible. Available updates appear here quietly.'}</p>
+      {!testing&&(desktop||status?.can_stage)&&<p>{desktop?'New versions download quietly. Choose Restart to update after verification; ordinary Quit closes the current app.':'After you close DISCO and its project services, the next launch applies the prepared update.'}</p>}
+    </details>
     {status?.check_error&&!error&&<p role="status">{status.check_error}</p>}
     {error&&<p role="alert" className="error">{error}</p>}
     {notice&&!desktop&&!status?.can_stage&&<p>Automatic installation is not available for this installation. Review the release instructions before updating.</p>}
 
     {download?.state==='failed'&&<p role="alert">{download.error}</p>}
-    {status?.checked_at&&<small>Last checked: {new Date(status.checked_at).toLocaleString()}</small>}
-    <footer>{url&&(desktop?<button onClick={()=>desktopBridge().openReleaseNotes(url)}>Release notes</button>:<a href={url} target="_blank" rel="noopener noreferrer">Release notes</a>)}{notice&&(testing?status.can_download:!desktop&&status.can_stage)&&!ready&&<button disabled={busy||download?.state==='running'} onClick={onDownload}>{download?.state==='failed'?'Retry download':'Download update'}</button>}{desktop&&ready&&<button disabled={busy} onClick={onRestart}>Restart to update</button>}<button disabled={busy} onClick={onCheck}><RefreshCw size={14} className={busy?'spin':''}/> Check for updates</button></footer>
+    {status?.checked_at&&<small className="app-update-checked">Last checked: {new Date(status.checked_at).toLocaleString()}</small>}
+    <footer>{url&&(desktop?<button onClick={()=>desktopBridge().openReleaseNotes(url)}>Release notes</button>:<a href={url} target="_blank" rel="noopener noreferrer">Release notes</a>)}{notice&&(testing?status.can_download:!desktop&&status.can_stage)&&!ready&&<button className="app-update-primary" disabled={busy||download?.state==='running'} onClick={onDownload}><Download size={15} aria-hidden="true"/>{download?.state==='failed'?'Retry download':'Download update'}</button>}{desktop&&ready&&<button className="app-update-primary" disabled={busy} onClick={onRestart}><RefreshCw size={15} aria-hidden="true"/>Restart to update</button>}<button disabled={busy} onClick={onCheck}><RefreshCw size={14} className={busy?'spin':''}/> Check for updates</button></footer>
   </dialog>,document.body);
 }
 
