@@ -7,9 +7,6 @@
 
 .column-tree[aria-busy=true] .tp-branch:disabled,.column-tree[aria-busy=true] .tp-epoch:disabled,.column-tree[aria-busy=true] .tp-path button:disabled{opacity:1}
 
-.column-tree .tp-cell-selectable{padding-left:24px}
-.column-tree .tp-cell-select{position:absolute;left:5px;top:14px;width:14px;height:14px;margin:0;accent-color:var(--accent)}
-.column-tree .tp-cell-select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 
 /* Size the adjacent trace against the actual navigation viewport. */
 .column-tree .tp-columns{container-type:inline-size}
