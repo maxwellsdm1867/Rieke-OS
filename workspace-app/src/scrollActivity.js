@@ -13,7 +13,7 @@ export function installScrollActivity(root = document) {
   };
   root.addEventListener('scroll', onScroll, {capture: true, passive: true});
   return () => {
-    root.removeEventListener('scroll', onScroll, true);
+    root.removeEventListener('scroll', onScroll, {capture: true});
     for (const [element, timer] of pending) {
       clearTimeout(timer);
       element.removeAttribute('data-scroll-active');
