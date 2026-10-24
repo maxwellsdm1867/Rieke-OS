@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 
 const testing = {state:'Current',installed:'0.1.3',channel:'unsigned-testing',manual_updates:true};
 function text(node){if(typeof node==='string')return node;if(!node)return '';return (Array.isArray(node)?node:node.children||[]).map(text).join('');}
-async function harness(initial=testing,{source=false}={}){
+async function harness(initial=testing,{source=false,compact=false}={}){
   const old={window:globalThis.window,document:globalThis.document,fetch:globalThis.fetch};
   const fixture={status:initial,downloads:0,restarts:0,checks:0,requests:[]};let listener;
   const bridge={status:async()=>fixture.status,onStatus:fn=>{listener=fn;return()=>{listener=null;};},
@@ -27,7 +27,7 @@ async function harness(initial=testing,{source=false}={}){
     plugins:[{name:'update-dialog-browser-boundary',enforce:'pre',resolveId:id=>id==='react-dom'?'\0update-portal':undefined,
       load:id=>id==='\0update-portal'?'export const createPortal=children=>children;':undefined}]});
   const {default:AppUpdates}=await server.ssrLoadModule('/src/app-updates/ui/AppUpdates.jsx');let renderer;
-  await act(async()=>{renderer=TestRenderer.create(React.createElement(AppUpdates),{createNodeMock:node=>node.type==='dialog'?{showModal(){},close(){}}:null});});
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(AppUpdates,{compact}),{createNodeMock:node=>node.type==='dialog'?{showModal(){},close(){}}:null});});
   const h={fixture,get text(){return text(renderer.toJSON());},get buttons(){return renderer.root.findAllByType('button');},get progress(){return renderer.root.findAllByType('progress');},
     async click(name){const button=h.buttons.find(node=>text(node).trim()===name||node.props['aria-label']===name);assert.ok(button,`Button missing: ${name}`);await act(async()=>button.props.onClick());},
     async open(){await act(async()=>h.buttons.find(node=>node.props['aria-haspopup']==='dialog').props.onClick());},
@@ -136,5 +136,27 @@ test('failure stops progress and keeps retry actions usable',async()=>{
   assert.equal(h.progress.length,0);assert.match(h.text,/Update validation failed/);
   assert.equal(h.buttons.find(node=>text(node).trim()==='Download update').props.disabled,false);
   assert.equal(h.buttons.some(node=>text(node).trim()==='Restart to update'),false);
+ }finally{await h.close();}
+});
+
+test('compact rail indicator follows update status and opens the existing dialog without losing its notice',async()=>{
+ const h=await harness(testing,{compact:true});
+ const entry=()=>h.buttons.find(node=>node.props['aria-haspopup']==='dialog');
+ try{
+  assert.match(entry().props.className,/app-update-rail-button/);
+  assert.doesNotMatch(entry().props.className,/has-update/);
+  await h.emit({...testing,state:'Available',available:'0.1.4',can_download:true});
+  assert.match(entry().props.className,/has-update/);
+  assert.equal(entry().findAll(node=>node.props.className==='app-update-dot').length,1);
+  assert.match(entry().props['aria-label'],/0\.1\.4 is available/);
+  await h.open();assert.match(h.text,/Download update/);
+  await h.click('Close updates');assert.match(entry().props.className,/has-update/);
+  await h.emit({...testing,state:'Ready',available:'0.1.4'});
+  assert.match(entry().props.title,/Restart to update/);
+  await h.open();assert.match(h.text,/Restart to update/);
+  assert.equal(h.fixture.downloads,0);assert.equal(h.fixture.restarts,0);
+  await h.click('Close updates');await h.emit(testing);
+  assert.doesNotMatch(entry().props.className,/has-update/);
+  assert.equal(entry().findAll(node=>node.props.className==='app-update-dot').length,0);
  }finally{await h.close();}
 });

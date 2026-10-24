@@ -54,7 +54,7 @@ function UpdateDialog({status,busy,operation,error,onCheck,onClose,onDownload,on
   </dialog>,document.body);
 }
 
-export default function AppUpdates({sidebar=false}){
+export default function AppUpdates({sidebar=false,compact=false}){
   const [status,setStatus]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[open,setOpen]=useState(false);
   const alive=useRef(false),checking=useRef(false);
   const [download,setDownload]=useState(null);
@@ -95,7 +95,7 @@ export default function AppUpdates({sidebar=false}){
   function openDetails(){setDiscovery(null);setOpen(true);}
   const detail=ready?`DISCO ${notice?.version||status?.available||''} is ready${desktopBridge()?' — choose Restart to update':' for the next launch'}`:notice?.message;
 
-  return <><button className={`${sidebar?'nav-item app-update-nav':'app-update-button'} ${notice?'has-update':''}`} onClick={openDetails} title={detail||status?.message||'App updates'} aria-label={`App Updates${detail?` — ${detail}`:''}`} aria-haspopup="dialog" aria-expanded={open}><ArrowUpCircle size={17}/><span>App Updates</span>{notice&&<span className="app-update-badge" role="status" aria-live="polite">{status?.channel==='unsigned-testing'?`${ready?'Ready · ':''}v${notice.version}`:ready?'Ready':'Update'}</span>}</button>
+  return <><button className={`${compact?'app-update-rail-button':sidebar?'nav-item app-update-nav':'app-update-button'} ${notice?'has-update':''}`} onClick={openDetails} title={detail||status?.message||'App updates'} aria-label={`App Updates${detail?` — ${detail}`:''}`} aria-haspopup="dialog" aria-expanded={open}><ArrowUpCircle size={compact?20:17} aria-hidden="true"/>{!compact&&<span>App Updates</span>}{compact&&notice&&<span className="app-update-dot" aria-hidden="true"/>}{compact&&<span className="app-update-rail-status" role="status" aria-live="polite">{detail||''}</span>}{!compact&&notice&&<span className="app-update-badge" role="status" aria-live="polite">{status?.channel==='unsigned-testing'?`${ready?'Ready · ':''}v${notice.version}`:ready?'Ready':'Update'}</span>}</button>
     {discovery&&!open&&createPortal(<aside className="app-update-discovery" role="status" aria-live="polite"><ArrowUpCircle size={21}/><div><strong>App update available</strong><p>{discovery.message}</p><button onClick={openDetails}>View update details</button></div><button className="icon-button" aria-label="Dismiss update notification" onClick={()=>setDiscovery(null)}><X size={16}/></button></aside>,document.body)}
 
     {open&&<UpdateDialog status={status} busy={busy||!!operation||['Checking','Downloading','Validating','Draining','Installing'].includes(status?.state)} operation={operation} error={error} onCheck={()=>check(true)} onDownload={stage} onRestart={restart} download={download} onClose={()=>setOpen(false)}/>}</>;
