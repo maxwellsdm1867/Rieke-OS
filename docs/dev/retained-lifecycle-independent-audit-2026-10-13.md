@@ -94,3 +94,22 @@ The prepared-only shell preserves hidden/inert presentation, not scientific auth
 `src/traces/preparedEmptyShell.test.js` covers capability arrival, current first-focus width, no empty I/O, source/publication retirement, late replies, error/retry behavior, actual Viewer Pan-to-empty-to-reselect parity, generic Trace opt-out, Sample preference preservation, held pointer release, metadata-settled null trace admission and SelectionOverview precedence. The external final candidate `9672804` passed 42 scoped checks; its two actual-entry parity tests also passed against baseline. The integration removes only an external-prototype comment and a test-only source-root override. Integrated full-suite qualification belongs to the integration owner and is not asserted here. Browser evidence at `8315179` uses a **Synthetic million-sample test fixture**, not the user's recordings; all 48 layout/accessibility cases and all 24 focused plot crops matched. Strict full-image comparison still records four outside-plot pixel differences reproduced without source change; the explicitly reviewed supplementary proof and artifact limitation remain in `evidence/direct-recovery/empty-shell-qualified-proof.md`. Ordinary timing and setup observations remain separately attributed, and the under-50-ms complete-display objective is not achieved.
 
 After the two scoped receipt updates, the standalone inventory checker passed all **243 modules** and all **four lifecycle policy tests passed in 639.320 ms**. Exact output is `evidence/direct-recovery/empty-shell-integrated-lifecycle-policy-tests.log` in the external kit. This is integrated receipt/policy validation, not new latency, native-H5, installed-app or full-suite qualification.
+
+## Combined UI review for 0.2.1 (2026-10-23)
+
+The integration review compared the current combined UI against the previously
+reviewed automatic-preparation source `63143d3`. Thirteen changed modules retain
+identical ordered effect-site records; one new pure protocol-status helper has
+no effects. Only those fourteen review receipts were updated, with module-local
+rationales. The update/dialog, appearance, cell drawing and overview edits are
+presentation changes. Inspector and MatchingEpochs now preserve the originating
+tree mode while their existing design-visibility transition still revokes pending
+selection authority. ColumnTree loses only the redundant shared-cell-tag checkbox;
+group/epoch actions and freshness checks remain.
+
+The initial full run at `a26c21f` passed 1,589 of 1,592 cases. Two hide tests still
+searched for Back to epochs although their fixture starts in Split tree; the
+third failure was this deliberately conservative whole-module review inventory.
+The hide tests now click Back to split tree and keep their original stale-range
+and late-failure assertions. No production behavior or test assertion was relaxed.
+Exact-source rerun and package qualification remain separate required evidence.

@@ -214,7 +214,7 @@ for(const change of ['unchanged','revision','binding','owner-replaced','owner-re
     await h.wait(()=>!document.querySelector('.column-tree .tree-group-tag-button').disabled&&document.querySelector('.tree-selection-tags .annotation-composer input')&&document.querySelector('.tree-preview-identity')?.textContent.includes('Epoch 61'),'settled design detail before synchronous retirement');
     await h.settle();h.cache.retire();
    }
-   if(change.startsWith('hide'))await h.click([...document.querySelectorAll('button')].find(node=>node.textContent===' Back to epochs'));
+   if(change.startsWith('hide'))await h.click([...document.querySelectorAll('button')].find(node=>node.textContent.trim()==='Back to split tree'));
    release();await h.settle();await h.settle();
    if(change==='owner-retired'){
     const target=document.querySelector('.tree-selection-tags .annotation-composer input');
