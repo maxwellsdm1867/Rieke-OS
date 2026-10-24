@@ -2,8 +2,8 @@
 :root{--scroll-track:transparent}
 *{--scroll-idle:transparent;scrollbar-width:thin;scrollbar-color:var(--scroll-idle) var(--scroll-track)}
 *:hover,*:focus-visible,*[data-scroll-active]{scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
-/* These two long reference views retain a position indicator at rest. */
-.project-overview-retained,.metadata-panel-scroll{--scroll-idle:var(--scroll-thumb)}
+/* Metadata retains a position indicator; Project overview is reactive too. */
+.metadata-panel-scroll{--scroll-idle:var(--scroll-thumb)}
 /* Prefer the WebKit path where supported, so thumb hover remains explicit. */
 @supports selector(::-webkit-scrollbar){
  *,*:hover,*:focus-visible,*[data-scroll-active]{scrollbar-width:auto;scrollbar-color:auto}
