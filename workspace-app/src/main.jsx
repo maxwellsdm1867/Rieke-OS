@@ -5,7 +5,10 @@ import './styles.css';
 import './themes.css';
 import {applyTheme,readCachedAppearance} from './appearance/appearanceThemes.js';
 import {installDesktopLifecycle} from './desktopLifecycle.js';
+import {installScrollActivity} from './scrollActivity.js';
 installDesktopLifecycle();
+const disposeScrollActivity = installScrollActivity();
+if (import.meta.hot) import.meta.hot.dispose(disposeScrollActivity);
 applyTheme(readCachedAppearance());
 class RenderBoundary extends React.Component {
   state = {error:null};
