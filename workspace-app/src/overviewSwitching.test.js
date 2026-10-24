@@ -47,3 +47,24 @@ test('project overview stays cached across protocol navigation in actual App',as
   assert.equal(h.fixture.requests.filter(r=>r.path==='/protocols/protocol-A/overview?cells_limit=200').length,1);
  }finally{await h.close();}
 });
+
+test('App sidebar pending badges prepare their root summary once during Inspect, without navigation polling',async()=>{
+ const h=await createWorkflowHarness();let prepared=false;
+ h.fixture.route={page:'protocol',protocol:'protocol-A',key:'route-inspect'};
+ h.fixture.respond=(url,options,fallback)=>{
+  if(url.pathname==='/api/workbench/prepare'){prepared=true;return {status:'ready'};}
+  if(url.pathname==='/api/workbench/summary')return prepared?{workbench_counts:[]}:{failure:202,status:'preparing',preparation:{status:'pending',resource:'workbench'}};
+  return fallback();
+ };
+ try{
+  await h.mount();await h.waitFor(()=>summary(h));
+  await h.act(()=>h.root.findByProps({'aria-label':'Inspect'}).props.onClick());
+  await h.waitFor(()=>h.fixture.requests.some(r=>r.path==='/workbench/prepare'));
+  assert.equal(h.fixture.requests.filter(r=>r.path==='/workbench/prepare').length,1);
+  const count=h.fixture.requests.filter(r=>r.path==='/workbench/summary').length;
+  await h.act(()=>h.root.findByProps({'aria-label':'Overview'}).props.onClick());
+  await h.act(()=>h.root.findByProps({'aria-label':'Inspect'}).props.onClick());
+  assert.equal(h.fixture.requests.filter(r=>r.path==='/workbench/summary').length,count);
+  assert.equal(h.fixture.requests.filter(r=>r.method!=='GET').length,1,'display preparation never submits merge or curation');
+ }finally{await h.close();}
+});

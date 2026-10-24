@@ -2738,19 +2738,15 @@
       ]
     },
     "src/protocol-overview/overviewCache.js": {
-      "fingerprint": "8062ef170013abb8770fe0a0b58323efd52b312a6a7b6b4ee935c58c3c7ff80b",
+      "fingerprint": "b77157537ed61536c69b81c05e05df38c527162135ff8bdf688092892f1be090",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "Delayed project prefetch visits only still-invalidated entries; a foreground protocol read retains its own revision clock and cannot be replaced or aborted by a delayed project clock.",
+      "reason": "Successful shared preparation invalidates only cached preparation refusals, leaving valid summaries reusable and hidden consumers deferred. A late pre-publication refusal re-reads against the completed publication instead of triggering another preparation. Existing request/owner and revision fences remain.",
       "tests": [
-        "src/preparedRead.test.js",
-        "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js",
-        "src/protocol-overview/overviewCache.test.js",
         "src/protocol-overview/overviewDemand.test.js",
-        "src/tree-browser/preparedTreeMount.test.js",
-        "src/workspaceChangesLedger.test.js",
-        "src/overviewSwitching.test.js"
+        "src/protocol-overview/prepareView.test.js",
+        "src/protocol-overview/preparationLifecycle.test.js",
+        "src/incoming-workbench/workbenchPreparation.test.js"
       ]
     },
     "src/protocol-overview/protocolOverviewModel.js": {
@@ -3005,7 +3001,7 @@
       ]
     },
     "src/protocol-overview/useOverviewResource.js": {
-      "fingerprint": "dd86cfb1e080f926c77b66f51e43c6ca75c8b0ff27163cc8a829b00b91212180",
+      "fingerprint": "03ad0857e0919eba9743ca8e7f1b4ae6d44d38aa90ced9949043cbc3590787fa",
       "sites": [
         {
           "owner": "useOverviewCache",
@@ -3015,7 +3011,7 @@
         {
           "owner": "useOverviewCache",
           "kind": "useEffect",
-          "fingerprint": "2eeaafb177b913390d75ae96e9e87f228a24d92cf69ec80c4383c9bfd7b9b91c"
+          "fingerprint": "524f63834eac3ac21e6ad7875df6e868ca2951b84f907ff31fd77367983e8c5d"
         },
         {
           "owner": "useOverviewResource",
@@ -3025,7 +3021,12 @@
         {
           "owner": "useOverviewResource",
           "kind": "useLayoutEffect",
-          "fingerprint": "67c7ea0490802716d2332d600288159edb0ba4bcd49ce80d061588ddc152b480"
+          "fingerprint": "803e838f1792cf59907213e8f5c591f9e805afb5e69c9112534e5ee7e8d61501"
+        },
+        {
+          "owner": "useOverviewResource",
+          "kind": "useEffect",
+          "fingerprint": "350f2342f10cd9626403905801488ac6085c9887b3ddda0146e86354d6a8b3bd"
         },
         {
           "owner": "useOverviewResource",
@@ -3039,17 +3040,12 @@
         }
       ],
       "lifetime": "project-cache-and-active-demand",
-      "reason": "Hidden demand releases reads. Deferred reload remains stale; only committed visibility authorizes old reload closures. F2 typed-change-events review (2026-10-18): typed membership/curation invalidates only that protocol's summaries and /overview; structure keeps the full invalidate+prefetch. F2 curation receipt channel review (2026-10-18): applied curation receipts invalidate that protocol's summaries only. Prepared-view review (2026-10-20): Explicit preparation is scoped by descriptor/revision/visibility and an AbortController; stale handlers/completions cannot renew another destination. Pending canonical durations poll only while visible, every two seconds with at most fifteen attempts; nested pending statuses are included. No scientific membership or write authority is retained. Independent post-native review 2026-10-21: The existing active-demand read effect now responds to populated invalidation with unchanged descriptor. Hidden-view guard remains; cache owner/generation checks retire stale reads and unchanged current operations coalesce. The invalidation transition cannot treat retained display data as fresh authority. Final root-demand review 2026-10-21: renewRetained permits populated root invalidation renewal only on Overview while initial missing root demand remains live for shell startup; protocol active-demand behavior and retained-visibility guards remain unchanged. Native startup restoration and merge/Undo/Finish renewal passed; no command is replayed.",
+      "reason": "Visible display demand prepares once per current descriptor after 202, cancels on owner/visibility changes, and stops after failure or a second refusal. Known workspace revisions invalidate; focus/reconnect/visibility do not refresh ready summaries. Bounded polling only completes known pending duration work. Custom request owners bypass automatic preparation.",
       "tests": [
-        "src/epoch-browser/curationReceipts.test.js",
-        "src/preparedRead.test.js",
-        "src/protocol-overview/overviewCache.test.js",
         "src/protocol-overview/overviewDemand.test.js",
-        "src/protocolBrowseEntry.test.js",
-        "src/traces/retainedReadLifecycle.test.js",
-        "src/tree-browser/preparedTreeMount.test.js",
-        "src/workspaceChangesLedger.test.js",
-        "src/overviewSwitching.test.js"
+        "src/protocol-overview/prepareView.test.js",
+        "src/protocol-overview/preparationLifecycle.test.js",
+        "src/incoming-workbench/workbenchPreparation.test.js"
       ]
     },
     "src/protocol-tree-layout/treeLayoutPersistence.js": {
@@ -4345,14 +4341,15 @@
       ]
     },
     "src/protocol-overview/ui/ViewPreparation.jsx": {
-      "fingerprint": "223e5331103eab188a6bc942a772c92816b4367f9e509dd9f1641a97325d0ac6",
+      "fingerprint": "19323a3c78c8d7ddd558b6fa85f69a4471286c1e81bea65a8d5c812c04354a92",
       "sites": [],
       "lifetime": "pure-presentation",
-      "reason": "Prepared-view review (2026-10-20): Explicit button calls the supplied preparation owner; busy/failed text is presentation only, and no effect or hidden automatic preparation is introduced.",
+      "reason": "Automatic display preparation has neutral loading text; only the failed/still-unready fallback offers Retry. The control obtains no scientific consent.",
       "tests": [
-        "src/preparedRead.test.js",
         "src/protocol-overview/overviewDemand.test.js",
-        "src/tree-browser/preparedTreeMount.test.js"
+        "src/protocol-overview/prepareView.test.js",
+        "src/protocol-overview/preparationLifecycle.test.js",
+        "src/incoming-workbench/workbenchPreparation.test.js"
       ]
     },
     "src/tree-browser/prepareTree.js": {
@@ -4368,18 +4365,24 @@
     },
     "src/incoming-workbench/useWorkbenchPreparation.js": {
       "lifetime": "explicit-project-scoped-preparation",
-      "reason": " Workbench preparation review (2026-10-20): explicit preparation aborts on project/protocol/revision/visibility/unmount; held completion cannot reload another owner. Fresh GET remains required, held reads disable duplicate preparation and merge authority. Unavailable review counts do not become zero.",
+      "reason": "Visible pending queue/summary demand prepares once, coalesced per project, then requires a fresh read before actions. Failure/repeated refusal stops at Retry. Owner/project/revision/visibility retirement cancels and fences late results; successful fresh data permits later change-driven preparation.",
       "tests": [
-        "src/importReviewDialog.test.js",
-        "src/incoming-workbench/workbenchPreparation.test.js",
-        "src/workbenchRouteRendering.test.js"
+        "src/protocol-overview/overviewDemand.test.js",
+        "src/protocol-overview/prepareView.test.js",
+        "src/protocol-overview/preparationLifecycle.test.js",
+        "src/incoming-workbench/workbenchPreparation.test.js"
       ],
-      "fingerprint": "c8421770db90bb8ebbc047898cdea4952e646aa42b8c07b72e7b080afc998bd5",
+      "fingerprint": "9baffe130e9d53ac77ec9acc1b029c6c71dec421251634be5a134cca12be5303",
       "sites": [
         {
           "owner": "useWorkbenchPreparation",
           "kind": "useLayoutEffect",
-          "fingerprint": "fcd2dd398dc68968bdc2514581ded2e8c24138052ac226a80d776626afd2ecd0"
+          "fingerprint": "378850443259f34250e0b55607fce82b44e7a66462e3ed249b77c95fbd0549db"
+        },
+        {
+          "owner": "useWorkbenchPreparation",
+          "kind": "useEffect",
+          "fingerprint": "b0c33aefd91d8961e244fec21e88979a3477df1976ad0aef680a62648b577049"
         }
       ]
     },
@@ -4420,6 +4423,18 @@
       "lifetime": "render-only",
       "tests": [
         "src/protocolSuggestionHold.test.js"
+      ]
+    },
+    "src/protocol-overview/prepareView.js": {
+      "fingerprint": "fe51609c2cf51fb4d648e1a5c2f0d0c3a1b8f876ee254ef442134b3083d92d4c",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "Display-only in-flight POST sharing by exact project owner and resource. Last subscriber cancels after a microtask reconnect allowance; one departure cannot cancel remaining consumers. No completed readiness cache and no edit/merge authority.",
+      "tests": [
+        "src/protocol-overview/overviewDemand.test.js",
+        "src/protocol-overview/prepareView.test.js",
+        "src/protocol-overview/preparationLifecycle.test.js",
+        "src/incoming-workbench/workbenchPreparation.test.js"
       ]
     }
   }

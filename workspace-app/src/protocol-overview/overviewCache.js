@@ -1,8 +1,8 @@
-// Read-only overview snapshots live above route mounts. A local change or a
-// return to the app invalidates them; simply navigating does not. Export/edit
+// Read-only overview snapshots live above route mounts. A local or otherwise
+// verified workspace change invalidates them; focus and navigation do not. Export/edit
 // requests never consume this cache as authority.
 export function createOverviewCache({maxEntries=12,maxBytes=8*1024*1024}={}){
- const entries=new Map(),listeners=new Set(),users=new Map();let version=0,bytes=0,queue=0;
+ const entries=new Map(),listeners=new Set(),users=new Map();let version=0,bytes=0,queue=0,preparationVersion=0;
  const keyOf=({scope,path})=>JSON.stringify([scope,path]);
  const notify=()=>{version++;for(const listener of listeners)listener();};
  const remove=key=>{const entry=entries.get(key);if(!entry)return;entry.operation?.controller.abort();bytes-=entry.bytes||0;entries.delete(key);};
@@ -15,7 +15,7 @@ export function createOverviewCache({maxEntries=12,maxBytes=8*1024*1024}={}){
   }
   if(!entry){entry={...descriptor,data:null,etag:null,bytes:0,loading:false,error:null};entries.set(key,entry);}
   entry.operation?.controller.abort();
-  const operation={controller:new AbortController()};
+  const operation={controller:new AbortController(),preparationVersion};
   entry.operation=operation;entry.loading=true;entry.error=null;entry.preparation=null;entry.invalidated=false;
   entry.revision=descriptor.revision;entry.request=request;
   const previous=entry.data,etag=entry.etag;
@@ -41,6 +41,14 @@ export function createOverviewCache({maxEntries=12,maxBytes=8*1024*1024}={}){
    notify();return data;
   },error=>{
    if(operation.controller.signal.aborted||entries.get(key)!==entry||entry.operation!==operation)return;
+   // This refusal may have been produced before a sibling finished preparing.
+   // Re-read the new publication once instead of exposing the stale refusal or
+   // starting another preparation. A current-publication refusal still stops.
+   if(error.preparation&&operation.preparationVersion!==preparationVersion){
+    entry.operation=null;entry.invalidated=true;entry.loading=true;entry.error=null;entry.preparation=null;
+    if(users.has(key))return read(descriptor,{request,background});
+    notify();return;
+   }
    bytes-=entry.bytes;entry.bytes=0;entry.data=null;entry.etag=null;
    entry.loading=false;entry.error=error.message;entry.preparation=error.preparation||null;entry.operation=null;notify();
    throw error;
@@ -69,6 +77,14 @@ export function createOverviewCache({maxEntries=12,maxBytes=8*1024*1024}={}){
  }
  async function refresh(revision){invalidate();await prefetch(revision);}
  return {peek,read,refresh,prefetch,invalidate,keyOf,
+  prepared(){
+   preparationVersion++;
+   // One publication serves project and protocol summaries. Retire every old
+   // preparation refusal; visible consumers re-read, hidden consumers wait.
+   const stale=[...entries.values()].filter(entry=>entry.preparation);
+   for(const entry of stale){entry.preparation=null;entry.error=null;entry.invalidated=true;entry.loading=true;}
+   if(stale.length)notify();
+  },
   subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},
   snapshot:()=>version,
   acquire(descriptor){const key=keyOf(descriptor);users.set(key,(users.get(key)||0)+1);},

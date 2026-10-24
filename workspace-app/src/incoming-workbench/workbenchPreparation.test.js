@@ -5,7 +5,7 @@ import TestRenderer,{act} from 'react-test-renderer';
 import {fileURLToPath} from 'node:url';
 import {createServer} from '../test-support/isolatedVite.js';
 
-for(const kind of ['queue','summary'])test(`${kind} preparation is explicit and retires across project switch/unmount`,async t=>{
+for(const kind of ['queue','summary'])test(`${kind} preparation is automatic and retires across project switch/unmount`,async t=>{
  const previous={window:globalThis.window,fetch:globalThis.fetch};
  globalThis.window={...(previous.window||{}),addEventListener(){},removeEventListener(){}};
  const calls=[];let ready=false,held,latest,holdRead=false,releaseRead;
@@ -27,18 +27,17 @@ for(const kind of ['queue','summary'])test(`${kind} preparation is explicit and 
  let renderer;
  const render=async project=>act(()=>{const element=React.createElement(kind==='queue'?Queue:Summary,{project});if(renderer)renderer.update(element);else renderer=TestRenderer.create(element);});
  t.after(async()=>{await act(()=>renderer?.unmount());await server.close();Object.assign(globalThis,previous);});
- await render('A');assert.equal(calls.length,1);assert.equal(latest.data,null);
- await act(()=>renderer.root.findByType('button').props.onClick());assert.equal(calls.length,2);assert.equal(latest.preparing,true);
+ await render('A');assert.equal(calls.length,2);assert.equal(latest.data,null);assert.equal(latest.preparing,true);
  const abandoned=held;
- await render('B');assert.equal(calls[1].options.signal.aborted,true);assert.equal(calls.length,3);
- await act(()=>abandoned(new Response('{}')));assert.equal(calls.length,3);assert.equal(latest.data,null);
- await act(()=>renderer.root.findByType('button').props.onClick());ready=true;holdRead=true;
+ await render('B');assert.equal(calls[1].options.signal.aborted,true);assert.equal(calls.length,4);
+ await act(()=>abandoned(new Response('{}')));assert.equal(calls.length,4);assert.equal(latest.data,null);
+ ready=true;holdRead=true;
  await act(()=>held(new Response('{}')));assert.equal(calls.length,5);assert.equal(latest.data,null);assert.equal(latest.preparing,true);
- assert.equal(renderer.root.findByType('button').props.disabled,true);
+ assert.equal(renderer.root.findAllByType('button').length,0);
  await act(()=>latest.prepare());assert.equal(calls.length,5,'no second preparation while the fresh queue is held');
  holdRead=false;await act(()=>releaseRead());assert.equal(latest.data.queue_revision,'fresh');assert.equal(latest.preparation,undefined);
  ready=false;await act(()=>latest.reload());assert.equal(latest.data,null);
- await act(()=>renderer.root.findByType('button').props.onClick());const final=held;
+ assert.equal(latest.preparing,true);const final=held;
  await act(()=>renderer.unmount());renderer=null;assert.equal(calls.at(-1).options.signal.aborted,true);
  const count=calls.length;await act(()=>final(new Response('{}')));assert.equal(calls.length,count);
 });
@@ -54,5 +53,22 @@ test('import review exposes preparation without claiming zero pending or enablin
  const text=JSON.stringify(renderer.toJSON());
  assert.match(text,/Pending updates unavailable/);assert.doesNotMatch(text,/No pending protocol updates|Refreshing catalog totals/);
  const buttons=renderer.root.findAllByType('button');assert.equal(buttons.filter(node=>node.props['aria-label']==='Hold to merge all').length,0);
- await act(()=>buttons.find(node=>node.children.includes('Prepare view')).props.onClick());assert.equal(prepares,1);
+ await act(()=>buttons.find(node=>node.children.includes('Retry')).props.onClick());assert.equal(prepares,1);
+});
+
+test('Workbench automatic failure and repeated refusal stop; Retry recovers without a merge',async t=>{
+ const oldFetch=globalThis.fetch;let tree,current,fail=true,ready=false,posts=0,reads=0;
+ const {default:usePreparation}=await import('./useWorkbenchPreparation.js');
+ const {useResource}=await import('../api.js');
+ globalThis.fetch=async path=>{
+  if(path.endsWith('/prepare')){posts++;if(fail)throw Error('offline');return new Response('{}');}
+  reads++;return ready?new Response(JSON.stringify({queue_revision:'fresh'})):new Response(JSON.stringify({status:'preparing',preparation:{status:'pending',resource:'workbench'}}),{status:202});
+ };
+ function Probe(){current=usePreparation(useResource('/workbench/summary',0),'project','/workbench/summary',0);return null;}
+ t.after(async()=>{await act(()=>tree?.unmount());globalThis.fetch=oldFetch;});
+ await act(()=>{tree=TestRenderer.create(React.createElement(Probe));});assert.equal(posts,1);assert.equal(current.prepareError,'offline');
+ await act(()=>tree.update(React.createElement(Probe)));assert.equal(posts,1);
+ fail=false;await act(()=>current.prepare());assert.equal(posts,2);assert.equal(reads,2);assert.equal(current.preparation.status,'pending');
+ await act(()=>tree.update(React.createElement(Probe)));assert.equal(posts,2,'a second 202 cannot loop');
+ ready=true;await act(()=>current.prepare());assert.equal(posts,3);assert.equal(current.data.queue_revision,'fresh');
 });

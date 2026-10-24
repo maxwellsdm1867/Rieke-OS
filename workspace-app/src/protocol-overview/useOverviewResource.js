@@ -3,10 +3,10 @@ import {useEffect,useLayoutEffect,useMemo,useRef,useState,useSyncExternalStore} 
 import {api,useResource} from '../api.js';
 import {useWorkspaceRequestScope} from '../workspaceRequest.js';
 import {createOverviewCache} from './overviewCache.js';
+import {prepareView} from './prepareView.js';
 
 export function useOverviewCache(scope,revision,structureRevision=revision,change=null){
  const cache=useMemo(()=>createOverviewCache(),[scope]);
- const current=useRef(revision);current.current=revision;
  const structure=useRef(null),typed=useRef(null);
  useLayoutEffect(()=>{
   const structural=structure.current?.cache!==cache||structure.current?.revision!==structureRevision;
@@ -23,27 +23,9 @@ export function useOverviewCache(scope,revision,structureRevision=revision,chang
   cache.invalidate();
   if(structural){const timer=setTimeout(()=>{void cache.prefetch(revision);},200);return()=>clearTimeout(timer);}
  },[cache,revision,structureRevision,change?.seq]);
- useEffect(()=>{
-  let pendingFocus,internalUntil=0,projectVisible=true;
-  const bridge=window.riekeDesktop;
-  const stopVisibility=bridge?.onProjectVisibility?.(event=>{
-   projectVisible=event.visible!==false;
-   // Native view selection is not an external data change. Batch DOM focus
-   // with its native visibility message; scientific witness owners still
-   // revoke independently, and known revision changes still invalidate above.
-   if(projectVisible){internalUntil=Date.now()+250;clearTimeout(pendingFocus);}
-  });
-  const refresh=()=>{if(projectVisible)void cache.refresh(current.current);};
-  const focus=()=>{
-   if(!stopVisibility){refresh();return;}
-   clearTimeout(pendingFocus);
-   pendingFocus=setTimeout(()=>{if(Date.now()>internalUntil)refresh();},50);
-  };
-  const visible=()=>{if(document.visibilityState==='visible')focus();};
-  window.addEventListener('focus',focus);window.addEventListener('online',refresh);
-  document.addEventListener('visibilitychange',visible);
-  return()=>{clearTimeout(pendingFocus);stopVisibility?.();window.removeEventListener('focus',focus);window.removeEventListener('online',refresh);document.removeEventListener('visibilitychange',visible);cache.clear();};
- },[cache]);
+ // Display snapshots refresh from known workspace changes, not app focus,
+ // reconnect, or a timer. Commands still acquire their own current authority.
+ useEffect(()=>()=>cache.clear(),[cache]);
  return cache;
 }
 
@@ -56,19 +38,33 @@ export function useOverviewResource(path,revision,{cache,scope,active:requestedA
  useSyncExternalStore(enabled?cache.subscribe:subscribeNothing,enabled?cache.snapshot:zero,zero);
  const descriptor=useMemo(()=>path?{path,scope,revision}:null,[path,scope,revision]);
  const entry=enabled?cache.peek(descriptor):null;
- const preparationIdentity=useMemo(()=>({}),[descriptor,active,owner]),committedPreparation=useRef(null);
+ const preparationDemand=useMemo(()=>({}),[descriptor,owner]),attemptedPreparation=useRef(null);
+ const preparationIdentity=useMemo(()=>({}),[preparationDemand,active]),committedPreparation=useRef(null);
  const preparationOwner=useRef(null),[preparing,setPreparing]=useState(false),[prepareError,setPrepareError]=useState(null);
- useLayoutEffect(()=>{committedPreparation.current=preparationIdentity;setPreparing(false);setPrepareError(null);return()=>{committedPreparation.current=null;preparationOwner.current?.abort();preparationOwner.current=null;};},[preparationIdentity]);
+ useLayoutEffect(()=>{committedPreparation.current=preparationIdentity;setPreparing(false);setPrepareError(null);return()=>{committedPreparation.current=null;if(preparationOwner.current){attemptedPreparation.current=null;preparationOwner.current.abort();preparationOwner.current=null;}};},[preparationIdentity]);
  const prepare=async()=>{
   if(!active||!visible.current||owner||committedPreparation.current!==preparationIdentity||preparationOwner.current)return;
+  attemptedPreparation.current=preparationDemand;
   const controller=new AbortController();preparationOwner.current=controller;setPreparing(true);setPrepareError(null);
   try{
-   await api('/overview/prepare',{method:'POST',body:{},signal:controller.signal});
+   await prepareView(cache||preparationDemand,'/overview/prepare',{signal:controller.signal,request:async(path,options)=>{
+    const result=await api(path,options);
+    if(enabled&&!options.signal.aborted)cache.prepared();
+    return result;
+   }});
    if(controller.signal.aborted||preparationOwner.current!==controller)return;
-   if(enabled)await cache.read(descriptor,{request:api,force:true});else fallback.reload();
+   if(enabled)await cache.read(descriptor,{request:api});else fallback.reload();
   }catch(error){if(!controller.signal.aborted&&preparationOwner.current===controller)setPrepareError(error.message);}
   finally{if(preparationOwner.current===controller){preparationOwner.current=null;setPreparing(false);}}
  };
+ const preparation=enabled?entry?.preparation:fallback.preparation;
+ const preparationLoading=enabled?entry?.loading:fallback.loading;
+ const automaticPending=active&&!owner&&!!path&&!preparationLoading&&preparation?.status==='pending'&&attemptedPreparation.current!==preparationDemand;
+ useEffect(()=>{
+  if(!active||owner||!path||preparationLoading||preparing)return;
+  if(preparation?.status==='pending'&&attemptedPreparation.current!==preparationDemand)void prepare();
+  else if(!preparation&&(enabled?entry?.data&&!entry.error:fallback.data&&!fallback.error))attemptedPreparation.current=null;
+ },[active,owner,path,preparationLoading,preparing,preparation,preparationDemand,entry,fallback.data,fallback.error]);
  const durationData=enabled?entry?.data:fallback.data;
  const durationPending=durationData?.duration_status==='pending'||durationData?.counts?.duration_status==='pending'||
   durationData?.cells?.some(cell=>cell.duration_status==='pending')||durationData?.protocols?.some(protocol=>protocol.counts?.duration_status==='pending');
@@ -98,8 +94,8 @@ export function useOverviewResource(path,revision,{cache,scope,active:requestedA
   return()=>cache.release(descriptor);
  },[enabled,active,cache,descriptor,invalidatedDemand,reloadNonce]);
  const displayData=display.current&&display.current.cache===cache&&display.current.path===path&&display.current.scope===scope?display.current.data:null;
- if(!enabled)return {...fallback,displayData,prepare,preparing,prepareError};
- return {data:entry?.data||null,displayData,prepare,preparing,prepareError,preparation:entry?.preparation||null,error:entry?.error||null,
+ if(!enabled)return {...fallback,displayData,prepare,preparing:preparing||automaticPending,prepareError};
+ return {data:entry?.data||null,displayData,prepare,preparing:preparing||automaticPending,prepareError,preparation:entry?.preparation||null,error:entry?.error||null,
   loading:!!path&&(pendingReload.current===descriptor||!entry||entry.loading||entry.invalidated||entry.revision!==revision),
   reload:()=>{if(!descriptor)return;if(!visible.current){pendingReload.current=descriptor;setReloadNonce(value=>value+1);return;}void cache.read(descriptor,{request:api,force:true}).catch(()=>{});}};
 }

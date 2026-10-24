@@ -32,13 +32,22 @@ closing a review proves no rollback. UI labels never create recorded identities.
 
 ## Entry readiness
 
-Queue/summary HTTP 202 preparation responses are not queue authority. The compact
-Prepare view action explicitly POSTs `/workbench/prepare`, then requests a fresh
-queue/summary. `useWorkbenchPreparation` owns cancellation by project, protocol,
-revision, retained visibility and unmount; it never automatically retries or
-grants merge consent. Preparation and its subsequent fresh read keep actions
-unavailable. Overview review cards, Workbench and the import-review dialog expose
-the same preparation path; unavailable pending counts never display as no updates.
+Queue/summary HTTP 202 preparation responses are not queue authority. Visible demand POSTs `/workbench/prepare` once after a preparation refusal, then
+requests a fresh queue/summary. Concurrent consumers in one project share the
+request through `protocol-overview/prepareView.js`. `useWorkbenchPreparation`
+owns cancellation by project, protocol, revision, retained visibility and unmount.
+A failed preparation or a second refusal stops at explicit Retry; unchanged
+revisits do not restart that failed attempt. A successfully read view may prepare
+again after a later invalidation. Hidden consumers do not initiate preparation.
+Preparation and its subsequent fresh read keep actions unavailable and never
+grant merge consent. Overview review cards, Workbench and the import-review
+dialog use this path; unavailable counts never display as no updates.
+The App-owned project summary also supplies the persistent protocol sidebar's
+pending badges. Its initial and known-change reads are explicit shell demand,
+including while Inspect is selected; they do not poll or repeat on tab navigation.
+`overviewSwitching.test.js` mounts this path and verifies that only the display
+preparation POST occurs. `preparationLifecycle.test.js` exercises real ReactDOM
+StrictMode and Activity reconnects for both Overview and Workbench.
 
 App mounts Workbench independently of the main protocol summary and main tree
 layout. Incoming queue negotiation, preparation and fresh candidate context still

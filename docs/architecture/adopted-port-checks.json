@@ -1794,7 +1794,8 @@
           "allow": [
             "react",
             "workspace-app/src/api.js",
-            "workspace-app/src/retainedWorkspaceViews.js"
+            "workspace-app/src/retainedWorkspaceViews.js",
+            "workspace-app/src/protocol-overview/prepareView.js"
           ]
         },
         {

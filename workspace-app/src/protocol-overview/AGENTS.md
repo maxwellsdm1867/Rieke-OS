@@ -70,8 +70,10 @@ protocols use the same owner. A revisit at the same local revision returns the
 snapshot without a request. Known structure/import changes refresh only visited
 summaries in the background, serially; visible reads coalesce with that work.
 Tag/curation changes invalidate hidden summaries without competing with the live
-editor; opening one refreshes it. Focus/reconnect revalidate to catch external
-changes. Protocol ETags can confirm reuse without rebuilding the summary.
+editor; opening one refreshes it. App focus, reconnect and unchanged navigation do not invalidate display
+summaries. Explicit metadata refresh discovers external source changes; scientific
+commands continue to acquire independent current authority. Protocol ETags can
+confirm reuse without rebuilding the summary.
 
 Keys include the caller's presentation scope and complete URL. Custom request
 owners bypass this cache. Request replacement, project disposal, errors and
@@ -88,7 +90,7 @@ absent from that overview DTO; missing fields must not be treated as complete
 empty membership. Project overview keeps the full project DTO. Linked file-size
 reads inspect only relevant registered paths and never request epoch inventory.
 
-Retained Protocol panels keep Overview, Inspect and Workbench state separately. Summary failure exposes `displayData` independently of canonical `data`; App renders that display inert while keeping current authority unavailable. An invalidated unfinished root summary restarts even if its deferred summary revision did not change, preventing startup from remaining empty after simultaneous draft restoration and an annotation scan. `overviewDemand.test.js` covers this race and failed-refresh separation. Native project visibility messages suppress the coalesced internal focus refresh; genuine app focus/reconnect still revalidates. Disk presentation uses a fixed-height quiet status slot and disables Overview callbacks/recording-size requests until canonical data is current.
+Retained Protocol panels keep Overview, Inspect and Workbench state separately. Summary failure exposes `displayData` independently of canonical `data`; App renders that display inert while keeping current authority unavailable. An invalidated unfinished root summary restarts even if its deferred summary revision did not change, preventing startup from remaining empty after simultaneous draft restoration and an annotation scan. `overviewDemand.test.js` covers this race and failed-refresh separation. App focus/reconnect and native project visibility changes do not refresh display summaries. Disk presentation uses a fixed-height quiet status slot and disables Overview callbacks/recording-size requests until canonical data is current.
 
 Project and ordinary protocol overview summaries request a first window of 200
 cells. `useOverviewCells` owns later display-only windows separately from the
@@ -163,3 +165,28 @@ page, but passes `renewRetained:false` there to defer invalidation of a populate
 root snapshot. Returning to Overview renews it; changed descriptor revisions still
 read normally. Protocol summaries retain visible renewal. This preserves the
 external-annotation no-unrelated-summary-read contract in `workflowResponsiveness.test.js`.
+
+
+## Automatic display preparation
+
+A visible Overview that receives a preparation-required response automatically
+prepares once and reads again. Project root demand needed to open the workspace
+retains its existing active lifetime. `prepareView.js` coalesces concurrent POSTs
+within the project cache owner; one leaving consumer cannot cancel another's
+request. The last consumer cancels, with a microtask reconnect allowance.
+Custom scientific request owners never enter this path. A failed preparation or
+second refusal exposes Retry and cannot loop or retry merely on a tab revisit.
+A later current successful read resets the attempt for future invalidation.
+
+Successful preparation retires preparation refusals across the shared cache.
+Visible consumers re-read once; hidden consumers stay invalidated until needed.
+Valid summaries remain reusable. Preparation is display-only and does not grant
+edit/export/merge authority. `overviewDemand.test.js` covers automatic first use,
+bounded failures, explicit retry, sibling recovery, visibility and scope fences;
+`prepareView.test.js` checks shared cancellation and reconnect behavior.
+
+Duration polling is limited to an already-observed pending exact-duration job
+after a known change: active views only, every two seconds for at most 15 reads,
+stopping on completion or hide. Idle ready summaries have no timer. It never
+POSTs preparation. Project-wide source/import publication remains separate from
+recipe-local tree preparation and target-level annotation/count updates.
