@@ -1,3 +1,4 @@
+import CellTypeIcon from '../../components/CellTypeIcon.jsx';
 import EpochListRefreshDialog from './EpochListRefreshDialog.jsx';
 import {tagStore} from '../../annotations/tagStore.js';
 import {useWorkspaceRequest,useWorkspaceRequestScope} from '../../workspaceRequest.js';
@@ -101,7 +102,7 @@ function CellBranch({cell,dateOpen,onSelectCell,onSelectGroupCell,onTagCell,sele
       if(event.target.closest('button,input')||selectedCell===cell.cell_uuid)return;
       // Read live focus: a memoized branch can skip renders for unrelated focus.
       const {focusedCell,onTargetCell}=liveTree.current;
-      if(!props.browseOnly||!focusedCell)onSelectCell?.(cell);else if(focusedCell===cell.cell_uuid)onTargetCell?.(cell);}} aria-label={datedCellLabel(cell,true)} aria-description={tags} title={[cell.identity_qualifier&&cell.cell_uuid,tags].filter(Boolean).join('\n')||undefined}><strong>{cell.label||cell.cell_label||'Unlabeled cell'}</strong>{cell.identity_qualifier&&<span> · {cell.identity_qualifier}</span>}{props.source.readContext&&!props.browseOnly&&<TreeGroupTagButton label="Tag This Cell" count={cell.epochs} disabled={props.disabled} onSelect={event=>onSelectGroupCell(cell,event)} onClick={event=>onTagCell(cell,event)}/>}</summary>
+      if(!props.browseOnly||!focusedCell)onSelectCell?.(cell);else if(focusedCell===cell.cell_uuid)onTargetCell?.(cell);}} aria-label={datedCellLabel(cell,true)} aria-description={tags} title={[cell.identity_qualifier&&cell.cell_uuid,tags].filter(Boolean).join('\n')||undefined}><span className="inspection-cell-type-icon"><CellTypeIcon type={typeof cell.cell_type==='string'?cell.cell_type:'Unclassified'} size={22}/></span><strong>{cell.label||cell.cell_label||'Unlabeled cell'}</strong>{cell.identity_qualifier&&<span> · {cell.identity_qualifier}</span>}{props.source.readContext&&!props.browseOnly&&<TreeGroupTagButton label="Tag This Cell" count={cell.epochs} disabled={props.disabled} onSelect={event=>onSelectGroupCell(cell,event)} onClick={event=>onTagCell(cell,event)}/>}</summary>
     {dateOpen&&open&&<CellEpochs key={props.source.readContext?.cohort_key?JSON.stringify([frozenPresentationScope(props.source.readContext,props.source.protocolId,props.source.query),props.refreshGeneration]):JSON.stringify([props.source,props.revision,cell.cell_uuid,cell.epochs])} cell={cell} offset={offset} onFrontier={onFrontier} rowRegistry={rowRegistry} {...props}/>}
   </details>;
 }

@@ -49,3 +49,7 @@
 
 .inspector .inspection-cell-tree .cell-tree-epoch.analysis-excluded strong{color:var(--ink-muted)}
 .pending-epoch-rows{padding:0 8px 8px;font-size:12px}.pending-epoch-rows>p{color:var(--ink-secondary);line-height:1.5;margin:8px 0}.pending-epoch-rows button{display:flex;gap:8px;width:100%;padding:5px 6px;text-align:left;border:0;background:transparent;color:var(--ink);border-radius:4px}.pending-epoch-rows button[aria-current="true"]{background:var(--surface-subtle);font-weight:550}.pending-epoch-rows time{color:var(--ink-secondary)}
+
+/* Match the split-tree cell glyph without repeating the recorded type label. */
+.inspection-cell-tree .inspection-cell-type-icon{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-right:7px;vertical-align:middle}
+.inspection-cell-tree .inspection-cell-type-icon>svg{flex-shrink:0}
