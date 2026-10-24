@@ -1,4 +1,4 @@
-> **DISCO 0.1.23 · Mac desktop testing build:** [Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.23/Disco-0.1.23-arm64.zip) · [Release details and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.23). Python and native MySQL are bundled; no Docker or Terminal setup is needed. Existing users can use **App Updates → Download update → Restart to update**. The original public 0.1.10 helper may require opening DISCO normally once after replacement; no re-download or reimport is needed. For manual installation, extract the ZIP, quit DISCO, replace **Disco.app**, and reopen it. Project folders remain separate. This unsigned, unnotarized Apple silicon testing build targets macOS 14+; macOS 14 runtime support remains unqualified and Intel is unsupported. macOS may require **Privacy & Security → Open Anyway**. This is a manual testing release with documented CI limitations, not a stable release.
+> **DISCO 0.2.1 · Mac desktop testing build:** [Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.2.1/Disco-0.2.1-arm64.zip) · [Release details and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.1). Python and native MySQL are bundled; no Docker or Terminal setup is needed. Existing users can use **App Updates → Download update → Restart to update**. The original public 0.1.10 helper may require opening DISCO normally once after replacement; no re-download or reimport is needed. For manual installation, extract the ZIP, quit DISCO, replace **Disco.app**, and reopen it. Project folders remain separate. This unsigned, unnotarized Apple silicon testing build targets macOS 14+; macOS 14 runtime support remains unqualified and Intel is unsupported. macOS may require **Privacy & Security → Open Anyway**. This is a manual testing release with documented CI limitations, not a stable release.
 
 # DISCO
 
@@ -71,12 +71,17 @@ can be reused when switching views, subject to project, protocol and revision ch
 cell-metadata reads stay scoped to the relevant cohort. These changes preserve source identities and
 saved scientific membership; they do not turn a search into a selection or merge.
 
-## Current 0.1.22 testing build
+## Current 0.2.1 testing build
+
+DISCO 0.2.1 combines automatic view preparation, the sidebar App Updates control,
+clearer cell and epoch navigation, repaired group tagging, and the latest UI refinements.
+The download icon in the left sidebar changes color and shows a notification dot when
+an update is available. Open it to download, then choose **Restart to update**.
 
 The published app and release tag identify clean source
-[`af8fb1c`](https://github.com/maxwellsdm1867/Rieke-OS/commit/af8fb1cb87c8bbc5b966c4c197db2e172325c490).
-See the [0.1.22 release notes](release-evidence/disco-0.1.22.md) and
-[release assets and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.22).
+[`c989239`](https://github.com/maxwellsdm1867/Rieke-OS/commit/c989239c3bce301c46da35f74dad556e0fd3c7ea).
+See the [0.2.1 release notes](release-evidence/disco-0.2.1.md) and
+[release assets and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.1).
 Later documentation commits on `main` do not change the published app or tag.
 
 ## Earlier 0.1.12 testing-build qualification
@@ -136,15 +141,15 @@ The [module ledger](docs/architecture/core-module-ledger.md) and its
 and [backend](docs/architecture/core-module-ledger.md#backend-finite-current-path-composition)
 path records separate implemented organization, retained owners and proposals.
 Their earlier source and test receipts remain historical evidence; use the
-[current release metadata](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.22) for the downloadable build.
+[current release metadata](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.1) for the downloadable build.
 The broader [stable-ports design](docs/architecture/stable-ports.md) remains a
 proposal beyond the explicitly adopted slices.
 
 ## Source download (developer workflow)
 
 **[Download main as a ZIP](https://github.com/maxwellsdm1867/Rieke-OS/archive/refs/heads/main.zip)**
-for development source and documentation. To match the 0.1.22 app exactly, use
-[the release source tag](https://github.com/maxwellsdm1867/Rieke-OS/tree/desktop-test-v0.1.22).
+for development source and documentation. To match the 0.2.1 app exactly, use
+[the release source tag](https://github.com/maxwellsdm1867/Rieke-OS/tree/desktop-test-v0.2.1).
 You can also choose a version from
 [Releases](https://github.com/maxwellsdm1867/Rieke-OS/releases) and download
 its **Source code (zip)**. Extract the entire archive before installing. GitHub's

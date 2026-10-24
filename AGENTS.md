@@ -100,3 +100,16 @@ benchmarks, or final build/release qualification. A local test build/install and
 focused regression checks may be used to make the UI change testable. Passing
 source tests alone does not establish that the UI works. After the native
 workflow passes, complete the required qualification on the final source.
+
+
+## DISCO 0.2.1 release handoff (2026-10-24)
+
+The testing release `desktop-test-v0.2.1` identifies packaged source
+`c989239c3bce301c46da35f74dad556e0fd3c7ea`. Later test-harness and documentation
+commits on main do not change the archive. See `release-evidence/disco-0.2.1.md`
+and the release's `qualification-summary.json` for exact-source regression,
+million-row and native package checks, including the documented HTTP 403
+rate-limit exception on repeated GitHub release-feed checks. Do not describe
+the requalification workflow as fully green. Verify live GitHub and the installed
+runtime manifest before further changes; earlier installed-version notes above
+are historical.
