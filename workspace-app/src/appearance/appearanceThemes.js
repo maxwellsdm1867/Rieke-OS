@@ -6,7 +6,7 @@ export const THEMES = [
   {id:'fred', name:'Fred', description:'Light purple · Rieke emblem', icon:'rieke', scheme:'light'},
 ];
 export function normalizeAppearance(value){
-  const theme = THEMES.find(item=>item.id===(value?.theme==='bright'?'light':value?.theme)) || THEMES.find(item=>item.id===(value?.icon==='rieke'?'fred':'light'));
+  const theme = THEMES.find(item=>item.id===(value?.theme==='bright'?'light':value?.theme)) || THEMES.find(item=>item.id===(value?.icon==='rieke'?'fred':value?.icon==='disco'?'light':'system'));
   return {theme:theme.id, icon:theme.icon};
 }
 export function readCachedAppearance(storage=globalThis.localStorage){

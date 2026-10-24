@@ -21,7 +21,7 @@ export function ThemePicker({appearance}){
    <span className={`theme-preview ${theme.id==='system'?'theme-system-preview':''}`} aria-hidden="true">
     {theme.id==='system'?<><ThemeMiniature palette="light" icon="disco" half="day"/><ThemeMiniature palette="dark" icon="disco" half="night"/></>:<ThemeMiniature palette={theme.id} icon={theme.icon}/>}
    </span>
-   <span className="theme-option-name">{theme.name}{theme.id==='light'&&<small>Default</small>}<span className="theme-selection">{appearance.theme===theme.id&&<Check size={13}/>}</span></span>
+   <span className="theme-option-name">{theme.name}{theme.id==='system'&&<small>Default</small>}<span className="theme-selection">{appearance.theme===theme.id&&<Check size={13}/>}</span></span>
    <span className="theme-option-description">{theme.description}</span>
   </label>)}
  </div><p className="appearance-save-note" role="status">{appearance.busy?'Saving appearance…':appearance.loading?'Loading appearance…':appearance.error?errorStatus:'Applies immediately. Remembered across projects.'}</p></fieldset>;

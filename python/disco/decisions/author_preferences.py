@@ -76,7 +76,7 @@ def appearance_preferences():
     if path.is_symlink():
         raise ValueError('Appearance preference cannot be a symbolic link')
     if not path.exists():
-        return {'icon': 'disco', 'theme': 'light'}
+        return {'icon': 'disco', 'theme': 'system'}
     if path.stat().st_size > 4096:
         raise ValueError('Appearance preference is unexpectedly large')
     value = json.loads(path.read_text())

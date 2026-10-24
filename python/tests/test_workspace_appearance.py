@@ -17,7 +17,7 @@ class AppearanceTests(unittest.TestCase):
         self.addCleanup(environment.stop)
 
     def test_default_and_reversible_preference_touch_only_machine_appearance(self):
-        self.assertEqual(appearance_preferences(), {'icon': 'disco', 'theme': 'light'})
+        self.assertEqual(appearance_preferences(), {'icon': 'disco', 'theme': 'system'})
         remember_appearance('rieke')
         self.assertEqual(appearance_preferences(), {'icon': 'rieke', 'theme': 'fred'})
         remember_appearance('disco')
@@ -38,7 +38,7 @@ class AppearanceTests(unittest.TestCase):
         register_app_routes(app)
         app.register_error_handler(ValueError, lambda error: ({'error': str(error)}, 400))
         client = app.test_client()
-        self.assertEqual(client.get('/api/app/appearance').get_json(), {'icon':'disco','theme':'light'})
+        self.assertEqual(client.get('/api/app/appearance').get_json(), {'icon':'disco','theme':'system'})
         self.assertEqual(client.post('/api/app/appearance', json={'icon':'rieke'}).status_code,403)
         headers={'X-Workspace-Request':'1'}
         self.assertEqual(client.post('/api/app/appearance', json={'icon':'rieke'},headers=headers).get_json(),{'icon':'rieke','theme':'fred'})

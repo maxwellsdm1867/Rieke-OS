@@ -52,15 +52,16 @@ test('common recorded scientific context preserves source facts and marks config
 });
 
 
-test('shared designer puts its only Back to epochs control in the left tree pane',async()=>{
+for(const treeMode of [false,true])test(`shared designer labels its return to ${treeMode?'split tree':'epochs'} in the left pane`,async()=>{
+ const label=treeMode?'Back to split tree':'Back to epochs';
  const {default:EpochViewer}=await server.ssrLoadModule('/src/epoch-browser/ui/EpochViewer.jsx');
- const html=render(EpochViewer,{designMode:true,toolbar:{designMode:true,onBrowse:()=>{}},
+ const html=render(EpochViewer,{designMode:true,treePane:{treeMode},toolbar:{designMode:true,onBrowse:()=>{}},
   layout:{sizes:{columns:'320px 7px minmax(0,1fr)',tree:320,treeMax:560},treeOpen:true,metadataOpen:false,onResize:()=>{}},
   builder:{catalogData:{fields:[]},value:[],onChange:()=>{},preview:{count:0,levels:[]}},columnTree:{predicate:{all:[]},splits:''}});
- assert.equal((html.match(/Back to epochs/g)||[]).length,1);
+ assert.equal(html.split(label).length-1,1);
  const leftPane=html.match(/<aside class="inspection-tree">([\s\S]*?)<\/aside>/)?.[1];
- assert.ok(leftPane);assert.match(leftPane,/Back to epochs/);
- assert.ok(leftPane.indexOf('Back to epochs')<leftPane.indexOf('Tree builder'));
+ assert.ok(leftPane);assert.ok(leftPane.includes(label));
+ assert.ok(leftPane.indexOf(label)<leftPane.indexOf('Tree builder'));
 });
 
 test('trace advertises frozen authority support and rejects incomplete candidate context during render',async()=>{

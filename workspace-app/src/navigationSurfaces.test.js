@@ -189,3 +189,21 @@ for(const surface of ['pinned','predicate','workbench'])test(`${surface}: rapid 
   assert.equal(Number(appended[0].body?.offset??new URL(appended[0].path,'http://fixture').searchParams.get('offset')),60);
  }finally{held.forEach(release=>release());await h.close();}
 });
+
+for(const surface of ['pinned','predicate','workbench'])for(const treeMode of [false,true])test(`${surface}: View tree returns to ${treeMode?'split tree':'epochs'}`,async()=>{
+ const h=await createWorkflowHarness({total:500,realTreePane:true});attach(h);
+ try{
+  const Component=await h.component(surface==='predicate'?'MatchingEpochs':'Inspector');
+  const props=options(surface);await h.mount(Component,props);await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-8');
+  await h.act(()=>h.viewer.treePane.onTreeMode(treeMode));
+  if(surface==='predicate')await h.render(Component,{...props,designMode:true});
+  else await h.act(()=>h.viewer.toolbar.onDesign());
+  assert.equal(h.viewer.designMode,true);
+  assert.equal(h.viewer.treePane.treeMode,treeMode);
+  await h.act(()=>h.viewer.toolbar.onBrowse());
+  if(surface==='predicate')await h.render(Component,{...props,designMode:false});
+  assert.equal(h.viewer.designMode,false);
+  assert.equal(h.viewer.treePane.treeMode,treeMode);
+  assert.equal(h.viewer.epoch.epoch_uuid,'epoch-8');
+ }finally{await h.close();}
+});

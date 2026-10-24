@@ -228,7 +228,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const designSelectionAuthority={...treeSelectionAuthority,identity:JSON.stringify([selectionIdentity,designAuthorityKey,treeReceiptCurrent?treePage?.revision:null]),
     available:!!(selectionAvailable&&treeReceiptCurrent&&treePage?.revision&&treeStatus.scope===designAuthorityKey&&!treeStatus.error)};
   const receiveTreeStatus=value=>setTreeStatus({...value,scope:designAuthorityKey});
-  function openTreeDesign(){setTreeStatus({loading:true,error:null});setDesignMode(true);setTreeOpen(true);setTreeMode(true);}
+  function openTreeDesign(){setTreeStatus({loading:true,error:null});setDesignMode(true);setTreeOpen(true);}
   const tree={data:treePage,...treeStatus};
   const receiveTree=useCallback(data=>setTreeReceipt({scope:designAuthorityKey,focused,data}),[designAuthorityKey,focused]);
   useEffect(()=>setTreeReceipt(null),[id,protocolSearch,splits,pageRevision]);
@@ -521,7 +521,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const highlightedSelected=new Set(targets);
   const highlightTools=(locked=false)=>readContext&&<EpochHighlightTools count={highlightedEpochs.length} allSelected={highlightedEpochs.length>0&&highlightedEpochs.every(uuid=>highlightedSelected.has(uuid))} disabled={locked||busy||readPaused||!!draftSelection?.disabled||!cellsReady} onSelect={()=>applyHighlighted(true)} onDeselect={()=>applyHighlighted(false)}/>;
   return <EpochViewer hideFilterControl viewFilters={filters} onViewFilters={onFilterChange} filterRevision={revision} filterDisabled={busy} className={designMode?'tree-design':'epoch-inspector-mode'} ariaLabel={designMode?'Tree overview workspace':'Epoch inspection workspace. Tab next epoch, Shift+Tab previous epoch; Up/Down or W/S also navigate.'} onKeyDown={epochKeys}
-    toolbar={{portalTarget:toolbarTarget,treeControlsInPane:true,designMode:designMode,onBrowse:()=>{setDesignMode(false);setTreeMode(false);setTreeOpen(true);},onDesign:openTreeDesign,onTags:openTagsForSelection,metadataOpen:metadataOpen,onToggleMetadata:()=>toggleMetadata(!metadataOpen),actions:[
+    toolbar={{portalTarget:toolbarTarget,treeControlsInPane:true,designMode:designMode,onBrowse:()=>{setDesignMode(false);setTreeOpen(true);},onDesign:openTreeDesign,onTags:openTagsForSelection,metadataOpen:metadataOpen,onToggleMetadata:()=>toggleMetadata(!metadataOpen),actions:[
         !!onReviewDetails&&{label:'Review details',run:onReviewDetails},
         {label:treeOpen?(designMode?'Hide tree editor':'Hide epoch list'):(designMode?'Show tree editor':'Show epoch list'),icon:GitBranch,run:()=>setTreeOpen(value=>!value)},
         !readContext&&!designMode&&{label:'Import mask file…',icon:FileJson,run:()=>(!readContext&&setMasksOpen(true)),disabled:busy},

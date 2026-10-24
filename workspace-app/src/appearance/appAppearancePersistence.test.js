@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import React from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
 import {useAppAppearance} from './appAppearance.js';
-import {APPEARANCE_CACHE} from './appearanceThemes.js';
+import {APPEARANCE_CACHE,normalizeAppearance,readCachedAppearance,resolveTheme} from './appearanceThemes.js';
 
 async function fixture(t,request,bridge){
  const previousWindow=globalThis.window,previousStorage=Object.getOwnPropertyDescriptor(globalThis,'localStorage');
@@ -51,4 +51,14 @@ test('System follows device changes and stops following after a fixed theme is c
  assert.equal(h.value.theme,'system');assert.equal(globalThis.document.documentElement.dataset.theme,'dark');
  await h.choose('light');assert.equal(listeners.size,0);
  assert.equal(globalThis.document.documentElement.dataset.theme,'light');
+});
+
+test('fresh appearance follows the system while explicit and legacy choices remain intact',()=>{
+ assert.deepEqual(normalizeAppearance(null),{theme:'system',icon:'disco'});
+ assert.equal(readCachedAppearance({getItem:()=>null}).theme,'system');
+ assert.equal(resolveTheme(null,true),'dark');assert.equal(resolveTheme(null,false),'light');
+ for(const theme of ['light','dark','system','fred'])assert.equal(normalizeAppearance({theme}).theme,theme);
+ assert.equal(normalizeAppearance({theme:'bright'}).theme,'light');
+ assert.equal(normalizeAppearance({icon:'rieke'}).theme,'fred');
+ assert.equal(normalizeAppearance({icon:'disco'}).theme,'light');
 });
