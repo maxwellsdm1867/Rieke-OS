@@ -278,7 +278,8 @@ async function main() {
         await application.evaluate(({BrowserWindow},width)=>BrowserWindow.getAllWindows()[0].setContentSize(width,900),width);
         await page.waitForFunction(width=>window.innerWidth===width,width);
         assert.equal(await page.locator('.header-app-icon').count(),0);
-        const rail=page.locator('.rail');
+        await showProjectSidebar(page);
+        const rail=page.locator('.rail-bottom');
         const appearance=rail.getByRole('button',{name:'Appearance',exact:true});
         const updates=rail.getByRole('button',{name:/^App Updates/});
         assert.equal(await appearance.count(),1);assert.equal(await updates.count(),1);
