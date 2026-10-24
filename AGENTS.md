@@ -113,3 +113,22 @@ rate-limit exception on repeated GitHub release-feed checks. Do not describe
 the requalification workflow as fully green. Verify live GitHub and the installed
 runtime manifest before further changes; earlier installed-version notes above
 are historical.
+
+
+## DISCO 0.2.2 release handoff (2026-10-24)
+
+Published testing tag `desktop-test-v0.2.2` and the installed app at
+`~/Applications/Disco.app` identify clean source
+`a917930914cfaacdafdf97d1c15f8cebaedd3b93`. The native App Updates workflow
+downloaded the published ZIP, verified it, installed via Restart to update,
+and automatically restored the saved workspace.
+
+Full regression (1,592 frontend tests), million-row comparisons, native UI,
+launch/connectivity, packaging and updater checks passed. Candidate build
+40076531870 was verified without rebuilding in run 40079391145; publication
+40082458967 verified the uploaded hashes. The first smoke runner exhausted its
+GitHub API quota and a packaging attempt timed out; retries passed, with original
+diagnostics retained. See the release's `qualification-summary.json` and
+`release-evidence/disco-0.2.2.md`. This remains an unsigned Apple silicon testing
+prerelease, not production or universal macOS qualification. Later documentation
+commits do not change the release archive. Verify live state before further work.
