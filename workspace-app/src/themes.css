@@ -50,6 +50,7 @@
  color-scheme:dark;
 }
 :root[data-theme="fred"],[data-palette="fred"]{
+ --rail-update:#d7bfe8;--on-rail-update:#35283f;
  --background:#f8f6fa;--surface:#fff;--surface-subtle:#f3eff6;--surface-hover:#ece5f1;
  --sidebar:#f1ecf5;--rail:#35283f;--rail-ink:#ede3f3;--rail-active:#5c456b;
  --ink:#302737;--ink-secondary:#554a60;--ink-muted:#6a5f71;

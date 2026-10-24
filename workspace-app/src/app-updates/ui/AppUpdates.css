@@ -40,3 +40,5 @@
 .app-update-dialog footer .app-update-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
 .app-update-dialog .error{margin:12px 0}
 @media(prefers-reduced-motion:reduce){.app-update-summary .spin{animation:none}}
+
+@media(prefers-reduced-motion:reduce){.app-update-rail-button .spin{animation:none}}
