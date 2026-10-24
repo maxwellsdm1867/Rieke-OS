@@ -190,3 +190,16 @@ after a known change: active views only, every two seconds for at most 15 reads,
 stopping on completion or hide. Idle ready summaries have no timer. It never
 POSTs preparation. Project-wide source/import publication remains separate from
 recipe-local tree preparation and target-level annotation/count updates.
+
+## Dataset explanation and query disclosure
+
+`protocolDatasetStatus.js` and `ui/ProtocolDatasetStatus.jsx` read the overview's
+explicit binding and current effective query. Missing or inconsistent binding
+information is unknown, not an unbound protocol. A bound response never falls
+back to the starter query as its current query. Show query is read-only and
+labels the protocol preset separately. Saved membership can differ from rerunning
+the predicate. Before importing, `freeze_baselines` saves existing live protocol
+membership; new matching recordings require review rather than automatic merge.
+Pending cells remain the eligible count from the existing queue response; unknown
+is not zero. Mounted coverage is in `overviewPresentation.test.js`; import
+semantics are exercised by `test_workspace_suggestions.py`.

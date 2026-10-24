@@ -4,11 +4,17 @@
 .protocol-infographic{container-type:inline-size;border:1px solid var(--border);border-radius:10px;margin:0 0 20px;background:var(--surface);min-width:0;overflow:hidden}
 .protocol-infographic small{color:var(--ink-muted);font-size:11px}
 
-/* Header: scope as a quiet status pill, its meaning as one muted line. */
-.protocol-infographic>header{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;padding:12px 24px;font-size:12px;border-bottom:1px solid var(--border);background:var(--surface)}
-.pi-scope{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);white-space:nowrap}
-.pi-scope-note{color:var(--ink-muted);font-size:12px;min-width:0}
-.protocol-infographic>header>small{margin-left:auto}
+/* Dataset meaning and read-only query disclosure; no internal state badge. */
+.protocol-dataset-description{padding:16px 24px;font-size:13px;color:var(--ink-secondary)}
+.protocol-dataset-description p{margin:0 0 8px;max-width:85ch;line-height:1.5}
+.protocol-dataset-description strong{color:var(--ink)}
+.protocol-query-details>summary{cursor:pointer;color:var(--accent);font-weight:600;width:fit-content;padding:4px 0}
+.protocol-query-details[open]>summary{margin-bottom:8px}
+.protocol-query-details pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto}
+.protocol-query-details code{overflow-wrap:anywhere}
+.protocol-query-group{padding:6px 0}
+.protocol-query-group ul{padding-left:24px;margin:4px 0}
+.protocol-query-group li{padding:3px 0}
 
 /* Hero metric row (matches .ov-metric-ribbon). */
 .pi-cohort-summary{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,.3fr);border-bottom:1px solid var(--border);align-items:stretch;background:linear-gradient(115deg,var(--surface-subtle),var(--surface))}
@@ -96,8 +102,6 @@
 .pi-metrics>div>span{font-size:13px}
 .pi-metrics>div>strong,.pi-metrics>div:first-child>strong,.pi-metrics>div:last-child>strong{font-size:36px;letter-spacing:-1px}
 .protocol-infographic small,.pi-metrics>div>small{font-size:12px}
-.protocol-infographic>header,.pi-scope-note{font-size:13px}
-.pi-scope{font-size:12px}
 .pi-section-title h3{font-size:15px}
 .pi-date-identity strong,.pi-date-count{font-size:13px}
 .pi-inventory,.pi-export-history summary{font-size:13px}
