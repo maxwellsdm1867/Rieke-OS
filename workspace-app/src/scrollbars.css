@@ -16,6 +16,9 @@
 /* The middle trace pane reveals its thumb only during scrolling or keyboard focus. */
 .inspection-detail:not([data-scroll-active]):not(:focus-visible){scrollbar-color:transparent transparent}
 .inspection-detail:not([data-scroll-active]):not(:focus-visible)::-webkit-scrollbar-thumb{background-color:transparent}
+@supports selector(::-webkit-scrollbar){
+ .inspection-detail:not([data-scroll-active]):not(:focus-visible){scrollbar-color:auto}
+}
 /* Match only the visible overview; retained hidden overview DOM must not affect Inspect. */
 .protocol-workspace-content:has(>[data-retained-panel="overview"][data-retained-panel-active="true"]){scrollbar-width:none}
 .protocol-workspace-content:has(>[data-retained-panel="overview"][data-retained-panel-active="true"])::-webkit-scrollbar{display:none}
