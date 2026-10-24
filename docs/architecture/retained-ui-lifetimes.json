@@ -197,7 +197,7 @@
       ]
     },
     "src/annotations/ui/AnnotationProfile.jsx": {
-      "fingerprint": "0f61994f10017c7cce1975308882a7a0b7dbd975acdd0dcfb9f907621b218b70",
+      "fingerprint": "1bf4ecaba3d49de70f3fd54ae8c9b50c876ea4373938e5be36a9dcf728b4ad6c",
       "sites": [
         {
           "owner": "AnnotationProfile",
@@ -211,10 +211,11 @@
         }
       ],
       "lifetime": "project-owner/outside-Activity",
-      "reason": "App-shell profile preference and external annotation monitor outlive route visibility; cancellation/subscription cleanup and actor changes remain scientific boundaries. External scans still invalidate broad epoch resources; no claim of sample-level invalidation.",
+      "reason": "App-shell profile preference and external annotation monitor outlive route visibility; cancellation/subscription cleanup and actor changes remain scientific boundaries. External scans still invalidate broad epoch resources; no claim of sample-level invalidation. Reviewed 2026-10-24 against 740ee044: authorInitials is pure display derivation; author rows, form and help markup add no subscriptions or asynchronous work. Prompt effect, modal close cleanup, authored-draft identity, busy guards and UUID-based select/create callbacks are unchanged.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
-        "src/presentationSessionsApp.test.js"
+        "src/presentationSessionsApp.test.js",
+        "src/annotationTags.test.js"
       ]
     },
     "src/annotations/ui/AnnotationTags.jsx": {
@@ -494,7 +495,7 @@
       ]
     },
     "src/app-updates/ui/AppUpdates.jsx": {
-      "fingerprint": "e7afa827528e22810c25da69a1223d70ac451bd980275c0ebe65897914e49ac6",
+      "fingerprint": "41a58d75a23af9ac6f3adbbb231bfde33cff246649836e8e5eba3faee30e385f",
       "sites": [
         {
           "owner": "UpdateDialog",
@@ -518,11 +519,12 @@
         }
       ],
       "lifetime": "project-shell-subscriptions/outside-Activity",
-      "reason": "App update/appearance controls are composed outside retained route Activity. Polls and native subscriptions clean up normally; preferences and canonical update state retain their existing explicit persistence owner. Combined UI review2026-10-23: Compact rail markup, derived status icons and dialog presentation change only. Existing status subscription, modal visibility, cleanup, check/download/restart callbacks and explicit update authority are unchanged.",
+      "reason": "App update/appearance controls are composed outside retained route Activity. Polls and native subscriptions clean up normally; preferences and canonical update state retain their existing explicit persistence owner. Combined UI review2026-10-23: Compact rail markup, derived status icons and dialog presentation change only. Existing status subscription, modal visibility, cleanup, check/download/restart callbacks and explicit update authority are unchanged. Reviewed 2026-10-24 against 740ee044: fixed rail glyph, heading icon and footer ordering change presentation only. Modal cleanup, alive/checking fences, bridge unsubscribe, cancelled download poll and timer cleanup, discovery effect, and explicit check/download/restart callbacks are unchanged.",
       "tests": [
         "src/app-updates/appUpdates.test.js",
         "src/appearance/appAppearancePersistence.test.js",
-        "src/presentationSessionsApp.test.js"
+        "src/presentationSessionsApp.test.js",
+        "src/appUpdatesLifecycle.test.js"
       ]
     },
     "src/appearance/appAppearance.js": {
