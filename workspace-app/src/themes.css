@@ -7,7 +7,7 @@
    Light supplies shared defaults; Dark and Fred override the relevant roles. */
 :root,[data-palette]{
  --background:#f5f7fb;--surface:#fff;--surface-subtle:#f0f3f9;--surface-hover:#e9eef8;
- --sidebar:#eef1f8;--rail:#253353;--rail-ink:#e4eafe;--rail-active:#40537d;--rail-update:#94b2ff;
+ --sidebar:#eef1f8;--rail:#253353;--rail-ink:#e4eafe;--rail-active:#40537d;--rail-update:#6b8bff;--on-rail-update:#fff;
  --ink:#202a3c;--ink-secondary:#465269;--ink-muted:#5f697b;--muted:var(--ink-muted);
  --border:#d6dde9;--border-subtle:#e5e9f1;--border-strong:#7888a3;
  --accent:#445fc6;--accent-hover:#354ca8;--accent-soft:#e5ebff;--on-accent:#fff;--focus:#385bcc;

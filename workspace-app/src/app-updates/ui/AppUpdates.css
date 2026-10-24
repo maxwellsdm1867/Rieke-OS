@@ -11,8 +11,8 @@
 .rail .app-update-rail-button{position:relative;display:grid;place-items:center;width:38px;height:38px;padding:8px;border:0;background:transparent;color:var(--rail-ink);box-shadow:none}
 .rail .app-update-rail-button:hover{background:transparent;color:var(--rail-ink)}
 .rail .app-update-rail-button.has-update{color:var(--rail-update);background:transparent}
-.app-update-rail-button.has-update>svg>circle{fill:var(--rail-update);stroke:var(--rail-update)}
-.app-update-rail-button.has-update>svg>path{stroke:var(--rail)}
-.app-update-dot{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--rail-update);box-shadow:0 0 0 2px var(--rail);pointer-events:none}
+.app-update-glyph{display:grid;place-items:center;width:22px;height:22px;border-radius:50%}
+.app-update-rail-button.has-update .app-update-glyph{background:var(--rail-update);color:var(--on-rail-update)}
+.app-update-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--rail-update);box-shadow:0 0 0 2px var(--rail);pointer-events:none}
 .rail .app-update-rail-button:focus-visible{outline:2px solid var(--rail-ink);outline-offset:2px}
 .app-update-rail-status{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
