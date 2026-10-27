@@ -216,8 +216,8 @@ test('a dead launcher preserves surviving project evidence without blocking the 
  await fs.mkdir(path.dirname(supervisor.registryPath),{recursive:true});
  await fs.writeFile(supervisor.registryPath,JSON.stringify(previous));
  supervisor.inspectProcess=async pid=>pid===previous.pid?null:project.executable;
- supervisor.recoverProcess=async()=>assert.fail('Do not recover or signal an unrelated project during chooser startup');
- await supervisor.reconcilePrevious();
+ let ownershipChecks=0;supervisor.recoverProcess=async()=>{ownershipChecks++;return null;};
+ await supervisor.reconcilePrevious();assert.equal(ownershipChecks,1);
  const childrenPath=path.join(supervisor.userData,'backend/desktop-services.json');
  assert.deepEqual(JSON.parse(await fs.readFile(childrenPath,'utf8')),{version:1,services:[project]});
  await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});
@@ -225,4 +225,21 @@ test('a dead launcher preserves surviving project evidence without blocking the 
  const existing={version:1,services:[project],database_operations:[{project_path:'/owned/transfer'}],recovery_required:[{project_path:'/owned/other'}]};
  await fs.writeFile(childrenPath,JSON.stringify(existing));await fs.writeFile(supervisor.registryPath,JSON.stringify(previous));
  await supervisor.reconcilePrevious();assert.deepEqual(JSON.parse(await fs.readFile(childrenPath,'utf8')),existing);
+});
+
+test('verified orphaned project still closes normally before the new chooser starts', async t => {
+ const {supervisor}=await fixture(t,()=>assert.fail('Request adapter is replaced below'));
+ const record={pid:12345,created_at:100,executable:'/owned/python',project_path:'/owned/project',project_uuid:'project',session_id:'old',port:9877};
+ const previous={pid:99999,executable:'/owned/python',entry:'/owned/workspace_desktop.py',port:9876,session_id:'prior',services:[record]};
+ await fs.mkdir(path.dirname(supervisor.registryPath),{recursive:true});await fs.writeFile(supervisor.registryPath,JSON.stringify(previous));
+ let live=true;const operations=[];
+ supervisor.inspectProcess=async pid=>pid===record.pid&&live?record.executable:null;
+ supervisor.recoverProcess=async target=>{assert.deepEqual(target,record);return 'verified-old-capability';};
+ supervisor.request=async(url,options)=>{
+  assert.equal(options.headers['X-Rieke-Desktop-Capability'],'verified-old-capability');
+  const operation=url.split('/').at(-1);operations.push(operation);if(operation==='stop')live=false;
+  return response(operation==='health'?{...record,ready:true}:{ready:true});
+ };
+ await supervisor.reconcilePrevious();assert.deepEqual(operations,['health','quit','stop']);
+ assert.equal(live,false);await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});
 });

@@ -164,19 +164,29 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
       // process/session/profile/listener proof authorizes safe cleanup.
       await this.finishPrevious(previous);
     } else {
-      // A surviving project must not prevent the chooser or unrelated projects
-      // from starting. Preserve its evidence for Python's per-project admission;
-      // do not adopt it or send it the new session's capability.
+      // Preserve safe cleanup of exactly verified prior sessions. A failed
+      // project cleanup must not prevent the chooser or unrelated projects
+      // from starting; Python retains its per-project admission evidence.
       const childrenPath = path.join(this.userData, 'backend', 'desktop-services.json');
+      let records = previous.services || [];
       try {
         const info = await fs.lstat(childrenPath);
         if (info.isSymbolicLink() || !info.isFile() || info.size > 1024 * 1024) throw Error('Invalid project registry');
         const children = JSON.parse(await fs.readFile(childrenPath, 'utf8'));
         if (children.version !== 1 || !Array.isArray(children.services)) throw Error('Invalid project registry');
+        records = children.services;
       } catch (error) {
         if (error.code !== 'ENOENT') throw new Error('Prior project service evidence is unreadable; recovery is required');
         if (previous.services !== undefined && !Array.isArray(previous.services)) throw new Error('Prior project service evidence is invalid');
         if (previous.services?.length) await atomicJSON(childrenPath, {version:1, services:previous.services});
+      }
+      for (const record of records) {
+        try {
+          if (await this.inspectProcess(record.pid) === record.executable) await this.finishPrevious(record);
+        } catch {
+          // Never erase the child record or force a process to exit. Failed
+          // ownership, busy work and incomplete shutdown remain project-local.
+        }
       }
       // The backend retains exact live service witnesses and database recovery
       // per folder. Same-project admission and strict update drain still refuse.
