@@ -15,7 +15,7 @@ const entries = ['close/draft-barrier.cjs', 'close/quit-coordinator.cjs',
   'updates/updater.cjs', 'updates/testing-updater.cjs', 'updates/testing-update-validation.cjs'];
 const mainEntries = entries.filter(entry => entry !== 'updates/testing-update-validation.cjs');
 const rootPatterns = ['*.cjs', '*.html', '*.css'];
-const rootFiles = ['recovery.js', 'icon.png', 'package.json', 'distribution.json', 'rieke-emblem.png'];
+const rootFiles = ['runtime-store.py','recovery.js', 'icon.png', 'package.json', 'distribution.json', 'rieke-emblem.png'];
 const expectedFiles = [...rootPatterns, ...rootFiles, ...entries];
 const parser = import(pathToFileURL(path.resolve(desktop, '../workspace-app/architectureImports.mjs')).href);
 

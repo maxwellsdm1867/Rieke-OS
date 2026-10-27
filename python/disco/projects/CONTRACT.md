@@ -266,3 +266,19 @@ database is stopped with `stop_native_database` first and the folder is kept if 
 cannot be stopped. Unregistered folders and folders without a matching owner file
 are never deleted; the desktop health reports them as `staging_attention`. The
 owner file is removed before a transfer package's inventory and publication.
+
+## Busy projects and independent sessions
+
+A browser tab is a client; closing it need not stop its project service. Desktop
+opening takes an exclusive `.app-state-session.lock`, while source/browser
+sessions hold the existing shared lease. A second desktop session cannot assume
+that SQL connectivity makes the first session's caches, jobs or recovery files
+safe to share. It receives `project_session_in_use` with close-and-retry guidance;
+no project data or lock pathname is deleted. OS lease release, not file deletion,
+is what makes retry possible.
+
+Prior desktop services and native database recovery are scoped to their exact
+project folder. The chooser and unrelated project creation/open remain usable.
+Live prior services retain PID/creation/executable evidence across relaunches;
+they are not adopted as children of the new session. Strict update drain still
+requires their exit, while ordinary Quit retains their recovery evidence.

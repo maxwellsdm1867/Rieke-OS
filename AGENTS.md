@@ -132,3 +132,33 @@ diagnostics retained. See the release's `qualification-summary.json` and
 `release-evidence/disco-0.2.2.md`. This remains an unsigned Apple silicon testing
 prerelease, not production or universal macOS qualification. Later documentation
 commits do not change the release archive. Verify live state before further work.
+
+## DISCO 0.2.4 release handoff (2026-10-27)
+
+Published testing tag `desktop-test-v0.2.4` and the installed entry at
+`~/Applications/Disco.app` identify clean source
+`d89dc598fc24ffb233a1f121e7b9f55f82bcd605`. The running app uses the verified managed
+runtime generation `38a8d53ccc1590d23061f98f034af9bbb3e2cff2f00440107bad0dc4a8ce3359`.
+Normal opening prepares/reuses a runtime without an installer page; sessions retain
+independent runtime lifetimes and the same project folder remains exclusive.
+
+Full regression `40466641965`, million-row comparison `40467763012`, and all five
+native suites in `40491116026` passed for saved candidate `40466641450`.
+Publication `40495294238` verified the uploaded bytes without rebuilding. Earlier
+performance flags, quota failure, test-cache defect, and CI batch timeouts remain
+recorded in the release's `qualification-summary.json`; they were not waived.
+The final verification harness was `ba0c52e6b468504e6f5f171fd7fe1add5a9d989d`.
+
+The actual installed 0.2.2 app found, downloaded and verified the published 0.2.4
+ZIP through App Updates. Restart to update installed and opened 0.2.4, restoring
+the project/protocol/epoch and trace. Sidebar visibility, shortcut expansion and
+sample-cursor view state were restored manually. Installed and managed-runtime
+manifest/ASAR hashes match the publication audit. The legacy previous app is kept
+for recovery; completed installer-download files were removed.
+
+See `release-evidence/disco-0.2.4.md` and the release's qualification summary.
+This remains an unsigned, unnotarized Apple silicon testing prerelease, with no
+Intel, signed-updater or universal macOS qualification. The native busy-import
+fallback was not exercised with H5 recordings. Later documentation/harness commits
+do not change the release archive. Verify live GitHub and installed state before
+further application changes.

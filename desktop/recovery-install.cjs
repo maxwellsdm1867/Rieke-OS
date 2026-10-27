@@ -8,10 +8,13 @@ const {promisify} = require('node:util');
 const run = promisify(require('node:child_process').execFile);
 const {installCompleteBundle, signatureIdentity, readBundleManifest, enclosingApp} = require('./bootstrap.cjs');
 async function main() {
-  const [pidText, previous, destination] = process.argv.slice(2);
+  const [pidText, previous, destination, userData] = process.argv.slice(2);
   const pid = Number(pidText);
   const expected = path.join(os.homedir(), 'Applications', 'Disco.app');
   if (!Number.isSafeInteger(pid) || pid <= 0 || destination !== expected || enclosingApp(process.execPath) !== destination || !previous.endsWith(path.join('updates', 'previous', 'Rieke OS.app'))) throw new Error('Invalid recovery request.');
+  if (!userData || !path.isAbsolute(userData) || userData.includes('\0')) throw new Error('Invalid recovery profile.');
+  const profile = await fs.lstat(userData);
+  if (!profile.isDirectory() || profile.isSymbolicLink() || profile.uid !== process.getuid()) throw new Error('Unverified recovery profile.');
   const current = await signatureIdentity(destination), prior = await signatureIdentity(previous);
   if (current.team !== prior.team) throw new Error('Recovery signature differs.');
   const deadline = Date.now() + 60000;
@@ -23,7 +26,7 @@ async function main() {
     await new Promise(resolve => setTimeout(resolve, 200));
   }
   await installCompleteBundle({source: previous, destination, allowRollback: true, ignorePid: process.pid});
-  await run('/usr/bin/open', ['-n', destination]);
+  await run('/usr/bin/open', ['-n', destination, '--args', `--user-data-dir=${userData}`]);
 }
 if (require.main === module) main().catch(() => { process.exitCode = 1; });
 module.exports = {main};

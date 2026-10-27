@@ -58,7 +58,7 @@ async function restorePriorBundle({app, manifest, prepareQuit, authorizeQuit, ru
   const {previous, installedBundle} = await verifyPriorBundle({app, manifest, run});
   const result = await prepareQuit();
   if (result?.ready !== true) return result;
-  const helper = spawnHelper(app.getPath('exe'), [path.join(__dirname, 'recovery-install.cjs'), String(process.pid), previous, installedBundle],
+  const helper = spawnHelper(app.getPath('exe'), [path.join(__dirname, 'recovery-install.cjs'), String(process.pid), previous, installedBundle, app.getPath('userData')],
     {detached: true, stdio: 'ignore', cwd: app.getPath('userData'), env: {HOME: process.env.HOME, TMPDIR: process.env.TMPDIR, ELECTRON_RUN_AS_NODE: '1'}});
   await new Promise((resolve, reject) => {helper.once('spawn', resolve); helper.once('error', reject);});
   helper.unref(); authorizeQuit(); app.quit();

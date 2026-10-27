@@ -183,6 +183,9 @@ def create_launcher(root, retinanalysis_dir, *, application_dir=None):
     def error(error):
         if isinstance(error,HTTPException):
             return jsonify(error=error.description),error.code
+        from workspace_startup_failure import ProjectSessionInUseError
+        if isinstance(error, ProjectSessionInUseError):
+            return jsonify(error=str(error), code=error.code), 409
         from workspace_frontend import ProjectHandoffUnavailable
         if isinstance(error, ProjectHandoffUnavailable):
             return jsonify(error=str(error), code='project_handoff_unavailable'), 409

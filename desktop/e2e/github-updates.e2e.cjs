@@ -1,16 +1,19 @@
 'use strict';
-// Only the official GitHub HTTPS transport is mapped to a loopback asset server
-// inside an isolated test clone. Descriptor, ZIP, candidate/runtime validation,
+// Official GitHub HTTPS transport is mapped to an owned loopback asset server;
+// /usr/bin/open dispatch is captured, then the exact admitted runtime is launched
+// with real Electron in the isolated fixture. Descriptor, ZIP, runtime validation,
 // UI, draft/writer drain and ordinary Quit all run the packaged implementation.
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),nativeFs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {createHash}=require('node:crypto'),asar=require('@electron/asar');
-const {createFixture,launch,gracefulQuit,cleanupOwnedFixture,ownedControl,run}=require('./qualification-helpers.cjs');
+const {createFixture,prepareRuntime,launch,gracefulQuit,cleanupOwnedFixture,ownedControl,run}=require('./qualification-helpers.cjs');
 const {showProjectSidebar,createRendererWatcher,waitForRenderer,captureRendererFailure}=require('./renderer-target.cjs');
 const {verifyResources}=require('../updater-validation.cjs');
+const {RuntimeGenerations}=require('../runtime-generations.cjs');
+const {bundleDigest}=require('../bootstrap.cjs');
 const {releaseVersions}=require('./release-versions.cjs');
 const output=path.resolve(__dirname,'../../docs/dev/desktop-ui-e2e/github-update-receipt.json');
-const receipt={format:'rieke-packaged-github-update-ui-e2e',version:1,signed_qualification:false,checks:[],failures:[],method:'Version-only Current clone, official HTTPS GitHub URLs mapped only at transport boundary to real final descriptor and ZIP; no candidate validation or drain mocks'};
-let fixture,application,page,server;const counts={api:0,descriptor:0,archive:0};
+const receipt={format:'rieke-packaged-github-update-ui-e2e',version:1,signed_qualification:false,checks:[],failures:[],method:'Synthetic prior clone with version metadata and test-only transport/native-open seams; official HTTPS GitHub URLs serve the real final descriptor and ZIP, /usr/bin/open dispatch is captured before real Electron launch of its admitted runtime; no candidate validation or drain mocks'};
+let fixture,application,page,server,otherApplication,otherPage;const counts={api:0,descriptor:0,archive:0};
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const watchRenderer=createRendererWatcher(error=>receipt.failures.push(error));
 async function write(){await fs.mkdir(path.dirname(output),{recursive:true});await fs.writeFile(output,JSON.stringify({...receipt,requests:counts},null,2)+'\n');}
@@ -20,8 +23,8 @@ async function main(){
  receipt.source_manifest_sha256=createHash('sha256').update(sourceBytes).digest('hex');receipt.source_app_asar_sha256=createHash('sha256').update(await fs.readFile(path.join(published,'Contents/Resources/app.asar'))).digest('hex');
  const {candidateVersion,priorVersion}=releaseVersions(sourceManifest.application_version,process.env.RIEKE_E2E_PRIOR_VERSION);
  assert.equal(JSON.parse(asar.extractFile(path.join(published,'Contents/Resources/app.asar'),'package.json')).version,candidateVersion,'Packaged version must match candidate manifest');
- receipt.candidate_version=candidateVersion;receipt.synthetic_prior={version:priorVersion,authentic_published_release:false,construction:'Candidate clone with version metadata overlaid; documented transport seam remains test-only'};
- fixture=await createFixture({reuse:false});receipt.fixture_root=fixture.root;
+ receipt.candidate_version=candidateVersion;receipt.synthetic_prior={version:priorVersion,authentic_published_release:false,construction:'Candidate clone with version metadata overlaid plus documented test-only HTTPS transport and /usr/bin/open capture seams'};
+ fixture=await createFixture({reuse:false,prepare:false});receipt.fixture_root=fixture.root;
  const zip=path.resolve(__dirname,`../dist/Disco-${candidateVersion}-arm64.zip`),descriptorPath=path.join(fixture.root,'desktop-release.json');
  await run(path.join(fixture.bundle,'Contents/Resources/runtime/python/bin/python3.11'),['-B',path.resolve(__dirname,'../../tools/desktop_test_release.py'),'--app',published,'--archive',zip,'--output',descriptorPath],{env:{...process.env,PYTHONDONTWRITEBYTECODE:'1'}});
  const descriptorBytes=await fs.readFile(descriptorPath),descriptor=JSON.parse(descriptorBytes);receipt.candidate_archive_sha256=descriptor.archive.sha256;
@@ -44,12 +47,17 @@ async function main(){
  const archive=path.join(fixture.bundle,'Contents/Resources/app.asar'),unpacked=path.join(fixture.root,'update-ui-test-asar');asar.extractAll(archive,unpacked);
  const mainFile=path.join(unpacked,'main.cjs'),original=await fs.readFile(mainFile,'utf8'),anchor='manifest: supervisor.manifest, distribution});';assert.ok(original.includes(anchor));
  await fs.writeFile(mainFile,original.replace(anchor,`manifest: supervisor.manifest, distribution, transport: require(${JSON.stringify(transport)}).transport});`));
+ const launchHandoff=path.join(fixture.root,'generation-launch.json'),ownerFile=path.join(unpacked,'runtime-generations.cjs'),ownerSource=await fs.readFile(ownerFile,'utf8');
+ const runAnchor='const run = promisify(execFile);';assert.equal(ownerSource.split(runAnchor).length,2);
+ await fs.writeFile(ownerFile,ownerSource.replace(runAnchor,`const nativeRun=promisify(execFile); const run=(file,args,options)=>{if(file==='/usr/bin/open'){require('node:fs').writeFileSync(${JSON.stringify(launchHandoff)},JSON.stringify({file,args})+'\\n',{mode:0o600});return Promise.resolve({stdout:'',stderr:''});}return nativeRun(file,args,options);};`));
  const packageFile=path.join(unpacked,'package.json'),pack=JSON.parse(await fs.readFile(packageFile));pack.version=priorVersion;await fs.writeFile(packageFile,JSON.stringify(pack,null,2)+'\n');
  await asar.createPackage(unpacked,archive);asar.uncacheAll();const plist=path.join(fixture.bundle,'Contents/Info.plist');
  await run('/usr/libexec/PlistBuddy',['-c',`Set :CFBundleShortVersionString ${priorVersion}`,plist]);await run('/usr/libexec/PlistBuddy',['-c',`Set :CFBundleVersion ${priorVersion}`,plist]);
  await run('/usr/libexec/PlistBuddy',['-c',`Set :ElectronAsarIntegrity:Resources/app.asar:hash ${createHash('sha256').update(asar.getRawHeader(archive).headerString).digest('hex')}`,plist]);
  await run('/usr/bin/codesign',['--force','--sign','-','--entitlements',path.resolve(__dirname,'../entitlements.mac.plist'),fixture.bundle]);await run('/usr/bin/codesign',['--verify','--deep','--strict',fixture.bundle]);
  await verifyResources(runtime,manifest.resources);receipt.test_current_version=priorVersion;
+ fixture=await prepareRuntime(fixture);
+ const priorGeneration=fixture.generation.id,priorGenerationDigest=await bundleDigest(fixture.bundle);
  ({application,page}=await launch(fixture));watchRenderer(page);
  await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});
  await check('background official release metadata creates a quiet version notice without downloading',async()=>{
@@ -76,14 +84,91 @@ async function main(){
   const before=await ownedControl(fixture,'health');await page.getByRole('button',{name:/^App Updates(?: —|$)/}).first().click();const dialog=page.getByRole('dialog',{name:'App Updates',exact:true});
   const active=await page.evaluate(async id=>(await fetch('/api/jobs').then(r=>r.json())).jobs.find(j=>j.job_uuid===id),job.job_uuid);
   assert.ok(active&&!['complete','completed','failed','cancelled'].includes(active.status),'Importer must still be active immediately before Restart');
-  await dialog.getByRole('button',{name:'Restart to update',exact:true}).click();await dialog.getByRole('alert').waitFor({timeout:120000});
-  const deferralReason=await dialog.getByRole('alert').innerText();assert.match(deferralReason,/draft|import|work|busy|writer|Scientific operations are still active/i);assert.equal(page.isClosed(),false);assert.equal((await ownedControl(fixture,'health')).pid,before.pid);assert.equal((await page.evaluate(()=>window.riekeDesktop.status())).state,'Ready');
-  let done;for(let n=0;n<240;n++){done=await page.evaluate(async id=>(await fetch('/api/jobs').then(r=>r.json())).jobs.find(j=>j.job_uuid===id),job.job_uuid);if(['complete','completed','failed','cancelled'].includes(done?.status))break;await delay(500);}assert.ok(['complete','completed'].includes(done?.status));await page.keyboard.press('Escape');return {busy_restart_deferred:true,active_import_status_before_restart:active.status,deferral_reason:deferralReason,deferral_barrier:/draft/i.test(deferralReason)?'draft-persistence':'writer-drain',writer_drain_exercised:!/draft/i.test(deferralReason),root_preserved:true,current_app_usable:true,real_import_completed:true};
+  await dialog.getByRole('button',{name:'Restart to update',exact:true}).click();
+  await page.waitForFunction(()=>window.riekeDesktop.status().then(value=>value.state==='Current'&&/new version opened/.test(value.message||'')),null,{timeout:420000});
+  const deferralReason=(await page.evaluate(()=>window.riekeDesktop.status())).message;assert.match(deferralReason,/draft|import|work|busy|writer|Scientific operations are still active/i);assert.equal(page.isClosed(),false);assert.equal((await ownedControl(fixture,'health')).pid,before.pid);
+  const dispatch=JSON.parse(await fs.readFile(launchHandoff,'utf8')),selected=fixture.runtimeStore.current();
+  assert.ok(dispatch.args.includes('--disco-new-session'));
+  const separate={...fixture,bundle:selected.generation.bundle,executable:path.join(selected.generation.bundle,'Contents/MacOS/Disco'),generation:{id:selected.id},allowSessionSlot:true,preparedLaunch:{args:[dispatch.file,...dispatch.args]}};
+  const fresh=await launch(separate);otherApplication=fresh.application;otherPage=fresh.page;
+  await otherPage.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});
+  assert.equal((await otherApplication.evaluate(({app})=>app.getVersion())),candidateVersion);
+  let done;for(let n=0;n<240;n++){done=await page.evaluate(async id=>(await fetch('/api/jobs').then(r=>r.json())).jobs.find(j=>j.job_uuid===id),job.job_uuid);if(['complete','completed','failed','cancelled'].includes(done?.status))break;await delay(500);}assert.ok(['complete','completed'].includes(done?.status));await gracefulQuit(otherApplication,otherPage);otherApplication=null;await fs.unlink(launchHandoff);await page.keyboard.press('Escape');return {busy_session_transfer_deferred:true,new_version_opened_independently:true,active_import_status_before_restart:active.status,deferral_reason:deferralReason,deferral_barrier:/draft/i.test(deferralReason)?'draft-persistence':'writer-drain',writer_drain_exercised:!/draft/i.test(deferralReason),root_preserved:true,current_app_usable:true,real_import_completed:true};
  });
- await check('ordinary Quit with a prepared testing update leaves the current complete app installed',async()=>{
-  await page.keyboard.press('Escape');assert.equal((await page.evaluate(()=>window.riekeDesktop.status())).state,'Ready');await gracefulQuit(application,page);application=null;
+ await check('ordinary Quit preserves the running runtime and selected generation',async()=>{
+  await page.keyboard.press('Escape');const stateBefore=(await page.evaluate(()=>window.riekeDesktop.status())).state;assert.ok(['Ready','Current'].includes(stateBefore));const selectionBefore=fixture.runtimeStore.current(),selectedBefore=selectionBefore.id;await gracefulQuit(application,page);application=null;assert.equal(fixture.runtimeStore.current().id,selectedBefore);
   const after=JSON.parse(await fs.readFile(manifestFile));assert.equal(after.application_version,priorVersion);await verifyResources(runtime,manifest.resources);
-  assert.equal(await fs.stat(path.join(path.dirname(fixture.bundle),'.Rieke OS.previous.app')).then(()=>true,()=>false),false);const cache=path.join(fixture.userData,'updates','unsigned-testing');const entries=await fs.readdir(cache).catch(()=>[]);assert.ok(!entries.some(name=>/^install-.*\.json$/.test(name)));return {ordinary_quit_did_not_install:true,current_version:priorVersion,runtime_immutable:true,native_orderly_exit:true};
+  assert.equal(await fs.stat(path.join(path.dirname(fixture.bundle),'.Rieke OS.previous.app')).then(()=>true,()=>false),false);const cache=path.join(fixture.userData,'updates','unsigned-testing');const entries=await fs.readdir(cache).catch(()=>[]);assert.ok(!entries.some(name=>/^install-.*\.json$/.test(name)));return {ordinary_quit_did_not_change_selection:true,running_version:priorVersion,selected_version:selectionBefore.generation.manifest.application_version,update_activated_before_quit:stateBefore==='Current',runtime_immutable:true,native_orderly_exit:true};
+ });
+ await check('managed Restart activates the exact downloaded runtime while another old session stays usable',async()=>{
+  const otherProfile=path.join(fixture.home,'other-session');await fs.mkdir(otherProfile,{recursive:true});
+  const other={...fixture,userData:otherProfile,generation:{id:priorGeneration}};
+  const second=await launch(other);otherApplication=second.application;otherPage=second.page;
+  await otherPage.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});
+  ({application,page}=await launch(fixture));
+  if(process.env.RIEKE_E2E_H5){await page.getByRole('heading',{name:'Testing update writer fixture',exact:true}).waitFor({timeout:90000});await showProjectSidebar(page);}else await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});
+  await page.waitForFunction(()=>window.riekeDesktop.status().then(value=>['Ready','Available'].includes(value.state)),null,{timeout:180000});
+  await page.getByRole('button',{name:/^App Updates(?: —|$)/}).first().click();
+  const dialog=page.getByRole('dialog',{name:'App Updates',exact:true}),exited=new Promise(resolve=>application.process().once('exit',resolve));
+  const readinessDeadline=Date.now()+180000,readinessRemaining=()=>{const left=readinessDeadline-Date.now();assert.ok(left>0,'Update readiness exceeded its existing three-minute bound');return left;};
+  if((await page.evaluate(()=>window.riekeDesktop.status())).state==='Available'){
+   try{await dialog.getByRole('button',{name:'Download update',exact:true}).click({timeout:Math.min(30000,readinessRemaining())});}
+   catch(error){
+    if(error.name!=='TimeoutError')throw error;
+    const transitioned=await page.evaluate(()=>window.riekeDesktop.status());
+    if(!['Validating','Downloading','Ready'].includes(transitioned.state))throw error;
+    receipt.cached_validation_click_race={state:transitioned.state,original_error:error.name};await write();
+   }
+  }
+  // Cached verification can supersede the transient Available state. Require
+  // the real Ready UI within one unchanged validation budget, without retrying
+  // or resetting its deadline when the Download button disappears.
+  await dialog.getByRole('button',{name:'Restart to update',exact:true}).waitFor({timeout:readinessRemaining()});
+  receipt.restart_ready_status=await page.evaluate(()=>window.riekeDesktop.status());await write();
+  assert.equal(receipt.restart_ready_status.state,'Ready');assert.equal(receipt.restart_ready_status.can_restart,true);
+  await dialog.getByRole('button',{name:'Restart to update',exact:true}).click();
+  assert.equal(await Promise.race([exited,new Promise((_,reject)=>setTimeout(()=>reject(Error('Managed restart did not exit')),420000).unref())]),0);application=null;
+  let dispatch;for(let n=0;n<240;n++){try{dispatch=JSON.parse(await fs.readFile(launchHandoff,'utf8'));break;}catch(error){if(error.code!=='ENOENT')throw error;}await delay(250);}
+  assert.ok(dispatch,'Exact-session helper must request the replacement launch');
+  assert.ok(dispatch.args.includes('--disco-recover-session'));assert.ok(dispatch.args.includes(`--user-data-dir=${fixture.userData}`));
+  const activation=fixture.runtimeStore.current();assert.equal(activation.generation.manifest.application_version,candidateVersion);
+  assert.equal(await bundleDigest(activation.generation.bundle),await bundleDigest(published));
+  assert.equal(await bundleDigest(fixture.bundle),priorGenerationDigest);
+  assert.equal(otherApplication.process().exitCode,null);
+  assert.equal((await otherApplication.evaluate(({app})=>app.getVersion())),priorVersion);
+  const next={...fixture,bundle:activation.generation.bundle,executable:path.join(activation.generation.bundle,'Contents/MacOS/Disco'),generation:{id:activation.id},preparedLaunch:{args:[dispatch.file,...dispatch.args]}};
+  const reopened=await launch(next);application=reopened.application;page=reopened.page;
+  await page.getByRole('heading',{name:process.env.RIEKE_E2E_H5?'Testing update writer fixture':'Your projects',exact:true}).waitFor({timeout:90000});
+  assert.equal((await ownedControl(next,'health')).application_version,candidateVersion);
+  assert.equal((await application.evaluate(({app})=>app.getPath('userData'))),fixture.userData);
+  receipt.updated_generation=activation.id;
+  return {downloaded_bundle_exact:true,initiating_session_reopened_exact_profile:true,other_old_session_continues:true,old_runtime_immutable:true,launch_services_dispatch_only_captured:true};
+ });
+ await check('an older runtime is retained until its last session exits, then collected without removing project state',async()=>{
+  const newer=path.join(fixture.root,'future-fixture/Disco.app');await fs.mkdir(path.dirname(newer),{recursive:true});await run('/usr/bin/ditto',[published,newer]);
+  const parts=candidateVersion.split('.').map(Number),futureVersion=`${parts[0]}.${parts[1]}.${parts[2]+1}`;
+  const futureRuntime=path.join(newer,'Contents/Resources/runtime'),futureManifestFile=path.join(futureRuntime,'runtime-manifest.json'),futureManifest=JSON.parse(await fs.readFile(futureManifestFile));
+  futureManifest.application_version=futureVersion;
+  for(const name of Object.keys(futureManifest.resources).filter(name=>name.endsWith('/rieke-release.json'))){const file=path.join(futureRuntime,name),value=JSON.parse(await fs.readFile(file));value.version=futureVersion;const bytes=Buffer.from(JSON.stringify(value,null,2)+'\n');await fs.writeFile(file,bytes);futureManifest.resources[name]={...futureManifest.resources[name],sha256:createHash('sha256').update(bytes).digest('hex'),size:bytes.length};}
+  await fs.writeFile(futureManifestFile,JSON.stringify(futureManifest,null,2)+'\n');
+  const futureArchive=path.join(newer,'Contents/Resources/app.asar'),futureAsar=path.join(fixture.root,'future-asar');asar.extractAll(futureArchive,futureAsar);
+  const packageFile=path.join(futureAsar,'package.json'),value=JSON.parse(await fs.readFile(packageFile));value.version=futureVersion;await fs.writeFile(packageFile,JSON.stringify(value,null,2)+'\n');
+  await asar.createPackage(futureAsar,futureArchive);asar.uncacheAll();const futurePlist=path.join(newer,'Contents/Info.plist');
+  for(const key of ['CFBundleShortVersionString','CFBundleVersion'])await run('/usr/libexec/PlistBuddy',['-c',`Set :${key} ${futureVersion}`,futurePlist]);
+  await run('/usr/libexec/PlistBuddy',['-c',`Set :ElectronAsarIntegrity:Resources/app.asar:hash ${createHash('sha256').update(asar.getRawHeader(futureArchive).headerString).digest('hex')}`,futurePlist]);
+  await run('/usr/bin/codesign',['--force','--sign','-','--entitlements',path.resolve(__dirname,'../entitlements.mac.plist'),newer]);
+  const store=new RuntimeGenerations({root:fixture.runtimeStore.root,python:path.join(newer,'Contents/Resources/runtime/python/bin/python3.11')});
+  await store.activate(await store.stage(newer));
+  const alive=await store.collect();assert.ok(!alive.removed.includes(priorGeneration));assert.equal(await bundleDigest(fixture.bundle),priorGenerationDigest);
+  await gracefulQuit(otherApplication,otherPage);otherApplication=null;
+  let result;for(let n=0;n<30;n++){result=await store.collect();if(result.removed.includes(priorGeneration))break;await delay(500);}
+  assert.ok(result.removed.includes(priorGeneration),JSON.stringify(result));
+  assert.equal(await fs.stat(fixture.bundle).then(()=>true,()=>false),false);
+  assert.equal(application.process().exitCode,null);
+  assert.equal((await application.evaluate(({app})=>app.getVersion())),candidateVersion);
+  await gracefulQuit(application,page);application=null;
+  receipt.synthetic_future={version:futureVersion,authentic_release:false,purpose:'Make original prior generation eligible beyond the retained rollback slot; never published'};
+  return {live_old_generation_retained:true,normal_last_exit_releases_bytes:true,newer_session_survives_collection:true,scientific_state_untouched:true};
  });
  assert.equal(receipt.failures.length,0);await write();await new Promise(resolve=>server.close(resolve));server=null;console.log('GitHub update UI receipt: '+output);
 }
@@ -92,7 +177,7 @@ main().catch(async error=>{
  page=error.launchedPage||page||fixture?.activePage;
  if(application)try{receipt.failure_targets=await captureRendererFailure(application,'github-updates');}catch{}
  console.error(error.stack);receipt.failures.push({name:'github-update-suite',message:error.message});
- receipt.failure_cleanup=await cleanupOwnedFixture(application,page);await write();
+ receipt.failure_cleanup=[await cleanupOwnedFixture(otherApplication,otherPage),await cleanupOwnedFixture(application,page)];await write();
  server?.close();
  // Exit only this controller; a deferred owned app is retained for inspection.
  process.exit(1);

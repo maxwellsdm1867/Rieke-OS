@@ -1,4 +1,4 @@
-> **DISCO 0.2.2 · Mac desktop testing build:** [Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.2.2/Disco-0.2.2-arm64.zip) · [Release details and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.2). Python and native MySQL are bundled; no Docker or Terminal setup is needed. Existing users can use **App Updates → Download update → Restart to update**. The original public 0.1.10 helper may require opening DISCO normally once after replacement; no re-download or reimport is needed. For manual installation, extract the ZIP, quit DISCO, replace **Disco.app**, and reopen it. Project folders remain separate. This unsigned, unnotarized Apple silicon testing build targets macOS 14+; macOS 14 runtime support remains unqualified and Intel is unsupported. macOS may require **Privacy & Security → Open Anyway**. This is a manual testing release, not a stable release.
+> **DISCO 0.2.4 · Mac desktop testing build:** [Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.2.4/Disco-0.2.4-arm64.zip) · [Release details and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.4). Python and native MySQL are bundled; no Docker or Terminal setup is needed. Existing users can use **App Updates → Download update → Restart to update**. The original public 0.1.10 helper may require opening DISCO normally once after replacement; no re-download or reimport is needed. For manual installation, extract the ZIP and open **Disco.app** normally; it prepares its runtime automatically. Project folders remain separate. This unsigned, unnotarized Apple silicon testing build targets macOS 14+; macOS 14 runtime support remains unqualified and Intel is unsupported. macOS may require **Privacy & Security → Open Anyway**. This is a manual testing release, not a stable release.
 
 # DISCO
 
@@ -71,18 +71,22 @@ can be reused when switching views, subject to project, protocol and revision ch
 cell-metadata reads stay scoped to the relevant cohort. These changes preserve source identities and
 saved scientific membership; they do not turn a search into a selection or merge.
 
-## Current 0.2.2 testing build
+## Current 0.2.4 testing build
 
-DISCO 0.2.2 adds evenly spaced sidebar controls, rounded background-only hover states,
-a simpler author chooser with clear initials, and a full-blue native macOS icon
-that stays consistent at startup. The sidebar download icon lights up when an
-update is available. Open it to download, then choose **Restart to update**.
+DISCO 0.2.4 opens normally without an installer page. It prepares a runtime on
+first launch and reuses it afterward. Existing sessions keep their original
+runtime while new sessions use the selected version; **DISCO → New session** opens
+independent session state. The same project folder remains exclusive to its owner.
+
+Open **App Updates → Download update → Restart to update** to move the initiating
+session to the new version. Unused runtime versions are retired only after their
+sessions and helpers exit, retaining the current and previous version for recovery.
 
 The published app and release tag identify clean source
-[`a917930`](https://github.com/maxwellsdm1867/Rieke-OS/commit/a917930914cfaacdafdf97d1c15f8cebaedd3b93).
-See the [0.2.2 release notes](release-evidence/disco-0.2.2.md) and
-[release assets and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.2), including the exact-source qualification summary.
-Later documentation commits on `main` do not change the published app or tag.
+[`d89dc598`](https://github.com/maxwellsdm1867/Rieke-OS/commit/d89dc598fc24ffb233a1f121e7b9f55f82bcd605).
+See the [0.2.4 release notes](release-evidence/disco-0.2.4.md) and
+[release assets and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.4), including the exact-source qualification summary.
+Later documentation and test-harness commits do not change the published app or tag.
 
 ## Earlier 0.1.12 testing-build qualification
 
@@ -141,15 +145,15 @@ The [module ledger](docs/architecture/core-module-ledger.md) and its
 and [backend](docs/architecture/core-module-ledger.md#backend-finite-current-path-composition)
 path records separate implemented organization, retained owners and proposals.
 Their earlier source and test receipts remain historical evidence; use the
-[current release metadata](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.2) for the downloadable build.
+[current release metadata](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.4) for the downloadable build.
 The broader [stable-ports design](docs/architecture/stable-ports.md) remains a
 proposal beyond the explicitly adopted slices.
 
 ## Source download (developer workflow)
 
 **[Download main as a ZIP](https://github.com/maxwellsdm1867/Rieke-OS/archive/refs/heads/main.zip)**
-for development source and documentation. To match the 0.2.2 app exactly, use
-[the release source tag](https://github.com/maxwellsdm1867/Rieke-OS/tree/desktop-test-v0.2.2).
+for development source and documentation. To match the 0.2.4 app exactly, use
+[the release source tag](https://github.com/maxwellsdm1867/Rieke-OS/tree/desktop-test-v0.2.4).
 You can also choose a version from
 [Releases](https://github.com/maxwellsdm1867/Rieke-OS/releases) and download
 its **Source code (zip)**. Extract the entire archive before installing. GitHub's

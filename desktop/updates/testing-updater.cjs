@@ -82,7 +82,7 @@ function assetURL(asset,tag,name){
   approvedURL(asset.browser_download_url,'asset');return asset.browser_download_url;
 }
 async function releaseList(transport){return jsonAt(transport,API,'api');}
-function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus=()=>{},prepareQuit,authorizeQuit=()=>{},revokeQuit=()=>{},onInstallationFailure=()=>{},installedBundle,transport=httpsTransport,verifyCandidate=validateTestingCandidate,revalidateCandidate=revalidateTestingCandidate,installHelper,processIdentity,hostVersion,timers=globalThis,random=Math.random,enabled}){
+function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus=()=>{},prepareQuit,authorizeQuit=()=>{},revokeQuit=()=>{},onInstallationFailure=()=>{},installedBundle,activateGeneration,launchGeneration,transport=httpsTransport,verifyCandidate=validateTestingCandidate,revalidateCandidate=revalidateTestingCandidate,installHelper,processIdentity,hostVersion,timers=globalThis,random=Math.random,enabled}){
   installedBundle||=path.resolve(app.getPath('exe'),'../../..');
   let status={state:'Current',installed:manifest.application_version,available:null,channel:'unsigned-testing',manual_updates:true,can_download:false,can_restart:false,developer_id_verified:false,message:'Using the installed testing version.'};
   let active=false,stopped=false,timer=null,checking=null,downloading=null,installing=null,pending=null,offered=null,lastInstall=null;
@@ -264,7 +264,26 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
       let drained=false,operationCache=null,operationReceipt=null,phase='validate-prepared';
       try{
         set('Validating',{message:'Checking the prepared update before closing Disco.'});
-        await verifyPrepared();set('Draining',{message:'Saving drafts and closing scientific services before updating.'});
+        await verifyPrepared();
+        if(activateGeneration){
+          if(!launchGeneration)throw Error('Runtime launch adapter is unavailable');
+          const activation=await activateGeneration(pending);
+          set('Draining',{message:'The new version is ready. Saving this session before reopening it.'});
+          let result;
+          try{result=await prepareQuit();}catch(error){result={ready:false,reason:error.message};}
+          if(stopped)throw Error('Updater stopped during session handoff');
+          if(result?.ready!==true){
+            await launchGeneration(activation,{fresh:true});
+            pending=null;await forgetHint();
+            set('Current',{can_restart:false,message:'The new version opened in a separate session. This session remains open because its work could not be safely closed. '+(result?.reason||'')});
+            return {ready:true,activated:true,opened:true};
+          }
+          drained=true;
+          if(stopped)throw Error('Updater stopped during session handoff');
+          await launchGeneration(activation);
+          authorizeQuit();app.quit?.();return {ready:true,activated:true,installing:true};
+        }
+        set('Draining',{message:'Saving drafts and closing scientific services before updating.'});
         phase='drain-services';const result=await prepareQuit();
         if(result?.ready!==true){set('Ready',{message:'Testing update remains pending until drafts, writers and services close.'});return{ready:false,reason:result?.reason||status.message};}
         drained=true;phase='validate-after-drain';set('Validating',{message:'Checking the update after scientific services close.'});await verifyPrepared();if(stopped)throw new Error('Updater stopped during drain.');

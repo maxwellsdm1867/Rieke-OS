@@ -105,6 +105,23 @@ Native operation and project session ownership remain Python responsibilities.
 
 ## Restoration, profile and location contract
 
+`session-profiles.cjs` selects an independent userData and sessionData before
+Electron readiness for each packaged installed GUI. Profile leases isolate cookies,
+capabilities, drafts, startup preferences, backend registries and update caches;
+canonical project-folder locks remain the scientific exclusion boundary. New
+session (Cmd+Shift+N) opens a chooser. New slots inherit only validated workspace
+and project-discovery preferences. Clean released slots may be reused; interrupted
+or unreadable ownership records are preserved for explicit Recover previous session.
+Recovery never silently substitutes another profile for an invalid requested slot.
+Only confirmed service cleanup releases the profile marker. A clean updater restart
+uses the exact saved slot without nesting profiles or discarding restoration.
+Healthy root control remains available after a failed saved-project restore even
+with retained child evidence; each later project open still requires its own proof.
+Replacement additionally refuses other live processes of the same bundle. Ordinary
+use and Quit do not require unrelated sessions to exit. The executable examples in
+`tests/session-profiles.test.cjs` use injected locks; native multi-instance execution
+is a separate obligation.
+
 Restoration consumes one saved target and rejects duplicate accepted opens. Main
 checks UUID/canonical path and cancellation after asynchronous authorization and
 before navigation. Changed identity requires authorized cleanup; cancellation

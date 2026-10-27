@@ -5,7 +5,7 @@ This entry point never installs dependencies or terminates scientific workers.
 """
 from __future__ import annotations
 
-from workspace_startup_failure import RequiredComponentError, safe_component_failure, startup_failure_message
+from workspace_startup_failure import RequiredComponentError, ProjectSessionInUseError, safe_component_failure, startup_failure_message
 
 import argparse
 import contextlib
@@ -56,7 +56,7 @@ def acquire_project_session(project):
         fcntl.flock(session_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         session_lock.close()
-        raise ValueError('Another app or recovery owns this project; close it before opening') from None
+        raise ProjectSessionInUseError(project) from None
     return session_lock
 
 
@@ -382,6 +382,8 @@ def validate_child_startup_receipt(line, record):
         if value.get('stage') != 'before_project_database' or value.get('ready') is not False:
             raise ValueError('Unknown child startup failure stage')
         outcome = {'valid': False, 'pre_database_failed': True}
+        if value.get('failure_code') == ProjectSessionInUseError.code:
+            outcome['session_conflict'] = True
         failure = safe_component_failure(value.get('component_failure'))
         if failure:
             outcome['component_failure'] = failure
@@ -407,25 +409,13 @@ class DesktopServices:
             previous = json.loads(self.path.read_text())
             if not isinstance(previous, dict) or previous.get('version') != 1 or not isinstance(previous.get('services'), list):
                 raise ValueError('Desktop service registry is invalid')
-            import psutil
             for record in previous['services']:
                 if not isinstance(record, dict) or type(record.get('pid')) is not int:
                     raise ValueError('Desktop service registry is invalid')
-                try:
-                    process = psutil.Process(record['pid'])
-                    # PID existence alone neither authorizes shutdown nor proves
-                    # prior scientific operations finished. Matching processes
-                    # require recovery; foreign/reused PIDs are not our services.
-                    # A zombie cannot serve HTTP, but its independent database
-                    # or inherited import worker may still be active. It must
-                    # satisfy the same clean receipt checks as any exited child.
-                    if (process.status() != psutil.STATUS_ZOMBIE
-                            and process.create_time() == record.get('created_at')
-                            and str(Path(process.exe()).resolve()) == record.get('executable')):
-                        raise ValueError('A previous desktop project service is still alive; recovery must close it before opening projects')
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    if psutil.pid_exists(record['pid']):
-                        raise ValueError('A previous service cannot be inspected; preserve it for recovery')
+                if self._prior_service_alive(record):
+                    self._mark_recovery({**record, 'service_owner': record},
+                                        'This project is still open in a previous DISCO session')
+                    continue
                 if not self._unused_database(record) and not self._clean_database(record):
                     if self._rejected_legacy_preflight(record):
                         continue
@@ -448,24 +438,41 @@ class DesktopServices:
                     self._mark_recovery(mark, mark.get('reason') or 'Project recovery is required')
         self._save()
 
-    def _mark_recovery(self, record, reason):
-        """Scope recovery to one project; only a live owned database blocks all.
+    @staticmethod
+    def _prior_service_alive(record):
+        """Read-only liveness; uncertain inspection keeps this project blocked."""
+        import psutil
+        try:
+            process = psutil.Process(record['pid'])
+            return (process.status() != psutil.STATUS_ZOMBIE
+                    and process.create_time() == record.get('created_at')
+                    and str(Path(process.exe()).resolve()) == record.get('executable'))
+        except psutil.NoSuchProcess:
+            return False
+        except psutil.AccessDenied:
+            return psutil.pid_exists(record['pid'])
 
-        The project's own native gate keeps refusing unclean copied/moved data.
-        """
-        from disco.projects.runtime_state import NEVER_STARTED, RUNNING_OWNED, STOPPED_CLEAN, project_runtime_state
+    def _mark_recovery(self, record, reason):
+        """Keep prior service/database ownership local to its project folder."""
+        from disco.projects.runtime_state import NEVER_STARTED, STOPPED_CLEAN, project_runtime_state
         if not isinstance(record.get('project_path'), str):
             raise ValueError('Desktop service registry is invalid')
+        owner = record.get('service_owner')
+        if owner is not None and (not isinstance(owner, dict) or type(owner.get('pid')) is not int
+                                  or owner.get('project_path') != record['project_path']
+                                  or owner.get('project_uuid') != record.get('project_uuid')):
+            raise ValueError('Project service recovery identity is invalid')
+        live_service = bool(owner and self._prior_service_alive(owner))
         state = project_runtime_state(record['project_path'])
-        if state['state'] == RUNNING_OWNED:
-            raise ValueError('A previous project database is still running; recovery must close it before opening projects')
-        if state['state'] == NEVER_STARTED and record.get('phase') != 'failed_shutdown':
-            return  # No database evidence exists and no shutdown failure was reported.
-        if state['state'] == STOPPED_CLEAN and record.get('recovery_state'):
-            return  # A previously marked project has since closed cleanly.
+        if not live_service:
+            if state['state'] == NEVER_STARTED and record.get('phase') != 'failed_shutdown':
+                return
+            if state['state'] == STOPPED_CLEAN and record.get('recovery_state'):
+                return
         self.recovery[str(Path(record['project_path']).expanduser().resolve())] = {
             'project_path': record['project_path'], 'project_uuid': record.get('project_uuid'),
-            'recovery_state': True, 'state': state['state'], 'reason': reason + '; ' + str(state['reason'])}
+            'recovery_state': True, 'state': state['state'], 'reason': reason + '; ' + str(state['reason']),
+            **({'service_owner': owner} if live_service else {})}
 
     def recovery_records(self):
         with self.lock:
@@ -474,6 +481,9 @@ class DesktopServices:
     def _admit_recovered_project(self, key):
         """Opening a marked project needs proof that no database process remains."""
         from disco.projects.runtime_state import RUNNING, project_runtime_state
+        owner = self.recovery[key].get('service_owner')
+        if owner and self._prior_service_alive(owner):
+            raise ProjectSessionInUseError(key)
         state = project_runtime_state(key)
         if state['state'] in RUNNING:
             raise ValueError('This project needs recovery: a database process from an earlier session is still '
@@ -661,6 +671,10 @@ class DesktopServices:
             with socket.socket() as listener:
                 listener.bind(('127.0.0.1', 0))
                 port = listener.getsockname()[1]
+            # Reject a busy project before spawning a child or touching its database.
+            # The child acquires and holds the same lock; this probe grants no lease.
+            with acquire_project_session(directory):
+                pass
             log_path = directory / 'logs' / 'workspace-launch.log'
             log_path.parent.mkdir(exist_ok=True)
             if log_path.is_symlink():
@@ -706,6 +720,8 @@ class DesktopServices:
                 bound.wait(1)
                 self.records()
                 # Other startup failures retain the existing recovery-required path.
+                if packet.get('session_conflict'):
+                    raise ProjectSessionInUseError(directory)
                 raise ValueError(startup_failure_message(log_path, packet.get('component_failure')))
             if not bound.is_set():
                 bound.wait(.2)
@@ -746,6 +762,14 @@ class DesktopServices:
 
     def drain(self, timeout, *, for_quit=False):
         with self.lock:
+            # Separate-project use does not grant app replacement authority.
+            # Explicit Quit can leave prior-session recovery evidence intact.
+            if not for_quit:
+                from disco.projects.runtime_state import RUNNING, project_runtime_state
+                for key, mark in self.recovery.items():
+                    owner = mark.get('service_owner')
+                    if (owner and self._prior_service_alive(owner)) or project_runtime_state(key)['state'] in RUNNING:
+                        raise ValueError('Close the project in its previous session before updating DISCO. Other projects remain available.')
             self.draining = True
             records = self.records()
         prepared = []
@@ -817,6 +841,8 @@ def desktop_open_project(project_dir, identity, retinanalysis_dir, *, timeout=30
                 return json.load(response)
         except HTTPError as error:
             payload = json.load(error)
+            if payload.get('code') == ProjectSessionInUseError.code:
+                raise ProjectSessionInUseError(project['path']) from None
             if payload.get('code') == DesktopProjectCompatibilityError.code:
                 raise DesktopProjectCompatibilityError() from None
             raise
@@ -857,6 +883,8 @@ def initialize_before_project_database(args, manifest, initialize):
                           project_uuid=catalog['project_uuid'], project_path=str(project),
                           application_version=manifest['application_version'], source_commit=manifest['source_commit'],
                           ready=False, stage='before_project_database')
+            if isinstance(error, ProjectSessionInUseError):
+                failed['failure_code'] = error.code
             if isinstance(error, RequiredComponentError):
                 failed['component_failure'] = {'component': error.component, 'reason': error.reason}
             with os.fdopen(args.ready_fd, 'w') as pipe:
@@ -932,7 +960,7 @@ def main(argv=None):
             catalog = json.loads((project / 'catalog.json').read_text())
             if catalog.get('connection', {}).get('credential_provider', {}).get('kind') != 'native-project':
                 raise ValueError('Desktop requires a project-owned native database; migrate legacy projects before opening them')
-            session_lock = acquire_project_session(project)
+            session_lock = initialize_before_project_database(args, manifest, lambda: acquire_project_session(project))
             from lifecycle_diagnostic import install_read_observers
             install_read_observers()
             from workspace_projects import _project_record

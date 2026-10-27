@@ -243,10 +243,10 @@ class DesktopRegistryTests(unittest.TestCase):
         path = self.state / '.app-state-session.lock'
         with path.open('a') as source_app:
             fcntl.flock(source_app.fileno(), fcntl.LOCK_SH | fcntl.LOCK_NB)
-            with self.assertRaisesRegex(ValueError, 'Another app'):
+            with self.assertRaisesRegex(ValueError, 'already open'):
                 acquire_project_session(self.state)
         with acquire_project_session(self.state):
-            with self.assertRaisesRegex(ValueError, 'Another app'):
+            with self.assertRaisesRegex(ValueError, 'already open'):
                 acquire_project_session(self.state)
 
     def test_session_lock_cannot_redirect_to_another_project(self):
@@ -338,14 +338,34 @@ class DesktopRegistryTests(unittest.TestCase):
                 self.services.call({'port': 8766, 'bound': False}, 'health')
             send.assert_not_called()
 
-    def test_prior_living_exact_process_requires_recovery(self):
+    def test_prior_living_exact_process_blocks_only_its_project_across_relaunch(self):
         import psutil
+        root, record = self._dead_project_record()
         process = psutil.Process()
-        record = {'pid': process.pid, 'created_at': process.create_time(), 'executable': str(Path(process.exe()).resolve())}
+        record.update(pid=process.pid, created_at=process.create_time(), executable=str(Path(process.exe()).resolve()))
         self.services.path.write_text(json.dumps({'version': 1, 'services': [record]}))
-        with self.assertRaisesRegex(ValueError, 'still alive'):
-            DesktopServices(self.state, self.state / 'resources', self.state / 'manifest',
-                            'new-session', 's' * 48, {})
+        relaunched = self.relaunch()
+        self.assertEqual(relaunched.records(), [])  # Not adopted as our child.
+        self.assertEqual(relaunched.recovery_records()[0]['service_owner']['pid'], process.pid)
+        relaunched = self.relaunch('third')
+        with self.assertRaisesRegex(ValueError, 'before updating'):
+            relaunched.drain(.01)
+        self.assertFalse(relaunched.draining)
+        with patch('workspace_desktop.subprocess.Popen') as spawn:
+            with self.assertRaisesRegex(ValueError, 'already open'):
+                relaunched.open(root, record['project_uuid'], None, 1)
+            spawn.assert_not_called()
+        other = self.state / 'independent-project'
+        other.mkdir()
+        (other / 'catalog.json').write_text(json.dumps({'connection': {'credential_provider': {'kind': 'native-project'}}}))
+        with patch('workspace_desktop.subprocess.Popen', side_effect=RuntimeError('spawn reached')):
+            with self.assertRaisesRegex(RuntimeError, 'spawn reached'):
+                relaunched.open(other, 'other', None, 1)
+        # Reused PID does not indefinitely block the project.
+        relaunched.recovery[str(root.resolve())]['service_owner']['created_at'] -= 10
+        with patch('workspace_desktop.subprocess.Popen', side_effect=RuntimeError('spawn reached')):
+            with self.assertRaisesRegex(RuntimeError, 'spawn reached'):
+                relaunched.open(root, record['project_uuid'], None, 1)
 
     def test_transient_database_ack_requires_same_instance_and_absent_runtime(self):
         root = self.state / 'project'
@@ -421,20 +441,42 @@ class DesktopRegistryTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'spawn reached'):
                 relaunched.open(other, 'other', None, 1)
 
-    def test_live_owned_database_of_a_dead_service_still_blocks_globally(self):
+    def test_live_owned_database_of_a_dead_service_or_transfer_blocks_only_its_project(self):
         root, record = self._dead_project_record()
-        self.services.path.write_text(json.dumps({'version': 1, 'services': [record]}))
-        with patch.object(runtime_state, 'project_runtime_state',
-                   return_value={'state': 'running_owned', 'pid': 4242, 'reason': 'owned database process is alive'}):
-            with self.assertRaisesRegex(ValueError, 'still running'):
-                self.relaunch()
         operation = {'operation_id': 'op', 'project_path': str(root), 'project_uuid': record['project_uuid'],
                      'instance_uuid': None, 'phase': 'running'}
-        self.services.path.write_text(json.dumps({'version': 1, 'services': [], 'database_operations': [operation]}))
-        with patch.object(runtime_state, 'project_runtime_state',
-                   return_value={'state': 'running_owned', 'pid': 4242, 'reason': 'owned database process is alive'}):
-            with self.assertRaisesRegex(ValueError, 'still running'):
-                self.relaunch()
+        for previous in [{'version': 1, 'services': [record]},
+                         {'version': 1, 'services': [], 'database_operations': [operation]}]:
+            self.services.path.write_text(json.dumps(previous))
+            with patch.object(runtime_state, 'project_runtime_state',
+                       return_value={'state': 'running_owned', 'pid': 4242, 'reason': 'owned database process is alive'}):
+                relaunched = self.relaunch()
+                self.assertEqual(relaunched.recovery_records()[0]['project_path'], str(root))
+                with patch('workspace_desktop.subprocess.Popen') as spawn:
+                    with self.assertRaisesRegex(ValueError, 'Other projects remain available'):
+                        relaunched.open(root, record['project_uuid'], None, 1)
+                    spawn.assert_not_called()
+                other = self.state / 'other-live'
+                other.mkdir(exist_ok=True)
+                (other / 'catalog.json').write_text(json.dumps({'connection': {'credential_provider': {'kind': 'native-project'}}}))
+                with patch('workspace_desktop.subprocess.Popen', side_effect=RuntimeError('spawn reached')):
+                    with self.assertRaisesRegex(RuntimeError, 'spawn reached'):
+                        relaunched.open(other, 'other', None, 1)
+
+    def test_browser_session_conflict_is_explained_before_spawn_and_retry_works_after_close(self):
+        import fcntl
+        root, record = self._dead_project_record()
+        with (root / '.app-state-session.lock').open('a') as browser:
+            fcntl.flock(browser, fcntl.LOCK_SH | fcntl.LOCK_NB)
+            with patch('workspace_desktop.subprocess.Popen') as spawn:
+                with self.assertRaisesRegex(ValueError, 'Closing a browser tab alone') as raised:
+                    self.services.open(root, record['project_uuid'], None, 1)
+                self.assertEqual(raised.exception.code, 'project_session_in_use')
+                spawn.assert_not_called()
+            self.assertEqual(self.services.records(), [])
+        with patch('workspace_desktop.subprocess.Popen', side_effect=RuntimeError('spawn reached')):
+            with self.assertRaisesRegex(RuntimeError, 'spawn reached'):
+                self.services.open(root, record['project_uuid'], None, 1)
 
     def test_recovery_marked_project_opens_only_without_a_live_database(self):
         root, record = self._dead_project_record()

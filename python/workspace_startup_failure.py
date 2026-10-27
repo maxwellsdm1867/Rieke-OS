@@ -32,3 +32,16 @@ def startup_failure_message(log_path, failure=None):
                     'do not delete or replace the project database. ')
     # Location is supplied by the parent, never by the child or a log parser.
     return message + f'Recovery log: {log_path}'
+
+
+class ProjectSessionInUseError(ValueError):
+    """One project is busy; the launcher and other projects remain available."""
+    code = 'project_session_in_use'
+
+    def __init__(self, project):
+        super().__init__(
+            'DISCO could not open this project. This project is already open in another DISCO session '
+            'or recovery. Close it in the existing app or browser session, then retry. '
+            'Closing a browser tab alone may leave its service running. You can open or create another '
+            'project now. Keep your project files; reinstalling the app will not close that session. '
+            'Project: ' + str(project))

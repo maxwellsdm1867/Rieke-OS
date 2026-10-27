@@ -2,11 +2,11 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises'), path = require('node:path');
 const {createHash} = require('node:crypto');
-const {createFixture, launch, gracefulQuit, run} = require('./qualification-helpers.cjs');
+const {createFixture, prepareRuntime, launch, gracefulQuit, run} = require('./qualification-helpers.cjs');
 const {resealRuntimeManifest} = require('../sign-runtime.cjs');
 const {verifyResources} = require('../updater-validation.cjs');
 (async () => {
-  const fixture = await createFixture({reuse: false});
+  let fixture = await createFixture({reuse: false, prepare:false});
   const runtime = path.join(fixture.bundle, 'Contents/Resources/runtime');
   const sourceManifestSha256 = createHash('sha256').update(await fs.readFile(path.join(runtime, 'runtime-manifest.json'))).digest('hex');
   const appAsarSha256 = createHash('sha256').update(await fs.readFile(path.join(fixture.bundle, 'Contents/Resources/app.asar'))).digest('hex');
@@ -25,6 +25,7 @@ const {verifyResources} = require('../updater-validation.cjs');
   // exercise backend recovery instead of failing platform bundle admission.
   await run('/usr/bin/codesign', ['--force', '--sign', '-', '--entitlements', path.resolve(__dirname, '../entitlements.mac.plist'), fixture.bundle]);
   await run('/usr/bin/codesign', ['--verify', '--deep', '--strict', fixture.bundle]);
+  fixture=await prepareRuntime(fixture);
   const {application, page} = await launch(fixture,{renderer:'shell'});
   await fs.writeFile(releaseFault, 'release\n', {flag:'wx', mode:0o600});
   await page.getByRole('heading', {name: 'DISCO recovery', exact: true}).waitFor({timeout: 90000});

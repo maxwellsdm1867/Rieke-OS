@@ -70,6 +70,37 @@ test('startup metadata notice never downloads; explicit download prepares and or
   const result=await Promise.all([f.coordinator.installPrepared(),f.coordinator.installPrepared()]);
   assert.ok(result.every(r=>r.installing));assert.equal(f.helperCalls(),1);assert.equal(f.drains(),1);
 });
+test('generation activation precedes this session drain and never invokes flat replacement',async t=>{
+  const events=[];
+  const activation={generation:{id:'d'.repeat(64)}};
+  const f=await fixture(t,{activateGeneration:async candidate=>{
+    assert.equal(candidate.bundle_sha256,'c'.repeat(64));assert.equal(candidate.runtime_manifest_sha256,descriptor.runtime_manifest_sha256);
+    events.push('activate');return activation;
+  },prepareQuit:async()=>{events.push('drain');return {ready:true};},
+  launchGeneration:async value=>{assert.equal(value,activation);events.push('handoff');},authorizeQuit:()=>events.push('authorize')});
+  f.app.quit=()=>events.push('quit');
+  await f.coordinator.start();await f.coordinator.download();
+  assert.equal((await f.coordinator.installPrepared()).activated,true);
+  assert.deepEqual(events,['activate','drain','handoff','authorize','quit']);assert.equal(f.helperCalls(),0);
+});
+for(const throws of [false,true])test(`a ${throws?'thrown':'declined'} local transfer opens the activated version independently without closing the old session`,async t=>{
+  let launched=0,quit=0;
+  const f=await fixture(t,{activateGeneration:async()=>({generation:{id:'d'.repeat(64)}}),
+    prepareQuit:async()=>{if(throws)throw Error('This project still has a writer');return {ready:false,reason:'This project still has a writer'};},
+    launchGeneration:async(_value,options)=>{assert.equal(options.fresh,true);launched++;}});
+  f.app.quit=()=>quit++;
+  await f.coordinator.start();await f.coordinator.download();
+  const result=await f.coordinator.installPrepared();
+  assert.deepEqual(result,{ready:true,activated:true,opened:true});assert.equal(launched,1);assert.equal(quit,0);
+  assert.equal(f.coordinator.getStatus().can_restart,false);assert.match(f.coordinator.getStatus().message,/writer/);
+  assert.equal((await f.coordinator.installPrepared()).ready,false);assert.equal(launched,1);
+});
+test('failed generation validation does not drain this session or authorize quit',async t=>{
+  let quit=0;
+  const f=await fixture(t,{activateGeneration:async()=>{throw Error('Downloaded runtime checksum changed');},authorizeQuit:()=>quit++});
+  await f.coordinator.start();await f.coordinator.download();
+  assert.equal((await f.coordinator.installPrepared()).ready,false);assert.equal(f.drains(),0);assert.equal(quit,0);assert.equal(f.helperCalls(),0);
+});
 test('installer progress is display-only and reports validation before quit',async t=>{
   const statuses=[];let releaseHelper,enteredHelper;
   const entered=new Promise(resolve=>{enteredHelper=resolve;});

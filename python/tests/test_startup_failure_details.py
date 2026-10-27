@@ -70,5 +70,21 @@ class StartupFailureDetails(unittest.TestCase):
                 self.assertNotIn('secret', message)
                 self.assertNotIn('trusted distribution', message)
 
+    def test_session_conflict_receipt_is_typed_and_bound_to_exact_child(self):
+        from workspace_startup_failure import ProjectSessionInUseError
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder); (root / 'catalog.json').write_text('{"project_uuid":"p"}')
+            read, write = os.pipe()
+            args = SimpleNamespace(project_dir=root, ready_fd=write, session_id='00000000-0000-0000-0000-000000000001', port=9000)
+            def fail(): raise ProjectSessionInUseError(root)
+            with self.assertRaises(ProjectSessionInUseError):
+                initialize_before_project_database(args, dict(application_version='1', source_commit='abc'), fail)
+            with os.fdopen(read) as source: line = source.read()
+            record = json.loads(line.split('=', 1)[1])
+            self.assertTrue(validate_child_startup_receipt(line, record)['session_conflict'])
+            with self.assertRaises(ValueError): validate_child_startup_receipt(line, {**record, 'project_path': '/another'})
+            record['failure_code'] = 'untrusted-code'
+            self.assertNotIn('session_conflict', validate_child_startup_receipt('RIEKE_DESKTOP_STARTUP_FAILED=' + json.dumps(record), record))
+
 
 if __name__ == '__main__': unittest.main()

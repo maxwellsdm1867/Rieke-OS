@@ -9,7 +9,8 @@ const {execFile} = require('node:child_process');
 const {promisify} = require('node:util');
 const {ServiceSupervisor, matchesHealth} = require('./supervisor.cjs');
 const {validateSender, approvedReleaseURL, isOwnedURL, allowClipboardWrite} = require('./security.cjs');
-const {enclosingApp, installCompleteBundle} = require('./bootstrap.cjs');
+const {enclosingApp, installCompleteBundle, otherDiscoProcessRunning} = require('./bootstrap.cjs');
+const {selectSessionProfile} = require('./session-profiles.cjs');
 const {DraftBarrier} = require('./close/draft-barrier.cjs');
 const {DraftStore} = require('./drafts/draft-store.cjs');
 const {StartupSession,viewNamespace,VIEW_COMPATIBILITY,compatibleViews}=require('./startup/startup-session.cjs');
@@ -52,20 +53,13 @@ const {ProjectViews,bindingKey}=require('./project-views.cjs');
 const recoveryPage = path.join(__dirname, 'recovery.html');
 const sourceApp = enclosingApp(process.execPath);
 const destination = path.join(os.homedir(), 'Applications', 'Disco.app');
-const bootstrap = app.isPackaged && process.platform === 'darwin' && sourceApp !== destination;
-const installedUserData = app.getPath('userData');
-if (bootstrap) {
-  // A downloaded installer must be able to explain why a running installed app
-  // blocks replacement instead of silently forwarding its launch to that app.
-  const installerState = path.join(app.getPath('userData'), 'installer');
-  require('node:fs').mkdirSync(installerState, {recursive:true,mode:0o700});
-  app.setPath('userData', installerState);
-}
+let bootstrap, installedUserData, generationContext;
 let supervisor, backendStartup, coordinator, quitAuthorized = false, startupInProgress = false, quitting;
 let draftStore, viewUnavailable = false, retiredDraftsUnconfirmed = false, navigationGeneration = 0;
 let lifecycleStatus = {state: 'Starting', title: 'Starting DISCO', message: 'Opening your workspace.'};
+let runtimeNotice='';
 let applicationVerification, verificationController, verificationRecovery, verificationRecoveryResult;
-let integrityFailed=false;
+let integrityFailed=false, profilePreparedForExit=false;
 async function verifyApplicationFiles() {
   if (applicationVerification || integrityFailed || quitting || bootstrap) return;
   verificationController=new AbortController();
@@ -115,8 +109,9 @@ function broadcast(value) {
   value = previewStatus(value);
   for (const window of rendererOwners()) if (!window.isDestroyed()) window.webContents.send('desktop:status-changed', value);
 }
-function status() { return previewStatus(lifecycleStatus.state === 'Running' ? (coordinator?.getStatus() || {state: 'Current', installed_version: app.getVersion()}) : lifecycleStatus); }
-function publishUpdateStatus(value){if(lifecycleStatus.state==='Running')broadcast(value);}
+function runtimeStatus(value){return runtimeNotice?{...value,message:[value.message,runtimeNotice].filter(Boolean).join(' ')}:value;}
+function status() { return previewStatus(runtimeStatus(lifecycleStatus.state === 'Running' ? (coordinator?.getStatus() || {state: 'Current', installed_version: app.getVersion()}) : lifecycleStatus)); }
+function publishUpdateStatus(value){if(lifecycleStatus.state==='Running')broadcast(runtimeStatus(value));}
 function recovery(message, detail = '') {
   lifecycleStatus = {state: 'Recovery', channel:distribution.channel, title: 'DISCO recovery', message, detail}; broadcast(lifecycleStatus);
   // Recovery hides documents but cannot discard a healthy unsaved draft.
@@ -135,10 +130,16 @@ async function acknowledgeDrafts() {
   return draftBarrier.prepare(scientificWindows);
 }
 async function prepareQuit() {
+  profilePreparedForExit=false;
+  if(!generationContext && app.isPackaged && sourceApp && await otherDiscoProcessRunning(promisify(execFile),sourceApp)){
+    const result={ready:false,reason:'Close the other DISCO sessions before updating or replacing this app. You can continue using different project folders in those sessions.'};
+    broadcast({...status(),message:result.reason});return result;
+  }
   const drafts = await acknowledgeDrafts();
   if (!drafts.ready) { broadcast({...status(), message:drafts.reason}); return drafts; }
   const result = supervisor ? await supervisor.drain() : {ready: true};
   if (!result.ready) broadcast({...status(), message:result.reason});
+  profilePreparedForExit=result.ready===true;
   return result;
 }
 function orderlyQuit() {
@@ -157,7 +158,7 @@ function orderlyQuit() {
           () => supervisor ? supervisor.quit({...options,startup:startupOpening}) : {ready:true});
       },
       publish: value => { lifecycleStatus = value; broadcast(value); },
-      exit: () => { quitAuthorized = true; app.quit(); }
+      exit: result => { if(result.services_closed){sessionProfile.release();try{generationContext?.retire();}catch{}} quitAuthorized = true; app.quit(); }
     });
   }
   return quitting.quit();
@@ -413,6 +414,7 @@ function restoreStartupWindow(window){
 async function startScientificUI() {
   if (startupInProgress || quitting || integrityFailed) return;
   startupInProgress = true;
+  profilePreparedForExit=false;
   try {
     let origin;
     if (backendStartup) {
@@ -436,6 +438,10 @@ async function startScientificUI() {
         ? require('./updates/testing-updater.cjs').createTestingUpdateCoordinator
         : require('./updates/updater.cjs').createUpdateCoordinator;
       coordinator = createUpdateCoordinator({app, publishStatus: publishUpdateStatus, prepareQuit,
+        activateGeneration:generationContext ? async candidate => generationContext.store.activate(await generationContext.store.stage(candidate.bundle_path,candidate)) : undefined,
+        launchGeneration:generationContext ? async (activation,{fresh=false}={}) => fresh
+          ? generationContext.store.launch({profile:sessionProfile.base,fresh:true,generation:activation.generation})
+          : generationContext.store.restartAfterExit(activation.generation,app.getPath('userData')) : undefined,
         authorizeQuit: () => { quitAuthorized = true; }, revokeQuit: () => { quitAuthorized = false; },
         onInstallationFailure: () => { recovery('Native update installation failed. Restart the installed backend or restore the verified previous app.'); },
         manifest: supervisor.manifest, distribution});
@@ -451,10 +457,10 @@ async function startScientificUI() {
       if(target&&!startupSession.cancelled){
         try{restored=(await restoreStartupWindow(window)).restored;}
         catch(error){
-          // A failed ownership check can leave a child requiring recovery. Only
-          // a root that confirms no retained child allows the ordinary chooser.
+          // Retained project children remain owned/recovery-gated. They do not
+          // prevent another folder from opening through a healthy exact root.
           const health=await supervisor.api('/api/desktop/health');
-          if(health.services?.length)throw error;
+          if(!matchesHealth(health,supervisor.expectedHealth()))throw error;
           startupError=error.message;
         }
       }
@@ -476,7 +482,7 @@ function registerIPC() {
     if(!ownerCurrent(window))throw Error('The project backend binding has changed.');
     if(window.active===false&&['desktop:choose-project-folder','desktop:prepare-project-close','desktop:confirm-project-closed','desktop:cancel-project-close'].includes(channel))throw Error('The project is not visible.');
     const recoveryHost=!window.parentWindow&&isOwnedURL(window.webContents?.getURL(),null,[recoveryPage]);
-    if ((quitting || integrityFailed || lifecycleStatus.state==='Recovery') && !['desktop:quit', 'desktop:status', 'desktop:drafts-ack', 'desktop:save-draft', ...(!quitting&&!integrityFailed&&recoveryHost?['desktop:retry-startup','desktop:restore-previous']:[])].includes(channel))
+    if ((quitting || integrityFailed || lifecycleStatus.state==='Recovery') && !['desktop:quit', 'desktop:status', 'desktop:drafts-ack', 'desktop:save-draft', ...(!quitting&&!integrityFailed&&recoveryHost?['desktop:retry-startup','desktop:restore-previous','desktop:new-session']:[])].includes(channel))
       throw new Error('DISCO is closing; new work is paused.');
     return action(payload, window);
   });
@@ -530,10 +536,22 @@ function registerIPC() {
     return coordinator.installPrepared();
   });
   noPayload('desktop:quit', () => orderlyQuit());
+  noPayload('desktop:new-session', () => openSession());
   noPayload('desktop:retry-startup', () => { if (bootstrap) throw new Error('Install the complete app before starting projects'); return startScientificUI(); });
   handle('desktop:restore-previous', async payload => {
     if (preview) throw new Error('Restore is disabled in DISCO Preview.');
     if (payload !== undefined || lifecycleStatus.state !== 'Recovery') throw new Error('Verified restoration is available only from recovery');
+    if(generationContext){
+      const activation=await generationContext.store.restorePrevious();
+      let result;try{result=await prepareQuit();}catch(error){result={ready:false,reason:error.message};}
+      if(result?.ready!==true){
+        await generationContext.store.launch({profile:sessionProfile.base,fresh:true,generation:activation.generation});
+        broadcast({...status(),message:'The previous version opened in a separate session. This session remains available for recovery. '+(result?.reason||'')});
+        return {ready:true,opened:true};
+      }
+      await generationContext.store.restartAfterExit(activation.generation,app.getPath('userData'));
+      quitAuthorized=true;app.quit();return {ready:true,restoring:true};
+    }
     const restorePriorBundle = distribution.channel === 'unsigned-testing'
       ? require('./testing-install.cjs').restoreTestingPriorBundle
       : require('./update-recovery.cjs').restorePriorBundle;
@@ -575,9 +593,48 @@ function registerIPC() {
     quitAuthorized = true; app.quit(); return {installed: true};
   });
 }
-if (!app.requestSingleInstanceLock()) app.quit();
+async function openSession(profile = sessionProfile.base, recover = false) {
+  if (!app.isPackaged || process.platform !== 'darwin' || bootstrap || preview || integrityFailed) throw Error('A separate session is unavailable for this application.');
+  if (recover && !sessionProfile.recoverable().includes(profile)) throw Error('Unknown recovery profile');
+  if(generationContext)return generationContext.store.launch({profile,recover,fresh:!recover,
+    ...(recover?{generation:generationContext.generation}:{})});
+  const env = {...process.env}; delete env.ELECTRON_RUN_AS_NODE;
+  await promisify(execFile)('/usr/bin/open', ['-n','-a',sourceApp,'--args',`--user-data-dir=${profile}`,
+    recover?'--disco-recover-session':'--disco-new-session'], {env});
+  return {opened:true};
+}
+async function recoverSession() {
+  const profiles = sessionProfile.recoverable();
+  if(!profiles.length){await dialog.showMessageBox({type:'info',message:'No preserved sessions need recovery.',buttons:['OK']});return;}
+  const result = await dialog.showMessageBox({type:'info',title:'Recover a previous session',
+    message:'Choose a preserved session to recover',
+    detail:'Its saved views and ownership records have been kept. Recovery opens separately; this session can continue using other project folders.',
+    buttons:[...profiles.map((profile,index)=>`Recover session ${index+1} (${path.basename(profile)})`),'Cancel'],
+    defaultId:profiles.length,cancelId:profiles.length,noLink:true});
+  if(result.response<profiles.length)await openSession(profiles[result.response],true);
+}
+let sessionProfile;
+function startDesktop(context=null) {
+generationContext=context;
+bootstrap = !context && app.isPackaged && process.platform === 'darwin' && sourceApp !== destination;
+installedUserData = app.getPath('userData');
+if(bootstrap){
+  const installerState=path.join(installedUserData,'installer');
+  require('node:fs').mkdirSync(installerState,{recursive:true,mode:0o700});
+  app.setPath('userData',installerState);
+}
+try {
+  sessionProfile = selectSessionProfile({app,bootstrap,preview,
+    runtime:path.join(process.resourcesPath||path.join(__dirname,'build'),'runtime')});
+} catch(error) {
+  dialog.showErrorBox('Session unavailable', error.message);
+  sessionProfile = {acquired:false};
+}
+if(sessionProfile.acquired&&generationContext)generationContext.bindProfile(app.getPath('userData'));
+if (!sessionProfile.acquired) app.quit();
 else {
-  app.on('second-instance', () => { const window = [...windows][0]; if (window) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); } });
+  app.on('second-instance', (_event,_argv,_cwd,data) => { if(data?.discoIndependentSession)return; const window = [...windows][0]; if (window) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); } });
+  app.on('will-quit', () => { if(quitAuthorized&&profilePreparedForExit&&supervisor?.exited&&!supervisor.abnormalExit){sessionProfile.release();try{generationContext?.retire();}catch{}} });
   app.on('before-quit', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
   app.on('window-all-closed', () => { if (quitAuthorized) app.quit(); });
   app.whenReady().then(async () => {
@@ -591,10 +648,13 @@ else {
     draftStore = new DraftStore(app.getPath('userData'));
     startupSession=new StartupSession(app.getPath('userData'),VIEW_COMPATIBILITY);
     await startupSession.load();
-    if(startupSession.value?.mode==='resume')lifecycleStatus={state:'Starting',title:'Restoring your workspace',message:'Reopening your saved '+startupSession.value.view+' view. Checking the project before loading scientific data.'};
+    if(sessionProfile.startAtChooser)startupSession.cancelled=true;
+    if(!startupSession.cancelled&&startupSession.value?.mode==='resume')lifecycleStatus={state:'Starting',title:'Restoring your workspace',message:'Reopening your saved '+startupSession.value.view+' view. Checking the project before loading scientific data.'};
     configureSession(); registerIPC(); createWindow();
     powerMonitor.on('shutdown', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
     Menu.setApplicationMenu(Menu.buildFromTemplate([{label: 'DISCO', submenu: [{role: 'about'}, {type: 'separator'},
+      {label:'New session', accelerator:'CommandOrControl+Shift+N', enabled:app.isPackaged&&!bootstrap&&!preview, click:()=>void openSession().catch(error=>dialog.showErrorBox('New session',error.message))},
+      {label:'Recover previous session…', enabled:!!sessionProfile.base, click:()=>void recoverSession().catch(error=>dialog.showErrorBox('Recover session',error.message))},
       {label: 'Check for Updates', enabled:!preview, click: () => coordinator?.check()},
       {id:'verify-application',label:'Verify Application Files…', enabled:app.isPackaged&&!bootstrap, click:()=>void verifyApplicationFiles()},
       {label:'Cancel Application Verification',click:()=>void cancelApplicationVerification()},
@@ -604,5 +664,28 @@ else {
     {label: 'Window', submenu: [{label:'Resume Last Workspace at Startup',type:'checkbox',checked:startupSession.value?.mode!=='chooser',click:item=>{(item.checked?startupSession.resume():startupSession.choose()).catch(()=>broadcast({...status(),message:'Startup preference could not be saved.'}));}},{role: 'minimize'}, {role: 'zoom'}]}]));
     if (bootstrap) { lifecycleStatus = {state: 'Bootstrap', channel:distribution.channel, title: 'Install DISCO', message: 'Install this complete app in your Applications folder and open it.', detail: distribution.channel === 'unsigned-testing' ? 'Unsigned testing release. Install a copy downloaded from the official DISCO GitHub release. macOS may require a one-time Open Anyway approval in Privacy & Security. Existing projects stay in their selected folders.' : 'The downloaded app and installed copy must pass Developer ID signature verification. Existing projects stay in their selected folders.'}; broadcast(lifecycleStatus); }
     else await startScientificUI();
+    if(generationContext){
+      let maintaining=false,notified=false;
+      const maintain=async()=>{
+        if(maintaining||quitting)return;
+        maintaining=true;
+        try {
+          const result=await generationContext.store.maintain();
+          if(!result.promotion.ready&&!notified){
+            notified=true;
+            runtimeNotice='This version is ready to use. Updating the Applications entry is pending; it may still open the previous version until existing sessions finish. DISCO will retry automatically.';
+            broadcast(status());
+            console.error('Applications shortcut maintenance:',result.promotion.reason);
+          }
+          if(result.promotion.ready&&runtimeNotice){runtimeNotice='';broadcast(status());}
+        } catch(error){console.error('Runtime maintenance deferred:',error.message);}
+        finally{maintaining=false;}
+      };
+      void maintain();
+      const maintenanceTimer=setInterval(()=>void maintain(),60000);
+      maintenanceTimer.unref();app.on('will-quit',()=>clearInterval(maintenanceTimer));
+    }
   }).catch(error => { console.error('Desktop startup failed:', error.name); app.exit(1); });
 }
+}
+if(typeof module!=='undefined')module.exports={startDesktop};

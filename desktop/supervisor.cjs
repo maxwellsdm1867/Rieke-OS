@@ -164,18 +164,33 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
       // process/session/profile/listener proof authorizes safe cleanup.
       await this.finishPrevious(previous);
     } else {
-      // The root may have stopped while an owned project service remained.
-      // Use the backend's existing exact process records, never PID alone.
+      // Preserve safe cleanup of exactly verified prior sessions. A failed
+      // project cleanup must not prevent the chooser or unrelated projects
+      // from starting; Python retains its per-project admission evidence.
       const childrenPath = path.join(this.userData, 'backend', 'desktop-services.json');
       let records = previous.services || [];
-      try { const children = JSON.parse(await fs.readFile(childrenPath, 'utf8')); records = children.services || records; }
-      catch (error) { if (error.code !== 'ENOENT') throw new Error('Prior project service evidence is unreadable; recovery is required'); }
-      for (const record of records) {
-        if (await this.inspectProcess(record.pid) !== record.executable) continue;
-        await this.finishPrevious(record);
+      try {
+        const info = await fs.lstat(childrenPath);
+        if (info.isSymbolicLink() || !info.isFile() || info.size > 1024 * 1024) throw Error('Invalid project registry');
+        const children = JSON.parse(await fs.readFile(childrenPath, 'utf8'));
+        if (children.version !== 1 || !Array.isArray(children.services)) throw Error('Invalid project registry');
+        records = children.services;
+      } catch (error) {
+        if (error.code !== 'ENOENT') throw new Error('Prior project service evidence is unreadable; recovery is required');
+        if (previous.services !== undefined && !Array.isArray(previous.services)) throw new Error('Prior project service evidence is invalid');
+        if (previous.services?.length) await atomicJSON(childrenPath, {version:1, services:previous.services});
       }
-      // New backend startup independently requires clean native-database
-      // receipts for crashed children and unfinished database operations.
+      for (const record of records) {
+        try {
+          if (await this.inspectProcess(record.pid) === record.executable) await this.finishPrevious(record);
+        } catch {
+          // Never erase the child record or force a process to exit. Failed
+          // ownership, busy work and incomplete shutdown remain project-local.
+        }
+      }
+      // The backend retains exact live service witnesses and database recovery
+      // per folder. Same-project admission and strict update drain still refuse.
+
     }
     this.recoveredQuit = previous.quit;
     await fs.rm(this.registryPath, {force:true});

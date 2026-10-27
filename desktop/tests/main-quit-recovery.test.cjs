@@ -9,7 +9,7 @@ function fixture(){
  const actualRequire=require('node:module').createRequire(path.join(__dirname,'../main.cjs'));
  const required=name=>name==='electron'?electron:name==='./close/quit-coordinator.cjs'?{QuitCoordinator:class extends actualRequire(name).QuitCoordinator{constructor(options){super({...options,deadline:25,draftDeadline:5});}}}:actualRequire(name);
  const context={require:required,__dirname:path.join(__dirname,'..'),process,console,setTimeout,clearTimeout};
- vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../main.cjs'),'utf8')+'\n globalThis.harness={recovery,orderlyQuit,prepareQuit,createWindow,scientificWindows,setSupervisor:value=>supervisor=value};',context);
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../main.cjs'),'utf8')+'\n startDesktop();globalThis.harness={recovery,orderlyQuit,prepareQuit,createWindow,scientificWindows,setSupervisor:value=>supervisor=value};',context);
  return{...context.harness,app,quitCompleted,get quits(){return quits;}};
 }
 test('recovery retains the uncertainty of the vanished scientific owner; Quit still exits with retained-view warning',async()=>{const h=fixture(),window=h.createWindow();h.scientificWindows.add(window);let calls=0;h.setSupervisor({quit:async()=>{calls++;return{ready:true};},drain:async()=>({ready:true})});h.recovery('Recovery reproduced');assert.equal(h.scientificWindows.size,1);assert.equal(window.draftUnavailable,true);const result=await h.orderlyQuit();assert.equal(h.quits,1);assert.equal(calls,1);assert.equal(result.drafts_saved,false);assert.match(result.warnings.join(' '),/last saved view/i);assert.equal(window.messages.filter(value=>value.channel==='desktop:prepare-close').length,0);});

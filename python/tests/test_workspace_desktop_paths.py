@@ -37,6 +37,24 @@ class DesktopPathTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'ownership is unavailable'):
                 require_external_data_path('/fixture')
 
+    def test_generation_session_protects_other_versions_and_canonical_front_door(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            home = Path(scratch).resolve()
+            store = home / 'Library/Application Support/Rieke OS/application-versions'
+            runtime = store / 'unsigned-testing/darwin-arm64/generations' / ('a' * 64) / 'Disco.app/Contents/Resources/runtime'
+            runtime.mkdir(parents=True)
+            with patch.dict(os.environ, {'HOME': str(home), 'RIEKE_DESKTOP_MODE': '1', 'RIEKE_DESKTOP_RUNTIME': str(runtime)}):
+                targets = [store / 'unsigned-testing/darwin-arm64/generations' / ('b' * 64) / 'Disco.app/project',
+                           home / 'Applications/Disco.app/project', home / 'Applications/.Rieke OS.previous.app/project',
+                           store / 'project']
+                for target in targets:
+                    with self.subTest(target=target), self.assertRaisesRegex(ValueError, 'outside the application bundle'):
+                        require_external_data_path(target)
+                    self.assertFalse(target.exists())
+                profile_state = home / 'Library/Application Support/Rieke OS/backend'
+                self.assertEqual(require_external_data_path(profile_state), profile_state)
+                self.assertEqual(require_external_data_path(home / 'projects'), home / 'projects')
+
     def test_source_mode_retains_external_source_path_behavior(self):
         with patch.dict(os.environ, {'RIEKE_DESKTOP_MODE': '0', 'RIEKE_DESKTOP_RUNTIME': '/fixture/Rieke OS.app/Contents/Resources/runtime'}):
             self.assertEqual(require_external_data_path('/fixture'), Path('/fixture'))

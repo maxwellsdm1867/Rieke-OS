@@ -53,7 +53,7 @@ async function processStart(pid, run) {
 // Like git's documented index.lock recovery, automated: it is abandoned when no
 // other Disco/Rieke OS process can be holding it. This process and its own
 // descendants (Electron helpers, owned backend, progress reporter) are excluded.
-async function otherDiscoProcessRunning(run) {
+async function otherDiscoProcessRunning(run, bundle = null) {
   const {stdout} = await run('/bin/ps', ['-axo', 'pid=,ppid=,comm=']);
   const rows = stdout.split('\n').map(line => /^\s*(\d+)\s+(\d+)\s+(.+)$/.exec(line)).filter(Boolean)
     .map(([, pid, ppid, command]) => ({pid: Number(pid), ppid: Number(ppid), command}));
@@ -62,7 +62,7 @@ async function otherDiscoProcessRunning(run) {
     grew = false;
     for (const row of rows) if (!own.has(row.pid) && own.has(row.ppid)) { own.add(row.pid); grew = true; }
   }
-  return rows.some(row => !own.has(row.pid) && DISCO_BUNDLE_PROCESS.test(row.command));
+  return rows.some(row => !own.has(row.pid) && (bundle ? row.command.startsWith(bundle + path.sep) : DISCO_BUNDLE_PROCESS.test(row.command)));
 }
 async function lockOwnerAlive(owner, run) {
   try { process.kill(owner.pid, 0); }
@@ -376,6 +376,7 @@ async function installCompleteBundle({source, destination = path.join(os.homedir
     }
     if (existing) {
       await assertNotRunning(destination, run, ignorePid);
+      await assertNotRunning(previous, run, ignorePid);
       // Retain exactly one verified previous signed bundle, only after the new copy is complete.
       await fs.rm(previous, {recursive: true, force: true});
       await fs.rename(destination, previous); movedPrevious = true;
@@ -400,4 +401,4 @@ async function installCompleteBundle({source, destination = path.join(os.homedir
     await releaseInstallLock(lock);
   }
 }
-module.exports = {APP_ID, enclosingApp, signatureIdentity, assertNotRunning, compatibleManifest, installCompleteBundle, readBundleManifest, bundleDigest, verifyTestingBundle, quarantinePreserved};
+module.exports = {otherDiscoProcessRunning, APP_ID, enclosingApp, signatureIdentity, assertNotRunning, compatibleManifest, installCompleteBundle, readBundleManifest, bundleDigest, verifyTestingBundle, quarantinePreserved};

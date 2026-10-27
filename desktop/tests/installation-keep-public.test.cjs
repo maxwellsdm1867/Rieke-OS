@@ -68,7 +68,7 @@ test('signed recovery defers or waits for root helper spawn before quit authoriz
  assert.deepEqual(await restorePriorBundle(options),{ready:false});assert.equal(authorized,0);assert.equal(quit,0);
  let signalSpawn;const entered=new Promise(resolve=>{signalSpawn=resolve;});
  const pending=restorePriorBundle({...options,prepareQuit:async()=>({ready:true}),spawnHelper:(exe,args,config)=>{
-  assert.equal(exe,f.executable);assert.deepEqual(args,[path.join(rootDesktop,'recovery-install.cjs'),String(process.pid),previous,f.installed]);
+  assert.equal(exe,f.executable);assert.deepEqual(args,[path.join(rootDesktop,'recovery-install.cjs'),String(process.pid),previous,f.installed,f.profile]);
   assert.equal(config.env.ELECTRON_RUN_AS_NODE,'1');assert.equal(config.detached,true);assert.equal(config.cwd,f.profile);
   spawned=f.child();signalSpawn();return spawned;
  }});

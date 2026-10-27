@@ -25,8 +25,11 @@ async function port(){const s=net.createServer();await new Promise(r=>s.listen(0
  for(let sample=0;sample<5;sample++)for(const item of cases){
   const project=item.project;
   await fs.writeFile(path.join(fixture.userData,'startup-session.json'),JSON.stringify({format:'disco-startup-session',version:1,compatibility:manifest.application_version+':view-v1',mode:'resume',projectId:project.uuid,projectPath:project.path,view:'overview'}));
+  const prepared=fixture.runtimeStore?await fixture.runtimeStore.prepareLaunch({profile:fixture.userData,generation:fixture.generation}):null;
+  if(fixture.generation)fixture.generation={id:fixture.generation.id};
+  const launchArgs=prepared?prepared.args.slice(prepared.args.indexOf('--args')+1):[`--user-data-dir=${fixture.userData}`];
   const debugPort=await port(),began=performance.now();
-  const child=spawn(fixture.executable,[`--user-data-dir=${fixture.userData}`,`--remote-debugging-port=${debugPort}`],{env:{...process.env,HOME:fixture.home,TMPDIR:fixture.root,XDG_CONFIG_HOME:fixture.userData,DISCO_STARTUP_DIAGNOSTIC:'1'},stdio:['ignore','pipe','ignore']});
+  const child=spawn(fixture.executable,[...launchArgs,`--remote-debugging-port=${debugPort}`],{env:{...process.env,HOME:fixture.home,TMPDIR:fixture.root,XDG_CONFIG_HOME:fixture.userData,DISCO_STARTUP_DIAGNOSTIC:'1'},stdio:['ignore','pipe','ignore']});
   const exited=new Promise(resolve=>child.once('exit',code=>resolve(code)));
   let browser,page,quitRequested=false;
   const painted=new Promise((resolve,reject)=>{
@@ -51,7 +54,7 @@ async function port(){const s=net.createServer();await new Promise(r=>s.listen(0
   }finally{if(child.exitCode===null&&!quitRequested)await quit();if(browser)await browser.close();}
  }
  await verifyResources(runtime,manifest.resources);
- const receipt={format:'disco-native-startup-timing',version:1,fixture:fixture.root,source_commit:manifest.source_commit,source_dirty:manifest.source_dirty,application_version:manifest.application_version,method:'Normal executable spawn. No Node debugger. No CDP client attaches until main reports an enabled current-project button observed after animation frames following document load. Parent monotonic elapsed time includes spawn and marker-delivery overhead. Five fresh processes per fixture, interleaved; OS caches uncontrolled. Data readiness measured separately after observer attachment.',samples,shell_target_ms:2000,shell_target_met:samples.every(x=>x.shell_ms<2000),packaged_resources_unchanged:true,clean_shutdown:true};
+ const receipt={format:'disco-native-startup-timing',version:1,fixture:fixture.root,source_commit:manifest.source_commit,source_dirty:manifest.source_dirty,application_version:manifest.application_version,method:'Physical runtime executable spawn after a real admission reservation; front-door preparation excluded. No Node debugger. No CDP client attaches until main reports an enabled current-project button observed after animation frames following document load. Parent monotonic elapsed time includes spawn and marker-delivery overhead. Five fresh processes per fixture, interleaved; OS caches uncontrolled. Data readiness measured separately after observer attachment.',samples,shell_target_ms:2000,shell_target_met:samples.every(x=>x.shell_ms<2000),packaged_resources_unchanged:true,clean_shutdown:true};
  const output=path.resolve(__dirname,'../../benchmarks/results/native-startup-'+manifest.source_commit.slice(0,7));await fs.mkdir(output,{recursive:true});
  const file=path.join(output,'startup.json');await fs.writeFile(file,JSON.stringify(receipt,null,2)+'\n',{flag:'wx'});console.log(file);assert.equal(receipt.shell_target_met,true,'Every native project shell must paint within two seconds');
 })().catch(error=>{console.error(error);process.exitCode=1;});
