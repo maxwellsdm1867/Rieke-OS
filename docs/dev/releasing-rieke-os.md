@@ -174,7 +174,10 @@ receipt. No app is launched in setup. After setup succeeds, the existing four-mi
 smoke work budget and one-minute orderly-shutdown allowance begin; the individual
 launch limit remains 45 seconds. Setup failures still fail qualification. The CI
 job allows 15 minutes for download, verification, setup, smoke and evidence upload;
-that job ceiling is not an application-startup performance budget.
+that job ceiling is not an application-startup performance budget. The packaging
+job has a separate 40-minute ceiling for its multiple complete-bundle copies,
+bootstrap checks, portability audits and startup-fault fixture. All individual
+functional deadlines, validation checks and benchmark policies remain unchanged.
 
 The deeper suites are selected from the changed area or an explicit extended run.
 Keep qualification gaps visible instead of treating unrun tests as passing. A

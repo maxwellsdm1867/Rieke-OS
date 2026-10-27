@@ -85,10 +85,10 @@ jobs:
           if requested_suite != 'auto' and not candidate: raise SystemExit('A focused check requires an existing candidate run')
           # Fixture copy/generation verification precedes the unchanged 5-minute app smoke.
           checks = [{'suite': 'smoke', 'timeout': 15}]
-          for flag, suite, timeout in [('updater','updater',60),('database','database',20),('packaging','packaging',20),('full_ui','ui',20)]:
+          for flag, suite, timeout in [('updater','updater',60),('database','database',20),('packaging','packaging',40),('full_ui','ui',20)]:
               if plan[flag]: checks.append({'suite': suite, 'timeout': timeout})
           if requested_suite != 'auto':
-              checks = [{'suite': requested_suite, 'timeout': {'smoke':15,'updater':60,'database':20,'packaging':20,'ui':20}[requested_suite]}]
+              checks = [{'suite': requested_suite, 'timeout': {'smoke':15,'updater':60,'database':20,'packaging':40,'ui':20}[requested_suite]}]
           with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
               out.write('checks='+json.dumps({'include': checks})+'\n')
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
