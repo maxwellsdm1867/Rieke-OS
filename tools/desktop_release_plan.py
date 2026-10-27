@@ -52,6 +52,8 @@ def change_kind(path):
     if path.startswith('workspace-app/'):
         return {'routine'}
     if path.startswith('desktop/'):
+        if name in {'entry.cjs', 'runtime-generations.cjs', 'runtime-store.py', 'generation-restart.cjs'}:
+            return {'updater', 'packaging', 'full_ui'}
         if name in {'bootstrap.cjs', 'recovery-install.cjs'}:
             return {'updater', 'packaging'}
         if name in {'main.cjs', 'supervisor.cjs', 'draft-barrier.cjs', 'draft-store.cjs'}:

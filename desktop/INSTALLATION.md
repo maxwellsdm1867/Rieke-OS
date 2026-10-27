@@ -1,5 +1,11 @@
 # Installation and rollback: retained root owners
 
+Unsigned generation-capable builds now use the
+[runtime-generation contract](RUNTIME_GENERATIONS.md). The flat replacement
+helpers below remain the signed/legacy owners; they must never replace a managed
+generation. Canonical front-door maintenance may use the strict whole-bundle
+installer without making it a prerequisite for scientific launch.
+
 The installation runtime stays at its existing desktop root paths. This is an
 explicit organization decision: spawned helper filenames are installed contracts,
 and moving them would add parser, staged layout and native ASAR qualification

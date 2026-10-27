@@ -4,7 +4,6 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const http = require('node:http');
 const {chromium}=require('playwright');
-const {spawn} = require('node:child_process');
 const {createHash, randomUUID} = require('node:crypto');
 const {createFixture, launch, gracefulQuit, ownedControl, run, projectDraftPath} = require('./qualification-helpers.cjs');
 const {showProjectSidebar,createRendererWatcher,waitForRenderer,rendererId,rendererSnapshot,nativeWindowCount,captureRendererFailure}=require('./renderer-target.cjs');
@@ -179,6 +178,7 @@ async function main() {
     const alias = path.join(fixture.root, 'resource-parent-alias-' + receipt.run_id);
     await fs.symlink(path.join(fixture.bundle, 'Contents/Resources'), alias);
     for (const directory of [direct, path.join(alias, 'forbidden-project'),
+      ...(fixture.frontDoor?[path.join(fixture.frontDoor,'forbidden-project'),path.join(fixture.runtimeStore.root,'forbidden-project')]:[]),
       path.join(fixture.bundle, 'forbidden-project'), path.join(fixture.bundle, 'Contents/MacOS/forbidden-project')]) {
       const result = await page.evaluate(async project_directory => {
         const response = await fetch('/api/projects', {method: 'POST', headers: {'Content-Type': 'application/json', 'X-Workspace-Request': '1'}, body: JSON.stringify({name: 'Must not be created', project_directory})});
@@ -221,11 +221,17 @@ async function main() {
     await application.evaluate(({dialog}) => {dialog.showOpenDialog = async () => ({canceled: true, filePaths: []});});
     assert.equal(await page.evaluate(() => window.riekeDesktop.chooseProjectFolder()), null);
   });
-  await check('duplicate launch preserves one owner and existing backend', async () => {
+  await check('a second isolated session preserves the first owner and gets its own backend', async () => {
     const before = await ownedControl(fixture, 'health');
-    const child = spawn(fixture.executable, [`--user-data-dir=${fixture.userData}`], {env: {...process.env, HOME: fixture.home, TMPDIR: fixture.root}, stdio: 'ignore'});
-    const code = await Promise.race([new Promise(resolve => child.once('exit', resolve)), delay(10000).then(() => {throw new Error('Duplicate app did not exit');})]);
-    assert.equal(code, 0); assert.equal((await ownedControl(fixture, 'health')).pid, before.pid); assert.equal(await nativeWindowCount(application), 1);
+    const profile=path.join(fixture.home,'independent-state');await fs.mkdir(profile,{recursive:true});
+    const secondFixture={...fixture,userData:profile,generation:fixture.generation?{id:fixture.generation.id}:undefined};
+    const second=await launch(secondFixture);
+    try{
+      await second.page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});
+      assert.notEqual((await ownedControl(secondFixture,'health')).pid,before.pid);
+      assert.equal((await ownedControl(fixture,'health')).pid,before.pid);
+      assert.equal(await nativeWindowCount(application),1);assert.equal(await nativeWindowCount(second.application),1);
+    }finally{await gracefulQuit(second.application,second.page);}
   });
   await check('corrupted saved view is visible, blocks overwrite and supports preserved quit or explicit reset', async () => {
     await gracefulQuit(application, page); application = null; page = null;

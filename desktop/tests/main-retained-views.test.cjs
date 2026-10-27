@@ -29,7 +29,7 @@ async function fixture(t,{retainedViews=true}={}){
  const actualRequire=require('node:module').createRequire(path.join(__dirname,'../main.cjs'));
  const electron={app,BrowserWindow:Window,WebContentsView:retainedViews?View:undefined,ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},dialog:{},session:{},shell:{},Menu:{},powerMonitor:{}};
  const context={require:name=>name==='electron'?electron:actualRequire(name),__dirname:path.join(__dirname,'..'),process,console,URL,AbortSignal,setTimeout,clearTimeout,queueMicrotask};
- vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../main.cjs'),'utf8')+`\nglobalThis.h={createWindow,activateProject,projectViews,scientificWindows,rendererOwners,recovery,registerIPC,prepareQuit,set(value){supervisor=value;startupSession={remember:async(...args)=>globalThis.remembered.push(args)};draftStore=new DraftStore(globalThis.directory);}};`,Object.assign(context,{remembered,directory}));
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../main.cjs'),'utf8')+`\nstartDesktop();globalThis.h={createWindow,activateProject,projectViews,scientificWindows,rendererOwners,recovery,registerIPC,prepareQuit,set(value){supervisor=value;startupSession={remember:async(...args)=>globalThis.remembered.push(args)};draftStore=new DraftStore(globalThis.directory);}};`,Object.assign(context,{remembered,directory}));
  context.h.set(supervisor);context.h.registerIPC();const window=context.h.createWindow();
  const call=(owner,name,payload)=>handlers.get(name)({sender:owner.webContents,senderFrame:owner.webContents.mainFrame},payload);
  return {...context.h,window,supervisor,records,call,remembered,native,contents};

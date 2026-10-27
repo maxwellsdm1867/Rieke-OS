@@ -212,6 +212,14 @@ still requires its separate exact-candidate plan.
 
 ### macOS product name and update compatibility
 
+Unsigned generation-capable builds open directly; there is no Install and Open
+page. First launch prepares a verified private runtime automatically. Later
+launches use the selected runtime, while existing sessions keep their original
+files. The Applications entry refreshes when safe without blocking the new
+session. See [runtime generations](RUNTIME_GENERATIONS.md) for the lifecycle,
+recovery and retirement contract. Signed/legacy installation below remains a
+separate compatibility path.
+
 The visible product name, `CFBundleName`, and `CFBundleDisplayName` are `Disco`.
 Electron's helper executables follow the product name (`Disco Helper`), which
 must agree with `CFBundleName` for Chromium child processes to launch.
@@ -234,8 +242,8 @@ and historical release URLs remain `maxwellsdm1867/Rieke-OS`.
 
 The updater recognizes exact legacy and Disco archive schemas, checks the matching
 executable, and refuses automatic update or restore across installation names.
-Same-name updates and rollback remain supported; a cross-name transition requires
-a manual Install and Open into the matching app destination. Existing old clients may require a manual Install and
-Open of the new Disco download because their archive validators required the old
-bundle name. This change does not rewrite prior published releases or install
-anything on the user's computer.
+Legacy flat same-name updates and rollback remain supported; old clients whose
+archive validators require the former bundle name may need a manual download of
+the new Disco app. Opening a current unsigned download prepares and opens it
+automatically. Managed-generation rollback selects a verified retained version
+without replacing running files. This does not rewrite prior published releases.

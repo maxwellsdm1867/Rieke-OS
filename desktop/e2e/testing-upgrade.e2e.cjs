@@ -4,7 +4,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),nativeFs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {spawn}=require('node:child_process'),{createHash}=require('node:crypto'),asar=require('@electron/asar');
 async function fileSha256(file){const hash=createHash('sha256');for await(const chunk of nativeFs.createReadStream(file))hash.update(chunk);return hash.digest('hex');}
-const {createFixture,launch,gracefulQuit,ownedControl,run}=require('./qualification-helpers.cjs');
+const {createFixture,prepareRuntime,launch,gracefulQuit,ownedControl,run}=require('./qualification-helpers.cjs');
 const {bundleDigest}=require('../bootstrap.cjs');
 const {verifyResources}=require('../updater-validation.cjs');
 const {waitForHelperResult,captureHelperDiagnostics}=require('./helper-result.cjs');
@@ -155,9 +155,10 @@ async function phase(phase,config){
  }
 }
 async function startup(version){
- const launched=await launch(fixture);application=launched.application;
+ const scientific=await prepareRuntime({...fixture},{selectExact:true});
+ const launched=await launch(scientific);application=launched.application;
  await launched.page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});
- const health=await ownedControl(fixture,'health');assert.equal(health.application_version,version);
+ const health=await ownedControl(scientific,'health');assert.equal(health.application_version,version);
  await gracefulQuit(application,launched.page);application=null;
  return{application_version:health.application_version,owned_wsgi_ready:true,real_electron_started:true,isolated_home_and_profile:true,orderly_shutdown:true};
 }
@@ -180,7 +181,7 @@ async function main(){
  assert.equal(descriptor.application_version,candidateVersion);assert.equal(descriptor.archive.filename,path.basename(zip));
  assert.equal(await fileSha256(zip),receipt.archive_sha256);
  const candidateDigest=await bundleDigest(published);receipt.candidate_bundle_sha256=candidateDigest;
- fixture=await createFixture({reuse:false});
+ fixture=await createFixture({reuse:false,prepare:false});
  receipt.fixture_root=fixture.root;receipt.diagnostic_directory=path.relative(harnessRoot,diagnosticOutput);await write();
  await versionPrior(priorVersion);const priorDigest=await bundleDigest(fixture.bundle);receipt.prior_fixture_bundle_sha256=priorDigest;
  const tag=`desktop-test-v${candidateVersion}`,baseURL=`https://github.com/maxwellsdm1867/Rieke-OS/releases/download/${tag}/`;

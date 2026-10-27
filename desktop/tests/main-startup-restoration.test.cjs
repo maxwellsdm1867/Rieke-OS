@@ -73,7 +73,7 @@ function fixture(options = {}) {
       return options.close ? options.close() : {ok: true, json: async () => ({state: 'closed'})};
     }, seed: {supervisor, startupSession}};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../main.cjs'), 'utf8') + `
-    supervisor=seed.supervisor; startupSession=seed.startupSession;
+    startDesktop();supervisor=seed.supervisor; startupSession=seed.startupSession;
     registerIPC(); globalThis.window=createWindow(); globalThis.sendUpdaterStatus=publishUpdateStatus;
     globalThis.startNativeRestore=()=>{supervisor.child={pid:100};supervisor.exited=false;coordinator={getStatus:()=>({state:"Current"})};return startScientificUI();};
     globalThis.enterRecovery=()=>{recovery('Test recovery');openSession=async()=>({opened:true});};

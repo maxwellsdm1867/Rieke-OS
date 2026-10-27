@@ -18,6 +18,16 @@ def require_external_data_path(path, *, reject_ancestor=True):
     # tests without an outer .app still protect their entire resource directory.
     bundle = resources.parent.parent
     protected = bundle if bundle.suffix == '.app' else resources
-    if target.is_relative_to(protected) or (reject_ancestor and protected.is_relative_to(target)):
+    protected_roots = [protected]
+    application_store = (Path.home() / 'Library/Application Support/Rieke OS/application-versions').resolve()
+    if protected.is_relative_to(application_store):
+        # Generation-capable desktop sessions share an immutable application
+        # store. Other generations and the stable front door are application
+        # bytes too, even though this session's executable lives elsewhere.
+        protected_roots.extend((application_store,
+                                (Path.home() / 'Applications/Disco.app').resolve(),
+                                (Path.home() / 'Applications/.Rieke OS.previous.app').resolve()))
+    if any(target.is_relative_to(root) or (reject_ancestor and root.is_relative_to(target))
+           for root in protected_roots):
         raise ValueError('Project data and generated files must be stored outside the application bundle. Choose a separate project folder.')
     return target

@@ -1,10 +1,10 @@
 {
   "name": "disco-desktop",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": true,
   "description": "DISCO self-contained desktop application",
   "author": "DISCO contributors",
-  "main": "main.cjs",
+  "main": "entry.cjs",
   "scripts": {
     "start": "electron .",
     "test": "node --test tests/*.test.cjs close/tests/*.test.cjs drafts/tests/*.test.cjs startup/tests/*.test.cjs integrity/tests/*.test.cjs updates/tests/*.test.cjs",
@@ -38,6 +38,7 @@
     },
     "files": [
       "*.cjs",
+      "runtime-store.py",
       "close/draft-barrier.cjs",
       "close/quit-coordinator.cjs",
       "drafts/draft-store.cjs",
@@ -91,13 +92,14 @@
       "extendInfo": {
         "CFBundleDisplayName": "Disco",
         "CFBundleName": "Disco",
-        "LSHasLocalizedDisplayName": true
+        "LSHasLocalizedDisplayName": true,
+        "DiscoRuntimeGenerationProtocol": 1
       },
       "executableName": "Disco"
     },
     "dmg": {
       "sign": false,
-      "title": "Open DISCO to install",
+      "title": "Open DISCO",
       "backgroundColor": "#f7f4fa",
       "window": {
         "width": 560,

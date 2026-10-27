@@ -25,6 +25,11 @@ paths and signed/testing readiness distinctions. [Retained startup and state own
 explains supervisor, restoration, profile/path and location-index contracts and
 public examples. No universal lifecycle facade exists.
 
+[Unsigned runtime generations](RUNTIME_GENERATIONS.md) owns ordinary packaged
+entry, immutable generation activation/admission/retirement and canonical
+front-door maintenance. Read it before changing `entry.cjs`,
+`runtime-generations.cjs`, `runtime-store.py` or `generation-restart.cjs`.
+
 Preserve strict replacement versus bounded explicit Quit. Project UUID/canonical
 path and PID/creation time are separate proofs. Preference restoration grants no
 scientific readiness. Do not widen IPC, disable sandbox/security checks or replace

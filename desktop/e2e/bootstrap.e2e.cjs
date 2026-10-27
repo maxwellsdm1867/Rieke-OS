@@ -1,100 +1,85 @@
 'use strict';
-// Real downloaded app UI, installer copy/seal/quarantine checks and installed
-// startup. Only Launch Services dispatch is stubbed in this disposable clone;
-// it must never target the user's running application or profile.
+// Real packaged entry/copy/admission; only LaunchServices dispatch is captured
+// so the owned physical child can be attached by Playwright. No validation mock.
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path');
-const {createHash}=require('node:crypto');
-const {_electron}=require('playwright');
-const asar=require('@electron/asar');
+const {createHash}=require('node:crypto'),asar=require('@electron/asar');
 const {createFixture,launch,gracefulQuit,cleanupOwnedFixture,run}=require('./qualification-helpers.cjs');
-const {captureRendererFailure}=require('./renderer-target.cjs');
-const {verifyResources}=require('../updater-validation.cjs');
+const {RuntimeGenerations,runtimeStore}=require('../runtime-generations.cjs');
 const {bundleDigest,quarantinePreserved}=require('../bootstrap.cjs');
 const output=path.resolve(__dirname,'../../docs/dev/desktop-ui-e2e/bootstrap-receipt.json');
-const receipt={format:'rieke-packaged-bootstrap-e2e',version:1,signed_qualification:false,checks:[],failures:[],method:'Real downloaded packaged clone with native install checks; only /usr/bin/open dispatch stubbed; isolated installed profile launched with Playwright'};
-let fixture,application,page;
+const receipt={format:'rieke-packaged-bootstrap-e2e',version:2,signed_qualification:false,checks:[],failures:[],method:'Packaged unsigned front door, actual complete generation copy and admission; only native open dispatch captured before controlled physical-child launch'};
+let fixture,application,page,secondApplication,secondPage;
+const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function write(){await fs.mkdir(path.dirname(output),{recursive:true});await fs.writeFile(output,JSON.stringify(receipt,null,2)+'\n');}
-async function check(name,fn){try{const evidence=await fn();receipt.checks.push({name,passed:true,evidence});console.log('PASS '+name);}catch(error){receipt.failures.push({name,message:error.message});await write();throw error;}await write();}
+async function check(name,fn){const started=Date.now();try{receipt.checks.push({name,passed:true,evidence:await fn(),elapsed_ms:Date.now()-started});console.log('PASS '+name);}catch(error){receipt.failures.push({name,message:error.message});await write();throw error;}await write();}
+async function waitFor(fn,timeout=420000){const deadline=Date.now()+timeout;while(Date.now()<deadline){const result=await fn();if(result)return result;await delay(250);}throw Error('Owned native condition did not complete');}
 async function main(){
- fixture=await createFixture({reuse:false});receipt.fixture_root=fixture.root;
- const target=fixture.bundle,downloaded=path.join(fixture.home,'Downloads','Disco.app');
- const resources=path.join(target,'Contents/Resources'),sourceAsar=path.join(resources,'app.asar');
- receipt.source_app_asar_sha256=createHash('sha256').update(await fs.readFile(sourceAsar)).digest('hex');
- const manifestBytes=await fs.readFile(path.join(resources,'runtime/runtime-manifest.json')),manifest=JSON.parse(manifestBytes);
- receipt.source_manifest_sha256=createHash('sha256').update(manifestBytes).digest('hex');receipt.application_version=manifest.application_version;
- await fs.mkdir(path.dirname(downloaded),{recursive:true});await fs.rename(target,downloaded);
- fixture.bundle=downloaded;fixture.executable=path.join(downloaded,'Contents/MacOS/Disco');
- const archive=path.join(downloaded,'Contents/Resources/app.asar'),unpacked=path.join(fixture.root,'bootstrap-test-asar'),handoff=path.join(fixture.home,'launch-services-handoff.json');
- asar.extractAll(archive,unpacked);
- const mainFile=path.join(unpacked,'main.cjs'),original=await fs.readFile(mainFile,'utf8');
- const exact="const {execFile} = require('node:child_process');";
- assert.ok(original.includes(exact),'Expected packaged main OS process boundary');
- const wrapper=`const nativeExecFile = require('node:child_process').execFile;
-const execFile = (...args) => nativeExecFile(...args);
-execFile[require('node:util').promisify.custom] = async (file, args) => {
- if (file === '/usr/bin/open') { require('node:fs').writeFileSync(${JSON.stringify(handoff)}, JSON.stringify({file,args,home:process.env.HOME,userData:app.getPath('userData')})+'\\n',{mode:0o600}); return {stdout:'',stderr:''}; }
- return require('node:util').promisify(nativeExecFile)(file,args);
-};`;
- await fs.writeFile(mainFile,original.replace(exact,wrapper));await asar.createPackage(unpacked,archive);asar.uncacheAll();
- const headerHash=createHash('sha256').update(asar.getRawHeader(archive).headerString).digest('hex');
- await run('/usr/libexec/PlistBuddy',['-c',`Set :ElectronAsarIntegrity:Resources/app.asar:hash ${headerHash}`,path.join(downloaded,'Contents/Info.plist')]);
+ fixture=await createFixture({reuse:false,prepare:false});receipt.fixture_root=fixture.root;
+ const canonical=fixture.bundle,downloaded=path.join(fixture.home,'Downloads/Disco.app');
+ const originalAsar=path.join(canonical,'Contents/Resources/app.asar');
+ receipt.source_app_asar_sha256=createHash('sha256').update(await fs.readFile(originalAsar)).digest('hex');
+ const manifestBytes=await fs.readFile(path.join(canonical,'Contents/Resources/runtime/runtime-manifest.json'));
+ receipt.source_manifest_sha256=createHash('sha256').update(manifestBytes).digest('hex');receipt.application_version=JSON.parse(manifestBytes).application_version;
+ assert.equal(JSON.parse(asar.extractFile(originalAsar,'package.json')).main,'entry.cjs');
+ await fs.mkdir(path.dirname(downloaded),{recursive:true});await fs.rename(canonical,downloaded);
+ const archive=path.join(downloaded,'Contents/Resources/app.asar'),stage=path.join(fixture.root,'front-door-asar'),handoff=path.join(fixture.root,'launch-handoff.json');
+ asar.extractAll(archive,stage);
+ const owner=path.join(stage,'runtime-generations.cjs'),source=await fs.readFile(owner,'utf8'),anchor='const run = promisify(execFile);';
+ assert.equal(source.split(anchor).length,2);
+ const wrapper=`const nativeRun=promisify(execFile);\nconst run=(file,args,options)=>{if(file==='/usr/bin/open'){require('node:fs').writeFileSync(${JSON.stringify(handoff)},JSON.stringify({file,args,home:process.env.HOME})+'\\n',{mode:0o600});return Promise.resolve({stdout:'',stderr:''});}return nativeRun(file,args,options);};`;
+ await fs.writeFile(owner,source.replace(anchor,wrapper));await asar.createPackage(stage,archive);asar.uncacheAll();
+ await run('/usr/libexec/PlistBuddy',['-c',`Set :ElectronAsarIntegrity:Resources/app.asar:hash ${createHash('sha256').update(asar.getRawHeader(archive).headerString).digest('hex')}`,path.join(downloaded,'Contents/Info.plist')]);
  await run('/usr/bin/codesign',['--force','--sign','-','--entitlements',path.resolve(__dirname,'../entitlements.mac.plist'),downloaded]);
  await run('/usr/bin/codesign',['--verify','--deep','--strict',downloaded]);
- const quarantine='0083;66000000;Rieke-E2E;00000000-0000-4000-8000-000000000001';
- // Quarantine is assigned only AFTER this source test clone has launched.
- // The quarantined installed copy is never executed or stripped of quarantine.
- const before=await bundleDigest(downloaded);
- await check('downloaded clone displays explicit unsigned Install and Open before any backend starts',async()=>{
-  application=await _electron.launch({executablePath:fixture.executable,args:[`--user-data-dir=${fixture.userData}`],env:{...process.env,HOME:fixture.home,TMPDIR:fixture.root,XDG_CONFIG_HOME:fixture.userData},chromiumSandbox:true,bypassCSP:false,timeout:45000});
-  const actual=await application.evaluate(({app})=>({home:process.env.HOME,userData:app.getPath('userData'),appPath:app.getAppPath(),packaged:app.isPackaged}));
-  assert.equal(actual.home,fixture.home);assert.equal(actual.userData,path.join(fixture.userData,'installer'));assert.ok(actual.appPath.startsWith(downloaded+'/'));assert.equal(actual.packaged,true);
-  page=await application.firstWindow();await page.getByRole('heading',{name:'Install DISCO',exact:true}).waitFor();
-  await page.getByText('Unsigned testing',{exact:true}).waitFor();assert.match(await page.locator('#detail').innerText(),/Open Anyway/);
-  await page.getByRole('button',{name:'Install and Open',exact:true}).waitFor();
-  assert.equal(await fs.stat(target).then(()=>true,()=>false),false);assert.equal(await fs.stat(handoff).then(()=>true,()=>false),false);
+ const sourceDigest=await bundleDigest(downloaded),store=new RuntimeGenerations({root:runtimeStore(fixture.home),python:path.join(downloaded,'Contents/Resources/runtime/python/bin/python3.11')});
+ const env={...process.env,HOME:fixture.home,TMPDIR:fixture.root,XDG_CONFIG_HOME:fixture.userData};delete env.ELECTRON_RUN_AS_NODE;
+ await check('ordinary downloaded entry stages and requests scientific launch without an installer page',async()=>{
+  await run(path.join(downloaded,'Contents/MacOS/Disco'),[`--user-data-dir=${fixture.userData}`],{env,timeout:420000});
+  const dispatch=JSON.parse(await fs.readFile(handoff,'utf8')),current=store.current();
+  assert.equal(dispatch.home,fixture.home);assert.equal(dispatch.args[2],current.generation.bundle);
+  assert.ok(dispatch.args.includes(`--user-data-dir=${fixture.userData}`));assert.ok(dispatch.args.some(value=>value.startsWith('--disco-runtime-admission=')));
+  assert.equal(await bundleDigest(current.generation.bundle),sourceDigest);assert.equal(await bundleDigest(downloaded),sourceDigest);
   assert.equal(await fs.stat(path.join(fixture.userData,'desktop-service.json')).then(()=>true,()=>false),false);
-  await page.screenshot({path:path.join(path.dirname(output),'bootstrap-install-and-open.png')});
-  await run('/usr/bin/xattr',['-w','com.apple.quarantine',quarantine,downloaded]);return {bootstrap:true,no_automatic_install:true,no_backend:true,isolated_installer_profile:true};
+  fixture={...fixture,frontDoor:canonical,bundle:current.generation.bundle,executable:path.join(current.generation.bundle,'Contents/MacOS/Disco'),runtimeStore:store,
+    preparedLaunch:{args:[dispatch.file,...dispatch.args]}};
+  return {no_install_action:true,complete_verified_copy:true,source_unchanged:true,no_front_door_backend:true,exact_profile_and_admission:true};
  });
- await check('explicit Install and Open copies the complete verified bundle and preserves quarantine and installed profile',async()=>{
-  const exited=new Promise(resolve=>application.process().once('exit',resolve));await page.getByRole('button',{name:'Install and Open',exact:true}).click();
-  const code=await Promise.race([exited,new Promise((_r,reject)=>setTimeout(()=>reject(new Error('Installer failed to complete its native copy')),420000).unref())]);assert.equal(code,0);
+ await check('admitted physical runtime opens the chooser and refreshes the canonical front door',async()=>{
+  ({application,page}=await launch(fixture));await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});
+  assert.equal((await application.evaluate(({app})=>app.getVersion())),receipt.application_version);
+  await waitFor(async()=>fs.access(path.join(canonical,'Contents/Resources/runtime/runtime-manifest.json')).then(()=>true,()=>false));
+  await run('/usr/bin/codesign',['--verify','--deep','--strict',canonical]);assert.equal(await bundleDigest(canonical),sourceDigest);
+  await page.screenshot({path:path.join(path.dirname(output),'bootstrap-direct-chooser.png')});
+  return {real_electron_and_backend:true,base_profile_preserved:true,canonical_promoted:true};
+ });
+ await check('opening canonical again reserves an independent profile and reuses the same complete runtime',async()=>{
+  const profile=path.join(fixture.home,'second-state');await fs.mkdir(profile,{recursive:true});
+  const before=store.current().id;
+  await run(path.join(canonical,'Contents/MacOS/Disco'),[`--user-data-dir=${profile}`],{env:{...env,XDG_CONFIG_HOME:profile},timeout:90000});
   const dispatch=JSON.parse(await fs.readFile(handoff,'utf8'));
-  assert.deepEqual(dispatch.args,['-n','-a',target,'--env',`HOME=${fixture.home}`,'--args',`--user-data-dir=${fixture.userData}`]);assert.equal(dispatch.file,'/usr/bin/open');assert.equal(dispatch.home,fixture.home);
-  assert.equal(await bundleDigest(target),before);assert.equal(await bundleDigest(downloaded),before);
-  const copiedQuarantine=(await run('/usr/bin/xattr',['-px','com.apple.quarantine',target])).stdout.replace(/\s/g,'').toLowerCase();
-  assert.equal(quarantinePreserved(Buffer.from(quarantine,'utf8').toString('hex'),copiedQuarantine),true);
-  await verifyResources(path.join(target,'Contents/Resources/runtime'),manifest.resources);await run('/usr/bin/codesign',['--verify','--deep','--strict',target]);
-  return {real_complete_copy:true,copy_hash_identical:true,source_unchanged:true,quarantine_preserved:true,exact_isolated_launch_profile:true,os_dispatch_only_stubbed:true};
+  assert.equal(store.current().id,before);
+  const next={...fixture,userData:profile,preparedLaunch:{args:[dispatch.file,...dispatch.args]}};
+  const launched=await launch(next);secondApplication=launched.application;secondPage=launched.page;
+  await secondPage.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});
+  assert.equal(application.process().exitCode,null);assert.equal(secondApplication.process().exitCode,null);
+  await gracefulQuit(secondApplication,secondPage);secondApplication=null;
+  await gracefulQuit(application,page);application=null;
+  return {two_real_sessions:true,independent_profiles:true,no_reinstallation:true,ordinary_quit:true};
  });
- await check('installed copy cold starts into Your projects using the base isolated profile',async()=>{
-  // A completely separate never-quarantined fixture qualifies profile startup.
-  fixture=await createFixture({reuse:false});receipt.unquarantined_profile_fixture_root=fixture.root;
-  const cleanTarget=fixture.bundle,cleanDownload=path.join(fixture.home,'Downloads','Disco.app'),cleanHandoff=path.join(fixture.home,'launch-services-handoff.json');
-  await fs.mkdir(path.dirname(cleanDownload),{recursive:true});await fs.rename(cleanTarget,cleanDownload);
-  const cleanArchive=path.join(cleanDownload,'Contents/Resources/app.asar'),cleanUnpacked=path.join(fixture.root,'profile-test-asar');asar.extractAll(cleanArchive,cleanUnpacked);
-  const cleanMain=path.join(cleanUnpacked,'main.cjs'),cleanOriginal=await fs.readFile(cleanMain,'utf8');assert.ok(cleanOriginal.includes(exact));
-  await fs.writeFile(cleanMain,cleanOriginal.replace(exact,wrapper.replace(JSON.stringify(handoff),JSON.stringify(cleanHandoff))));await asar.createPackage(cleanUnpacked,cleanArchive);asar.uncacheAll();
-  await run('/usr/libexec/PlistBuddy',['-c',`Set :ElectronAsarIntegrity:Resources/app.asar:hash ${createHash('sha256').update(asar.getRawHeader(cleanArchive).headerString).digest('hex')}`,path.join(cleanDownload,'Contents/Info.plist')]);
-  await run('/usr/bin/codesign',['--force','--sign','-','--entitlements',path.resolve(__dirname,'../entitlements.mac.plist'),cleanDownload]);await run('/usr/bin/codesign',['--verify','--deep','--strict',cleanDownload]);
-  application=await _electron.launch({executablePath:path.join(cleanDownload,'Contents/MacOS/Disco'),args:[`--user-data-dir=${fixture.userData}`],env:{...process.env,HOME:fixture.home,TMPDIR:fixture.root,XDG_CONFIG_HOME:fixture.userData},chromiumSandbox:true,bypassCSP:false,timeout:45000});
-  page=await application.firstWindow();await page.getByRole('heading',{name:'Install DISCO',exact:true}).waitFor();
-  const exited=new Promise(resolve=>application.process().once('exit',resolve));await page.getByRole('button',{name:'Install and Open',exact:true}).click();assert.equal(await Promise.race([exited,new Promise((_r,reject)=>setTimeout(()=>reject(new Error('Clean installer did not finish')),420000).unref())]),0);
-  assert.deepEqual(JSON.parse(await fs.readFile(cleanHandoff,'utf8')).args,['-n','-a',cleanTarget,'--env',`HOME=${fixture.home}`,'--args',`--user-data-dir=${fixture.userData}`]);
-  assert.equal(await run('/usr/bin/xattr',['-p','com.apple.quarantine',cleanTarget]).then(()=>true,error=>{if(error.code===1)return false;throw error;}),false,'This startup fixture must never carry quarantine');
-  fixture.bundle=cleanTarget;fixture.executable=path.join(cleanTarget,'Contents/MacOS/Disco');({application,page}=await launch(fixture));
-  await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});assert.equal((await page.evaluate(()=>window.riekeDesktop.status())).channel,'unsigned-testing');
-  await gracefulQuit(application,page);await verifyResources(path.join(cleanTarget,'Contents/Resources/runtime'),manifest.resources);return {manual_macos_approval_unqualified:true,separate_never_quarantined_fixture:true,real_installed_startup:true,base_profile_restored:true,native_orderly_exit:true,runtime_immutable:true};
+ await check('a never-executed quarantined source keeps quarantine through generation staging',async()=>{
+  const quarantined=path.join(fixture.root,'quarantine-source/Disco.app');await fs.mkdir(path.dirname(quarantined),{recursive:true});await run('/usr/bin/ditto',[downloaded,quarantined]);
+  const value='0083;66000000;Rieke-E2E;00000000-0000-4000-8000-000000000001';await run('/usr/bin/xattr',['-w','com.apple.quarantine',value,quarantined]);
+  const isolated=new RuntimeGenerations({root:path.join(fixture.root,'quarantine-store'),python:path.join(downloaded,'Contents/Resources/runtime/python/bin/python3.11')});
+  const generation=await isolated.stage(quarantined);
+  const copied=(await run('/usr/bin/xattr',['-px','com.apple.quarantine',generation.bundle])).stdout.replace(/\s/g,'').toLowerCase();
+  assert.equal(quarantinePreserved(Buffer.from(value).toString('hex'),copied),true);
+  assert.equal(await bundleDigest(generation.bundle),sourceDigest);
+  return {quarantine_preserved:true,quarantined_source_and_copy_never_executed:true,manual_macos_approval_unqualified:true};
  });
- assert.equal(receipt.failures.length,0);await write();console.log('Bootstrap receipt: '+output);
+ receipt.passed=true;await write();console.log('Bootstrap receipt: '+output);
 }
 main().catch(async error=>{
- application=error.launchedApplication||application||fixture?.activeApplication;
- page=error.launchedPage||page||fixture?.activePage;
- if(application)try{receipt.failure_targets=await captureRendererFailure(application,'bootstrap');}catch{}
  console.error(error.stack);receipt.failures.push({name:'bootstrap-suite',message:error.message});
- receipt.failure_cleanup=await cleanupOwnedFixture(application,page);await write();
-
- // Exit only this controller; a deferred owned app is retained for inspection.
- process.exit(1);
+ receipt.failure_cleanup=[await cleanupOwnedFixture(secondApplication,secondPage),await cleanupOwnedFixture(application,page)];
+ await write();process.exitCode=1;
 });

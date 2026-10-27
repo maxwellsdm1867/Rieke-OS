@@ -376,6 +376,7 @@ async function installCompleteBundle({source, destination = path.join(os.homedir
     }
     if (existing) {
       await assertNotRunning(destination, run, ignorePid);
+      await assertNotRunning(previous, run, ignorePid);
       // Retain exactly one verified previous signed bundle, only after the new copy is complete.
       await fs.rm(previous, {recursive: true, force: true});
       await fs.rename(destination, previous); movedPrevious = true;
