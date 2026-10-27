@@ -155,6 +155,9 @@ async function phase(phase,config){
  }
 }
 async function startup(version){
+ // The legacy helper atomically replaces this same bundle pathname. ASAR's
+ // process-local header cache otherwise still describes the preceding archive.
+ asar.uncacheAll();
  const scientific=await prepareRuntime({...fixture},{selectExact:true});
  const launched=await launch(scientific);application=launched.application;
  await launched.page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});
