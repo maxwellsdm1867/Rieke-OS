@@ -2617,7 +2617,7 @@
       ]
     },
     "src/project-workspace/ui/ProjectOnboarding.jsx": {
-      "fingerprint": "92fa8bf3b92c7bbee838db51fe222afd4ebe8d9d68cffb7ac29ba32dce116ce5",
+      "fingerprint": "2a435c0dd2b2e41d06eb6a67ce63b64d198027dcaf9e5a89c8b00a718a5e8fb4",
       "sites": [
         {
           "owner": "ProjectOnboarding",
@@ -2636,7 +2636,7 @@
         }
       ],
       "lifetime": "project-shell-dialog-and-authored-fields",
-      "reason": "Project setup/folder dialogs are outside Activity; modal and cancellation effects clean up normally. Chosen path/name is authored presentation; no filesystem operation, confirmation or inspection token is restored as authority.",
+      "reason": "Project setup remains outside retained routes; modal, busy and registry effects are unchanged. A project-specific startup error now preserves the known inventory count, while inventory errors retain the unavailable count. No new effects, requests, authority or retained state. Native busy-project chooser showed two projects and permitted new-project creation; existing inventory and authored-draft tests retain their scopes.",
       "tests": [
         "src/authoredDrafts.test.js",
         "src/project-workspace/projectTransfer.test.js",
@@ -2661,7 +2661,7 @@
       ]
     },
     "src/project-workspace/ui/ProjectStartupError.jsx": {
-      "fingerprint": "b9e182c89e4f3f5501b8d3402312c1a502fb1d32c16553583aa76ddb09c7cfe5",
+      "fingerprint": "cfc9c506dbf525663f14186527581b4885958aa99e04a28e80d71c9495b2b49f",
       "sites": [
         {
           "owner": "ProjectStartupError",
@@ -2670,7 +2670,7 @@
         }
       ],
       "lifetime": "project-shell-presentation",
-      "reason": "Sidebar/rail are outside retained routes; project identity resets sections/rename and drag state. Transient drag/copy feedback has bounded cleanup, while sidebar preferences remain in the existing project preference owner.",
+      "reason": "Presentation-only error view. Strip only the known Electron startup/open-startup transport prefix for display and copying. Copy completion remains fenced by the original message identity and generation; message changes and unmount invalidate pending feedback. No new effects, requests, timers or recovery authority. The copy test now covers an IPC-wrapped error; the native busy-project screen displayed and copied the clean diagnostic.",
       "tests": [
         "src/protocolSidebarWorkflow.test.js",
         "src/projectStartupError.test.js",
