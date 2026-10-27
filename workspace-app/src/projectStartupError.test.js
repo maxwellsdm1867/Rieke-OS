@@ -30,6 +30,10 @@ test('startup recovery details can be copied, repeated failure stays visible, re
     assert.equal(renderer.root.findAllByProps({role:'status'}).length,0,'late completion cannot annotate a later identical failure');
     deny=true;await act(async()=>renderer.root.findByType('button').props.onClick());assert.match(JSON.stringify(renderer.toJSON()),/Copy unavailable/);
     await act(async()=>renderer.update(React.createElement(ErrorView,{message:''})));assert.equal(renderer.toJSON(),null);
+    deny=false;
+    await act(async()=>renderer.update(React.createElement(ErrorView,{message:"Error invoking remote method 'desktop:startup-session': Error: "+message})));
+    assert.doesNotMatch(JSON.stringify(renderer.toJSON()),/Error invoking remote method/);
+    await act(async()=>renderer.root.findByType('button').props.onClick());assert.equal(copied,message);
     await act(async()=>renderer.update(React.createElement(ErrorView,{message:'Unclassified error'})));assert.equal(renderer.root.findAllByType('button').length,0);
   }finally{if(renderer)await act(async()=>renderer.unmount());await server.close();if(old)Object.defineProperty(globalThis,'navigator',old);else delete globalThis.navigator;}
 });

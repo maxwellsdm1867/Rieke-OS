@@ -208,3 +208,21 @@ test('stalled startup cannot consume quit before admission pause and interruptio
   assert.equal(record.quit.state,'interrupted');assert.match(record.quit.reason,/unbound/);
   assert.equal(supervisor.exited,false);assert.equal(supervisor.stopping,false);
 });
+
+test('a dead launcher preserves surviving project evidence without blocking the new chooser', async t => {
+ const {supervisor}=await fixture(t,()=>assert.fail('Never contact an unadopted project'));
+ const project={pid:12345,created_at:100,executable:'/owned/python',project_path:'/owned/project',project_uuid:'project',session_id:'old'};
+ const previous={pid:99999,executable:'/owned/python',entry:'/owned/workspace_desktop.py',port:9876,session_id:'prior',services:[project]};
+ await fs.mkdir(path.dirname(supervisor.registryPath),{recursive:true});
+ await fs.writeFile(supervisor.registryPath,JSON.stringify(previous));
+ supervisor.inspectProcess=async pid=>pid===previous.pid?null:project.executable;
+ supervisor.recoverProcess=async()=>assert.fail('Do not recover or signal an unrelated project during chooser startup');
+ await supervisor.reconcilePrevious();
+ const childrenPath=path.join(supervisor.userData,'backend/desktop-services.json');
+ assert.deepEqual(JSON.parse(await fs.readFile(childrenPath,'utf8')),{version:1,services:[project]});
+ await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});
+ // Existing database-operation and recovery evidence is never overwritten by a root snapshot.
+ const existing={version:1,services:[project],database_operations:[{project_path:'/owned/transfer'}],recovery_required:[{project_path:'/owned/other'}]};
+ await fs.writeFile(childrenPath,JSON.stringify(existing));await fs.writeFile(supervisor.registryPath,JSON.stringify(previous));
+ await supervisor.reconcilePrevious();assert.deepEqual(JSON.parse(await fs.readFile(childrenPath,'utf8')),existing);
+});
