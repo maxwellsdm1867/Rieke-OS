@@ -178,6 +178,10 @@ that job ceiling is not an application-startup performance budget. The packaging
 job has a separate 40-minute ceiling for its multiple complete-bundle copies,
 bootstrap checks, portability audits and startup-fault fixture. All individual
 functional deadlines, validation checks and benchmark policies remain unchanged.
+The updater job allows 90 minutes for dependency setup, managed-generation checks,
+the full legacy install/restore/rollback suite, final bundle hashes and evidence
+upload. Its legacy controller remains bounded to 55 minutes, with unchanged
+individual driver/helper and application-launch limits.
 
 The deeper suites are selected from the changed area or an explicit extended run.
 Keep qualification gaps visible instead of treating unrun tests as passing. A
