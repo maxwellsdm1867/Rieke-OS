@@ -76,17 +76,30 @@ function fixture(options = {}) {
     supervisor=seed.supervisor; startupSession=seed.startupSession;
     registerIPC(); globalThis.window=createWindow(); globalThis.sendUpdaterStatus=publishUpdateStatus;
     globalThis.startNativeRestore=()=>{supervisor.child={pid:100};supervisor.exited=false;coordinator={getStatus:()=>({state:"Current"})};return startScientificUI();};
+    globalThis.enterRecovery=()=>{recovery('Test recovery');openSession=async()=>({opened:true});};
+    globalThis.rejectIntegrity=()=>{integrityFailed=true;};
   `, context);
   const window = context.window;
   window.webContents.mainFrame.url = launcher;
   return {supervisor, startupSession, record, calls, navigation, messages, window,
     get quits() { return quits; },
     startNativeRestore:()=>context.startNativeRestore(), publishUpdate:value=>context.sendUpdaterStatus(value),
+    enterRecovery:()=>context.enterRecovery(), rejectIntegrity:()=>context.rejectIntegrity(),
     invoke(channel, payload) {
       return handlers.get('desktop:' + channel)({sender: window.webContents, senderFrame: window.webContents.mainFrame}, payload);
     }};
 }
 async function claim(h) { assert.equal((await h.invoke('startup-session')).projectId, projectId); }
+
+test('recovery host can open an independent session; payloads, scientific recovery senders and integrity failures cannot',async()=>{
+  const h=fixture();h.enterRecovery();
+  assert.deepEqual(plain(await h.invoke('new-session')),{opened:true});
+  await assert.rejects(h.invoke('new-session',{profile:'/untrusted'}),/accepts no payload/);
+  h.window.webContents.mainFrame.url=launcher;
+  await assert.rejects(h.invoke('new-session'),/new work is paused/);
+  h.enterRecovery();h.rejectIntegrity();
+  await assert.rejects(h.invoke('new-session'),/new work is paused/);
+});
 
 test('registered restoration claims once from chooser and opens exact saved identity only after authorization', async () => {
   const gate = deferred();

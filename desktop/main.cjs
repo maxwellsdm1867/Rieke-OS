@@ -484,7 +484,7 @@ function registerIPC() {
     if(!ownerCurrent(window))throw Error('The project backend binding has changed.');
     if(window.active===false&&['desktop:choose-project-folder','desktop:prepare-project-close','desktop:confirm-project-closed','desktop:cancel-project-close'].includes(channel))throw Error('The project is not visible.');
     const recoveryHost=!window.parentWindow&&isOwnedURL(window.webContents?.getURL(),null,[recoveryPage]);
-    if ((quitting || integrityFailed || lifecycleStatus.state==='Recovery') && !['desktop:quit', 'desktop:status', 'desktop:drafts-ack', 'desktop:save-draft', ...(!quitting&&!integrityFailed&&recoveryHost?['desktop:retry-startup','desktop:restore-previous']:[])].includes(channel))
+    if ((quitting || integrityFailed || lifecycleStatus.state==='Recovery') && !['desktop:quit', 'desktop:status', 'desktop:drafts-ack', 'desktop:save-draft', ...(!quitting&&!integrityFailed&&recoveryHost?['desktop:retry-startup','desktop:restore-previous','desktop:new-session']:[])].includes(channel))
       throw new Error('DISCO is closing; new work is paused.');
     return action(payload, window);
   });
@@ -628,7 +628,7 @@ else {
     startupSession=new StartupSession(app.getPath('userData'),VIEW_COMPATIBILITY);
     await startupSession.load();
     if(sessionProfile.startAtChooser)startupSession.cancelled=true;
-    if(startupSession.value?.mode==='resume')lifecycleStatus={state:'Starting',title:'Restoring your workspace',message:'Reopening your saved '+startupSession.value.view+' view. Checking the project before loading scientific data.'};
+    if(!startupSession.cancelled&&startupSession.value?.mode==='resume')lifecycleStatus={state:'Starting',title:'Restoring your workspace',message:'Reopening your saved '+startupSession.value.view+' view. Checking the project before loading scientific data.'};
     configureSession(); registerIPC(); createWindow();
     powerMonitor.on('shutdown', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
     Menu.setApplicationMenu(Menu.buildFromTemplate([{label: 'DISCO', submenu: [{role: 'about'}, {type: 'separator'},
