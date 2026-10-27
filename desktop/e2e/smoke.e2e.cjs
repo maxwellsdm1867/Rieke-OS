@@ -3,11 +3,13 @@
 // return value is mapped to this owned scratch fixture; no updater/install mock.
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path');
 const {createHash,randomUUID}=require('node:crypto');
-const {createFixture,launch,gracefulQuit,ownedControl,run}=require('./qualification-helpers.cjs');
+const {createFixture,prepareRuntime,launch,gracefulQuit,ownedControl,run}=require('./qualification-helpers.cjs');
 const {showProjectSidebar,createRendererWatcher,waitForRenderer,captureRendererFailure}=require('./renderer-target.cjs');
 const output=path.resolve(__dirname,'../../docs/dev/desktop-smoke-e2e.json');
-const started=Date.now(),workDeadline=started+240000,totalDeadline=started+300000;
+const started=Date.now(),preparationDeadline=started+300000;
+let smokeStarted,workDeadline,totalDeadline,workTimer,hardTimer;
 const receipt={format:'rieke-packaged-smoke-e2e',version:1,started_at:new Date().toISOString(),total_deadline_ms:300000,
+ fixture_preparation:{started_at:new Date(started).toISOString(),deadline_ms:300000,status:'running',included_in_smoke_budget:false},
  signed_qualification:false,passed:false,checks:[],failures:[],warnings:[],
  seams:['Actual packaged Electron and owned scientific services in isolated HOME/userData.','Native folder chooser returns only this owned fixture folder.','Real update Check UI and status; offline handling never proves connectivity.'],
  limits:['Routine smoke only; no import/export, fault, signing or full runtime-hash qualification.']};
@@ -19,6 +21,18 @@ function remaining(){if(aborted||Date.now()>=workDeadline)throw new Error('Routi
 async function bounded(promise,name,budget=45000){
  let timer;try{return await Promise.race([promise,new Promise((_resolve,reject)=>{timer=setTimeout(()=>{aborted=true;reject(new Error(`${name} exceeded the routine smoke deadline`));},Math.min(budget,remaining()));})]);}finally{clearTimeout(timer);}
 }
+async function prepareBounded(promise,name,budget=300000){
+ let timer;try{return await Promise.race([promise,new Promise((_resolve,reject)=>{
+  timer=setTimeout(()=>reject(new Error(`${name} exceeded the separate fixture preparation deadline`)),Math.max(1,Math.min(budget,preparationDeadline-Date.now())));
+ })]);}finally{clearTimeout(timer);}
+}
+function beginSmoke(){
+ smokeStarted=Date.now();workDeadline=smokeStarted+240000;totalDeadline=smokeStarted+300000;
+ receipt.smoke_started_at=new Date(smokeStarted).toISOString();
+ hardTimer=setTimeout(()=>{console.error('Routine smoke total deadline reached; only the test controller is exiting.');process.exit(1);},300000);
+ workTimer=setTimeout(()=>{void finish(new Error('Routine smoke work deadline reached; preserving one minute for orderly shutdown'));},240000);
+}
+function recordElapsed(){receipt.overall_elapsed_ms=Date.now()-started;receipt.elapsed_ms=smokeStarted===undefined?null:Date.now()-smokeStarted;}
 async function check(name,fn){remaining();const began=Date.now();try{const evidence=await fn();remaining();receipt.checks.push({name,passed:true,elapsed_ms:Date.now()-began,evidence});console.log('PASS '+name);}catch(error){receipt.failures.push({name,message:error.message});await write();throw error;}await write();}
 async function bundleReceipts(){
  const resources=path.join(fixture.bundle,'Contents/Resources'),bytes=await fs.readFile(path.join(resources,'runtime/runtime-manifest.json'));
@@ -75,11 +89,15 @@ async function start(restoredProjectName=null){
  else await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:Math.min(60000,remaining())});
 }
 async function main(){
- fixture=await bounded(createFixture(),'Owned fixture preparation',90000);receipt.fixture_root=fixture.root;
- assert.equal((await ownedProcesses()).length,0,'Reusable fixture must have no running app or scientific service');
- const initial=await bundleReceipts(),manifest=initial.manifest;
+ await write();
+ fixture=await prepareBounded(createFixture({prepare:false}),'Owned fixture copy',90000);receipt.fixture_root=fixture.root;await write();
+ fixture=await prepareBounded(prepareRuntime(fixture),'Verified runtime generation preparation');
+ assert.equal((await prepareBounded(ownedProcesses(),'Fixture process inspection')).length,0,'Reusable fixture must have no running app or scientific service');
+ const initial=await prepareBounded(bundleReceipts(),'Initial bundle receipts'),manifest=initial.manifest;
  assert.equal(manifest.format,'rieke-desktop-runtime');assert.equal(typeof manifest.application_version,'string');assert.ok(manifest.application_version);
  receipt.application_version=manifest.application_version;receipt.manifest_sha256=initial.manifest_sha256;receipt.asar_sha256=initial.asar_sha256;
+ receipt.fixture_preparation.status='passed';receipt.fixture_preparation.elapsed_ms=Date.now()-started;
+ beginSmoke();await write();
  await check('packaged launcher starts with matching app and backend versions',async()=>{
   await start();const brand=await application.evaluate(({app,Menu})=>({name:app.getName(),version:app.getVersion(),executable:process.execPath,menu:Menu.getApplicationMenu().items[0].label,quit:Menu.getApplicationMenu().items[0].submenu.items.at(-1).label}));
   const version=brand.version;assert.equal(version,manifest.application_version);assert.equal(brand.name,'DISCO');assert.equal(brand.menu,'DISCO');assert.equal(brand.quit,'Quit DISCO');assert.equal(path.basename(brand.executable),'Disco');assert.equal(path.basename(fixture.bundle),'Disco.app');
@@ -179,11 +197,12 @@ async function main(){
   const shutdown=await quitAndVerify(),after=await bundleReceipts();assert.equal(after.manifest_sha256,initial.manifest_sha256);assert.equal(after.asar_sha256,initial.asar_sha256);assert.equal(receipt.failures.length,0,'Renderer errors occurred');
   return{...shutdown,manifest_unchanged:true,asar_unchanged:true};
  });
- receipt.passed=true;receipt.elapsed_ms=Date.now()-started;await write();console.log('Routine smoke receipt: '+output);
+ receipt.passed=true;recordElapsed();await write();console.log('Routine smoke receipt: '+output);
 }
 async function finish(error){
  if(finishing)return;finishing=true;aborted=true;clearTimeout(workTimer);
- if(error){application=error.launchedApplication||application||fixture?.activeApplication;page=error.launchedPage||page||fixture?.activePage;receipt.failures.push({name:'smoke-suite',message:error.message});receipt.elapsed_ms=Date.now()-started;
+ if(error){application=error.launchedApplication||application||fixture?.activeApplication;page=error.launchedPage||page||fixture?.activePage;receipt.failures.push({name:'smoke-suite',message:error.message});recordElapsed();
+  if(smokeStarted===undefined){receipt.fixture_preparation.status='failed';receipt.fixture_preparation.elapsed_ms=Date.now()-started;receipt.fixture_preparation.failure=error.message;}
   if(application)try{receipt.failure_targets=await captureRendererFailure(application,'smoke');}catch(snapshot){receipt.warnings.push(String(snapshot));}
   if(application&&page){try{const child=application.process(),exit=child.exitCode!==null?Promise.resolve(child.exitCode):new Promise(resolve=>child.once('exit',resolve));const left=Math.max(1,Math.min(45000,totalDeadline-Date.now()));
    let result;
@@ -198,6 +217,4 @@ async function finish(error){
  // writers if normal shutdown is deferred; the owned fixture stays inspectable.
  process.exit(error?1:0);
 }
-const hardTimer=setTimeout(()=>{console.error('Routine smoke total deadline reached; only the test controller is exiting.');process.exit(1);},300000);
-const workTimer=setTimeout(()=>{void finish(new Error('Routine smoke work deadline reached; preserving one minute for orderly shutdown'));},240000);
 main().then(()=>finish(),finish);

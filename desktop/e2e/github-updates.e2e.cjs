@@ -110,7 +110,22 @@ async function main(){
   await page.waitForFunction(()=>window.riekeDesktop.status().then(value=>['Ready','Available'].includes(value.state)),null,{timeout:180000});
   await page.getByRole('button',{name:/^App Updates(?: —|$)/}).first().click();
   const dialog=page.getByRole('dialog',{name:'App Updates',exact:true}),exited=new Promise(resolve=>application.process().once('exit',resolve));
-  if((await page.evaluate(()=>window.riekeDesktop.status())).state==='Available'){await dialog.getByRole('button',{name:'Download update',exact:true}).click();await dialog.getByRole('button',{name:'Restart to update',exact:true}).waitFor({timeout:180000});}
+  const readinessDeadline=Date.now()+180000,readinessRemaining=()=>{const left=readinessDeadline-Date.now();assert.ok(left>0,'Update readiness exceeded its existing three-minute bound');return left;};
+  if((await page.evaluate(()=>window.riekeDesktop.status())).state==='Available'){
+   try{await dialog.getByRole('button',{name:'Download update',exact:true}).click({timeout:Math.min(30000,readinessRemaining())});}
+   catch(error){
+    if(error.name!=='TimeoutError')throw error;
+    const transitioned=await page.evaluate(()=>window.riekeDesktop.status());
+    if(!['Validating','Downloading','Ready'].includes(transitioned.state))throw error;
+    receipt.cached_validation_click_race={state:transitioned.state,original_error:error.name};await write();
+   }
+  }
+  // Cached verification can supersede the transient Available state. Require
+  // the real Ready UI within one unchanged validation budget, without retrying
+  // or resetting its deadline when the Download button disappears.
+  await dialog.getByRole('button',{name:'Restart to update',exact:true}).waitFor({timeout:readinessRemaining()});
+  receipt.restart_ready_status=await page.evaluate(()=>window.riekeDesktop.status());await write();
+  assert.equal(receipt.restart_ready_status.state,'Ready');assert.equal(receipt.restart_ready_status.can_restart,true);
   await dialog.getByRole('button',{name:'Restart to update',exact:true}).click();
   assert.equal(await Promise.race([exited,new Promise((_,reject)=>setTimeout(()=>reject(Error('Managed restart did not exit')),420000).unref())]),0);application=null;
   let dispatch;for(let n=0;n<240;n++){try{dispatch=JSON.parse(await fs.readFile(launchHandoff,'utf8'));break;}catch(error){if(error.code!=='ENOENT')throw error;}await delay(250);}

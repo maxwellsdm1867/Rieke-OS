@@ -168,6 +168,14 @@ HOME/user data/projects. It never uses the user's installed app or research proj
 npm run test:e2e:smoke --prefix desktop
 ```
 
+Fixture copying, complete runtime-generation verification, process inspection and
+initial hashes have a separate bounded five-minute setup phase, recorded in the
+receipt. No app is launched in setup. After setup succeeds, the existing four-minute
+smoke work budget and one-minute orderly-shutdown allowance begin; the individual
+launch limit remains 45 seconds. Setup failures still fail qualification. The CI
+job allows 15 minutes for download, verification, setup, smoke and evidence upload;
+that job ceiling is not an application-startup performance budget.
+
 The deeper suites are selected from the changed area or an explicit extended run.
 Keep qualification gaps visible instead of treating unrun tests as passing. A
 successful build alone is not proof of installation, startup, or data preservation.
