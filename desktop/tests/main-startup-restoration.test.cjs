@@ -227,6 +227,12 @@ test('native startup failure without a retained child opens the chooser with vis
   assert.equal(await h.invoke('startup-session'),null);
 });
 
+test('failed saved restore with retained child still admits chooser through a healthy root',async()=>{
+  const h=fixture({open:()=>{throw Error('Saved project busy');},health:()=>({pid:100,session_id:'owned-session',ready:true,services:[{pid:200}]})});
+  await h.startNativeRestore();assert.deepEqual(h.navigation,[launcher]);
+  await assert.rejects(h.invoke('startup-session'),/Saved project busy/);
+});
+
 
 test('late updater status cannot replace startup or recovery but still publishes while running',async()=>{
   const h=fixture();

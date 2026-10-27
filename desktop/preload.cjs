@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('riekeDesktop', Object.freeze({
   resetDraft: projectId => ipcRenderer.invoke('desktop:reset-draft', projectId),
   openReleaseNotes: url => ipcRenderer.invoke('desktop:open-release-notes', url),
   installAndOpen: () => ipcRenderer.invoke('desktop:install-and-open'),
+  newSession: () => ipcRenderer.invoke('desktop:new-session'),
   retryStartup: () => ipcRenderer.invoke('desktop:retry-startup'),
   restorePreviousVersion: () => ipcRenderer.invoke('desktop:restore-previous'),
   quit: () => ipcRenderer.invoke('desktop:quit')

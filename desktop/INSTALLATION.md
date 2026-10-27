@@ -38,6 +38,9 @@ ready drain and successful spawn it returns `{ready:true,restoring:true}`. Spawn
 errors reject and grant no quit authority. The separately executed signed CLI's
 PID-liveness wait is weaker than the testing creation identity protocol; preserve
 that distinction instead of claiming equivalent proofs.
+The signed helper receives the exact absolute userData directory and relaunches
+with that profile, preserving a secondary session's saved view. This does not
+strengthen its existing PID-liveness or signing qualification.
 
 Testing `launchTestingInstall({receiptPath,currentExecutable,currentPid,run,
 spawnHelper,readyTimeoutMs})` validates current parent identity and helper origin,

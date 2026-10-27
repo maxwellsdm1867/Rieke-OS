@@ -9,7 +9,8 @@ const {execFile} = require('node:child_process');
 const {promisify} = require('node:util');
 const {ServiceSupervisor, matchesHealth} = require('./supervisor.cjs');
 const {validateSender, approvedReleaseURL, isOwnedURL, allowClipboardWrite} = require('./security.cjs');
-const {enclosingApp, installCompleteBundle} = require('./bootstrap.cjs');
+const {enclosingApp, installCompleteBundle, otherDiscoProcessRunning} = require('./bootstrap.cjs');
+const {selectSessionProfile} = require('./session-profiles.cjs');
 const {DraftBarrier} = require('./close/draft-barrier.cjs');
 const {DraftStore} = require('./drafts/draft-store.cjs');
 const {StartupSession,viewNamespace,VIEW_COMPATIBILITY,compatibleViews}=require('./startup/startup-session.cjs');
@@ -65,7 +66,7 @@ let supervisor, backendStartup, coordinator, quitAuthorized = false, startupInPr
 let draftStore, viewUnavailable = false, retiredDraftsUnconfirmed = false, navigationGeneration = 0;
 let lifecycleStatus = {state: 'Starting', title: 'Starting DISCO', message: 'Opening your workspace.'};
 let applicationVerification, verificationController, verificationRecovery, verificationRecoveryResult;
-let integrityFailed=false;
+let integrityFailed=false, profilePreparedForExit=false;
 async function verifyApplicationFiles() {
   if (applicationVerification || integrityFailed || quitting || bootstrap) return;
   verificationController=new AbortController();
@@ -135,10 +136,16 @@ async function acknowledgeDrafts() {
   return draftBarrier.prepare(scientificWindows);
 }
 async function prepareQuit() {
+  profilePreparedForExit=false;
+  if(app.isPackaged && sourceApp && await otherDiscoProcessRunning(promisify(execFile),sourceApp)){
+    const result={ready:false,reason:'Close the other DISCO sessions before updating or replacing this app. You can continue using different project folders in those sessions.'};
+    broadcast({...status(),message:result.reason});return result;
+  }
   const drafts = await acknowledgeDrafts();
   if (!drafts.ready) { broadcast({...status(), message:drafts.reason}); return drafts; }
   const result = supervisor ? await supervisor.drain() : {ready: true};
   if (!result.ready) broadcast({...status(), message:result.reason});
+  profilePreparedForExit=result.ready===true;
   return result;
 }
 function orderlyQuit() {
@@ -157,7 +164,7 @@ function orderlyQuit() {
           () => supervisor ? supervisor.quit({...options,startup:startupOpening}) : {ready:true});
       },
       publish: value => { lifecycleStatus = value; broadcast(value); },
-      exit: () => { quitAuthorized = true; app.quit(); }
+      exit: result => { if(result.services_closed)sessionProfile.release(); quitAuthorized = true; app.quit(); }
     });
   }
   return quitting.quit();
@@ -413,6 +420,7 @@ function restoreStartupWindow(window){
 async function startScientificUI() {
   if (startupInProgress || quitting || integrityFailed) return;
   startupInProgress = true;
+  profilePreparedForExit=false;
   try {
     let origin;
     if (backendStartup) {
@@ -451,10 +459,10 @@ async function startScientificUI() {
       if(target&&!startupSession.cancelled){
         try{restored=(await restoreStartupWindow(window)).restored;}
         catch(error){
-          // A failed ownership check can leave a child requiring recovery. Only
-          // a root that confirms no retained child allows the ordinary chooser.
+          // Retained project children remain owned/recovery-gated. They do not
+          // prevent another folder from opening through a healthy exact root.
           const health=await supervisor.api('/api/desktop/health');
-          if(health.services?.length)throw error;
+          if(!matchesHealth(health,supervisor.expectedHealth()))throw error;
           startupError=error.message;
         }
       }
@@ -530,6 +538,7 @@ function registerIPC() {
     return coordinator.installPrepared();
   });
   noPayload('desktop:quit', () => orderlyQuit());
+  noPayload('desktop:new-session', () => openSession());
   noPayload('desktop:retry-startup', () => { if (bootstrap) throw new Error('Install the complete app before starting projects'); return startScientificUI(); });
   handle('desktop:restore-previous', async payload => {
     if (preview) throw new Error('Restore is disabled in DISCO Preview.');
@@ -575,9 +584,36 @@ function registerIPC() {
     quitAuthorized = true; app.quit(); return {installed: true};
   });
 }
-if (!app.requestSingleInstanceLock()) app.quit();
+async function openSession(profile = sessionProfile.base, recover = false) {
+  if (!app.isPackaged || process.platform !== 'darwin' || bootstrap || preview || integrityFailed) throw Error('A separate session is unavailable for this application.');
+  if (recover && !sessionProfile.recoverable().includes(profile)) throw Error('Unknown recovery profile');
+  const env = {...process.env}; delete env.ELECTRON_RUN_AS_NODE;
+  await promisify(execFile)('/usr/bin/open', ['-n','-a',sourceApp,'--args',`--user-data-dir=${profile}`,
+    recover?'--disco-recover-session':'--disco-new-session'], {env});
+  return {opened:true};
+}
+async function recoverSession() {
+  const profiles = sessionProfile.recoverable();
+  if(!profiles.length){await dialog.showMessageBox({type:'info',message:'No preserved sessions need recovery.',buttons:['OK']});return;}
+  const result = await dialog.showMessageBox({type:'info',title:'Recover a previous session',
+    message:'Choose a preserved session to recover',
+    detail:'Its saved views and ownership records have been kept. Recovery opens separately; this session can continue using other project folders.',
+    buttons:[...profiles.map((profile,index)=>`Recover session ${index+1} (${path.basename(profile)})`),'Cancel'],
+    defaultId:profiles.length,cancelId:profiles.length,noLink:true});
+  if(result.response<profiles.length)await openSession(profiles[result.response],true);
+}
+let sessionProfile;
+try {
+  sessionProfile = selectSessionProfile({app,bootstrap,preview,
+    runtime:path.join(process.resourcesPath||path.join(__dirname,'build'),'runtime')});
+} catch(error) {
+  dialog.showErrorBox('Session unavailable', error.message);
+  sessionProfile = {acquired:false};
+}
+if (!sessionProfile.acquired) app.quit();
 else {
-  app.on('second-instance', () => { const window = [...windows][0]; if (window) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); } });
+  app.on('second-instance', (_event,_argv,_cwd,data) => { if(data?.discoIndependentSession)return; const window = [...windows][0]; if (window) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); } });
+  app.on('will-quit', () => { if(quitAuthorized&&profilePreparedForExit&&supervisor?.exited&&!supervisor.abnormalExit)sessionProfile.release(); });
   app.on('before-quit', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
   app.on('window-all-closed', () => { if (quitAuthorized) app.quit(); });
   app.whenReady().then(async () => {
@@ -591,10 +627,13 @@ else {
     draftStore = new DraftStore(app.getPath('userData'));
     startupSession=new StartupSession(app.getPath('userData'),VIEW_COMPATIBILITY);
     await startupSession.load();
+    if(sessionProfile.startAtChooser)startupSession.cancelled=true;
     if(startupSession.value?.mode==='resume')lifecycleStatus={state:'Starting',title:'Restoring your workspace',message:'Reopening your saved '+startupSession.value.view+' view. Checking the project before loading scientific data.'};
     configureSession(); registerIPC(); createWindow();
     powerMonitor.on('shutdown', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
     Menu.setApplicationMenu(Menu.buildFromTemplate([{label: 'DISCO', submenu: [{role: 'about'}, {type: 'separator'},
+      {label:'New session', accelerator:'CommandOrControl+Shift+N', enabled:app.isPackaged&&!bootstrap&&!preview, click:()=>void openSession().catch(error=>dialog.showErrorBox('New session',error.message))},
+      {label:'Recover previous session…', enabled:!!sessionProfile.base, click:()=>void recoverSession().catch(error=>dialog.showErrorBox('Recover session',error.message))},
       {label: 'Check for Updates', enabled:!preview, click: () => coordinator?.check()},
       {id:'verify-application',label:'Verify Application Files…', enabled:app.isPackaged&&!bootstrap, click:()=>void verifyApplicationFiles()},
       {label:'Cancel Application Verification',click:()=>void cancelApplicationVerification()},

@@ -791,6 +791,7 @@
           "desktop/updates/tests/public-examples.test.cjs",
           "desktop/tests/installation-keep-public.test.cjs",
           "desktop/tests/retained-owners-public-examples.test.cjs",
+          "desktop/tests/session-profiles.test.cjs",
           "desktop/tests/project-views.test.cjs",
           "desktop/tests/main-retained-views.test.cjs"
         ]
