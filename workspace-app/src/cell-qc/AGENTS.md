@@ -59,4 +59,6 @@ epoch durations (unavailable if any duration is missing or invalid). Temperature
 keeps its observation drill-down. Optional voltage preparation remains below the
 recordings. Non-QC protocols have individual `protocol:<exact recorded name>`
 groups; duplicate short labels retain the full name. Legacy `other` paging remains
-readable, and restored `other` navigation selects the first individual protocol.
+readable. Restored `other` navigation resets its combined-list offset and resolves
+the individual protocol from the preserved selected epoch (or the first available
+protocol when no epoch was selected).

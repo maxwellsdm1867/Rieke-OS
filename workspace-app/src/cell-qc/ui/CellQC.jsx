@@ -108,10 +108,10 @@ export default function CellQC({cellUuid,revision,structureRevision=revision,ann
   const qcRevision=`${structureRevision}:${refresh}`,liveRevision=`${annotationRevision}:${refresh}:${tagRefresh}`;
   const result=useResource(`/cells/${cellUuid}/qc`,qcRevision);
   const data=result.data;
-  const [family,setFamily]=useState(session?.family||''),[offset,setOffset]=useState(session?.offset||0),[selected,setSelected]=useState(session&&Object.hasOwn(session,'selected')?session.selected:(initialEpochUuid??null)),[copied,setCopied]=useState(false),[copyError,setCopyError]=useState(''),[showMetadata,setShowMetadata]=useState(session?.showMetadata||false);
+  const [family,setFamily]=useState(session?.family==='other'?'':session?.family||''),[offset,setOffset]=useState(session?.family==='other'?0:session?.offset||0),[selected,setSelected]=useState(session&&Object.hasOwn(session,'selected')?session.selected:(initialEpochUuid??null)),[copied,setCopied]=useState(false),[copyError,setCopyError]=useState(''),[showMetadata,setShowMetadata]=useState(session?.showMetadata||false);
   useEffect(()=>{onSession?.({family,offset,selected,showMetadata});},[family,offset,selected,showMetadata,onSession]);
   const available=(data?.families||[]).filter(item=>item.epoch_count>0);
-  const active=family==='other'?available.find(item=>item.id.startsWith('protocol:'))?.id||available[0]?.id:family || available[0]?.id;
+  const active=family || available[0]?.id;
   const rowsPath=active?`/cells/${cellUuid}/qc/epochs?family=${encodeURIComponent(active)}&offset=${offset}&limit=40`:null;
   const rows=useResource(rowsPath,qcRevision);
   const epochs=rows.path===rowsPath?rows.data?.epochs||[]:[];
@@ -126,7 +126,7 @@ export default function CellQC({cellUuid,revision,structureRevision=revision,ann
   // Tag receipts change only annotation display; the trace keeps the source
   // epoch object so a tag save never repaints recorded samples.
   const rawEpoch=useMemo(()=>sourceEpoch&&tagStore.apply(sourceEpoch),[sourceEpoch,tagVersion]);
-  useEffect(()=>{if((!family&&initialEpochUuid||family==='other')&&rawEpoch){const match=available.find(item=>item.protocol_names?.includes(rawEpoch.protocol_name));if(match)setFamily(match.id);}},[family,initialEpochUuid,rawEpoch,data]);
+  useEffect(()=>{if(!family&&(initialEpochUuid||selected)&&rawEpoch){const match=available.find(item=>item.protocol_names?.includes(rawEpoch.protocol_name));if(match)setFamily(match.id);}},[family,initialEpochUuid,selected,rawEpoch,data]);
   const measured=response.data?.epoch_uuid===epochId&&response.data?.cell_uuid===cellUuid?response.data:null;
   const stats=measured?.statistics;
   const summaryStream=rawEpoch?.streams?.find(stream=>stream.uuid===measured?.trace?.stream_uuid);

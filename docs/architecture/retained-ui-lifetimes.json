@@ -612,7 +612,7 @@
       ]
     },
     "src/cell-qc/ui/CellQC.jsx": {
-      "fingerprint": "cfdcb910400ed19647428379b91741c081dbade45b314a0c7721e4aeeb53d9b1",
+      "fingerprint": "0336c206b579b94747b21250435d2fc831562605b3c3049a2f275ba92dc6c8d7",
       "sites": [
         {
           "owner": "CellQC",
@@ -622,11 +622,11 @@
         {
           "owner": "CellQC",
           "kind": "useEffect",
-          "fingerprint": "c41485db85f1c748d40e674f30d922734237d598639d7e26847359b0458705be"
+          "fingerprint": "a4b21844c00ee59d9848c78741b9150364208aa08442898ea34d90c4987faa2b"
         }
       ],
       "lifetime": "session-publication-and-current-data",
-      "reason": "Publish route-owned presentation snapshots; current pages/focus and ResizeObserver refresh independently. Initial CellQC family selection is guarded by absence of a user-selected family. Authored annotation text is checkpointed separately. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Reviewed 0.1.13 QC tile: presentation-only title/icon placement and exact display aliases; request, session, annotation and retained effect ownership unchanged. Request-decoupling review (2026-10-17): QC overview, trial pages, response summaries, traces and the metadata catalog follow structureRevision plus explicit refresh; only the annotation-bearing epoch detail and tag controls follow live revision, so tag edits no longer reread samples. The epoch detail uses the shared cache without warming an unused 20k trace window. Effect sites unchanged. Tag decoupling review (2026-10-17): confirmed tag receipts are merged and applied to the displayed epoch; live reads follow annotationRevision so a confirmed save sends one POST and no reread. Effect sites unchanged. Trace and metadata panel keep the source epoch object; only tag display uses the receipt-applied epoch. Effect sites unchanged. Tag channel review (2026-10-17): displayed epoch overlays tagStore through a deferred subscription; no private receipt state. Effect sites unchanged.",
+      "reason": "Publish route-owned presentation snapshots; current pages/focus and ResizeObserver refresh independently. Initial CellQC family selection is guarded by absence of a user-selected family. Authored annotation text is checkpointed separately. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Reviewed 0.1.13 QC tile: presentation-only title/icon placement and exact display aliases; request, session, annotation and retained effect ownership unchanged. Request-decoupling review (2026-10-17): QC overview, trial pages, response summaries, traces and the metadata catalog follow structureRevision plus explicit refresh; only the annotation-bearing epoch detail and tag controls follow live revision, so tag edits no longer reread samples. The epoch detail uses the shared cache without warming an unused 20k trace window. Effect sites unchanged. Tag decoupling review (2026-10-17): confirmed tag receipts are merged and applied to the displayed epoch; live reads follow annotationRevision so a confirmed save sends one POST and no reread. Effect sites unchanged. Trace and metadata panel keep the source epoch object; only tag display uses the receipt-applied epoch. Effect sites unchanged. Tag channel review (2026-10-17): displayed epoch overlays tagStore through a deferred subscription; no private receipt state. Effect sites unchanged. Cell QC summary/protocol review (2026-10-28): rig and total duration consume the existing overview read; individual protocol IDs use existing bounded family paging. Legacy Other sessions normalize to an unset family and zero page offset while preserving the exact selected epoch. The existing identity-checked epoch effect resolves an unset family from either initial or restored selection; an explicit family choice still wins. Session publication remains presentation-only; no new effect, read owner, annotation write, or preparation authority. Native synthetic import/QC switching, paging and history return passed; mounted legacy-session coverage checks exact protocol and offset reset.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/authoredDrafts.test.js",

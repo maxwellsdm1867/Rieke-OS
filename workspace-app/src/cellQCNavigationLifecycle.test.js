@@ -95,3 +95,29 @@ test('a confirmed QC tag is shown from its write receipt with no rereads',async(
   assert.match(text,/qc-tag/);
  }finally{await h.close();}
 });
+
+
+test('legacy Other sessions restore the selected exact protocol and discard the combined-list offset',async()=>{
+ const h=await createWorkflowHarness();
+ try{
+  h.fixture.respond=(url,options,fallback)=>{
+   const route=url.pathname.replace('/api','');
+   if(route==='/cells/cell-0/qc')return {cell:{cell_uuid:'cell-0',label:'Cell 0'},counts:{epochs:2},families:[
+    {id:'protocol:lab.Movie',label:'Movie',epoch_count:1,protocol_names:['lab.Movie']},
+    {id:'protocol:lab.Noise',label:'Noise',epoch_count:1,protocol_names:['lab.Noise']}]};
+   if(route==='/cells/cell-0/qc/epochs')return {epochs:[{epoch_uuid:url.searchParams.get('family')==='protocol:lab.Noise'?'epoch-1':'epoch-0'}],total:1};
+   if(route==='/cells/cell-0/qc/response')return {cell_uuid:'cell-0',epoch_uuid:url.searchParams.get('epoch_uuid'),statistics:{units:'mV'}};
+   if(route==='/epochs/epoch-1')return {...fallback(),protocol_name:'lab.Noise'};
+   return fallback();
+  };
+  const Component=await h.component('CellQC');
+  await h.mount(Component,{cellUuid:'cell-0',revision:0,session:{family:'other',offset:40,selected:'epoch-1'}});
+  const selected=()=>h.root.findByProps({className:'qc-families'}).findAllByType('button').find(node=>node.props['aria-pressed']);
+  await h.waitFor(()=>selected()?.findByType('span').children.join('')==='Noise');
+  await h.waitFor(()=>h.root.findAllByProps({className:'qc-trace-identity'}).some(node=>node.findByType('code').children.join('')==='epoch-1'));
+  const pages=h.fixture.requests.filter(request=>request.path.includes('/qc/epochs?')).map(request=>new URL(request.path,'http://fixture').searchParams);
+  assert.ok(pages.some(query=>query.get('family')==='protocol:lab.Noise'));
+  assert.ok(pages.every(query=>query.get('offset')==='0'));
+  assert.ok(pages.every(query=>query.get('family')!=='other'));
+ }finally{await h.close();}
+});
