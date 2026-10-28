@@ -53,3 +53,10 @@ Recording rig labels use the additive metadata-backed `recording_rigs` and
 source rigs remain distinguishable, and labels do not change scientific identity.
 `overviewPresentation.test.js` checks collapsed-row navigation, both Overview
 entries and repeated-label UUIDs; browser fixture evidence checks reveal/layout.
+
+QC's top summary shows recorded source rigs and the sum of all same-cell catalog
+epoch durations (unavailable if any duration is missing or invalid). Temperature
+keeps its observation drill-down. Optional voltage preparation remains below the
+recordings. Non-QC protocols have individual `protocol:<exact recorded name>`
+groups; duplicate short labels retain the full name. Legacy `other` paging remains
+readable, and restored `other` navigation selects the first individual protocol.

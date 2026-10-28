@@ -105,6 +105,38 @@ class CellQCTests(unittest.TestCase):
         self.assertFalse(self.case.curation.rows)
         self.assertFalse(self.case.datasets.rows)
 
+    def test_other_protocols_are_distinct_exact_names_and_pages(self):
+        self.same_cell()
+        names = ['lab.one.UnusualProtocol', 'lab.two.UnusualProtocol']
+        for identity, name in zip(self.ids, names):
+            self.service.rows[identity]['protocol_name'] = name
+        groups = self.qc.overview(self.cell)['families']
+        self.assertNotIn('other', [group['id'] for group in groups])
+        for identity, name in zip(self.ids, names):
+            group = next(group for group in groups if group['id'] == 'protocol:' + name)
+            self.assertEqual(group['label'], name)
+            self.assertEqual(group['epoch_count'], 1)
+            page = self.case.client.get(self.base + '/epochs', query_string={'family': group['id'], 'limit': 1}).get_json()
+            self.assertEqual([row['epoch_uuid'] for row in page['epochs']], [identity])
+            self.assertEqual(page['total'], 1)
+        self.service.trace.assert_not_called()
+
+    def test_recording_summary_uses_source_rig_and_complete_epoch_durations(self):
+        self.same_cell()
+        self.service.sources[0]['metadata'] = {'rig': 'EF', 'rig_type': 'PATCH'}
+        for identity, seconds in zip(self.ids, [2.5, 3.5]):
+            self.service.rows[identity]['duration_seconds'] = seconds
+        result = self.qc.overview(self.cell)
+        self.assertEqual(result['cell']['recording_rigs'], ['EF'])
+        self.assertFalse(result['cell']['recording_rig_missing'])
+        self.assertEqual(result['recording_seconds'], 6.)
+        self.service.rows[self.ids[1]]['duration_seconds'] = None
+        self.service.sources[0]['metadata'] = {'rig_type': 'PATCH'}
+        result = self.qc.overview(self.cell)
+        self.assertIsNone(result['recording_seconds'])
+        self.assertEqual(result['cell']['recording_rigs'], [])
+        self.assertTrue(result['cell']['recording_rig_missing'])
+
     def test_compensation_is_not_a_resistance_measurement(self):
         details = self.service.details[self.ids[0]]
         details['metadata']['group'] = {'uuid': 'group-id', 'properties': {'seriesResistanceCompensation': 0}}

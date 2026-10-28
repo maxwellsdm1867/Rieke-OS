@@ -104,7 +104,13 @@ class CellQC:
 
     def overview(self, cell_uuid):
         rows = self.rows(cell_uuid)
-        cell = self.service.cells[str(uuid.UUID(cell_uuid))]
+        from workspace_api import recording_rig_summary
+        cell = copy.deepcopy(self.service.cells[str(uuid.UUID(cell_uuid))])
+        cell.update(recording_rig_summary(
+            {row['source_sha256'] for row in rows},
+            {source['source_sha256']: source for source in self.service.sources}))
+        durations = [row.get('duration_seconds') for row in rows]
+        recording_seconds = sum(durations) if durations and all(number(value) and value >= 0 for value in durations) else None
         observations, measured, compensation = [], [], []
         seen_resistance, seen_compensation = set(), set()
         # Read each epoch's detail once in this request (one bulk read on the
@@ -121,11 +127,21 @@ class CellQC:
         block_count = len({r['block_uuid'] for r in rows if family(r) == 'current_noise'})
         families = []
         for key, (label, _) in FAMILIES.items():
+            if key == 'other':
+                continue
             members = [r for r in rows if family(r) == key]
             families.append({'id': key, 'label': label, 'epoch_count': len(members),
                 'blocks': len({r['block_uuid'] for r in members}),
                 'protocol_names': sorted({r['protocol_name'] for r in members})})
-        return {'cell': copy.deepcopy(cell), 'scope': 'main_catalog_same_cell_uuid',
+        other_protocols = sorted({r['protocol_name'] for r in rows if family(r) == 'other'})
+        for protocol in other_protocols:
+            members = [r for r in rows if r['protocol_name'] == protocol]
+            short = protocol.rsplit('.', 1)[-1]
+            label = short if sum(name.rsplit('.', 1)[-1] == short for name in other_protocols) == 1 else protocol
+            families.append({'id': 'protocol:' + protocol, 'label': label,
+                'epoch_count': len(members), 'blocks': len({r['block_uuid'] for r in members}),
+                'protocol_names': [protocol]})
+        return {'recording_seconds': recording_seconds, 'cell': cell, 'scope': 'main_catalog_same_cell_uuid',
             'scope_note': 'All recorded epochs for this cell UUID, including epochs outside protocol working sets and local inclusion masks.',
             'counts': {'epochs': len(rows), 'blocks': len({r['block_uuid'] for r in rows}),
                 'groups': len({r['group_uuid'] for r in rows}), 'protocols': len({r['protocol_name'] for r in rows})},
@@ -177,11 +193,13 @@ class CellQC:
             'has_more': offset + limit < len(rows)}
 
     def epochs(self, cell_uuid, family_id=None, offset=0, limit=50):
-        if family_id is not None and family_id not in FAMILIES:
+        protocol = family_id.removeprefix('protocol:') if family_id and family_id.startswith('protocol:') else None
+        if family_id is not None and family_id not in FAMILIES and not protocol:
             raise ValueError('Unknown QC protocol family')
         if type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 100:
             raise ValueError('QC epoch page requires nonnegative offset and limit 1–100')
-        rows = [r for r in self.rows(cell_uuid) if family_id is None or family(r) == family_id]
+        rows = [r for r in self.rows(cell_uuid) if family_id is None
+                or (r['protocol_name'] == protocol if protocol is not None else family(r) == family_id)]
         values = [{**copy.deepcopy(row), 'parameters': detail.get('parameters', {}),
             'source_filename': Path(self.service.manifests[row['source_sha256']]['source_path']).name}
             for row, detail in self._details(rows[offset:offset+limit])]

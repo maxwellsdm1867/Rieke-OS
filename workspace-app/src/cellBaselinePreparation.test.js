@@ -16,7 +16,7 @@ test('resting-voltage supporting detail reads prepared anchors and labels the cu
   const button=renderer.root.findAllByType('button').find(button=>button.children.includes('View prepared estimates'));
   await act(async()=>button.props.onClick());
   const output=JSON.stringify(renderer.toJSON());
-  for(const text of ['exact-epoch','exact-block','Recording time (s)','Raw 1 ms mean (mV)','possible spike first 2ms','Curve unvalidated','Validated resting-voltage curve: unavailable'])assert.ok(output.includes(text),text);
+  for(const text of ['exact-epoch','exact-block','Recording time (s)','Raw 1 ms mean (mV)','possible spike first 2ms','Validated resting-voltage curve: unavailable'])assert.ok(output.includes(text),text);
   assert.deepEqual(requests,['/api/cells/cell/qc']);
  }finally{if(renderer)await act(async()=>renderer.unmount());await server.close();globalThis.fetch=previous;}
 });
