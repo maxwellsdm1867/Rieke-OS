@@ -126,7 +126,7 @@ export default function CellQC({cellUuid,revision,structureRevision=revision,ann
   // Tag receipts change only annotation display; the trace keeps the source
   // epoch object so a tag save never repaints recorded samples.
   const rawEpoch=useMemo(()=>sourceEpoch&&tagStore.apply(sourceEpoch),[sourceEpoch,tagVersion]);
-  useEffect(()=>{if(!family&&initialEpochUuid&&rawEpoch){const match=available.find(item=>item.protocol_names?.includes(rawEpoch.protocol_name));if(match)setFamily(match.id);}},[family,initialEpochUuid,rawEpoch,data]);
+  useEffect(()=>{if((!family&&initialEpochUuid||family==='other')&&rawEpoch){const match=available.find(item=>item.protocol_names?.includes(rawEpoch.protocol_name));if(match)setFamily(match.id);}},[family,initialEpochUuid,rawEpoch,data]);
   const measured=response.data?.epoch_uuid===epochId&&response.data?.cell_uuid===cellUuid?response.data:null;
   const stats=measured?.statistics;
   const summaryStream=rawEpoch?.streams?.find(stream=>stream.uuid===measured?.trace?.stream_uuid);
