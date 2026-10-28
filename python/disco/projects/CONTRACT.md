@@ -177,6 +177,14 @@ The renderer requests `/api/project/activate` after painting the restored shell.
 Concurrent requests share initialization. Failure leaves the shell and explicit
 retry available; data-dependent endpoints refuse access until ready.
 
+After successful activation, one daemon thread imports h5py in that project
+backend. Activation does not wait for it. It opens no recording or dataset and
+creates no sample cache; ordinary source validation remains unchanged. Preparation
+failure is logged without failing activation. The import cache lasts for the
+backend lifetime, including view switches and metadata refreshes. The launcher
+and unactivated shell do not import it. Process exit owns this import-only thread;
+it holds no project resource that needs a separate shutdown transaction.
+
 The desktop entry retains session locks, identity and authenticated admission.
 Its deferred builder retains storage/recovery checks and native ownership before
 scientific use. A private session receipt changes durably from `unused` to

@@ -2983,6 +2983,7 @@
             "disco.projects.presentation_cache",
             "disco.projects.project_inventory",
             "flask",
+            "h5py",
             "json",
             "os",
             "pathlib",
