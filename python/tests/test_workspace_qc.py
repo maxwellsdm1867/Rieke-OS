@@ -52,6 +52,35 @@ class CellQCTests(unittest.TestCase):
         self.assertEqual({k: v for k, v in result.items() if k != 'resting_voltage'},
                          {k: v for k, v in full.items() if k != 'resting_voltage'})
 
+    def test_display_projection_preserves_visible_facts_and_default_family_order(self):
+        self.same_cell()
+        self.service.rows[self.ids[0]]['protocol_name'] = 'lab.Movie'
+        self.service.rows[self.ids[1]]['protocol_name'] = 'lab.CurrentStep'
+        full = self.qc.overview(self.cell, include_baselines=False)
+        display = self.case.client.get(self.base + '?projection=display').get_json()
+        self.assertNotIn('resistance', display)
+        self.assertEqual(display, {k: v for k, v in full.items() if k != 'resistance'})
+        page = self.case.client.get(self.base + '/epochs?family=default&limit=1').get_json()
+        self.assertEqual(page['family'], 'current_step')
+        self.assertEqual([r['epoch_uuid'] for r in page['epochs']], [self.ids[1]])
+        self.service.rows[self.ids[1]]['protocol_name'] = 'lab.AMovie'
+        page = self.qc.epochs(self.cell, 'default')
+        self.assertEqual(page['family'], 'protocol:lab.AMovie')
+        for query in ('projection=unknown', 'projection=display&include_baselines=true', 'projection=display&projection=full'):
+            self.assertEqual(self.case.client.get(self.base + '?' + query).status_code, 400)
+
+    def test_response_uses_exact_registered_row_but_preserves_custom_cell_policy(self):
+        from unittest.mock import patch
+        with patch.object(self.qc, 'rows', side_effect=AssertionError('No cohort sort for one response')):
+            result = self.qc.response(self.cell, self.ids[0], summary_only=True)
+        self.assertEqual(result['cell_uuid'], self.cell)
+        with patch.object(self.service, 'cell_rows', return_value=[]):
+            with self.assertRaisesRegex(ValueError, 'does not belong'):
+                self.qc.response(self.cell, self.ids[0], summary_only=True)
+        self.service.rows[self.ids[0]]['epoch_uuid'] = self.ids[1]
+        with self.assertRaisesRegex(ValueError, 'does not belong'):
+            self.qc.response(self.cell, self.ids[0], summary_only=True)
+
     def test_overview_reads_each_detail_once_and_rechecks_changes_on_next_request(self):
         self.same_cell()
         backing = self.service.details

@@ -8,8 +8,8 @@ async function setup(){
   const route=url.pathname.replace('/api','');
   if(route==='/cells/cell-0/qc')return {cell:{cell_uuid:'cell-0',label:'Cell 0',cell_type:'RGC/ON-parasol'},counts:{epochs:2},families:[{id:'a',label:'Family A',epoch_count:1},{id:'b',label:'Family B',epoch_count:1}]};
   if(route==='/cells/cell-0/qc/epochs'){
-   const id=url.searchParams.get('family')==='a'?'epoch-0':'epoch-1';
-   const result={epochs:[{epoch_uuid:id,epoch_number:id==='epoch-0'?1:2}],total:1};
+   const id=['a','default'].includes(url.searchParams.get('family'))?'epoch-0':'epoch-1';
+   const result={family:id==='epoch-0'?'a':'b',epochs:[{epoch_uuid:id,epoch_number:id==='epoch-0'?1:2}],total:1};
    return h.fixture.holdRows?.(url,options,result)??result;
   }
   if(route==='/cells/cell-0/qc/response'){
@@ -138,4 +138,34 @@ test('QC revisit reuses bounded reads while refresh and structure revisions rene
   await h.render(Component,{...props,key:'revisit',structureRevision:1});
   await h.waitFor(()=>h.fixture.requests.slice(refreshed).filter(r=>r.path.startsWith('/cells/')).length===3);
  }finally{await h.close();}
+});
+
+test('first trial reads precede a held overview and late default pages cannot replace explicit family choice',async()=>{
+ const h=await createWorkflowHarness();let releaseOverview,pendingDefault,holdOverview=true,holdDefault=false;
+ const overview={cell:{cell_uuid:'cell-0',label:'Cell 0'},counts:{epochs:2},families:[{id:'a',label:'Family A',epoch_count:1},{id:'b',label:'Family B',epoch_count:1}]};
+ try{
+  h.fixture.respond=(url,options,fallback)=>{
+   const route=url.pathname.replace('/api','');
+   if(route==='/cells/cell-0/qc')return holdOverview?new Promise(resolve=>releaseOverview=()=>resolve(overview)):overview;
+   if(route==='/cells/cell-0/qc/epochs'){
+    const family=url.searchParams.get('family')==='b'?'b':'a';
+    const value={family,epochs:[{epoch_uuid:family==='a'?'epoch-0':'epoch-1'}],total:1};
+    return holdDefault&&url.searchParams.get('family')==='default'?new Promise(resolve=>pendingDefault={signal:options.signal,release:()=>resolve(value)}):value;
+   }
+   if(route==='/cells/cell-0/qc/response')return {cell_uuid:'cell-0',epoch_uuid:url.searchParams.get('epoch_uuid'),statistics:{units:'mV'}};
+   return fallback();
+  };
+  const Component=await h.component('CellQC');await h.mount(Component,{cellUuid:'cell-0',revision:0});
+  await h.waitFor(()=>h.fixture.requests.some(r=>r.path.startsWith('/cells/cell-0/qc/response?')));
+  assert.ok(releaseOverview,'Overview is still pending while the trial and response load');
+  holdOverview=false;await h.act(()=>releaseOverview());
+  await h.waitFor(()=>h.root.findAllByProps({className:'qc-trace-identity'}).length>0);
+  holdDefault=true;await h.act(()=>h.root.findByProps({'aria-label':'Refresh cell quality'}).props.onClick());
+  await h.waitFor(()=>!!pendingDefault);
+  const button=h.root.findByProps({className:'qc-families'}).findAllByType('button').find(n=>n.findByType('span').children.join('')==='Family B');
+  await h.act(()=>button.props.onClick());
+  await h.waitFor(()=>h.root.findAllByProps({className:'qc-trace-identity'}).some(n=>n.findByType('code').children.join('')==='epoch-1'));
+  await h.act(()=>pendingDefault.release());
+  assert.equal(h.root.findByProps({className:'qc-trace-identity'}).findByType('code').children.join(''),'epoch-1');
+ }finally{releaseOverview?.();pendingDefault?.release();await h.close();}
 });

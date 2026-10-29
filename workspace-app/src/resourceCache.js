@@ -9,7 +9,7 @@ export function cacheableEpochPath(path){return typeof path==='string'&&/^\/epoc
 // QC snapshots carry no action authority or annotations. Keep them in the same
 // byte/entry/TTL-bounded pool; structural revisions and project invalidation
 // retire them just like epoch reads. Preparation/status endpoints stay fresh.
-export function cacheableResourcePath(path){return cacheableEpochPath(path)||typeof path==='string'&&/^\/cells\/[^/?]+\/qc(?:\?include_baselines=false|\/epochs\?[^#]+|\/response\?[^#]+)$/.test(path);}
+export function cacheableResourcePath(path){return cacheableEpochPath(path)||typeof path==='string'&&/^\/cells\/[^/?]+\/qc(?:\?(?:include_baselines=false|projection=display)|\/epochs\?[^#]+|\/response\?[^#]+)$/.test(path);}
 const tracePath=path=>path.split('?')[0].endsWith('/trace');
 const metadataEpoch=path=>{const match=/^\/epochs\/([^/?]+)(?:\?|$)/.exec(path);if(!match)return null;try{return decodeURIComponent(match[1]);}catch{return null;}};
 const PREFETCH_RESERVATION_BYTES=1024*1024;

@@ -67,8 +67,17 @@ QC overview, bounded trial pages and response statistics use the shared 30-secon
 entry/byte-bounded response snapshot cache under exact URL and structure revision.
 Explicit Cell QC refresh invalidates the cell's entire QC prefix before renewing
 reads. Annotation-only changes do not invalidate these annotation-free displays.
-Prepared voltage is excluded: the overview requests `include_baselines=false`,
+Prepared voltage is excluded: the overview requests `projection=display`,
 and opening the voltage panel reads its existing integrity-checked endpoint.
 Accepted preparation refreshes that panel only. Trace loading proceeds independently
 of response statistics; each displayed statistic still requires matching cell and
 epoch identity. The legacy overview API defaults to including prepared voltage.
+
+First-open display requests `projection=display`: exact temperature properties,
+rigs, durations, family counts and provenance, without unused resistance payloads
+or supporting-voltage validation. The full QC API remains available. The bounded
+trial request resolves `family=default` independently using the same family order
+as the overview; explicit/restored family selection still wins and late reads are
+fenced by path/revision. Trial pages request only epoch parameters from the shared
+metadata owner. Canonical response lookup verifies both cell and epoch UUIDs
+without sorting the whole cell; custom `cell_rows` policy retains its old path.

@@ -205,6 +205,36 @@ class DiskIndexTests(unittest.TestCase):
         self.assertEqual(index.details['epoch-7'],self.details['epoch-7'])
         with self.assertRaises(KeyError): list(index.details.many(['epoch-1','unknown']))
 
+    def test_inline_projection_is_independent_for_cached_uncached_and_duplicate_keys(self):
+        index=self.build()
+        index.details['epoch-7']
+        before=list(index.details.cache)
+        keys=['epoch-0','epoch-7','epoch-0']
+        values=list(index.details.projected_many(keys,('parameters',)))
+        self.assertEqual([key for key,_ in values],keys)
+        for key,value in values:self.assertEqual(value,{'parameters':self.details[key]['parameters']})
+        values[0][1]['parameters']['a/b~']='changed'
+        values[1][1]['parameters']['a/b~']='changed'
+        self.assertEqual(values[2][1],{'parameters':self.details['epoch-0']['parameters']})
+        self.assertEqual(index.details['epoch-7'],self.details['epoch-7'])
+        self.assertEqual(list(index.details.cache),before)
+        with self.assertRaisesRegex(ValueError,'inline'):list(index.details.projected_many(keys,('metadata',)))
+        with self.assertRaises(KeyError):list(index.details.projected_many(['unknown'],('parameters',)))
+        with sqlite3.connect(self.path) as connection:connection.execute("UPDATE epochs SET row_json='{}' WHERE epoch_id=1")
+        with self.assertRaisesRegex(ValueError,'changed'):list(index.details.projected_many(['epoch-7'],('parameters',)))
+        index.close()
+        with self.assertRaisesRegex(ValueError,'closed'):list(index.details.projected_many(['epoch-7'],('parameters',)))
+
+    def test_inline_projection_still_validates_unused_shared_ancestors(self):
+        from disco.metadata.tests.test_workspace_metadata_object_contract import fixture as owned_fixture
+        row,detail=owned_fixture()
+        index=DiskMetadataIndex.build(self.path,[row],{row['epoch_uuid']:detail},
+            [{'source_sha256':row['source_sha256']}],'generation','project')
+        with patch.object(index._metadata_decoder,'_object',side_effect=ValueError('Ancestor checksum differs')) as read:
+            with self.assertRaisesRegex(ValueError,'checksum'):
+                list(index.details.projected_many([row['epoch_uuid']],('properties',)))
+            self.assertGreater(read.call_count,0)
+
     def test_failed_rebuild_keeps_old_database(self):
         index=self.build()
         bad=dict(self.details);bad['epoch-0']={'parameters':{'invalid':float('nan')}}

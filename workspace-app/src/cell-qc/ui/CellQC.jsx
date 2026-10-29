@@ -108,14 +108,16 @@ export default function CellQC({cellUuid,revision,structureRevision=revision,ann
   // Samples, QC summaries and recorded metadata do not depend on tags. Only the
   // epoch detail (which carries annotations) and tag controls follow tag edits.
   const qcRevision=`${structureRevision}:${refresh}`,liveRevision=`${annotationRevision}:${refresh}:${tagRefresh}`;
-  const result=useResource(`/cells/${cellUuid}/qc?include_baselines=false`,qcRevision,0,{cache:true});
+  const result=useResource(`/cells/${cellUuid}/qc?projection=display`,qcRevision,0,{cache:true});
   const data=result.data;
   const [family,setFamily]=useState(session?.family==='other'?'':session?.family||''),[offset,setOffset]=useState(session?.family==='other'?0:session?.offset||0),[selected,setSelected]=useState(session&&Object.hasOwn(session,'selected')?session.selected:(initialEpochUuid??null)),[copied,setCopied]=useState(false),[copyError,setCopyError]=useState(''),[showMetadata,setShowMetadata]=useState(session?.showMetadata||false);
   useEffect(()=>{onSession?.({family,offset,selected,showMetadata});},[family,offset,selected,showMetadata,onSession]);
   const available=(data?.families||[]).filter(item=>item.epoch_count>0);
-  const active=family || available[0]?.id;
-  const rowsPath=active?`/cells/${cellUuid}/qc/epochs?family=${encodeURIComponent(active)}&offset=${offset}&limit=40`:null;
+  // Default-family resolution belongs to the bounded page read, so a first
+  // trial can load while the independent cell-wide summary is still pending.
+  const rowsPath=`/cells/${cellUuid}/qc/epochs?family=${encodeURIComponent(family||'default')}&offset=${offset}&limit=40`;
   const rows=useResource(rowsPath,qcRevision,0,{cache:true});
+  const active=family || rows.data?.family || available[0]?.id;
   const epochs=rows.path===rowsPath?rows.data?.epochs||[]:[];
   const epochId=selected || epochs[0]?.epoch_uuid;
   const epoch=useResource(epochId?`/epochs/${epochId}`:null,liveRevision,0,{cache:true});

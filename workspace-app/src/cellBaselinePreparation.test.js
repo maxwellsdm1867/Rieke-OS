@@ -14,10 +14,10 @@ test('resting-voltage supporting detail reads prepared anchors and labels the cu
   const {default:CellQC}=await server.ssrLoadModule("/src/cell-qc/ui/CellQC.jsx");
   await act(async()=>{renderer=TestRenderer.create(React.createElement(CellQC,{cellUuid:'cell',revision:0}));});
   const button=renderer.root.findAllByType('button').find(button=>button.children.includes('View prepared estimates'));
-  assert.deepEqual(requests,['/api/cells/cell/qc?include_baselines=false']);
+  assert.deepEqual(requests,['/api/cells/cell/qc?projection=display','/api/cells/cell/qc/epochs?family=default&offset=0&limit=40']);
   await act(async()=>button.props.onClick());
   const output=JSON.stringify(renderer.toJSON());
   for(const text of ['exact-epoch','exact-block','Recording time (s)','Raw 1 ms mean (mV)','possible spike first 2ms','Validated resting-voltage curve: unavailable'])assert.ok(output.includes(text),text);
-  assert.deepEqual(requests,['/api/cells/cell/qc?include_baselines=false','/api/cells/cell/qc/block-baselines']);
+  assert.deepEqual(requests,['/api/cells/cell/qc?projection=display','/api/cells/cell/qc/epochs?family=default&offset=0&limit=40','/api/cells/cell/qc/block-baselines']);
  }finally{if(renderer)await act(async()=>renderer.unmount());await server.close();globalThis.fetch=previous;}
 });
