@@ -43,6 +43,15 @@ class CellQCTests(unittest.TestCase):
         self.service.rows[self.ids[1]]['cell_uuid'] = self.cell
         self.service.rows[self.ids[1]]['cell_label'] = 'Cell1'
 
+    def test_light_overview_defers_prepared_voltage_validation(self):
+        from unittest.mock import patch
+        with patch.object(self.qc, 'prepared_baselines', side_effect=AssertionError('voltage must stay lazy')):
+            result = self.qc.overview(self.cell, include_baselines=False)
+        self.assertEqual(result['resting_voltage']['supporting_measurements'], {})
+        full = self.qc.overview(self.cell)
+        self.assertEqual({k: v for k, v in result.items() if k != 'resting_voltage'},
+                         {k: v for k, v in full.items() if k != 'resting_voltage'})
+
     def test_overview_reads_each_detail_once_and_rechecks_changes_on_next_request(self):
         self.same_cell()
         backing = self.service.details

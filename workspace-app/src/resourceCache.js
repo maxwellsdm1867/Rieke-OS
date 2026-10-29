@@ -6,6 +6,10 @@ export const EPOCH_CACHE_LIMITS={entries:128,bytes:32*1024*1024,ttlMs:30000};
 // Bytes count the binary64 samples (8 per value); arrays are never copied in.
 export const WHOLE_TRACE_LIMITS={entries:6,bytes:24*1024*1024};
 export function cacheableEpochPath(path){return typeof path==='string'&&/^\/epochs\/[^/?]+(?:\/trace)?(?:\?[^#]*)?$/.test(path);}
+// QC snapshots carry no action authority or annotations. Keep them in the same
+// byte/entry/TTL-bounded pool; structural revisions and project invalidation
+// retire them just like epoch reads. Preparation/status endpoints stay fresh.
+export function cacheableResourcePath(path){return cacheableEpochPath(path)||typeof path==='string'&&/^\/cells\/[^/?]+\/qc(?:\?include_baselines=false|\/epochs\?[^#]+|\/response\?[^#]+)$/.test(path);}
 const tracePath=path=>path.split('?')[0].endsWith('/trace');
 const metadataEpoch=path=>{const match=/^\/epochs\/([^/?]+)(?:\?|$)/.exec(path);if(!match)return null;try{return decodeURIComponent(match[1]);}catch{return null;}};
 const PREFETCH_RESERVATION_BYTES=1024*1024;
@@ -27,7 +31,7 @@ export function createResourceCache({entries=EPOCH_CACHE_LIMITS.entries,bytes=EP
   const globalPart=admission=>String(admission).split(':')[0];
   function admits(path,admission){return path&&tracePath(path)?globalPart(admission)===String(generation):String(admission)===token();}
   function put(path,revision,data,admission=token(),{speculative=false}={}){
-    if(!cacheableEpochPath(path)||!admits(path,admission))return false;
+    if(!cacheableResourcePath(path)||!admits(path,admission))return false;
     let size;try{size=JSON.stringify(data).length*2;}catch{return false;}
     if(size>bytes)return false;
     if(speculative&&(size>PREFETCH_RESERVATION_BYTES||used+size>bytes*.75||values.size+1>Math.floor(entries*.75)))return false;
@@ -89,7 +93,7 @@ export function createResourceCache({entries=EPOCH_CACHE_LIMITS.entries,bytes=EP
 export const epochResourceCache=createResourceCache(EPOCH_CACHE_LIMITS);
 export async function cachedResourceRequest(path,{request,revision=0,signal,cache=epochResourceCache,speculative=false}={}){
   if(signal?.aborted)throw abortError();
-  if(!cacheableEpochPath(path))return request(path,{signal});
+  if(!cacheableResourcePath(path))return request(path,{signal});
   const hit=(speculative?cache.peek:cache.get)(path,revision);if(hit!==undefined)return hit;
   const end=speculative?()=>{}:cache.beginDemand();
   try{

@@ -62,3 +62,13 @@ groups; duplicate short labels retain the full name. Legacy `other` paging remai
 readable. Restored `other` navigation resets its combined-list offset and resolves
 the individual protocol from the preserved selected epoch (or the first available
 protocol when no epoch was selected).
+
+QC overview, bounded trial pages and response statistics use the shared 30-second,
+entry/byte-bounded response snapshot cache under exact URL and structure revision.
+Explicit Cell QC refresh invalidates the cell's entire QC prefix before renewing
+reads. Annotation-only changes do not invalidate these annotation-free displays.
+Prepared voltage is excluded: the overview requests `include_baselines=false`,
+and opening the voltage panel reads its existing integrity-checked endpoint.
+Accepted preparation refreshes that panel only. Trace loading proceeds independently
+of response statistics; each displayed statistic still requires matching cell and
+epoch identity. The legacy overview API defaults to including prepared voltage.

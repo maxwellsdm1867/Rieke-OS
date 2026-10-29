@@ -24,7 +24,7 @@ async function setup(){
  return {h,Component,frame,family:name=>h.root.findByProps({className:'qc-families'}).findAllByType('button').find(n=>n.findByType('span').children.join('')===name)};
 }
 
-test('QC keeps its list and committed frame through a delayed family change, then publishes a matching epoch/summary',async()=>{
+test('QC renders the exact new trial without waiting for a delayed response summary',async()=>{
  const {h,frame,family}=await setup();let release;
  try{
   const identity=h.root.findByProps({className:'qc-cell-type'});
@@ -34,9 +34,9 @@ test('QC keeps its list and committed frame through a delayed family change, the
   await h.act(()=>family('Family B').props.onClick());await h.waitFor(()=>!!release);
   assert.equal(h.root.findByProps({className:'qc-trial-list'}),list);
   assert.equal(h.root.findByProps({className:'qc-recording'}),recording);
-  assert.equal(frame().props['aria-busy'],true);
-  assert.equal(frame().findByProps({className:'stable-content-body'}).props.inert,true);
-  assert.equal(h.root.findByProps({className:'qc-trace-identity'}).findByType('code').children.join(''),'epoch-0');
+  await h.waitFor(()=>!frame().props['aria-busy']);
+  assert.equal(h.root.findByProps({className:'qc-trace-identity'}).findByType('code').children.join(''),'epoch-1');
+  assert.equal(h.root.findAllByProps({className:'qc-response-stats'}).length,0,'Old trial statistics cannot accompany the new trace');
   await h.act(()=>release());await h.waitFor(()=>!frame().props['aria-busy']);
   assert.equal(h.root.findByProps({className:'qc-recording'}),recording);
   assert.equal(h.root.findByProps({className:'qc-trace-identity'}).findByType('code').children.join(''),'epoch-1');
@@ -119,5 +119,23 @@ test('legacy Other sessions restore the selected exact protocol and discard the 
   assert.ok(pages.some(query=>query.get('family')==='protocol:lab.Noise'));
   assert.ok(pages.every(query=>query.get('offset')==='0'));
   assert.ok(pages.every(query=>query.get('family')!=='other'));
+ }finally{await h.close();}
+});
+
+
+test('QC revisit reuses bounded reads while refresh and structure revisions renew them',async()=>{
+ const {h,Component}=await setup();
+ try{
+  const props={cellUuid:'cell-0',revision:0,structureRevision:0};
+  await h.render(Component,props);
+  const before=h.fixture.requests.length;
+  await h.render(Component,{...props,key:'revisit'});
+  await h.waitFor(()=>h.root.findAllByProps({className:'qc-trace-identity'}).length>0);
+  assert.deepEqual(h.fixture.requests.slice(before).filter(r=>r.path.startsWith('/cells/')),[]);
+  await h.act(()=>h.root.findByProps({'aria-label':'Refresh cell quality'}).props.onClick());
+  await h.waitFor(()=>h.fixture.requests.slice(before).filter(r=>r.path.startsWith('/cells/')).length===3);
+  const refreshed=h.fixture.requests.length;
+  await h.render(Component,{...props,key:'revisit',structureRevision:1});
+  await h.waitFor(()=>h.fixture.requests.slice(refreshed).filter(r=>r.path.startsWith('/cells/')).length===3);
  }finally{await h.close();}
 });

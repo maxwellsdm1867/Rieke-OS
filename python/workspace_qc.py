@@ -102,7 +102,7 @@ class CellQC:
                         'source_sha256': row['source_sha256']})
         return measurements
 
-    def overview(self, cell_uuid):
+    def overview(self, cell_uuid, *, include_baselines=True):
         rows = self.rows(cell_uuid)
         from workspace_api import recording_rig_summary
         cell = copy.deepcopy(self.service.cells[str(uuid.UUID(cell_uuid))])
@@ -123,19 +123,25 @@ class CellQC:
         recorded_units = {item['units'] for item in points}
         same_units = len(recorded_units) == 1
         has_resistance = any(item['numeric'] for item in measured)
-        baseline = self.prepared_baselines(cell_uuid, rows=rows)
+        baseline = self.prepared_baselines(cell_uuid, rows=rows) if include_baselines else {}
         block_count = len({r['block_uuid'] for r in rows if family(r) == 'current_noise'})
+        family_rows, protocol_rows = {}, {}
+        for row in rows:
+            kind = family(row)
+            family_rows.setdefault(kind, []).append(row)
+            if kind == 'other':
+                protocol_rows.setdefault(row['protocol_name'], []).append(row)
         families = []
         for key, (label, _) in FAMILIES.items():
             if key == 'other':
                 continue
-            members = [r for r in rows if family(r) == key]
+            members = family_rows.get(key, [])
             families.append({'id': key, 'label': label, 'epoch_count': len(members),
                 'blocks': len({r['block_uuid'] for r in members}),
                 'protocol_names': sorted({r['protocol_name'] for r in members})})
-        other_protocols = sorted({r['protocol_name'] for r in rows if family(r) == 'other'})
+        other_protocols = sorted(protocol_rows)
         for protocol in other_protocols:
-            members = [r for r in rows if r['protocol_name'] == protocol]
+            members = protocol_rows[protocol]
             short = protocol.rsplit('.', 1)[-1]
             label = short if sum(name.rsplit('.', 1)[-1] == short for name in other_protocols) == 1 else protocol
             families.append({'id': 'protocol:' + protocol, 'label': label,
@@ -505,9 +511,12 @@ def register_qc_routes(app, service, db_lock):
 
     @app.get('/api/cells/<cell_uuid>/qc')
     def cell_qc(cell_uuid):
-        options({})
+        options({'include_baselines'})
+        include = request.args.get('include_baselines', 'true')
+        if include not in {'true', 'false'}:
+            raise ValueError('include_baselines must be true or false')
         with db_lock:
-            return jsonify(qc.overview(cell_uuid))
+            return jsonify(qc.overview(cell_uuid, include_baselines=include == 'true'))
 
     @app.get('/api/cells/<cell_uuid>/qc/epochs')
     def cell_qc_epochs(cell_uuid):
