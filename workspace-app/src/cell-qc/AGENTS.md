@@ -81,3 +81,7 @@ as the overview; explicit/restored family selection still wins and late reads ar
 fenced by path/revision. Trial pages request only epoch parameters from the shared
 metadata owner. Canonical response lookup verifies both cell and epoch UUIDs
 without sorting the whole cell; custom `cell_rows` policy retains its old path.
+
+The collapsed temperature/conditions disclosure constructs its trend only when
+opened. Recorded points, units and range remain unchanged; opening/closing is
+presentation state and issues no preparation command or additional data read.
