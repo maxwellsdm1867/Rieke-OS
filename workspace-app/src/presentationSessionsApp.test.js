@@ -307,3 +307,13 @@ for(const callback of ['onCreated','onSelect'])for(const outcome of ['opened','r
   if(outcome==='needs-migration')assert.equal(activations,0,'Migration still requires its separate user workflow');
  }finally{await h.close();}
 });
+
+test('returning to a retained desktop project refreshes the mounted-project list only when visible',async()=>{
+ const h=await createPresentationSessionHarness();let visibility,unsubscribed=false;
+ window.riekeDesktop.onProjectVisibility=callback=>{visibility=callback;return()=>{unsubscribed=true;};};
+ try{
+  await h.mount();const key=h.route.key,count=()=>h.requests.filter(item=>item.path==='/projects').length;const before=count();
+  assert.equal(typeof visibility,'function');await h.act(()=>visibility({visible:false}));assert.equal(count(),before);
+  await h.act(()=>visibility({visible:true}));await h.waitFor(()=>count()===before+1);assert.equal(h.route.key,key);
+ }finally{await h.close();}assert.equal(unsubscribed,true);
+});

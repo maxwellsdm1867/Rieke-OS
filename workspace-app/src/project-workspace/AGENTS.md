@@ -100,3 +100,5 @@ also completes create-and-open before returning to the originating retained view
 `presentationSessionsApp.test.js` exercises both setup callbacks and failures.
 
 ProjectFolder uses the native activation bridge and closes its originating dialog only after an affirmative activation receipt; a retained document never stays busy awaiting browser unload. Native Close project prepares the exact UUID/path and waits for authenticated child-exit confirmation before releasing its view. Definite pre-shutdown refusal cancels preparation; uncertain shutdown retains the fence. Browser-only navigation retains its ordinary local-URL behavior. Mounted cases live in `../projectFolderLifecycle.test.js`.
+
+When a retained native document becomes visible, App refreshes the mounted-project inventory so opens and unmounts in another document appear in its chooser and rail. This read-only refresh preserves the current route and does not replay project operations.

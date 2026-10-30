@@ -223,6 +223,7 @@ export default function App(){
   const summaryClock=JSON.stringify([dataRevision,tagStore.getConfirmedGeneration()]);
   const overviewRevision=useSummaryRevision(summaryClock,page==='overview',structureRevision);
   const registry=useStableSummary('/projects',structureRevision),isLauncher=registry.data?.launcher===true;
+  useEffect(()=>window.riekeDesktop?.onProjectVisibility?.(({visible})=>{if(visible===true)registry.reload();}),[registry.reload]);
   const undo=useMutationUndo(registry.data?.current_project_uuid,changed);
   const projectReady=!!registry.data&&!isLauncher&&!registry.error&&!registry.data.inventory_unavailable;
   const projectData=useProjectData(projectReady?registry.data:null,()=>{registry.reload();changed();});
