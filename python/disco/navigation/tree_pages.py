@@ -9,6 +9,7 @@ import re
 import contextlib
 import sys
 import uuid
+from array import array
 from itertools import chain
 from collections.abc import Mapping
 
@@ -98,6 +99,12 @@ class _NavigationValues(Mapping):
         self.grouping_budget = min(maximum, max(16 * 1024,
             (len(rows) if scope_size is None else scope_size) * 40))
         self.group_cache, self.group_bytes, self.summary = {}, 0, None
+        # Compact count-only paging shares the already charged grouping
+        # reservation; it must not evict a previously admissible scope merely
+        # by adding a second up-front memory allowance.
+        self.compact_budget = min(12 * 1024 * 1024, self.grouping_budget)
+        self.compact, self.compact_bytes = None, 0
+        self.compact_attempted = False
 
     def __sizeof__(self):
         return object.__sizeof__(self) + self.grouping_budget
@@ -118,10 +125,11 @@ class _NavigationValues(Mapping):
                       + sys.getsizeof(bucket['summary'])
                       + sum(sys.getsizeof(value) for value in bucket['summary'].values())
                       for bucket in buckets))
-        if cost > self.grouping_budget:
+        available = self.grouping_budget - self.compact_bytes
+        if cost > available:
             return
         while self.group_cache and (len(self.group_cache) >= 128
-                                   or self.group_bytes + cost > self.grouping_budget):
+                                   or self.group_bytes + cost > available):
             _, _, previous = self.group_cache.pop(next(iter(self.group_cache)))
             self.group_bytes -= previous
         self.group_cache[key] = (current, buckets, cost)
@@ -313,6 +321,177 @@ def selection_revision(service, protocol, predicate, filters, order, rows, bindi
                    for row in sorted(rows,key=lambda row:row['epoch_uuid'])]})
 
 
+def _group_order(field, value, missing, row, canonical):
+    if field == 'block' and not missing:
+        from workspace_service import _date
+        stamp = row.get('block_start_time')
+        return (0, (_date(stamp) + stamp[11:]) if stamp else '', str(value))
+    return (1,) if missing else (0, field_value_order(field, value, canonical=canonical))
+
+
+class _CompactTreeBudget(ValueError):
+    """A correct ordinary page is the fallback when compact admission is full."""
+
+
+class _CompactTree:
+    """Compact structural hierarchy owned by one already-validated scope.
+
+    Only integer row positions, node records and opaque branch digests are retained.
+    Leaf membership is one permutation, never a Python row list per ancestor.
+    Scope freshness remains the caller's responsibility; this grants no authority.
+    """
+    # Node record: representative row, leaf start/stop, children start/count,
+    # ordinal within its parent. Children have independent display/hash indexes.
+    WIDTH = 6
+
+    def __init__(self, rows, values, order, structural_path, budget):
+        self.rows, self.order = rows, tuple(order)
+        self.nodes, self.leaves = array('I'), array('I')
+        self.children, self.lookup = array('I'), array('I')
+        self.keys = bytearray()
+        self.budget = budget
+        if self.nodes.itemsize != 4 or len(rows) >= 2**32:
+            raise _CompactTreeBudget('Compact tree position range exceeded')
+        if len(rows) * 5 + 2048 > budget:
+            raise _CompactTreeBudget('Compact leaf storage exceeds its reservation')
+        self._add(0, bytes(32), 0)
+
+        def build(node, indices, depth):
+            start = len(self.leaves)
+            if depth == len(order):
+                self.leaves.extend(sorted(indices, key=lambda i: _chronology(rows[i])))
+                self._check_budget()
+            else:
+                field = order[depth]
+                column = values.columns[field]
+                groups = {}
+                for position in indices:
+                    value = rows[position].get(column)
+                    present = value is not None
+                    canonical = value_key(value) if present else None
+                    key = (present, canonical)
+                    if key not in groups:
+                        # Refuse excessive fan-out before retaining unbounded bins.
+                        if (len(groups) + len(self.nodes) // self.WIDTH) * 80 + len(rows) * 4 > budget:
+                            raise _CompactTreeBudget('Compact tree branch budget exceeded')
+                        groups[key] = array('I')
+                    groups[key].append(position)
+                ordered = sorted(groups, key=lambda key: _group_order(
+                    field, rows[groups[key][0]].get(column), not key[0], rows[groups[key][0]], key[1]))
+                offset = len(self.children)
+                self.children.extend([0] * len(ordered))
+                self.lookup.extend([0] * len(ordered))
+                self._check_budget()
+                children = []
+                for ordinal, key in enumerate(ordered):
+                    members = groups[key]
+                    representative = members[0]
+                    digest = bytes.fromhex(structural_path.key(values[rows[representative]['epoch_uuid']], field))
+                    child = self._add(representative, digest, ordinal)
+                    self.children[offset + ordinal] = child
+                    children.append(child)
+                    build(child, members, depth + 1)
+                    del groups[key]
+                for rank, child in enumerate(sorted(children, key=self.key)):
+                    self.lookup[offset + rank] = child
+                self.nodes[node * self.WIDTH + 3] = offset
+                self.nodes[node * self.WIDTH + 4] = len(children)
+            self.nodes[node * self.WIDTH + 1] = start
+            self.nodes[node * self.WIDTH + 2] = len(self.leaves)
+
+        build(0, range(len(rows)), 0)
+        self._check_budget()
+
+    def _add(self, representative, key, ordinal):
+        node = len(self.nodes) // self.WIDTH
+        self.nodes.extend((representative, 0, 0, 0, 0, ordinal))
+        self.keys.extend(key)
+        self._check_budget()
+        return node
+
+    def _check_budget(self):
+        if self.retained_bytes() > self.budget:
+            raise _CompactTreeBudget('Compact tree storage budget exceeded')
+
+    def retained_bytes(self):
+        # Rows are borrowed from the surrounding already-accounted scope.
+        return object.__sizeof__(self) + sys.getsizeof(self.__dict__) + sum(
+            sys.getsizeof(item) for item in (self.order, self.nodes, self.leaves, self.children, self.lookup, self.keys))
+
+    def key(self, node):
+        return self.keys[node * 32:(node + 1) * 32]
+
+    def child_count(self, node):
+        return self.nodes[node * self.WIDTH + 4]
+
+    def count(self, node):
+        base = node * self.WIDTH
+        return self.nodes[base + 2] - self.nodes[base + 1]
+
+    def child(self, node, key):
+        wanted = bytes.fromhex(key)
+        begin = self.nodes[node * self.WIDTH + 3]
+        low, high = begin, begin + self.child_count(node)
+        while low < high:
+            middle = (low + high) // 2
+            candidate = self.lookup[middle]
+            if self.key(candidate) < wanted:
+                low = middle + 1
+            else:
+                high = middle
+        if low >= begin + self.child_count(node) or self.key(self.lookup[low]) != wanted:
+            raise KeyError('Tree branch is outside this selection')
+        child = self.lookup[low]
+        return child, self.nodes[child * self.WIDTH + 5]
+
+    def branch(self, node, depth, values):
+        row = self.rows[self.nodes[node * self.WIDTH]]
+        value = row.get(values.columns[self.order[depth]])
+        return {'row': row, 'value': value, 'missing': value is None,
+                'count': self.count(node)}
+
+    def branches(self, node, depth, offset, limit, values):
+        begin = self.nodes[node * self.WIDTH + 3]
+        end = min(self.child_count(node), offset + limit)
+        return [self.branch(self.children[begin + rank], depth, values) for rank in range(offset, end)]
+
+    def page(self, node, offset, limit):
+        base = node * self.WIDTH
+        begin, end = self.nodes[base + 1], self.nodes[base + 2]
+        return [self.rows[self.leaves[position]] for position in range(begin + offset, min(end, begin + offset + limit))]
+
+    def locate(self, node, row):
+        base = node * self.WIDTH
+        begin, end = self.nodes[base + 1], self.nodes[base + 2]
+        wanted = _chronology(row)
+        low, high = begin, end
+        while low < high:
+            middle = (low + high) // 2
+            if _chronology(self.rows[self.leaves[middle]]) < wanted:
+                low = middle + 1
+            else:
+                high = middle
+        if low >= end or self.rows[self.leaves[low]]['epoch_uuid'] != row['epoch_uuid']:
+            raise KeyError('Epoch is outside this tree selection')
+        return low - begin
+
+
+def _compact_tree(rows, values, order, structural_path):
+    if values.compact_attempted:
+        return values.compact if values.compact is not None and values.compact.rows is rows else None
+    values.compact_attempted = True
+    try:
+        prepared = _CompactTree(rows, values, order, structural_path, values.compact_budget)
+    except _CompactTreeBudget:
+        return None
+    cost = prepared.retained_bytes()
+    while values.group_cache and values.group_bytes + cost > values.grouping_budget:
+        _, _, previous = values.group_cache.pop(next(iter(values.group_cache)))
+        values.group_bytes -= previous
+    values.compact, values.compact_bytes = prepared, cost
+    return prepared
+
+
 def _group_buckets(current, depth, order, structural_path, values, *, counts_only):
     field = order[depth]
     cache_key = (field, id(current), counts_only)
@@ -332,12 +511,7 @@ def _group_buckets(current, depth, order, structural_path, values, *, counts_onl
         bucket['rows'].append(row)
     def sorting(key):
         bucket = buckets[key]
-        if field == 'block' and not bucket['missing']:
-            row = bucket['row']; stamp = row.get('block_start_time')
-            # Same source chronology as the full-tree renderer.
-            from workspace_service import _date
-            return (0, (_date(stamp) + stamp[11:]) if stamp else '', str(bucket['value']))
-        return (1,) if bucket['missing'] else (0, field_value_order(field,bucket['value'],canonical=key[1]))
+        return _group_order(field, bucket['value'], bucket['missing'], bucket['row'], key[1])
     # Reuse grouping keys; do not encode every distinct value again.
     result = sorted(buckets, key=sorting)
     for index, key in enumerate(result):
@@ -600,6 +774,8 @@ class TreePages:
         if expected is not None and expected != revision:
             raise StaleTreePage('Tree metadata or membership changed; reload the root before continuing')
         structural_path = TreePath(order,definitions,path)
+        compact = (_compact_tree(rows, values, order, structural_path)
+                   if counts_only and type(values) is _NavigationValues and self._canonical_reader() else None)
         if counts_only:
             root_summary = {'count': len(rows)}
         elif isinstance(values, _NavigationValues):
@@ -640,7 +816,7 @@ class TreePages:
                 key = key_for(bucket['row'],field)
                 child = labels[key]
                 if counts_only:
-                    summary = {'count': len(bucket['rows'])}
+                    summary = {'count': bucket['count'] if compact is not None else len(bucket['rows'])}
                 elif isinstance(values, _NavigationValues):
                     if 'summary' not in bucket:
                         bucket['summary'] = _summary(bucket['rows'])
@@ -657,12 +833,20 @@ class TreePages:
 
         ancestors = []
         if anchor:
-            candidate = next((row for row in rows if row['epoch_uuid'] == anchor), None)
+            candidate = (self.service.rows.get(anchor) if compact is not None else
+                         next((row for row in rows if row['epoch_uuid'] == anchor), None))
             if candidate is None:
                 raise KeyError('Epoch is outside this tree selection')
             path = [key_for(candidate,field) for field in order]
         selected = rows
+        node = 0
         for depth, key in enumerate(path):
+            if compact is not None:
+                node, ordinal = compact.child(node, key)
+                current = compact.branch(node, depth, values)
+                ancestors.extend([{**item, 'parent_offset': ordinal // limit * limit}
+                                  for item in branch_records([current], depth, path[:depth])])
+                continue
             buckets = groups(selected,depth)
             found = next(((index,bucket) for index,bucket in enumerate(buckets) if key_for(bucket['row'],order[depth]) == key),None)
             current = found[1] if found else None
@@ -672,7 +856,7 @@ class TreePages:
             selected = current['rows']
         depth = len(path)
         if counts_only:
-            selected_summary = {'count': len(selected)}
+            selected_summary = {'count': compact.count(node) if compact is not None else len(selected)}
         elif not isinstance(values, _NavigationValues):
             selected_summary = _summary(selected)
         elif ancestors:
@@ -686,18 +870,26 @@ class TreePages:
             'selection':selected_summary, 'ancestors':ancestors,
             'source_scope_revision':self.service.source_scope()['revision'] if body.get('protocol_uuid') is None else None}
         if depth < len(order):
-            buckets = groups(selected,depth)
-            payload.update(kind='branches',total=len(buckets),
-                branches=branch_records(buckets[offset:offset+limit],depth,path))
+            if compact is not None:
+                buckets = compact.branches(node, depth, offset, limit, values)
+                total = compact.child_count(node)
+            else:
+                all_buckets = groups(selected,depth)
+                buckets, total = all_buckets[offset:offset+limit], len(all_buckets)
+            payload.update(kind='branches',total=total,
+                branches=branch_records(buckets,depth,path))
         else:
-            selected = sorted(selected,key=_chronology)
+            if compact is None:
+                selected = sorted(selected,key=_chronology)
             if anchor:
-                index = next(index for index,row in enumerate(selected) if row['epoch_uuid']==anchor)
+                index = (compact.locate(node, candidate) if compact is not None else
+                         next(index for index,row in enumerate(selected) if row['epoch_uuid']==anchor))
                 offset = (index // limit) * limit
                 payload['offset'] = offset
                 payload['anchor'] = {'epoch_uuid':anchor,'path':path,'index':index,'offset':offset}
-            shown=selected[offset:offset+limit]
-            payload.update(kind='epochs',total=len(selected),epochs=[_epoch(row) for row in shown])
+            shown = compact.page(node, offset, limit) if compact is not None else selected[offset:offset+limit]
+            payload.update(kind='epochs',total=compact.count(node) if compact is not None else len(selected),
+                           epochs=[_epoch(row) for row in shown])
             shared=getattr(self.service,'shared_annotations',None)
             if shared:
                 annotations=shared.for_epochs(shown)

@@ -465,3 +465,28 @@ Retryable close preparation (recovery flush and annotation checkpoint) finishes
 before prepared read owners are disposed. A failed flush leaves Overview, tree
 reads and their workers available; successful disposal drains callbacks outside
 the database lock. Source-server shutdown also closes both new owners.
+
+
+## Compact structural count paging
+
+Canonical count-only fallback pages over date/cell/block may retain a compact
+hierarchy of integer row positions, branch digests, counts and sorted leaf
+positions. This is distinct from `PreparedNavigation`: an existing prepared view
+retains precedence and its publication/closing checks; custom, dynamic and full
+summary readers keep their existing paths. Scope keys, exact membership and
+fingerprint/publication invalidation remain the owners of freshness.
+
+The compact hierarchy uses standard-library `array` storage. Its entire retained
+allocation shares the existing `_NavigationValues.grouping_budget` (at most
+12 MiB for the compact portion), rather than adding another scope reservation.
+Ordinary group entries are evicted as needed to keep the combined allocation
+within that allowance. Over-budget construction falls back once per scope;
+no partially built hierarchy is published. First construction still enumerates
+and sorts the admitted scope; warmed pages/anchors reuse bounded windows and
+binary lookup. This does not claim constant first-use latency or an RSS ceiling.
+
+The equivalence, offset/anchor/selection ordering, stale membership/fingerprint,
+empty-scope and allocation-refusal cases are in `test_workspace_tree_navigation_cache`.
+`test_workspace_prepared_navigation` verifies that existing prepared views bypass
+this fallback. Scientific selection, tags, traces and mutation authority do not
+come from compact navigation.
