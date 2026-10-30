@@ -82,9 +82,12 @@ fenced by path/revision. Trial pages request only epoch parameters from the shar
 metadata owner. Canonical response lookup verifies both cell and epoch UUIDs
 without sorting the whole cell; custom `cell_rows` policy retains its old path.
 
-The collapsed temperature/conditions disclosure constructs its trend only when
-opened. Recorded points, units and range remain unchanged; opening/closing is
-presentation state and issues no preparation command or additional data read.
+The Bath temperature tile opens one combined temperature/recording-conditions
+panel with recorded group labels, the lazy trend and paginated epoch readings.
+There is no separate conditions bar. The tile exposes expanded state and controls
+the panel; its close button and the tile both collapse it. Opening uses the existing
+bounded temperature-observations endpoint; the closed tile constructs no trend and
+loads no observation pages. No preparation command or new endpoint is introduced.
 
 Temperature summaries and trial rows show recorded units (Celsius aliases display
 as °C). Values strictly below 28 °C, or the equivalent in recorded °F/K, are red.
