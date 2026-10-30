@@ -9,7 +9,7 @@ test('temperature opens all-epoch pages and inspects the exact source without a 
  const previous=globalThis.fetch,requests=[];
  globalThis.fetch=async url=>{
   requests.push(url);let data;
-  if(url==='/api/cells/cell/qc')data={cell:{cell_uuid:'cell',label:'Cell 1'},families:[],temperature:{recorded_count:1,missing_count:500,units:null,range:{min:30,max:30}},counts:{epochs:501},resting_voltage:{status:'unavailable'}};
+  if(url==='/api/cells/cell/qc?projection=display')data={cell:{cell_uuid:'cell',label:'Cell 1',recording_rigs:['EF'],recording_rig_missing:false},families:[],recording_seconds:125,temperature:{points:[{value:30,start_time:'09/30/2026 12:00:00'}],recorded_count:1,missing_count:500,units:null,range:{min:30,max:30}},counts:{epochs:501},resting_voltage:{status:'unavailable'}};
   else if(url.startsWith('/api/cells/cell/qc/temperature')){const offset=Number(new URL(url,'http://fixture').searchParams.get('offset'));data={total:501,has_more:offset<500,observations:[{epoch_uuid:`epoch-${offset}`,cell_uuid:'cell',recording_order:offset+1,epoch_number:2,start_time:'09/30/2026 12:00:00',status:'missing',value:null,units:null}]};}
   else if(url.startsWith('/api/epochs/'))data={epoch_uuid:url.split('/').at(-1),cell_uuid:'cell',streams:[],parameters:{},properties:{bathTemperature:null},date:'2026-09-30',metadata:{}};
   else data={fields:[]};
@@ -20,6 +20,14 @@ test('temperature opens all-epoch pages and inspects the exact source without a 
  try{
   const {default:CellQC}=await server.ssrLoadModule("/src/cell-qc/ui/CellQC.jsx");
   await act(async()=>{renderer=TestRenderer.create(React.createElement(CellQC,{cellUuid:'cell',revision:0}));});
+  const metrics=renderer.root.findByProps({className:'qc-metrics'}).findAllByType('strong').map(node=>node.children.join('')).join(' ');
+  assert.ok(metrics.includes('EF'));assert.ok(metrics.includes('2m 5s'));assert.ok(!metrics.includes('Not established'));
+  assert.equal(renderer.root.findAllByProps({className:'qc-trend'}).length,0,'Closed conditions do not construct the chart');
+  const conditions=renderer.root.findAllByType('details').find(node=>node.props.className==='qc-temperature');
+  await act(async()=>conditions.props.onToggle({currentTarget:{open:true}}));
+  assert.equal(renderer.root.findAllByProps({className:'qc-trend'}).length,1);
+  await act(async()=>conditions.props.onToggle({currentTarget:{open:false}}));
+  assert.equal(renderer.root.findAllByProps({className:'qc-trend'}).length,0);
   const findButton=label=>renderer.root.findAllByType('button').find(button=>button.children.includes(label));
   const card=renderer.root.findByProps({className:'qc-temperature-metric'});
   assert.equal(card.props['aria-expanded'],false);

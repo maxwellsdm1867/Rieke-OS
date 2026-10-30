@@ -164,3 +164,24 @@ test('whole decoded traces are byte bounded, LRU and cleared by global or epoch 
  cache.invalidateAnnotations({targets:[{target_kind:'cell',target_uuid:'cell'}]});assert.ok(cache.peekWholeTrace('c'),'tag receipts keep decoded samples');
  cache.invalidate();assert.equal(cache.peekWholeTrace('c'),undefined);
 });
+
+
+test('QC display snapshots reuse exact path/revision, expire, and exclude preparation authority',async()=>{
+ let now=0,calls=0;
+ const cache=createResourceCache({now:()=>now,ttlMs:20});
+ const request=async path=>({path,version:++calls});
+ for(const path of ['/cells/a/qc?include_baselines=false','/cells/a/qc/epochs?family=x&offset=0&limit=40','/cells/a/qc/response?epoch_uuid=e&summary_only=true']){
+  const first=await cachedResourceRequest(path,{request,cache,revision:1});
+  assert.equal(await cachedResourceRequest(path,{request,cache,revision:1}),first);
+  assert.notEqual(await cachedResourceRequest(path,{request,cache,revision:2}),first);
+  cache.invalidate(path);
+  assert.notEqual(await cachedResourceRequest(path,{request,cache,revision:1}),first);
+ }
+ for(const path of ['/cells/a/qc/block-baselines','/cells/a/qc/prepare-baselines','/cells/a/qc']){
+  const first=await cachedResourceRequest(path,{request,cache});
+  assert.notEqual(await cachedResourceRequest(path,{request,cache}),first);
+ }
+ const path='/cells/a/qc?include_baselines=false',first=await cachedResourceRequest(path,{request,cache});
+ now=21;assert.notEqual(await cachedResourceRequest(path,{request,cache}),first);
+ cache.invalidate();assert.equal(cache.stats().entries,0);
+});

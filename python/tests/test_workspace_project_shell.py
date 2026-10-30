@@ -16,6 +16,9 @@ from disco.projects.project_validation import validate_project_folder
 
 class ProjectShellTests(unittest.TestCase):
     def setUp(self):
+        library = patch("disco.projects.project_shell.ProjectData._import_trace_library")
+        self.prepare_library = library.start()
+        self.addCleanup(library.stop)
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name).resolve()
@@ -78,6 +81,7 @@ class ProjectShellTests(unittest.TestCase):
                     self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
             self.assertEqual(self.client.get('/api/overview').status_code, 409)
         self.build.assert_not_called()
+        self.prepare_library.assert_not_called()
         self.assertTrue(unused_session(self.root / 'state', self.identity))
         self.app.extensions['desktop_stop_database']()
         self.cleanup.assert_not_called()
@@ -118,6 +122,33 @@ class ProjectShellTests(unittest.TestCase):
         self.assertEqual(self.client.get('/api/projects').json['project_data']['status'], 'ready')
         self.app.extensions['desktop_stop_database']()
         self.stop_data.assert_called_once()
+
+    def test_reader_preparation_does_not_block_activation_or_metadata(self):
+        entered, release = threading.Event(), threading.Event()
+        def delayed_import():
+            entered.set()
+            self.assertTrue(release.wait(5))
+        self.prepare_library.side_effect = delayed_import
+        try:
+            self.assertEqual(self.activate().status_code, 200)
+            self.assertTrue(entered.wait(1))
+            self.assertTrue(self.data.reader_preparation.is_alive())
+            self.assertEqual(self.client.get('/api/overview').json['counts']['epochs'], 17)
+            self.assertEqual(self.activate().status_code, 200)
+            self.prepare_library.assert_called_once()
+        finally:
+            release.set()
+            self.data.reader_preparation.join(2)
+
+    def test_reader_import_failure_leaves_project_ready(self):
+        self.prepare_library.side_effect = ImportError('unavailable test library')
+        with self.assertLogs(self.app.logger, level='ERROR'):
+            self.assertEqual(self.activate().status_code, 200)
+            self.data.reader_preparation.join(2)
+        self.assertEqual(self.data.status()['status'], 'ready')
+        self.assertEqual(self.client.get('/api/overview').status_code, 200)
+        self.assertEqual(self.activate().status_code, 200)
+        self.prepare_library.assert_called_once()
 
     def test_failed_load_leaves_shell_available_and_retry_is_explicit(self):
         self.build.side_effect = FileNotFoundError('The requested recording is unavailable')

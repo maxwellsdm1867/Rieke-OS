@@ -53,3 +53,35 @@ Recording rig labels use the additive metadata-backed `recording_rigs` and
 source rigs remain distinguishable, and labels do not change scientific identity.
 `overviewPresentation.test.js` checks collapsed-row navigation, both Overview
 entries and repeated-label UUIDs; browser fixture evidence checks reveal/layout.
+
+QC's top summary shows recorded source rigs and the sum of all same-cell catalog
+epoch durations (unavailable if any duration is missing or invalid). Temperature
+keeps its observation drill-down. Optional voltage preparation remains below the
+recordings. Non-QC protocols have individual `protocol:<exact recorded name>`
+groups; duplicate short labels retain the full name. Legacy `other` paging remains
+readable. Restored `other` navigation resets its combined-list offset and resolves
+the individual protocol from the preserved selected epoch (or the first available
+protocol when no epoch was selected).
+
+QC overview, bounded trial pages and response statistics use the shared 30-second,
+entry/byte-bounded response snapshot cache under exact URL and structure revision.
+Explicit Cell QC refresh invalidates the cell's entire QC prefix before renewing
+reads. Annotation-only changes do not invalidate these annotation-free displays.
+Prepared voltage is excluded: the overview requests `projection=display`,
+and opening the voltage panel reads its existing integrity-checked endpoint.
+Accepted preparation refreshes that panel only. Trace loading proceeds independently
+of response statistics; each displayed statistic still requires matching cell and
+epoch identity. The legacy overview API defaults to including prepared voltage.
+
+First-open display requests `projection=display`: exact temperature properties,
+rigs, durations, family counts and provenance, without unused resistance payloads
+or supporting-voltage validation. The full QC API remains available. The bounded
+trial request resolves `family=default` independently using the same family order
+as the overview; explicit/restored family selection still wins and late reads are
+fenced by path/revision. Trial pages request only epoch parameters from the shared
+metadata owner. Canonical response lookup verifies both cell and epoch UUIDs
+without sorting the whole cell; custom `cell_rows` policy retains its old path.
+
+The collapsed temperature/conditions disclosure constructs its trend only when
+opened. Recorded points, units and range remain unchanged; opening/closing is
+presentation state and issues no preparation command or additional data read.

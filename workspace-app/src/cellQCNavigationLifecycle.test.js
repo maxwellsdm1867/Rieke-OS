@@ -8,8 +8,8 @@ async function setup(){
   const route=url.pathname.replace('/api','');
   if(route==='/cells/cell-0/qc')return {cell:{cell_uuid:'cell-0',label:'Cell 0',cell_type:'RGC/ON-parasol'},counts:{epochs:2},families:[{id:'a',label:'Family A',epoch_count:1},{id:'b',label:'Family B',epoch_count:1}]};
   if(route==='/cells/cell-0/qc/epochs'){
-   const id=url.searchParams.get('family')==='a'?'epoch-0':'epoch-1';
-   const result={epochs:[{epoch_uuid:id,epoch_number:id==='epoch-0'?1:2}],total:1};
+   const id=['a','default'].includes(url.searchParams.get('family'))?'epoch-0':'epoch-1';
+   const result={family:id==='epoch-0'?'a':'b',epochs:[{epoch_uuid:id,epoch_number:id==='epoch-0'?1:2}],total:1};
    return h.fixture.holdRows?.(url,options,result)??result;
   }
   if(route==='/cells/cell-0/qc/response'){
@@ -24,7 +24,7 @@ async function setup(){
  return {h,Component,frame,family:name=>h.root.findByProps({className:'qc-families'}).findAllByType('button').find(n=>n.findByType('span').children.join('')===name)};
 }
 
-test('QC keeps its list and committed frame through a delayed family change, then publishes a matching epoch/summary',async()=>{
+test('QC renders the exact new trial without waiting for a delayed response summary',async()=>{
  const {h,frame,family}=await setup();let release;
  try{
   const identity=h.root.findByProps({className:'qc-cell-type'});
@@ -34,9 +34,9 @@ test('QC keeps its list and committed frame through a delayed family change, the
   await h.act(()=>family('Family B').props.onClick());await h.waitFor(()=>!!release);
   assert.equal(h.root.findByProps({className:'qc-trial-list'}),list);
   assert.equal(h.root.findByProps({className:'qc-recording'}),recording);
-  assert.equal(frame().props['aria-busy'],true);
-  assert.equal(frame().findByProps({className:'stable-content-body'}).props.inert,true);
-  assert.equal(h.root.findByProps({className:'qc-trace-identity'}).findByType('code').children.join(''),'epoch-0');
+  await h.waitFor(()=>!frame().props['aria-busy']);
+  assert.equal(h.root.findByProps({className:'qc-trace-identity'}).findByType('code').children.join(''),'epoch-1');
+  assert.equal(h.root.findAllByProps({className:'qc-response-stats'}).length,0,'Old trial statistics cannot accompany the new trace');
   await h.act(()=>release());await h.waitFor(()=>!frame().props['aria-busy']);
   assert.equal(h.root.findByProps({className:'qc-recording'}),recording);
   assert.equal(h.root.findByProps({className:'qc-trace-identity'}).findByType('code').children.join(''),'epoch-1');
@@ -94,4 +94,78 @@ test('a confirmed QC tag is shown from its write receipt with no rereads',async(
   const text=JSON.stringify(h.root.findByProps({className:'page cell-qc'}).findAll(node=>typeof node.children?.[0]==='string').map(node=>node.children.join('')));
   assert.match(text,/qc-tag/);
  }finally{await h.close();}
+});
+
+
+test('legacy Other sessions restore the selected exact protocol and discard the combined-list offset',async()=>{
+ const h=await createWorkflowHarness();
+ try{
+  h.fixture.respond=(url,options,fallback)=>{
+   const route=url.pathname.replace('/api','');
+   if(route==='/cells/cell-0/qc')return {cell:{cell_uuid:'cell-0',label:'Cell 0'},counts:{epochs:2},families:[
+    {id:'protocol:lab.Movie',label:'Movie',epoch_count:1,protocol_names:['lab.Movie']},
+    {id:'protocol:lab.Noise',label:'Noise',epoch_count:1,protocol_names:['lab.Noise']}]};
+   if(route==='/cells/cell-0/qc/epochs')return {epochs:[{epoch_uuid:url.searchParams.get('family')==='protocol:lab.Noise'?'epoch-1':'epoch-0'}],total:1};
+   if(route==='/cells/cell-0/qc/response')return {cell_uuid:'cell-0',epoch_uuid:url.searchParams.get('epoch_uuid'),statistics:{units:'mV'}};
+   if(route==='/epochs/epoch-1')return {...fallback(),protocol_name:'lab.Noise'};
+   return fallback();
+  };
+  const Component=await h.component('CellQC');
+  await h.mount(Component,{cellUuid:'cell-0',revision:0,session:{family:'other',offset:40,selected:'epoch-1'}});
+  const selected=()=>h.root.findByProps({className:'qc-families'}).findAllByType('button').find(node=>node.props['aria-pressed']);
+  await h.waitFor(()=>selected()?.findByType('span').children.join('')==='Noise');
+  await h.waitFor(()=>h.root.findAllByProps({className:'qc-trace-identity'}).some(node=>node.findByType('code').children.join('')==='epoch-1'));
+  const pages=h.fixture.requests.filter(request=>request.path.includes('/qc/epochs?')).map(request=>new URL(request.path,'http://fixture').searchParams);
+  assert.ok(pages.some(query=>query.get('family')==='protocol:lab.Noise'));
+  assert.ok(pages.every(query=>query.get('offset')==='0'));
+  assert.ok(pages.every(query=>query.get('family')!=='other'));
+ }finally{await h.close();}
+});
+
+
+test('QC revisit reuses bounded reads while refresh and structure revisions renew them',async()=>{
+ const {h,Component}=await setup();
+ try{
+  const props={cellUuid:'cell-0',revision:0,structureRevision:0};
+  await h.render(Component,props);
+  const before=h.fixture.requests.length;
+  await h.render(Component,{...props,key:'revisit'});
+  await h.waitFor(()=>h.root.findAllByProps({className:'qc-trace-identity'}).length>0);
+  assert.deepEqual(h.fixture.requests.slice(before).filter(r=>r.path.startsWith('/cells/')),[]);
+  await h.act(()=>h.root.findByProps({'aria-label':'Refresh cell quality'}).props.onClick());
+  await h.waitFor(()=>h.fixture.requests.slice(before).filter(r=>r.path.startsWith('/cells/')).length===3);
+  const refreshed=h.fixture.requests.length;
+  await h.render(Component,{...props,key:'revisit',structureRevision:1});
+  await h.waitFor(()=>h.fixture.requests.slice(refreshed).filter(r=>r.path.startsWith('/cells/')).length===3);
+ }finally{await h.close();}
+});
+
+test('first trial reads precede a held overview and late default pages cannot replace explicit family choice',async()=>{
+ const h=await createWorkflowHarness();let releaseOverview,pendingDefault,holdOverview=true,holdDefault=false;
+ const overview={cell:{cell_uuid:'cell-0',label:'Cell 0'},counts:{epochs:2},families:[{id:'a',label:'Family A',epoch_count:1},{id:'b',label:'Family B',epoch_count:1}]};
+ try{
+  h.fixture.respond=(url,options,fallback)=>{
+   const route=url.pathname.replace('/api','');
+   if(route==='/cells/cell-0/qc')return holdOverview?new Promise(resolve=>releaseOverview=()=>resolve(overview)):overview;
+   if(route==='/cells/cell-0/qc/epochs'){
+    const family=url.searchParams.get('family')==='b'?'b':'a';
+    const value={family,epochs:[{epoch_uuid:family==='a'?'epoch-0':'epoch-1'}],total:1};
+    return holdDefault&&url.searchParams.get('family')==='default'?new Promise(resolve=>pendingDefault={signal:options.signal,release:()=>resolve(value)}):value;
+   }
+   if(route==='/cells/cell-0/qc/response')return {cell_uuid:'cell-0',epoch_uuid:url.searchParams.get('epoch_uuid'),statistics:{units:'mV'}};
+   return fallback();
+  };
+  const Component=await h.component('CellQC');await h.mount(Component,{cellUuid:'cell-0',revision:0});
+  await h.waitFor(()=>h.fixture.requests.some(r=>r.path.startsWith('/cells/cell-0/qc/response?')));
+  assert.ok(releaseOverview,'Overview is still pending while the trial and response load');
+  holdOverview=false;await h.act(()=>releaseOverview());
+  await h.waitFor(()=>h.root.findAllByProps({className:'qc-trace-identity'}).length>0);
+  holdDefault=true;await h.act(()=>h.root.findByProps({'aria-label':'Refresh cell quality'}).props.onClick());
+  await h.waitFor(()=>!!pendingDefault);
+  const button=h.root.findByProps({className:'qc-families'}).findAllByType('button').find(n=>n.findByType('span').children.join('')==='Family B');
+  await h.act(()=>button.props.onClick());
+  await h.waitFor(()=>h.root.findAllByProps({className:'qc-trace-identity'}).some(n=>n.findByType('code').children.join('')==='epoch-1'));
+  await h.act(()=>pendingDefault.release());
+  assert.equal(h.root.findByProps({className:'qc-trace-identity'}).findByType('code').children.join(''),'epoch-1');
+ }finally{releaseOverview?.();pendingDefault?.release();await h.close();}
 });

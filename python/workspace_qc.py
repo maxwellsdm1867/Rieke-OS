@@ -69,14 +69,16 @@ class CellQC:
     def _params(self, row):
         return self.service.details[row['epoch_uuid']].get('parameters', {})
 
-    def _details(self, rows):
+    def _details(self, rows, *, fields=None):
         """Yield (row, detail) in row order; one bulk read when the mapping offers it."""
+        projected = getattr(self.service.details, 'projected_many', None) if fields else None
         many = getattr(self.service.details, 'many', None)
         if many is None:
             for row in rows:
                 yield row, self.service.details[row['epoch_uuid']]
             return
-        details = dict(many(row['epoch_uuid'] for row in rows))
+        identities = [row['epoch_uuid'] for row in rows]
+        details = dict(projected(identities, fields) if projected else many(identities))
         for row in rows:
             yield row, details[row['epoch_uuid']]
 
@@ -102,30 +104,53 @@ class CellQC:
                         'source_sha256': row['source_sha256']})
         return measurements
 
-    def overview(self, cell_uuid):
+    def overview(self, cell_uuid, *, include_baselines=True, display_only=False):
         rows = self.rows(cell_uuid)
-        cell = self.service.cells[str(uuid.UUID(cell_uuid))]
+        from workspace_api import recording_rig_summary
+        cell = copy.deepcopy(self.service.cells[str(uuid.UUID(cell_uuid))])
+        cell.update(recording_rig_summary(
+            {row['source_sha256'] for row in rows},
+            {source['source_sha256']: source for source in self.service.sources}))
+        durations = [row.get('duration_seconds') for row in rows]
+        recording_seconds = sum(durations) if durations and all(number(value) and value >= 0 for value in durations) else None
         observations, measured, compensation = [], [], []
         seen_resistance, seen_compensation = set(), set()
         # Read each epoch's detail once in this request (one bulk read on the
         # sealed index), then discard it; no summary survives to a later request.
-        for index, (row, detail) in enumerate(self._details(rows)):
+        for index, (row, detail) in enumerate(self._details(rows, fields=('properties',) if display_only else None)):
             observations.append(self._temperature(row, index + 1, detail=detail))
-            measured.extend(self._metadata_values(row, detail, RESISTANCE_FIELDS, seen_resistance))
-            compensation.extend(self._metadata_values(row, detail, {'seriesResistanceCompensation'}, seen_compensation))
+            if not display_only:
+                measured.extend(self._metadata_values(row, detail, RESISTANCE_FIELDS, seen_resistance))
+                compensation.extend(self._metadata_values(row, detail, {'seriesResistanceCompensation'}, seen_compensation))
         points = [item for item in observations if item['status'] == 'recorded']
         recorded_units = {item['units'] for item in points}
         same_units = len(recorded_units) == 1
         has_resistance = any(item['numeric'] for item in measured)
-        baseline = self.prepared_baselines(cell_uuid, rows=rows)
+        baseline = self.prepared_baselines(cell_uuid, rows=rows) if include_baselines and not display_only else {}
         block_count = len({r['block_uuid'] for r in rows if family(r) == 'current_noise'})
+        family_rows, protocol_rows = {}, {}
+        for row in rows:
+            kind = family(row)
+            family_rows.setdefault(kind, []).append(row)
+            if kind == 'other':
+                protocol_rows.setdefault(row['protocol_name'], []).append(row)
         families = []
         for key, (label, _) in FAMILIES.items():
-            members = [r for r in rows if family(r) == key]
+            if key == 'other':
+                continue
+            members = family_rows.get(key, [])
             families.append({'id': key, 'label': label, 'epoch_count': len(members),
                 'blocks': len({r['block_uuid'] for r in members}),
                 'protocol_names': sorted({r['protocol_name'] for r in members})})
-        return {'cell': copy.deepcopy(cell), 'scope': 'main_catalog_same_cell_uuid',
+        other_protocols = sorted(protocol_rows)
+        for protocol in other_protocols:
+            members = protocol_rows[protocol]
+            short = protocol.rsplit('.', 1)[-1]
+            label = short if sum(name.rsplit('.', 1)[-1] == short for name in other_protocols) == 1 else protocol
+            families.append({'id': 'protocol:' + protocol, 'label': label,
+                'epoch_count': len(members), 'blocks': len({r['block_uuid'] for r in members}),
+                'protocol_names': [protocol]})
+        result = {'recording_seconds': recording_seconds, 'cell': cell, 'scope': 'main_catalog_same_cell_uuid',
             'scope_note': 'All recorded epochs for this cell UUID, including epochs outside protocol working sets and local inclusion masks.',
             'counts': {'epochs': len(rows), 'blocks': len({r['block_uuid'] for r in rows}),
                 'groups': len({r['group_uuid'] for r in rows}), 'protocols': len({r['protocol_name'] for r in rows})},
@@ -151,6 +176,9 @@ class CellQC:
                 {'id': 'condition_response_summary', 'label': 'Recorded response summary', 'status': 'available', 'reason': 'Raw signal window means in the recorded stream units, grouped within acquisition block and exact parameters; no event classification, firing-rate or receptive-field interpretation.'},
                 {'id': 'spike_rate_receptive_field', 'status': 'unvalidated_adapter', 'reason': 'RetinAnalysis ExpandingSpotsPipeline.get_stim_nspikes/plot_rf exists, but spike detector and acquisition/clamp configuration need validation before automatic QC use.'},
                 {'id': 'baseline_drift_interpolant', 'status': 'unavailable', 'reason': RESTING_REASON}]}
+        if display_only:
+            result.pop('resistance')
+        return result
 
     def _temperature(self, row, order, *, detail=None):
         properties = (self.service.details[row['epoch_uuid']] if detail is None else detail).get('properties', {})
@@ -177,15 +205,23 @@ class CellQC:
             'has_more': offset + limit < len(rows)}
 
     def epochs(self, cell_uuid, family_id=None, offset=0, limit=50):
-        if family_id is not None and family_id not in FAMILIES:
+        all_rows = self.rows(cell_uuid)
+        if family_id == 'default':
+            present = {family(row) for row in all_rows}
+            family_id = next((key for key in FAMILIES if key != 'other' and key in present), None)
+            if family_id is None and all_rows:
+                family_id = 'protocol:' + min(row['protocol_name'] for row in all_rows)
+        protocol = family_id.removeprefix('protocol:') if family_id and family_id.startswith('protocol:') else None
+        if family_id is not None and family_id not in FAMILIES and not protocol:
             raise ValueError('Unknown QC protocol family')
         if type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 100:
             raise ValueError('QC epoch page requires nonnegative offset and limit 1–100')
-        rows = [r for r in self.rows(cell_uuid) if family_id is None or family(r) == family_id]
+        rows = [r for r in all_rows if family_id is None
+                or (r['protocol_name'] == protocol if protocol is not None else family(r) == family_id)]
         values = [{**copy.deepcopy(row), 'parameters': detail.get('parameters', {}),
             'source_filename': Path(self.service.manifests[row['source_sha256']]['source_path']).name}
-            for row, detail in self._details(rows[offset:offset+limit])]
-        return {'epochs': values, 'total': len(rows), 'offset': offset, 'limit': limit,
+            for row, detail in self._details(rows[offset:offset+limit], fields=('parameters',))]
+        return {'family': family_id, 'epochs': values, 'total': len(rows), 'offset': offset, 'limit': limit,
                 'has_more': offset + limit < len(rows)}
 
     def _response_stream(self, row, stream_uuid=None):
@@ -205,9 +241,18 @@ class CellQC:
         return stream
 
     def response(self, cell_uuid, epoch_uuid, stream_uuid=None, *, summary_only=False):
-        identity = str(uuid.UUID(epoch_uuid))
-        row = next((r for r in self.rows(cell_uuid) if r['epoch_uuid'] == identity), None)
-        if row is None:
+        identity, cell = str(uuid.UUID(epoch_uuid)), str(uuid.UUID(cell_uuid))
+        from workspace_service import WorkspaceService
+        if getattr(self.service.cell_rows, '__func__', None) is WorkspaceService.cell_rows:
+            self.service._ready()
+            if cell not in self.service.cells:
+                raise KeyError('Cell is not in the main project catalog')
+            row = self.service.rows.get(identity)
+        else:
+            # Preserve custom membership policy; canonical index-less adapters
+            # still use the exact registered row lookup above.
+            row = next((r for r in self.rows(cell) if r['epoch_uuid'] == identity), None)
+        if row is None or row['cell_uuid'] != cell or row['epoch_uuid'] != identity:
             raise ValueError('Epoch does not belong to this cell UUID')
         stream = self._response_stream(row, stream_uuid)
         parameters = self._params(row)
@@ -487,9 +532,18 @@ def register_qc_routes(app, service, db_lock):
 
     @app.get('/api/cells/<cell_uuid>/qc')
     def cell_qc(cell_uuid):
-        options({})
+        options({'include_baselines', 'projection'})
+        projection = request.args.get('projection', 'full')
+        if projection not in {'full', 'display'}:
+            raise ValueError('Unknown cell QC projection')
+        include = request.args.get('include_baselines', 'false' if projection == 'display' else 'true')
+        if include not in {'true', 'false'}:
+            raise ValueError('include_baselines must be true or false')
+        if projection == 'display' and include == 'true':
+            raise ValueError('The display projection defers supporting voltage')
         with db_lock:
-            return jsonify(qc.overview(cell_uuid))
+            return jsonify(qc.overview(cell_uuid, include_baselines=include == 'true',
+                display_only=projection == 'display'))
 
     @app.get('/api/cells/<cell_uuid>/qc/epochs')
     def cell_qc_epochs(cell_uuid):

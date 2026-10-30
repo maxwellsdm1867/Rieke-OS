@@ -43,6 +43,44 @@ class CellQCTests(unittest.TestCase):
         self.service.rows[self.ids[1]]['cell_uuid'] = self.cell
         self.service.rows[self.ids[1]]['cell_label'] = 'Cell1'
 
+    def test_light_overview_defers_prepared_voltage_validation(self):
+        from unittest.mock import patch
+        with patch.object(self.qc, 'prepared_baselines', side_effect=AssertionError('voltage must stay lazy')):
+            result = self.qc.overview(self.cell, include_baselines=False)
+        self.assertEqual(result['resting_voltage']['supporting_measurements'], {})
+        full = self.qc.overview(self.cell)
+        self.assertEqual({k: v for k, v in result.items() if k != 'resting_voltage'},
+                         {k: v for k, v in full.items() if k != 'resting_voltage'})
+
+    def test_display_projection_preserves_visible_facts_and_default_family_order(self):
+        self.same_cell()
+        self.service.rows[self.ids[0]]['protocol_name'] = 'lab.Movie'
+        self.service.rows[self.ids[1]]['protocol_name'] = 'lab.CurrentStep'
+        full = self.qc.overview(self.cell, include_baselines=False)
+        display = self.case.client.get(self.base + '?projection=display').get_json()
+        self.assertNotIn('resistance', display)
+        self.assertEqual(display, {k: v for k, v in full.items() if k != 'resistance'})
+        page = self.case.client.get(self.base + '/epochs?family=default&limit=1').get_json()
+        self.assertEqual(page['family'], 'current_step')
+        self.assertEqual([r['epoch_uuid'] for r in page['epochs']], [self.ids[1]])
+        self.service.rows[self.ids[1]]['protocol_name'] = 'lab.AMovie'
+        page = self.qc.epochs(self.cell, 'default')
+        self.assertEqual(page['family'], 'protocol:lab.AMovie')
+        for query in ('projection=unknown', 'projection=display&include_baselines=true', 'projection=display&projection=full'):
+            self.assertEqual(self.case.client.get(self.base + '?' + query).status_code, 400)
+
+    def test_response_uses_exact_registered_row_but_preserves_custom_cell_policy(self):
+        from unittest.mock import patch
+        with patch.object(self.qc, 'rows', side_effect=AssertionError('No cohort sort for one response')):
+            result = self.qc.response(self.cell, self.ids[0], summary_only=True)
+        self.assertEqual(result['cell_uuid'], self.cell)
+        with patch.object(self.service, 'cell_rows', return_value=[]):
+            with self.assertRaisesRegex(ValueError, 'does not belong'):
+                self.qc.response(self.cell, self.ids[0], summary_only=True)
+        self.service.rows[self.ids[0]]['epoch_uuid'] = self.ids[1]
+        with self.assertRaisesRegex(ValueError, 'does not belong'):
+            self.qc.response(self.cell, self.ids[0], summary_only=True)
+
     def test_overview_reads_each_detail_once_and_rechecks_changes_on_next_request(self):
         self.same_cell()
         backing = self.service.details
@@ -104,6 +142,38 @@ class CellQCTests(unittest.TestCase):
         self.assertFalse(self.case.events.rows)
         self.assertFalse(self.case.curation.rows)
         self.assertFalse(self.case.datasets.rows)
+
+    def test_other_protocols_are_distinct_exact_names_and_pages(self):
+        self.same_cell()
+        names = ['lab.one.UnusualProtocol', 'lab.two.UnusualProtocol']
+        for identity, name in zip(self.ids, names):
+            self.service.rows[identity]['protocol_name'] = name
+        groups = self.qc.overview(self.cell)['families']
+        self.assertNotIn('other', [group['id'] for group in groups])
+        for identity, name in zip(self.ids, names):
+            group = next(group for group in groups if group['id'] == 'protocol:' + name)
+            self.assertEqual(group['label'], name)
+            self.assertEqual(group['epoch_count'], 1)
+            page = self.case.client.get(self.base + '/epochs', query_string={'family': group['id'], 'limit': 1}).get_json()
+            self.assertEqual([row['epoch_uuid'] for row in page['epochs']], [identity])
+            self.assertEqual(page['total'], 1)
+        self.service.trace.assert_not_called()
+
+    def test_recording_summary_uses_source_rig_and_complete_epoch_durations(self):
+        self.same_cell()
+        self.service.sources[0]['metadata'] = {'rig': 'EF', 'rig_type': 'PATCH'}
+        for identity, seconds in zip(self.ids, [2.5, 3.5]):
+            self.service.rows[identity]['duration_seconds'] = seconds
+        result = self.qc.overview(self.cell)
+        self.assertEqual(result['cell']['recording_rigs'], ['EF'])
+        self.assertFalse(result['cell']['recording_rig_missing'])
+        self.assertEqual(result['recording_seconds'], 6.)
+        self.service.rows[self.ids[1]]['duration_seconds'] = None
+        self.service.sources[0]['metadata'] = {'rig_type': 'PATCH'}
+        result = self.qc.overview(self.cell)
+        self.assertIsNone(result['recording_seconds'])
+        self.assertEqual(result['cell']['recording_rigs'], [])
+        self.assertTrue(result['cell']['recording_rig_missing'])
 
     def test_compensation_is_not_a_resistance_measurement(self):
         details = self.service.details[self.ids[0]]
