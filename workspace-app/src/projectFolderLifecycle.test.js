@@ -14,10 +14,14 @@ async function fixture({activate,confirm,closeStatus=200}={}){
  window.riekeDesktop={async activateProject(url){events.push(['activate',url]);await activate?.();return {activated:true};},async prepareProjectClose(value){assert.deepEqual(value,identity);events.push(['prepare']);},async confirmProjectClosed(value){assert.deepEqual(value,identity);events.push(['confirm']);await confirm?.();return {closed:true};},async cancelProjectClose(){events.push(['cancel']);}};
  globalThis.fetch=async(url)=>{events.push([url]);const data=url==='/api/projects/inspect-folder'?{valid:true,kind:'project'}:url==='/api/projects/open-folder'?{url:'http://127.0.0.1:41002/'}:url==='/api/project/close'?closeStatus===200?{state:'closed',launcher_url:'http://127.0.0.1:41000/'}:{error:'Project busy'}:{};return new Response(JSON.stringify(data),{status:url==='/api/project/close'?closeStatus:200});};
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
+ const lifecycle=await server.ssrLoadModule('/src/desktopLifecycle.js');let releaseFence;
+ const prepare=window.riekeDesktop.prepareProjectClose,cancel=window.riekeDesktop.cancelProjectClose;
+ window.riekeDesktop.prepareProjectClose=async value=>{await prepare(value);releaseFence=lifecycle.beginProjectUnmount();};
+ window.riekeDesktop.cancelProjectClose=async value=>{await cancel(value);releaseFence?.();};
  const {default:ProjectFolder}=await server.ssrLoadModule('/src/project-workspace/ui/ProjectFolder.jsx');const root=createRoot(document.querySelector('main'));let closed=0;
  await act(async()=>root.render(React.createElement(ProjectFolder,{project:{uuid:'project',path:'/owned/current',name:'Current',database_kind:'native-mysql'},initialDirectory:'/owned/other',onClose:()=>{closed++;}})));
  const button=label=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()===label);
- return {events,button,get closed(){return closed;},async click(label){await act(async()=>{button(label).click();await new Promise(r=>setTimeout(r,10));});},async close(){await act(()=>root.unmount());await server.close();dom.window.close();for(const [key,value] of Object.entries(previous)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}};
+ return {events,button,get closed(){return closed;},async click(label){await act(async()=>{button(label).click();await new Promise(r=>setTimeout(r,10));});},async close(){releaseFence?.();await act(()=>root.unmount());await server.close();dom.window.close();for(const [key,value] of Object.entries(previous)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}};
 }
 test('folder opening completes the originating retained dialog only after native activation',async()=>{
  let release;const held=new Promise(r=>release=r);const h=await fixture({activate:()=>held});try{

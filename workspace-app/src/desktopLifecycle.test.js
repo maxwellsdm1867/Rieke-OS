@@ -48,7 +48,7 @@ test('project checkpoint runs hidden dirty guards, permits close request, and re
  try{
   await prepare({requestId:'blocked',purpose:'project-checkpoint'});assert.equal(ack.ok,false);assert.match(ack.reason,/hidden draft/);assert.doesNotThrow(()=>assertDesktopWritable('/edit'));
   stop();await prepare({requestId:'saved',purpose:'project-checkpoint'});assert.equal(ack.ok,true);
-  assert.throws(()=>assertDesktopWritable('/edit'),/unmounting/);assert.doesNotThrow(()=>assertDesktopWritable('/projects/unmount'));
+  assert.throws(()=>assertDesktopWritable('/edit'),/unmounting/);assert.doesNotThrow(()=>assertDesktopWritable('/projects/unmount'));assert.doesNotThrow(()=>assertDesktopWritable('/project/close'));
   resume();assert.doesNotThrow(()=>assertDesktopWritable('/edit'));
  }finally{stop();uninstall();}
 });
