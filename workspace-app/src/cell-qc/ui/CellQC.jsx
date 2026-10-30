@@ -45,7 +45,8 @@ function solutionText(value){
   if(typeof value==='string'){
     const text=value.trim();
     if(text.startsWith('[')||text.startsWith('{')){try{return solutionText(JSON.parse(text));}catch{/* Retain non-JSON recorded descriptions verbatim. */}}
-    return /^(none|no additions?|not recorded|n\/a|null|unknown)$/i.test(text)?'':text;
+    if(/^(n\/?a|not applicable)$/i.test(text))return 'N/A';
+    return /^(none|no additions?|not recorded|null)$/i.test(text)?'':text;
   }
   if(typeof value==='object'){
     if('quantity' in value)return value.quantity==null?'':`${solutionText(value.quantity)}${value.units?` ${value.units}`:''}`;
@@ -55,7 +56,7 @@ function solutionText(value){
 }
 function conditionSummary(groups=[]){
   const internal=[...new Set(groups.map(row=>solutionText(row.pipette_solution)).filter(Boolean))];
-  const drugs=[...new Set(groups.flatMap(row=>[['External',row.external_additions],['Internal',row.internal_additions]].map(([where,value])=>{const text=solutionText(value);return text?`${where}: ${text}`:'';}).filter(Boolean)))];
+  const drugs=[...new Set(groups.flatMap(row=>[['External',row.external_additions],['Internal',row.internal_additions]].map(([where,value])=>{const text=solutionText(value);return text&&!/^(N\/A|unknown)$/i.test(text)?`${where}: ${text}`:'';}).filter(Boolean)))];
   const missing=groups.filter(row=>!solutionText(row.pipette_solution)).length;
   const provenance=groups.map(row=>`${row.group_label||row.group_uuid}: Internal solution ${solutionText(row.pipette_solution)||'Not recorded'}; external additions ${solutionText(row.external_additions)||'None recorded'}; internal additions ${solutionText(row.internal_additions)||'None recorded'}`).join('\n');
   return {internal,drugs,missing,provenance};

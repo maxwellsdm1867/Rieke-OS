@@ -101,3 +101,9 @@ solutions remain visible; missing groups are disclosed rather than filled in.
 The display overview reads a single full detail per source/group for shared
 conditions, alongside the existing inline temperature projection. It does not
 copy full ancestors per epoch or add a read endpoint or preparation command.
+
+Literal NA/N/A/not applicable is preserved as N/A, including the internal-solution
+summary and per-group provenance. Missing/null remains Not recorded. Technique or
+protocol names never synthesize N/A. N/A-only additions do not create a drug card.
+The observed project catalog has pipetteSolution plus internal/external additions;
+a base external-solution field is not inferred from those addition fields.
