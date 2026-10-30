@@ -44,6 +44,7 @@ class RuntimeRefreshTests(unittest.TestCase):
                         patch.object(runtime_builder, 'scientific_preflight', return_value={}) as preflight, \
                         patch.object(runtime_builder, 'build_frontend') as frontend, \
                         patch.object(runtime_builder, 'copy_application') as copy, \
+                        patch.object(runtime_builder, 'build_trace_native', return_value={}), \
                         patch.object(runtime_builder, 'refresh_native_license_inventory'), \
                         patch.object(runtime_builder, 'run') as run:
                     original = json.dumps({'runtime_build_inputs': runtime_builder.runtime_build_inputs()})
@@ -76,6 +77,7 @@ class RuntimeRefreshTests(unittest.TestCase):
                     patch.object(runtime_builder, 'scientific_preflight') as preflight, \
                     patch.object(runtime_builder, 'build_frontend') as frontend, \
                     patch.object(runtime_builder, 'copy_application') as copy, \
+                    patch.object(runtime_builder, 'build_trace_native', return_value={}) as trace, \
                     patch.object(runtime_builder, 'refresh_native_license_inventory') as licenses, \
                     patch.object(runtime_builder, 'run') as run:
                 current = runtime_builder.runtime_build_inputs()
@@ -91,12 +93,12 @@ class RuntimeRefreshTests(unittest.TestCase):
                         with self.assertRaisesRegex(ValueError, 'fresh pinned runtime'):
                             runtime_builder.main()
                         self.assertEqual(receipt_path.read_text(), original)
-                        for operation in (preflight, frontend, copy, licenses, run):
+                        for operation in (preflight, frontend, copy, trace, licenses, run):
                             operation.assert_not_called()
                 receipt_path.write_text(json.dumps(receipts[1]))
                 preflight.return_value = {'native_imports': 'passed'}
                 runtime_builder.main()
-                for operation in (preflight, frontend, copy, licenses, run):
+                for operation in (preflight, frontend, copy, trace, licenses, run):
                     operation.assert_called_once()
                 refreshed = json.loads(receipt_path.read_text())
                 self.assertEqual(refreshed['runtime_build_inputs'], current)
