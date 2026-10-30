@@ -98,3 +98,5 @@ restore/migration chooser. App closes the originating setup only after project
 selection completes successfully, including a retained desktop activation. This
 also completes create-and-open before returning to the originating retained view;
 `presentationSessionsApp.test.js` exercises both setup callbacks and failures.
+
+ProjectFolder uses the native activation bridge and closes its originating dialog only after an affirmative activation receipt; a retained document never stays busy awaiting browser unload. Native Close project prepares the exact UUID/path and waits for authenticated child-exit confirmation before releasing its view. Definite pre-shutdown refusal cancels preparation; uncertain shutdown retains the fence. Browser-only navigation retains its ordinary local-URL behavior. Mounted cases live in `../projectFolderLifecycle.test.js`.

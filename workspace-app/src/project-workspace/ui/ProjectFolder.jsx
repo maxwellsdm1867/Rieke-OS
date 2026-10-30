@@ -4,7 +4,7 @@ import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {Activity,ArrowRight,Check,CheckCircle2,ChevronRight,Clock3,Copy,Database,Download,Files,FolderOpen,LoaderCircle,LogOut,Package,Search,ShieldCheck,Tags,X} from 'lucide-react';
 import {api} from '../../api.js';
-import {flushDesktopDrafts} from '../../desktopLifecycle.js';
+import {flushDesktopDrafts,desktopBridge} from '../../desktopLifecycle.js';
 import {inspectAndOpenProject,localProjectUrl,runProjectTransfer} from '../projectTransfer.js';
 import './ProjectFolder.css';
 import FolderPathInput from '../../file-picker/ui/FolderPathInput.jsx';
@@ -47,18 +47,30 @@ export default function ProjectFolder({project,onClose,onFiles,initialMode='open
         return;
       }
       setOpenPath(response.directory);setRelocate(false);
-      window.location.assign(localProjectUrl(response.url,window.location.href));
+      const url=localProjectUrl(response.url,window.location.href),bridge=desktopBridge();
+      if(bridge?.activateProject){
+        const activated=await bridge.activateProject(url);
+        if(activated?.activated!==true)throw new Error('The desktop did not confirm project activation.');
+        setBusy(false);setOpening(false);onClose();
+      }else window.location.assign(url);
     }catch(error){setError(error.message);setBusy(false);setOpening(false);}
   }
   async function closeProject(){
     if(busy)return;
     setBusy(true);setClosing(true);setError('');
+    const bridge=desktopBridge(),identity={projectUuid:project?.uuid,path:project?.path};let prepared=false,requested=false;
     try{
       await flushDesktopDrafts();
+      if(bridge?.prepareProjectClose&&bridge?.confirmProjectClosed){await bridge.prepareProjectClose(identity);prepared=true;}
+      requested=true;
       const response=await api('/project/close',{method:'POST',body:{}});
       if(response.state!=='closed')throw new Error('The project did not confirm a clean close. Keep its folder in place.');
+      if(prepared){await bridge.confirmProjectClosed(identity);onClose();return;}
       const launcher=new URL(localProjectUrl(response.launcher_url,window.location.href));if(project?.path)launcher.searchParams.set('closed_project',project.path);if(mode==='prepare')launcher.searchParams.set('share_project',directory.trim());window.location.assign(launcher.href);
-    }catch(error){setError(error.message);setBusy(false);setClosing(false);}
+    }catch(error){
+      if(prepared&&(!requested||(error.status>=400&&error.status<500&&error.status!==408&&error.data?.ready!==false&&!error.data?.close_unconfirmed)))await bridge.cancelProjectClose?.(identity);
+      setError(error.message);setBusy(false);setClosing(false);
+    }
   }
   async function submit(event){
     event.preventDefault();if(busy||!directory.trim()||!destination.trim()||(mode==='restore'&&!inspection))return;

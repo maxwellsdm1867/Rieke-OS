@@ -8,6 +8,7 @@ DISCO 0.2.7 brings together the locally tested Cell QC and clean-close changes.
 - Structural tree paging reuses compact indexes while preserving exact branch counts, epoch order, scope freshness, and existing prepared-view behavior.
 - Cell QC starts the first trial independently of optional summaries and avoids repeated metadata reads. H5 reader preparation starts after project activation.
 - Native process ownership remains stable across macOS clock changes. Clean-close retries preserve completed preparation and expose the failing shutdown phase.
+- Opening a project completes the originating retained dialog after native activation; Close project and Unmount share verified child-exit confirmation.
 - Project unmount waits for verified child-process exit after the clean-close response, preserving the paused view if closure cannot be confirmed.
 - Invalid update preparations are rejected before changing the selected runtime or creating a launch handoff.
 - Runtime refresh refuses reuse when dependency or build inputs no longer match; annotation acknowledgment tests hold background reads to check the actual dependency.
