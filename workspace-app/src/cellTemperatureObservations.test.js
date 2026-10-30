@@ -74,7 +74,7 @@ test('internal solution is always shown and drug additions appear only when reco
  let renderer;
  try{
   const {default:CellQC}=await server.ssrLoadModule('/src/cell-qc/ui/CellQC.jsx');
-  for(const [conditions,expected,hasDrug] of [[[],['Internal solution','Not recorded'],false],[[{group_label:'Control',pipette_solution:'K-gluconate',external_additions:[],internal_additions:null}],['K-gluconate'],false],[[{group_label:'Drug',pipette_solution:'Cs-based',external_additions:['AP5 50 µM'],internal_additions:'QX-314 5 mM'}],['Cs-based','External: AP5 50 µM','Internal: QX-314 5 mM'],true]]){
+  for(const [conditions,expected,hasDrug] of [[[],['Internal solution','Not recorded'],false],[[{group_label:'Control',pipette_solution:'K-gluconate',external_additions:[],internal_additions:null}],['K-gluconate'],false],[[{group_label:'Control',pipette_solution:null,external_additions:'[]',internal_additions:'null'}],['Internal solution','Not recorded'],false],[[{group_label:'Drug',pipette_solution:'K-gluconate',external_additions:'["AP5 50 µM"]'}],['External: AP5 50 µM'],true],[[{group_label:'Drug',pipette_solution:'Cs-based',external_additions:['AP5 50 µM'],internal_additions:'QX-314 5 mM'}],['Cs-based','External: AP5 50 µM','Internal: QX-314 5 mM'],true]]){
    groups=conditions;
    await act(async()=>{renderer=TestRenderer.create(React.createElement(CellQC,{cellUuid:'solution-cell',revision:Math.random()}));});
    const rendered=JSON.stringify(renderer.toJSON());

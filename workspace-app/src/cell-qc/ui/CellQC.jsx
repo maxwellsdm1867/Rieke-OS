@@ -42,7 +42,11 @@ function TemperatureSummary({temperature}){
 function solutionText(value){
   if(value==null||value===false)return '';
   if(Array.isArray(value))return value.map(solutionText).filter(Boolean).join(', ');
-  if(typeof value==='string')return /^(none|no additions?|not recorded|n\/a|null|unknown)$/i.test(value.trim())?'':value.trim();
+  if(typeof value==='string'){
+    const text=value.trim();
+    if(text.startsWith('[')||text.startsWith('{')){try{return solutionText(JSON.parse(text));}catch{/* Retain non-JSON recorded descriptions verbatim. */}}
+    return /^(none|no additions?|not recorded|n\/a|null|unknown)$/i.test(text)?'':text;
+  }
   if(typeof value==='object'){
     if('quantity' in value)return value.quantity==null?'':`${solutionText(value.quantity)}${value.units?` ${value.units}`:''}`;
     return Object.entries(value).map(([key,item])=>{const text=solutionText(item);return text?`${key}: ${text}`:'';}).filter(Boolean).join(', ');
