@@ -92,18 +92,16 @@ Missing readings are Unmeasured; numeric values without recorded units are Unkno
 Both are red and summary counts cover all epochs, including beyond the preview.
 Unlabelled values are never assumed Celsius; source metadata remains inspectable.
 
-The top summary replaces total recording time with Internal solution, always shown
-from recorded group `pipetteSolution` (Not recorded when absent). Drug additions
-appears only for nonempty recorded `internalSolutionAdditions` or
-`externalSolutionAdditions`; internal/external labels and recorded values/units
-remain distinct. Group provenance is available in the card title. Multiple
-solutions remain visible; missing groups are disclosed rather than filled in.
-The display overview reads a single full detail per source/group for shared
-conditions, alongside the existing inline temperature projection. It does not
-copy full ancestors per epoch or add a read endpoint or preparation command.
+The top summary always shows Pipette solution from recorded group `pipetteSolution`,
+using Not recorded for missing/null. Internal additions and External additions
+are independent conditional cards from `internalSolutionAdditions` and
+`externalSolutionAdditions`. Each appears when it has a recorded display value,
+including explicit N/A or Unknown. Empty/serialized empty lists do not create cards.
+Multiple recorded values remain distinct, and missing groups are disclosed.
+Per-field group provenance is available in each card title. The display overview
+reads one full detail per source/group alongside inline temperature projection;
+no extra endpoint, preparation command or per-epoch ancestor copying is introduced.
 
-Literal NA/N/A/not applicable is preserved as N/A, including the internal-solution
-summary and per-group provenance. Missing/null remains Not recorded. Technique or
-protocol names never synthesize N/A. N/A-only additions do not create a drug card.
-The observed project catalog has pipetteSolution plus internal/external additions;
-a base external-solution field is not inferred from those addition fields.
+Literal NA/N/A/not applicable remains N/A; missing/null remains Not recorded.
+Technique and protocol names never synthesize N/A. The observed project catalog
+has these three solution fields; no base external solution is inferred.

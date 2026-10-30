@@ -67,20 +67,29 @@ test('temperature warnings preserve units and distinguish unknown and unmeasured
  }finally{if(renderer)await act(async()=>renderer.unmount());await server.close();globalThis.fetch=previous;}
 });
 
-test('internal solution is always shown and drug additions appear only when recorded',async()=>{
+test('pipette solution is always visible and recorded additions have independent cards',async()=>{
  const previous=globalThis.fetch;let groups=[];
  globalThis.fetch=async url=>({ok:true,json:async()=>url.includes('/qc?')?{cell:{cell_uuid:'solution-cell'},families:[],recording_conditions:groups,counts:{epochs:1}}:{fields:[]}});
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
  let renderer;
+ const cases=[
+  [[],{'Pipette solution':'Not recorded'}],
+  [[{pipette_solution:'NA',internal_additions:'not applicable',external_additions:'N/A'}],{'Pipette solution':'N/A','Internal additions':'N/A','External additions':'N/A'}],
+  [[{pipette_solution:'Unknown',external_additions:'Unknown'}],{'Pipette solution':'Unknown','External additions':'Unknown'}],
+  [[{pipette_solution:'K-gluconate',external_additions:'[]',internal_additions:'null'}],{'Pipette solution':'K-gluconate'}],
+  [[{pipette_solution:'Cs-based',internal_additions:'QX-314 5 mM',external_additions:'["AP5 50 µM"]'}],{'Pipette solution':'Cs-based','Internal additions':'QX-314 5 mM','External additions':'AP5 50 µM'}],
+  [[{pipette_solution:'K-gluconate',internal_additions:'QX-314'}, {pipette_solution:null,internal_additions:null}],{'Pipette solution':'K-gluconate','Internal additions':'QX-314'}],
+ ];
  try{
   const {default:CellQC}=await server.ssrLoadModule('/src/cell-qc/ui/CellQC.jsx');
-  for(const [conditions,expected,hasDrug] of [[[],['Internal solution','Not recorded'],false],[[{group_label:'Spike',pipette_solution:'NA',external_additions:'N/A',internal_additions:'not applicable'}],['Internal solution','N/A'],false],[[{group_label:'Unknown',pipette_solution:'Unknown',external_additions:'Unknown'}],['Unknown'],false],[[{group_label:'Control',pipette_solution:'K-gluconate',external_additions:[],internal_additions:null}],['K-gluconate'],false],[[{group_label:'Control',pipette_solution:null,external_additions:'[]',internal_additions:'null'}],['Internal solution','Not recorded'],false],[[{group_label:'Drug',pipette_solution:'K-gluconate',external_additions:'["AP5 50 µM"]'}],['External: AP5 50 µM'],true],[[{group_label:'Drug',pipette_solution:'Cs-based',external_additions:['AP5 50 µM'],internal_additions:'QX-314 5 mM'}],['Cs-based','External: AP5 50 µM','Internal: QX-314 5 mM'],true]]){
+  for(const [index,[conditions,expected]] of cases.entries()){
    groups=conditions;
-   await act(async()=>{renderer=TestRenderer.create(React.createElement(CellQC,{cellUuid:'solution-cell',revision:Math.random()}));});
+   await act(async()=>{renderer=TestRenderer.create(React.createElement(CellQC,{cellUuid:'solution-cell',revision:index}));});
+   const cards=renderer.root.findAllByProps({className:'qc-solution'});
+   assert.deepEqual(Object.fromEntries(cards.map(card=>[card.props['aria-label'],card.findByType('strong').children.join('')])),expected);
+   if(index===5)assert.ok(cards.every(card=>card.findByType('small').children.join('')==='Not recorded in some groups'));
    const rendered=JSON.stringify(renderer.toJSON());
-   for(const value of expected)assert.ok(rendered.includes(value),value);
-   assert.equal(rendered.includes('Drug additions'),hasDrug);
-   assert.equal(rendered.includes('Total recording time'),false);
+   assert.equal(rendered.includes('Drug additions'),false);assert.equal(rendered.includes('Total recording time'),false);
    await act(async()=>renderer.unmount());renderer=null;
   }
  }finally{if(renderer)await act(async()=>renderer.unmount());await server.close();globalThis.fetch=previous;}
