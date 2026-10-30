@@ -106,3 +106,12 @@ and retain source/hash attribution. Scientific E2E fixtures reserve real admissi
 before Playwright launches the physical runtime; installer/front-door qualification
 is separate. Required core and million-row comparisons still follow native workflow
 verification, and release publication still requires the exact clean candidate.
+
+
+Provided preparation tokens are validated for syntax, existence, exact caller
+PID and selected generation before activation, admission reservation or restart
+handoff writes. A rejected token leaves the current pointer (including invalid
+pointer evidence), preparation pins, admissions and handoffs unchanged. Successful
+operations still replace the preparation pin under the same store transaction.
+The fault matrix in `tests/runtime-generations.test.cjs` covers foreign-process,
+wrong-generation, absent, malformed and non-string tokens for all three operations.

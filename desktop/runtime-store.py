@@ -159,15 +159,26 @@ def hold_profile_witnesses(ticket, held, application):
 
 def execute(root, request):
     operation = request["operation"]
-    def release_preparation():
+    def validate_preparation():
         token = request.get("preparation")
-        if token:
-            if not TOKEN.fullmatch(token):
-                raise ValueError("Invalid runtime preparation")
-            file = root / "preparations" / (token + ".json")
-            if read(file)["pid"] != os.getppid():
-                raise ValueError("Runtime preparation belongs to another process")
-            file.unlink()
+        if token is None:
+            return None
+        if not isinstance(token, str) or not TOKEN.fullmatch(token):
+            raise ValueError("Invalid runtime preparation")
+        file = root / "preparations" / (token + ".json")
+        record = read(file)
+        if record["pid"] != os.getppid():
+            raise ValueError("Runtime preparation belongs to another process")
+        return file, record["id"]
+    # A refused token must not select a runtime, quarantine a pointer, or leave
+    # an admission/handoff behind. Validation precedes every such mutation.
+    preparation = validate_preparation() if operation in {"activate", "reserve", "restart-handoff"} else None
+    def require_prepared_generation(identity):
+        if preparation is not None and preparation[1] != identity:
+            raise ValueError("Runtime preparation belongs to another generation")
+    def release_preparation():
+        if preparation is not None:
+            preparation[0].unlink()
     if operation == "prepare":
         selected = generation(root, request["id"])
         private(root / "preparations")
@@ -189,6 +200,7 @@ def execute(root, request):
         file.unlink()
         return dict(ready=True)
     if operation == "restart-handoff":
+        require_prepared_generation(request["id"])
         selected = generation(root, request["id"])
         private(root / "handoffs")
         token = str(uuid.uuid4())
@@ -223,6 +235,7 @@ def execute(root, request):
             os.rename(staging, destination)
         return execute(root, dict(operation="prepare", id=record["id"]))
     if operation == "activate":
+        require_prepared_generation(request["id"])
         candidate = generation(root, request["id"])
         try:
             prior = current(root)
@@ -266,6 +279,7 @@ def execute(root, request):
             if handoff.get("helper_pid") != helper.pid or handoff.get("helper_created_at") != helper.create_time() or handoff["id"] != request.get("id") or handoff["profile"] != request.get("profile"):
                 raise ValueError("Runtime restart helper identity changed")
         selected = generation(root, request["id"]) if request.get("id") else current(root)["generation"]
+        require_prepared_generation(selected["id"])
         profile = request["profile"]
         if not Path(profile).is_absolute():
             raise ValueError("An exact session profile is required")
