@@ -160,6 +160,7 @@ class CellQC:
                 'unit_basis': 'recorded' if same_units and None not in recorded_units else 'mixed_or_not_recorded',
                 'range': {'min': min(p['value'] for p in points), 'max': max(p['value'] for p in points)} if points and same_units else None,
                 'recorded_count': len(points), 'missing_count': len(rows) - len(points),
+                'unknown_units_count': sum(p['units'] is None for p in points),
                 'points': points[:500], 'truncated': len(points) > 500},
             'resistance': {'status': 'recorded' if has_resistance else 'unavailable', 'measurements': measured,
                 'compensation_settings': compensation,

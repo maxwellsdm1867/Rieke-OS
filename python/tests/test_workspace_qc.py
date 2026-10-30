@@ -210,6 +210,9 @@ class CellQCTests(unittest.TestCase):
                 'start_time': f'09/24/2026 14:{index // 60:02d}:{index % 60:02d}:000000'}
             self.service.details[identity] = {'properties': {'bathTemperature': 30.}}
         first = self.case.client.get(self.base + '/temperature?limit=2').get_json()
+        summary = self.qc.overview(self.cell)['temperature']
+        self.assertEqual(summary['unknown_units_count'], 501)
+        self.assertEqual(summary['missing_count'], 1)
         self.assertEqual(first['total'], 503)
         self.assertTrue(first['has_more'])
         self.assertEqual(first['observations'][0]['epoch_uuid'], self.ids[0])

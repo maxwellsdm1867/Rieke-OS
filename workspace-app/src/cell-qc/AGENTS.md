@@ -85,3 +85,9 @@ without sorting the whole cell; custom `cell_rows` policy retains its old path.
 The collapsed temperature/conditions disclosure constructs its trend only when
 opened. Recorded points, units and range remain unchanged; opening/closing is
 presentation state and issues no preparation command or additional data read.
+
+Temperature summaries and trial rows show recorded units (Celsius aliases display
+as °C). Values strictly below 28 °C, or the equivalent in recorded °F/K, are red.
+Missing readings are Unmeasured; numeric values without recorded units are Unknown.
+Both are red and summary counts cover all epochs, including beyond the preview.
+Unlabelled values are never assumed Celsius; source metadata remains inspectable.
