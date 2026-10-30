@@ -1,6 +1,8 @@
 name: Disco hosted identical-source trace control
 on:
   workflow_dispatch:
+  push:
+    branches: [codex/trace-control-0.2.7]
 permissions:
   contents: read
 jobs:
