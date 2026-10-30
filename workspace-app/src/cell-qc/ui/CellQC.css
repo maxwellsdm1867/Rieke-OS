@@ -24,3 +24,5 @@
 
 .cell-qc .qc-temperature-warning{color:var(--error-ink)}
 .qc-temperature-metric small{display:block;white-space:normal;overflow-wrap:anywhere}.qc-temperature-metric small+small{margin-top:4px}
+
+.qc-metrics.qc-with-drugs{grid-template-columns:190px repeat(4,minmax(0,1fr))}.qc-solution strong{overflow-wrap:anywhere;white-space:normal}.qc-solution strong>span{display:block}.qc-solution strong>span+span{margin-top:5px}@media(max-width:1180px){.qc-metrics.qc-with-drugs{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:850px){.qc-metrics.qc-with-drugs{grid-template-columns:repeat(2,minmax(0,1fr))}}

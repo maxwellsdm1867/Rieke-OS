@@ -69,6 +69,39 @@ class CellQCTests(unittest.TestCase):
         for query in ('projection=unknown', 'projection=display&include_baselines=true', 'projection=display&projection=full'):
             self.assertEqual(self.case.client.get(self.base + '?' + query).status_code, 400)
 
+    def test_solution_summary_uses_one_verified_detail_per_recording_group(self):
+        self.same_cell()
+        backing = self.service.details
+        for index, identity in enumerate(self.ids):
+            self.service.rows[identity]['group_uuid'] = str(uuid.uuid4())
+            backing[identity]['metadata']['group'] = {'properties': {
+                'pipetteSolution': 'K-gluconate',
+                'internalSolutionAdditions': None,
+                'externalSolutionAdditions': [] if index == 0 else ['AP5 50 uM']}}
+        template = self.service.rows[self.ids[0]]
+        extra = str(uuid.uuid4())
+        self.service.rows[extra] = {**template, 'epoch_uuid': extra}
+        backing[extra] = copy.deepcopy(backing[self.ids[0]])
+        full = self.qc.overview(self.cell, include_baselines=False)
+        reads = []
+
+        class ProjectedDetails(dict):
+            def many(self, keys):
+                reads.append(list(keys))
+                return [(key, copy.deepcopy(self[key])) for key in keys]
+            def projected_many(self, keys, fields):
+                return [(key, {field: copy.deepcopy(self[key].get(field, {})) for field in fields}) for key in keys]
+
+        self.service.details = ProjectedDetails(backing)
+        display = self.qc.overview(self.cell, display_only=True)
+        self.assertEqual(display['recording_conditions'], full['recording_conditions'])
+        self.assertEqual(len(reads), 1)
+        self.assertEqual(len(reads[0]), 2, 'One full detail per source/group, not per epoch')
+        self.assertEqual(len(display['recording_conditions']), 2)
+        self.assertEqual(display['recording_conditions'][1]['external_additions'], ['AP5 50 uM'])
+        self.assertEqual(display['recording_conditions'][0]['pipette_solution'], 'K-gluconate')
+        self.service.trace.assert_not_called()
+
     def test_response_uses_exact_registered_row_but_preserves_custom_cell_policy(self):
         from unittest.mock import patch
         with patch.object(self.qc, 'rows', side_effect=AssertionError('No cohort sort for one response')):

@@ -114,14 +114,37 @@ class CellQC:
         durations = [row.get('duration_seconds') for row in rows]
         recording_seconds = sum(durations) if durations and all(number(value) and value >= 0 for value in durations) else None
         observations, measured, compensation = [], [], []
+        group_rows, conditions, seen_groups = [], [], set()
+        projected_groups = display_only and callable(getattr(self.service.details, 'projected_many', None))
+
+        def group_condition(row, detail):
+            group = detail.get('metadata', {}).get('group', {})
+            properties = group.get('properties', {})
+            return {'group_uuid': row['group_uuid'], 'group_label': row.get('group_label'),
+                'epoch_uuid': row['epoch_uuid'], 'source_sha256': row['source_sha256'],
+                'pipette_solution': copy.deepcopy(properties.get('pipetteSolution')),
+                'internal_additions': copy.deepcopy(properties.get('internalSolutionAdditions')),
+                'external_additions': copy.deepcopy(properties.get('externalSolutionAdditions'))}
+
         seen_resistance, seen_compensation = set(), set()
         # Read each epoch's detail once in this request (one bulk read on the
         # sealed index), then discard it; no summary survives to a later request.
         for index, (row, detail) in enumerate(self._details(rows, fields=('properties',) if display_only else None)):
             observations.append(self._temperature(row, index + 1, detail=detail))
+            group_key = (row['source_sha256'], row['group_uuid'])
+            if group_key not in seen_groups:
+                seen_groups.add(group_key)
+                if projected_groups:
+                    group_rows.append(row)
+                else:
+                    conditions.append(group_condition(row, detail))
             if not display_only:
                 measured.extend(self._metadata_values(row, detail, RESISTANCE_FIELDS, seen_resistance))
                 compensation.extend(self._metadata_values(row, detail, {'seriesResistanceCompensation'}, seen_compensation))
+        # Group solutions are shared metadata: read one representative per source/group,
+        # retaining the metadata owner's full integrity checks without copying every epoch's ancestors.
+        if group_rows:
+            conditions.extend(group_condition(row, detail) for row, detail in self._details(group_rows))
         points = [item for item in observations if item['status'] == 'recorded']
         recorded_units = {item['units'] for item in points}
         same_units = len(recorded_units) == 1
@@ -150,7 +173,7 @@ class CellQC:
             families.append({'id': 'protocol:' + protocol, 'label': label,
                 'epoch_count': len(members), 'blocks': len({r['block_uuid'] for r in members}),
                 'protocol_names': [protocol]})
-        result = {'recording_seconds': recording_seconds, 'cell': cell, 'scope': 'main_catalog_same_cell_uuid',
+        result = {'recording_seconds': recording_seconds, 'recording_conditions': conditions, 'cell': cell, 'scope': 'main_catalog_same_cell_uuid',
             'scope_note': 'All recorded epochs for this cell UUID, including epochs outside protocol working sets and local inclusion masks.',
             'counts': {'epochs': len(rows), 'blocks': len({r['block_uuid'] for r in rows}),
                 'groups': len({r['group_uuid'] for r in rows}), 'protocols': len({r['protocol_name'] for r in rows})},

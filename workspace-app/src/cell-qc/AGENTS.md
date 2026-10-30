@@ -91,3 +91,13 @@ as °C). Values strictly below 28 °C, or the equivalent in recorded °F/K, are 
 Missing readings are Unmeasured; numeric values without recorded units are Unknown.
 Both are red and summary counts cover all epochs, including beyond the preview.
 Unlabelled values are never assumed Celsius; source metadata remains inspectable.
+
+The top summary replaces total recording time with Internal solution, always shown
+from recorded group `pipetteSolution` (Not recorded when absent). Drug additions
+appears only for nonempty recorded `internalSolutionAdditions` or
+`externalSolutionAdditions`; internal/external labels and recorded values/units
+remain distinct. Group provenance is available in the card title. Multiple
+solutions remain visible; missing groups are disclosed rather than filled in.
+The display overview reads a single full detail per source/group for shared
+conditions, alongside the existing inline temperature projection. It does not
+copy full ancestors per epoch or add a read endpoint or preparation command.

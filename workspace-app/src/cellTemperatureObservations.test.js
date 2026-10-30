@@ -21,7 +21,7 @@ test('temperature opens all-epoch pages and inspects the exact source without a 
   const {default:CellQC}=await server.ssrLoadModule("/src/cell-qc/ui/CellQC.jsx");
   await act(async()=>{renderer=TestRenderer.create(React.createElement(CellQC,{cellUuid:'cell',revision:0}));});
   const metrics=renderer.root.findByProps({className:'qc-metrics'}).findAllByType('strong').map(node=>node.children.join('')).join(' ');
-  assert.ok(metrics.includes('EF'));assert.ok(metrics.includes('2m 5s'));assert.ok(!metrics.includes('Not established'));
+  assert.ok(metrics.includes('EF'));assert.ok(metrics.includes('Not recorded'));assert.ok(!metrics.includes('2m 5s'));assert.ok(!metrics.includes('Not established'));
   assert.equal(renderer.root.findAllByProps({className:'qc-trend'}).length,0,'Closed conditions do not construct the chart');
   const conditions=renderer.root.findAllByType('details').find(node=>node.props.className==='qc-temperature');
   await act(async()=>conditions.props.onToggle({currentTarget:{open:true}}));
@@ -62,6 +62,25 @@ test('temperature warnings preserve units and distinguish unknown and unmeasured
    assert.equal(strong.children.join(''),label);
    assert.equal(strong.props.className==='qc-temperature-warning',warn);
    if(missing)assert.ok(JSON.stringify(card.toJSON?.()||renderer.toJSON()).includes('no reading available'));
+   await act(async()=>renderer.unmount());renderer=null;
+  }
+ }finally{if(renderer)await act(async()=>renderer.unmount());await server.close();globalThis.fetch=previous;}
+});
+
+test('internal solution is always shown and drug additions appear only when recorded',async()=>{
+ const previous=globalThis.fetch;let groups=[];
+ globalThis.fetch=async url=>({ok:true,json:async()=>url.includes('/qc?')?{cell:{cell_uuid:'solution-cell'},families:[],recording_conditions:groups,counts:{epochs:1}}:{fields:[]}});
+ const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
+ let renderer;
+ try{
+  const {default:CellQC}=await server.ssrLoadModule('/src/cell-qc/ui/CellQC.jsx');
+  for(const [conditions,expected,hasDrug] of [[[],['Internal solution','Not recorded'],false],[[{group_label:'Control',pipette_solution:'K-gluconate',external_additions:[],internal_additions:null}],['K-gluconate'],false],[[{group_label:'Drug',pipette_solution:'Cs-based',external_additions:['AP5 50 µM'],internal_additions:'QX-314 5 mM'}],['Cs-based','External: AP5 50 µM','Internal: QX-314 5 mM'],true]]){
+   groups=conditions;
+   await act(async()=>{renderer=TestRenderer.create(React.createElement(CellQC,{cellUuid:'solution-cell',revision:Math.random()}));});
+   const rendered=JSON.stringify(renderer.toJSON());
+   for(const value of expected)assert.ok(rendered.includes(value),value);
+   assert.equal(rendered.includes('Drug additions'),hasDrug);
+   assert.equal(rendered.includes('Total recording time'),false);
    await act(async()=>renderer.unmount());renderer=null;
   }
  }finally{if(renderer)await act(async()=>renderer.unmount());await server.close();globalThis.fetch=previous;}

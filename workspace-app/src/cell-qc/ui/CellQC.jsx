@@ -1,8 +1,8 @@
 import {cellTypeQCLabel,recordingRigLabel} from '../cellTypes.js';
 import CellTypeIcon from '../../components/CellTypeIcon.jsx';
 import {useEffect,useMemo,useState} from 'react';
-import {Activity,Clock,Monitor,ArrowLeft,ArrowUpRight,Check,Copy,Info,Layers,RefreshCw,Thermometer,Tag} from 'lucide-react';
-import {api,duration,humanize,number,useResource} from "../../api.js";
+import {Activity,FlaskConical,Monitor,ArrowLeft,ArrowUpRight,Check,Copy,Info,Layers,RefreshCw,Thermometer,Tag} from 'lucide-react';
+import {api,humanize,number,useResource} from "../../api.js";
 import {Badge,Empty,Status} from "../../components/Common.jsx";
 import Trace from "../../traces/ui/TraceViewer.jsx";
 import StableContent from "../../components/StableContent.jsx";
@@ -38,6 +38,23 @@ function TemperatureSummary({temperature}){
   const warning=!count||unknown>0||missing>0||(range&&temperatureLow(range.min,unit));
   const label=!count?'Unmeasured':unknown===count?'Unknown':range&&unit?`${display(range.min)}${range.max!==range.min?` – ${display(range.max)}`:''} ${unit}`:'See trials';
   return <><strong className={warning?'qc-temperature-warning':undefined}>{label}</strong><small>{number(count)} observations · View epochs</small>{unknown>0&&<small className="qc-temperature-warning">{number(unknown)} trials: Unknown — unit not recorded</small>}{missing>0&&<small className="qc-temperature-warning">{number(missing)} trials: Unmeasured — no reading available</small>}{!count&&!missing&&<small className="qc-temperature-warning">No reading available</small>}</>;
+}
+function solutionText(value){
+  if(value==null||value===false)return '';
+  if(Array.isArray(value))return value.map(solutionText).filter(Boolean).join(', ');
+  if(typeof value==='string')return /^(none|no additions?|not recorded|n\/a|null|unknown)$/i.test(value.trim())?'':value.trim();
+  if(typeof value==='object'){
+    if('quantity' in value)return value.quantity==null?'':`${solutionText(value.quantity)}${value.units?` ${value.units}`:''}`;
+    return Object.entries(value).map(([key,item])=>{const text=solutionText(item);return text?`${key}: ${text}`:'';}).filter(Boolean).join(', ');
+  }
+  return String(value);
+}
+function conditionSummary(groups=[]){
+  const internal=[...new Set(groups.map(row=>solutionText(row.pipette_solution)).filter(Boolean))];
+  const drugs=[...new Set(groups.flatMap(row=>[['External',row.external_additions],['Internal',row.internal_additions]].map(([where,value])=>{const text=solutionText(value);return text?`${where}: ${text}`:'';}).filter(Boolean)))];
+  const missing=groups.filter(row=>!solutionText(row.pipette_solution)).length;
+  const provenance=groups.map(row=>`${row.group_label||row.group_uuid}: Internal solution ${solutionText(row.pipette_solution)||'Not recorded'}; external additions ${solutionText(row.external_additions)||'None recorded'}; internal additions ${solutionText(row.internal_additions)||'None recorded'}`).join('\n');
+  return {internal,drugs,missing,provenance};
 }
 const flagged=flags=>Array.isArray(flags)?flags:Object.entries(flags||{}).filter(([,value])=>value===true).map(([key])=>key);
 const parameterNames=['currentSpotSize','contrast','spotContrast','amplitude','currentAmplitude','frequencyCutoff'];
@@ -146,6 +163,7 @@ export default function CellQC({cellUuid,revision,structureRevision=revision,ann
   const response=useResource(epochId?`/cells/${cellUuid}/qc/response?epoch_uuid=${epochId}&summary_only=true`:null,qcRevision,0,{cache:true});
   const catalog=useResource(showMetadata?'/explore/predicate-fields':null,qcRevision);
   const temperature=data?.temperature;
+  const conditions=conditionSummary(data?.recording_conditions);
   const cellLabel=datedCellLabel(data?.cell||{},true);
   const sourceEpoch=epoch.data?.cell_uuid===cellUuid&&epoch.data?.epoch_uuid===epochId?epoch.data:null;
   // Tag receipts change only annotation display; the trace keeps the source
@@ -161,7 +179,7 @@ export default function CellQC({cellUuid,revision,structureRevision=revision,ann
   return <div className="page cell-qc"><header className="qc-heading"><div><div className="eyebrow">CELL QUALITY WORKBENCH</div><h1>{data?cellLabel:'Cell quality'}</h1><p>Characterization recordings linked across the main project database.</p></div><div className="qc-heading-actions"><button onClick={onBack}><ArrowLeft size={15}/> Back to workspace</button><button onClick={refreshQC} aria-label="Refresh cell quality"><RefreshCw size={16}/></button></div></header>
     <Status {...result} retry={result.reload}>{data&&<>
       <div className="qc-identity"><span>{number(data.counts?.epochs)} epochs · {number(data.counts?.blocks)} blocks</span><button className="qc-copy" onClick={copyIdentity} aria-label="Copy cell UUID">{copied?<Check size={13}/>:<Copy size={13}/>} Cell UUID</button><code>{cellUuid}</code>{copyError&&<span role="status">{copyError}</span>}</div>
-      <section className="qc-metrics" aria-label="Cell quality measurements"><article className="qc-cell-type" aria-label="Recorded cell type" title={data.cell?.cell_type||'Unclassified'}><strong>{cellTypeQCLabel(data.cell?.cell_type)}</strong><div className="qc-cell-type-icon"><CellTypeIcon type={data.cell?.cell_type} size={56}/></div></article><article><button className="qc-temperature-metric" aria-expanded={temperatureOpen} onClick={()=>setTemperatureOpen(value=>!value)}><span><Thermometer size={16}/> Bath temperature</span><TemperatureSummary temperature={temperature}/></button></article><article><span><Monitor size={16}/> Rig</span><strong>{recordingRigLabel(data.cell)}</strong><small>Recorded acquisition rig</small></article><article><span><Clock size={16}/> Total recording time</span><strong>{numeric(data.recording_seconds)?duration(data.recording_seconds):'Unavailable'}</strong><small>Sum of recorded epoch durations</small></article></section>
+      <section className={`qc-metrics${conditions.drugs.length?' qc-with-drugs':''}`} aria-label="Cell quality measurements"><article className="qc-cell-type" aria-label="Recorded cell type" title={data.cell?.cell_type||'Unclassified'}><strong>{cellTypeQCLabel(data.cell?.cell_type)}</strong><div className="qc-cell-type-icon"><CellTypeIcon type={data.cell?.cell_type} size={56}/></div></article><article><button className="qc-temperature-metric" aria-expanded={temperatureOpen} onClick={()=>setTemperatureOpen(value=>!value)}><span><Thermometer size={16}/> Bath temperature</span><TemperatureSummary temperature={temperature}/></button></article><article><span><Monitor size={16}/> Rig</span><strong>{recordingRigLabel(data.cell)}</strong><small>Recorded acquisition rig</small></article><article className="qc-solution" title={conditions.provenance}><span><FlaskConical size={16}/> Internal solution</span><strong>{conditions.internal.join(' / ')||'Not recorded'}</strong><small>{conditions.internal.length&&conditions.missing?'Not recorded in some groups':'Recorded pipette solution'}</small></article>{conditions.drugs.length>0&&<article className="qc-solution" title={conditions.provenance}><span><FlaskConical size={16}/> Drug additions</span><strong>{conditions.drugs.map(value=><span key={value}>{value}</span>)}</strong><small>Recorded across this cell’s groups</small></article>}</section>
       <TemperaturePanel key={`${cellUuid}:temperature`} cellUuid={cellUuid} revision={qcRevision} opened={temperatureOpen} onToggle={()=>setTemperatureOpen(false)}/>
       <details className="qc-temperature" onToggle={event=>setConditionsOpen(event.currentTarget.open)}><summary><Thermometer size={15}/> Temperature & recording conditions <span>{(data.characteristics?.group_labels||[]).join(' · ')}</span></summary>{conditionsOpen&&<>{temperature?.range&&temperature?.units?<Trend points={temperature?.points} label="Recorded bath temperature" units={temperatureUnit(temperature?.units)}/>:<p className="qc-muted">No comparable temperature range. View per-epoch observations for recorded values and units.</p>}<p className="qc-muted">{number(temperature?.missing_count)} epochs without a temperature entry. Values follow acquisition order. Readings below 28 °C (or equivalent), unknown units and missing readings are highlighted in red.{temperature?.truncated?' The preview is bounded; additional observations are not shown.':''}</p></>}</details>
       <section className="qc-characterization"><header><h2><Layers size={17}/> Characterization recordings</h2><span className="qc-muted">Availability is separate from cell quality.</span></header><nav className="qc-families" aria-label="Cell characterization protocols">{(data.families||[]).map(item=><button key={item.id} disabled={!item.epoch_count} aria-pressed={active===item.id} onClick={()=>chooseFamily(item.id)}><span>{item.label}</span><strong>{item.epoch_count?number(item.epoch_count):'Not recorded'}</strong></button>)}</nav>
