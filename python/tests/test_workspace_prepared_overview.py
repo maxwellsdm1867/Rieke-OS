@@ -285,6 +285,35 @@ class PreparedOverviewTests(fixtures.MemoFixture):
             lambda result:completed.set(),key=self.protocol)
         self.assertTrue(completed.wait(2))
 
+    def test_close_retry_after_verified_database_exit_does_not_reopen_sql_for_snapshot(self):
+        import os
+        from pathlib import Path
+        from unittest.mock import Mock
+        from workspace_api import create_app
+        self.service.config['connection']={'credential_provider':{'kind':'native-project'}}
+        with patch.dict(os.environ,{'RIEKE_DESKTOP_MODE':'1','RIEKE_DESKTOP_FRONTEND':self.case.temp.name}):
+            app=create_app(self.case.temp.name,self.case.temp.name,service=self.service,store=self.case.store,
+                explorer_history=self.case.explorer_history,data_stores=self.case.data_stores,
+                protocol_suggestions=self.case.protocol_suggestions,shared_annotations=self.shared)
+        self.addCleanup(app.extensions['close_overview_publication'])
+        self.addCleanup(app.extensions['close_trace_workers'])
+        self.addCleanup(app.extensions['disco.navigation.prepared'].close)
+        scheduler=Mock();app.extensions['backup_scheduler']=scheduler
+        owner=Path(self.case.temp.name)/'database/native-owner.json'
+        owner.parent.mkdir(exist_ok=True);owner.write_text('{"clean_shutdown": false}')
+        with patch('workspace_native_mysql.stop_native_database') as stop:
+            with self.assertRaisesRegex(ValueError,'clean database shutdown'):
+                app.extensions['desktop_stop_database']()
+            scheduler.flush.assert_called_once()
+            # Native recovery has now verified and completed the actual shutdown.
+            owner.write_text('{"clean_shutdown": true}')
+            scheduler.flush.side_effect=AssertionError('Must not query the stopped database')
+            with patch('disco.projects.runtime_state.project_runtime_state',return_value={'state':'stopped_clean'}):
+                app.extensions['desktop_stop_database']()
+            self.assertEqual(stop.call_count,2)
+            scheduler.flush.assert_called_once()
+            scheduler.close.assert_called_once_with(flush=False)
+
     def test_same_revision_rebind_updates_version_without_recomputing_duration(self):
         history=self.case.explorer_history
         preview=self.service.explore_preview({'all':[]},'cell',include_tree=False,include_catalog_summary=False)

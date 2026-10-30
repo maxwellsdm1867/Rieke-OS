@@ -69,6 +69,57 @@ class NativeMysqlTests(unittest.TestCase):
                 native._credentials(self.root, self.descriptor)
             chmod.assert_not_called()
 
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS clock-adjustment identity')
+    def test_clock_adjustment_does_not_change_native_process_identity(self):
+        process = MagicMock()
+        process.status.return_value = 'running'
+        process.create_time.return_value = 1120.0  # display clock moved
+        process._proc.create_time.return_value = 1000.0  # same kernel process
+        process.uids.return_value = SimpleNamespace(real=os.getuid())
+        process.exe.return_value = '/usr/bin/true'
+        process.cmdline.return_value = ['/usr/bin/true', '--owned-test']
+        record = {'pid': 1234, 'process_created': 1000.0,
+                  'executable': str(Path('/usr/bin/true').resolve()),
+                  'argv': process.cmdline.return_value}
+        with patch('psutil.Process', return_value=process):
+            self.assertIs(native._owned_process(record), process)
+        process._proc.create_time.assert_called_once_with(monotonic=True)
+        process.create_time.assert_not_called()
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS kernel process identity')
+    def test_real_mac_process_remains_owned_when_psutil_display_clock_changes(self):
+        import psutil
+        from psutil import _psosx
+        me = psutil.Process()
+        recorded = me.create_time()
+        record = {'pid': me.pid, 'process_created': recorded,
+                  'executable': str(Path(me.exe()).resolve()), 'argv': me.cmdline()}
+        with patch('psutil._psosx.INIT_BOOT_TIME', _psosx.boot_time() + 120):
+            self.assertNotEqual(psutil.Process(me.pid).create_time(), recorded)
+            self.assertIsNotNone(native._owned_process(record))
+
+    def test_matching_live_server_with_changed_birth_time_keeps_runtime_evidence(self):
+        process = MagicMock()
+        process.status.return_value = 'running'
+        process.create_time.return_value = 1120.0
+        process._proc.create_time.return_value = 1120.0
+        process.uids.return_value = SimpleNamespace(real=os.getuid())
+        process.exe.return_value = '/usr/bin/true'
+        process.cmdline.return_value = ['/usr/bin/true', '--owned-test']
+        record = {'pid': 1234, 'process_created': 1000.0,
+                  'executable': str(Path('/usr/bin/true').resolve()),
+                  'argv': process.cmdline.return_value}
+        runtime_path = self.root / self.descriptor['runtime_ref']
+        native._write(runtime_path, record)
+        original = runtime_path.read_bytes()
+        with patch('psutil.Process', return_value=process), \
+             patch.object(native, '_runtime', return_value=record), \
+             patch.object(native, '_shutdown') as shutdown:
+            with self.assertRaisesRegex(ValueError, 'birth time differs'):
+                native.stop_native_database(self.root)
+            shutdown.assert_not_called()
+        self.assertEqual(runtime_path.read_bytes(), original)
+
     def test_foreign_pid_is_never_signalled(self):
         import psutil
         me = psutil.Process()
@@ -272,7 +323,10 @@ class NativeMysqlTests(unittest.TestCase):
             self.assertEqual(state(), rs.RUNNING_OWNED)
             self.assertEqual(rs.project_runtime_state(self.root)['pid'], me.pid)
             native._write(self.root / self.descriptor['runtime_ref'], {**runtime, 'process_created': me.create_time() - 100})
-            self.assertEqual(state(), rs.STOPPED_UNCLEAN)  # Recycled PID: never ours.
+            self.assertEqual(state(), rs.RUNNING_FOREIGN)  # Matching live server: uncertain birth record is retained.
+            native._write(self.root / self.descriptor['runtime_ref'], {**runtime,
+                'process_created': me.create_time() - 100, 'executable': '/previous/process'})
+            self.assertEqual(state(), rs.STOPPED_UNCLEAN)  # A different process reused the PID.
             native._write(self.root / self.descriptor['runtime_ref'], {**runtime, 'executable': '/foreign/bin'})
             self.assertEqual(state(), rs.RUNNING_FOREIGN)
             native._write(self.root / self.descriptor['runtime_ref'], {**runtime, 'project_path': '/source/project'})

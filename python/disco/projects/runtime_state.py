@@ -23,6 +23,8 @@ from __future__ import annotations
 
 import json
 import os
+import math
+from sys import platform as _platform
 from pathlib import Path
 
 NEVER_STARTED = 'never_started'
@@ -46,6 +48,23 @@ def _small_json(path):
     value = json.loads(path.read_text())
     if not isinstance(value, dict):
         raise ValueError('Runtime evidence must be an object')
+    return value
+
+
+def process_birth_time(process):
+    """Stable PID identity, never psutil's clock-adjusted macOS display time.
+
+    psutil 7.2.2 uses this same kernel timestamp for its own PID-reuse checks.
+    Keep the narrow private adapter here: an unsupported backend fails closed,
+    rather than falling back to the clock-dependent value on macOS.
+    """
+    try:
+        value = (process._proc.create_time(monotonic=True) if _platform == 'darwin'
+                 else process.create_time())
+    except (AttributeError, TypeError) as error:
+        raise ValueError('Stable process birth time is unavailable') from error
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+        raise ValueError('Stable process birth time is invalid')
     return value
 
 

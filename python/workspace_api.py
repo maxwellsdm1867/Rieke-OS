@@ -3277,7 +3277,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     if service.config.get('connection', {}).get('credential_provider', {}).get('kind') == 'native-project':
         from workspace_lifecycle import register_project_lifecycle
+        close_prepared = False
         def stop_project_database():
+            nonlocal close_prepared
+            from disco.projects.runtime_state import project_runtime_state, STOPPED_CLEAN
+            already_closed = close_prepared and project_runtime_state(project_dir)['state'] == STOPPED_CLEAN
             inbox.stop()
             if importing.locked() or active_jobs:
                 inbox.start()
@@ -3287,8 +3291,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             with db_lock:
                 scheduler=app.extensions.get('backup_scheduler')
                 try:
-                    if scheduler is not None:scheduler.flush()
-                    prepare_annotations()
+                    if not already_closed:
+                        if scheduler is not None:scheduler.flush()
+                        prepare_annotations()
+                        close_prepared = True
                 except Exception as error:
                     error.desktop_shutdown_stage = 'recovery_snapshot'
                     inbox.start()
@@ -3306,8 +3312,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if navigation is not None:navigation.close()
             close_overview_publication()
             with db_lock:
-                with contextlib.suppress(Exception):
-                    service.dj.conn().close()
+                if not already_closed:
+                    with contextlib.suppress(Exception):
+                        service.dj.conn().close()
                 from workspace_native_mysql import stop_native_database
                 stop_native_database(project_dir)
                 owner = json.loads((project_dir / 'database/native-owner.json').read_text())

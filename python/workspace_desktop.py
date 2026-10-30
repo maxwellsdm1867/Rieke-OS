@@ -30,6 +30,7 @@ sys.dont_write_bytecode = True
 if __name__ == '__main__':
     sys.modules['workspace_desktop'] = sys.modules[__name__]
 
+
 from flask import jsonify, request
 from werkzeug.wrappers import Response
 from werkzeug.wsgi import ClosingIterator
@@ -214,6 +215,11 @@ class DesktopBoundary:
                 return jsonify(error='Quit requires an empty object'), 400
             try:
                 if not self.drain(for_quit=True):
+                    failure = getattr(self.services, 'shutdown_failure', None)
+                    if isinstance(failure, dict):
+                        return jsonify(ready=False, error='Project shutdown could not be verified: ' + failure['error'],
+                                       stage=failure['stage'], project_uuid=failure.get('project_uuid'),
+                                       pid=failure.get('pid')), 409
                     return jsonify(ready=False, error='Accepted operations remain active; admission is paused and existing recovery records are retained.'), 409
             except Exception:
                 self.app.logger.exception('Explicit desktop quit cleanup was not acknowledged')
@@ -401,6 +407,7 @@ class DesktopServices:
         self.lock = threading.RLock()
         self.children = {}
         self.database_operations = {}
+        self.shutdown_failure = None
         self.draining = False
         self.recovery = {}
         if self.path.exists():
@@ -440,12 +447,13 @@ class DesktopServices:
 
     @staticmethod
     def _prior_service_alive(record):
+        from disco.projects.runtime_state import process_birth_time
         """Read-only liveness; uncertain inspection keeps this project blocked."""
         import psutil
         try:
             process = psutil.Process(record['pid'])
             return (process.status() != psutil.STATUS_ZOMBIE
-                    and process.create_time() == record.get('created_at')
+                    and process_birth_time(process) == record.get('created_at')
                     and str(Path(process.exe()).resolve()) == record.get('executable'))
         except psutil.NoSuchProcess:
             return False
@@ -627,11 +635,12 @@ class DesktopServices:
             return [dict(item['record']) for item in self.children.values()]
 
     def call(self, record, operation, body=None, timeout=5):
+        from disco.projects.runtime_state import process_birth_time
         if record.get('bound') is not True:
             raise ValueError('Owned child has not acknowledged binding its listener')
         import psutil
         process = psutil.Process(record['pid'])
-        if (process.create_time() != record['created_at']
+        if (process_birth_time(process) != record['created_at']
                 or str(Path(process.exe()).resolve()) != record['executable']):
             raise ValueError('Desktop service process ownership changed')
         url = f"http://127.0.0.1:{record['port']}/api/desktop/{operation}"
@@ -648,6 +657,7 @@ class DesktopServices:
         return payload
 
     def open(self, directory, identity, retinanalysis, timeout):
+        from disco.projects.runtime_state import process_birth_time
         from workspace_desktop_paths import require_external_data_path
         directory = require_external_data_path(directory)
         catalog = json.loads((directory / 'catalog.json').read_text())
@@ -696,7 +706,7 @@ class DesktopServices:
             import psutil
             record = {**self.identity, 'pid': process.pid, 'port': port, 'session_id': self.session_id,
                       'project_uuid': identity, 'project_path': key,
-                      'created_at': psutil.Process(process.pid).create_time(),
+                      'created_at': process_birth_time(psutil.Process(process.pid)),
                       'executable': str(Path(sys.executable).resolve()), 'bound': False}
             self.children[key] = {'record': record, 'process': process}
             self._save()
@@ -753,10 +763,14 @@ class DesktopServices:
             self.draining = True
             records = self.records()
         complete = True
+        self.shutdown_failure = None
         for record in records:
             try:
-                complete = bool(self.call(record, 'pause', {}, timeout=2).get('paused')) and complete
-            except Exception:
+                if not self.call(record, 'pause', {}, timeout=2).get('paused'):
+                    raise ValueError('Project did not acknowledge pause')
+            except Exception as error:
+                self.shutdown_failure = {'stage': 'child_pause', 'pid': record.get('pid'),
+                    'project_uuid': record.get('project_uuid'), 'error': str(error)[:500]}
                 complete = False
         return complete
 
@@ -773,22 +787,29 @@ class DesktopServices:
             self.draining = True
             records = self.records()
         prepared = []
+        self.shutdown_failure = None
+        phase = 'child_drain'
+        record = {}
         try:
             # Prepare ALL services before permitting any to shut down.
             for record in records:
                 if not self.call(record, 'quit' if for_quit else 'drain', {}, timeout=timeout + 2).get('ready'):
                     raise ValueError('Project service did not acknowledge drain')
                 prepared.append(record)
+            phase = 'child_stop'
             for record in prepared:
                 if not self.call(record, 'stop', {}, timeout=timeout + 2).get('stopped'):
                     raise ValueError('Project service did not acknowledge stop')
+            phase = 'child_exit'
             deadline = time.monotonic() + timeout
             while self.records() and time.monotonic() < deadline:
                 time.sleep(.1)
             if self.records():
                 raise ValueError('Owned services have not exited')
             return True
-        except Exception:
+        except Exception as error:
+            self.shutdown_failure = {'stage': phase, 'pid': record.get('pid'),
+                'project_uuid': record.get('project_uuid'), 'error': str(error)[:500]}
             if not for_quit:
                 for record in prepared:
                     with contextlib.suppress(Exception):

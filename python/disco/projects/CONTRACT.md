@@ -290,3 +290,26 @@ project folder. The chooser and unrelated project creation/open remain usable.
 Live prior services retain PID/creation/executable evidence across relaunches;
 they are not adopted as children of the new session. Strict update drain still
 requires their exit, while ordinary Quit retains their recovery evidence.
+
+### Stable process birth identity during close
+
+`runtime_state.process_birth_time` records and compares the kernel process birth
+value on macOS, using the same pinned psutil backend primitive as its PID-reuse
+checks. The public display timestamp can change in a long-lived process after
+system-clock correction. It is not an ownership token. The private adapter is
+contained in this owner and fails closed if unavailable. Other platforms retain
+their existing timestamp representation; PID, executable, argv, user, project,
+instance and capability checks remain required.
+
+A live server with matching executable/argv but a different recorded birth time
+is uncertain ownership: retain its runtime record and refuse shutdown. It is not
+proof that the database has disappeared. Desktop child pause/drain/stop failures
+retain their phase and project identity; Quit reports those failures separately
+from genuinely active scientific work. All children must drain before any stops.
+
+Close retries remember successful recovery preparation in the owning application.
+Only after the native runtime reports a clean database exit may a retry skip SQL
+snapshot preparation; it must still finish read-owner cleanup and verify the
+native owner receipt. Failed initial preparation never grants that shortcut.
+This prevents a post-shutdown retry from trying to reconnect to the database it
+has already closed.
