@@ -4,7 +4,7 @@
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
     "src/App.jsx": {
-      "fingerprint": "8a19d62d7ac7a171cc32be5a07aff55d5bd9b15474f3af5a0d4f9607a4bdc12b",
+      "fingerprint": "6b4fffd779b531696ec024864853ca77ecc9bb9f2d028d176ea247e2ab50e8a1",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -20,6 +20,11 @@
           "owner": "Protocol",
           "kind": "useEffect",
           "fingerprint": "7139b477fe29d1616ce9c3360492cf8084a1517d7c2fd2d568c94ff7c6428128"
+        },
+        {
+          "owner": "App",
+          "kind": "useEffect",
+          "fingerprint": "c834fddbf69b3e5ab0bf8783c5c83976528d03df12d8331f00a18e4e7b7dbe17"
         },
         {
           "owner": "App",
@@ -48,7 +53,7 @@
         }
       ],
       "lifetime": "mixed-project-and-retained-composition",
-      "reason": "Route-matched shared card merges stay in their originating Overview or import route; verified receipt and invalidation remain App-owned. Independent review 2026-10-21 (repeated review cycles): Adds dismiss only for definitive source-command errors; uncertain recovery controls remain persistent and retain command ownership. Final root-demand review 2026-10-21: renewRetained permits populated root invalidation renewal only on Overview while initial missing root demand remains live for shell startup; protocol active-demand behavior and retained-visibility guards remain unchanged. Native startup restoration and merge/Undo/Finish renewal passed; no command is replayed. Combined UI review2026-10-23: AppUpdates moves within the same App owner to the rail. Removed duplicate appearance button and protocol explanatory sentence are presentation only; all eight effect sites and retained Protocol/cache/draft/command lifetimes are unchanged.",
+      "reason": "Route-matched shared card merges stay in their originating Overview or import route; verified receipt and invalidation remain App-owned. Independent review 2026-10-21 (repeated review cycles): Adds dismiss only for definitive source-command errors; uncertain recovery controls remain persistent and retain command ownership. Final root-demand review 2026-10-21: renewRetained permits populated root invalidation renewal only on Overview while initial missing root demand remains live for shell startup; protocol active-demand behavior and retained-visibility guards remain unchanged. Native startup restoration and merge/Undo/Finish renewal passed; no command is replayed. Combined UI review2026-10-23: AppUpdates moves within the same App owner to the rail. Removed duplicate appearance button and protocol explanatory sentence are presentation only; all eight effect sites and retained Protocol/cache/draft/command lifetimes are unchanged. Native return review 2026-10-30: adds one project-lifetime visibility subscription, cleaned up by its returned unsubscribe. Only visible:true refreshes the read-only mounted-project inventory; it preserves the route and does not replay open, close, unmount or scientific commands. Existing eight effect sites are unchanged. Mounted visibility/route/unsubscribe coverage and native retained chooser/rail refresh after unmount passed at 588f174.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/appLifecycleImports.test.js",
@@ -826,14 +831,16 @@
       ]
     },
     "src/desktopLifecycle.js": {
-      "fingerprint": "1ef412ece7c87b5f3e10ff6003d45fe9e06a3fde11d96d611394673663182e6f",
+      "fingerprint": "8e558d5638be95408370a8b976600d9dfb3ee416e7b9634eabdb6e8433129721",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds flushBeforeSubmission (accepted writes still gate; view-saver failure returns viewSaved:false). flushDesktopDrafts and close/unmount acknowledgement stay strict.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. 2026-10-16: adds flushBeforeSubmission (accepted writes still gate; view-saver failure returns viewSaved:false). flushDesktopDrafts and close/unmount acknowledgement stay strict. Close-control review 2026-10-30: the prepared project-checkpoint fence permits only the existing /project/close control in addition to /projects/unmount. Scientific writes remain blocked, and global Closing/Recovery still refuses both controls. Strict draft/write flushing is unchanged. Tests exercise the actual checkpoint fence and native Close project completed with verified child exit at 588f174.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
-        "src/desktopLifecycle.test.js"
+        "src/desktopLifecycle.test.js",
+        "src/projectFolderLifecycle.test.js",
+        "src/projectUnmount.test.js"
       ]
     },
     "src/epoch-browser/curationReceipts.js": {
@@ -2584,7 +2591,7 @@
       ]
     },
     "src/project-workspace/ui/ProjectFolder.jsx": {
-      "fingerprint": "c2c6ec873c195289e9cc3d116086201da41fdff482676a88711b06169dc4e2f2",
+      "fingerprint": "4bd9702b82b727404a56f78a3bf7f1cf2fae5cdc193711f61f488f715b91d42c",
       "sites": [
         {
           "owner": "ProjectFolder",
@@ -2593,11 +2600,13 @@
         }
       ],
       "lifetime": "project-shell-dialog-and-authored-fields",
-      "reason": "Project setup/folder dialogs are outside Activity; modal and cancellation effects clean up normally. Chosen path/name is authored presentation; no filesystem operation, confirmation or inspection token is restored as authority.",
+      "reason": "Project setup/folder dialogs are outside Activity; modal and cancellation effects clean up normally. Chosen path/name is authored presentation; no filesystem operation, confirmation or inspection token is restored as authority. Retained native dialog review 2026-10-30: successful native open awaits affirmative activation before clearing busy state and dismissing the originating dialog; refusal keeps it usable with an error. Explicit close prepares the exact UUID/path, requests close, and awaits authenticated child-exit confirmation. Definite pre-shutdown refusal cancels preparation; uncertain completion stays fenced. The modal/abort effect is unchanged and browser navigation remains local-URL validated. Held activation/confirmation, refusal and actual checkpoint tests passed; native open-return, Close, reopen and Unmount passed at 588f174.",
       "tests": [
         "src/authoredDrafts.test.js",
         "src/project-workspace/projectTransfer.test.js",
-        "src/projectInventoryRecovery.test.js"
+        "src/projectInventoryRecovery.test.js",
+        "src/projectFolderLifecycle.test.js",
+        "src/projectUnmount.test.js"
       ]
     },
     "src/project-workspace/ui/ProjectNavigator.jsx": {
