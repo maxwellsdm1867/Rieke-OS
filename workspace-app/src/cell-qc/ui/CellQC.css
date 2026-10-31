@@ -50,8 +50,13 @@
 /* One horizontal summary row; preserve readable values at narrow widths. */
 .qc-metrics,.qc-metrics.qc-with-additions{grid-template-columns:minmax(260px,1.25fr) minmax(260px,1.2fr) minmax(140px,.65fr) minmax(220px,1fr);grid-auto-flow:column;grid-auto-columns:minmax(220px,1fr);overflow-x:auto}
 
-.qc-metrics article{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:148px;padding:18px 16px;text-align:center}
+.qc-metrics article{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:148px;padding:36px 16px;text-align:center;position:relative}
 .qc-metrics article>span{justify-content:center;font-size:14px}
 .qc-metrics article>strong{font-size:30px;line-height:1.2;font-weight:650;margin:0}
 .qc-metrics article>small{font-size:12px;line-height:1.4}
 .qc-temperature-metric>span{font-size:14px}
+
+/* Field labels anchor the footer; the primary value stays at the tile center. */
+.qc-metrics article:not(.qc-cell-type)>span,.qc-temperature-metric>span{position:absolute;left:16px;right:16px;bottom:12px;justify-content:flex-start;text-align:left}
+.qc-temperature-metric{position:static;flex:1;gap:0}
+.qc-metrics article>small{position:absolute;top:12px;left:16px;right:16px;font-size:11px}

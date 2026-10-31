@@ -133,3 +133,9 @@ vertically and horizontally in their tiles, with larger primary values. All summ
 views scroll the summary horizontally instead of wrapping cards or shrinking
 primary text below a readable size. The rig
 filename fallback is display-only and never changes recorded metadata.
+
+Field labels sit at the bottom-left of each metric tile, independently of the
+centered primary value. Redundant acquisition/provenance captions are omitted;
+source group provenance stays in the solution tooltip, and incomplete-group
+warnings remain visible above the value. Identity keeps its type/icon/date-cell
+composition.
