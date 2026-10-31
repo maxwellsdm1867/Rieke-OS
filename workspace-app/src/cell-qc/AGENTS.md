@@ -128,14 +128,19 @@ The explicit entry's selected row is revealed by scrolling only the bounded tria
 list, without moving the outer workspace or stealing keyboard focus. Hidden lists
 perform no scroll work.
 
-Cell QC date and cell label share one prominent heading. All metric content groups are centered
-vertically and horizontally in their tiles, with larger primary values. All summary tiles remain in one horizontal row, including additions. Narrow
+Cell QC date and cell label share one prominent heading. Metric values retain their vertical midpoint
+and use the label text’s left anchor, with larger primary values. All summary tiles remain in one horizontal row, including additions. Narrow
 views scroll the summary horizontally instead of wrapping cards or shrinking
 primary text below a readable size. The rig
 filename fallback is display-only and never changes recorded metadata.
 
 Field labels sit at the upper-left of each metric tile, independently of the
-centered primary value. Redundant acquisition/provenance captions are omitted;
+vertically centered primary value. Redundant acquisition/provenance captions are omitted;
 source group provenance stays in the solution tooltip, and incomplete-group
-warnings remain visible below the value. Identity keeps its type/icon/date-cell
-composition.
+warnings remain visible below the value. Identity leads with date/cell, followed by its compact icon/type row.
+
+The summary uses common text anchors: metric values align with their label text,
+not the leading label icon. Their approved vertical midpoint is preserved.
+Identity is date-led: date and cell name form the first, prominent line at the
+value midpoint; a compact cell icon and cell-type row follows beneath it.
+Identity qualifiers remain visible in that secondary row.

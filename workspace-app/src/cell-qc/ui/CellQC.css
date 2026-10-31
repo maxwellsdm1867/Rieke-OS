@@ -60,3 +60,15 @@
 .qc-metrics article:not(.qc-cell-type)>span,.qc-temperature-metric>span{position:absolute;left:16px;right:16px;top:12px;justify-content:flex-start;text-align:left}
 .qc-temperature-metric{position:static;flex:1;gap:0}
 .qc-metrics article>small{position:absolute;bottom:12px;left:16px;right:16px;font-size:11px}
+
+/* Shared text anchors make each value read with its field label. */
+.qc-metrics article:not(.qc-cell-type)>strong,.qc-temperature-metric>strong{align-self:stretch;text-align:left;padding-left:23px}
+.qc-temperature-metric{color:var(--ink)}
+.qc-metrics article>small{left:39px;text-align:left}
+.qc-metrics article.qc-cell-type{padding:36px 16px;align-items:stretch;gap:0}
+.qc-cell-type h1{text-align:left}
+.qc-cell-secondary{position:absolute;left:16px;right:16px;bottom:12px;display:flex;align-items:center;gap:9px;text-align:left}
+.qc-cell-secondary>svg{flex-shrink:0}
+.qc-cell-secondary>div{min-width:0}
+.qc-cell-secondary strong{display:block;font-size:15px;line-height:18px;font-weight:600;overflow-wrap:anywhere}
+.qc-cell-secondary .qc-cell-qualifier{display:block;font-size:11px;line-height:14px;overflow-wrap:anywhere}
