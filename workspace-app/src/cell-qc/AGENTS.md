@@ -141,9 +141,9 @@ warnings remain visible below the value. Identity leads with date/cell, followed
 
 The summary uses common text anchors: metric values align with their label text,
 not the leading label icon. Their approved vertical midpoint is preserved.
-Identity keeps its horizontal centering, 24px date/cell text and familiar 42px
+Identity keeps its horizontal centering, 18px dark date/cell text and familiar 42px
 glyph. The date/cell line starts near the upper field-label level; the glyph and
 larger 22px cell type share the next line. The summary row is 120px minimum high.
 Qualifiers remain in normal flow. The user selected compact variant B from the
-throwaway comparison on branch codex/qc-identity-layout-prototype at c9b691f,
+throwaway comparison on branch codex/qc-identity-layout-prototype at 437f270 (initial compact B at c9b691f),
 reviewed visually at full and narrower widths before native qualification.
