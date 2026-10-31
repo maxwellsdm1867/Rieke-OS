@@ -37,7 +37,7 @@ test('temperature tile opens conditions, lazy trend and all-epoch pages with exa
   assert.equal(card.props['aria-expanded'],false);
   assert.equal(renderer.root.findAllByProps({className:'qc-trend'}).length,0);
   await act(async()=>card.props.onClick());
-  assert.ok(JSON.stringify(renderer.toJSON()).includes('Unmeasured'));
+  assert.ok(JSON.stringify(renderer.toJSON()).includes('Unknown'));
   assert.ok(JSON.stringify(renderer.toJSON()).includes('No reading available'));
   for(let index=0;index<10;index++)await act(async()=>findButton('Next').props.onClick());
   assert.equal(findButton('Next').props.disabled,true);
@@ -51,7 +51,7 @@ test('temperature tile opens conditions, lazy trend and all-epoch pages with exa
  }
 });
 
-test('temperature warnings preserve units and distinguish unknown and unmeasured trials',async()=>{
+test('temperature uses Celsius for omitted units and warns only below 25 or for unknown readings',async()=>{
  const previous=globalThis.fetch;
  let temperature;
  globalThis.fetch=async url=>({ok:true,json:async()=>url.includes('/qc?')?{cell:{cell_uuid:'warning-cell'},families:[],temperature,counts:{epochs:3}}:{fields:[]}});
@@ -59,7 +59,7 @@ test('temperature warnings preserve units and distinguish unknown and unmeasured
  let renderer;
  try{
   const {default:CellQC}=await server.ssrLoadModule('/src/cell-qc/ui/CellQC.jsx');
-  for(const [value,units,missing,unknown,label,warn] of [[27.9,'degC',0,0,'27.9 °C',true],[28,'degC',0,0,'28 °C',false],[30,'degC',2,0,'30 °C',true],[0,null,0,1,'Unknown',true],[null,null,3,0,'Unmeasured',true]]){
+  for(const [value,units,missing,unknown,label,warn] of [[24.9,null,0,1,'24.9 °C',true],[25,null,0,1,'25 °C',false],[27.9,'degC',0,0,'27.9 °C',false],[32.5,null,0,185,'32.5 °C',false],[30,'degC',2,0,'30 °C',true],[0,null,0,1,'0 °C',true],[null,null,3,0,'Unknown',true],[77,'degF',0,0,'77 °F',false]]){
    temperature={recorded_count:value===null?0:1,missing_count:missing,unknown_units_count:unknown,units,range:value===null?null:{min:value,max:value},points:[]};
    await act(async()=>{renderer=TestRenderer.create(React.createElement(CellQC,{cellUuid:'warning-cell',revision:Math.random()}));});
    const card=renderer.root.findByProps({className:'qc-temperature-metric'});

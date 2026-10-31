@@ -19,6 +19,8 @@ const numeric=value=>typeof value==='number'&&Number.isFinite(value);
 const display=value=>!numeric(value)?'—':value!==0&&(Math.abs(value)<0.001||Math.abs(value)>=1e6)?value.toExponential(3):new Intl.NumberFormat(undefined,{maximumSignificantDigits:5}).format(value);
 const temperatureUnit=units=>{
   const key=String(units||'').trim().toLowerCase().replace(/[°\s_-]/g,'');
+  // bathTemperature is Celsius by acquisition convention when units are omitted.
+  if(!key)return '°C';
   if(['c','degc','celsius','degreecelsius','degreescelsius'].includes(key))return '°C';
   if(['f','degf','fahrenheit','degreefahrenheit','degreesfahrenheit'].includes(key))return '°F';
   if(['k','kelvin'].includes(key))return 'K';
@@ -26,18 +28,18 @@ const temperatureUnit=units=>{
 };
 const temperatureLow=(value,units)=>{
   const unit=temperatureUnit(units);
-  return numeric(value)&&(unit==='°C'?value<28:unit==='°F'?value<82.4:unit==='K'?value<301.15:false);
+  return numeric(value)&&(unit==='°C'?value<25:unit==='°F'?value<77:unit==='K'?value<298.15:false);
 };
 function TemperatureValue({value,units,missing=false}){
   const unit=temperatureUnit(units),unmeasured=missing||!numeric(value);
-  return <span className={unmeasured||!unit||temperatureLow(value,unit)?'qc-temperature-warning':undefined} title={unmeasured?'No reading available':!unit?`Recorded value: ${display(value)}; unit not recorded`:undefined}>{unmeasured?'Unmeasured':!unit?'Unknown':`${display(value)} ${unit}`}</span>;
+  return <span className={unmeasured||!unit||temperatureLow(value,unit)?'qc-temperature-warning':undefined} title={unmeasured?'No reading available':!unit?`Recorded value: ${display(value)}; unit not recorded`:undefined}>{unmeasured?'Unknown':!unit?'Unknown':`${display(value)} ${unit}`}</span>;
 }
 function TemperatureSummary({temperature}){
   const range=temperature?.range,unit=temperatureUnit(temperature?.units),count=temperature?.recorded_count||0;
-  const missing=temperature?.missing_count||0,unknown=temperature?.unknown_units_count??(!unit&&range?count:0);
-  const warning=!count||unknown>0||missing>0||(range&&temperatureLow(range.min,unit));
-  const label=!count?'Unmeasured':unknown===count?'Unknown':range&&unit?`${display(range.min)}${range.max!==range.min?` – ${display(range.max)}`:''} ${unit}`:'See trials';
-  return <><strong className={warning?'qc-temperature-warning':undefined}>{label}</strong><small>{number(count)} observations · Readings & conditions</small>{unknown>0&&<small className="qc-temperature-warning">{number(unknown)} trials: Unknown — unit not recorded</small>}{missing>0&&<small className="qc-temperature-warning">{number(missing)} trials: Unmeasured — no reading available</small>}{!count&&!missing&&<small className="qc-temperature-warning">No reading available</small>}</>;
+  const missing=temperature?.missing_count||0;
+  const warning=!count||missing>0||(range&&temperatureLow(range.min,unit));
+  const label=!count?'Unknown':range&&unit?`${display(range.min)}${range.max!==range.min?` – ${display(range.max)}`:''} ${unit}`:'See trials';
+  return <><strong className={warning?'qc-temperature-warning':undefined}>{label}</strong><small>{number(count)} observations · Readings & conditions</small>{missing>0&&<small className="qc-temperature-warning">{number(missing)} trials: Unknown — no reading available</small>}{!count&&!missing&&<small className="qc-temperature-warning">No reading available</small>}</>;
 }
 function solutionText(value){
   if(value==null||value===false)return '';
@@ -96,10 +98,10 @@ function TemperaturePanel({cellUuid,revision,opened,onToggle,temperature,groupLa
   if(!opened)return null;
   return <section id={`qc-temperature-${cellUuid}`} className="qc-temperature" aria-label="Temperature and recording conditions"><header><h2><Thermometer size={16}/> Temperature & recording conditions</h2><button onClick={onToggle}>Close temperature details</button></header>
     <p className="qc-muted">Recording conditions: {groupLabels.length?groupLabels.join(' · '):'Not recorded'}</p>
-    {temperature?.range&&temperature?.units?<Trend points={temperature.points} label="Recorded bath temperature" units={temperatureUnit(temperature.units)}/>:<p className="qc-muted">No comparable temperature range. Recorded values and units are listed below.</p>}
-    <p className="qc-muted">{number(temperature?.missing_count)} epochs without a temperature entry. Values follow acquisition order. Readings below 28 °C (or equivalent), unknown units and missing readings are highlighted in red.{temperature?.truncated?' The chart preview is bounded; use the pages below to inspect all epochs.':''}</p>
+    {temperature?.range?<Trend points={temperature.points} label="Recorded bath temperature" units={temperatureUnit(temperature.units)}/>:<p className="qc-muted">No comparable temperature range. Recorded values and units are listed below.</p>}
+    <p className="qc-muted">{number(temperature?.missing_count)} epochs without a temperature entry. Values follow acquisition order. Bath temperature is in Celsius when no unit is stored. Unknown readings and values below 25 °C (or equivalent) are highlighted in red.{temperature?.truncated?' The chart preview is bounded; use the pages below to inspect all epochs.':''}</p>
     <h3>Readings by epoch</h3>
-    <Status {...result} retry={result.reload}>{data&&<><div className="qc-scroll-table"><table><thead><tr><th>Order / epoch</th><th>Recording time</th><th>Value</th><th>Recorded units</th><th>Source epoch</th></tr></thead><tbody>{data.observations.map(row=><tr key={row.epoch_uuid}><td>{row.recording_order} / {row.epoch_number??'Unrecorded'}</td><td>{row.start_time||'Time not recorded'}</td><td><TemperatureValue value={row.value} units={row.units} missing={row.status!=='recorded'}/></td><td>{row.units||<span className="qc-temperature-warning">{row.status==='recorded'?'Unknown — unit not recorded':'No reading available'}</span>}</td><td><button aria-pressed={selected===row.epoch_uuid} onClick={()=>setSelected(row.epoch_uuid)}>Inspect epoch</button><code>{row.epoch_uuid}</code></td></tr>)}</tbody></table></div><footer className="qc-observation-pages"><button disabled={!offset} onClick={()=>setOffset(Math.max(0,offset-50))}>Previous</button><span>{data.total?`${offset+1}–${offset+data.observations.length}`:'0'} of {number(data.total)} epochs</span><button disabled={!data.has_more} onClick={()=>setOffset(offset+50)}>Next</button></footer></>}</Status>
+    <Status {...result} retry={result.reload}>{data&&<><div className="qc-scroll-table"><table><thead><tr><th>Order / epoch</th><th>Recording time</th><th>Value</th><th>Units</th><th>Source epoch</th></tr></thead><tbody>{data.observations.map(row=><tr key={row.epoch_uuid}><td>{row.recording_order} / {row.epoch_number??'Unrecorded'}</td><td>{row.start_time||'Time not recorded'}</td><td><TemperatureValue value={row.value} units={row.units} missing={row.status!=='recorded'}/></td><td>{row.status==='recorded'?temperatureUnit(row.units):<span className="qc-temperature-warning">No reading available</span>}</td><td><button aria-pressed={selected===row.epoch_uuid} onClick={()=>setSelected(row.epoch_uuid)}>Inspect epoch</button><code>{row.epoch_uuid}</code></td></tr>)}</tbody></table></div><footer className="qc-observation-pages"><button disabled={!offset} onClick={()=>setOffset(Math.max(0,offset-50))}>Previous</button><span>{data.total?`${offset+1}–${offset+data.observations.length}`:'0'} of {number(data.total)} epochs</span><button disabled={!data.has_more} onClick={()=>setOffset(offset+50)}>Next</button></footer></>}</Status>
     {selected&&<Status {...epoch} retry={epoch.reload}>{source&&<div className="qc-temperature-source"><h3>Source epoch <code>{selected}</code></h3><Trace epoch={source}/><MetadataPanel epoch={source} catalog={catalog} onClose={()=>setSelected(null)}/></div>}</Status>}
   </section>;
 }

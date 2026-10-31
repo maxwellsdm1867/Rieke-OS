@@ -8,7 +8,7 @@ recorded labels remain unchanged and unknown types retain the neutral fallback. 
 Existing named exports, component props and adjacent CSS remain the public interface.
 
 Recorded UUIDs identify cells even when labels/dates repeat. Type labels remain source
-metadata; presentation grouping never retypes a cell. Missing type/value/unit stays
+metadata; presentation grouping never retypes a cell. Missing type/value stays
 unknown rather than becoming a zero or a fabricated category count. QC plots use
 finite recorded observations and preserve recorded units. Bath-temperature pages
 remain bounded to 50 observations; opening a selected epoch verifies both its epoch
@@ -90,10 +90,11 @@ bounded temperature-observations endpoint; the closed tile constructs no trend a
 loads no observation pages. No preparation command or new endpoint is introduced.
 
 Temperature summaries and trial rows show recorded units (Celsius aliases display
-as °C). Values strictly below 28 °C, or the equivalent in recorded °F/K, are red.
-Missing readings are Unmeasured; numeric values without recorded units are Unknown.
-Both are red and summary counts cover all epochs, including beyond the preview.
-Unlabelled values are never assumed Celsius; source metadata remains inspectable.
+as °C). Values strictly below 25 °C, or the equivalent in recorded °F/K, are red.
+Missing readings are Unknown and red; summary counts cover all epochs, including
+beyond the preview. Per the scientist’s acquisition convention, bathTemperature
+values without a separate unit field display as Celsius and are not unknown.
+Explicit recorded units remain respected; source metadata remains unchanged and inspectable.
 
 The top summary always shows Pipette solution from recorded group `pipetteSolution`,
 using Not recorded for missing/null. Internal additions and External additions
