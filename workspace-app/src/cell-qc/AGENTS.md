@@ -128,6 +128,7 @@ The explicit entry's selected row is revealed by scrolling only the bounded tria
 list, without moving the outer workspace or stealing keyboard focus. Hidden lists
 perform no scroll work.
 
-Cell QC date and cell label share one prominent heading. Temperature is centered
-vertically and horizontally in its tile, with a larger numeric value. The rig
+Cell QC date and cell label share one prominent heading. All metric content groups are centered
+vertically and horizontally in their tiles, with larger primary values. Tiles
+wrap according to available width and retain at least 300px when space allows. The rig
 filename fallback is display-only and never changes recorded metadata.
