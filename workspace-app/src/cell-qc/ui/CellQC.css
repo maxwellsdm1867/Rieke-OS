@@ -78,3 +78,10 @@
 .qc-cell-type-icon svg{width:36px;height:42px}
 .qc-cell-type-line>strong{font-size:30px;line-height:36px;font-weight:650;letter-spacing:-.5px;text-align:left;overflow-wrap:anywhere;min-width:0}
 .qc-metrics article.qc-cell-type>.qc-cell-qualifier{text-align:left;font-size:11px}
+
+/* Temperature is the only expandable summary field. */
+.qc-temperature-tile>.qc-temperature-metric{position:absolute;inset:0;width:100%;height:100%;padding:36px 16px!important;border-radius:0;cursor:pointer;transition:background-color 120ms ease}
+.qc-temperature-tile>.qc-temperature-metric:hover,.qc-temperature-tile>.qc-temperature-metric:focus-visible{background:var(--surface-subtle);color:var(--ink)}
+.qc-temperature-tile>.qc-temperature-metric:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.qc-temperature-icon{display:inline-flex;align-items:center;flex:0 0 16px}
+.qc-temperature-metric:hover .qc-temperature-icon,.qc-temperature-metric:focus-visible .qc-temperature-icon{color:var(--accent)}
