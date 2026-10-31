@@ -137,10 +137,13 @@ filename fallback is display-only and never changes recorded metadata.
 Field labels sit at the upper-left of each metric tile, independently of the
 vertically centered primary value. Redundant acquisition/provenance captions are omitted;
 source group provenance stays in the solution tooltip, and incomplete-group
-warnings remain visible below the value. Identity leads with date/cell, followed by the original icon and then cell type.
+warnings remain visible below the value. Identity leads with date/cell, followed by the original icon beside the cell type.
 
 The summary uses common text anchors: metric values align with their label text,
 not the leading label icon. Their approved vertical midpoint is preserved.
-Identity keeps its centered styling and familiar 42px glyph. Only its sequence
-changes: date and cell name first, then the icon, then cell type. Identity
-qualifiers remain visible in normal flow beneath the type.
+Identity keeps its horizontal centering, 24px date/cell text and familiar 42px
+glyph. The date/cell line starts near the upper field-label level; the glyph and
+larger 22px cell type share the next line. The summary row is 120px minimum high.
+Qualifiers remain in normal flow. The user selected compact variant B from the
+throwaway comparison on branch codex/qc-identity-layout-prototype at c9b691f,
+reviewed visually at full and narrower widths before native qualification.
