@@ -129,6 +129,7 @@ list, without moving the outer workspace or stealing keyboard focus. Hidden list
 perform no scroll work.
 
 Cell QC date and cell label share one prominent heading. All metric content groups are centered
-vertically and horizontally in their tiles, with larger primary values. Tiles
-wrap according to available width and retain at least 300px when space allows. The rig
+vertically and horizontally in their tiles, with larger primary values. All summary tiles remain in one horizontal row, including additions. Narrow
+views scroll the summary horizontally instead of wrapping cards or shrinking
+primary text below a readable size. The rig
 filename fallback is display-only and never changes recorded metadata.
