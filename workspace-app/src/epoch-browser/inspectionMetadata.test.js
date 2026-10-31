@@ -58,6 +58,7 @@ test('field-only sidebar copies exact registered IDs without requesting values o
  try{
   await h.render();await act(async()=>h.root.findByProps({'aria-label':'Search metadata fields'}).props.onChange({target:{value:'a~1b'}}));await act(async()=>h.root.findByProps({'aria-label':'Copy field ID metadata/cell/a~1b'}).props.onClick());
   assert.equal(copied,'metadata/cell/a~1b');assert.equal(h.calls.length,0);
+  const name=h.root.findByProps({'aria-label':'Copy field name Field with slash'});assert.equal(name.props.title,'Click to copy name');await act(async()=>name.props.onClick());assert.equal(copied,'Field with slash');assert.equal(h.calls.length,0);
   const text=JSON.stringify(h.root.toJSON?.()??h.root.findByProps({'aria-label':'Available metadata fields'}).findAllByType('p').map(n=>n.children));
   assert.doesNotMatch(text,/No protocol settings were recorded|Not recorded/);
   await h.render({record:{epoch_uuid:'a'}});assert.match(h.current.resource.error,/Trace information is unavailable/);assert.equal(h.calls.length,0);
@@ -418,4 +419,19 @@ test('selected off-page offers never borrow parent capabilities and cell-focus c
   assert.equal(h.viewer.traceEpoch,null,'clearing focused-cell scope needs the new scope receipt');
   assert.equal(h.fixture.requests.some(r=>r.path.includes('/display?')),false);
  }finally{await focused.close();}
+});
+
+for(const live of [false,true])test(`metadata names and values copy with live updates ${live?'on':'off'}`,async()=>{
+ const h=await harness({live}),descriptor=Object.getOwnPropertyDescriptor(globalThis,'navigator');let copied;
+ Object.defineProperty(globalThis,'navigator',{configurable:true,value:{clipboard:{writeText:async text=>{copied=text;}}}});
+ try{
+  await h.render();if(!live)await act(async()=>h.current.metadata.load());
+  await act(async()=>h.calls.at(-1).finish({...row('a'),parameters:{gain:0,enabled:false,settings:[1,2]}}));
+  for(const [key,value] of [['gain','0'],['enabled','false'],['settings','[\n  1,\n  2\n]']]){
+   const name=h.root.findByProps({'aria-label':`Copy setting name ${key}`}),button=h.root.findByProps({'aria-label':`Copy setting value ${key}`});
+   assert.equal(name.props.title,'Click to copy name');assert.match(button.props.title,/^Click to copy value/);
+   await act(async()=>name.props.onClick());assert.equal(copied,key);
+   await act(async()=>button.props.onClick());assert.equal(copied,value);
+  }
+ }finally{if(descriptor)Object.defineProperty(globalThis,'navigator',descriptor);else delete globalThis.navigator;await h.close();}
 });
