@@ -132,3 +132,18 @@ test('App owner derives distinct loading, failed, browse-only and selected-profi
    }
  }finally{await h.close();}
 });
+
+
+test('epoch UUID results keep exact identity with or without saved protocol membership',async()=>{
+ const h=await createGlobalSearchHarness();const epochs=[],cells=[];
+ try{
+  await h.render({onEpoch:row=>epochs.push(row),onCell:row=>cells.push(row)});
+  for(const [index,protocol_uuid] of ['protocol-A',null].entries()){
+   const row={kind:'epoch',id:`epoch-${index}`,epoch_uuid:`epoch-${index}`,cell_uuid:'cell-a',label:`Epoch ${index}`,protocol_uuid,protocols:protocol_uuid?[{name:'Saved protocol'}]:[]};
+   h.fixture.result={results:[row],total:1};await open(h);await query(h,`epoch-${index}`);await settle(h,index+1);
+   assert.ok(rows(h)[0].findAllByType('small').some(node=>node.children.includes(' · Open in Cell QC')));
+   await h.act(()=>rows(h)[0].props.onClick());assert.deepEqual(epochs.at(-1),row);
+  }
+  assert.equal(epochs.length,2);assert.deepEqual(cells,[]);
+ }finally{await h.close();}
+});

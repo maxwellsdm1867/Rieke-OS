@@ -228,8 +228,16 @@ class CellQC:
             'total': len(rows), 'offset': offset, 'limit': limit,
             'has_more': offset + limit < len(rows)}
 
-    def epochs(self, cell_uuid, family_id=None, offset=0, limit=50):
+    def epochs(self, cell_uuid, family_id=None, offset=0, limit=50, anchor_epoch_uuid=None):
         all_rows = self.rows(cell_uuid)
+        anchor_id = str(uuid.UUID(anchor_epoch_uuid)) if anchor_epoch_uuid is not None else None
+        if anchor_id is not None:
+            anchor = next((row for row in all_rows if row['epoch_uuid'] == anchor_id), None)
+            if anchor is None:
+                raise ValueError('Anchor epoch does not belong to this cell')
+            if family_id == 'default':
+                kind = family(anchor)
+                family_id = 'protocol:' + anchor['protocol_name'] if kind == 'other' else kind
         if family_id == 'default':
             present = {family(row) for row in all_rows}
             family_id = next((key for key in FAMILIES if key != 'other' and key in present), None)
@@ -242,11 +250,19 @@ class CellQC:
             raise ValueError('QC epoch page requires nonnegative offset and limit 1–100')
         rows = [r for r in all_rows if family_id is None
                 or (r['protocol_name'] == protocol if protocol is not None else family(r) == family_id)]
+        if anchor_id is not None:
+            index = next((i for i, row in enumerate(rows) if row['epoch_uuid'] == anchor_id), None)
+            if index is None:
+                raise ValueError('Anchor epoch is outside the selected protocol family')
+            offset = (index // limit) * limit
         values = [{**copy.deepcopy(row), 'parameters': detail.get('parameters', {}),
             'source_filename': Path(self.service.manifests[row['source_sha256']]['source_path']).name}
             for row, detail in self._details(rows[offset:offset+limit], fields=('parameters',))]
-        return {'family': family_id, 'epochs': values, 'total': len(rows), 'offset': offset, 'limit': limit,
-                'has_more': offset + limit < len(rows)}
+        result = {'family': family_id, 'epochs': values, 'total': len(rows), 'offset': offset, 'limit': limit,
+                  'has_more': offset + limit < len(rows)}
+        if anchor_id is not None:
+            result['anchor_epoch_uuid'] = anchor_id
+        return result
 
     def _response_stream(self, row, stream_uuid=None):
         streams = [s for s in row.get('streams', []) if s['kind'] == 'responses']
@@ -571,10 +587,11 @@ def register_qc_routes(app, service, db_lock):
 
     @app.get('/api/cells/<cell_uuid>/qc/epochs')
     def cell_qc_epochs(cell_uuid):
-        options({'family', 'offset', 'limit'})
+        options({'family', 'offset', 'limit', 'anchor_epoch_uuid'})
         with db_lock:
             return jsonify(qc.epochs(cell_uuid, request.args.get('family'),
-                int(request.args.get('offset', 0)), int(request.args.get('limit', 50))))
+                int(request.args.get('offset', 0)), int(request.args.get('limit', 50)),
+                request.args.get('anchor_epoch_uuid')))
 
     @app.get('/api/cells/<cell_uuid>/qc/temperature')
     def cell_qc_temperature(cell_uuid):

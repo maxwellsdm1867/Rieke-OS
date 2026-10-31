@@ -328,7 +328,7 @@ export default function App(){
   function sourceMerged(id,{navigate=true}={},receipt=null){announceMerge(receipt);const key=mergedSourceKey(sourceMergeProject,receipt);if(key)setMergedSources(previous=>rememberMergedSource(previous,key));const origin=sourceMergeOrigin.current;sourceMergeOrigin.current=null;changed({kind:'membership',protocolId:id});if(!navigate||(origin?.protocolId===id&&origin.routeKey===route.key))return;const prior=presentation.current.read({page:'protocol',protocol:id,key:''}).session;presentation.current.remember({page:'protocol',protocol:id,key:'source-merge-overview'}, {...prior,tab:'overview'});navigation.go('protocol',{protocol:id});}
   function protocolApplied(id,{navigate=true}={}){changed({kind:'membership',protocolId:id});if(navigate)navigation.go('protocol',{protocol:id});}
   function openQC(cellUuid,epochUuid=null){navigation.go('cell-qc',{cell_uuid:cellUuid,epoch_uuid:epochUuid});}
-  function searchEpoch(result){if(result.protocol_uuid)openInspection(result.protocol_uuid,result);else openQC(result.cell_uuid,result.epoch_uuid);}
+  function searchEpoch(result){openQC(result.cell_uuid,result.epoch_uuid);}
   function searchPredicate(predicate){navigation.go('explore',{explorePredicate:predicate});}
   function renderDestination(destination,{active,remember,values,whenCurrent}){
     const {page,protocol,recipe:initialRecipe=null,inspection:initialInspection=null,explorePredicate=null,exploreRevisionId=null,exploreTargetId=null,exploreExportIntent=null}=destination;

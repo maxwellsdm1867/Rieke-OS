@@ -173,3 +173,53 @@ test('first trial reads precede a held overview and late default pages cannot re
   assert.equal(h.root.findByProps({className:'qc-trace-identity'}).findByType('code').children.join(''),'epoch-1');
  }finally{releaseOverview?.();pendingDefault?.release();await h.close();}
 });
+
+
+async function anchoredSetup({held=false}={}){
+ const h=await createWorkflowHarness();let release;
+ h.fixture.respond=(url,options,fallback)=>{
+  const route=url.pathname.replace('/api','');
+  if(route==='/cells/cell-0/qc')return {cell:{cell_uuid:'cell-0',label:'Cell 0'},counts:{epochs:101},families:[{id:'expanding_spots',label:'Spots',epoch_count:1,protocol_names:['Spots']},{id:'protocol:Test',label:'Test',epoch_count:100,protocol_names:['Test']}]};
+  if(route==='/cells/cell-0/qc/epochs'){
+   const anchor=url.searchParams.get('anchor_epoch_uuid'),family=anchor?'protocol:Test':url.searchParams.get('family');
+   const offset=anchor?40:Number(url.searchParams.get('offset'));
+   const epochs=family==='expanding_spots'?[{epoch_uuid:'epoch-0',epoch_number:1}]:Array.from({length:Math.min(40,100-offset)},(_,i)=>({epoch_uuid:`epoch-${offset+i}`,epoch_number:offset+i+1}));
+   const page={family,offset,limit:40,total:family==='expanding_spots'?1:100,has_more:family!=='expanding_spots'&&offset+40<100,epochs,...(anchor?{anchor_epoch_uuid:anchor}:{})};
+   if(anchor&&held)return new Promise(resolve=>release=()=>resolve(page));
+   return page;
+  }
+  if(route==='/cells/cell-0/qc/response')return {cell_uuid:'cell-0',epoch_uuid:url.searchParams.get('epoch_uuid'),statistics:{pre:{mean:1},stim:{mean:2},delta_mean:1,units:'mV'}};
+  return fallback();
+ };
+ const Component=await h.component('CellQC');await h.mount(Component,{cellUuid:'cell-0',initialEpochUuid:'epoch-73',revision:0});
+ return {h,release:()=>release?.()};
+}
+
+test('epoch entry shows its exact trial and page before ordinary next-page navigation',async()=>{
+ const {h}=await anchoredSetup();
+ try{
+  await h.waitFor(()=>h.fixture.requests.some(r=>r.path.includes('family=protocol%3ATest&offset=40')));
+  await h.waitFor(()=>h.root.findByProps({className:'qc-trial-list'}).findAllByType('button').length===40);
+  const trial=h.root.findByProps({className:'qc-trial-list'}).findAllByType('button').find(n=>n.props['aria-pressed']);
+  assert.ok(trial);assert.match(trial.findByType('span').children.join(''),/Epoch 74$/);
+  assert.equal(h.root.findByProps({className:'qc-trace-identity'}).findByType('code').children.join(''),'epoch-73');
+  const footer=h.root.findByProps({className:'qc-trials'}).findByType('footer');
+  assert.ok(footer.findByType('span').children.join('').includes('41'));
+  await h.act(()=>footer.findAllByType('button').find(n=>n.children.includes('Next')).props.onClick());
+  await h.waitFor(()=>h.root.findAllByProps({className:'qc-trace-identity'}).some(n=>n.findByType('code').children.join('')==='epoch-80'));
+  assert.equal(h.fixture.requests.filter(r=>r.path.includes('anchor_epoch_uuid')).length,1);
+ }finally{await h.close();}
+});
+
+test('explicit protocol choice wins over a late epoch-entry anchor response',async()=>{
+ const {h,release}=await anchoredSetup({held:true});
+ try{
+  await h.waitFor(()=>h.root.findAllByProps({className:'qc-families'}).length>0);
+  const spots=h.root.findByProps({className:'qc-families'}).findAllByType('button').find(n=>n.findByType('span').children.join('')==='Spots');
+  await h.act(()=>spots.props.onClick());
+  await h.waitFor(()=>h.root.findAllByProps({className:'qc-trace-identity'}).some(n=>n.findByType('code').children.join('')==='epoch-0'));
+  await h.act(()=>release());
+  assert.equal(h.root.findByProps({className:'qc-trace-identity'}).findByType('code').children.join(''),'epoch-0');
+  assert.equal(h.root.findByProps({className:'qc-families'}).findAllByType('button').find(n=>n.props['aria-pressed']).findByType('span').children.join(''),'Spots');
+ }finally{release();await h.close();}
+});

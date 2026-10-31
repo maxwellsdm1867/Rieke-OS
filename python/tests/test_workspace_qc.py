@@ -176,6 +176,47 @@ class CellQCTests(unittest.TestCase):
         self.assertFalse(self.case.curation.rows)
         self.assertFalse(self.case.datasets.rows)
 
+    def test_epoch_anchor_resolves_exact_non_qc_protocol_and_bounded_page(self):
+        template = self.service.rows[self.ids[0]]
+        identities = []
+        for index in range(85):
+            identity = str(uuid.uuid5(uuid.UUID(self.cell), f'anchor-{index}'))
+            identities.append(identity)
+            self.service.rows[identity] = {**copy.deepcopy(template), 'epoch_uuid': identity,
+                'protocol_name': 'lab.NoiseExample',
+                'start_time': f'09/24/2026 14:{index // 60:02d}:{index % 60:02d}:000000'}
+            self.service.details[identity] = {'parameters': {'ordinal': index}}
+        response = self.case.client.get(self.base + '/epochs', query_string={
+            'family': 'default', 'limit': 40, 'anchor_epoch_uuid': identities[73]})
+        self.assertEqual(response.status_code, 200, response.get_json())
+        page = response.get_json()
+        self.assertEqual(page['family'], 'protocol:lab.NoiseExample')
+        self.assertEqual((page['offset'], page['total'], page['limit']), (40, 85, 40))
+        self.assertEqual(page['anchor_epoch_uuid'], identities[73])
+        self.assertEqual([row['epoch_uuid'] for row in page['epochs']], identities[40:80])
+        self.assertEqual(page['epochs'][33]['parameters'], {'ordinal': 73})
+        for options in [
+            {'anchor_epoch_uuid': self.ids[1]},
+            {'anchor_epoch_uuid': str(uuid.uuid4())},
+            {'anchor_epoch_uuid': 'not-a-uuid'},
+            {'anchor_epoch_uuid': identities[73], 'family': 'expanding_spots'},
+            {'anchor_epoch_uuid': identities[73], 'limit': 101},
+        ]:
+            result = self.case.client.get(self.base + '/epochs', query_string=options)
+            self.assertEqual(result.status_code, 400, result.get_json())
+        self.service.trace.assert_not_called()
+        self.assertFalse(self.case.events.rows)
+        self.assertFalse(self.case.curation.rows)
+        self.assertFalse(self.case.datasets.rows)
+
+    def test_epoch_anchor_selects_the_targets_qc_family(self):
+        self.same_cell()
+        self.service.rows[self.ids[1]]['protocol_name'] = 'lab.SplitFieldCentering'
+        page = self.qc.epochs(self.cell, 'default', limit=40, anchor_epoch_uuid=self.ids[1])
+        self.assertEqual(page['family'], 'split_field')
+        self.assertEqual([row['epoch_uuid'] for row in page['epochs']], [self.ids[1]])
+        self.assertEqual(page['offset'], 0)
+
     def test_other_protocols_are_distinct_exact_names_and_pages(self):
         self.same_cell()
         names = ['lab.one.UnusualProtocol', 'lab.two.UnusualProtocol']

@@ -115,3 +115,15 @@ The metrics row's left identity tile contains the recorded type, retinal icon,
 cell name and recorded date; no duplicate hero/banner sits above it. Full UUID
 is in the copy control's title and exposed as selectable text if clipboard fails.
 Recorded identity qualifiers remain visible. Dates are never rewritten.
+
+An explicit epoch entry anchors its first bounded trial page via the existing
+`GET /cells/<cell>/qc/epochs` read with `anchor_epoch_uuid`. With `family=default`,
+the backend resolves the target's QC family (or exact non-QC protocol) and its
+page offset. Anchors outside the cell or requested family are refused. Only the
+returned page's parameter details are read; no waveform or scientific write is
+performed. The renderer retains exact selected-epoch identity and adopts the
+resolved page only while that entry intent is current; explicit family changes
+win over late anchor responses. History restores its own selected trial/page.
+The explicit entry's selected row is revealed by scrolling only the bounded trial
+list, without moving the outer workspace or stealing keyboard focus. Hidden lists
+perform no scroll work.

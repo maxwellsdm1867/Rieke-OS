@@ -1,6 +1,6 @@
 import {cellTypeQCLabel,recordingRigLabel} from '../cellTypes.js';
 import CellTypeIcon from '../../components/CellTypeIcon.jsx';
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {Activity,FlaskConical,Monitor,ArrowLeft,ArrowUpRight,Check,Copy,Info,Layers,RefreshCw,Thermometer,Tag} from 'lucide-react';
 import {api,humanize,number,useResource} from "../../api.js";
 import {Badge,Empty,Status} from "../../components/Common.jsx";
@@ -11,6 +11,7 @@ import AnnotationTags from "../../annotations/ui/AnnotationTags.jsx";
 import TagExchangeControls from "../../annotations/ui/TagExchangeControls.jsx";
 import {datedCellLabel,recordingDate} from "../../recording-import/recordingIdentity.js";
 import {epochResourceCache} from '../../resourceCache.js';
+import {useRetainedView} from '../../retainedWorkspaceViews.js';
 import {tagStore} from "../../annotations/tagStore.js";
 import {useDeferredTagVersion} from "../../annotations/useTagStore.js";
 import './CellQC.css';
@@ -151,6 +152,7 @@ function ConditionSummary({cellUuid,family,epoch,revision,onSelect}){
 }
 
 export default function CellQC({cellUuid,revision,structureRevision=revision,annotationRevision=revision,onBack,initialEpochUuid,session,onSession,onAnnotationsChanged,onTagFilter}){
+  const viewActive=useRetainedView()?.active!==false;
   const [refresh,setRefresh]=useState(0),[tagRefresh,setTagRefresh]=useState(0),[tagFocus,setTagFocus]=useState(0),[temperatureOpen,setTemperatureOpen]=useState(false);
   // Confirmed tags live in the tag store and are shown in place: one write, no
   // reread. Other annotation changes (imports, unverified saves) renew the epoch.
@@ -168,11 +170,13 @@ export default function CellQC({cellUuid,revision,structureRevision=revision,ann
   const available=(data?.families||[]).filter(item=>item.epoch_count>0);
   // Default-family resolution belongs to the bounded page read, so a first
   // trial can load while the independent cell-wide summary is still pending.
-  const rowsPath=`/cells/${cellUuid}/qc/epochs?family=${encodeURIComponent(family||'default')}&offset=${offset}&limit=40`;
+  const anchorEpoch=!family&&initialEpochUuid?(selected||initialEpochUuid):null;
+  const rowsPath=`/cells/${cellUuid}/qc/epochs?family=${encodeURIComponent(family||'default')}&offset=${offset}&limit=40${anchorEpoch?`&anchor_epoch_uuid=${encodeURIComponent(anchorEpoch)}`:''}`;
   const rows=useResource(rowsPath,qcRevision,0,{cache:true});
-  const active=family || rows.data?.family || available[0]?.id;
+  const active=family || rows.data?.family || (!anchorEpoch?available[0]?.id:null);
   const epochs=rows.path===rowsPath?rows.data?.epochs||[]:[];
   const epochId=selected || epochs[0]?.epoch_uuid;
+  const trialList=useRef(null),selectedTrial=useRef(null);
   const epoch=useResource(epochId?`/epochs/${epochId}`:null,liveRevision,0,{cache:true});
   const response=useResource(epochId?`/cells/${cellUuid}/qc/response?epoch_uuid=${epochId}&summary_only=true`:null,qcRevision,0,{cache:true});
   const catalog=useResource(showMetadata?'/explore/predicate-fields':null,qcRevision);
@@ -187,20 +191,36 @@ export default function CellQC({cellUuid,revision,structureRevision=revision,ann
   // Tag receipts change only annotation display; the trace keeps the source
   // epoch object so a tag save never repaints recorded samples.
   const rawEpoch=useMemo(()=>sourceEpoch&&tagStore.apply(sourceEpoch),[sourceEpoch,tagVersion]);
-  useEffect(()=>{if(!family&&(initialEpochUuid||selected)&&rawEpoch){const match=available.find(item=>item.protocol_names?.includes(rawEpoch.protocol_name));if(match)setFamily(match.id);}},[family,initialEpochUuid,selected,rawEpoch,data]);
+  useEffect(()=>{
+    if(family)return;
+    if(anchorEpoch){
+      if(rows.path===rowsPath&&rows.data?.anchor_epoch_uuid===anchorEpoch){setFamily(rows.data.family);setOffset(rows.data.offset);}
+    }else if(selected&&rawEpoch){
+      const match=available.find(item=>item.protocol_names?.includes(rawEpoch.protocol_name));if(match)setFamily(match.id);
+    }
+  },[family,anchorEpoch,rows.path,rows.data,rowsPath,selected,rawEpoch,data]);
+  useEffect(()=>{
+    const list=trialList.current,trial=selectedTrial.current;
+    if(!viewActive||!initialEpochUuid||epochId!==initialEpochUuid||!list?.clientHeight||!trial)return;
+    // Reveal only inside the trial list; do not move the outer workspace or focus.
+    const top=trial.getBoundingClientRect().top-list.getBoundingClientRect().top+list.scrollTop;
+    const bottom=top+trial.offsetHeight;
+    if(top<list.scrollTop)list.scrollTop=top;
+    else if(bottom>list.scrollTop+list.clientHeight)list.scrollTop=bottom-list.clientHeight;
+  },[viewActive,initialEpochUuid,epochId,rows.path,rows.data]);
   const measured=response.data?.epoch_uuid===epochId&&response.data?.cell_uuid===cellUuid?response.data:null;
   const stats=measured?.statistics;
   const summaryStream=rawEpoch?.streams?.find(stream=>stream.uuid===measured?.trace?.stream_uuid);
   async function copyIdentity(){try{await navigator.clipboard.writeText(cellUuid);setCopied(true);setCopyError('');}catch{setCopyError('Copy is unavailable. Select the UUID below to copy it.');}}
   function refreshQC(){epochResourceCache.invalidate(`/cells/${cellUuid}/qc`,{related:true});setRefresh(n=>n+1);}
-  function chooseFamily(id){if(id===active)return;setFamily(id);setOffset(0);setSelected(null);}
+  function chooseFamily(id){if(id===active&&!anchorEpoch)return;setFamily(id);setOffset(0);setSelected(null);}
   return <div className="page cell-qc"><header className="qc-toolbar" aria-label="Cell quality controls"><button onClick={onBack} aria-label="Back to workspace"><ArrowLeft size={15}/> Back</button><div className="qc-toolbar-details">{data&&<span>{number(data.counts?.epochs)} epochs · {number(data.counts?.blocks)} blocks</span>}<button className="qc-copy" onClick={copyIdentity} aria-label="Copy cell UUID" title={cellUuid}>{copied?<Check size={14}/>:<Copy size={14}/>} UUID</button><button onClick={refreshQC} aria-label="Refresh cell quality" title="Refresh cell quality"><RefreshCw size={16}/></button></div></header>
     {copyError&&<div className="qc-copy-error" role="status">{copyError} <code>{cellUuid}</code></div>}
     <Status {...result} retry={result.reload}>{data&&<>
       <section className={`qc-metrics${conditions.additions.length?' qc-with-additions':''}`} style={{'--qc-condition-columns':3+conditions.additions.length}} aria-label="Cell quality measurements"><article className="qc-cell-type" aria-label="Cell identity" title={cellLabel}><strong title={data.cell?.cell_type||'Unclassified'}>{typeLabel.toLowerCase()==='bipolar'?'Bipolar cell':typeLabel}</strong><div className="qc-cell-type-icon"><CellTypeIcon type={data.cell?.cell_type} size={42}/></div><h1>{cellName}</h1><span className="qc-cell-date">{cellDate}</span>{data.cell?.identity_qualifier&&<span className="qc-cell-qualifier">{data.cell.identity_qualifier}</span>}</article><article><button className="qc-temperature-metric" aria-controls={`qc-temperature-${cellUuid}`} aria-expanded={temperatureOpen} onClick={()=>setTemperatureOpen(value=>!value)}><span><Thermometer size={16}/> Bath temperature</span><TemperatureSummary temperature={temperature}/></button></article><article><span><Monitor size={16}/> Rig</span><strong>{recordingRigLabel(data.cell)}</strong><small>Recorded acquisition rig</small></article><SolutionMetric item={conditions.pipette}/>{conditions.additions.map(item=><SolutionMetric key={item.label} item={item}/>)}</section>
       <TemperaturePanel key={`${cellUuid}:temperature`} cellUuid={cellUuid} revision={qcRevision} opened={temperatureOpen} onToggle={()=>setTemperatureOpen(false)} temperature={temperature} groupLabels={data.characteristics?.group_labels}/>
       <section className="qc-characterization"><header><h2><Layers size={17}/> Characterization recordings</h2><span className="qc-muted">Availability is separate from cell quality.</span></header><nav className="qc-families" aria-label="Cell characterization protocols">{(data.families||[]).map(item=><button key={item.id} disabled={!item.epoch_count} aria-pressed={active===item.id} onClick={()=>chooseFamily(item.id)}><span>{item.label}</span><strong>{item.epoch_count?number(item.epoch_count):'Not recorded'}</strong></button>)}</nav>
-      {!available.length?<Empty title="No characterization recordings">Source recordings remain available from the main catalog.</Empty>:<div className={`qc-recording-workbench ${showMetadata?'with-metadata':''}`}><aside className="qc-trials" aria-label="Characterization trials"><header><strong>{data.families.find(item=>item.id===active)?.label}</strong><small>{rows.data?number(rows.data.total):'…'} trials</small></header><div className="qc-trial-list"><Status {...rows} retry={rows.reload}>{epochs.map(row=><button key={row.epoch_uuid} aria-pressed={epochId===row.epoch_uuid} onClick={()=>setSelected(row.epoch_uuid)}><span>{row.start_time?.slice(11)||row.date} · Epoch {row.epoch_number}</span><strong>{conditionLabel(row)}</strong><small>{row.group_label || 'Group not labeled'}</small></button>)}</Status></div><footer><button disabled={!offset} onClick={()=>{setSelected(null);setOffset(Math.max(0,offset-40));}}>Previous</button><span>{offset+1}–{offset+epochs.length}</span><button disabled={!rows.data?.has_more} onClick={()=>{setSelected(null);setOffset(offset+40);}}>Next</button></footer></aside>
+      {!available.length?<Empty title="No characterization recordings">Source recordings remain available from the main catalog.</Empty>:<div className={`qc-recording-workbench ${showMetadata?'with-metadata':''}`}><aside className="qc-trials" aria-label="Characterization trials"><header><strong>{data.families.find(item=>item.id===active)?.label}</strong><small>{rows.data?number(rows.data.total):'…'} trials</small></header><div className="qc-trial-list" ref={trialList}><Status {...rows} retry={rows.reload}>{epochs.map(row=><button key={row.epoch_uuid} ref={epochId===row.epoch_uuid?selectedTrial:null} aria-pressed={epochId===row.epoch_uuid} onClick={()=>setSelected(row.epoch_uuid)}><span>{row.start_time?.slice(11)||row.date} · Epoch {row.epoch_number}</span><strong>{conditionLabel(row)}</strong><small>{row.group_label || 'Group not labeled'}</small></button>)}</Status></div><footer><button disabled={!offset} onClick={()=>{setSelected(null);setOffset(Math.max(0,offset-40));}}>Previous</button><span>{offset+1}–{offset+epochs.length}</span><button disabled={!rows.data?.has_more} onClick={()=>{setSelected(null);setOffset(offset+40);}}>Next</button></footer></aside>
       <StableContent className="qc-recording-frame" scope={`${cellUuid}:${qcRevision}`} data={rawEpoch} loading={rows.loading||epoch.loading} error={rows.error||epoch.error} label="Loading selected trial" retry={()=>{rows.reload();epoch.reload();response.reload();}}><div className="qc-recording"><header><div><h3>Recorded response</h3><p>{rawEpoch?conditionLabel(rawEpoch):'Select a trial'}</p></div><button onClick={()=>{setShowMetadata(true);setTagFocus(value=>value+1);}}><Tag size={14}/> Tags</button><button aria-expanded={showMetadata} onClick={()=>setShowMetadata(!showMetadata)}>{showMetadata?'Hide':'Show'} metadata</button></header><Status {...epoch} retry={epoch.reload}>{rawEpoch&&<><Trace epoch={sourceEpoch} revision={qcRevision}/><div className="qc-trace-identity"><code title="Trial UUID">{rawEpoch.epoch_uuid}</code><button onClick={()=>setShowMetadata(true)}><ArrowUpRight size={14}/> Epoch details</button></div></>}</Status>
       <Status {...response} retry={response.reload}>{stats&&<><p className="qc-muted">Summary stream: {summaryStream?.device || measured?.trace?.stream_uuid} · {stats.units || 'unit unrecorded'}</p><div className="qc-response-stats"><div><span>Pre-stimulus mean</span><strong>{display(stats.pre?.mean)} <small>{stats.units}</small></strong></div><div><span>Stimulus-window mean</span><strong>{display(stats.stim?.mean)} <small>{stats.units}</small></strong></div><div><span>Change in mean</span><strong>{display(stats.delta_mean)} <small>{stats.units}</small></strong></div></div>{stats.status==='unavailable'&&<p className="qc-muted">{stats.reason}</p>}</>}</Status><p className="qc-method-note"><Info size={15}/> Recorded response summaries retain the raw signal. They are not firing rate, sensitivity, receptive-field fits, or resting voltage.</p><details className="qc-method"><summary>Response timing & measurement method</summary><pre>{JSON.stringify({timing:measured?.timing,method:measured?.method,statistics:stats},null,2)}</pre></details><ConditionSummary key={`${cellUuid}:${active}`} cellUuid={cellUuid} family={active} epoch={rawEpoch} revision={qcRevision} onSelect={setSelected}/></div></StableContent>
       {showMetadata&&<MetadataPanel tags={rawEpoch&&<AnnotationTags reconcileReceipt refreshWithEpoch epoch={rawEpoch} revision={liveRevision} disabled={epoch.loading} focusRequest={tagFocus} onChange={annotationsChanged} onFilter={onTagFilter} tools={<TagExchangeControls epoch={rawEpoch} disabled={epoch.loading} onChanged={annotationsChanged}/>}/>} epoch={sourceEpoch} catalog={catalog} onClose={()=>setShowMetadata(false)}/>}</div>}

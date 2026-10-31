@@ -317,3 +317,23 @@ test('returning to a retained desktop project refreshes the mounted-project list
   await h.act(()=>visibility({visible:true}));await h.waitFor(()=>count()===before+1);assert.equal(h.route.key,key);
  }finally{await h.close();}assert.equal(unsubscribed,true);
 });
+
+
+test('UUID search opens fresh Cell QC visits and preserves exact epoch intent across history',async()=>{
+ const h=await createPresentationSessionHarness();
+ try{
+  await h.mount();await h.act(()=>h.probe('search').onCell({cell_uuid:'cell-A'}));
+  assert.equal(h.route.page,'cell-qc');assert.equal(h.probe('qc').cellUuid,'cell-A');
+  const firstKey=h.route.key;
+  await h.act(()=>h.probe('qc').onSession({family:'expanding_spots',offset:0,selected:'old-epoch'}));
+  await h.act(()=>h.probe('search').onEpoch({cell_uuid:'cell-A',epoch_uuid:'searched-epoch',protocol_uuid:'protocol-A'}));
+  assert.equal(h.route.page,'cell-qc');assert.notEqual(h.route.key,firstKey);
+  assert.equal(h.probe('qc').initialEpochUuid,'searched-epoch');
+  assert.notEqual(h.probe('qc').session?.selected,'old-epoch');
+  await h.history('back');assert.equal(h.probe('qc').session.selected,'old-epoch');
+  await h.history('forward');assert.equal(h.probe('qc').initialEpochUuid,'searched-epoch');
+  await h.act(()=>h.probe('search').onEpoch({cell_uuid:'cell-B',epoch_uuid:'unbound-epoch',protocol_uuid:null}));
+  assert.equal(h.route.page,'cell-qc');assert.equal(h.probe('qc').cellUuid,'cell-B');
+  assert.equal(h.probe('qc').initialEpochUuid,'unbound-epoch');
+ }finally{await h.close();}
+});
