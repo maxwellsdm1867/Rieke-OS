@@ -137,10 +137,10 @@ filename fallback is display-only and never changes recorded metadata.
 Field labels sit at the upper-left of each metric tile, independently of the
 vertically centered primary value. Redundant acquisition/provenance captions are omitted;
 source group provenance stays in the solution tooltip, and incomplete-group
-warnings remain visible below the value. Identity leads with date/cell, followed by its compact icon/type row.
+warnings remain visible below the value. Identity leads with date/cell, followed by the original icon and then cell type.
 
 The summary uses common text anchors: metric values align with their label text,
 not the leading label icon. Their approved vertical midpoint is preserved.
-Identity is date-led: date and cell name form the first, prominent line at the
-value midpoint; a compact cell icon and cell-type row follows beneath it.
-Identity qualifiers remain visible in that secondary row.
+Identity keeps its centered styling and familiar 42px glyph. Only its sequence
+changes: date and cell name first, then the icon, then cell type. Identity
+qualifiers remain visible in normal flow beneath the type.
