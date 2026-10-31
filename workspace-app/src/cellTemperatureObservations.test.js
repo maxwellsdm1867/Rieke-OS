@@ -66,7 +66,7 @@ test('temperature uses Celsius for omitted units and warns only below 25 or for 
    const strong=card.findByType('strong');
    assert.equal(strong.children.join(''),label);
    assert.equal(strong.props.className==='qc-temperature-warning',warn);
-   if(missing)assert.ok(JSON.stringify(card.toJSON?.()||renderer.toJSON()).includes('no reading available'));
+   assert.equal(card.findAllByType('small').length,0,'Temperature tile has no observation counts or explanatory text');
    await act(async()=>renderer.unmount());renderer=null;
   }
  }finally{if(renderer)await act(async()=>renderer.unmount());await server.close();globalThis.fetch=previous;}
