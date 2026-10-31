@@ -147,3 +147,14 @@ larger 22px cell type share the next line. The summary row is 120px minimum high
 Qualifiers remain in normal flow. The user selected compact variant B from the
 throwaway comparison on branch codex/qc-identity-layout-prototype at 437f270 (initial compact B at c9b691f),
 reviewed visually at full and narrower widths before native qualification.
+
+
+## Selected three-field identity layout (2026-10-31)
+The current approved design supersedes the earlier centered identity-tile notes.
+A page heading shows recorded date · cell name · rig. Rig uses the existing
+recorded-rig/filename-fallback presentation and is no longer a separate tile.
+The horizontal row contains Cell type, Bath temperature, Pipette solution, plus
+recorded additions when present. Cell type uses existing CellsIcon (16px) in its
+label and CellTypeIcon (36px wide, 42px high) beside its 30px type value. The row
+retains 120px minimum height, qualifiers, missing-value warnings, and horizontal
+scrolling at narrow widths. No scientific metadata changes.
