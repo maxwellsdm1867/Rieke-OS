@@ -29,8 +29,8 @@ control requests. Startup also rejects a health response arriving after its
 spawn exits. These are evidence checks, not extra waits: the existing deadlines,
 polling intervals and ordinary close path are unchanged.
 
-Explicit Quit also cancels pending root startup synchronously. Startup checks
-this intent both on entry and immediately before spawning, with no intervening
+When its service-cleanup phase begins, explicit Quit cancels pending root
+startup synchronously. Startup checks this intent both on entry and immediately before spawning, with no intervening
 await. A Quit completed during asynchronous manifest/recovery/directory work
 cannot be followed by a new backend spawn. This adds no wait and does not cancel
 or terminate a process that has already started.

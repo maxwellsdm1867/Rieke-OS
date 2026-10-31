@@ -1,4 +1,4 @@
-# Disco 0.2.11 testing
+# Disco 0.2.10 testing
 
 This unsigned Apple silicon testing prerelease includes the Cell QC updates from
 local builds 0.2.8–0.2.10 and strengthens shutdown evidence.
