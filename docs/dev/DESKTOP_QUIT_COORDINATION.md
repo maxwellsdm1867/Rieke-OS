@@ -17,3 +17,14 @@ Quit cancels only those owned helpers before draining the parent requests. This
 addresses an OS-blocked project-list read without treating all GETs as harmless or
 loosening writer/database shutdown. See the existing
 [project inventory contract](../../python/disco/projects/CONTRACT.md#bounded-project-inventory).
+
+
+The root supervisor requires a positive stop response and the exact spawned
+process's normal zero exit before reporting services closed. Sending stop alone,
+a negative/missing stop acknowledgement, a nonzero exit or a signal exit cannot
+release the session profile or authorize replacement. Interrupted ownership
+records remain available for recovery, including on a repeated close attempt.
+Once that child exits, its former loopback port is no longer authorized for
+control requests. Startup also rejects a health response arriving after its
+spawn exits. These are evidence checks, not extra waits: the existing deadlines,
+polling intervals and ordinary close path are unchanged.

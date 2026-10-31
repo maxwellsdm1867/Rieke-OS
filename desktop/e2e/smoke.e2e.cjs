@@ -50,7 +50,9 @@ async function quitAndVerify(){
  receipt.quit_diagnostics.push(diagnostic);
  diagnostic.renderers_before=await captureRendererFailure(application,'smoke-before-quit');
  await write();
- await bounded(gracefulQuit(application,page),'Orderly quit',45000);application=null;page=null;
+ const quitStarted=performance.now();
+ await bounded(gracefulQuit(application,page),'Orderly quit',45000);
+ diagnostic.ordinary_quit_ms=performance.now()-quitStarted;application=null;page=null;
  const deadline=Math.min(workDeadline,Date.now()+10000);let left;
  do{left=await ownedProcesses();if(!left.length)break;await delay(200);}while(Date.now()<deadline);
  assert.equal(left.length,0,'Root, project, native database and Electron processes must all exit');
@@ -58,7 +60,7 @@ async function quitAndVerify(){
  diagnostic.registry_after=await fs.readFile(path.join(fixture.userData,'desktop-service.json'),'utf8').then(JSON.parse,error=>{if(error.code==='ENOENT')return null;throw error;});
  await write();
  await assert.rejects(fs.stat(path.join(fixture.userData,'desktop-service.json')),{code:'ENOENT'});
- return{orderly_exit:true,owned_processes_before:before.length,owned_processes_after:0,root_registry_removed:true};
+ return{orderly_exit:true,ordinary_quit_ms:diagnostic.ordinary_quit_ms,owned_processes_before:before.length,owned_processes_after:0,root_registry_removed:true};
 }
 async function authorProfile(){
  const dialog=page.getByRole('dialog',{name:'Tag author',exact:true});

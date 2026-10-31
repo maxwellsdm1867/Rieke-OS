@@ -41,7 +41,7 @@ test('root control transport rejects unbound, child-origin and non-control reque
     request:async (...args) => { calls.push(args); return {ok:true, json:async () => ({ready:true})}; }});
   supervisor.origin = 'http://127.0.0.1:40001';
   await assert.rejects(supervisor.api('/api/desktop/health'), /listener ownership/);
-  supervisor.bound = true;
+  supervisor.bound = true; supervisor.exited = false;
   await assert.rejects(supervisor.api('/api/desktop/health', {origin:'http://127.0.0.1:40002'}), /exact owned root/);
   await assert.rejects(supervisor.api('/api/project'), /exact owned root/);
   assert.equal(calls.length, 0);

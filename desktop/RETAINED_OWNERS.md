@@ -188,3 +188,16 @@ and all other permissions are denied. No clipboard IPC is exposed. Electron
 claim gesture-only enforcement. Copy controls still call the browser API from
 explicit clicks. `tests/security.test.cjs` exercises admission and denial cases;
 actual packaged copy and clipboard-read refusal require separate native evidence.
+
+
+### Root shutdown receipt review (2026-10-31)
+
+`ServiceSupervisor` distinguishes a stop request from its positive response and
+from the spawned child's exit code/signal. Only an acknowledged stop followed by
+normal zero exit grants a clean-service receipt. Failed stop and abnormal exit
+retain ownership evidence across repeated Quit/drain calls. A known-exited root
+cannot receive another control capability at its former port; post-exit startup
+health cannot admit it. No timeout, poll interval, process signal, child ownership
+policy or native database cleanup sequence is changed. The regression cases in
+`tests/supervisor.test.cjs` exercise rejected stop, nonzero/signal exit and former
+port reuse, alongside existing clean late-exit and interrupted-recovery cases.
