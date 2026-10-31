@@ -85,3 +85,6 @@
 .qc-temperature-tile>.qc-temperature-metric:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .qc-temperature-icon{display:inline-flex;align-items:center;flex:0 0 16px}
 .qc-temperature-metric:hover .qc-temperature-icon,.qc-temperature-metric:focus-visible .qc-temperature-icon{color:var(--accent)}
+
+.qc-temperature-hint{position:absolute;left:39px;bottom:10px;font-size:11px;line-height:16px;color:var(--accent);opacity:0;pointer-events:none}
+.qc-temperature-metric:hover .qc-temperature-hint,.qc-temperature-metric:focus-visible .qc-temperature-hint{opacity:1}
