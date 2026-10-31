@@ -6,7 +6,7 @@ async function setup(){
  const h=await createWorkflowHarness();
  h.fixture.respond=(url,options,fallback)=>{
   const route=url.pathname.replace('/api','');
-  if(route==='/cells/cell-0/qc')return {cell:{cell_uuid:'cell-0',label:'Cell 0',cell_type:'RGC/ON-parasol'},counts:{epochs:2},families:[{id:'a',label:'Family A',epoch_count:1},{id:'b',label:'Family B',epoch_count:1}]};
+  if(route==='/cells/cell-0/qc')return {cell:{cell_uuid:'cell-0',label:'Cell 0',date:'2026-10-07',cell_type:'RGC/ON-parasol'},counts:{epochs:2},families:[{id:'a',label:'Family A',epoch_count:1},{id:'b',label:'Family B',epoch_count:1}]};
   if(route==='/cells/cell-0/qc/epochs'){
    const id=['a','default'].includes(url.searchParams.get('family'))?'epoch-0':'epoch-1';
    const result={family:id==='epoch-0'?'a':'b',epochs:[{epoch_uuid:id,epoch_number:id==='epoch-0'?1:2}],total:1};
@@ -28,6 +28,10 @@ test('QC renders the exact new trial without waiting for a delayed response summ
  const {h,frame,family}=await setup();let release;
  try{
   const identity=h.root.findByProps({className:'qc-cell-type'});
+  assert.equal(identity.findByType('h1').children.join(''),'Cell 0');
+  assert.equal(identity.findByProps({className:'qc-cell-date'}).children.join(''),'2026-10-07');
+  assert.equal(h.root.findAllByProps({className:'qc-heading'}).length,0);
+  assert.ok(h.root.findByProps({className:'qc-toolbar'}).findByProps({'aria-label':'Copy cell UUID'}));
   assert.ok(identity.findAllByType('svg').some(node=>node.props.style?.color==='var(--cell-on)'&&node.props['aria-hidden']===true));
   const list=h.root.findByProps({className:'qc-trial-list'}),recording=h.root.findByProps({className:'qc-recording'});
   h.fixture.holdSummary=(url,options,value)=>value.epoch_uuid==='epoch-1'?new Promise(resolve=>release=()=>resolve(value)):value;

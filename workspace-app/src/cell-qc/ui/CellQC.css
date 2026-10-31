@@ -28,3 +28,17 @@
 .qc-metrics.qc-with-additions{grid-template-columns:190px repeat(var(--qc-condition-columns),minmax(0,1fr))}.qc-solution strong{overflow-wrap:anywhere;white-space:normal}.qc-solution strong>span{display:block}.qc-solution strong>span+span{margin-top:5px}@media(max-width:1180px){.qc-metrics.qc-with-additions{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:850px){.qc-metrics.qc-with-additions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .qc-temperature>header h2{display:flex;align-items:center;gap:7px}.qc-temperature>h3{font-size:13px;margin:12px 0 6px}
+
+/* Cell identity shares the metrics row; navigation needs only a slim toolbar. */
+.qc-toolbar,.qc-toolbar-details{display:flex;align-items:center;gap:10px;min-width:0}
+.qc-toolbar{justify-content:space-between;min-height:32px;margin:0 0 8px;gap:16px}
+.qc-toolbar button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:30px;padding:5px 9px;font-size:12px;white-space:nowrap}
+.qc-toolbar-details>span{font-size:12px;color:var(--ink-muted)}
+.qc-copy-error{font-size:12px;color:var(--ink-secondary);overflow-wrap:anywhere;margin:6px 0}
+.qc-copy-error code{user-select:all}
+.qc-metrics article.qc-cell-type{gap:3px;padding:10px 14px}
+.qc-cell-type-icon{height:42px}
+.qc-cell-type h1{font-size:16px;line-height:20px;font-weight:650;letter-spacing:-.2px;margin:0;text-align:center;overflow-wrap:anywhere;max-width:100%}
+.qc-metrics article.qc-cell-type>.qc-cell-date{display:block;font-size:12px;line-height:17px;color:var(--ink-secondary);text-align:center}
+.qc-metrics article.qc-cell-type>.qc-cell-qualifier{font-size:11px;overflow-wrap:anywhere;text-align:center}
+@media(max-width:620px){.qc-toolbar{gap:6px;flex-wrap:wrap}.qc-toolbar-details{gap:6px;flex-wrap:wrap}.qc-toolbar-details>span{font-size:11px}}

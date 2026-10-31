@@ -109,3 +109,9 @@ no extra endpoint, preparation command or per-epoch ancestor copying is introduc
 Literal NA/N/A/not applicable remains N/A; missing/null remains Not recorded.
 Technique and protocol names never synthesize N/A. The observed project catalog
 has these three solution fields; no base external solution is inferred.
+
+Cell QC uses a compact toolbar for Back, epoch/block counts, UUID copy and refresh.
+The metrics row's left identity tile contains the recorded type, retinal icon,
+cell name and recorded date; no duplicate hero/banner sits above it. Full UUID
+is in the copy control's title and exposed as selectable text if clipboard fails.
+Recorded identity qualifiers remain visible. Dates are never rewritten.
