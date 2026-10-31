@@ -103,7 +103,10 @@ The retained HTTP owner adds `recording_rigs` and `recording_rig_missing` to cel
 summary DTOs for project and protocol Overview. Rig names come from the already
 validated source summary's experiment `metadata.rig`, or recorded
 `metadata.properties.rig` when the top-level key is absent. Recorded null/missing
-names remain unknown; PATCH/MEA rig type and filenames do not supply rig names.
+names use the acquisition filename rig code only for valid YYYY-MM-DD_CODE.h5
+or YYYYMMDDCODE.h5 names, following the scientist’s naming convention. Other
+filenames remain unknown; PATCH/MEA never supplies the rig name. This display
+fallback does not change the recorded metadata.
 Multiple source rigs remain explicit rather than choosing one from repeated cell
 labels. The exact cell UUID and existing epoch membership determine the sources.
 

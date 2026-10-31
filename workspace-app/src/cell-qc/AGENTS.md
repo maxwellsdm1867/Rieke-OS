@@ -49,7 +49,7 @@ and its visible chevron retain keyboard access. QC receives the exact cell UUID
 through the existing caller-owned route callback; it neither toggles disclosure
 nor reads or prepares QC data. Unknown counts/export coverage remain unavailable.
 Recording rig labels use the additive metadata-backed `recording_rigs` and
-`recording_rig_missing` display fields; missing rig is Not recorded, multiple
+`recording_rig_missing` display fields; missing rig falls back to the acquisition filename code only for valid YYYY-MM-DD_CODE.h5 or YYYYMMDDCODE.h5 names; otherwise it is Not recorded. Multiple
 source rigs remain distinguishable, and labels do not change scientific identity.
 `overviewPresentation.test.js` checks collapsed-row navigation, both Overview
 entries and repeated-label UUIDs; browser fixture evidence checks reveal/layout.
@@ -127,3 +127,7 @@ win over late anchor responses. History restores its own selected trial/page.
 The explicit entry's selected row is revealed by scrolling only the bounded trial
 list, without moving the outer workspace or stealing keyboard focus. Hidden lists
 perform no scroll work.
+
+Cell QC date and cell label share one prominent heading. Temperature is centered
+vertically and horizontally in its tile, with a larger numeric value. The rig
+filename fallback is display-only and never changes recorded metadata.

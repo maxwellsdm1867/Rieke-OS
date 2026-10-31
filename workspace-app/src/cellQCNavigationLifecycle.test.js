@@ -28,7 +28,7 @@ test('QC renders the exact new trial without waiting for a delayed response summ
  const {h,frame,family}=await setup();let release;
  try{
   const identity=h.root.findByProps({className:'qc-cell-type'});
-  assert.equal(identity.findByType('h1').children.join(''),'Cell 0');
+  assert.equal(identity.findByType('h1').findAllByType('span').map(node=>node.children.join('')).join(''),'2026-10-07 · Cell 0');
   assert.equal(identity.findByProps({className:'qc-cell-date'}).children.join(''),'2026-10-07');
   assert.equal(h.root.findAllByProps({className:'qc-heading'}).length,0);
   assert.ok(h.root.findByProps({className:'qc-toolbar'}).findByProps({'aria-label':'Copy cell UUID'}));
