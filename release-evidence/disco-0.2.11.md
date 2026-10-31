@@ -12,6 +12,8 @@ local builds 0.2.8–0.2.10 and strengthens shutdown evidence.
   backend before releasing its session or authorizing replacement. Failed stops,
   crashes and signal exits preserve recovery evidence. An exited backend's former
   port is no longer used for control requests.
+- Quitting during startup cancels any not-yet-started backend, preventing a late
+  spawn after the app has closed.
 - The shutdown hardening adds no waiting period and leaves existing deadlines
   unchanged. It does not force-stop scientific writers or unrelated sessions.
 

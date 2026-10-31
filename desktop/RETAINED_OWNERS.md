@@ -201,3 +201,9 @@ health cannot admit it. No timeout, poll interval, process signal, child ownersh
 policy or native database cleanup sequence is changed. The regression cases in
 `tests/supervisor.test.cjs` exercise rejected stop, nonzero/signal exit and former
 port reuse, alongside existing clean late-exit and interrupted-recovery cases.
+
+Explicit Quit also cancels pending root startup synchronously. Startup checks
+this intent both on entry and immediately before spawning, with no intervening
+await. A Quit completed during asynchronous manifest/recovery/directory work
+cannot be followed by a new backend spawn. This adds no wait and does not cancel
+or terminate a process that has already started.

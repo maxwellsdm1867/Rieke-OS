@@ -39,7 +39,7 @@ class ServiceSupervisor {
     Object.assign(this, {resourcesPath, userData, appVersion, spawnProcess, request, inspectProcess, startupTimeout, drainTimeout, recoverProcess, onFailure});
     this.capability = randomBytes(32).toString('hex'); this.sessionId = randomUUID();
     this.rendererCapability = createHash('sha256').update(this.capability + ':renderer').digest('hex');
-    this.origins = new Set(); this.child = null; this.exited = true; this.ready = false;
+    this.origins = new Set(); this.child = null; this.exited = true; this.ready = false; this.quitRequested = false;
     this.registryPath = path.join(userData, 'desktop-service.json');
   }
   async loadManifest() {
@@ -58,6 +58,7 @@ class ServiceSupervisor {
     return this.manifest;
   }
   async start() {
+    if(this.quitRequested)throw new Error('Desktop is closing; backend startup cancelled');
     if (this.child && !this.exited) throw new Error('Previous backend is still running; replacement is deferred');
     await this.loadManifest();
     await this.reconcilePrevious();
@@ -75,6 +76,9 @@ class ServiceSupervisor {
       RIEKE_PARSER_CONFIG: path.join(backendState, 'parser', 'config.ini')};
     if (process.env.DISCO_LAZY_ROOT_EXPERIMENT === '1') env.DISCO_LAZY_ROOT_EXPERIMENT = '1';
     if (process.env.DISCO_LIFECYCLE_DIAGNOSTIC_DIR) env.DISCO_LIFECYCLE_DIAGNOSTIC_DIR = process.env.DISCO_LIFECYCLE_DIAGNOSTIC_DIR;
+    // No await separates this final cancellation check from spawning. Quit may
+    // have completed while manifest, prior-session or directory work was pending.
+    if(this.quitRequested)throw new Error('Desktop is closing; backend startup cancelled');
     this.child = this.spawnProcess(this.executable, ['-B', this.entry, '--host', '127.0.0.1', '--port', String(port),
       '--resources', this.resourcesPath, '--user-state', backendState,
       '--manifest', path.join(this.resourcesPath, 'runtime', 'runtime-manifest.json'), '--session-id', this.sessionId],
@@ -229,6 +233,7 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
       throw new Error('Prior service has not exited after cleanup; retry recovery');
   }
   async quit({timeout = this.drainTimeout, drafts, startup} = {}) {
+    this.quitRequested=true;
     const until = Date.now()+timeout, remaining = () => Math.max(1, until-Date.now());
     if (!this.child) {
       try {await fs.access(this.registryPath);return {ready:false,reason:'Previous service cleanup remains unverified. Its ownership and operation records are retained for recovery.'};}

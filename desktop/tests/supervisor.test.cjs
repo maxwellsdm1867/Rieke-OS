@@ -281,3 +281,19 @@ test('exited owned root cannot receive further capabilities at its reusable port
   await assert.rejects(supervisor.api('/api/desktop/stop',{method:'POST'}),/exited/);
   assert.equal(requests,before);
 });
+
+test('Quit during pre-spawn startup cancels that spawn and every later startup attempt',async t=>{
+  const {supervisor,spawned}=await fixture(t,()=>assert.fail('No capability without a backend'));
+  let entered,release;
+  const reached=new Promise(resolve=>{entered=resolve;}),held=new Promise(resolve=>{release=resolve;});
+  const load=supervisor.loadManifest.bind(supervisor);
+  supervisor.loadManifest=async()=>{await load();entered();await held;};
+  const starting=supervisor.start();await reached;
+  const result=await supervisor.quit({timeout:1000,drafts:{ready:true}});
+  assert.equal(result.ready,true);assert.equal(spawned(),undefined);
+  release();
+  await assert.rejects(starting,/closing.*startup cancelled/);
+  await assert.rejects(supervisor.start(),/closing.*startup cancelled/);
+  assert.equal(spawned(),undefined);
+  await assert.rejects(fs.access(supervisor.registryPath),{code:'ENOENT'});
+});
