@@ -40,3 +40,40 @@ Native candidate verification, combined selection/protocol changes, exact-source
 core and matched million-row regression checks are pending. The installed app has
 not been replaced. Test artifacts and final source identity will be recorded here
 before completion.
+
+## Local version reservation
+
+The combined fix reserves **0.2.11 for a local, unpublished build**. Live GitHub
+refs checked on November 7 include `desktop-test-v0.2.10` at the installed source
+and no 0.2.11 tag. No tag or release is being published by this task.
+
+Runtime generation activation rejects equal-version/different-byte applications,
+and its supported version grammar does not accept local/prerelease suffixes.
+Consequently the repaired application cannot safely be installed as another
+0.2.10. Any future official 0.2.11 must use this exact qualified source/artifact,
+or choose a later version; do not replace the local generation with different
+bytes under the same version. Final installation/source receipts remain pending.
+
+## Coordinated repair scope
+
+- Import monitoring/progress: parent branch, independent hook/authority review.
+- Epoch range/Command selection and restored counted bulk controls: separate
+  `epoch-multiselect-fix` worktree, independent stale-origin and bulk-write review.
+- Action-triggered protocol inventory, immutable rename publication, retained
+  Search preview renewal and unchanged compare/apply authority: separate
+  `protocol-state-refresh` worktree using Astra high, independent authority review.
+
+The merged Search component preserves both action-driven preview renewal and
+single-gesture local inclusion undo. Combined lifecycle and import checks passed
+(31 checks); preview and retained-control checks also passed. See the adjacent
+selection and protocol-state-refresh evidence directories for their focused runs.
+
+Native checks so far on the combined source with Electron 44.9.2 verified:
+existing pinned update 63→61 epochs, first→Shift30 plus Command toggles,
+exact30-UUID exclusion/reinclusion, and exact30-UUID tag add/removal, with other31
+rows unchanged. Arrow navigation and Light/Dark/Fred selection fill passed.
+Search/Workbench/import and final packaged verification remain pending.
+
+An early generic Electron test target had unreliable focus/targeting. Its backend
+was drained and stopped with clean database shutdown before switching to a uniquely
+identified owned test shell. No user research project was used for these checks.
