@@ -49,7 +49,7 @@ and its visible chevron retain keyboard access. QC receives the exact cell UUID
 through the existing caller-owned route callback; it neither toggles disclosure
 nor reads or prepares QC data. Unknown counts/export coverage remain unavailable.
 Recording rig labels use the additive metadata-backed `recording_rigs` and
-`recording_rig_missing` display fields; missing rig is Not recorded, multiple
+`recording_rig_missing` display fields; missing rig falls back to the acquisition filename code only for valid YYYY-MM-DD_CODE.h5 or YYYYMMDDCODE.h5 names; otherwise it is Not recorded. Multiple
 source rigs remain distinguishable, and labels do not change scientific identity.
 `overviewPresentation.test.js` checks collapsed-row navigation, both Overview
 entries and repeated-label UUIDs; browser fixture evidence checks reveal/layout.
@@ -127,3 +127,34 @@ win over late anchor responses. History restores its own selected trial/page.
 The explicit entry's selected row is revealed by scrolling only the bounded trial
 list, without moving the outer workspace or stealing keyboard focus. Hidden lists
 perform no scroll work.
+
+Cell QC date and cell label share one prominent heading. Metric values retain their vertical midpoint
+and use the label text’s left anchor, with larger primary values. All summary tiles remain in one horizontal row, including additions. Narrow
+views scroll the summary horizontally instead of wrapping cards or shrinking
+primary text below a readable size. The rig
+filename fallback is display-only and never changes recorded metadata.
+
+Field labels sit at the upper-left of each metric tile, independently of the
+vertically centered primary value. Redundant acquisition/provenance captions are omitted;
+source group provenance stays in the solution tooltip, and incomplete-group
+warnings remain visible below the value. Identity leads with date/cell, followed by the original icon beside the cell type.
+
+The summary uses common text anchors: metric values align with their label text,
+not the leading label icon. Their approved vertical midpoint is preserved.
+Identity keeps its horizontal centering, 18px dark date/cell text and familiar 42px
+glyph. The date/cell line starts near the upper field-label level; the glyph and
+larger 22px cell type share the next line. The summary row is 120px minimum high.
+Qualifiers remain in normal flow. The user selected compact variant B from the
+throwaway comparison on branch codex/qc-identity-layout-prototype at 437f270 (initial compact B at c9b691f),
+reviewed visually at full and narrower widths before native qualification.
+
+
+## Selected three-field identity layout (2026-10-31)
+The current approved design supersedes the earlier centered identity-tile notes.
+A page heading shows recorded date · cell name · rig. Rig uses the existing
+recorded-rig/filename-fallback presentation and is no longer a separate tile.
+The horizontal row contains Cell type, Bath temperature, Pipette solution, plus
+recorded additions when present. Cell type uses existing CellsIcon (16px) in its
+label and CellTypeIcon (36px wide, 42px high) beside its 30px type value. The row
+retains 120px minimum height, qualifiers, missing-value warnings, and horizontal
+scrolling at narrow widths. No scientific metadata changes.

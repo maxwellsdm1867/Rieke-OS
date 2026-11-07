@@ -21,7 +21,7 @@ test('temperature tile opens conditions, lazy trend and all-epoch pages with exa
   const {default:CellQC}=await server.ssrLoadModule("/src/cell-qc/ui/CellQC.jsx");
   await act(async()=>{renderer=TestRenderer.create(React.createElement(CellQC,{cellUuid:'cell',revision:0}));});
   const metrics=renderer.root.findByProps({className:'qc-metrics'}).findAllByType('strong').map(node=>node.children.join('')).join(' ');
-  assert.ok(metrics.includes('EF'));assert.ok(metrics.includes('Not recorded'));assert.ok(!metrics.includes('2m 5s'));assert.ok(!metrics.includes('Not established'));
+  assert.ok(renderer.root.findByProps({className:'qc-cell-heading'}).findAllByType('span').some(node=>node.children.join('')==='EF'));assert.ok(metrics.includes('Not recorded'));assert.ok(!metrics.includes('2m 5s'));assert.ok(!metrics.includes('Not established'));
   assert.equal(renderer.root.findAllByProps({className:'qc-trend'}).length,0,'Closed conditions do not construct the chart');
   assert.equal(renderer.root.findAllByType('details').filter(node=>node.props.className==='qc-temperature').length,0,'No duplicate conditions disclosure');
   assert.equal(requests.filter(url=>url.includes('/qc/temperature')).length,0,'Closed tile does not load observations');

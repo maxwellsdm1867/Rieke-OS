@@ -98,7 +98,24 @@ def recorded_source_rig(source):
     value = metadata.get('rig')
     if 'rig' not in metadata:
         value = (metadata.get('properties') or {}).get('rig')
-    return value if isinstance(value, str) and value.strip() else None
+    if isinstance(value, str) and value.strip():
+        return value
+    # Acquisition convention: a date followed by the rig code, e.g.
+    # 2026-10-07_E.h5 or 20261007E.h5. This is display-only provenance;
+    # never rewrite recorded metadata or use the PATCH/MEA acquisition type.
+    filename = source.get('filename')
+    if not isinstance(filename, str):
+        return None
+    match = re.fullmatch(r'(\d{4}-\d{2}-\d{2})_([A-Za-z0-9]+)\.h5', filename, re.IGNORECASE)
+    if not match:
+        match = re.fullmatch(r'(\d{8})([A-Za-z][A-Za-z0-9]*)\.h5', filename, re.IGNORECASE)
+    if not match:
+        return None
+    try:
+        dt.datetime.strptime(match[1], '%Y-%m-%d' if '-' in match[1] else '%Y%m%d')
+    except ValueError:
+        return None
+    return match[2]
 
 
 def recording_rig_summary(source_ids, source_metadata):
