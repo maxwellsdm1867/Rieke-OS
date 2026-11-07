@@ -1,0 +1,103 @@
+{
+  "format": "disco-release-qualification",
+  "version": 1,
+  "application_version": "0.2.13",
+  "source_commit": "18e86dedd5d59918831807a926ac540b4c30f670",
+  "source_dirty": false,
+  "channel": "unsigned-testing",
+  "production_ready": false,
+  "repository": "maxwellsdm1867/Rieke-OS",
+  "release_tag": "desktop-test-v0.2.13",
+  "checks": {
+    "full_regression": {
+      "run_id": 42420252228,
+      "status": "success"
+    },
+    "fixed_core_and_everyday_million": {
+      "run_id": 42420254653,
+      "status": "success",
+      "pinned_baseline": "a16c915f9730384af3285949bb962d12707ccf01",
+      "previous_iteration": "96fbace23130deca0289f52c13cc1c4b3dfb9a96",
+      "comparison_review_required": []
+    },
+    "desktop_candidate": {
+      "run_id": 42420236274,
+      "status": "success",
+      "native_suites": [
+        "smoke",
+        "updater",
+        "database",
+        "packaging",
+        "ui"
+      ]
+    },
+    "gated_publication": {
+      "run_id": 42425145766,
+      "status": "success"
+    }
+  },
+  "published_hashes": {
+    "archive_sha256": "8bf3364130a295387dfe2e5c60180f13d0edb4ad60cd84a6dece335f3faf5a1c",
+    "runtime_manifest_sha256": "9a14a81dc523a58efa6c73b7141d93cf130447a74b8c288a940e66af1d346d2a",
+    "asar_sha256": "87b1801d687863d4ac2c58036b985aca8adb98ee171f4654847193b2dc750f9b",
+    "native_helper_sha256": "9f98fb471ea4a8da6698309e4fcce86120f9e65b57b19016b81e3d4ae1799e5a",
+    "native_source_sha256": "dcd40d039fce841f84a0d65ca5b7cf351aac6929921841933de5e5901b139573"
+  },
+  "native_app_update": {
+    "downloaded_from_github_in_app": true,
+    "archive_matches_publication": true,
+    "restart_activated_published_generation": true,
+    "generation": "261d6d2dfcb49717b0d0ea4f093d093b259faaccb2f2fd5f49142811360cb083",
+    "restored": [
+      "project",
+      "protocol",
+      "Workbench incoming review",
+      "pending counts",
+      "focused epoch",
+      "trace window",
+      "metadata pane"
+    ],
+    "sidebar_reopened_manually": true,
+    "compatible_canonical_launcher_initially_retained_prior_bundle": true,
+    "supported_installer_aligned_canonical_launcher_after_update": true,
+    "installed_and_running_hashes_match_publication": true,
+    "scientific_data_mutated_for_verification": false
+  },
+  "local_native_selection": {
+    "source_commit": "18e86dedd5d59918831807a926ac540b4c30f670",
+    "owned_synthetic_fixture": true,
+    "checks": [
+      "automatic incoming review after import",
+      "distinct cell and epoch counts",
+      "single Workbench Deselect all owner",
+      "list and tree selection/reset",
+      "single-selection toolbar hidden",
+      "multi-selection toolbar shown",
+      "counted removal confirmation and cancellation",
+      "pinned removal followed by Undo",
+      "restored epoch count and trace"
+    ]
+  },
+  "cleanup": {
+    "final_disposable_paths_removed": 37,
+    "earlier_preview_bundles_replaced": 3,
+    "obsolete_0_2_11_bundles_retired": 2,
+    "release_phase_total_removed_artifacts": 42,
+    "archived_benchmark_worktrees": 2,
+    "observed_final_cleanup_free_space_change_bytes": 4838817792,
+    "managed_cleanup_exit_code": 0,
+    "retained": [
+      "canonical Disco 0.2.13 and active managed generation",
+      "verified 0.2.12 rollback copies",
+      "source and raw qualification evidence",
+      "frontend dependencies shared by protocol-state-refresh",
+      "small reusable build license cache"
+    ]
+  },
+  "limits": [
+    "Unsigned and unnotarized Apple silicon testing prerelease",
+    "No Intel or universal macOS runtime qualification",
+    "Native busy-import fallback was not exercised with scientific H5 recordings",
+    "Earlier unpublished candidate failures remain qualification history; they were corrected, not waived"
+  ]
+}
