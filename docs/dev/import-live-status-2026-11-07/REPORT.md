@@ -34,11 +34,37 @@ replacement/late-response fencing, fresh admission, serial batch completion,
 no retry of uncertain uploads, active status longevity and bounded actual counters.
 This is source-level evidence, not native or release qualification.
 
-## Pending coordinated checks
+## Final local verification
 
-Native source-shell workflow verification is complete. Exact-source core, matched
-million-row checks and final packaged verification are next. The installed app has
-not yet been replaced. Final source and installation receipts will be recorded here.
+Installed local 0.2.11 at `~/Applications/Disco.app` uses clean source
+`70a9bdb30a87167f1b764041f23c8ba3fcd4eac5`. The running managed generation is
+`fb2d12438adc2d7e8d519fe7e06d4e48ccbec393c498c424e655aea4c6b3d793`.
+See [the compact qualification receipt](local-0.2.11-qualification.json).
+The documentation commit containing this final receipt does not change the app.
+
+Full frontend (1,626), desktop (441), and scoped backend (88) tests passed, as did
+the architecture guard and fixed core execution/source gate. Both serial actual-
+million comparisons passed with no review flags, against the pinned regression
+baseline and the previously installed 0.2.10 source using the same current harness.
+The core receipt explicitly remains `release_qualified=false` with an uncalibrated
+performance budget; this is a local tested installation, not release promotion.
+
+The complete assembled bundle passed strict/deep ad-hoc signature verification
+and testing-bundle validation. Static audit examined 815 native binaries with no
+known blockers. Fresh-HOME relocated runtime checks passed for Python 3.11.13,
+DataJoint 2.2.2, parser imports and MySQL 8.4.2 with resource hashes unchanged.
+This does not qualify macOS 14 execution, Intel, notarization or clean-machine use.
+
+Both old sessions exited through ordinary Quit; no scientific process was killed.
+The new app restored Pulse family Inspect at epoch 477 of 505, with the 60,000-
+sample trace and preexisting exclusion intact. Sidebar visibility was restored
+manually. The supported runtime manager and complete-bundle installer retained
+the verified 0.2.10 rollback. An initial activation correctly refused an expired
+process-bound preparation; renewing staging within the activating process passed.
+
+Raw JSON and logs remain under
+`benchmarks/results/import-ui-20261107-70a9bdb/`, including the initial desktop
+fixture-Python failure and its fully passing corrected rerun.
 
 ## Local version reservation
 
@@ -51,7 +77,7 @@ and its supported version grammar does not accept local/prerelease suffixes.
 Consequently the repaired application cannot safely be installed as another
 0.2.10. Any future official 0.2.11 must use this exact qualified source/artifact,
 or choose a later version; do not replace the local generation with different
-bytes under the same version. Final installation/source receipts remain pending.
+bytes under the same version. The exact installation/source identity is recorded in the compact receipt above.
 
 ## Coordinated repair scope
 
@@ -79,8 +105,23 @@ epochs; review opened automatically. A same-name/different-acquisition fixture w
 correctly refused without adding records, exercising visible stop feedback. Live
 progress remained visible at 9 seconds. Rename immediately updated sidebar/breadcrumb;
 returning to Search loaded 122 current matches without manual metadata refresh.
-Final packaged verification remains separate and pending.
+Final packaged verification and restoration are recorded above.
 
 An early generic Electron test target had unreliable focus/targeting. Its backend
 was drained and stopped with clean database shutdown before switching to a uniquely
 identified owned test shell. No user research project was used for these checks.
+
+## Cleanup and retained work
+
+Removed 30 inspected task-owned artifacts after orderly test shutdown and saving
+raw evidence: copied native test app/runtime, synthetic projects and imports,
+packaging outputs, disposable Node runtime and helper files. The standard cleanup
+sweep completed with no queued leftovers. Three managed worktrees were archived.
+The protocol-state-refresh worktree remains because the archive service reports
+another active task still uses it; its shared frontend dependency target is retained.
+Parent source and evidence remain on `codex/import-live-status`. No push or release
+was performed. The verified previous 0.2.10 app/runtime remains for recovery.
+
+Available space changed from 194,400,000 KiB before packaging to 194,745,812 KiB
+after cleanup (+345,812 KiB, approximately 338 MiB). This is a net filesystem
+observation across packaging/cleanup, not isolated deletion savings on APFS.
