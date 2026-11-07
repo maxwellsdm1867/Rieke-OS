@@ -2032,6 +2032,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         include_cells=request.args.get('include_cells','false')
         if len(request.args.getlist('include_cells'))>1 or include_cells not in ('true','false'):
             raise ValueError('include_cells must be true or false')
+        selection_receipt=request.args.get('selection_receipt','false')
+        if len(request.args.getlist('selection_receipt'))>1 or selection_receipt not in ('true','false'):
+            raise ValueError('selection_receipt must be true or false')
         cells_window=cell_page()
         if cells_window is not None and include_cells!='true':
             raise ValueError('cells_limit requires include_cells=true')
@@ -2042,10 +2045,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if native is not None:arguments['include_curation']=False
             if include_cells=='true':arguments['include_cells']=True
             if cells_window is not None:arguments['cells_page']=cells_window
-            query_filters=filters({'anchor_uuid','include_cells','cells_limit','cells_after'})
+            query_filters=filters({'anchor_uuid','include_cells','cells_limit','cells_after','selection_receipt'})
             from disco.metadata.explore_queries import generation
             scoped_context={'protocol_uuid':protocol_uuid,'filters':query_filters}
-            scoped_generation=generation(service,scoped_context) if 'metadata_predicate' in query_filters else None
+            scoped_generation=generation(service,scoped_context) if 'metadata_predicate' in query_filters or selection_receipt=='true' else None
             page = service.epoch_page(protocol_uuid, query_filters, int(request.args.get("offset", 0)),
                                       int(request.args.get("limit", 80)), **arguments)
             shared_receipt=page.pop('_shared_annotation_generation',None)
@@ -2081,6 +2084,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 raise StaleWorkspace('Shared annotations changed while reading this page. Refresh and retry.')
             if scoped_generation is not None and scoped_generation!=generation(service,scoped_context):
                 raise StaleWorkspace('Scoped annotations changed while reading this page. Refresh and retry.')
+            if selection_receipt=='true':
+                # Curation revisions deliberately omit shared-tag generations.
+                # Complete selection needs a separate cross-page scope witness.
+                page['selection_revision']=checksum({'protocol_uuid':protocol_uuid,'filters':query_filters,
+                    'generation':scoped_generation,'query_revision':revision,'binding_version':binding_version})
             return jsonify(page)
 
     @app.get("/api/protocols/<protocol_uuid>/tree")

@@ -15,6 +15,11 @@ test('counted selection bar exposes tag, exclude, include and clear with freshne
   const buttons=root.root.findAllByType('button');assert.equal(buttons.length,4);
   for(const button of buttons){assert.equal(button.props.disabled,false);await act(()=>button.props.onClick());}
   assert.deepEqual(actions,['tags','exclude','include','clear']);
+  await render({...props,onSelectAll:()=>actions.push('all'),onSelectCell:()=>actions.push('cell'),cellSelectDisabled:true});
+  const all=root.root.findAllByType('button').find(button=>button.children.includes('Select all'));
+  const cell=root.root.findAllByType('button').find(button=>button.children.includes('Select focused cell'));
+  assert.equal(all.props.disabled,false);assert.equal(cell.props.disabled,true);await act(()=>all.props.onClick());
+  assert.equal(actions.at(-1),'all');
   await render({...props,disabled:true});assert.ok(root.root.findAllByType('button').every(button=>button.props.disabled));
   await render({...props,targets:[]});assert.equal(root.toJSON(),null);
  }finally{await act(()=>root?.unmount());await server.close();}

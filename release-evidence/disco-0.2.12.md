@@ -13,7 +13,8 @@ Cell QC presentation with import and epoch/protocol interaction repairs.
   Pipette solution, with recorded additions when present and an expansion hint.
 - Metadata field names and field IDs have separate copy controls.
 - Pinned protocols can remove selected epochs in list/tree views and restore them
-  with Undo. Removing membership leaves recordings, other pins and existing exports
+  with Undo. The selected toolbar includes full-view/cell selection and a named,
+  counted removal confirmation. Removing membership leaves recordings, other pins and existing exports
   intact; future exports follow the updated membership.
 
 The existing cell-specific Overview, recorded cell-type icons, individually paged

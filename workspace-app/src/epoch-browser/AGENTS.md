@@ -49,11 +49,23 @@ view. Public entries and styles:
 
 Keep UUIDs, source-specific query revisions, predicate values, frozen candidate identity and branch scope exact. Invalid frozen context must refuse rather than fall back globally. Curation submission checks current selection and receipt authority; browsing or restored focus never grants consent. Page requests remain bounded and preserve anchor versus offset behavior. Preserve loading/error states, abort cleanup and stale-result fences.
 
-Pinned Main views expose immediate membership removal in the shared selected
+Pinned Main views expose membership removal in the shared selected
 toolbar (list and tree), or for the focused epoch when selection is empty.
 Ordinary source protocols, incoming and scoped read owners expose no removal.
-The command snapshots exact UUIDs, query/binding and view scope; stale callbacks
-refuse. An accepted write survives navigation and is never retried automatically.
+The selected bar stays visible with Select all, Select focused cell, Deselect all
+and the existing tag/inclusion commands. `loadProtocolSelection` collects bounded
+pages for the complete filtered protocol or focused cell, verifying query/binding,
+counts and identities before replacing selection; more than 1,000 refuses whole.
+Selection pages explicitly request `selection_receipt=true` and must share the
+same `selection_revision`, which includes shared/scoped annotation generations
+that ordinary curation revisions deliberately omit. Ordinary browse pages pay no
+extra selection-witness reads. Live retained activity tokens fence selection
+publication and consent even when a busy view stays mounted while hidden.
+The removal command snapshots exact UUIDs, query/binding and view scope in a
+confirmation dialog naming the pin and count. Cancel sends no mutation. The
+confirmation lease retires on selection, authority, visibility or read-state
+changes; a stale dialog/callback cannot submit even after returning to an earlier
+scope. An accepted write survives navigation and is never retried automatically.
 Confirmed or uncertain completion invalidates the originating protocol; only the
 still-current owner may clear its selection/focus. Undo uses the sealed response
 receipt through the session Undo owner. `inspectorMembershipLifecycle.test.js`

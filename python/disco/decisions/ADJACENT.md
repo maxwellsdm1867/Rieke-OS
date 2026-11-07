@@ -158,6 +158,13 @@ The source/HTTP regressions are `test_workspace_pinned_membership` and
 `test_workspace_pinned_membership_domain`; native display/export/recovery checks
 remain separate qualification.
 
+Complete filtered selection can opt in to `GET /protocols/<id>/epochs` with
+`selection_receipt=true`. Its `selection_revision` hashes the current full
+applicable generation, filters, protocol/query and binding; a closing generation
+change refuses that page. Consumers must match this witness across pages because
+ordinary curation revisions intentionally omit shared annotation generations.
+No witness is added or extra generation read performed on ordinary browse pages.
+
 `ExplorerHistory.prepared_delta(previous, current, limit=20000)` projects a chain
 of retained verified membership deltas for prepared display owners. It walks at
 most 64 cached parent links across forward/undo/redo paths; matching sealed parent

@@ -106,6 +106,28 @@ class PinnedMembershipTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400, response.json)
         self.assertIn('only for a pinned', response.json['error'])
 
+    def test_complete_selection_has_an_annotation_scope_witness_separate_from_curation(self):
+        path = self.base + '/epochs?limit=1&selection_receipt=true'
+        with patch('disco.metadata.explore_queries.generation', return_value={'annotation': 'before'}):
+            first = self.client.get(path)
+            same = self.client.get(path + '&offset=1')
+        with patch('disco.metadata.explore_queries.generation', return_value={'annotation': 'after'}):
+            changed = self.client.get(path + '&offset=1')
+        for result in [first, same, changed]:
+            self.assertEqual(result.status_code, 200, result.json)
+        self.assertEqual(first.json['query_revision'], changed.json['query_revision'])
+        self.assertEqual(first.json['total'], changed.json['total'])
+        self.assertEqual(first.json['selection_revision'], same.json['selection_revision'])
+        self.assertNotEqual(first.json['selection_revision'], changed.json['selection_revision'])
+        with patch('disco.metadata.explore_queries.generation', side_effect=[{'annotation': 'before'}, {'annotation': 'after'}]):
+            self.assertEqual(self.client.get(path).status_code, 409)
+        with patch('disco.metadata.explore_queries.generation', side_effect=AssertionError('Ordinary pages need no extra selection witness')):
+            ordinary = self.client.get(self.base + '/epochs?limit=1')
+            self.assertEqual(ordinary.status_code, 200, ordinary.json)
+            self.assertNotIn('selection_revision', ordinary.json)
+        for suffix in ['selection_receipt=1', 'selection_receipt=true&selection_receipt=false']:
+            self.assertEqual(self.client.get(self.base + '/epochs?' + suffix).status_code, 400)
+
     def test_shared_root_branches_keep_each_other_and_snapshot_verification_intact(self):
         from workspace_state_snapshot import verify_lineage_state
         history = self.explorer_history
