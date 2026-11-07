@@ -2571,6 +2571,108 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 epochs=[{'epoch_uuid': row['epoch_uuid'], 'cell_uuid': row['cell_uuid'],
                          'curation_revision': current[row['epoch_uuid']]['revision']} for row in rows])
 
+    def change_pinned_membership(protocol_uuid, body, *, restore=False):
+        """Publish a bounded explicit membership edit; recordings stay immutable."""
+        with db_lock, data_stores.registration_locks():
+            verify_service_sources(protocol_uuid)
+            definition = service.protocols[protocol_uuid]['definition']
+            if not definition.get('initial_revision_uuid'):
+                raise ValueError('Membership removal is available only for a pinned protocol')
+            binding = explorer_history.protocol_binding_header(protocol_uuid)
+            if binding is None:
+                raise StaleWorkspace('The pinned protocol has no current saved membership')
+            header = explorer_history.header(binding['revision_uuid'])
+            with annotation_locks(service, header['predicate'], extra_protocols=(protocol_uuid,)):
+                binding = explorer_history.protocol_binding_header(protocol_uuid)
+                if (binding is None or type(body['expected_binding_version']) is not int
+                        or body['expected_binding_version'] != binding['version']):
+                    raise StaleWorkspace('Protocol membership changed. Refresh before editing it.')
+                header = explorer_history.header(binding['revision_uuid'])
+                members = explorer_history.members(binding['revision_uuid'])
+                revision = workbench_read_revision(protocol_uuid)
+                guard = revision_guard(protocol_uuid)
+                added, removed = {}, []
+                if restore:
+                    removal = explorer_history.latest_membership_removal(binding['revision_uuid'], protocol_uuid)
+                    if (removal is None or body['removal_revision_uuid'] != removal['revision_uuid']
+                            or removal.get('delta', {}).get('added')):
+                        raise StaleWorkspace('Only the latest unchanged membership removal can be undone')
+                    removed_ids = removal['delta']['removed']
+                    if not 1 <= len(removed_ids) <= 1000:
+                        raise ValueError('This removal exceeds the supported Undo size')
+                    original = explorer_history.members(removal['parent_revision_uuid'])
+                    added = {key: original[key] for key in removed_ids}
+                    if any(key in members for key in added):
+                        raise StaleWorkspace('The removed epochs are already present; Undo was refused')
+                else:
+                    removed = body['epoch_uuids']
+                    if (not isinstance(removed, list) or not 1 <= len(removed) <= 1000
+                            or any(not isinstance(key, str) or str(uuid.UUID(key)) != key for key in removed)
+                            or len(set(removed)) != len(removed)):
+                        raise ValueError('Choose a unique list of 1–1,000 epoch UUIDs')
+                    if body['query_revision'] != revision:
+                        raise StaleWorkspace('The inspected dataset changed. Refresh before removing epochs.')
+                    if any(key not in members for key in removed):
+                        raise ValueError('Removal includes an epoch outside this pinned protocol')
+                    curation_selection_scope(removed, body['selection_scope'], protocol_uuid)
+                    removed = sorted(removed)
+
+                def verify_restored():
+                    if not added:
+                        return
+                    active = set(service.source_scope()['active_source_revisions'])
+                    sources = set()
+                    for key, fingerprint in added.items():
+                        row = service.rows.get(key)
+                        if (row is None or service._fingerprints.get(key) != fingerprint
+                                or row['source_sha256'] not in active):
+                            raise StaleWorkspace('A removed recording changed or became unavailable; Undo was refused')
+                        sources.add(row['source_sha256'])
+                    for source in sorted(sources):
+                        service._verified_source(service.manifests[source])
+
+                verify_restored()
+                # Declare the optional lineage index before entering a data transaction.
+                _ = explorer_history.Membership
+                provenance = {'kind': 'undo_remove' if restore else 'remove',
+                    'protocol_uuid': protocol_uuid, 'previous_revision_uuid': binding['revision_uuid']}
+                if restore:
+                    provenance['removal_revision_uuid'] = removal['revision_uuid']
+                actor = os.environ.get('USER', 'local-user')
+                diff = {'added': sorted(added), 'removed': removed, 'changed': []}
+                with service.dj.conn().transaction:
+                    if guard() != revision:
+                        raise StaleWorkspace('The pinned protocol changed before membership publication')
+                    verify_restored()
+                    record = explorer_history.create_delta(binding['revision_uuid'], added, removed, actor,
+                        name=header['name'], fields={'membership_edit': provenance}, _in_transaction=True)
+                    saved = explorer_history.bind(record['revision_uuid'], protocol_uuid, binding['version'], actor,
+                        diff, len(members), expected_query_revision=revision, current_query_revision=guard,
+                        _in_transaction=True, _lock_held=True)
+                    verify_restored()
+                result = {'protocol_uuid': protocol_uuid, 'binding': saved,
+                    'previous_count': len(members), 'next_count': record['recipe']['epoch_count'],
+                    'removed_epoch_uuids': removed, 'restored_epoch_uuids': sorted(added)}
+                if not restore:
+                    result['undo'] = {'kind': 'protocol-membership', 'protocol_uuid': protocol_uuid,
+                        'removal_revision_uuid': record['revision_uuid'],
+                        'expected_binding_version': saved['version'], 'count': len(removed)}
+                else:
+                    preceding = explorer_history.latest_membership_removal(record['revision_uuid'], protocol_uuid)
+                    result['next_undo'] = ({'removal_revision_uuid': preceding['revision_uuid'],
+                        'expected_binding_version': saved['version']} if preceding else None)
+                return jsonify(result)
+
+    @app.post('/api/protocols/<protocol_uuid>/membership/remove')
+    def remove_pinned_membership(protocol_uuid):
+        fields = {'epoch_uuids', 'query_revision', 'expected_binding_version', 'selection_scope'}
+        return change_pinned_membership(protocol_uuid, explorer_request(fields, fields))
+
+    @app.post('/api/protocols/<protocol_uuid>/membership/undo-remove')
+    def undo_pinned_membership_removal(protocol_uuid):
+        fields = {'removal_revision_uuid', 'expected_binding_version'}
+        return change_pinned_membership(protocol_uuid, explorer_request(fields, fields), restore=True)
+
     @app.post("/api/protocols/<protocol_uuid>/curation")
     def curate(protocol_uuid):
         body = request.get_json()

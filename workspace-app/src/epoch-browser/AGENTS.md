@@ -49,6 +49,16 @@ view. Public entries and styles:
 
 Keep UUIDs, source-specific query revisions, predicate values, frozen candidate identity and branch scope exact. Invalid frozen context must refuse rather than fall back globally. Curation submission checks current selection and receipt authority; browsing or restored focus never grants consent. Page requests remain bounded and preserve anchor versus offset behavior. Preserve loading/error states, abort cleanup and stale-result fences.
 
+Pinned Main views expose immediate membership removal in the shared selected
+toolbar (list and tree), or for the focused epoch when selection is empty.
+Ordinary source protocols, incoming and scoped read owners expose no removal.
+The command snapshots exact UUIDs, query/binding and view scope; stale callbacks
+refuse. An accepted write survives navigation and is never retried automatically.
+Confirmed or uncertain completion invalidates the originating protocol; only the
+still-current owner may clear its selection/focus. Undo uses the sealed response
+receipt through the session Undo owner. `inspectorMembershipLifecycle.test.js`
+and `bulkSelectionControls.test.js` cover these bounds; native checks are separate.
+
 Pending counts and the bounded cell list (requires backend #118/#119): a
 multi-field query run or page may answer with null totals, `cells_pending: true`
 and `counts: {status: "pending", request_id}`. `queryCounts.js` reads that job and

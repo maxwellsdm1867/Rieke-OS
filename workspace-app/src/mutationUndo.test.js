@@ -3,6 +3,34 @@ import assert from 'node:assert/strict';
 import {createUndoHistory,shouldUndoData} from "./undo/mutationUndo.js";
 import {persistUndo,installUndoShortcuts} from "./undo/useMutationUndo.js";
 const action=(revision=1,id='original')=>({kind:'annotations',operations:[{target_kind:'epoch',target_uuid:id,profile_uuid:'scientist',expected_revision:revision,before_revision:revision-1,tags_add:[],tags_remove:['chosen']}]});
+const membership=(id='remove-A',version=2)=>({kind:'protocol-membership',protocol_uuid:'pin-A',removal_revision_uuid:id,expected_binding_version:version,count:2});
+
+test('membership Undo sends a sealed removal reference and rebases only its exact predecessor',async()=>{
+ const h=createUndoHistory();h.project('project');h.record(membership());h.record(membership('remove-B',3));
+ const calls=[];
+ assert.equal(await h.undo(value=>persistUndo(value,async(path,options)=>{
+  calls.push({path,...options});return {protocol_uuid:'pin-A',binding:{version:4},restored_epoch_uuids:['b','c'],next_undo:{removal_revision_uuid:'remove-A',expected_binding_version:4}};
+ })),true);
+ assert.deepEqual(calls,[{path:'/protocols/pin-A/membership/undo-remove',method:'POST',undoOperation:true,body:{removal_revision_uuid:'remove-B',expected_binding_version:3}}]);
+ await h.undo(async value=>{assert.equal(value.removal_revision_uuid,'remove-A');assert.equal(value.expected_binding_version,4);return {revisions:{}};});
+ assert.equal(h.view().count,0);
+ h.record(membership());h.record(membership('remove-B',3));
+ await h.undo(async()=>({nextMembershipUndo:{removal_revision_uuid:'unrelated',expected_binding_version:4}}));
+ await h.undo(async value=>{assert.equal(value.expected_binding_version,2);return {};});
+});
+
+test('membership receipts are bounded and incomplete inverse responses are never claimed as success',async()=>{
+ const h=createUndoHistory();h.project('project');
+ for(const patch of [{count:0},{count:1001},{expected_binding_version:0},{removal_revision_uuid:null}])h.record({...membership(),...patch});
+ assert.equal(h.view().count,0);
+ h.record(membership());assert.equal(h.view().count,1);
+ for(const patch of [{restored_epoch_uuids:['a','a']},{binding:{version:99}},{protocol_uuid:'other'},
+   {next_undo:{removal_revision_uuid:'earlier',expected_binding_version:99}}]){
+  let calls=0;
+  await assert.rejects(persistUndo(membership(),async()=>{calls++;return {protocol_uuid:'pin-A',binding:{version:3},restored_epoch_uuids:['a','b'],...patch};}),error=>error.saved===true);
+  assert.equal(calls,1);
+ }
+});
 
 test('undo targets original identities after navigation; repeated shortcuts cannot race',async()=>{
  const h=createUndoHistory();h.project('project-A');h.record(action());

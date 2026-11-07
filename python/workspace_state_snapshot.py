@@ -214,7 +214,7 @@ def verify_lineage_state(tables):
     rows = tables.get('protocol_membership') or []
     if not rows:
         return
-    from disco.decisions.explorer import membership_hash
+    from disco.decisions.explorer import membership_hash, indexed_lineage_members
     revisions = {row['revision_uuid']: row['recipe'] for row in tables.get('explorer_revision', [])}
     lineages = {}
     for row in rows:
@@ -226,12 +226,11 @@ def verify_lineage_state(tables):
         lineage = recipe.get('lineage_uuid', recipe.get('revision_uuid'))
         if lineage not in lineages:
             continue
-        chain, link = set(), recipe
+        chain, link = [], recipe
         while link is not None:
-            chain.add(link['revision_uuid'])
+            chain.append(link)
             link = revisions.get(link.get('parent_revision_uuid')) if link.get('storage') else None
-        members = [(row['epoch_uuid'], row['metadata_hash']) for row in lineages[lineage]
-                   if row['added_revision_uuid'] in chain and row.get('removed_revision_uuid') not in chain]
+        members = indexed_lineage_members(lineages[lineage], chain)
         expected = recipe.get('membership_hash')
         if expected is None and isinstance(recipe.get('epochs'), list):
             expected = membership_hash((member['uuid'], member['metadata_hash']) for member in recipe['epochs'])

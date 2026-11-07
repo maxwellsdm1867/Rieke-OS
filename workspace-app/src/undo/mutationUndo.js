@@ -24,9 +24,10 @@ export function createUndoHistory(limits=UNDO_LIMITS){
   record(action){
    if(!project||!action)return;
    if(action.kind==='unavailable'){clear();message=action.reason;emit();return;}
-   if(!['annotations','annotation_group','curation','search-inclusion'].includes(action.kind))return;
+   if(!['annotations','annotation_group','curation','search-inclusion','protocol-membership'].includes(action.kind))return;
    if(action.kind==='annotation_group'&&(!Number.isSafeInteger(action.count)||action.count<1||typeof action.operation_uuid!=='string'||typeof action.profile_uuid!=='string'))return;
-   if(!['search-inclusion','annotation_group'].includes(action.kind)&&!actionRows(action).length)return;
+   if(action.kind==='protocol-membership'&&(!Number.isSafeInteger(action.count)||action.count<1||action.count>1000||typeof action.protocol_uuid!=='string'||typeof action.removal_revision_uuid!=='string'||!Number.isSafeInteger(action.expected_binding_version)||action.expected_binding_version<1))return;
+   if(!['search-inclusion','annotation_group','protocol-membership'].includes(action.kind)&&!actionRows(action).length)return;
    if(actionRows(action).length>1000){clear();message='This gesture is too large for session undo.';emit();return;}
    const size=actionSize(action);
    if(size>limits.bytes){clear();message='This gesture exceeds session undo memory limits.';emit();return;}
@@ -46,6 +47,11 @@ export function createUndoHistory(limits=UNDO_LIMITS){
     if(result===undefined)throw Error('That search is no longer active. Return to its original viewer before undoing.');
     if(project!==original)return false;
     stack.pop();bytes-=entry.size;
+    if(action.kind==='protocol-membership'&&result.nextMembershipUndo){
+     const next=result.nextMembershipUndo;
+     const older=stack.findLast(saved=>saved.action.kind==='protocol-membership'&&saved.action.protocol_uuid===action.protocol_uuid);
+     if(older?.action.removal_revision_uuid===next.removal_revision_uuid)older.action.expected_binding_version=next.expected_binding_version;
+    }
     // An inverse is a new revision. Advance only the nearest preceding edit on
     // each original target when its expected revision is the undone prior state.
     const updates=result.revisions||{};
@@ -65,7 +71,7 @@ export function createUndoHistory(limits=UNDO_LIMITS){
  };
 }
 export const mutationUndo=createUndoHistory();
-export function isUndoableRequest(path,options){return undoEnabled&&options?.method==='POST'&&!options.undoOperation&&(path==='/annotations'||/^\/protocols\/[^/]+\/curation$/.test(path));}
+export function isUndoableRequest(path,options){return undoEnabled&&options?.method==='POST'&&!options.undoOperation&&(path==='/annotations'||/^\/protocols\/[^/]+\/(curation|membership\/remove)$/.test(path));}
 export function shouldUndoData(target){
  if(!target)return true;
  if(target.isContentEditable)return false;

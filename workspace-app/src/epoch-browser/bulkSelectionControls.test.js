@@ -22,13 +22,30 @@ test('counted selection bar exposes tag, exclude, include and clear with freshne
 
 test('shared viewer renders bulk controls in list and tree modes without relying on a focused trace',async()=>{
  const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{name:'bulk-viewer-boundaries',enforce:'pre',resolveId(id,importer){if(importer?.endsWith('/epoch-browser/ui/EpochViewer.jsx')&&['./EpochBrowserLayout.jsx','../../typed-query/ui/TreeBuilder.jsx','../../tree-browser/ui/RetainedTreePresentation.jsx'].includes(id))return '\0bulk-empty';},load(id){if(id==='\0bulk-empty')return 'export default ()=>null;';}}]});
- const {default:Viewer}=await server.ssrLoadModule('/src/epoch-browser/ui/EpochViewer.jsx');let root;
+ const {default:Viewer}=await server.ssrLoadModule('/src/epoch-browser/ui/EpochViewer.jsx');let root,removed=0;
  try{
-  for(const designMode of [false,true]){
-   await act(()=>{const element=React.createElement(Viewer,{designMode,targets:['a','b'],selectionActions:{onInclude(){},onExclude(){}},metadata:{onClearSelection(){}},layout:{metadataOpen:false},toolbar:{actions:[],onTags(){}},columnTree:{},treePane:{}});if(root)root.update(element);else root=TestRenderer.create(element);});
+  for(const [designMode,treeMode] of [[false,false],[false,true],[true,true]]){
+   await act(()=>{const element=React.createElement(Viewer,{designMode,targets:['a','b'],selectionActions:{onInclude(){},onExclude(){},onRemove(){removed++;}},metadata:{onClearSelection(){}},layout:{metadataOpen:false},toolbar:{actions:[],onTags(){}},columnTree:{},treePane:{treeMode}});if(root)root.update(element);else root=TestRenderer.create(element);});
    assert.equal(root.root.findAllByProps({className:'inspection-scope bulk-active compact-selection'}).length,1);
    const labels=root.root.findAllByType('button').map(button=>button.children.filter(child=>typeof child==='string').join(''));
    assert.ok(labels.some(label=>label.includes('Exclude selected')));assert.ok(labels.some(label=>label.includes('Include selected')));
+   const remove=root.root.findAllByType('button').find(button=>button.children.includes('Remove from pinned protocol'));
+   assert.ok(remove);assert.equal(remove.props.disabled,false);await act(()=>remove.props.onClick());
   }
+  assert.equal(removed,3);
+ }finally{await act(()=>root?.unmount());await server.close();}
+});
+
+test('membership removal control requires its owner callback and obeys freshness and ordinary batch bounds',async()=>{
+ const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
+ const {EpochSelectionBar}=await server.ssrLoadModule('/src/epoch-browser/ui/EpochBrowserChrome.jsx');let root;
+ const render=async props=>act(()=>{const element=React.createElement(EpochSelectionBar,props);if(root)root.update(element);else root=TestRenderer.create(element);});
+ const remove=()=>root.root.findAllByType('button').filter(button=>button.children.includes('Remove from pinned protocol'));
+ try{
+  await render({targets:['a']});assert.equal(remove().length,0);
+  await render({targets:['a'],onRemove(){},disabled:true});assert.equal(remove()[0].props.disabled,true);
+  await render({targets:Array.from({length:1000},(_,i)=>String(i)),onRemove(){}});assert.equal(remove()[0].props.disabled,false);
+  await render({targets:Array.from({length:1001},(_,i)=>String(i)),onRemove(){}});assert.equal(remove()[0].props.disabled,true);
+  await render({targets:[],onRemove(){}});assert.equal(root.toJSON(),null);
  }finally{await act(()=>root?.unmount());await server.close();}
 });

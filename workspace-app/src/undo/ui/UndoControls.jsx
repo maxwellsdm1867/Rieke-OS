@@ -5,5 +5,5 @@ import {mutationUndo} from '../mutationUndo.js';
 export default function UndoControls({onUndo}){
  useSyncExternalStore(mutationUndo.subscribe,mutationUndo.version);
  const state=mutationUndo.view();
- return <><button disabled={!state.count||state.busy||!!state.pending} onClick={onUndo} title="Undo last tag or analysis inclusion edit (Cmd+Z / Ctrl+Z)">Undo edit</button>{state.message&&<span role="status" className="undo-status">{state.message}</span>}</>;
+ return <><button disabled={!state.count||state.busy||!!state.pending} onClick={onUndo} title="Undo last tag, analysis inclusion or pinned membership edit (Cmd+Z / Ctrl+Z)">Undo edit</button>{state.message&&<span role="status" className="undo-status">{state.message}</span>}</>;
 }

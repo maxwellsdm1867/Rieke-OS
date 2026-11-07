@@ -4827,6 +4827,7 @@
               "ExplorerHistory",
               "MemberView",
               "explorer_table",
+              "indexed_lineage_members",
               "membership_hash",
               "protocol_binding_table",
               "protocol_membership_table",
@@ -5677,7 +5678,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "98e4e58cbe6fb13e8c7348d8cf0f68db1b338a8933d59be7a85178716fe7d9e8",
+                "file_sha256": "2125947477a0ca4c44bba96d49848d2f9f4a0472bd21274defdaf468abcebd99",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5728,7 +5729,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "462cbc6110556e5e9470d39f746f8afe38c9fa4119e36266fab02afa9b102898",
+                "file_sha256": "01c7f26d9606ba05bb5563a87031ded4a545ad542d10c085ff1efe1a4fd18c5b",
                 "contract_id": null
               }
             ]
@@ -5828,7 +5829,7 @@
               {
                 "module": "workspace_state_snapshot",
                 "file": "python/workspace_state_snapshot.py",
-                "file_sha256": "77be05b2af7d4f47b567f6155db2de705973084f9fcb7e94fc9b69e8b3055858",
+                "file_sha256": "cd401361d8c9fe3711b5774288550204e42c89f463d728e4e069f16910ea0699",
                 "contract_id": null
               }
             ]
@@ -6060,7 +6061,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "98e4e58cbe6fb13e8c7348d8cf0f68db1b338a8933d59be7a85178716fe7d9e8",
+                "file_sha256": "2125947477a0ca4c44bba96d49848d2f9f4a0472bd21274defdaf468abcebd99",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -6163,7 +6164,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "462cbc6110556e5e9470d39f746f8afe38c9fa4119e36266fab02afa9b102898",
+                "file_sha256": "01c7f26d9606ba05bb5563a87031ded4a545ad542d10c085ff1efe1a4fd18c5b",
                 "contract_id": null
               }
             ]
@@ -6196,7 +6197,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "462cbc6110556e5e9470d39f746f8afe38c9fa4119e36266fab02afa9b102898",
+                "file_sha256": "01c7f26d9606ba05bb5563a87031ded4a545ad542d10c085ff1efe1a4fd18c5b",
                 "contract_id": null
               }
             ]
@@ -7053,7 +7054,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "98e4e58cbe6fb13e8c7348d8cf0f68db1b338a8933d59be7a85178716fe7d9e8",
+                "file_sha256": "2125947477a0ca4c44bba96d49848d2f9f4a0472bd21274defdaf468abcebd99",
                 "contract_id": "backend-decisions"
               }
             ]

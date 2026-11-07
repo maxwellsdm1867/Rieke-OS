@@ -55,6 +55,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   // visibility revoke leases (checked live via active()) without re-reading.
   const treeOwnerIdentity=treeReadOwner?(treeReadOwner.presentationIdentity??treeReadOwner.identity):undefined;
   const id=protocol.definition.protocol_uuid,annotationOrigin=useId();
+  const membershipEditable=!!protocol.definition.initial_revision_uuid&&!incomingReadContext&&!requestScope;
   const selectedViewState=useSelectedEpochView({projectId,protocolId:id,context:incomingReadContext,filters:baseFilters,
     selected:draftSelection?.selected,paused:ownerReadPaused,disabled:!!draftSelection?.disabled,request:api});
   const selectedView=selectedViewState.selected,viewWorking=selectedViewState.pending;
@@ -432,6 +433,36 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
       if(mounted.current)setBusy(false);
     }
   }
+  async function removeMembership(epochUuid=null) {
+    if(!membershipEditable||readContext||designBlocked||busy||readPaused||curationRequest.current||!mounted.current)return;
+    if(committedCurationIdentity.current!==curationIdentity){setError('Selection or dataset changed. Refresh before removing epochs.');return;}
+    const uuids=epochUuid?[epochUuid]:[...targets];
+    if(!uuids.length||uuids.length>1000||!pageReady||!cellsReady){setError('Select 1–1,000 current epochs before removing them.');return;}
+    const controller=new AbortController(),generation=curationGeneration.current,notifyChange=changedCallback.current;
+    const isCurrent=()=>mounted.current&&generation===curationGeneration.current&&committedCurationIdentity.current===curationIdentity;
+    curationRequest.current=controller;setBusy(true);setError('');setOperationMessage('Removing epochs from pinned protocol…');
+    try {
+      // An accepted write is never aborted or retried when the view changes.
+      const result=await api(`/protocols/${id}/membership/remove`,{method:'POST',body:{
+        epoch_uuids:uuids,query_revision:curationReceipts.latest(id,queryRevision),expected_binding_version:bindingVersion,
+        selection_scope:{filters:filters||{},cell_uuid:epochUuid?null:focusCell}}});
+      if(result?.protocol_uuid!==id||result.binding?.version!==bindingVersion+1||
+          !Array.isArray(result.removed_epoch_uuids)||JSON.stringify([...result.removed_epoch_uuids].sort())!==JSON.stringify([...uuids].sort()))
+        throw Error('The removal receipt was incomplete. Refresh this protocol before editing again.');
+      if(isCurrent()){
+        selectTargets([]);
+        if(uuids.includes(focused)){setFocused(null);setOffset(0);setPendingNavigation(null);navigationIntent.current=null;}
+      }
+      notifyChange?.({kind:'membership',protocolId:id});
+    }catch(error){
+      if(mounted.current)setError(error.message);
+      // A transport error can follow a commit. Renew membership, never replay.
+      notifyChange?.({kind:'membership',protocolId:id});
+    }finally{
+      if(curationRequest.current===controller)curationRequest.current=null;
+      if(mounted.current)setBusy(false);
+    }
+  }
   async function saveMask() {
     if(busy||readContext)return;
     setBusy(true);setError('');setMaskMessage('');setOperationMessage('Saving protocol selection mask…');
@@ -555,9 +586,10 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     layout={{layoutRef,sizes:paneSizes,treeOpen,metadataOpen,onResize:changePane,onResizeCommit:savePane}} designMode={designMode}
     builder={{projectId,treeSelectionIntent,onTreeSelectionIntentChange:setTreeSelectionIntent,onTreeSelectionFeedback:reportTreeSelectionFeedback,protocolId:id,readContext,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,actionsDisabled:designBlocked||busy||!!draftSelection?.disabled||!cellsReady,onAnnotationsChanged:annotationChanged,summaryEnabled:!readContext,catalogPath:readRoot+'/tree-fields',summaryContext:{predicate:{all:[]},protocol_uuid:id,filters},queryString:protocolSearch,revision:pageRevision,value:splits.split(',').filter(Boolean),onChange:changeSplits,preview:tree.data,loading:tree.loading,error:tree.error,preparation:tree.preparation}} columnTree={{takeLayoutPreparation,readPaused,...(readContext?{highlightedEpochs,setHighlightedEpochs}:{}),projectId,navigationDisabled:busy||readPaused||!!draftSelection?.disabled||!cellsReady,selectionSummaryPaused:readPaused,treeSelectionIntent,onTreeSelectionIntentChange:setTreeSelectionIntent,onTreeSelectionFeedback:reportTreeSelectionFeedback,selectionAuthority:designSelectionAuthority,readPending:designMode&&!treeStatus.error&&designBlocked,onAnnotationsChanged:annotationChanged,collapseRequest:collapseRequest,externalCollapseControl:true,actionsDisabled:designBlocked||busy||!!draftSelection?.disabled||!cellsReady,inclusionForEpoch:applyEpoch,onToggleInclusion:(item,included)=>curate({included},'focused',item.epoch_uuid),cells:viewCells,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);if(!readContext)selectTargets([]);toggleMetadata(true);setDesignMode(false);setCellTagRequest((viewCells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},presentation:"columns",protocolId:id,readContext,filters:filters,splits:splits,revision:pageRevision,design:true,selected:treeFocused,initialNavigation:treeNavigation,onNavigationChange:setDesignNavigation,onMetadata:receiveTree,onStatus:receiveTreeStatus,onSelectEpoch:focusTreeEpoch}} treePane={{selectionTools:readContext?<><IncomingTagSummary summary={incomingTags} onFilter={onTagFilter} disabled={designBlocked||busy||!pageReady}/></>:null,treeMode:treeMode,onTreeMode:value=>{setTreeMode(value);if(value)changePane('tree',Math.max(420,paneSizes.tree));},onDesign:openTreeDesign,designDisabled:busy,collapseRequest:collapseRequest,onCollapse:()=>setCollapseRequest(value=>value+1),treeProps:{readPaused,...(readContext?{highlightedEpochs,setHighlightedEpochs}:{}),projectId,treeSelectionIntent,onTreeSelectionIntentChange:setTreeSelectionIntent,onTreeSelectionFeedback:reportTreeSelectionFeedback,selectionAuthority:treeSelectionAuthority,onAnnotationsChanged:annotationChanged,actionsDisabled:designBlocked||busy||!!draftSelection?.disabled||!cellsReady,inclusionForEpoch:applyEpoch,onToggleInclusion:(item,included)=>curate({included},'focused',item.epoch_uuid),cells:viewCells,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);if(!readContext)selectTargets([]);toggleMetadata(true);setDesignMode(false);setCellTagRequest((viewCells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},protocolId:id,readContext,filters,splits,revision:pageRevision,selected:treeFocused,initialNavigation:treeNavigation,onNavigationChange:setDesignNavigation,onSelectEpoch:focusTreeEpoch,onMetadata:receiveTree,onStatus:receiveTreeStatus},listRef:epochListRef,listKey:presentationScope,listProps:{refreshGeneration:listRecovery.revision,onRecoverEpochs:listRecovery.request,cellsMore:pagedCells?cellList.window:null,...(readContext?{highlightedEpochs,setHighlightedEpochs}:{}),revealEpoch:!rows.loading&&!rows.error?rows.data?.epochs?.find(row=>row.epoch_uuid===focused):null,navigationRequest:listNavigationRequest,navigationScope:JSON.stringify([projectId,presentationScope]),initialNavigation:listNavigation,onNavigationChange:setListNavigation,membershipReady:cellsReady,onAnnotationsChanged:annotationChanged,cells:viewCells||[],source:{kind:'protocol',protocolId:id,readContext,query:protocolSearch,queryRevision:listQueryRevision},revision:listReadRevision,inclusionForEpoch:applyEpoch,focused:cellTagRequest?null:focused,onFocus:focusTreeEpoch,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cell,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);if(!readContext)selectTargets([]);toggleMetadata(true);setCellTagRequest(cell);},focusedCell:focusedEpoch?.cell_uuid??null,onTargetCell:cell=>{if(!readContext)selectTargets([]);toggleMetadata(true);setCellTagRequest(cell);},targets,setTargets:selectOverviewTargets,disabled:busy||!!draftSelection?.disabled||!cellsReady,navigationDisabled:busy||!navigationReady,onToggleInclusion:(epoch,included)=>curate({included},'focused',epoch.epoch_uuid)}}}
     resource={{scope:id,...epoch,loading:!epoch.error&&(!!pendingNavigation||(!!focused&&(epoch.loading||!focusedEpoch))),retry:epoch.reload}}
-    epoch={focusedEpoch} targets={targets} selectionActions={{scope:readContext?'incoming additions':'protocol exports',disabled:designBlocked||busy||readPaused||!!draftSelection?.disabled||!pageReady||!cellsReady,onInclude:()=>curate({included:true}),onExclude:()=>curate({included:false})}} navigation={{position:focusedPageIndex<0?-1:offset+focusedPageIndex,total:rows.data?.total||0,loading:!!pendingNavigation||rows.loading,disabled:busy,onMove:moveEpoch}}
+    epoch={focusedEpoch} targets={targets} selectionActions={{scope:readContext?'incoming additions':'protocol exports',disabled:designBlocked||busy||readPaused||!!draftSelection?.disabled||!pageReady||!cellsReady,onInclude:()=>curate({included:true}),onExclude:()=>curate({included:false}),onRemove:membershipEditable?()=>removeMembership():undefined}} navigation={{position:focusedPageIndex<0?-1:offset+focusedPageIndex,total:rows.data?.total||0,loading:!!pendingNavigation||rows.loading,disabled:busy,onMove:moveEpoch}}
     readContext={readContext} traceReadContext={preparedTraceReadContext} traceEpoch={traceEpoch} traceRequested={!!focused||!!pendingNavigation} traceRevision={traceRevision} inclusion={{incoming:!!readContext,disabled:designBlocked||busy||!pageReady,scope:'pinned dataset',onToggle:(epoch,included)=>curate({included},'focused',epoch.epoch_uuid)}} detailDisabled={designBlocked||busy} onQC={onQC} tags={tagEntry}
     detailExtras={focusedEpoch&&(readContext?<IncomingEpochReview epoch={focusedEpoch} disabled={designBlocked||busy||!pageReady} onReview={reviewed=>curate({reviewed},'focused')}/>:<>        {busy&&<p className="curation-progress" role="status">{operationMessage}</p>}
+        {membershipEditable&&!targets.length&&<button disabled={designBlocked||busy||readPaused||!pageReady||!cellsReady} onClick={()=>removeMembership(focusedEpoch.epoch_uuid)} title="Remove only this epoch from the pinned protocol. The recording stays in the project.">Remove this epoch from pinned protocol</button>}
         <div className="tags"><span>Dataset-only tags:</span>
           {(focusedEpoch.curation?.tags||[]).map(t=><button key={t} disabled={designBlocked||busy} aria-label={`Remove tag ${t} from focused epoch only`} title="Remove from focused epoch only" onClick={()=>curate({tags_remove:[t]},'focused')}>{t}<X size={13}/></button>)}
           {!focusedEpoch.curation?.tags?.length&&<span>No tags</span>}

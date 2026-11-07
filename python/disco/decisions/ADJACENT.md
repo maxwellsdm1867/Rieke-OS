@@ -93,7 +93,8 @@ full-recipe root), the exact `delta` (`added` members with fingerprints and
 order-independent multiset hash, the sum of SHA-256(uuid:fingerprint) terms
 modulo 2**256, updated in O(delta) from the parent's. `content_sha256` seals the
 whole stored delta, so it also seals the parent seal and the multiset hash.
-`create_delta` writes one O(delta) row; only additive deltas are published today.
+`create_delta` writes one O(delta) row. Additive merges, data-store pruning and
+explicit pinned-membership edits publish exact deltas.
 
 Reading: `header(revision)` verifies a row's seal (for a delta also its parent
 link, disjointness of added/removed with the parent membership, the recomputed
@@ -110,12 +111,18 @@ sorted membership (for a delta, materialized from the verified chain).
 
 Lineage index: `protocol_membership(project_uuid, lineage_uuid, epoch_uuid,
 added_revision_uuid -> metadata_hash, removed_revision_uuid)`. Binding a delta
-inserts its added rows and marks its removed members in the bind transaction
+inserts immutable added rows in the bind transaction
 (the first additive delta bound on a lineage backfills the chain once,
 O(root); a removal on an unindexed lineage leaves it unindexed). A revision's
-indexed membership is the rows added on its chain and not removed on it.
-`retire_delta` removes an undone delta's rows with one DELETE inside the
-caller's binding transaction. `verify_lineage` re-hashes the indexed
+indexed membership is the rows added on its chain after that epoch's most recent
+sealed removal. `indexed_lineage_members` uses the ordered sealed chain in both
+live verification and snapshot verification. The legacy single
+`removed_revision_uuid` column remains readable but is not removal authority:
+two pins sharing a root can remove the same epoch independently, and an inverse
+adds a new row without changing historical rows or the other pin's membership.
+`retire_delta` retains sealed addition rows when a binding is undone: other pins,
+exports and history can still reference them. The restored binding's chain
+excludes them automatically. `verify_lineage` re-hashes the indexed
 membership against the sealed multiset hash, and `verify_membership` re-hashes
 a membership about to be used (and the index) against it. Both are O(members)
 and run where membership becomes scientific truth: protocol export
@@ -128,6 +135,28 @@ append-only in the recovery state (`workspace_state_snapshot.TABLES`,
 `recovery_generation.TABLE_NAMES`, ordinal 19); compact/expand queries never
 re-query a delta or a root that a delta builds on, because the chain seals that
 root's exact identity. Injected (custom) revision storage declares no index.
+
+### Explicit pinned membership edits
+
+A pin is an overlapping set of epoch UUIDs, not an owner of recordings or cells.
+Displayed cells are derived from its current epochs; accepted acquisition Protocol
+IDs remain in its definition even when their last current epoch is removed.
+`POST /protocols/<id>/membership/remove` accepts 1–1,000 exact selected UUIDs,
+the held query revision, binding version and selection scope. Only an explicitly
+pinned definition is eligible. Source/annotation/protocol guards surround one
+transaction that seals a `membership_edit` removal and advances the binding.
+Source rows, curation, other pins and existing export artifacts are unchanged.
+
+The response-only Undo receipt names the sealed removal and binding version.
+`membership/undo-remove` derives the inverse from that removal's parent, verifies
+current source availability and fingerprints, and adds a new delta. It never
+rewinds the binding or accepts client-supplied restored identities. Successive
+removals can undo in order across paired inverses; unrelated membership changes
+end that chain. `latest_membership_removal` identifies the latest still-applied
+removal, and `next_undo` permits rebasing only that exact preceding session receipt.
+The source/HTTP regressions are `test_workspace_pinned_membership` and
+`test_workspace_pinned_membership_domain`; native display/export/recovery checks
+remain separate qualification.
 
 `ExplorerHistory.prepared_delta(previous, current, limit=20000)` projects a chain
 of retained verified membership deltas for prepared display owners. It walks at

@@ -12,6 +12,9 @@ Cell QC presentation with import and epoch/protocol interaction repairs.
 - Cell QC shows recorded date, cell and rig above Cell type, Bath temperature and
   Pipette solution, with recorded additions when present and an expansion hint.
 - Metadata field names and field IDs have separate copy controls.
+- Pinned protocols can remove selected epochs in list/tree views and restore them
+  with Undo. Removing membership leaves recordings, other pins and existing exports
+  intact; future exports follow the updated membership.
 
 The existing cell-specific Overview, recorded cell-type icons, individually paged
 QC protocols, temperature/solution displays, exact-epoch UUID entry and prepared

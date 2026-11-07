@@ -211,7 +211,7 @@ class ProtocolWorkbench:
         # Small facts derived from verified immutable recipes, keyed by
         # revision UUID (recipes are insert-only and content-sealed with their
         # UUID). Never scope authority: opening contexts verify fresh recipes.
-        self._discovery, self._seen_sources = {}, {}
+        self._discovery, self._discovery_scopes = {}, {}
         self._checks, self._profiles = {}, {}
         self._prepared_queue = {}
         self._queue_check_refs = {}
@@ -404,8 +404,12 @@ class ProtocolWorkbench:
 
     @staticmethod
     def _discovery_facts(recipe):
-        return dict(predicate=copy.deepcopy(recipe['predicate']), membership_kind=recipe.get('membership_kind'),
-            previous_revision_uuid=recipe.get('additive_publication', {}).get('previous_revision_uuid'),
+        edit = recipe.get('membership_edit', {})
+        return dict(predicate=copy.deepcopy(recipe['predicate']),
+            membership_kind='membership_edit' if edit else recipe.get('membership_kind'),
+            previous_revision_uuid=(edit or recipe.get('additive_publication', {})).get('previous_revision_uuid'),
+            removed=tuple(recipe.get('delta', {}).get('removed', ())) if edit.get('kind') == 'remove' else (),
+            restored=tuple(row['uuid'] for row in recipe.get('delta', {}).get('added', ())) if edit.get('kind') == 'undo_remove' else (),
             source_revisions=tuple(recipe.get('source_revisions', ())),
             origins=[witness['candidate_revision_uuid'] for witness in
                      recipe.get('pending_union_provenance', {}).get('origins', [])])
@@ -818,21 +822,38 @@ class ProtocolWorkbench:
         """Recordings main was defined against: those present when its query was
         last saved, its pinned set created or its baseline frozen. Merges do not
         change it, so an unmerged rest of a new recording stays new."""
+        return self.discovery_scope(main)[0]
+
+    def discovery_scope(self, main):
+        """Preserve seen recordings and explicit removals across Main edits.
+
+        A removal from a partially merged recording must not hide its unmerged
+        siblings or offer the explicitly removed epoch again. A new saved query
+        starts a new baseline; membership edits never rewrite that query.
+        """
         start = main.get('revision_uuid')
-        if start in self._seen_sources:
-            value = self._seen_sources.pop(start)
-            _remember(self._seen_sources, start, value)
+        if start in self._discovery_scopes:
+            value = self._discovery_scopes.pop(start)
+            _remember(self._discovery_scopes, start, value)
             return value
         seen = 0
+        decisions = {}
         facts = self._discovery_facts(main)
-        while facts['membership_kind'] == 'additive_union' and seen < 10000:
+        while facts['membership_kind'] in ('additive_union', 'membership_edit'):
+            if seen >= 10000:
+                raise WorkbenchConflict('Membership history is too deep to prepare incoming recordings safely.')
+            for identity in facts['removed']:
+                decisions.setdefault(identity, True)
+            for identity in facts['restored']:
+                decisions.setdefault(identity, False)
             facts = self.discovery(facts['previous_revision_uuid'])
             seen += 1
-        value = frozenset(facts['source_revisions'])
+        value = (frozenset(facts['source_revisions']),
+                 frozenset(identity for identity, removed in decisions.items() if removed))
         # The chain below an immutable revision never changes, so its result
         # is remembered per revision instead of re-walking every merge.
         if start is not None:
-            _remember(self._seen_sources, start, value)
+            _remember(self._discovery_scopes, start, value)
         return value
 
     def pending_pool(self, protocol, *, prepared_only=False):
@@ -895,10 +916,11 @@ class ProtocolWorkbench:
             reason = 'Main contains epochs from a recording that is excluded from queries; include it again in Data stores.'
         else:
             allowed = protocol_ids(self.service, protocol)
-            seen = self.seen_sources(main)
+            seen, removed = self.discovery_scope(main)
             for identity in self.service.match_predicate(main['predicate'])[1]:
                 row = self.service.rows[identity]
-                if (identity not in members and row['source_sha256'] in active and row['source_sha256'] not in seen
+                if (identity not in members and identity not in removed
+                        and row['source_sha256'] in active and row['source_sha256'] not in seen
                         and protocol_key(row.get('protocol_name')) in allowed):
                     pool[identity] = fingerprints[identity]
         value = dict(pool=pool, main=main, members=members, binding=binding, reason=reason, annotation=annotation,
@@ -1471,7 +1493,7 @@ class ProtocolWorkbench:
                 return again
             (_revision_memo.get() or {}).clear()
             if current.get('storage') and callable(getattr(self.history, 'retire_delta', None)):
-                self.history.retire_delta(current['revision_uuid'])  # One DELETE of the merge's rows.
+                self.history.retire_delta(current['revision_uuid'])  # Sealed rows can still serve another pin.
             saved = self.history.bind(previous_uuid, protocol, binding['version'], actor,
                 dict(added=[], removed=removed, changed=[]), len(current_members),
                 _in_transaction=True, _lock_held=True)
