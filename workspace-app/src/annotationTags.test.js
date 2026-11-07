@@ -80,3 +80,8 @@ test('unsaved tag recovery restores one text and names every other cancelled tex
   assert.equal(unsavedTagMessage('Conflict.',['b','c']),'Conflict. Not saved: “b”, “c”.');
   assert.equal(unsavedTagMessage('Conflict.',[]),'Conflict.');
 });
+
+test('bulk removal targets only the active author with exact per-target revisions',()=>{
+ const body=bulkAnnotationChange({targetUuids:['a','b'],profileUuid:'me',tag:' remove ',remove:true,read:{targets:{a:{target_kind:'epoch',target_uuid:'a',revisions:{me:4,other:19}},b:{target_kind:'epoch',target_uuid:'b',revisions:{other:7}}}}});
+ assert.deepEqual(body,{target_kind:'epoch',target_uuids:['a','b'],profile_uuid:'me',tags_add:[],tags_remove:['remove'],expected_revisions:{a:4,b:0}});
+});

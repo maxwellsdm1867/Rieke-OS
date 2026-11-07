@@ -93,3 +93,11 @@ malformed values and propagates them. Chips stay name-only; `annotationChipTitle
 puts author and added time (or `saving…` for pending chips) in the tooltip.
 Tag-time view filters (`annotations/*/tag_times`) are composed in
 `typed-query/protocolViewFilter.js`; times are never invented client-side.
+
+For an ordinary selected-epoch editor, typing a tag enables a separate Remove my
+tag from selected epochs action. `bulkAnnotationChange` accepts optional
+`remove=false`; removal emits only `tags_remove` with the same exact UUIDs and
+active-author revisions. Removal waits for the existing read/guarded write and
+receipt ingestion; it never creates an optimistic add ticket. Other authors'
+tags are not targeted. Missing/failed receipts retain the typed value and do not
+retry. Group-mutation controls above the ordinary target bound are unchanged.

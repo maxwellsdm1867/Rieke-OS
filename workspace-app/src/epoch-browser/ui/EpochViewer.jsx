@@ -5,7 +5,7 @@ import {useState} from 'react';
 import {Activity,ArrowLeft,Tags,X,LoaderCircle,AlertTriangle} from 'lucide-react';
 import {useNavigationLoading,useDelayedLoading} from '../../components/NavigationLoading.jsx';
 import './EpochViewer.css';
-import {EpochBrowserToolbar,EpochNavigation} from './EpochBrowserChrome.jsx';
+import {EpochBrowserToolbar,EpochNavigation,EpochSelectionBar} from './EpochBrowserChrome.jsx';
 import EpochBrowserLayout from './EpochBrowserLayout.jsx';
 import EpochTreePane from './EpochTreePane.jsx';
 import TreeBuilder from '../../typed-query/ui/TreeBuilder.jsx';
@@ -46,7 +46,7 @@ function PreparedTraceDetail({resource,epoch,trace,heading,navigation,curation})
   </div>;
 }
 
-export default function EpochViewer({className='epoch-inspector-mode',ariaLabel='Epoch inspection',onKeyDown,toolbar,toolbarChildren,viewFilters,onViewFilters,filterRevision,filterDisabled=false,hideFilterControl=false,before,layout,designMode=false,builder,columnTree,treePane,resource={},epoch,targets=[],navigation,traceRevision,tracePreference:providedTracePreference,onTracePreference,readContext=null,traceReadContext=undefined,traceEpoch=null,traceRequested=true,inclusion,detailDisabled=false,onQC,tags,detailExtras,metadata}){
+export default function EpochViewer({className='epoch-inspector-mode',ariaLabel='Epoch inspection',onKeyDown,toolbar,toolbarChildren,viewFilters,onViewFilters,filterRevision,filterDisabled=false,hideFilterControl=false,before,layout,designMode=false,builder,columnTree,treePane,resource={},epoch,targets=[],selectionActions=null,navigation,traceRevision,tracePreference:providedTracePreference,onTracePreference,readContext=null,traceReadContext=undefined,traceEpoch=null,traceRequested=true,inclusion,detailDisabled=false,onQC,tags,detailExtras,metadata}){
   const [tracePreference,setTracePreference]=useTraceViewPreference(providedTracePreference,onTracePreference);
   const [previewOpen,setPreviewOpen]=useState(true);
   const [tagsOpen,setTagsOpen]=useState(false);
@@ -83,6 +83,7 @@ export default function EpochViewer({className='epoch-inspector-mode',ariaLabel=
   return <div className={`inspector ${className}`} tabIndex={0} aria-label={ariaLabel} onKeyDown={onKeyDown}>
     {toolbar&&<EpochBrowserToolbar browseLabel={treePane?.treeMode?'Back to split tree':'Back to epochs'} {...toolbar} filterControl={hideFilterControl?null:onViewFilters?<ProtocolViewFilter filters={viewFilters} onChange={onViewFilters} revision={filterRevision} disabled={filterDisabled}/>:toolbar.filterControl} treeControlsInPane>{toolbarChildren}{!designMode&&onViewFilters&&tagFilterLabel(viewFilters)&&<span className="inspection-filter-summary">{tagFilterLabel(viewFilters)}<button disabled={filterDisabled} onClick={()=>onViewFilters(Object.fromEntries(Object.entries(clearTagFilters(viewFilters)).filter(([key])=>key!=='metadata_predicate')))}>Clear filter</button></span>}</EpochBrowserToolbar>}
     {before}
+    {selectionActions&&<EpochSelectionBar {...selectionActions} targets={targets} onTags={()=>{if(designMode){cellSelection.clear();setTagsOpen(true);}toolbar?.onTags?.();}} onClear={metadata?.onClearSelection}/>}
     <EpochBrowserLayout {...layout} editing={designMode} retainDetail
       tree={designMode?<><nav className="tree-design-controls" aria-label="Tree editing"><button onClick={toolbar?.onBrowse}><ArrowLeft size={15}/> {treePane?.treeMode?'Back to split tree':'Back to epochs'}</button>{!previewOpen&&hasPreview&&<button aria-label="Show raw recording preview" onClick={()=>setPreviewOpen(true)}><Activity size={15}/></button>}<button aria-label="Show tree selection tags" aria-expanded={tagsOpen} onClick={()=>setTagsOpen(value=>!value)}><Tags size={15}/></button></nav>{treeTags}<TreeBuilder {...builder}/>{treePane?.selectionTools}</>:<EpochTreePane {...treePane} childrenInTree={false}>{!layout.metadataOpen&&<StableContent {...resource} className="stable-tag-dock" data={epoch}>{tags}</StableContent>}</EpochTreePane>}
       detail={<><div hidden={!designMode} style={!designMode?{display:'none'}:undefined} className="tree-design-content"><RetainedTreePresentation active={designMode} tree={{...columnTree,trailingPane:tracePane,trailingPaneKey:showPreview?columnTree?.selected:null, selectedCells:cellSelection.ids,onToggleCell:readContext?undefined:(...args)=>{cellSelection.toggle(...args);setTagsOpen(true);},onStatus:value=>{cellSelection.status(value);columnTree?.onStatus?.(value);},onMetadata:value=>{cellSelection.metadata(value);columnTree?.onMetadata?.(value);},onSelectEpoch:(...args)=>{setPreviewOpen(true);columnTree?.onSelectEpoch?.(...args);}}}/></div>{!designMode&&detail}</>}

@@ -94,3 +94,20 @@ test('Search holds the current result owner after annotations change until expli
   assert.ok(previewCalls()>count);assert.equal(matching().props.exportDisabled,false);
  }finally{await act(()=>tree?.unmount());await server.close();globalThis.fetch=previousFetch;globalThis.window=previousWindow;dom.window.close();}
 });
+
+test('bulk search inclusion is one reversible local action and stays fenced while hidden',async()=>{
+ const previousFetch=globalThis.fetch,previousWindow=globalThis.window;let tree,snapshot,finish;
+ const dom=new JSDOM('');globalThis.window=dom.window;
+ globalThis.fetch=async path=>new Response(JSON.stringify(path.includes('/explore/revisions/candidate-a?')?{revision_uuid:'candidate-a',recipe:{predicate:{all:[]},name:'Candidate',splits:'date,cell'}}:path.includes('/explore/preview')?{matched_count:3,tree_revision:'tree',catalog:{fields:[]},tree:{count:3},last_run:{cell_count:1}}:path.includes('/fields')?{fields:[],tree_fields:[]}:{}),{status:200});
+ const server=await createServer({...serverOptions,plugins:[{name:'retained-undo-control',enforce:'pre',resolveId(id,importer){if(importer?.endsWith('/metadata-explorer/ui/MetadataExplorer.jsx')&&id.endsWith('/MatchingEpochs.jsx'))return '\0retained-undo-matching';},load(id){if(id==='\0retained-undo-matching')return "export default 'retained-undo-matching';";}}]});
+ const [{default:Explorer},{RetainedWorkspaceViews},{mutationUndo},{trackWrite}]=await Promise.all([server.ssrLoadModule('/src/metadata-explorer/ui/MetadataExplorer.jsx'),server.ssrLoadModule('/src/retainedWorkspaceViews.js'),server.ssrLoadModule('/src/undo/mutationUndo.js'),server.ssrLoadModule('/src/desktopLifecycle.js')]);mutationUndo.project('undo-project');
+ const presentation={remember(){}},render=key=>act(async()=>{const node=React.createElement(RetainedWorkspaceViews,{route:{page:key==='search'?'explore':'overview',key},projectId:'undo-project',projectPath:'/undo-project',presentation,render:route=>route.page==='explore'?React.createElement(Explorer,{projectId:'undo-project',undoScopeId:'viewer',initialRevisionId:'candidate-a',onSession:value=>{snapshot=value;}}):null});tree?tree.update(node):tree=TestRenderer.create(node);});
+ try{await render('search');await act(()=>tree.root.findByType('retained-undo-matching').props.onToggleSelectionInclusion(['epoch','epoch2','epoch3'],false));assert.deepEqual(snapshot.excludedEpochs,['epoch','epoch2','epoch3']);assert.equal(mutationUndo.view().count,1);
+  await act(()=>tree.root.findByType('retained-undo-matching').props.onToggleSelectionInclusion(['epoch','epoch2','epoch3'],true));
+  assert.deepEqual(snapshot.excludedEpochs,[]);assert.equal(mutationUndo.view().count,2);
+  await act(()=>mutationUndo.undo(()=>assert.fail('expected local undo')));
+  assert.deepEqual(snapshot.excludedEpochs,['epoch','epoch2','epoch3']);assert.equal(mutationUndo.view().count,1);
+  const write=trackWrite(new Promise(resolve=>{finish=resolve;}));await render('other');assert.equal(tree.root.findAllByType('retained-undo-matching').length,1,'busy hidden owner is still mounted');let undone;await act(async()=>{undone=await mutationUndo.undo(()=>assert.fail('local undo must never become a scientific request'));});assert.equal(undone,false);assert.deepEqual(snapshot.excludedEpochs,['epoch','epoch2','epoch3']);assert.equal(mutationUndo.view().count,1);
+  await render('search');await act(async()=>{undone=await mutationUndo.undo(()=>assert.fail('expected local undo'));});assert.equal(undone,true);assert.deepEqual(snapshot.excludedEpochs,[]);finish();await write;
+ }finally{finish?.();await act(()=>tree?.unmount());mutationUndo.project(null);await server.close();globalThis.fetch=previousFetch;globalThis.window=previousWindow;dom.window.close();}
+});

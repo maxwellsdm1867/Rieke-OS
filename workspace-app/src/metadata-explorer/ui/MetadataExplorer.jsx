@@ -290,16 +290,22 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
     return mutationUndo.local(undoViewer.current,action=>{
       if(owners.some(({activity,token})=>!activity.active||activity.token!==token))throw Error('That search is no longer active. Return to its original viewer before undoing.');
       const current=localState.current;
-      if(current.busy||current.generation!==action.generation||!current.excludedEpochs.includes(action.epoch_uuid)!==action.after)throw Error('The temporary search selection changed since that action.');
-      setExcludedEpochs(ids=>toggleSearchInclusion(ids,action.epoch_uuid,action.prior));setDestination(null);setExportCandidate(null);
+      const changes=action.epochs||[[action.epoch_uuid,action.prior]];
+      if(current.busy||current.generation!==action.generation||changes.some(([id])=>!current.excludedEpochs.includes(id)!==action.after))throw Error('The temporary search selection changed since that action.');
+      setExcludedEpochs(ids=>changes.reduce((next,[id,prior])=>toggleSearchInclusion(next,id,prior),ids));setDestination(null);setExportCandidate(null);
       return {revisions:{}};
     });
   },[undoActive,undoActivity,undoActivity?.token,undoActivity?.parent?.token]);
   function toggleInclusion(epoch,included){
     if(busy||mutationUndo.view().busy)return;
-    const prior=!excludedEpochs.includes(epoch.epoch_uuid);if(prior===included)return;
-    if(undoEnabled)mutationUndo.record({kind:'search-inclusion',viewer:undoViewer.current,generation:undoGeneration,epoch_uuid:epoch.epoch_uuid,prior,after:included});
-    setExcludedEpochs(ids=>toggleSearchInclusion(ids,epoch.epoch_uuid,included));setDestination(null);setExportCandidate(null);
+    toggleSelectionInclusion([epoch.epoch_uuid],included);
+  }
+  function toggleSelectionInclusion(epochUuids,included){
+    if(busy||mutationUndo.view().busy||!Array.isArray(epochUuids)||!epochUuids.length||epochUuids.length>1000)return;
+    const changes=[...new Set(epochUuids)].map(id=>[id,!excludedEpochs.includes(id)]).filter(([,prior])=>prior!==included);
+    if(!changes.length)return;
+    if(undoEnabled)mutationUndo.record({kind:'search-inclusion',viewer:undoViewer.current,generation:undoGeneration,epochs:changes,after:included});
+    setExcludedEpochs(ids=>changes.reduce((next,[id])=>toggleSearchInclusion(next,id,included),ids));setDestination(null);setExportCandidate(null);
   }
   const exportDisabled=!!annotationHold||busy||resultLoading||!!resultError||!resultPreview?.matched_count;
   function openResultsExport(){
@@ -342,7 +348,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
     {initialCandidateLoading?<div className="mx-candidate-loading" role="status"><LoaderCircle size={18}/> Loading saved candidate…</div>:initialRevisionId&&!applied&&!departedInitial?<div className="mx-candidate-loading"><span>The saved candidate could not be loaded.</span><button onClick={()=>setInitialCandidateRetry(value=>value+1)}>Retry</button></div>:step==='filter'&&!focused?<SearchPresets entries={presets} fields={catalog.data?.fields||[]} history={history} projectPresets={projectPresets} onProjectPin={pinProjectPreset} onImportRecipe={importQueryRecipe} onProjectPage={setPresetOffset} busy={busy||catalog.loading||shortcutPreferences.loading} error={presetError||shortcutPreferences.error||catalog.error} onRun={usePreset} onEdit={item=>usePreset(item,'edit')} onPin={item=>usePreset(item,'pin')}/>:step==='results'?<div className="mx-results-workflow">
 
       {!hasViewFilter&&resultError&&<div className="mx-operation-error" role="alert">{resultError}<button onClick={refreshResults}>Refresh results</button></div>}
-      {!resultLoading&&!resultError&&resultPreview&&resultPredicate?<MatchingEpochs projectId={projectId} tracePreference={tracePreference} onTracePreference={setTracePreference} onQC={onQC} inclusionForEpoch={epoch=>searchEpochInclusion(epoch,excludedEpochs)} onToggleInclusion={toggleInclusion} toolbarTarget={epochToolbarTarget} viewFilters={viewFilters} onViewFilters={changeViewFilters} filterRevision={revision} filterDisabled={busy||!!annotationHold} onExport={openResultsExport} exportDisabled={exportDisabled} designDisabled={!!annotationHold||busy||resultLoading||!!resultError} actions={resultActions} onDesign={()=>{if(!annotationHold&&!busy&&!resultLoading&&!resultError)prepareDestination('tree');}} key={resultPreview.tree_revision} predicate={resultPredicate} splits={resultSplits} preview={resultPreview} session={matchingNavigation} onSession={setMatchingNavigation} onAnnotationsChanged={annotationsChanged} onTagFilter={predicate=>{setDraft(draftOf(predicate));setActivePreset(null);setEditorOpen(true);}} onRefresh={refreshResults}/>:<Status loading={resultLoading} error={resultError}/>}
+      {!resultLoading&&!resultError&&resultPreview&&resultPredicate?<MatchingEpochs projectId={projectId} tracePreference={tracePreference} onTracePreference={setTracePreference} onQC={onQC} inclusionForEpoch={epoch=>searchEpochInclusion(epoch,excludedEpochs)} onToggleInclusion={toggleInclusion} onToggleSelectionInclusion={toggleSelectionInclusion} toolbarTarget={epochToolbarTarget} viewFilters={viewFilters} onViewFilters={changeViewFilters} filterRevision={revision} filterDisabled={busy||!!annotationHold} onExport={openResultsExport} exportDisabled={exportDisabled} designDisabled={!!annotationHold||busy||resultLoading||!!resultError} actions={resultActions} onDesign={()=>{if(!annotationHold&&!busy&&!resultLoading&&!resultError)prepareDestination('tree');}} key={resultPreview.tree_revision} predicate={resultPredicate} splits={resultSplits} preview={resultPreview} session={matchingNavigation} onSession={setMatchingNavigation} onAnnotationsChanged={annotationsChanged} onTagFilter={predicate=>{setDraft(draftOf(predicate));setActivePreset(null);setEditorOpen(true);}} onRefresh={refreshResults}/>:<Status loading={resultLoading} error={resultError}/>}
     </div>:<>
       {catalog.supportsSummaries&&resultSummaries.status!=='idle'&&<SummaryStatus label="Result statistics" state={resultSummaries}/>}
       <Status {...displayTree} retry={()=>setGeneration(value=>value+1)}>{displayTree.data&&applied&&<MatchingEpochs designMode tracePreference={tracePreference} onTracePreference={setTracePreference} projectId={projectId} onQC={onQC}
@@ -350,7 +356,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
         onExport={openResultsExport} exportDisabled={exportDisabled} actions={resultActions}
         predicate={resultPredicate} splits={resultSplits} preview={resultPreview} session={matchingNavigation} onSession={setMatchingNavigation}
         onAnnotationsChanged={annotationsChanged} onTagFilter={predicate=>changeViewFilters({tag_predicate:JSON.stringify(predicate)})} onRefresh={refreshResults}
-        inclusionForEpoch={epoch=>searchEpochInclusion(epoch,excludedEpochs)} onToggleInclusion={toggleInclusion}
+        inclusionForEpoch={epoch=>searchEpochInclusion(epoch,excludedEpochs)} onToggleInclusion={toggleInclusion} onToggleSelectionInclusion={toggleSelectionInclusion}
         builder={{projectId,protocolId:initialProtocolId,summaryEnabled:false,summaryContext:{predicate:resultPredicate},onAnnotationsChanged:annotationsChanged,actionsDisabled:busy||!!annotationHold,revision:`${viewRevision}:${generation}`,catalogData:{...displayTree.data.catalog,fields:registryFields.length?summarizedFields:displayTree.data.catalog.fields},value:splits.split(',').filter(Boolean),onChange:changeSplits,preview:{...(pagedInfo&&pagedInfo.split_order?.join(',')===splits?{...displayTree.data.tree,...pagedInfo,count:displayTree.data.matched_count}:displayTree.data.tree),counting:countsJob.status==='pending'},loading:displayTree.loading||pagedStatus.loading,error:displayTree.error||pagedStatus.error}}
         columnTree={{onBrowse:showEpochResults,predicate:resultPredicate,...treePreviewScope(displayTree.data),revision:`${viewRevision}:${generation}`,initialNavigation:treeNavigation,onNavigationChange:setTreeNavigation,onRefreshPreview:()=>setGeneration(value=>value+1),onMetadata:setPagedInfo,onStatus:setPagedStatus}}/>}</Status>
 

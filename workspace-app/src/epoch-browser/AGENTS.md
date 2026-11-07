@@ -306,3 +306,13 @@ retain the plain-click origin for later Command/Ctrl and Shift gestures. Source,
 revision or ordered membership changes clear that origin. Reusing an origin for
 Command/Ctrl selection requires the current page revision; it never grants write
 authority. `inspectionTreeLifecycle.test.js` covers the loading-to-ready sequence.
+
+EpochViewer's optional `selectionActions` supplies counted bulk Include/Exclude
+controls alongside Tag selected and Clear in both list and tree modes. Inspector
+uses the existing guarded Main curation write or frozen incoming-decision owner
+with actual selected UUIDs, never transient highlights. Main labels refer to
+protocol exports; incoming labels refer to additions. MatchingEpochs delegates
+only local Search-export inclusion to its owning viewer. Existing 1,000-target
+ordinary action bounds and freshness gates apply. The explicit epoch-tag action
+in tree mode retires ephemeral cell targets before opening the epoch editor.
+Mounted examples: `bulkSelectionControls.test.js`, `inspectorCurationLifecycle.test.js`.

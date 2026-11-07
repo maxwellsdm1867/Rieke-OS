@@ -35,3 +35,25 @@ No benchmark or release qualification is claimed. Parent integration owns native
 verification first, then final combined-source core/everyday-million checks.
 Only temporary test logs were created; retained logs here are compact evidence.
 Existing dependency directory is referenced through a worktree-local symlink.
+
+## Bulk action followup
+
+The user additionally requested bulk Exclude/Include and tagging. The existing
+EpochSelectionBar had no production caller, while multiple selection replaced
+the individual trace/inclusion controls with a summary. Restored the shared bar
+in list and tree modes with exact selected count, Tag, Exclude, Include and Clear.
+Main uses its existing atomic curation owner; Workbench uses its incoming decision
+owner on actual selected UUIDs (not highlights). Search exclusions remain local
+and are one reversible gesture with individual prior states.
+
+The selected-epoch tag editor now has an explicit typed-tag Remove action. It
+sends only tags_remove using verified revisions for the active author, waits for
+the receipt and retains the typed tag on failure. Add-only group mutations above
+the ordinary bound remain unchanged. Existing normal action limits remain.
+
+Independent source review found no remaining authority/undo issue. Final focused
+bulk suite: 53 tests passed; lifecycle receipts: 4 passed; architecture guard:
+passed. Exact-UUID inclusion, incoming routing, changed-selection refusal, tag
+add/remove, active-author revision isolation, failure/draft retention and local
+undo visibility are covered. Native final-source validation is still required
+and will be recorded by the combined integration owner.

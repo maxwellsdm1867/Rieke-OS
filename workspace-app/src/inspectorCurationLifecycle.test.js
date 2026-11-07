@@ -87,3 +87,43 @@ test('same-scope rerender permits completion; saving never replays after later n
     assert.equal(calls.length,2);assert.equal(changed,1);assert.equal(h.tags.value,'new draft');
   }finally{await h.close();}
 });
+
+test('counted Main selection actions exclude and include exactly selected UUIDs in one atomic save',async()=>{
+ const h=await createInspectorHarness(),calls=[];
+ h.fixture.api=async(path,options)=>{calls.push({path,...options});return path.endsWith('/read')?receipt(options.body):{saved:true};};
+ try{
+  await h.render(props);const selected=['epoch-B','epoch-C','epoch-D'];
+  await h.act(()=>h.viewer.treePane.listProps.setTargets(selected));
+  assert.deepEqual(h.viewer.tags.props.selectedEpochs,selected);assert.equal(h.viewer.tags.props.targetScope,'selected');
+  for(const included of [false,true]){
+   calls.length=0;assert.equal(h.viewer.selectionActions.disabled,false);
+   await h.act(()=>included?h.viewer.selectionActions.onInclude():h.viewer.selectionActions.onExclude());
+   assert.equal(calls.length,2);assert.deepEqual(calls[1].body.epoch_uuids,selected);
+   assert.deepEqual(calls[1].body.changes,{included});assert.deepEqual(h.viewer.targets,selected);
+  }
+ }finally{await h.close();}
+});
+
+test('bulk inclusion refuses changed selection during its receipt read without submitting a write',async()=>{
+ const h=await createInspectorHarness(),pending=deferred(),calls=[];
+ h.fixture.api=(path,options)=>{calls.push({path,...options});return pending.promise;};
+ try{
+  await h.render(props);await h.act(()=>h.viewer.treePane.listProps.setTargets(['epoch-B','epoch-C']));
+  let work;await h.act(()=>{work=h.viewer.selectionActions.onExclude();});
+  await h.act(()=>h.viewer.treePane.listProps.setTargets(['epoch-D']));
+  await h.act(async()=>{pending.resolve(receipt(calls[0].body));await work;});
+  assert.equal(calls.length,1);assert.deepEqual(h.viewer.targets,['epoch-D']);assert.match(errorText(h.viewer.before),/Selection or dataset changed/);
+ }finally{await h.close();}
+});
+
+test('Workbench bulk actions use explicit selected UUIDs and incoming decisions rather than Main curation',async()=>{
+ const h=await createInspectorHarness(),decisions=[];
+ h.fixture.api=()=>assert.fail('Workbench decisions must not call Main curation');
+ try{
+  await h.render({...props,readContext:{root:'/protocols/protocol-A/workbench/candidates/candidate-A',candidate_scope_revision:'query-A'},onReviewDecision:async decision=>decisions.push(decision)});
+  const selected=['epoch-B','epoch-C'];await h.act(()=>h.viewer.treePane.listProps.setTargets(selected));
+  assert.deepEqual(h.viewer.tags.props.selectedEpochs,selected);assert.equal(h.viewer.tags.props.targetScope,'selected');
+  for(const included of [false,true])await h.act(()=>included?h.viewer.selectionActions.onInclude():h.viewer.selectionActions.onExclude());
+  assert.deepEqual(decisions.map(decision=>({ids:decision.epoch_uuids,changes:decision.changes})),[{ids:selected,changes:{included:false}},{ids:selected,changes:{included:true}}]);
+ }finally{await h.close();}
+});

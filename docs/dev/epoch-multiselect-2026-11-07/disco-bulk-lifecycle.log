@@ -1,0 +1,12 @@
+✔ the complete App production closure has current lifecycle review receipts (701.37375ms)
+✔ review catches aliased hooks, namespace hooks and changed callback helpers (1.43875ms)
+✔ new, missing, changed and stale module receipts fail closed (0.247625ms)
+✔ closure follows helper and literal lazy imports and rejects computed imports (2.65875ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 785.240417
