@@ -65,7 +65,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,li
     if(pathname==='/protocols/protocol-A/tree-fields')return {fields:[]};
     if(/^\/epochs\/epoch-\d+$/.test(pathname))return epoch(Number(pathname.split('-').at(-1)));
     if(/^\/epochs\/epoch-\d+\/annotations$/.test(pathname))return annotations(pathname.split('/')[2]);
-    if(pathname==='/annotations/read')return {targets:Object.fromEntries(body.target_uuids.map(identity=>[identity,targetReceipt(body.target_kind,identity)]))};
+    if(pathname==='/annotations/read')return {targets:Object.fromEntries(body.target_uuids.map(identity=>[identity,targetReceipt(body.target_kind,identity)])),...(body.target_kind==='epoch'?{annotations:Object.fromEntries(body.target_uuids.map(identity=>[identity,annotations(identity)]))}:{})};
     if(pathname==='/annotations'){
       if(fixture.failNextSave){fixture.failNextSave=false;return {failure:507,error:'Durable recovery copy failed; save unconfirmed'};}
       const storage=body.target_kind==='cell'?fixture.cellAnnotations:fixture.annotations;

@@ -1,6 +1,6 @@
-# Disco 0.2.12 testing release
+# Disco 0.2.12 local testing installation
 
-This unsigned Apple silicon testing release combines the latest reviewed local
+This unpublished unsigned Apple silicon local installation combines the latest reviewed local
 Cell QC presentation with import and epoch/protocol interaction repairs.
 
 - Imports retain visible transfer/job progress; stalled monitor recovery no longer
@@ -31,3 +31,7 @@ Version 0.2.12 supersedes the unpublished local 0.2.11 installation; 0.2.11's
 identity is not reused. No scientific metadata is retyped, and the rig filename
 fallback is display-only. This is unsigned/unnotarized testing software, not
 production, Intel or universal macOS runtime qualification.
+
+Installed locally from `d26af9cde0fe0603e6bcc4bd217ddef229c01b3f` on 2026-11-07.
+No 0.2.12 GitHub release was published. Follow-up presentation changes and the
+GitHub updater qualification use 0.2.13; do not reuse the 0.2.12 artifact identity.

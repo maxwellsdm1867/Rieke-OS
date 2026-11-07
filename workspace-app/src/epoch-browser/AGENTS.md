@@ -52,8 +52,11 @@ Keep UUIDs, source-specific query revisions, predicate values, frozen candidate 
 Pinned Main views expose membership removal in the shared selected
 toolbar (list and tree), or for the focused epoch when selection is empty.
 Ordinary source protocols, incoming and scoped read owners expose no removal.
-The selected bar stays visible with Select all, Select focused cell, Deselect all
-and the existing tag/inclusion commands. `loadProtocolSelection` collects bounded
+The selected bar appears for two or more selected epochs, with neutral cell/epoch
+counts and no addition prefixes. Hide actions collapses only its commands and
+preserves the selection; returning from zero/one to multiple selections reopens it.
+Its commands include Select all, Select focused cell, Deselect all and the existing
+tag/inclusion actions. Ordinary single-epoch focus keeps its existing detail actions. `loadProtocolSelection` collects bounded
 pages for the complete filtered protocol or focused cell, verifying query/binding,
 counts and identities before replacing selection; more than 1,000 refuses whole.
 Selection pages explicitly request `selection_receipt=true` and must share the
@@ -70,6 +73,19 @@ Confirmed or uncertain completion invalidates the originating protocol; only the
 still-current owner may clear its selection/focus. Undo uses the sealed response
 receipt through the session Undo owner. `inspectorMembershipLifecycle.test.js`
 and `bulkSelectionControls.test.js` cover these bounds; native checks are separate.
+
+The selected bar's distinct cell count describes the complete explicit UUID set,
+never only loaded rows. `readSelectedEpochCellCount` reuses bounded
+`/annotations/read` epoch/cell identity maps for Main and Search, validating exact
+UUID coverage; frozen incoming uses its advertised selection summary and existing
+manifest path above 1,000 epochs, without a global fallback. This is display only
+and grants no selection or mutation authority. `useSelectedEpochCellCount` keys
+reads by project, request owner, query/membership scope and exact selected IDs;
+selection/scope changes, pauses and hidden retained views abort/mask old results,
+including busy views whose effects stay connected. Nonempty pending or failed
+counts stay unavailable rather than displaying zero. Counts settle after selection
+gestures; unchanged UUID sets retain their current display. Tests live in
+`selectedEpochCellCount.test.js` and `selectedEpochCellCountLifecycle.test.js`.
 
 Pending counts and the bounded cell list (requires backend #118/#119): a
 multi-field query run or page may answer with null totals, `cells_pending: true`

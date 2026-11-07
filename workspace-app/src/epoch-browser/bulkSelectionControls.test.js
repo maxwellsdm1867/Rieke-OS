@@ -11,16 +11,20 @@ test('counted selection bar exposes tag, exclude, include and clear with freshne
  let root;const actions=[];const props={targets:['a','b','c'],onTags:()=>actions.push('tags'),onExclude:()=>actions.push('exclude'),onInclude:()=>actions.push('include'),onClear:()=>actions.push('clear'),scope:'protocol exports'};
  const render=async next=>act(()=>{if(root)root.update(React.createElement(EpochSelectionBar,next));else root=TestRenderer.create(React.createElement(EpochSelectionBar,next));});
  try{
-  await render(props);assert.match(JSON.stringify(root.toJSON()),/epochs selected/);
-  const buttons=root.root.findAllByType('button');assert.equal(buttons.length,4);
+  await render({...props,cellCount:2});assert.match(JSON.stringify(root.toJSON()),/epochs selected/);
+  assert.equal(root.root.findByProps({'aria-label':'2 selected cells'}).findByType('strong').children.join(''),'2');
+  assert.equal(root.root.findByProps({'aria-label':'3 epochs selected'}).findByType('strong').children.join(''),'3');
+  await render({...props,cellCount:null});
+  assert.equal(root.root.findByProps({'aria-label':'Selected cell count unavailable'}).findByType('strong').children.join(''),'—');
+  const buttons=root.root.findByProps({className:'epoch-selection-actions'}).findAllByType('button');assert.equal(buttons.length,4);
   for(const button of buttons){assert.equal(button.props.disabled,false);await act(()=>button.props.onClick());}
-  assert.deepEqual(actions,['tags','exclude','include','clear']);
+  assert.deepEqual(actions,['clear','tags','exclude','include']);
   await render({...props,onSelectAll:()=>actions.push('all'),onSelectCell:()=>actions.push('cell'),cellSelectDisabled:true});
-  const all=root.root.findAllByType('button').find(button=>button.children.includes('Select all'));
+  const all=root.root.findAllByType('button').find(button=>button.children.some(child=>typeof child==='string'&&child.trim()==='Select all'));
   const cell=root.root.findAllByType('button').find(button=>button.children.includes('Select focused cell'));
   assert.equal(all.props.disabled,false);assert.equal(cell.props.disabled,true);await act(()=>all.props.onClick());
   assert.equal(actions.at(-1),'all');
-  await render({...props,disabled:true});assert.ok(root.root.findAllByType('button').every(button=>button.props.disabled));
+  await render({...props,disabled:true});assert.ok(root.root.findByProps({className:'epoch-selection-actions'}).findAllByType('button').every(button=>button.props.disabled));
   await render({...props,targets:[]});assert.equal(root.toJSON(),null);
  }finally{await act(()=>root?.unmount());await server.close();}
 });
@@ -47,10 +51,31 @@ test('membership removal control requires its owner callback and obeys freshness
  const render=async props=>act(()=>{const element=React.createElement(EpochSelectionBar,props);if(root)root.update(element);else root=TestRenderer.create(element);});
  const remove=()=>root.root.findAllByType('button').filter(button=>button.children.includes('Remove from pinned protocol'));
  try{
-  await render({targets:['a']});assert.equal(remove().length,0);
-  await render({targets:['a'],onRemove(){},disabled:true});assert.equal(remove()[0].props.disabled,true);
+  await render({targets:['a']});assert.equal(root.toJSON(),null);
+  await render({targets:['a','b']});assert.equal(remove().length,0);
+  await render({targets:['a','b'],onRemove(){},disabled:true});assert.equal(remove()[0].props.disabled,true);
   await render({targets:Array.from({length:1000},(_,i)=>String(i)),onRemove(){}});assert.equal(remove()[0].props.disabled,false);
   await render({targets:Array.from({length:1001},(_,i)=>String(i)),onRemove(){}});assert.equal(remove()[0].props.disabled,true);
   await render({targets:[],onRemove(){}});assert.equal(root.toJSON(),null);
+ }finally{await act(()=>root?.unmount());await server.close();}
+});
+
+
+test('selection actions appear only for multiple epochs and collapse without changing selection',async()=>{
+ const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
+ const {EpochSelectionBar}=await server.ssrLoadModule('/src/epoch-browser/ui/EpochBrowserChrome.jsx');let root,cleared=0;
+ const render=async targets=>act(()=>{const element=React.createElement(EpochSelectionBar,{targets,cellCount:2,onClear(){cleared++;}});if(root)root.update(element);else root=TestRenderer.create(element);});
+ try{
+  await render(['a']);assert.equal(root.toJSON(),null);
+  await render(['a','b']);assert.equal(root.root.findByProps({'aria-label':'Hide selection actions'}).props['aria-expanded'],true);
+  await act(()=>root.root.findByProps({'aria-label':'Hide selection actions'}).props.onClick());
+  assert.equal(root.root.findAllByProps({className:'epoch-selection-actions'}).length,0);
+  assert.equal(root.root.findByProps({'aria-label':'Show selection actions'}).props['aria-expanded'],false);
+  assert.equal(root.root.findByProps({'aria-label':'2 epochs selected'}).findByType('strong').children.join(''),'2');assert.equal(cleared,0);
+  await render(['a','b','c']);assert.equal(root.root.findAllByProps({className:'epoch-selection-actions'}).length,0);
+  await act(()=>root.root.findByProps({'aria-label':'Show selection actions'}).props.onClick());assert.equal(root.root.findAllByProps({className:'epoch-selection-actions'}).length,1);
+  await act(()=>root.root.findByProps({'aria-label':'Hide selection actions'}).props.onClick());
+  await render(['a']);assert.equal(root.toJSON(),null);
+  await render(['a','b']);assert.equal(root.root.findAllByProps({className:'epoch-selection-actions'}).length,1);assert.equal(cleared,0);
  }finally{await act(()=>root?.unmount());await server.close();}
 });
