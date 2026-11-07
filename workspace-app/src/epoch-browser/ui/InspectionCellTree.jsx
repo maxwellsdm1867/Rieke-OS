@@ -201,8 +201,10 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
 
   const anchor=useRef(null),request=useRef(null),generation=useRef(0),committedScope=useRef(null),callbacks=useRef(null);
   const [selecting,setSelecting]=useState(false),[error,setError]=useState('');
-  const scope=JSON.stringify({source:props.source,revision:props.revision,disabled:!!disabled,navigationDisabled:!!navigationDisabled,
+  const anchorScope=JSON.stringify({source:props.source,revision:props.revision,
     cells:ordered.map(cell=>[cell.cell_uuid,cell.epochs])});
+  const previousAnchorScope=useRef(null);
+  const scope=JSON.stringify([anchorScope,!!disabled,!!navigationDisabled]);
   // Forwarders are fenced to the selection scope that created them: a handler
   // from an older scope stays inert, as before; same-scope calls use the latest
   // render, so memoized branches keep exact behavior without re-rendering.
@@ -211,7 +213,10 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
     setTargets:call('setTargets'),onTagEpoch:call('openEpoch'),onToggleInclusion:call('onToggleInclusion'),onTargetCell:call('onTargetCell')};},[scope]);
   useLayoutEffect(()=>{callbacks.current={targets,setTargets,onFocus,onSelectCell,highlightedEpochs:props.highlightedEpochs,setHighlightedEpochs:props.setHighlightedEpochs};});
   useLayoutEffect(()=>{
-    committedScope.current=scope;generation.current++;anchor.current=null;
+    committedScope.current=scope;generation.current++;
+    // Loading retires requests/handlers, but not the user's range origin in the
+    // same ordered membership. The next gesture still validates page receipts.
+    if(previousAnchorScope.current!==anchorScope){anchor.current=null;previousAnchorScope.current=anchorScope;}
     request.current?.abort();setSelecting(false);setError('');
     return()=>{generation.current++;committedScope.current=null;request.current?.abort();};
   },[scope]);
@@ -279,7 +284,7 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
         const previous=anchor.current;anchor.current=target;
         // Starting a ⌘/Ctrl selection keeps the epoch that was just clicked
         // (Finder-style): click 1, ⌘-click 3 → {1,3}. Workbench highlight keeps its own rules.
-        const base=multiple&&!props.source.readContext&&!selection().ids.length&&previous?.uuid&&previous.explicit===explicit&&previous.uuid!==target.uuid?[previous.uuid]:selection().ids;
+        const base=multiple&&!props.source.readContext&&!selection().ids.length&&previous?.uuid&&previous.explicit===explicit&&previous.revision===target.revision&&previous.uuid!==target.uuid?[previous.uuid]:selection().ids;
         if(explicit||multiple||shift)selection().set(toggleEpochSelection(base,target.uuid,props.source.readContext?.selection_manifests?Infinity:1000));
       }
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setError(error.message);}

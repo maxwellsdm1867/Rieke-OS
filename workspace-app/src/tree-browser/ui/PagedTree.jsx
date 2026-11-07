@@ -41,13 +41,17 @@ export default function PagedTree(props){
     if(pending&&(!path||path.length<=pending.length&&path.every((key,index)=>key===pending[index]))){selectionRequest.current?.abort();selectionPath.current=null;}
   };
   const [selectionError,setSelectionError]=useState('');
-  const scopeKey=JSON.stringify({protocolId:props.protocolId,predicate:props.predicate,filters:props.filters||{},splits:props.splits||'',revision:props.revision??0,readContext:props.readContext,expectedRevision:props.expectedRevision,active:props.active,readPaused:!!props.readPaused,selectionAuthority:continuityKey(props)});
+  const anchorScope=JSON.stringify({protocolId:props.protocolId,predicate:props.predicate,filters:props.filters||{},splits:props.splits||'',revision:props.revision??0,readContext:props.readContext,expectedRevision:props.expectedRevision,selectionIdentity:props.selectionAuthority?.identity});
+  const previousAnchorScope=useRef(null);
+  const scopeKey=JSON.stringify([anchorScope,props.active,!!props.readPaused,continuityKey(props)]);
   const selectionScope=useRef(null),generation=useRef(0);
   // Invalidate at commit, before a deferred request can publish into the new
   // scope. Cleanup also covers unmount and React's StrictMode effect replay.
   useLayoutEffect(()=>{
     selectionScope.current=scopeKey;generation.current++;
-    selectionRequest.current?.abort();anchor.current=null;setSelectionError('');
+    selectionRequest.current?.abort();
+    if(previousAnchorScope.current!==anchorScope){anchor.current=null;previousAnchorScope.current=anchorScope;}
+    setSelectionError('');
     return()=>{generation.current++;selectionScope.current=null;selectionRequest.current?.abort();};
   },[scopeKey]);
   async function selectCell(item,field,revision,loadedPage=null){
@@ -86,8 +90,10 @@ export default function PagedTree(props){
         const remove=explicit&&selection(props).ids.includes(uuid)?new Set(ids):null;
         current.set?.(remove?current.ids.filter(id=>!remove.has(id)):mergeEpochSelection(current.ids,ids,props.readContext?.selection_manifests?Infinity:1000));
       }else{
-        anchor.current=target;
-        if(explicit||event.metaKey||event.ctrlKey)selection(props).set(toggleEpochSelection(selection(props).ids,uuid,props.readContext?.selection_manifests?Infinity:1000));else if(props.setHighlightedEpochs)props.setHighlightedEpochs([uuid]);else if(!props.readContext)props.setSelectedEpochs([]);
+        const previous=anchor.current;anchor.current=target;
+        const multiple=event.metaKey||event.ctrlKey;
+        const base=multiple&&!explicit&&!props.readContext&&!props.setHighlightedEpochs&&!selection(props).ids.length&&previous?.uuid&&previous.explicit===explicit&&previous.revision===target.revision&&previous.uuid!==uuid?[previous.uuid]:selection(props).ids;
+        if(explicit||multiple)selection(props).set(toggleEpochSelection(base,uuid,props.readContext?.selection_manifests?Infinity:1000));else if(props.setHighlightedEpochs)props.setHighlightedEpochs([uuid]);else if(!props.readContext)props.setSelectedEpochs([]);
       }
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setSelectionError(error.message);}
   }

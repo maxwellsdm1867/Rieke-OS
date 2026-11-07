@@ -209,3 +209,32 @@ test('explicit range switches refuse late results after scope changes',async()=>
   await h.act(async()=>{pending.resolve(pageAt(0));await work;});assert.deepEqual(selected,['epoch-A-0']);
  }finally{await h.close();}
 });
+
+test('split-tree range and Command selection keep the clicked origin through a temporary read gate',async()=>{
+ const h=await createPagedTreeHarness();
+ try{
+  for(const modifier of ['shiftKey','metaKey','ctrlKey']){
+   let selected=[];const props={...scopeA,onSelectEpoch(){},setSelectedEpochs:ids=>{selected=ids;}};
+   const click=index=>h.tree.onSelectEpoch(`epoch-A-${index}`,pageAt(0).epochs[index],{},pageAt(0),index);
+   await h.render(props);await h.act(()=>click(1));
+   await h.render({...props,actionsDisabled:true});await h.render(props);
+   await h.act(()=>h.tree.onSelectEpoch('epoch-A-4',pageAt(0).epochs[4],{[modifier]:true},pageAt(0),4));
+   assert.deepEqual(selected,modifier==='shiftKey'?['epoch-A-1','epoch-A-2','epoch-A-3','epoch-A-4']:['epoch-A-1','epoch-A-4'],modifier);
+   await h.unmount();
+  }
+ }finally{await h.close();}
+});
+
+test('Command selection never re-adds an origin from an old page receipt or authority identity',async()=>{
+ const h=await createPagedTreeHarness();
+ try{
+  for(const change of ['page','authority']){
+   let selected=[];const props={...scopeA,selectionAuthority:{identity:'scope-A',available:true,current:()=>true},setSelectedEpochs:ids=>{selected=ids;}};
+   await h.render(props);await h.act(()=>h.tree.onSelectEpoch('epoch-A-0',pageAt(0).epochs[0],{},pageAt(0),0));
+   await h.render({...props,selectionAuthority:{...props.selectionAuthority,identity:change==='authority'?'scope-B':'scope-A'}});
+   const page=change==='page'?{...pageAt(0),revision:'new-page'}:pageAt(0);
+   await h.act(()=>h.tree.onSelectEpoch('epoch-A-4',page.epochs[4],{metaKey:true},page,4));
+   assert.deepEqual(selected,['epoch-A-4'],change);await h.unmount();
+  }
+ }finally{await h.close();}
+});

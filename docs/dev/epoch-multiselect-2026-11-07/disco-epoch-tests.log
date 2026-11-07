@@ -1,0 +1,156 @@
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+A props object containing a "key" prop is being spread into JSX:
+  let props = {key: someKey, data: ..., loading: ..., error: ..., owner: ..., transport: ..., reload: ..., retry: ..., children: ...};
+  <Status {...props} />
+React keys must be passed directly to JSX without using spread:
+  let props = {data: ..., loading: ..., error: ..., owner: ..., transport: ..., reload: ..., retry: ..., children: ...};
+  <Status key={someKey} {...props} />
+✔ actual expanding cell page and first-epoch selection share one request (943.718125ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ mounted inspection cancels late cell/range publication for scope and revision changes (1133.321708ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ old completions and errors cannot clear a newer pending selection or resurrect after A/B/A (600.698917ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ same-scope pending selection uses latest callbacks and cannot overwrite changed targets (598.390792ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ protocol and predicate range pages require consistent receipts despite unchanged endpoints/counts (608.628916ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ cell ownership, unmount cancellation, and duplicate-label UUID qualifiers stay exact (479.167667ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ return restores date/cell expansion and page only after fresh matching membership (293.224125ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ external and same-target navigation intents cancel delayed scroll; errors sleep and retry restores (315.788125ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ scrolling appends bounded pages with original ordinals and retires changed membership (287.713ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ keyboard focus reveals later rows without a visible sentinel and rejects binding changes (320.474583ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ malformed continuation renders retry instead of publishing rows or crashing (537.932542ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ left epoch list uses a separate bounded highlight store for plain, command and shift clicks (430.52825ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ incoming list selection switches apply a bounded range without replacing highlights (450.710541ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ explicit list ranges include intervening pages and cells in display order (354.042ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ Activity reconnect restores user scroll after transient page shrink and fresh membership (387.727917ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ clicking a cell row targets that cell for tags in browse and edit trees; buttons and the selected cell do not (421.619375ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ focus, highlight and selection changes re-render only the cell branches whose loaded rows they touch (394.998292ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ stale child page requests parent recovery, while malformed and frozen pages fail closed (506.8975ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ simultaneous child faults show one dialog; refresh survives collapsing the first faulted cell (365.075416ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ frozen fallback refresh re-reads the exact context after a fault without silently changing cohorts (401.029583ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ same-membership navigation loading preserves plain-click anchor for Shift and Command gestures (370.537042ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ scope commits across completion microtasks cannot publish a retired cell or range (310.223709ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ hidden Activity and disabled actions abort pending selections and block retained handlers (188.665125ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ explicit read pause retires standalone cell selection without an authority prop (259.970542ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ explicit read pause retires standalone range selection without an authority prop (187.545625ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ fetched range focuses immediately, then publishes ordered selection after completion (308.618375ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ same-page range focuses then publishes selection before its handler returns (308.262875ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ mounted tree cancels old cell/range requests on every source scope change and retains same-scope results (334.376ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ mounted selection generation prevents A → B → A resurrection and ignores stale errors (164.057208ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ new cell click wins out of order and unmount aborts without publication (181.539875ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ pending range cannot overwrite an independently changed selection (234.219ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ scope change clears the Shift anchor and preserves Command/Ctrl toggle semantics (188.741333ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ cell traversal rejects a server revision change before selecting (245.7685ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ incoming tree modifier gestures highlight without changing selected UUIDs (246.50825ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ a retired incoming highlight range cannot publish into the next scope (168.851709ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ explicit epoch switches select and deselect ranges without changing highlights or focus (140.818792ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ explicit range switches refuse late results after scope changes (286.952084ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ split-tree range and Command selection keep the clicked origin through a temporary read gate (181.28625ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ Command selection never re-adds an origin from an old page receipt or authority identity (274.349709ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10747.199375

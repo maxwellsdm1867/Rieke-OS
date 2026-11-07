@@ -1,0 +1,640 @@
+✔ an old page failure cannot cancel a newly requested anchor navigation (0.496208ms)
+✔ pane bounds reserve plot space, restore sensible defaults and overlay on narrow windows (0.25575ms)
+✔ compact inline panes keep trace controls reachable whenever all pane minima fit (0.198333ms)
+✔ W/S and Up/Down navigation preserve typing, composition, modifiers and native controls (0.180833ms)
+✔ epoch navigation crosses chronological pages and locates a tree-selected offpage epoch (2.528208ms)
+✔ Tab advances epochs only in navigation regions and Shift+Tab goes back (0.311958ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ ready page A/B/C/A focus uses native UUID and cell ownership without anchor/page churn (748.534125ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ pending cross-page anchor keeps exact list read scope, gates writes and latest A/B/A intent wins (520.310292ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ filter/annotation/binding/source context changes invalidate retained navigation and old callbacks (4447.679125ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ anchor failure disables retained list navigation; scoped detail waits for current page membership (545.418792ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ cell list permits plain read navigation while inclusion and modified bulk selection stay fenced (625.562167ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+A props object containing a "key" prop is being spread into JSX:
+  let props = {key: someKey, data: ..., loading: ..., error: ..., owner: ..., transport: ..., reload: ..., retry: ..., children: ...};
+  <Status {...props} />
+React keys must be passed directly to JSX without using spread:
+  let props = {data: ..., loading: ..., error: ..., owner: ..., transport: ..., reload: ..., retry: ..., children: ...};
+  <Status key={someKey} {...props} />
+✔ real mounted hooks keep loaded rows mounted through rapid 9/10/12/9 selection with no page GETs (1862.876458ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ real hooks abort/reject late cross-page anchors and preserve clickable list for latest 61/62/63 (2603.212167ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ retained plain-click callback cannot navigate when only navigation permission changes (622.18ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ annotation authority refresh with equal membership disables old navigation until fresh receipt arrives (2631.559625ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ reselecting the active Inspect tab returns from design without remounting or rereading rows (3880.441417ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ Inspector emits new list intent for same-target focus, outside-pane next and keyboard navigation (680.810125ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ highlight toolbar explicitly selects or deselects only highlights and clears on scope changes (666.257833ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ Edit Tree metaKey highlights multiple rows for one shared select/deselect action (998.056208ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ Edit Tree ctrlKey highlights multiple rows for one shared select/deselect action (1102.599958ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ cross-page anchors reuse cell summaries only with the current query and binding receipt (3413.412375ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ same-scope Activity return retains actual Inspector highlights while changed authority clears them (852.534708ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ anchor-to-offset handoff preserves loaded cell rows and query identity without list rereads (2653.071416ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ browse cell expansion preserves inspected epoch and existing rows, fetching only the opened cell (2170.413125ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ live initial off-page focus locates its admitted page before trace inspection (586.825ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ frozen same-page focus retains tree read scope and enabled actions with metadata off (390.801417ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ ordinary Inspector bounds cell lists, appends only matching receipts and fences filter changes (641.674417ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ main list recovery renews parent receipts once, preserves focus, and never replays writes (609.606083ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ read recovery preserves explicit UUID intent without replaying a write (805.813833ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ real parent and cell reads recover a missed update without polling or metadata verification (1544.428083ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ repeated external drift stops automatic reads and offers one refresh dialog (1769.108542ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ frozen Inspector asks its owner only on explicit refresh and honors owner refusal (497.951916ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ mounted frozen Inspector refresh retires its faulted child even when cohort identity is unchanged (2899.439292ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ a stale anchor read recovers without trapping the pending navigation intent (2648.296084ms)
+✔ tree 60/61 range retains its first-click anchor through same-authority flat-list navigation (4978.36375ms)
+✔ tree 0 through 60 range can publish after same-authority target focus lookup (1828.208125ms)
+✔ mounted split tree rejects late range publication after revision (1700.636958ms)
+✔ mounted split tree rejects late range publication after binding (2095.751583ms)
+✔ mounted split tree rejects late range publication after filter (2401.481458ms)
+✔ mounted split tree rejects late range publication after query (3460.547917ms)
+✔ mounted split tree rejects late range publication after paused (2705.146959ms)
+✔ mounted split tree rejects late range publication after draft-disabled (3721.606667ms)
+✔ mounted split tree rejects late range publication after hidden (2057.396625ms)
+✔ mounted split tree rejects late range publication after owner-retired (2781.455958ms)
+✔ mounted split tree rejects late range publication after explicit-cancel (1583.449083ms)
+✔ mounted split tree rejects late range publication after failed-flat-receipt (2212.937167ms)
+✔ mounted split tree rejects late range publication after mismatched-flat-receipt (2169.2715ms)
+✔ actual retained design tree preserves active focus anchor across its column pages (1537.7425ms)
+✔ actual retained wrapper evicts hidden A/B/A and changed-on-return focus without reviving old rows (2006.967791ms)
+✔ design tree external out-of-page focus blocks old mutation controls until originating locator finishes (3027.199959ms)
+✔ actual design range delayed publication: unchanged (2802.203792ms)
+✔ actual design range delayed publication: revision (1403.679459ms)
+✔ actual design range delayed publication: binding (1185.962125ms)
+✔ actual design range delayed publication: owner-replaced (1171.723791ms)
+✔ actual design range delayed publication: owner-retired (1003.592834ms)
+✔ actual design range delayed publication: hide (979.551458ms)
+✔ actual design range delayed publication: hide-late-failure (1125.851875ms)
+✔ actual retained wrapper rejects malformed opt-in authority and keeps omitted legacy behavior (723.81875ms)
+✔ old design locator completion cannot relabel metadata or release replacement-scope controls (814.103083ms)
+✔ fresh real provider with unavailable project scope rejects selection despite valid page and profile receipts (717.372334ms)
+✔ real provider null to available permits its first gesture after ordinary readiness (854.538042ms)
+✔ filter change retires excluded focus before hierarchy tree reads (795.153583ms)
+✔ filter change retires excluded focus before column tree reads (940.134958ms)
+✔ explicit replacement-scope epoch navigation still anchors its requested target (929.444917ms)
+✔ column design keeps a trace-only pane beside terminal epochs and closes it with its branch (1105.016375ms)
+✔ window focus and visibility revoke read leases without remounting Edit Tree, re-reading or losing the open path (934.509292ms)
+✔ collapsing a branch while its first-epoch read is pending keeps it collapsed (848.837666ms)
+✔ expanding a cell branch sends one tree page read and selects its first epoch from it (765.0975ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+A props object containing a "key" prop is being spread into JSX:
+  let props = {key: someKey, data: ..., loading: ..., error: ..., owner: ..., transport: ..., reload: ..., retry: ..., children: ...};
+  <Status {...props} />
+React keys must be passed directly to JSX without using spread:
+  let props = {data: ..., loading: ..., error: ..., owner: ..., transport: ..., reload: ..., retry: ..., children: ...};
+  <Status key={someKey} {...props} />
+✔ pinned: real list preserves siblings during expansion, fast clicks, Tab/backward and page crossing (4399.125708ms)
+ℹ {"surface":"pinned","metric":"mounted action to requested epoch ready; mock API; no browser paint","samples":10,"median_ms":9.026354500000252,"max_ms":58.61937500000022,"cross_page_ms":79.37437499999942}
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+✔ pinned: list/tree/list and leave-for-overview/return retain epoch and expanded cells (2199.679584ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+✔ predicate: real list preserves siblings during expansion, fast clicks, Tab/backward and page crossing (1625.165542ms)
+ℹ {"surface":"predicate","metric":"mounted action to requested epoch ready; mock API; no browser paint","samples":10,"median_ms":8.984041499999876,"max_ms":16.18525000000045,"cross_page_ms":10.846625000000131}
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+✔ predicate: list/tree/list and leave-for-overview/return retain epoch and expanded cells (1553.829875ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+✔ workbench: real list preserves siblings during expansion, fast clicks, Tab/backward and page crossing (2275.023584ms)
+ℹ {"surface":"workbench","metric":"mounted action to requested epoch ready; mock API; no browser paint","samples":10,"median_ms":28.819312999999966,"max_ms":63.67108299999927,"cross_page_ms":107.41229200000089}
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+✔ workbench: list/tree/list and leave-for-overview/return retain epoch and expanded cells (2274.908667ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+✔ predicate list session is isolated by project, predicate, split order and preview revision (10463.926125ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+✔ pinned: delayed A/B/A clicks keep rows mounted and only the latest result wins (2854.299292ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+✔ predicate: delayed A/B/A clicks keep rows mounted and only the latest result wins (1449.505375ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+✔ workbench: delayed A/B/A clicks keep rows mounted and only the latest result wins (1906.309125ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+✔ failed pinned epoch locator keeps existing rows and never jumps inspection to the first epoch (2220.674166ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ retained workspace owner keeps independent pinned, predicate and workbench positions across Overview and history-style returns (2154.772583ms)
+ℹ {"metric":"retained owner return to same epoch ready; mock API; no browser paint","timings":[{"surface":"pinned","ms":31.52049999999872},{"surface":"predicate","ms":25.724542000003566},{"surface":"workbench","ms":27.92933400000038},{"surface":"predicate","ms":26.103500000004715},{"surface":"pinned","ms":32.445125000005646}]}
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+✔ pinned: rapid Tab across a held page boundary honors all eight steps without rebuilding the list (1271.812167ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to MatchingEpochsContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+✔ predicate: rapid Tab across a held page boundary honors all eight steps without rebuilding the list (1531.561292ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InspectorContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+✔ workbench: rapid Tab across a held page boundary honors all eight steps without rebuilding the list (3703.784792ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ pinned: View tree returns to epochs (1767.671416ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ pinned: View tree returns to split tree (1041.094292ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ predicate: View tree returns to epochs (739.460292ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ predicate: View tree returns to split tree (729.243625ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ workbench: View tree returns to epochs (772.692583ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ workbench: View tree returns to split tree (713.922834ms)
+ℹ tests 89
+ℹ suites 0
+ℹ pass 89
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 60612.619125

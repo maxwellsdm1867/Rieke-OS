@@ -300,3 +300,9 @@ pages, a single dialog, collapsed-cell retry and exact frozen retry;
 `inspectorNavigationLifecycle.test.js` covers real parent/child renewal, bounded
 request counts/no polling, fresh action gates, owner refusal and retained UUID
 intent. These mounted tests exclude native paint and real recording I/O.
+
+Temporary same-membership read gates retire pending ranges and old handlers but
+retain the plain-click origin for later Command/Ctrl and Shift gestures. Source,
+revision or ordered membership changes clear that origin. Reusing an origin for
+Command/Ctrl selection requires the current page revision; it never grants write
+authority. `inspectionTreeLifecycle.test.js` covers the loading-to-ready sequence.
