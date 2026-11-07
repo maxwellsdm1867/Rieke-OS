@@ -62,8 +62,11 @@ class FixtureService(WorkspaceService):
             'query': {'version': 1, 'all': [{'field': 'EpochBlock.protocol_name',
                                           'operator': 'eq', 'value': 'example'}]},
             'view': {'group_by': ['date', 'cell'], 'layout': 'landscape'}}
+        protocol_file = self.project_dir / 'protocols' / 'fixture.json'
+        protocol_file.parent.mkdir(exist_ok=True)
+        protocol_file.write_text(json.dumps(definition))
         self.protocols = {self.protocol_id: {'definition': definition,
-            'file': self.project_dir / 'protocol.json',
+            'file': protocol_file,
             'result': {'project_uuid': self.project['project_uuid'],
                        'protocol_uuid': self.protocol_id, 'protocol_name': 'example',
                        'source_revisions': ['a' * 64],
@@ -136,7 +139,8 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(storage['root'], str(Path(self.temp.name).resolve()))
         self.assertNotEqual(storage['root'], storage['code_root'])
         files = self.client.get('/api/files?path=protocols').get_json()
-        self.assertEqual(files['entries'], [])
+        self.assertEqual([(entry['name'], entry['path'], entry['type']) for entry in files['entries']],
+                         [('fixture.json', 'protocols/fixture.json', 'file')])
         for path in ('../', '/etc', 'database/mysql'):
             with self.subTest(path=path):
                 response = self.client.get('/api/files', query_string={'path': path})

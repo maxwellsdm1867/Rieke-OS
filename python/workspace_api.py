@@ -475,12 +475,30 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 service.manager_recovery(error)
             raise
 
-    def verify_service_sources():
+    def verify_service_sources(protocol_uuid=None):
         """Pre-write source recheck for targeted writes (approve, explorer save,
-        masks, exports): O(sources) stat/registration witnesses; any change runs
+        bindings, masks, exports): O(sources) stat/registration witnesses; any change runs
         the complete refresh, whose failure leaves the service not ready."""
         try:
-            return service.verify_sources() if hasattr(service, 'verify_sources') else service.refresh()
+            if not hasattr(service, 'verify_sources'):
+                return service.refresh()
+            result = service.verify_sources()
+            if protocol_uuid is not None:
+                # A targeted binding write formerly reread protocol manifests
+                # through full refresh. Keep that external-edit fence without
+                # republishing the unchanged native query witness.
+                entry = service.protocols.get(protocol_uuid)
+                if entry is None:
+                    raise StaleWorkspace('Protocol definition changed. Refresh before applying this selection.')
+                path = entry['file']
+                try:
+                    if (path.is_symlink() or not path.is_file() or
+                            path.parent.resolve() != (project_dir / 'protocols').resolve() or
+                            json.loads(path.read_text()) != entry['definition']):
+                        raise ValueError('Protocol manifest changed')
+                except (OSError, ValueError, TypeError) as error:
+                    raise StaleWorkspace('Protocol definition changed. Refresh before applying this selection.') from error
+            return result
         except (OSError, ValueError) as error:
             with contextlib.suppress(Exception):
                 service.manager_recovery(error)
@@ -1600,6 +1618,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 raise StaleWorkspace('Protocol changed. Refresh before renaming.')
             after = {**before, 'name': name.strip()}
             if before != after:
+                from workspace_service import publish_frozen
+                protocols = {**service.protocols, protocol_uuid: {**entry, 'definition': after}}
+                frozen_protocols = publish_frozen(protocols)
                 write_json(path, after)
                 try:
                     record_event('protocol_display_name_changed', {'protocol_uuid': protocol_uuid,
@@ -1607,7 +1628,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 except Exception:
                     write_json(path, before)
                     raise
-                entry['definition'] = after
+                # Native protocol entries are immutable publication snapshots.
+                # Replace the map only after persistence/audit succeeds so the
+                # publication serial retires prepared summaries and search labels.
+                service.protocols = frozen_protocols if frozen_protocols is not None else protocols
             return jsonify(protocol_uuid=protocol_uuid, name=after['name'])
 
     @app.get('/api/storage')
@@ -2370,7 +2394,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if not isinstance(body['protocol_uuid'], str) or type(body['expected_binding_version']) is not int:
             raise ValueError('Protocol UUID and integer expected binding version are required')
         with db_lock, data_stores.registration_locks(), candidate_annotation_guard(revision_uuid, body['protocol_uuid']):
-            refresh_service()
+            # Recheck sources without retiring an unchanged publication: v5
+            # comparison authority is tied to that exact frozen publication.
+            # Changed sources still trigger full refresh and stale refusal.
+            verify_service_sources(body['protocol_uuid'])
             comparison = compare_protocol_candidate(revision_uuid, body['protocol_uuid'])
             if (body['expected_binding_version'] != comparison['expected_binding_version'] or
                     body['expected_query_revision'] != comparison['expected_query_revision']):

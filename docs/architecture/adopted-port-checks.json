@@ -5728,7 +5728,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "d3c7524f9acf3e4b020eb1ddb1c9908d3053ad478d3ae9328f0fdf728cea07e7",
+                "file_sha256": "d76d9925163eb7b2c9697ba3875432d4eb7fe79ad4aa86604e50fc3203bcd138",
                 "contract_id": null
               }
             ]
@@ -5902,11 +5902,11 @@
       },
       {
         "file": "python/tests/test_workspace_api.py",
-        "file_sha256": "ab78b40cf9350e7365b96342c4aded3130c2451a2141fc5aa6acffe0d3d77462",
-        "reason": "Inject owned in-memory workspace/curation table fixtures during CurationStore construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Added display-cache HTTP coverage; existing CurationStore fixture injection AST and targets are unchanged. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch regression additions retain existing reviewed mocks and observer syntax. Binary64 integration tests were added; the existing curation mock AST, origin and target are unchanged, with its exact selector relocated after review. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Counted predicate path review (2026-10-19): reviewed syntax, categories, origins and targets are unchanged; owner bytes add counted previews, typed query runs and inspection pages over frozen publications. See python/disco/navigation/CONTRACT.md#counted-previews-and-publication-revisions.",
+        "file_sha256": "0c774f14901a5c2654e576532f05f7fac8e7e4d55239392194052f99679064b3",
+        "reason": "Inject owned in-memory workspace/curation table fixtures during CurationStore construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Added display-cache HTTP coverage; existing CurationStore fixture injection AST and targets are unchanged. Recording-rig DTO review: additive metadata names and inert display fields only; existing observer/mock targets, owners and reviewed ASTs are unchanged. Exact owner byte hashes and shifted selectors rebound after review. Bounded trace batch regression additions retain existing reviewed mocks and observer syntax. Binary64 integration tests were added; the existing curation mock AST, origin and target are unchanged, with its exact selector relocated after review. Slow-read memo review (2026-10-17): reviewed syntax, categories, origins and targets are unchanged; owner bytes add generation-keyed memos (annotation catalog fields, project overview), an exact marshal input witness for protocol-context reuse, per-response schema attestation on read routes and a public export signature. See docs/dev/request-decoupling-audit.md. Counted predicate path review (2026-10-19): reviewed syntax, categories, origins and targets are unchanged; owner bytes add counted previews, typed query runs and inspection pages over frozen publications. See python/disco/navigation/CONTRACT.md#counted-previews-and-publication-revisions. Protocol-refresh fixture review 2026-11-07: the fixture now writes its declared managed protocol manifest and asserts its file listing. The curation constructor mock AST, origins and targets are unchanged; selector relocated by exact digest.",
         "sites": [
           {
-            "selector": "Call:168",
+            "selector": "Call:171",
             "ast_sha256": "0bf6ec386fe05c1092dd0d5f5b55eb0162cbfa70997b0211d832edae4400897f",
             "category": "test-mock-target",
             "origins": [
@@ -6163,7 +6163,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "d3c7524f9acf3e4b020eb1ddb1c9908d3053ad478d3ae9328f0fdf728cea07e7",
+                "file_sha256": "d76d9925163eb7b2c9697ba3875432d4eb7fe79ad4aa86604e50fc3203bcd138",
                 "contract_id": null
               }
             ]
@@ -6196,7 +6196,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "d3c7524f9acf3e4b020eb1ddb1c9908d3053ad478d3ae9328f0fdf728cea07e7",
+                "file_sha256": "d76d9925163eb7b2c9697ba3875432d4eb7fe79ad4aa86604e50fc3203bcd138",
                 "contract_id": null
               }
             ]
@@ -6785,7 +6785,7 @@
               {
                 "module": "tests.test_workspace_api",
                 "file": "python/tests/test_workspace_api.py",
-                "file_sha256": "ab78b40cf9350e7365b96342c4aded3130c2451a2141fc5aa6acffe0d3d77462",
+                "file_sha256": "0c774f14901a5c2654e576532f05f7fac8e7e4d55239392194052f99679064b3",
                 "contract_id": null
               }
             ]

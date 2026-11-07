@@ -1,0 +1,152 @@
+.../Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-lr8c3c5f'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-tqfil5kj'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-6_n6w9s9'>
+  _warnings.warn(warn_message, ResourceWarning)
+..../Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-8vygsm__'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-fzfjj0rw'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-ebr25twm'>
+  _warnings.warn(warn_message, ResourceWarning)
+...../Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-8pbcof2q'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-uwck6kcc'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-q8chtt6r'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-ejo_565r'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-5hw8pjjg'>
+  _warnings.warn(warn_message, ResourceWarning)
+..../Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-cqdu5126'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-btw3h637'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-3hfih3ju'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-g74nix2q'>
+  _warnings.warn(warn_message, ResourceWarning)
+...../Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-drcqdzbh'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-w4bqywtz'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-nyz5z17i'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-qaocxskb'>
+  _warnings.warn(warn_message, ResourceWarning)
+/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-2tq9_jk6'>
+  _warnings.warn(warn_message, ResourceWarning)
+.[2026-11-07 10:03:45,863] ERROR in workspace_api: Workspace error 708c5150-1e24-475f-bb97-4268cb1077b4
+Traceback (most recent call last):
+  File "/Users/maxwellsdm/.codex/worktrees/direct-browsing/Rieke-OS/.rieke-runtime/benchmark-python/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.codex/worktrees/direct-browsing/Rieke-OS/.rieke-runtime/benchmark-python/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.codex/worktrees/protocol-state-refresh/Rieke-OS/python/workspace_api.py", line 2407, in apply_protocol_revision
+    saved = explorer_history.bind(revision_uuid, body['protocol_uuid'], body['expected_binding_version'],
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.codex/worktrees/protocol-state-refresh/Rieke-OS/python/disco/decisions/explorer.py", line 292, in bind
+    self.Event.insert1({'event_uuid': event_uuid, 'project_uuid': self.project_uuid,
+  File "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1124, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1128, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1183, in _execute_mock_call
+    raise effect
+RuntimeError: Fixture audit write failed
+./Users/maxwellsdm/.codex/worktrees/protocol-state-refresh/Rieke-OS/python/tests/test_workspace_protocol_binding.py:61: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/tmpifzkfbig/exports/6935e29f-f984-4e24-9df4-ea69dfc23939/recordings.json'>
+  package = self.client.get(response.get_json()['download_url']).get_json()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.[2026-11-07 10:03:45,956] ERROR in workspace_api: Workspace error d8a4d123-dea7-402d-8757-575abce7abfd
+Traceback (most recent call last):
+  File "/Users/maxwellsdm/.codex/worktrees/direct-browsing/Rieke-OS/.rieke-runtime/benchmark-python/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.codex/worktrees/direct-browsing/Rieke-OS/.rieke-runtime/benchmark-python/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.codex/worktrees/protocol-state-refresh/Rieke-OS/python/workspace_api.py", line 2378, in create_protocol_from_candidate
+    result = create_pinned_protocol(service, explorer_history, record, body['name'],
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.codex/worktrees/protocol-state-refresh/Rieke-OS/python/workspace_protocol_identity.py", line 114, in create_pinned_protocol
+    history.bind(record['revision_uuid'], identity, 0, actor,
+  File "/Users/maxwellsdm/.codex/worktrees/protocol-state-refresh/Rieke-OS/python/disco/decisions/explorer.py", line 292, in bind
+    self.Event.insert1({'event_uuid': event_uuid, 'project_uuid': self.project_uuid,
+  File "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1124, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1128, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1183, in _execute_mock_call
+    raise effect
+RuntimeError: Audit unavailable
+./Users/maxwellsdm/.codex/worktrees/protocol-state-refresh/Rieke-OS/python/tests/test_workspace_protocol_binding.py:221: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/tmpsow_vrno/exports/11dd7ca2-e8ed-4976-a48f-addb0ac31297/recordings.json'>
+  package=self.client.get(exported.get_json()['download_url']).get_json()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+...[2026-11-07 10:03:46,133] ERROR in workspace_api: Workspace error da7e8b6e-1da7-4101-8639-a83244280695
+Traceback (most recent call last):
+  File "/Users/maxwellsdm/.codex/worktrees/direct-browsing/Rieke-OS/.rieke-runtime/benchmark-python/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.codex/worktrees/direct-browsing/Rieke-OS/.rieke-runtime/benchmark-python/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.codex/worktrees/protocol-state-refresh/Rieke-OS/python/workspace_api.py", line 2378, in create_protocol_from_candidate
+    result = create_pinned_protocol(service, explorer_history, record, body['name'],
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.codex/worktrees/protocol-state-refresh/Rieke-OS/python/workspace_protocol_identity.py", line 121, in create_pinned_protocol
+    json.dump(definition, handle, indent=2)
+  File "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1124, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1128, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1183, in _execute_mock_call
+    raise effect
+OSError: Disk full
+./Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/tempfile.py:934: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-shared-tag-index-jrs7xbkt'>
+  _warnings.warn(warn_message, ResourceWarning)
+./Users/maxwellsdm/.codex/worktrees/protocol-state-refresh/Rieke-OS/python/tests/test_workspace_protocol_binding.py:250: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/tmp9r08l7t1/exports/ef750845-bb29-48f1-8cc0-d662816bcca3/recordings.json'>
+  package = self.client.get(export.get_json()['download_url']).get_json()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.....[2026-11-07 10:03:46,455] ERROR in workspace_api: Workspace error 9d8a0673-4c4e-4799-af0d-4a0000a97515
+Traceback (most recent call last):
+  File "/Users/maxwellsdm/.codex/worktrees/direct-browsing/Rieke-OS/.rieke-runtime/benchmark-python/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.codex/worktrees/direct-browsing/Rieke-OS/.rieke-runtime/benchmark-python/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.codex/worktrees/protocol-state-refresh/Rieke-OS/python/workspace_api.py", line 1626, in protocol_display_name
+    record_event('protocol_display_name_changed', {'protocol_uuid': protocol_uuid,
+  File "/Users/maxwellsdm/.codex/worktrees/protocol-state-refresh/Rieke-OS/python/workspace_api.py", line 2734, in record_event
+    _, _, Event, _ = workspace_tables(service.dj)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1124, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1128, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1183, in _execute_mock_call
+    raise effect
+OSError: Audit unavailable
+....../Users/maxwellsdm/.codex/worktrees/protocol-state-refresh/Rieke-OS/python/tests/test_workspace_protocol_binding.py:81: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/tmp224k5owx/exports/6419dda7-4a04-4624-8943-ba28e18ff97a/recordings.json'>
+  old_bytes = self.client.get(url).data
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/maxwellsdm/.codex/worktrees/protocol-state-refresh/Rieke-OS/python/tests/test_workspace_protocol_binding.py:91: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/tmp224k5owx/exports/6419dda7-4a04-4624-8943-ba28e18ff97a/recordings.json'>
+  self.assertEqual(self.client.get(url).data, old_bytes)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+...............................................
+----------------------------------------------------------------------
+Ran 88 tests in 6.673s
+
+OK

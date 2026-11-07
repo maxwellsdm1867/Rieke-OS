@@ -4,7 +4,7 @@
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
     "src/App.jsx": {
-      "fingerprint": "6dc909ec6a0158d3f08edf5b00939bd9898ef38f7e9eea8b460f6e83078be907",
+      "fingerprint": "053301c03dc1cf8e0cba133e578013d9c01500cb51585da5dbb14579b5849407",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -53,7 +53,7 @@
         }
       ],
       "lifetime": "mixed-project-and-retained-composition",
-      "reason": "Route-matched shared card merges stay in their originating Overview or import route; verified receipt and invalidation remain App-owned. Independent review 2026-10-21 (repeated review cycles): Adds dismiss only for definitive source-command errors; uncertain recovery controls remain persistent and retain command ownership. Final root-demand review 2026-10-21: renewRetained permits populated root invalidation renewal only on Overview while initial missing root demand remains live for shell startup; protocol active-demand behavior and retained-visibility guards remain unchanged. Native startup restoration and merge/Undo/Finish renewal passed; no command is replayed. Combined UI review2026-10-23: AppUpdates moves within the same App owner to the rail. Removed duplicate appearance button and protocol explanatory sentence are presentation only; all eight effect sites and retained Protocol/cache/draft/command lifetimes are unchanged. Native return review 2026-10-30: adds one project-lifetime visibility subscription, cleaned up by its returned unsubscribe. Only visible:true refreshes the read-only mounted-project inventory; it preserves the route and does not replay open, close, unmount or scientific commands. Existing eight effect sites are unchanged. Mounted visibility/route/unsubscribe coverage and native retained chooser/rail refresh after unmount passed at 588f174. UUID entry review (2026-10-30): searchEpoch now opens a fresh Cell QC visit with the exact cell/epoch pair regardless of saved protocol membership. No App effect sites, caches, writes, route-owner guards or history lifecycle changed. Real App/history tests verify fresh visits and old selection restoration.",
+      "reason": "Route-matched shared card merges stay in their originating Overview or import route; verified receipt and invalidation remain App-owned. Independent review 2026-10-21 (repeated review cycles): Adds dismiss only for definitive source-command errors; uncertain recovery controls remain persistent and retain command ownership. Final root-demand review 2026-10-21: renewRetained permits populated root invalidation renewal only on Overview while initial missing root demand remains live for shell startup; protocol active-demand behavior and retained-visibility guards remain unchanged. Native startup restoration and merge/Undo/Finish renewal passed; no command is replayed. Combined UI review2026-10-23: AppUpdates moves within the same App owner to the rail. Removed duplicate appearance button and protocol explanatory sentence are presentation only; all eight effect sites and retained Protocol/cache/draft/command lifetimes are unchanged. Native return review 2026-10-30: adds one project-lifetime visibility subscription, cleaned up by its returned unsubscribe. Only visible:true refreshes the read-only mounted-project inventory; it preserves the route and does not replay open, close, unmount or scientific commands. Existing eight effect sites are unchanged. Mounted visibility/route/unsubscribe coverage and native retained chooser/rail refresh after unmount passed at 588f174. UUID entry review (2026-10-30): searchEpoch now opens a fresh Cell QC visit with the exact cell/epoch pair regardless of saved protocol membership. No App effect sites, caches, writes, route-owner guards or history lifecycle changed. Real App/history tests verify fresh visits and old selection restoration. Protocol-refresh review 2026-11-07: new protocol completion invalidates structural inventory; existing membership stays scoped. Displayed draft search witnesses follow held revision and explicit refresh generation, with editor-open suppression and effect-owned cancellation/reconnect. No command, recipe or removal consent is replayed. Workspace change ledger and requested-summary lifecycle regressions verify creation, exactly-one renewal, annotation hold and interrupted retained reads.",
       "tests": [
         "src/annotationReceiptWorkflow.test.js",
         "src/appLifecycleImports.test.js",
@@ -85,7 +85,8 @@
         "src/protocolSuggestionHold.test.js",
         "src/incoming-workbench/sourceMerge.test.js",
         "src/overviewSwitching.test.js",
-        "src/search-activation/globalSearchCache.test.js"
+        "src/search-activation/globalSearchCache.test.js",
+        "src/requested-summaries/requestedSummariesLifecycle.test.js"
       ]
     },
     "src/annotations/annotationProfile.js": {
@@ -2265,7 +2266,7 @@
       ]
     },
     "src/metadata-explorer/ui/MetadataExplorer.jsx": {
-      "fingerprint": "e610edc89c9eea152ec1a1b7e535e145b6d7dae64072dc6017eefa95e354a484",
+      "fingerprint": "ebd26fa251c4a2c0485f6390554e38dd996fd8419d7b9dcfc0875601649a3bac",
       "sites": [
         {
           "owner": "MetadataExplorer",
@@ -2315,7 +2316,7 @@
         {
           "owner": "MetadataExplorer",
           "kind": "useEffect",
-          "fingerprint": "1e54c7112b68815959738ff6da1dacfebd0ad524302ccdc49b038343a3694697"
+          "fingerprint": "daea806b77c7a86efa3967a53a75d102b2ed597ed2098831589873eac8b22c4e"
         },
         {
           "owner": "MetadataExplorer",
@@ -2329,7 +2330,7 @@
         }
       ],
       "lifetime": "semantic-presentation + hydration-witness + active-local-undo",
-      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged. Tag decoupling review (2026-10-17): tag saves report kind annotations (not an untyped structural change) with the confirmed receipt; focused epoch and presets follow annotationRevision. Effect sites unchanged. Summary-after-query review (2026-10-18): previews/runs/revisions always send catalog_summary:false and the explicit full-catalog key/effect is removed; one requested-summaries job is keyed to the shown result set (starts after that predicate's results load, survives same-query tree reloads, retires on predicate/filter/generation change) and decorates the builder fields. One effect site removed; hook-owned job lifetime unchanged. Preview removal (2026-10-19): PredicateDialog no longer receives previous-run preview props; result reads and the after-query summary job are unchanged. catalog_summary removal (2026-10-19, requires backend #117): result preview/run/revision bodies no longer send the deprecated catalog_summary flag; effect dependencies, abort and publication fences unchanged. Pending counts and cell windows (2026-10-19, requires backend #118/#119): the shown result's counts job is polled with useQueryCounts and merged into the displayed preview; a changed query cancels the previous job. Effect sites unchanged.",
+      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged. Tag decoupling review (2026-10-17): tag saves report kind annotations (not an untyped structural change) with the confirmed receipt; focused epoch and presets follow annotationRevision. Effect sites unchanged. Summary-after-query review (2026-10-18): previews/runs/revisions always send catalog_summary:false and the explicit full-catalog key/effect is removed; one requested-summaries job is keyed to the shown result set (starts after that predicate's results load, survives same-query tree reloads, retires on predicate/filter/generation change) and decorates the builder fields. One effect site removed; hook-owned job lifetime unchanged. Preview removal (2026-10-19): PredicateDialog no longer receives previous-run preview props; result reads and the after-query summary job are unchanged. catalog_summary removal (2026-10-19, requires backend #117): result preview/run/revision bodies no longer send the deprecated catalog_summary flag; effect dependencies, abort and publication fences unchanged. Pending counts and cell windows (2026-10-19, requires backend #118/#119): the shown result's counts job is polled with useQueryCounts and merged into the displayed preview; a changed query cancels the previous job. Effect sites unchanged. Protocol-refresh review 2026-11-07: new protocol completion invalidates structural inventory; existing membership stays scoped. Displayed draft search witnesses follow held revision and explicit refresh generation, with editor-open suppression and effect-owned cancellation/reconnect. No command, recipe or removal consent is replayed. Workspace change ledger and requested-summary lifecycle regressions verify creation, exactly-one renewal, annotation hold and interrupted retained reads.",
       "tests": [
         "src/retainedControls.test.js",
         "src/requested-summaries/requestedSummariesLifecycle.test.js",

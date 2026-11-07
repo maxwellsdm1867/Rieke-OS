@@ -326,7 +326,12 @@ export default function App(){
     return mergeIntents.current.claim(intent,projectId,route.protocol)&&consumed;
   }
   function sourceMerged(id,{navigate=true}={},receipt=null){announceMerge(receipt);const key=mergedSourceKey(sourceMergeProject,receipt);if(key)setMergedSources(previous=>rememberMergedSource(previous,key));const origin=sourceMergeOrigin.current;sourceMergeOrigin.current=null;changed({kind:'membership',protocolId:id});if(!navigate||(origin?.protocolId===id&&origin.routeKey===route.key))return;const prior=presentation.current.read({page:'protocol',protocol:id,key:''}).session;presentation.current.remember({page:'protocol',protocol:id,key:'source-merge-overview'}, {...prior,tab:'overview'});navigation.go('protocol',{protocol:id});}
-  function protocolApplied(id,{navigate=true}={}){changed({kind:'membership',protocolId:id});if(navigate)navigation.go('protocol',{protocol:id});}
+  function protocolApplied(id,{navigate=true}={}){
+    // A newly registered protocol changes the sidebar's inventory as well as
+    // membership. Existing datasets retain their scoped, deferred summary reads.
+    changed(data?.protocols?.some(item=>item.protocol_uuid===id)?{kind:'membership',protocolId:id}:{kind:'structure'});
+    if(navigate)navigation.go('protocol',{protocol:id});
+  }
   function openQC(cellUuid,epochUuid=null){navigation.go('cell-qc',{cell_uuid:cellUuid,epoch_uuid:epochUuid});}
   function searchEpoch(result){openQC(result.cell_uuid,result.epoch_uuid);}
   function searchPredicate(predicate){navigation.go('explore',{explorePredicate:predicate});}

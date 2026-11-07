@@ -84,7 +84,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
     try{return {predicate:compilePredicate(draft,catalog.data?.fields || null),error:null};}
     catch(error){return {predicate:null,error:error.message};}
   },[draft,catalog.data]);
-  const draftKey=predicateIdentity({predicate:compiled.predicate,splits:filterSplits});
+  const draftKey=predicateIdentity({predicate:compiled.predicate,splits:filterSplits,revision:viewRevision,generation});
   const changedFilter=!!applied&&predicateIdentity(compiled.predicate)!==predicateIdentity(applied.recipe.predicate);
   const changedTree=!!applied&&splits.split(',').map(x=>x.trim()).join(',')!==applied.recipe.splits.split(',').map(x=>x.trim()).join(',');
   const currentDraftPreview=draftPreview.key===draftKey?draftPreview.data:null;
@@ -127,13 +127,6 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
   },[applied,splits,viewRevision,generation,focused]);
   useEffect(()=>{if(focusVerified&&tree.data.focused_in_scope===false)setFocused(null);},[focusVerified,tree.data]);
   const changeSplits=useCallback(fields=>{const text=fields.join(',');setSplits(text);setFilterSplits(text);setPath([]);setTreeNavigation(null);setFocused(null);},[]);
-  async function previewDraft(predicate=compiled.predicate,grouping=filterSplits,baseline=restored?.revision_uuid,openResults=false){
-    if(!predicate)return;
-    const controller=new AbortController();draftController.current?.abort();draftController.current=controller;
-    const key=predicateIdentity({predicate,splits:grouping});setDraftPreview({data:null,loading:true,error:null,key});
-    try{const data=await api('/explore/preview',{method:'POST',body:{predicate,splits:grouping,summary_only:true,...(baseline?{baseline_revision_uuid:baseline}:{})},signal:controller.signal});if(!controller.signal.aborted){setDraftPreview({data,loading:false,error:null,key});setAnnotationHold(null);if(openResults){setResultsFromDraft(true);setStep('results');setDestination(null);setFocused(null);}}}
-    catch(error){if(!controller.signal.aborted)setDraftPreview({data:null,loading:false,error:error.message,key});}
-  }
   async function saveRevision(kind,nextStep='results',notifyParent=true){
     if(annotationHold){setError('Refresh results after editing annotations before recording or exporting this selection.');return;}
     const predicate=kind==='filter'?compiled.predicate:applied?.recipe.predicate;
@@ -170,7 +163,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
       const result=await api('/explore/run',{method:'POST',body:{predicate,splits:grouping},signal:controller.signal});
       if(controller.signal.aborted)return;
       setViewFilters({});setExcludedEpochs([]);setExportCandidate(null);setAnnotationHold(null);setActivePreset(item.preset_uuid?item:null);setImportedPreset(null);setDepartedInitial(true);setDraft(nextDraft);setName(nextName);setFilterSplits(grouping);setSplits(grouping);setRestored(null);setApplied(null);setTreeNavigation(null);setMatchingNavigation(null);setFocused(null);setDestination(null);
-      setDraftPreview({data:result,loading:false,error:null,key:predicateIdentity({predicate,splits:grouping})});setResultsFromDraft(true);setStep('results');setEditorOpen(false);
+      setDraftPreview({data:result,loading:false,error:null,key:predicateIdentity({predicate,splits:grouping,revision,generation})});setResultsFromDraft(true);setStep('results');setEditorOpen(false);
       await storePreset({name:nextName,predicate,splits:grouping,matched_count:result.matched_count,cell_count:result.last_run.cell_count,lastRunAt:result.last_run.ran_at});projectPresets.reload();
     }catch(error){if(!controller.signal.aborted)setError(error.message);}finally{if(!controller.signal.aborted)setBusy(false);}
   }
@@ -232,14 +225,27 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
   },[hasViewFilter,filteredKey,step,!!baseResultPreview]);
   function changeViewFilters(next){setViewFilters(next);setMatchingNavigation(null);setTreeNavigation(null);setPagedInfo(null);setDestination(null);setExportCandidate(null);}
 
-  useEffect(()=>{if(step==='results'&&resultsFromDraft&&!currentDraftPreview&&!draftPreview.loading&&draftPreview.key!==draftKey&&compiled.predicate)previewDraft();},[step,resultsFromDraft,draftKey,currentDraftPreview,draftPreview.loading,draftPreview.key]);
+  useEffect(()=>{
+    if(step!=='results'||!resultsFromDraft||editorOpen||!compiled.predicate)return;
+    if(draftPreview.key===draftKey&&!draftPreview.loading)return;
+    // Known workspace changes renew a displayed result's witness. Annotation
+    // edits keep viewRevision held until the user explicitly refreshes results.
+    // Reconnecting an interrupted retained read restarts it; a completed read
+    // at the same key stays reusable. Editing a predicate starts no preview.
+    const controller=new AbortController(),key=draftKey;
+    setDraftPreview({data:null,loading:true,error:null,key});
+    api('/explore/preview',{method:'POST',body:{predicate:compiled.predicate,splits:filterSplits,summary_only:true,...(restored?.revision_uuid?{baseline_revision_uuid:restored.revision_uuid}:{})},signal:controller.signal})
+      .then(data=>{if(!controller.signal.aborted)setDraftPreview({data,loading:false,error:null,key});})
+      .catch(error=>{if(!controller.signal.aborted)setDraftPreview({data:null,loading:false,error:error.message,key});});
+    return()=>controller.abort();
+  },[step,resultsFromDraft,editorOpen,draftKey]);
   function annotationsChanged(result,confirmed){
     // An annotation change, not a structural one: other views apply the receipt.
     setAnnotationHold(current=>current||{revision:viewRevision});setDestination(null);
     onChange?.({kind:'annotations',...(confirmed?{origin:'search',confirmed}:{})});
   }
   function refreshResults(){
-    if(resultsFromDraft){if(hasViewFilter)setGeneration(value=>value+1);previewDraft();}else{setAnnotationHold(null);setGeneration(value=>value+1);}
+    setAnnotationHold(null);setGeneration(value=>value+1);
   }
   async function prepareDestination(next,fromDraft=resultsFromDraft){
     if(annotationHold){setError('Refresh results after editing annotations before using this selection.');return;}
@@ -266,7 +272,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
   async function applyPopupSearch(nextDraft,predicate,signal){
     const result=await api('/explore/run',{method:'POST',body:{predicate,splits:filterSplits},signal});
     if(signal.aborted)return;
-    setViewFilters({});setExcludedEpochs([]);setExportCandidate(null);setAnnotationHold(null);setNotice('');setDraft(nextDraft);setDraftPreview({data:result,loading:false,error:null,key:predicateIdentity({predicate,splits:filterSplits})});
+    setViewFilters({});setExcludedEpochs([]);setExportCandidate(null);setAnnotationHold(null);setNotice('');setDraft(nextDraft);setDraftPreview({data:result,loading:false,error:null,key:predicateIdentity({predicate,splits:filterSplits,revision,generation})});
     setMatchingNavigation(null);setResultsFromDraft(true);setFocused(null);setDestination(null);setStep('results');setEditorOpen(false);
     await storePreset({name:name==='Metadata selection'?predicateSummary(predicate):name,predicate,splits:filterSplits,matched_count:result.matched_count,cell_count:result.last_run.cell_count,lastRunAt:result.last_run.ran_at});projectPresets.reload();
   }
@@ -335,7 +341,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
     {destination&&exportCandidate&&<ExportSelectionDialog directOnly={!!incomingReview} candidate={exportCandidate} projectId={projectId} protocols={protocols} initialProtocolId={initialProtocolId} defaultName={name} defaultFormat={initialExportIntent?.format} disabled={!!annotationHold||busy||resultLoading||!!resultError} onClose={()=>{setDestination(null);onChange?.();}} onApplied={onProtocolApplied} onChanged={()=>onChange?.()}/>}
     {initialCandidateLoading?<div className="mx-candidate-loading" role="status"><LoaderCircle size={18}/> Loading saved candidate…</div>:initialRevisionId&&!applied&&!departedInitial?<div className="mx-candidate-loading"><span>The saved candidate could not be loaded.</span><button onClick={()=>setInitialCandidateRetry(value=>value+1)}>Retry</button></div>:step==='filter'&&!focused?<SearchPresets entries={presets} fields={catalog.data?.fields||[]} history={history} projectPresets={projectPresets} onProjectPin={pinProjectPreset} onImportRecipe={importQueryRecipe} onProjectPage={setPresetOffset} busy={busy||catalog.loading||shortcutPreferences.loading} error={presetError||shortcutPreferences.error||catalog.error} onRun={usePreset} onEdit={item=>usePreset(item,'edit')} onPin={item=>usePreset(item,'pin')}/>:step==='results'?<div className="mx-results-workflow">
 
-      {!hasViewFilter&&resultError&&<div className="mx-operation-error" role="alert">{resultError}<button onClick={()=>resultsFromDraft?previewDraft():setGeneration(value=>value+1)}>Refresh results</button></div>}
+      {!hasViewFilter&&resultError&&<div className="mx-operation-error" role="alert">{resultError}<button onClick={refreshResults}>Refresh results</button></div>}
       {!resultLoading&&!resultError&&resultPreview&&resultPredicate?<MatchingEpochs projectId={projectId} tracePreference={tracePreference} onTracePreference={setTracePreference} onQC={onQC} inclusionForEpoch={epoch=>searchEpochInclusion(epoch,excludedEpochs)} onToggleInclusion={toggleInclusion} toolbarTarget={epochToolbarTarget} viewFilters={viewFilters} onViewFilters={changeViewFilters} filterRevision={revision} filterDisabled={busy||!!annotationHold} onExport={openResultsExport} exportDisabled={exportDisabled} designDisabled={!!annotationHold||busy||resultLoading||!!resultError} actions={resultActions} onDesign={()=>{if(!annotationHold&&!busy&&!resultLoading&&!resultError)prepareDestination('tree');}} key={resultPreview.tree_revision} predicate={resultPredicate} splits={resultSplits} preview={resultPreview} session={matchingNavigation} onSession={setMatchingNavigation} onAnnotationsChanged={annotationsChanged} onTagFilter={predicate=>{setDraft(draftOf(predicate));setActivePreset(null);setEditorOpen(true);}} onRefresh={refreshResults}/>:<Status loading={resultLoading} error={resultError}/>}
     </div>:<>
       {catalog.supportsSummaries&&resultSummaries.status!=='idle'&&<SummaryStatus label="Result statistics" state={resultSummaries}/>}
