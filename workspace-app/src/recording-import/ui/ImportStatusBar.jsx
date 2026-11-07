@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {ArrowUpRight,Check,FileWarning,LoaderCircle,X} from 'lucide-react';
-import {jobProgressView,sourceName} from '../importProgress.js';
+import {actualProgress,jobProgressView,sourceName} from '../importProgress.js';
 import './ImportStatusBar.css';
 
 export function ImportProgressMeter({count,pending,label}){
@@ -36,6 +36,22 @@ export default function ImportStatusBar({monitor,transfer,onOpen}){
     const timer=setTimeout(()=>setNotice(null),notice.attention?10000:6000);
     return()=>clearTimeout(timer);
   },[notice,paused]);
+  // Active work is live state, not a six-second notification. Keep it visible
+  // through transfer, acceptance and stage changes, including monitor outages.
+  const rows=(Array.isArray(monitor.data?.jobs)?monitor.data.jobs:[]).filter(Boolean);
+  const activeJob=rows.find(job=>jobProgressView(job).pending);
+  const activeView=activeJob?jobProgressView(activeJob,Date.now(),monitor.observedAt):null;
+  const transferring=transfer&&transfer.phase!=='error'&&transfer.phase!=='accepted';
+  const running=transferring?{
+    title:transfer.phase==='awaiting_job'?'Waiting for import acceptance':'Uploading recording',
+    filename:transfer.filename,
+    count:transfer.phase==='uploading'?actualProgress({completed:transfer.loaded,total:transfer.total,unit:'bytes'}):null,
+  }:activeJob?{title:activeView.stage,filename:sourceName(activeJob),count:activeView.count}:transfer?.phase==='accepted'&&!rows.some(job=>job.job_uuid===transfer.job_uuid)?{title:'Import accepted · waiting for job status',filename:transfer.filename,count:null}:null;
+  if(running)return <aside className="import-toast" aria-label="Live import status">
+    <div role="status" aria-live="polite"><LoaderCircle size={17} className="spin"/><strong>{running.title}</strong><span>{running.filename}</span>
+      <div className="import-live-progress"><ImportProgressMeter count={running.count} pending/>{monitor.connectionError&&<p>Connection interrupted · showing last confirmed progress.</p>}</div>
+    </div><button className="import-toast-open" onClick={onOpen}><ArrowUpRight size={15}/> View details</button>
+  </aside>;
   if(!notice)return null;
   const Icon=notice.attention?FileWarning:notice.pending?LoaderCircle:Check;
   return <aside className={`import-toast ${notice.attention?'is-attention':''}`} aria-label="Import notification" onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)} onFocus={()=>setPaused(true)} onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))setPaused(false);}}>
