@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "format": "disco-owned-dual-response-fixture-v1",
+  "base_h5_sha256": "68c1f6b3127559aa69318ea828f344b5dfb0d606e1b55113c624b803fbe2d7d8",
+  "h5_sha256": "ef8a73f5fabc6198f7fd2f6b113dcb20734723c94a9cbcef732255b95cf7bd15",
+  "oracle_sha256": "646d731940a6edd8ed5173f94d0bbfef03c6e1935f3d367d6ffe86cfd448ae80",
+  "parser_oracle_sha256": "751438986dc7bcf6f5fb8b75d61965f35cf748962b925af41d499a9c97cca635",
+  "base_oracle_sha256": "2247722d600a710672ffebca7568b1d4eda5b4825e62fdafabad4d20218f48ac",
+  "base_parser_oracle_sha256": "c001a647ff8727d5340f804e11d35165f919cb8c5cebc0eb313f5b9545801c21",
+  "alias_identity": "Every stream group and data dataset has identical H5 object ID at canonical and predeclared animal/experiment alias.",
+  "generator_sha256": "8db4495343d76f99c7f39db72c21b3084ac8c255ec4317f27962910c845d1091",
+  "parser_sha256": "0d63fa4df6e087cda60fd85305ea3c4a7d287949abab325b9f1dd2e5f12779d2",
+  "parser_preflight": {
+    "status": "passed"
+  },
+  "epochs": 63,
+  "cells": 2,
+  "responses": 126,
+  "samples_per_response": 256,
+  "base_common_generator_sha256": "50702746d8dd81af89a1e0dc28dc15b93a6f50fa5e825c784f410c112e27375a",
+  "completed_base_block_metadata": [
+    {
+      "block_uuid": "e814230f-347a-5ca0-9b97-2f2d2eaa1c46",
+      "dataFileName": "synthetic\\embedded-0.bin"
+    },
+    {
+      "block_uuid": "b4aa4b0f-3b9a-518d-993a-d694413f9cd4",
+      "dataFileName": "synthetic\\embedded-1.bin"
+    }
+  ],
+  "external_binary_reads": false
+}

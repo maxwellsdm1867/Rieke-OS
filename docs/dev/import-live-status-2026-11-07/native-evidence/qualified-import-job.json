@@ -1,0 +1,103 @@
+{
+  "source": "/private/tmp/disco-retention-native-refresh-gELswh/home/recordings/ef8a73f5fabc6198f7fd2f6b113dcb20734723c94a9cbcef732255b95cf7bd15/synthetic-incoming-20261107.h5",
+  "owner_run_id": "ca27152f-ae94-45b0-9edf-a06cb06187ff",
+  "catalog_committed": true,
+  "status": "complete",
+  "created_at": "2026-11-07T18:37:41.660620+00:00",
+  "managed_upload": true,
+  "upload_directory_uuid": "df5af2da-0730-4efd-8265-cd34cd3d7827",
+  "started_at": "2026-11-07T18:37:41.662417+00:00",
+  "progress_path": "/private/tmp/disco-retention-native-refresh-gELswh/home/project/logs/app-jobs/progress/6d26760c-1422-4fa8-ad46-ba0bdd1ca6ad.json",
+  "source_sha256": "ef8a73f5fabc6198f7fd2f6b113dcb20734723c94a9cbcef732255b95cf7bd15",
+  "source_size": 1129680,
+  "duplicate_check": {
+    "algorithm": "sha256",
+    "same_name_warnings": []
+  },
+  "retained_in_project": false,
+  "retained_in_library": true,
+  "recording_storage": {
+    "kind": "managed_library",
+    "path": "/private/tmp/disco-retention-native-refresh-gELswh/home/recordings/ef8a73f5fabc6198f7fd2f6b113dcb20734723c94a9cbcef732255b95cf7bd15/synthetic-incoming-20261107.h5",
+    "owner_project": null,
+    "library_path": "/private/tmp/disco-retention-native-refresh-gELswh/home/recordings",
+    "shared": true,
+    "sha256": "ef8a73f5fabc6198f7fd2f6b113dcb20734723c94a9cbcef732255b95cf7bd15",
+    "verified": true,
+    "original_removal_safe": true
+  },
+  "original_source": "/private/tmp/disco-retention-native-refresh-gELswh/home/project/raw-uploads/df5af2da-0730-4efd-8265-cd34cd3d7827/synthetic-incoming-20261107.h5",
+  "duplicate_staging_removed": true,
+  "protocol_baselines": [
+    {
+      "protocol_uuid": "2feb9aaf-2c7e-5e84-a716-42ce0c0e9b97",
+      "revision_uuid": "ea59ab09-a11c-4545-9dcc-5e45f8c94aff",
+      "binding_version": 2
+    },
+    {
+      "protocol_uuid": "51f70e85-d861-508e-bb5f-14eae5a91fd2",
+      "revision_uuid": "7956b6e5-e359-423a-9d52-817168037aeb",
+      "binding_version": 1
+    }
+  ],
+  "log_path": "/private/tmp/disco-retention-native-refresh-gELswh/home/project/logs/app-jobs/6d26760c-1422-4fa8-ad46-ba0bdd1ca6ad.log",
+  "catalog_delta": {
+    "sources_added": 1,
+    "protocol_types_added": 0,
+    "cells_added": 2,
+    "epochs_added": 63,
+    "responses_added": 126,
+    "stimuli_added": 0
+  },
+  "warnings": [],
+  "voltage_preparation": {
+    "status": "complete",
+    "cell_count": 2,
+    "failures": [],
+    "method": "block_onset_voltage_review_v2",
+    "preparation_ms": 4.469208972295746
+  },
+  "annotation_preparation": {
+    "status": "ready",
+    "storage": "native_sql",
+    "phases": {
+      "preparing_protocol_reads": {
+        "seconds": 0.010743
+      }
+    },
+    "project_uuid": "d158f86a-7946-4c5d-bc66-23d938f3161a",
+    "reused": false,
+    "protocols_prepared": 2,
+    "protocols_deferred": 0,
+    "phase": "complete",
+    "seconds": 0.232717
+  },
+  "view_preparation": {
+    "overview": {
+      "status": "ready",
+      "publication_serial": 16,
+      "elapsed_ms": 144.2219160089735,
+      "epochs": 126,
+      "protocol_memberships": 124
+    },
+    "tree": {
+      "status": "ready",
+      "resource": "tree",
+      "views": 3,
+      "deferred": [],
+      "elapsed_ms": 110.13366599217989
+    },
+    "workbench": {
+      "status": "ready",
+      "protocols": 2,
+      "elapsed_ms": 12.395500001730397
+    }
+  },
+  "protocol_suggestions": {
+    "created_count": 2,
+    "unchanged_count": 0,
+    "failed_count": 0,
+    "deduplicated_count": 0
+  },
+  "finished_at": "2026-11-07T18:37:48.172028+00:00"
+}

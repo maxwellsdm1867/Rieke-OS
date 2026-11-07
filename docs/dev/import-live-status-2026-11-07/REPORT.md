@@ -36,10 +36,9 @@ This is source-level evidence, not native or release qualification.
 
 ## Pending coordinated checks
 
-Native candidate verification, combined selection/protocol changes, exact-source
-core and matched million-row regression checks are pending. The installed app has
-not been replaced. Test artifacts and final source identity will be recorded here
-before completion.
+Native source-shell workflow verification is complete. Exact-source core, matched
+million-row checks and final packaged verification are next. The installed app has
+not yet been replaced. Final source and installation receipts will be recorded here.
 
 ## Local version reservation
 
@@ -70,9 +69,17 @@ selection and protocol-state-refresh evidence directories for their focused runs
 
 Native checks so far on the combined source with Electron 44.9.2 verified:
 existing pinned update 63→61 epochs, first→Shift30 plus Command toggles,
-exact30-UUID exclusion/reinclusion, and exact30-UUID tag add/removal, with other31
+exact 30-UUID exclusion/reinclusion, and exact 30-UUID tag add/removal, with other 31
 rows unchanged. Arrow navigation and Light/Dark/Fred selection fill passed.
-Search/Workbench/import and final packaged verification remain pending.
+Search local batch inclusion/Undo and split-tree gestures passed. Workbench
+explicit selection remained separate from highlights; incoming exclusion and tag
+add/removal affected only selected UUIDs and left the entire Main receipt unchanged.
+A uniquely named synthetic import started without Refresh jobs and committed 63
+epochs; review opened automatically. A same-name/different-acquisition fixture was
+correctly refused without adding records, exercising visible stop feedback. Live
+progress remained visible at 9 seconds. Rename immediately updated sidebar/breadcrumb;
+returning to Search loaded 122 current matches without manual metadata refresh.
+Final packaged verification remains separate and pending.
 
 An early generic Electron test target had unreliable focus/targeting. Its backend
 was drained and stopped with clean database shutdown before switching to a uniquely

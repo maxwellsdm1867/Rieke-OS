@@ -1,0 +1,63 @@
+{
+  "source": "/private/tmp/disco-retention-native-refresh-gELswh/home/recordings/7bdda6c39c240f098a6f10514acee5c452f894630f3d745f13eed583a2b274d7/synthetic-dual.h5",
+  "owner_run_id": "ca27152f-ae94-45b0-9edf-a06cb06187ff",
+  "catalog_committed": null,
+  "status": "interrupted",
+  "created_at": "2026-11-07T18:34:20.285055+00:00",
+  "managed_upload": true,
+  "upload_directory_uuid": "1b657016-f8f8-4c3e-91c9-1f81892ed876",
+  "started_at": "2026-11-07T18:34:20.287579+00:00",
+  "progress_path": "/private/tmp/disco-retention-native-refresh-gELswh/home/project/logs/app-jobs/progress/09a551ac-e58b-4189-9851-4a6e33775ec3.json",
+  "source_sha256": "7bdda6c39c240f098a6f10514acee5c452f894630f3d745f13eed583a2b274d7",
+  "source_size": 1129352,
+  "duplicate_check": {
+    "algorithm": "sha256",
+    "same_name_warnings": [
+      {
+        "source_sha256": "d7415f23e7cb39881c957ed892e98fca4c06521bda824905a944855390b513ae",
+        "source_path": "/private/tmp/disco-retention-native-refresh-gELswh/home/recordings/d7415f23e7cb39881c957ed892e98fca4c06521bda824905a944855390b513ae/synthetic-dual.h5",
+        "filename": "synthetic-dual.h5",
+        "project_uuid": "d158f86a-7946-4c5d-bc66-23d938f3161a",
+        "experiment_uuid": "5c5f6685-28d6-52e4-b57d-315002a94b1c",
+        "experiment_id": 1,
+        "source_size": 1129680
+      }
+    ]
+  },
+  "retained_in_project": false,
+  "retained_in_library": true,
+  "recording_storage": {
+    "kind": "managed_library",
+    "path": "/private/tmp/disco-retention-native-refresh-gELswh/home/recordings/7bdda6c39c240f098a6f10514acee5c452f894630f3d745f13eed583a2b274d7/synthetic-dual.h5",
+    "owner_project": null,
+    "library_path": "/private/tmp/disco-retention-native-refresh-gELswh/home/recordings",
+    "shared": true,
+    "sha256": "7bdda6c39c240f098a6f10514acee5c452f894630f3d745f13eed583a2b274d7",
+    "verified": true,
+    "original_removal_safe": false
+  },
+  "original_source": "/private/tmp/disco-retention-native-refresh-gELswh/home/project/raw-uploads/1b657016-f8f8-4c3e-91c9-1f81892ed876/synthetic-dual.h5",
+  "duplicate_staging_removed": true,
+  "protocol_baselines": [
+    {
+      "protocol_uuid": "2feb9aaf-2c7e-5e84-a716-42ce0c0e9b97",
+      "revision_uuid": "ea59ab09-a11c-4545-9dcc-5e45f8c94aff",
+      "binding_version": 2
+    },
+    {
+      "protocol_uuid": "51f70e85-d861-508e-bb5f-14eae5a91fd2",
+      "revision_uuid": "7956b6e5-e359-423a-9d52-817168037aeb",
+      "binding_version": 1
+    }
+  ],
+  "log_path": "/private/tmp/disco-retention-native-refresh-gELswh/home/project/logs/app-jobs/09a551ac-e58b-4189-9851-4a6e33775ec3.log",
+  "diagnostics": {
+    "stage": "database_transaction",
+    "error_type": "CatalogIdentityConflict",
+    "message": "A different acquisition uses this experiment filename. Matching names do not establish duplicate data; choose an explicitly qualified import filename before retrying; import stopped without merging, renumbering or overwriting acquisition records. Explicit source reconciliation is required.",
+    "traceback_path": "/private/tmp/disco-retention-native-refresh-gELswh/home/project/logs/imports/3e331287-76c0-4d4f-8dbd-bcef9109be03.traceback.txt"
+  },
+  "error": "A different acquisition uses this experiment filename. Matching names do not establish duplicate data; choose an explicitly qualified import filename before retrying; import stopped without merging, renumbering or overwriting acquisition records. Explicit source reconciliation is required.",
+  "requires_reconciliation": true,
+  "finished_at": "2026-11-07T18:34:29.659040+00:00"
+}

@@ -1,0 +1,20 @@
+{
+  "native_shell": "org.riekeos.native-import-selection-checks",
+  "electron": "44.9.2",
+  "protocol_uuid": "2feb9aaf-2c7e-5e84-a716-42ce0c0e9b97",
+  "before_name": "Native refresh renamed",
+  "after_name": "Native action refresh verified",
+  "sidebar_updated_immediately": true,
+  "breadcrumb_updated_immediately": true,
+  "manual_metadata_refresh_used": false,
+  "returned_search_matching_cells": 2,
+  "returned_search_matching_epochs": 122,
+  "new_source_epoch_rows_loaded": true,
+  "stale_preview_error": false,
+  "native_shutdown": {
+    "electron_exit_code": 0,
+    "clean_database_shutdown": true,
+    "native_runtime_record_absent": true,
+    "desktop_service_record_absent": true
+  }
+}

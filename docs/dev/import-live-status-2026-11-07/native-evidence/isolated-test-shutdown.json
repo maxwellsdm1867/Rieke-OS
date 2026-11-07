@@ -1,0 +1,20 @@
+{
+  "receipts": [
+    {
+      "action": "quit",
+      "result": {
+        "drained": true,
+        "ready": true
+      }
+    },
+    {
+      "action": "stop",
+      "result": {
+        "ready": true,
+        "stopped": true
+      }
+    }
+  ],
+  "clean_shutdown": true,
+  "owned_shell_exited": true
+}
