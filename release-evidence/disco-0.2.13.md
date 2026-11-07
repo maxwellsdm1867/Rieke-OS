@@ -1,4 +1,4 @@
-# Disco 0.2.13 unpublished testing candidate
+# Disco 0.2.13 testing release
 
 This unsigned Apple silicon testing release combines the latest reviewed local
 Cell QC presentation with import and epoch/protocol interaction repairs.
@@ -16,7 +16,8 @@ Cell QC presentation with import and epoch/protocol interaction repairs.
   with Undo. The neutral selected toolbar counts the distinct cells and epochs in the
   selection, without addition signs. It includes full-view/cell selection and a named,
   counted removal confirmation. Removing membership leaves recordings, other pins and existing exports
-  intact; future exports follow the updated membership.
+  intact; future exports follow the updated membership. Workbench keeps one
+  Deselect all action in its main selection toolbar, including tree-selection reset.
 
 The existing cell-specific Overview, recorded cell-type icons, individually paged
 QC protocols, temperature/solution displays, exact-epoch UUID entry and prepared
@@ -34,7 +35,8 @@ artifact identity; GitHub-built update bytes use this new version. No scientific
 fallback is display-only. This is unsigned/unnotarized testing software, not
 production, Intel or universal macOS runtime qualification.
 
-## Candidate failure record
+## Earlier unpublished candidate
+
 
 Source `96fbace23130deca0289f52c13cc1c4b3dfb9a96` was not published.
 [Full regression](https://github.com/maxwellsdm1867/Rieke-OS/actions/runs/42418475974)
@@ -48,5 +50,9 @@ replace these failed gates.
 
 The follow-up candidate removes the duplicate incoming action, scopes the harness
 to the existing named Workbench region, and fixes the independent protocol fixture.
-Comparison cases, correctness oracles and thresholds stay unchanged; original
-source tags and failed receipts remain intact.
+Comparison cases, correctness oracles and thresholds stay unchanged; the earlier source commit and failed receipts remain available.
+
+The scientist explicitly requested keeping version 0.2.13. Before replacing the
+unpublished candidate tag, the release was verified absent and the superseded
+build was cancelled. The earlier source remains in Git history and its CI runs;
+no published release, installed 0.2.13 app, or release asset was overwritten.
