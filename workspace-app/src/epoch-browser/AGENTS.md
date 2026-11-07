@@ -74,6 +74,12 @@ still-current owner may clear its selection/focus. Undo uses the sealed response
 receipt through the session Undo owner. `inspectorMembershipLifecycle.test.js`
 and `bulkSelectionControls.test.js` cover these bounds; native checks are separate.
 
+Incoming Workbench's mounted top selection tools own Deselect all, including its
+explicit tree-selection clear intent. The shared selected bar omits its redundant
+clear only when frozen read context, draft selection and the top-tools portal
+target are all present. Main, Search and incoming views without that top owner
+retain the shared Deselect all action.
+
 The selected bar's distinct cell count describes the complete explicit UUID set,
 never only loaded rows. `readSelectedEpochCellCount` reuses bounded
 `/annotations/read` epoch/cell identity maps for Main and Search, validating exact

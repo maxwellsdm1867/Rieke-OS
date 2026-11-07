@@ -4,6 +4,7 @@ import React from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
 import {createServer} from '../test-support/isolatedVite.js';
 import {fileURLToPath} from 'node:url';
+import {createInspectorHarness} from '../test-support/inspectorHarness.js';
 
 test('counted selection bar exposes tag, exclude, include and clear with freshness gates',async()=>{
  const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
@@ -24,6 +25,8 @@ test('counted selection bar exposes tag, exclude, include and clear with freshne
   const cell=root.root.findAllByType('button').find(button=>button.children.includes('Select focused cell'));
   assert.equal(all.props.disabled,false);assert.equal(cell.props.disabled,true);await act(()=>all.props.onClick());
   assert.equal(actions.at(-1),'all');
+  await render({...props,scope:'search export'});
+  assert.equal(root.root.findAllByType('button').filter(button=>button.children.some(child=>typeof child==='string'&&child.trim()==='Deselect all')).length,1,'Search keeps its shared clear action');
   await render({...props,disabled:true});assert.ok(root.root.findByProps({className:'epoch-selection-actions'}).findAllByType('button').every(button=>button.props.disabled));
   await render({...props,targets:[]});assert.equal(root.toJSON(),null);
  }finally{await act(()=>root?.unmount());await server.close();}
@@ -78,4 +81,36 @@ test('selection actions appear only for multiple epochs and collapse without cha
   await render(['a']);assert.equal(root.toJSON(),null);
   await render(['a','b']);assert.equal(root.root.findAllByProps({className:'epoch-selection-actions'}).length,1);assert.equal(cleared,0);
  }finally{await act(()=>root?.unmount());await server.close();}
+});
+
+test('incoming selection has one authoritative Deselect all, while Main and incoming fallbacks retain the shared action',async()=>{
+ const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
+ const {EpochSelectionBar}=await server.ssrLoadModule('/src/epoch-browser/ui/EpochBrowserChrome.jsx');
+ const {default:IncomingSelectionTools}=await server.ssrLoadModule('/src/incoming-workbench/ui/IncomingSelectionTools.jsx');
+ const children=(element,match)=>!element||typeof element!=='object'?[]:[...(match(element)?[element]:[]),...[element.props?.children].flat().flatMap(child=>children(child,match))];
+ const label=node=>node.children.filter(child=>typeof child==='string').join('').trim();
+ try{
+  for(const mode of ['owned-list','owned-tree','no-portal','no-draft','main']){
+   const h=await createInspectorHarness(),selected=['epoch-A','epoch-B'],changes=[];let root;
+   const owned=mode.startsWith('owned');
+   try{
+    await h.render({protocol:{definition:{protocol_uuid:'protocol-A'},query_revision:'query-A',expected_binding_version:2,cells:[{cell_uuid:'cell-A',epochs:2}]},filters:{},revision:0,initialEpochUuid:'epoch-A',initialNavigation:{treeMode:mode==='owned-tree'},onSelectionChange:ids=>changes.push(ids),
+      ...(mode!=='main'?{readContext:{root:'/protocols/protocol-A/workbench/candidates/candidate-A',candidate_scope_revision:'query-A'}}:{}),
+      ...(mode!=='no-draft'?{draftSelection:{selected}}:{}),...(mode!=='no-portal'?{draftSelectionTarget:{}}:{})});
+    if(mode==='no-draft'||mode==='main')await h.act(()=>h.viewer.treePane.listProps.setTargets(selected));
+    changes.length=0;
+    assert.equal(h.viewer.selectionActions.hideClear,owned,mode);
+    const incoming=children(h.viewer.before,item=>item.props?.source?.readContext&&typeof item.props?.onViewSelected==='function')[0];
+    assert.equal(!!incoming,owned,mode);
+    await act(()=>{root=TestRenderer.create(React.createElement(React.Fragment,null,
+      incoming&&React.createElement(IncomingSelectionTools,incoming.props),
+      React.createElement(EpochSelectionBar,{...h.viewer.selectionActions,targets:h.viewer.targets,onClear:h.viewer.metadata.onClearSelection})));});
+    const clear=root.root.findAllByType('button').filter(button=>label(button)==='Deselect all');
+    assert.equal(clear.length,1,mode);assert.equal(clear[0].props.disabled,false,mode);
+    await h.act(()=>clear[0].props.onClick());
+    assert.deepEqual(changes,[[]],mode);
+    if(owned)assert.deepEqual(h.viewer.treePane.treeProps.treeSelectionIntent.markers,[{path:[],on:false}],mode);
+   }finally{await act(()=>root?.unmount());await h.close();}
+  }
+ }finally{await server.close();}
 });

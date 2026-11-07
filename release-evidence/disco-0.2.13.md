@@ -1,4 +1,4 @@
-# Disco 0.2.13 testing release
+# Disco 0.2.13 unpublished testing candidate
 
 This unsigned Apple silicon testing release combines the latest reviewed local
 Cell QC presentation with import and epoch/protocol interaction repairs.
@@ -33,3 +33,20 @@ Version 0.2.13 supersedes the unpublished local 0.2.12 installation (source
 artifact identity; GitHub-built update bytes use this new version. No scientific metadata is retyped, and the rig filename
 fallback is display-only. This is unsigned/unnotarized testing software, not
 production, Intel or universal macOS runtime qualification.
+
+## Candidate failure record
+
+Source `96fbace23130deca0289f52c13cc1c4b3dfb9a96` was not published.
+[Full regression](https://github.com/maxwellsdm1867/Rieke-OS/actions/runs/42418475974)
+failed a fixture that copied a protocol definition without giving it a matching
+managed file. The production integrity refusal remained correct.
+[Browser qualification](https://github.com/maxwellsdm1867/Rieke-OS/actions/runs/42418477659)
+stopped during compatibility preflight: two visible Deselect all controls made
+the unscoped Workbench locator ambiguous. Million-row browser measurements were
+not started. Local native removal/Undo and toolbar checks passed but do not
+replace these failed gates.
+
+The follow-up candidate removes the duplicate incoming action, scopes the harness
+to the existing named Workbench region, and fixes the independent protocol fixture.
+Comparison cases, correctness oracles and thresholds stay unchanged; original
+source tags and failed receipts remain intact.
