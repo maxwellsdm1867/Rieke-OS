@@ -5,7 +5,9 @@
 `release-pages.yml` runs after the checked testing publisher succeeds, when a
 published release is created or edited, and when the hook itself changes on main.
 The `workflow_run` trigger covers releases created by `GITHUB_TOKEN`, whose release
-events do not start another workflow. A manual dispatch repairs presentation drift.
+events do not start another workflow. An hourly reconciliation also catches missed
+events, edits to older tags that lack this workflow, or publication that succeeds
+before a later publisher step fails. A manual dispatch can repair drift immediately.
 The workflow executes the synchronizer from main, never code from a release event
 or downloaded artifact, and serializes page updates.
 

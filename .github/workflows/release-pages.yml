@@ -7,6 +7,9 @@ on:
     workflows: ['Publish checked Disco testing candidate']
     types: [completed]
   workflow_dispatch:
+  # Repair missed events (including releases whose older tag lacks this file).
+  schedule:
+    - cron: '17 * * * *'
   push:
     branches: [main]
     paths:
