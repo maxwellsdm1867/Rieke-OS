@@ -73,6 +73,8 @@ saved scientific membership; they do not turn a search into a selection or merge
 
 ## Current 0.2.13 testing build
 
+**[What's new in 0.2.13](CHANGELOG.md)**
+
 DISCO 0.2.13 includes the updated Cell QC layout, live import progress, repaired
 selection controls, and confirmed removal from pinned protocols with Undo.
 
