@@ -12,7 +12,7 @@ export function EpochBrowserToolbar({designMode=false,browseLabel='Back to epoch
 export function EpochSelectionBar(props){
   return props.targets.length>1?<ActiveEpochSelectionBar {...props}/>:null;
 }
-function ActiveEpochSelectionBar({targets,cellCount=null,onTags,onClear,hideClear=false,onSelectAll,onSelectCell,cellSelectDisabled=false,onInclude,onExclude,onRemove,scope='export',disabled=false}){
+function ActiveEpochSelectionBar({targets,cellCount=null,onTags,onClear,hideClear=false,onSelectAll,onExclude,onRemove,scope='export',disabled=false}){
   const [expanded,setExpanded]=useState(true);
   const cells=Number.isSafeInteger(cellCount)&&cellCount>=0?cellCount:null;
   return <div className={`inspection-scope bulk-active compact-selection${expanded?'':' is-collapsed'}`} role="status" aria-live="polite" aria-label="Current selection">
@@ -24,11 +24,9 @@ function ActiveEpochSelectionBar({targets,cellCount=null,onTags,onClear,hideClea
     {expanded&&<div className="epoch-selection-actions">
       {onSelectAll&&<button disabled={disabled} onClick={onSelectAll} title="Select every matching epoch in this filtered protocol, up to 1,000."><CheckSquare size={13}/> Select all</button>}
       {!hideClear&&<button disabled={disabled} onClick={onClear}><Square size={13}/> Deselect all</button>}
-      {onSelectCell&&<button disabled={disabled||cellSelectDisabled} onClick={onSelectCell} title="Select the matching epochs from the focused cell.">Select focused cell</button>}
-      <button disabled={disabled||targets.length>1000} onClick={onTags}><MessageCircle size={13}/> Tag selected epochs</button>
-      <button disabled={disabled||targets.length>1000} onClick={onExclude} hidden={!onExclude}>Exclude selected from {scope}</button>
-      <button disabled={disabled||targets.length>1000} onClick={onInclude} hidden={!onInclude}>Include selected in {scope}</button>
-      {onRemove&&<button disabled={disabled||targets.length>1000} onClick={onRemove} title="Review removal of the selected epochs from this pinned protocol. Recordings and other protocols are kept.">Remove from pinned protocol</button>}
+      <button disabled={disabled||targets.length>1000} onClick={onTags} title="Tag the selected epochs across all selected cells"><MessageCircle size={13}/> Tag</button>
+      <button disabled={disabled||targets.length>1000} onClick={onExclude} hidden={!onExclude} title={`Exclude selected epochs from ${scope}`}>Exclude</button>
+      {onRemove&&<button disabled={disabled||targets.length>1000} onClick={onRemove} title="Review removal of the selected epochs from this pinned protocol. Recordings and other protocols are kept.">Remove from pin</button>}
     </div>}
   </div>;
 }

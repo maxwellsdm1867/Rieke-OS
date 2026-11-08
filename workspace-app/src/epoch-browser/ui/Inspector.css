@@ -33,16 +33,16 @@
 @container epoch-tree-pane (max-width:260px){.tree-heading .tree-edit-action{width:28px;justify-content:center}.tree-heading .tree-edit-action>span{display:none}}
 
 /* Selected membership uses the same neutral count-and-actions rhythm as Workbench. */
-.inspection-scope.compact-selection{padding:8px 14px;gap:16px;min-height:54px}
+.inspection-scope.compact-selection{padding:8px 14px;gap:10px;min-height:44px;flex-wrap:nowrap;overflow-x:auto}
 .epoch-selection-metrics{display:flex;align-items:center;gap:16px;flex-shrink:0}
 .epoch-selection-metrics>span{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
 .epoch-selection-metrics svg{align-self:center;flex-shrink:0;color:var(--accent)}
 .epoch-selection-metrics strong{font-size:24px;line-height:1.2;font-weight:600;letter-spacing:-.5px;font-variant-numeric:tabular-nums;color:var(--ink)}
 .epoch-selection-metrics small{font-size:12px;line-height:1.3;color:var(--ink-secondary)}
-.epoch-selection-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;flex:1}
-.epoch-selection-actions>button{padding:6px 9px;font-size:12px}
+.epoch-selection-actions{display:flex;align-items:center;flex-wrap:nowrap;gap:6px;min-width:max-content;flex:1}
+.epoch-selection-actions>button{padding:5px 8px;font-size:12px;white-space:nowrap;flex-shrink:0}
 
-.epoch-selection-toggle{font-size:11px;white-space:nowrap}
+.epoch-selection-toggle{font-size:10px;white-space:nowrap;padding:4px;flex-shrink:0;order:3}
 .compact-selection.is-collapsed{min-height:32px;padding-top:4px;padding-bottom:4px}
 .compact-selection.is-collapsed .epoch-selection-metrics{gap:12px}
 .compact-selection.is-collapsed .epoch-selection-metrics strong{font-size:12px;letter-spacing:0}
