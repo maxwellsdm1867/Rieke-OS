@@ -1,26 +1,35 @@
 # Disco changelog
 
+<!-- disco:changelog-insert -->
+
+<!-- disco:changelog-0.2.13:start -->
 ## 0.2.13 - 2026-11-07
 
-[Download and release details](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.13) · [Exact source tag](https://github.com/maxwellsdm1867/Rieke-OS/tree/desktop-test-v0.2.13)
+[Download and release details](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.13) · [Source tag: desktop-test-v0.2.13](https://github.com/maxwellsdm1867/Rieke-OS/tree/desktop-test-v0.2.13)
 
 Unsigned, unnotarized Apple silicon testing prerelease.
 
 ### What's new
 
-- Updated Cell QC layout with recorded date, cell and rig above Cell type, Bath temperature and Pipette solution; separate copy controls for metadata field names and IDs.
-- Visible import and transfer progress, with recovery when progress monitoring stalls.
-- Repaired Command/Shift epoch selection, counted Include/Exclude actions, and bulk tag changes for the selected epochs.
-- Neutral, collapsible cell/epoch selection counts; the bulk toolbar stays hidden for a single selected epoch. Workbench has one Deselect all action that also resets tree selection.
-- Confirmed removal from pinned protocols in list/tree views, with Undo. Recordings, other protocols and existing exports remain intact; future exports use the revised membership.
+- Imports retain visible transfer/job progress; stalled monitor recovery no longer
+  leaves the queue waiting indefinitely. Uncertain uploads are not automatically retried.
+- Command/Shift epoch selection retains its range origin across temporary reads.
+  Counted Include/Exclude and bulk tag add/remove target explicit selected epochs.
 - Protocol creation, renaming and saved-query changes refresh their visible state.
+  Search previews renew after structural changes while apply authority stays exact.
+- Cell QC shows recorded date, cell and rig above Cell type, Bath temperature and
+  Pipette solution, with recorded additions when present and an expansion hint.
+- Metadata field names and field IDs have separate copy controls.
+- Pinned protocols can remove selected epochs in list/tree views and restore them
+  with Undo. The neutral selected toolbar counts the distinct cells and epochs in the
+  selection, without addition signs. It is collapsible and stays hidden for a single
+  selected epoch. It includes full-view/cell selection and a named,
+  counted removal confirmation. Removing membership leaves recordings, other pins and existing exports
+  intact; future exports follow the updated membership. Workbench keeps one
+  Deselect all action in its main selection toolbar, including tree-selection reset.
 
-Clean packaged source: [`18e86de`](https://github.com/maxwellsdm1867/Rieke-OS/commit/18e86dedd5d59918831807a926ac540b4c30f670).
-Full regression, million-row comparisons and all five native suites passed for the
-published archive. The actual installed app downloaded the GitHub release through
-App Updates and restarted into the verified version.
-[Qualification details and retained candidate history](https://github.com/maxwellsdm1867/Rieke-OS/blob/2d256f2541bc44d928521b78e76bb02f03ea5c8b/release-evidence/disco-0.2.13.md).
-This does not establish production, Intel or universal macOS qualification.
+Packaged source: [`18e86de`](https://github.com/maxwellsdm1867/Rieke-OS/commit/18e86dedd5d59918831807a926ac540b4c30f670). See the release notes for qualification evidence and testing limits.
+<!-- disco:changelog-0.2.13:end -->
 
 ## 0.1.10 - 2026-10-09
 

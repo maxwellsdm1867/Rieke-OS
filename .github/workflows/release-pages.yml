@@ -1,0 +1,65 @@
+name: Keep Disco release pages current
+on:
+  release:
+    types: [published, edited]
+  # Releases published with GITHUB_TOKEN do not emit a downstream release run.
+  workflow_run:
+    workflows: ['Publish checked Disco testing candidate']
+    types: [completed]
+  workflow_dispatch:
+  # Repair missed events (including releases whose older tag lacks this file).
+  schedule:
+    - cron: '17 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - README.md
+      - CHANGELOG.md
+      - .github/workflows/release-pages.yml
+      - tools/desktop_release_pages.py
+      - python/tests/test_desktop_release_pages.py
+  pull_request:
+    paths:
+      - README.md
+      - CHANGELOG.md
+      - .github/workflows/release-pages.yml
+      - tools/desktop_release_pages.py
+      - python/tests/test_desktop_release_pages.py
+permissions:
+  contents: read
+concurrency:
+  group: disco-release-pages
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.sha || 'main' }}
+      - run: python3 -B -m unittest discover -s python/tests -p test_desktop_release_pages.py -v
+  sync:
+    needs: test
+    if: >-
+      github.repository == 'maxwellsdm1867/Rieke-OS' &&
+      github.event_name != 'pull_request' &&
+      (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Never execute the event's release/tag/artifact code with a write token.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Synchronize published release presentation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 -B tools/desktop_release_pages.py --apply --output "$RUNNER_TEMP/release-pages.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-pages-receipt
+          path: ${{ runner.temp }}/release-pages.json
+          if-no-files-found: warn
