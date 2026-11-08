@@ -1,5 +1,47 @@
 # Disco release operations
 
+## Automatic public release pages
+
+`release-pages.yml` runs after the checked testing publisher succeeds, when a
+published release is created or edited, and when the hook itself changes on main.
+The `workflow_run` trigger covers releases created by `GITHUB_TOKEN`, whose release
+events do not start another workflow. A manual dispatch repairs presentation drift.
+The workflow executes the synchronizer from main, never code from a release event
+or downloaded artifact, and serializes page updates.
+
+`tools/desktop_release_pages.py` selects the highest numeric published
+`desktop-test-vX.Y.Z` version, including testing prereleases. It checks the clean
+descriptor, tag commit, archive name, size and GitHub asset digests before writing.
+These are presentation identity checks, not new qualification or an archive
+download/audit. The existing publication gates remain authoritative.
+
+The hook updates only marked current-release sections of README, the current
+version's marked CHANGELOG entry, and a marked download/source block in release
+notes. Historical changelog entries and authored release notes remain intact.
+The reviewed `What's new` bullets in the published release body supply the text;
+for existing notes without that heading, the first feature list is used and given
+the heading. Missing features, malformed markers or mismatched identity fail the
+run instead of inventing notes. Keep feature changes in the reviewed release notes;
+do not manually edit generated README/changelog blocks.
+
+README and CHANGELOG are committed together to the default branch with a
+non-forced ref update. Concurrent branch/release edits fail visibly and can be
+rerun without overwriting the edit. Repeated runs with unchanged inputs make no
+commit or release edit. Tags, app bytes, assets and prerelease flags are never
+modified. The repository About URL is the permanent `/releases` page, so it does
+not need an administrator token or a per-version settings edit.
+
+Read-only preview and explicit repair:
+
+```sh
+python3 -B tools/desktop_release_pages.py
+python3 -B tools/desktop_release_pages.py --apply --output /tmp/disco-release-pages.json
+```
+
+The workflow runs the focused `test_desktop_release_pages.py` suite before any
+write and retains a compact Actions receipt. This hook changes public presentation
+only; it does not install an app, move a published tag, or build a new candidate.
+
 Build and publish from the dedicated `maxwellsdm1867/Rieke-OS` repository. The
 original EpicTreeGUI repository retains its MATLAB application and documentation;
 it is not a release source or update channel for Disco.
