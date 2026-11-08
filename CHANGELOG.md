@@ -19,7 +19,7 @@ Unsigned, unnotarized Apple silicon testing prerelease.
   Search previews renew after structural changes while apply authority stays exact.
 - Cell QC shows recorded date, cell and rig above Cell type, Bath temperature and
   Pipette solution, with recorded additions when present and an expansion hint.
-- Metadata field names and field IDs have separate copy controls.
+- Copy metadata field names and field IDs separately.
 - Pinned protocols can remove selected epochs in list/tree views and restore them
   with Undo. The neutral selected toolbar counts the distinct cells and epochs in the
   selection, without addition signs. It is collapsible and stays hidden for a single
