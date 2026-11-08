@@ -14,7 +14,7 @@ export function createUndoHistory(limits=UNDO_LIMITS){
  const listeners=new Set(),locals=new Map();
  const emit=()=>{version++;for(const listener of listeners)listener();};
  const clear=()=>{stack=[];bytes=0;};
- const view=()=>({project,count:stack.length,bytes,pending,busy,message});
+ const view=()=>{const action=stack.at(-1)?.action;return {project,count:stack.length,bytes,pending,busy,message,removal:action?.kind==='protocol-membership'?{protocolUuid:action.protocol_uuid,revisionUuid:action.removal_revision_uuid,count:action.count}:null};};
  return {
   subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},version:()=>version,view,
   project(value){if(project===value)return;project=value;clear();message='';emit();},

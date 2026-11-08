@@ -1,0 +1,4 @@
+.pin-removal-notice{position:fixed;left:18px;bottom:20px;z-index:90;display:flex;align-items:center;gap:12px;max-width:calc(100vw - 36px);box-sizing:border-box;padding:12px 14px;background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 24px color-mix(in srgb,var(--shadow-base) 20%,transparent);font-size:13px;line-height:1.4}
+.pin-removal-notice>span{min-width:0;overflow-wrap:anywhere}
+.pin-removal-notice>button{flex-shrink:0;white-space:nowrap;padding:6px 12px}
+.pin-removal-notice>.pin-removal-dismiss{padding:4px 7px;font-size:20px;line-height:1;color:var(--ink-secondary)}
