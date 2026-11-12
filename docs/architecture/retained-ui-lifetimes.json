@@ -996,10 +996,10 @@
       ]
     },
     "src/epoch-browser/ui/EpochBrowserChrome.jsx": {
-      "fingerprint": "48af0279b7cfe9165a892117680fff3f8f4541e078ed6346bee497e128962750",
+      "fingerprint": "b5d3b0a6066f21c56a754aa4dbfaff473de75acbfaac74e4b8a8a486748f4f98",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Pending counts and cell windows (2026-10-19, requires backend #118/#119): EpochNavigation shows 'counting matching epochs\u2026' for a null total. No effect sites. Combined UI review2026-10-23: View tree naming and caller-provided return label change only. Event callbacks remain owned by the same Inspector or MatchingEpochs caller. Independently reviewed bulk actions (2026-11-07): explicit counted selection controls call existing Main curation or incoming-decision owner with actual selected UUIDs; Search inclusion is one local undo gesture with per-UUID prior values and original visibility/generation fences. Shared-tag removal uses exact active-author revisions and existing pre-POST scope checks without an optimistic add. Tree Tag selected epochs clears only ephemeral cell targets. Mounted curation/control/undo/tag failure cases pass; native remains separately qualified. Pinned removal adds an optional selected toolbar command under the existing bounded selection and disabled state. Selected bar adds Select all/focused cell and Deselect all; removal opens counted confirmation. No added effects. Selection toolbar review (2026-11-07): pure neutral cell/epoch metrics use supplied exact counts, never addition prefixes. An inner local state component mounts only for multiple selections; hide/reopen affects only action presentation, retains counts and selection, and resets on the next multi-selection entry. The toggle stays operable while scientific actions are disabled; existing command gates and focused-epoch behavior are unchanged. No effect sites added. Incoming duplicate-control review (2026-11-07): the exact existing IncomingSelectionTools render condition also suppresses the shared toolbar clear control, keeping the top toolbar as sole deselection owner with its tree-selection reset. Main, Search and no-draft/no-target incoming fallbacks retain their clear action. No direct effect, request, mutation or membership authority changes. Mounted combined-toolbar tests cover list/tree and fallback cases.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Pending counts and cell windows (2026-10-19, requires backend #118/#119): EpochNavigation shows 'counting matching epochs\u2026' for a null total. No effect sites. Combined UI review2026-10-23: View tree naming and caller-provided return label change only. Event callbacks remain owned by the same Inspector or MatchingEpochs caller. Independently reviewed bulk actions (2026-11-07): explicit counted selection controls call existing Main curation or incoming-decision owner with actual selected UUIDs; Search inclusion is one local undo gesture with per-UUID prior values and original visibility/generation fences. Shared-tag removal uses exact active-author revisions and existing pre-POST scope checks without an optimistic add. Tree Tag selected epochs clears only ephemeral cell targets. Mounted curation/control/undo/tag failure cases pass; native remains separately qualified. Pinned removal adds an optional selected toolbar command under the existing bounded selection and disabled state. Selected bar adds Select all/focused cell and Deselect all; removal opens counted confirmation. No added effects. Selection toolbar review (2026-11-07): pure neutral cell/epoch metrics use supplied exact counts, never addition prefixes. An inner local state component mounts only for multiple selections; hide/reopen affects only action presentation, retains counts and selection, and resets on the next multi-selection entry. The toggle stays operable while scientific actions are disabled; existing command gates and focused-epoch behavior are unchanged. No effect sites added. Incoming duplicate-control review (2026-11-07): the exact existing IncomingSelectionTools render condition also suppresses the shared toolbar clear control, keeping the top toolbar as sole deselection owner with its tree-selection reset. Main, Search and no-draft/no-target incoming fallbacks retain their clear action. No direct effect, request, mutation or membership authority changes. Mounted combined-toolbar tests cover list/tree and fallback cases. The compact bar removes the focused-cell and Include controls and shortens the remaining labels. It forwards each action to its existing owner and keeps multi-selection visibility, caller freshness, disabled states and the 1,000-epoch mutation bound.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -4197,25 +4197,27 @@
       ]
     },
     "src/undo/mutationUndo.js": {
-      "fingerprint": "371180fee00e719925c4634a8594d68615c707ea2d654173c581ff0031d9f5a1",
+      "fingerprint": "9d09bf226f97b853aa75f3859bd7faa66ce5a11ca6099396531ad666e1131e76",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Pinned membership receipts preserve bounded session memory. Only the exact preceding removal identified by a confirmed server inverse is rebased; original protocol identity stays fixed.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Pinned membership receipts preserve bounded session memory. Only the exact preceding removal identified by a confirmed server inverse is rebased; original protocol identity stays fixed. The view derives a display summary only from the top pinned-removal receipt. Project changes clear the stack, and the existing pending and busy state gates the canonical inverse.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
-        "src/mutationUndo.test.js"
+        "src/mutationUndo.test.js",
+        "src/undo/removalNotice.test.js"
       ]
     },
     "src/undo/ui/UndoControls.jsx": {
-      "fingerprint": "b640a9a38ab707585e045d37d6dce3a6b724981a83bab4c1e4639f8c67bca3d0",
+      "fingerprint": "a6793723e8c57a6cae48c9b88c23fbe4d0f79649c84c26b9b642c6ae79e31960",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Pinned membership tooltip review: subscription and dispatch ownership are unchanged.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Pinned membership tooltip review: subscription and dispatch ownership are unchanged. The App header owns one subscription outside retained route views. Its body portal follows that component and the top removal receipt. Dismissal is local to the project, protocol and removal revision. The button rechecks that identity and pending or busy state before calling the existing Undo handler.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
-        "src/mutationUndoWorkflow.test.js"
+        "src/mutationUndoWorkflow.test.js",
+        "src/undo/removalNotice.test.js"
       ]
     },
     "src/undo/useMutationUndo.js": {
