@@ -2,6 +2,21 @@
 
 <!-- disco:changelog-insert -->
 
+<!-- disco:changelog-0.2.15:start -->
+## 0.2.15 - 2026-11-12
+
+[Download and release details](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.15) · [Source tag: desktop-test-v0.2.15](https://github.com/maxwellsdm1867/Rieke-OS/tree/desktop-test-v0.2.15)
+
+Unsigned, unnotarized Apple silicon testing prerelease.
+
+### What's new
+
+- The multi-selection toolbar fits on one row with shorter labels for Select All, Deselect All, Tag, and Exclude. It keeps the selected cell and epoch counts and the Remove from pin action.
+- After you remove epochs from a pinned protocol, a bottom-left notice lets you undo the removal. Undo restores the exact epoch membership and the prior export selections.
+
+Packaged source: [`4650110`](https://github.com/maxwellsdm1867/Rieke-OS/commit/46501103a74b04fdbd0e0f8db29336138a99a0e9). See the release notes for qualification evidence and testing limits.
+<!-- disco:changelog-0.2.15:end -->
+
 <!-- disco:changelog-0.2.13:start -->
 ## 0.2.13 - 2026-11-07
 

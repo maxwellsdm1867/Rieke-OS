@@ -1,5 +1,5 @@
 <!-- disco:release-banner:start -->
-> **DISCO 0.2.13 · Mac desktop testing build:** [Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.2.13/Disco-0.2.13-arm64.zip) · [Release details and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.13) · [What's new](CHANGELOG.md). Existing users: **App Updates → Download update → Restart to update**. For manual installation, extract the ZIP and open **Disco.app**. Python and native MySQL are bundled; no Docker or Terminal setup is needed. Unsigned, unnotarized Apple silicon testing prerelease; not production-qualified. Targets macOS 14+, with macOS 14 runtime support unqualified and Intel unsupported. macOS may require **Privacy & Security → Open Anyway**.
+> **DISCO 0.2.15 · Mac desktop testing build:** [Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.2.15/Disco-0.2.15-arm64.zip) · [Release details and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.15) · [What's new](CHANGELOG.md). Existing users: **App Updates → Download update → Restart to update**. For manual installation, extract the ZIP and open **Disco.app**. Python and native MySQL are bundled; no Docker or Terminal setup is needed. Unsigned, unnotarized Apple silicon testing prerelease; not production-qualified. Targets macOS 14+, with macOS 14 runtime support unqualified and Intel unsupported. macOS may require **Privacy & Security → Open Anyway**.
 <!-- disco:release-banner:end -->
 
 # DISCO
@@ -76,30 +76,16 @@ saved scientific membership; they do not turn a search into a selection or merge
 ## Current desktop testing build
 
 <!-- disco:current-release:start -->
-### DISCO 0.2.13
+### DISCO 0.2.15
 
-[Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.2.13/Disco-0.2.13-arm64.zip) · [Release notes and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.13)
+[Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.2.15/Disco-0.2.15-arm64.zip) · [Release notes and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.15)
 
 #### What's new
 
-- Imports retain visible transfer/job progress; stalled monitor recovery no longer
-  leaves the queue waiting indefinitely. Uncertain uploads are not automatically retried.
-- Command/Shift epoch selection retains its range origin across temporary reads.
-  Counted Include/Exclude and bulk tag add/remove target explicit selected epochs.
-- Protocol creation, renaming and saved-query changes refresh their visible state.
-  Search previews renew after structural changes while apply authority stays exact.
-- Cell QC shows recorded date, cell and rig above Cell type, Bath temperature and
-  Pipette solution, with recorded additions when present and an expansion hint.
-- Copy metadata field names and field IDs separately.
-- Pinned protocols can remove selected epochs in list/tree views and restore them
-  with Undo. The neutral selected toolbar counts the distinct cells and epochs in the
-  selection, without addition signs. It is collapsible and stays hidden for a single
-  selected epoch. It includes full-view/cell selection and a named,
-  counted removal confirmation. Removing membership leaves recordings, other pins and existing exports
-  intact; future exports follow the updated membership. Workbench keeps one
-  Deselect all action in its main selection toolbar, including tree-selection reset.
+- The multi-selection toolbar fits on one row with shorter labels for Select All, Deselect All, Tag, and Exclude. It keeps the selected cell and epoch counts and the Remove from pin action.
+- After you remove epochs from a pinned protocol, a bottom-left notice lets you undo the removal. Undo restores the exact epoch membership and the prior export selections.
 
-[Source tag: desktop-test-v0.2.13](https://github.com/maxwellsdm1867/Rieke-OS/tree/desktop-test-v0.2.13) identifies packaged source [`18e86de`](https://github.com/maxwellsdm1867/Rieke-OS/commit/18e86dedd5d59918831807a926ac540b4c30f670). Later documentation commits do not change the published app. See the release notes for verification results and limitations.
+[Source tag: desktop-test-v0.2.15](https://github.com/maxwellsdm1867/Rieke-OS/tree/desktop-test-v0.2.15) identifies packaged source [`4650110`](https://github.com/maxwellsdm1867/Rieke-OS/commit/46501103a74b04fdbd0e0f8db29336138a99a0e9). Later documentation commits do not change the published app. See the release notes for verification results and limitations.
 <!-- disco:current-release:end -->
 
 The app opens normally without an installer page. It prepares a runtime on
