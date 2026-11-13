@@ -1,0 +1,42 @@
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ queued files recover from a monitor transport that ignores abort without retrying an upload (841.3625ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ replacement retires monitor reads without stale errors or timeout interference (743.914542ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ queue admits only fresh jobs, serializes accepted imports, and stops the remaining batch on failure (221.663625ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ queue refuses missing or failed job observations until a confirmed fresh read arrives (168.957291ms)
+✔ determinate progress requires actual bounded completed and total counts (139.406875ms)
+✔ fresh monitor heartbeat never implies parser progress or a guessed ETA (1.15675ms)
+✔ committed warnings and uncertain interruptions are terminal and scientifically distinct (0.357667ms)
+✔ completion stops elapsed timer and progress completion is not overall completion (0.1305ms)
+✔ only latest terminal job is promoted; historical failures are not resurfaced after dismissal (0.480417ms)
+✔ malformed optional source/status fields do not crash progress presentation (1.125625ms)
+✔ monitor polling waits for its bounded request and recovers connection errors without mutation (1.386875ms)
+✔ confirmed commit with reconciliation remains a warning, not an unknown commit (1.595167ms)
+✔ first recovered terminal response refreshes catalog for an outstanding submitted request (0.317125ms)
+✔ monitor recovery refreshes failed workspace reads even when membership is unchanged (1.041541ms)
+✔ import review opens only for newly successful imports, not old history or failures (0.310833ms)
+✔ managed-copy guidance requires a verified successful receipt and keeps managed inputs safe (1.6355ms)
+✔ pinned protocols without a proposal stay visible without fabricated matches (0.80075ms)
+✔ applied and stale revisions remain distinct from ready additions (2.644917ms)
+✔ date summary includes newly matched trials in existing cells without double counting dates (1.819666ms)
+✔ approve all scope contains only pending valid pinned candidates (0.152792ms)
+✔ no pins means no approve-all targets even with pending saved protocols (0.098292ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ separate inspection and merge buttons enforce hold-only merge and retire stale gestures (1163.474208ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ active progress survives notification timeout and follows stage counters (1144.547292ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ import history shows verified managed location and external-original guidance only on confirmed jobs (2558.022375ms)
+✔ upload completion reports transfer completion, not import acceptance or parsing (27.018667ms)
+✔ upload connection errors are ambiguous and never retry the mutation automatically (0.443583ms)
+✔ server failures preserve ambiguous acceptance and inactive transfers have a bounded stop (13.314167ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2889.668666

@@ -173,6 +173,7 @@ def _credentials(root, descriptor):
 
 
 def _owned_process(runtime):
+    from disco.projects.runtime_state import process_birth_time
     import psutil
     if type(runtime.get('pid')) is not int or runtime['pid'] <= 1:
         raise ValueError('Native database process record is invalid')
@@ -180,8 +181,14 @@ def _owned_process(runtime):
         process = psutil.Process(runtime['pid'])
         if process.status() == psutil.STATUS_ZOMBIE:
             return None
-        if abs(process.create_time() - runtime['process_created']) > 0.001:
-            return None  # PID was recycled; this is not the recorded server, never signal it.
+        if abs(process_birth_time(process) - runtime['process_created']) > 0.001:
+            if (process.uids().real == os.getuid()
+                    and str(Path(process.exe()).resolve()) == runtime.get('executable')
+                    and process.cmdline() == runtime.get('argv')):
+                # A legacy clock-adjusted record or restarted matching server
+                # is uncertain ownership, not evidence that the DB is gone.
+                raise ValueError('Native database birth time differs; retaining the live process and runtime record')
+            return None  # A different process reused the PID; never signal it.
         if process.uids().real != os.getuid() or str(Path(process.exe()).resolve()) != runtime['executable'] or process.cmdline() != runtime['argv']:
             raise ValueError('Native database process ownership changed; refusing to attach or stop it')
         return process
@@ -284,6 +291,7 @@ def _unix_connection(unix_socket, password, *, autocommit=False):
 
 
 def _launch(root, descriptor, *, bootstrap, timeout):
+    from disco.projects.runtime_state import process_birth_time
     import psutil
     import pymysql
     executable = native_binary()
@@ -310,7 +318,7 @@ def _launch(root, descriptor, *, bootstrap, timeout):
     _PROCESSES[process.pid] = process
     owned = psutil.Process(process.pid)
     runtime = {'version': 1, 'project_uuid': descriptor['project_uuid'], 'instance_uuid': descriptor['instance_uuid'],
-        'project_path': str(root), 'pid': process.pid, 'process_created': owned.create_time(),
+        'project_path': str(root), 'pid': process.pid, 'process_created': process_birth_time(owned),
         'executable': str(executable), 'argv': argv, 'port': port, 'socket': unix_socket, 'bootstrap': bootstrap,
         'machine_id': _machine_identity()}
     _write(root / descriptor['runtime_ref'], runtime)

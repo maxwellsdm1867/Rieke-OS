@@ -53,6 +53,11 @@ Protocol sections (Pinned, Protocols, Typing & backtracking) collapse independen
 organizing temporarily reveals all sections. Renaming uses the managed manifest's
 compare-and-set display-name route and refreshes the app; UUID, query, binding and
 frozen membership stay unchanged. Audit failure restores the previous manifest.
+Successful rename republishes the immutable protocol map, retiring prepared
+summary and search-label witnesses. Creating a previously unknown protocol is a
+structural inventory change; updating existing membership retains its scoped clock.
+Candidate application rechecks source witnesses without replacing an unchanged
+publication before validating its comparison; actual source changes still fail stale.
 
 A new pinned dataset may explicitly contain multiple acquisition Protocol IDs.
 Creation submits every ID from the frozen revision and its recipe hash; multi-ID

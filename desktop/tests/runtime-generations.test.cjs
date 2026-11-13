@@ -89,3 +89,38 @@ test('concurrent staging publishes one immutable generation and removes disposab
   assert.equal(values[0].id,values[1].id);
   assert.equal((await fs.readdir(store.root)).filter(name=>name.startsWith('staging-')).length,0);
 });
+
+test('invalid preparation is refused before runtime store mutations',async t=>{
+  async function snapshot(root){
+    const result={};
+    async function walk(folder){
+      for(const entry of (await fs.readdir(folder,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name))){
+        const file=path.join(folder,entry.name),relative=path.relative(root,file);
+        if(entry.isDirectory()){result[relative]='/';await walk(file);}
+        else result[relative]=(await fs.readFile(file)).toString('base64');
+      }
+    }
+    await walk(root);return result;
+  }
+  for(const operation of ['activate','reserve','restart-handoff'])for(const fault of ['foreign','wrong-target','missing','malformed','wrong-type','foreign-invalid-pointer']){
+    await t.test(`${operation}/${fault}`,async t=>{
+      const {store,source,directory}=await fixture(t);
+      const old=await store.stage(await source('0.2.6'));await store.activate(old);
+      const next=await store.stage(await source('0.2.7'));
+      let preparation=next.preparation;
+      const file=path.join(store.root,'preparations',preparation+'.json');
+      if(fault.startsWith('foreign')||fault==='wrong-target'){
+        const record=JSON.parse(await fs.readFile(file,'utf8'));
+        if(fault==='wrong-target')record.id=old.id;else record.pid=process.pid+1000000;
+        await fs.writeFile(file,JSON.stringify(record));
+      }else if(fault==='missing')preparation=crypto.randomUUID();
+      else if(fault==='malformed')preparation='not-a-token';
+      else preparation={invalid:true};
+      if(fault==='foreign-invalid-pointer')await fs.writeFile(path.join(store.root,'current.json'),'invalid current evidence');
+      const before=await snapshot(store.root);
+      await assert.rejects(store.transaction({operation,id:next.id,preparation,
+        profile:path.join(directory,'profile'),identity:{pid:process.pid,executable:process.execPath}}));
+      assert.deepEqual(await snapshot(store.root),before,'Rejected preparation must leave pointers, pins, admissions and handoffs unchanged');
+    });
+  }
+});

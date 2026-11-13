@@ -224,8 +224,13 @@ class ImportSuggestionTests(unittest.TestCase):
         service = self.case.service
         second = str(uuid.uuid4())
         workspace = copy.deepcopy(service.protocols[service.protocol_id])
+        original_file = workspace['file']
+        original_bytes = original_file.read_bytes()
         workspace['definition'].update(protocol_uuid=second, name='Existing saved subset')
         workspace['result']['protocol_uuid'] = second
+        # A second protocol has its own managed manifest, matching its definition.
+        workspace['file'] = original_file.with_name(second + '.json')
+        workspace['file'].write_text(json.dumps(workspace['definition']))
         service.protocols[second] = workspace
         candidate = self.case.client.post('/api/explore/revisions', json={
             'predicate': {'field': 'parameters/example', 'operator': 'eq', 'value': 1},
@@ -242,6 +247,7 @@ class ImportSuggestionTests(unittest.TestCase):
         self.assertEqual(job['protocol_suggestions']['unchanged_count'], 1)
         self.assertEqual(self.case.explorer_history.protocol_binding(second), old_binding)
         self.assertEqual([row['uuid'] for row in service.query_result(second)['epochs']], [self.before_ids[1]])
+        self.assertEqual(original_file.read_bytes(), original_bytes)
 
     def test_candidate_apply_rejects_stale_curation_then_preserves_tags_and_exclusion(self):
         self.run_import()

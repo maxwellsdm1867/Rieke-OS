@@ -98,7 +98,24 @@ def recorded_source_rig(source):
     value = metadata.get('rig')
     if 'rig' not in metadata:
         value = (metadata.get('properties') or {}).get('rig')
-    return value if isinstance(value, str) and value.strip() else None
+    if isinstance(value, str) and value.strip():
+        return value
+    # Acquisition convention: a date followed by the rig code, e.g.
+    # 2026-10-07_E.h5 or 20261007E.h5. This is display-only provenance;
+    # never rewrite recorded metadata or use the PATCH/MEA acquisition type.
+    filename = source.get('filename')
+    if not isinstance(filename, str):
+        return None
+    match = re.fullmatch(r'(\d{4}-\d{2}-\d{2})_([A-Za-z0-9]+)\.h5', filename, re.IGNORECASE)
+    if not match:
+        match = re.fullmatch(r'(\d{8})([A-Za-z][A-Za-z0-9]*)\.h5', filename, re.IGNORECASE)
+    if not match:
+        return None
+    try:
+        dt.datetime.strptime(match[1], '%Y-%m-%d' if '-' in match[1] else '%Y%m%d')
+    except ValueError:
+        return None
+    return match[2]
 
 
 def recording_rig_summary(source_ids, source_metadata):
@@ -475,12 +492,30 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 service.manager_recovery(error)
             raise
 
-    def verify_service_sources():
+    def verify_service_sources(protocol_uuid=None):
         """Pre-write source recheck for targeted writes (approve, explorer save,
-        masks, exports): O(sources) stat/registration witnesses; any change runs
+        bindings, masks, exports): O(sources) stat/registration witnesses; any change runs
         the complete refresh, whose failure leaves the service not ready."""
         try:
-            return service.verify_sources() if hasattr(service, 'verify_sources') else service.refresh()
+            if not hasattr(service, 'verify_sources'):
+                return service.refresh()
+            result = service.verify_sources()
+            if protocol_uuid is not None:
+                # A targeted binding write formerly reread protocol manifests
+                # through full refresh. Keep that external-edit fence without
+                # republishing the unchanged native query witness.
+                entry = service.protocols.get(protocol_uuid)
+                if entry is None:
+                    raise StaleWorkspace('Protocol definition changed. Refresh before applying this selection.')
+                path = entry['file']
+                try:
+                    if (path.is_symlink() or not path.is_file() or
+                            path.parent.resolve() != (project_dir / 'protocols').resolve() or
+                            json.loads(path.read_text()) != entry['definition']):
+                        raise ValueError('Protocol manifest changed')
+                except (OSError, ValueError, TypeError) as error:
+                    raise StaleWorkspace('Protocol definition changed. Refresh before applying this selection.') from error
+            return result
         except (OSError, ValueError) as error:
             with contextlib.suppress(Exception):
                 service.manager_recovery(error)
@@ -1600,6 +1635,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 raise StaleWorkspace('Protocol changed. Refresh before renaming.')
             after = {**before, 'name': name.strip()}
             if before != after:
+                from workspace_service import publish_frozen
+                protocols = {**service.protocols, protocol_uuid: {**entry, 'definition': after}}
+                frozen_protocols = publish_frozen(protocols)
                 write_json(path, after)
                 try:
                     record_event('protocol_display_name_changed', {'protocol_uuid': protocol_uuid,
@@ -1607,7 +1645,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 except Exception:
                     write_json(path, before)
                     raise
-                entry['definition'] = after
+                # Native protocol entries are immutable publication snapshots.
+                # Replace the map only after persistence/audit succeeds so the
+                # publication serial retires prepared summaries and search labels.
+                service.protocols = frozen_protocols if frozen_protocols is not None else protocols
             return jsonify(protocol_uuid=protocol_uuid, name=after['name'])
 
     @app.get('/api/storage')
@@ -1991,6 +2032,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         include_cells=request.args.get('include_cells','false')
         if len(request.args.getlist('include_cells'))>1 or include_cells not in ('true','false'):
             raise ValueError('include_cells must be true or false')
+        selection_receipt=request.args.get('selection_receipt','false')
+        if len(request.args.getlist('selection_receipt'))>1 or selection_receipt not in ('true','false'):
+            raise ValueError('selection_receipt must be true or false')
         cells_window=cell_page()
         if cells_window is not None and include_cells!='true':
             raise ValueError('cells_limit requires include_cells=true')
@@ -2001,10 +2045,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if native is not None:arguments['include_curation']=False
             if include_cells=='true':arguments['include_cells']=True
             if cells_window is not None:arguments['cells_page']=cells_window
-            query_filters=filters({'anchor_uuid','include_cells','cells_limit','cells_after'})
+            query_filters=filters({'anchor_uuid','include_cells','cells_limit','cells_after','selection_receipt'})
             from disco.metadata.explore_queries import generation
             scoped_context={'protocol_uuid':protocol_uuid,'filters':query_filters}
-            scoped_generation=generation(service,scoped_context) if 'metadata_predicate' in query_filters else None
+            scoped_generation=generation(service,scoped_context) if 'metadata_predicate' in query_filters or selection_receipt=='true' else None
             page = service.epoch_page(protocol_uuid, query_filters, int(request.args.get("offset", 0)),
                                       int(request.args.get("limit", 80)), **arguments)
             shared_receipt=page.pop('_shared_annotation_generation',None)
@@ -2040,6 +2084,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 raise StaleWorkspace('Shared annotations changed while reading this page. Refresh and retry.')
             if scoped_generation is not None and scoped_generation!=generation(service,scoped_context):
                 raise StaleWorkspace('Scoped annotations changed while reading this page. Refresh and retry.')
+            if selection_receipt=='true':
+                # Curation revisions deliberately omit shared-tag generations.
+                # Complete selection needs a separate cross-page scope witness.
+                page['selection_revision']=checksum({'protocol_uuid':protocol_uuid,'filters':query_filters,
+                    'generation':scoped_generation,'query_revision':revision,'binding_version':binding_version})
             return jsonify(page)
 
     @app.get("/api/protocols/<protocol_uuid>/tree")
@@ -2370,7 +2419,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if not isinstance(body['protocol_uuid'], str) or type(body['expected_binding_version']) is not int:
             raise ValueError('Protocol UUID and integer expected binding version are required')
         with db_lock, data_stores.registration_locks(), candidate_annotation_guard(revision_uuid, body['protocol_uuid']):
-            refresh_service()
+            # Recheck sources without retiring an unchanged publication: v5
+            # comparison authority is tied to that exact frozen publication.
+            # Changed sources still trigger full refresh and stale refusal.
+            verify_service_sources(body['protocol_uuid'])
             comparison = compare_protocol_candidate(revision_uuid, body['protocol_uuid'])
             if (body['expected_binding_version'] != comparison['expected_binding_version'] or
                     body['expected_query_revision'] != comparison['expected_query_revision']):
@@ -2526,6 +2578,108 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 expected_binding_version=current_binding_version,
                 epochs=[{'epoch_uuid': row['epoch_uuid'], 'cell_uuid': row['cell_uuid'],
                          'curation_revision': current[row['epoch_uuid']]['revision']} for row in rows])
+
+    def change_pinned_membership(protocol_uuid, body, *, restore=False):
+        """Publish a bounded explicit membership edit; recordings stay immutable."""
+        with db_lock, data_stores.registration_locks():
+            verify_service_sources(protocol_uuid)
+            definition = service.protocols[protocol_uuid]['definition']
+            if not definition.get('initial_revision_uuid'):
+                raise ValueError('Membership removal is available only for a pinned protocol')
+            binding = explorer_history.protocol_binding_header(protocol_uuid)
+            if binding is None:
+                raise StaleWorkspace('The pinned protocol has no current saved membership')
+            header = explorer_history.header(binding['revision_uuid'])
+            with annotation_locks(service, header['predicate'], extra_protocols=(protocol_uuid,)):
+                binding = explorer_history.protocol_binding_header(protocol_uuid)
+                if (binding is None or type(body['expected_binding_version']) is not int
+                        or body['expected_binding_version'] != binding['version']):
+                    raise StaleWorkspace('Protocol membership changed. Refresh before editing it.')
+                header = explorer_history.header(binding['revision_uuid'])
+                members = explorer_history.members(binding['revision_uuid'])
+                revision = workbench_read_revision(protocol_uuid)
+                guard = revision_guard(protocol_uuid)
+                added, removed = {}, []
+                if restore:
+                    removal = explorer_history.latest_membership_removal(binding['revision_uuid'], protocol_uuid)
+                    if (removal is None or body['removal_revision_uuid'] != removal['revision_uuid']
+                            or removal.get('delta', {}).get('added')):
+                        raise StaleWorkspace('Only the latest unchanged membership removal can be undone')
+                    removed_ids = removal['delta']['removed']
+                    if not 1 <= len(removed_ids) <= 1000:
+                        raise ValueError('This removal exceeds the supported Undo size')
+                    original = explorer_history.members(removal['parent_revision_uuid'])
+                    added = {key: original[key] for key in removed_ids}
+                    if any(key in members for key in added):
+                        raise StaleWorkspace('The removed epochs are already present; Undo was refused')
+                else:
+                    removed = body['epoch_uuids']
+                    if (not isinstance(removed, list) or not 1 <= len(removed) <= 1000
+                            or any(not isinstance(key, str) or str(uuid.UUID(key)) != key for key in removed)
+                            or len(set(removed)) != len(removed)):
+                        raise ValueError('Choose a unique list of 1–1,000 epoch UUIDs')
+                    if body['query_revision'] != revision:
+                        raise StaleWorkspace('The inspected dataset changed. Refresh before removing epochs.')
+                    if any(key not in members for key in removed):
+                        raise ValueError('Removal includes an epoch outside this pinned protocol')
+                    curation_selection_scope(removed, body['selection_scope'], protocol_uuid)
+                    removed = sorted(removed)
+
+                def verify_restored():
+                    if not added:
+                        return
+                    active = set(service.source_scope()['active_source_revisions'])
+                    sources = set()
+                    for key, fingerprint in added.items():
+                        row = service.rows.get(key)
+                        if (row is None or service._fingerprints.get(key) != fingerprint
+                                or row['source_sha256'] not in active):
+                            raise StaleWorkspace('A removed recording changed or became unavailable; Undo was refused')
+                        sources.add(row['source_sha256'])
+                    for source in sorted(sources):
+                        service._verified_source(service.manifests[source])
+
+                verify_restored()
+                # Declare the optional lineage index before entering a data transaction.
+                _ = explorer_history.Membership
+                provenance = {'kind': 'undo_remove' if restore else 'remove',
+                    'protocol_uuid': protocol_uuid, 'previous_revision_uuid': binding['revision_uuid']}
+                if restore:
+                    provenance['removal_revision_uuid'] = removal['revision_uuid']
+                actor = os.environ.get('USER', 'local-user')
+                diff = {'added': sorted(added), 'removed': removed, 'changed': []}
+                with service.dj.conn().transaction:
+                    if guard() != revision:
+                        raise StaleWorkspace('The pinned protocol changed before membership publication')
+                    verify_restored()
+                    record = explorer_history.create_delta(binding['revision_uuid'], added, removed, actor,
+                        name=header['name'], fields={'membership_edit': provenance}, _in_transaction=True)
+                    saved = explorer_history.bind(record['revision_uuid'], protocol_uuid, binding['version'], actor,
+                        diff, len(members), expected_query_revision=revision, current_query_revision=guard,
+                        _in_transaction=True, _lock_held=True)
+                    verify_restored()
+                result = {'protocol_uuid': protocol_uuid, 'binding': saved,
+                    'previous_count': len(members), 'next_count': record['recipe']['epoch_count'],
+                    'removed_epoch_uuids': removed, 'restored_epoch_uuids': sorted(added)}
+                if not restore:
+                    result['undo'] = {'kind': 'protocol-membership', 'protocol_uuid': protocol_uuid,
+                        'removal_revision_uuid': record['revision_uuid'],
+                        'expected_binding_version': saved['version'], 'count': len(removed)}
+                else:
+                    preceding = explorer_history.latest_membership_removal(record['revision_uuid'], protocol_uuid)
+                    result['next_undo'] = ({'removal_revision_uuid': preceding['revision_uuid'],
+                        'expected_binding_version': saved['version']} if preceding else None)
+                return jsonify(result)
+
+    @app.post('/api/protocols/<protocol_uuid>/membership/remove')
+    def remove_pinned_membership(protocol_uuid):
+        fields = {'epoch_uuids', 'query_revision', 'expected_binding_version', 'selection_scope'}
+        return change_pinned_membership(protocol_uuid, explorer_request(fields, fields))
+
+    @app.post('/api/protocols/<protocol_uuid>/membership/undo-remove')
+    def undo_pinned_membership_removal(protocol_uuid):
+        fields = {'removal_revision_uuid', 'expected_binding_version'}
+        return change_pinned_membership(protocol_uuid, explorer_request(fields, fields), restore=True)
 
     @app.post("/api/protocols/<protocol_uuid>/curation")
     def curate(protocol_uuid):
@@ -3277,7 +3431,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     if service.config.get('connection', {}).get('credential_provider', {}).get('kind') == 'native-project':
         from workspace_lifecycle import register_project_lifecycle
+        close_prepared = False
         def stop_project_database():
+            nonlocal close_prepared
+            from disco.projects.runtime_state import project_runtime_state, STOPPED_CLEAN
+            already_closed = close_prepared and project_runtime_state(project_dir)['state'] == STOPPED_CLEAN
             inbox.stop()
             if importing.locked() or active_jobs:
                 inbox.start()
@@ -3287,8 +3445,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             with db_lock:
                 scheduler=app.extensions.get('backup_scheduler')
                 try:
-                    if scheduler is not None:scheduler.flush()
-                    prepare_annotations()
+                    if not already_closed:
+                        if scheduler is not None:scheduler.flush()
+                        prepare_annotations()
+                        close_prepared = True
                 except Exception as error:
                     error.desktop_shutdown_stage = 'recovery_snapshot'
                     inbox.start()
@@ -3306,8 +3466,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if navigation is not None:navigation.close()
             close_overview_publication()
             with db_lock:
-                with contextlib.suppress(Exception):
-                    service.dj.conn().close()
+                if not already_closed:
+                    with contextlib.suppress(Exception):
+                        service.dj.conn().close()
                 from workspace_native_mysql import stop_native_database
                 stop_native_database(project_dir)
                 owner = json.loads((project_dir / 'database/native-owner.json').read_text())

@@ -1,0 +1,72 @@
+{
+  "application_version": "0.2.11",
+  "source_commit": "70a9bdb30a87167f1b764041f23c8ba3fcd4eac5",
+  "source_dirty": false,
+  "installation": {
+    "destination": "/Users/maxwellsdm/Applications/Disco.app",
+    "previous": "/Users/maxwellsdm/Applications/.Rieke OS.previous.app",
+    "previousDigest": "6f637cc0e36a98fca1d163786d2160ae3627a33a6aa338e161e5f5e89787c5b8"
+  },
+  "launch": {
+    "opened": true,
+    "generation": "fb2d12438adc2d7e8d519fe7e06d4e48ccbec393c498c424e655aea4c6b3d793"
+  },
+  "installed_manifest_sha256": "f80aa282ffa6065fbbc019ed078ad36bb352dcc8d6c901ef7d99dc0541e4edfa",
+  "app_asar_sha256": "3c4d32c648965dc829ba1b926a8fca1127d3e4bdbb13b366950d6af066458ab0",
+  "format": "disco-local-import-interaction-qualification",
+  "version": 1,
+  "local_only": true,
+  "published": false,
+  "release_qualified": false,
+  "frontend_tests": 1626,
+  "desktop_tests": 441,
+  "backend_tests": 88,
+  "core_execution": "passed",
+  "architecture_guard": "passed",
+  "native_static_audit": {
+    "status": "no_known_static_blockers",
+    "native_binaries": 815
+  },
+  "relocated_runtime": "passed",
+  "native_restoration": {
+    "project": "Spike Response Model",
+    "protocol": "Pulse family",
+    "position": "477 of 505",
+    "samples": 60000,
+    "prior_exclusion_preserved": true,
+    "sidebar_manually_restored": true
+  },
+  "raw_evidence": "benchmarks/results/import-ui-20261107-70a9bdb",
+  "limitations": [
+    "Unsigned local Apple silicon build",
+    "macOS 14 runtime and Intel not qualified",
+    "Full release gates not claimed"
+  ],
+  "million_comparisons": {
+    "pinned": {
+      "status": "passed",
+      "review_required": [],
+      "receipt_sha256": "0e6058e631f92796b8684acac49bb95e89b1b9e40688e80bf797a0fc899c0695"
+    },
+    "previous": {
+      "status": "passed",
+      "review_required": [],
+      "receipt_sha256": "cdb5a5af9f62f6295869d5be63f1cc125591c38266766747843df5bf2988e9cb"
+    }
+  },
+  "cleanup": {
+    "removed_owned_artifacts": 30,
+    "archived_worktrees": 3,
+    "free_space_before_packaging_kib": 194400000,
+    "free_space_after_cleanup_kib": 194745812,
+    "net_free_space_change_kib": 345812,
+    "retained": [
+      "installed 0.2.11 app and managed runtime",
+      "verified 0.2.10 rollback",
+      "parent source and raw evidence",
+      "protocol-state-refresh worktree: another active task still uses it",
+      "shared workspace-app/node_modules required by that worktree"
+    ],
+    "measurement_caveat": "Net df change across packaging and cleanup; not isolated deletion savings."
+  }
+}

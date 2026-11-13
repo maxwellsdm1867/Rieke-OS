@@ -47,6 +47,23 @@ def membership_hash(items, base=None, removed=()):
     return format(total % _MULTISET_MODULUS, '064x')
 
 
+def indexed_lineage_members(rows, chain):
+    """Select indexed additions using this revision's sealed newest-first chain.
+
+    A shared addition can be removed on multiple branches. The legacy single
+    removed_revision_uuid column cannot represent that; removals come from the
+    sealed deltas instead. A later re-addition has its own immutable index row.
+    """
+    positions, removals = {}, {}
+    for position, recipe in enumerate(chain):
+        positions[recipe['revision_uuid']] = position
+        for key in recipe.get('delta', {}).get('removed', []):
+            removals.setdefault(key, position)
+    return [(row['epoch_uuid'], row['metadata_hash']) for row in rows
+            if row['added_revision_uuid'] in positions
+            and positions[row['added_revision_uuid']] < removals.get(row['epoch_uuid'], len(chain))]
+
+
 class MemberView:
     """Read-only UUID->fingerprint view of a sealed revision's exact membership.
 
@@ -420,6 +437,26 @@ class ExplorerHistory:
         if 'pending_union_provenance' in fields:
             recipe['membership_kind'] = 'workbench_pending_union'
             recipe['pending_union_provenance'] = fields.pop('pending_union_provenance')
+        if 'membership_edit' in fields:
+            edit = fields.pop('membership_edit')
+            expected = {'kind', 'protocol_uuid', 'previous_revision_uuid'}
+            if isinstance(edit, dict) and edit.get('kind') == 'undo_remove':
+                expected.add('removal_revision_uuid')
+            if (not isinstance(edit, dict) or set(edit) != expected
+                    or edit.get('kind') not in ('remove', 'undo_remove')
+                    or str(uuid.UUID(edit['protocol_uuid'])) != edit['protocol_uuid']
+                    or edit['previous_revision_uuid'] != parent_revision_uuid
+                    or (edit['kind'] == 'remove' and (added or not removed))
+                    or (edit['kind'] == 'undo_remove' and (removed or not added
+                        or str(uuid.UUID(edit['removal_revision_uuid'])) != edit['removal_revision_uuid']))):
+                raise ValueError('Invalid pinned membership edit provenance')
+            if edit['kind'] == 'undo_remove':
+                removal = self.latest_membership_removal(parent_revision_uuid, edit['protocol_uuid'])
+                if (removal is None or removal['revision_uuid'] != edit['removal_revision_uuid']
+                        or added != {key: self.members(removal['parent_revision_uuid'])[key]
+                                     for key in removal['delta']['removed']}):
+                    raise ValueError('Membership inverse must restore the latest exact removal')
+            recipe['membership_edit'] = edit
         if fields:
             raise ValueError('Unsupported delta revision fields: ' + ', '.join(sorted(fields)))
         recipe['content_sha256'] = checksum(recipe)
@@ -483,11 +520,35 @@ class ExplorerHistory:
                 return chain
             header = self.header(header['parent_revision_uuid'])
 
+    def latest_membership_removal(self, revision_uuid, protocol_uuid):
+        """Latest still-applied removal across this protocol's paired inverses.
+
+        Any unrelated binding edit ends the undo chain. Never retarget a receipt
+        across a merge, query replacement, or another protocol's edit.
+        """
+        undone = set()
+        for _ in range(10000):
+            header = self.header(revision_uuid)
+            edit = header.get('membership_edit', {})
+            if (edit.get('protocol_uuid') != protocol_uuid
+                    or edit.get('previous_revision_uuid') != header.get('parent_revision_uuid')):
+                return None
+            if edit.get('kind') == 'undo_remove':
+                undone.add(edit['removal_revision_uuid'])
+            elif edit.get('kind') == 'remove':
+                if revision_uuid not in undone:
+                    return header
+                undone.remove(revision_uuid)
+            else:
+                return None
+            revision_uuid = header['parent_revision_uuid']
+        raise ValueError('Membership Undo history exceeds the supported depth')
+
     def _extend_lineage(self, header):
         """Record a bound delta in its lineage index, in the bind transaction.
 
-        Added rows are inserted; removed members are marked with the removing
-        revision. The first additive delta bound on an unindexed lineage
+        Added rows are immutable; removals are read from each sealed chain.
+        The first additive delta bound on an unindexed lineage
         backfills the chain once (O(root)); a removal on an unindexed lineage
         leaves it unindexed, so pruning stays O(removed).
         """
@@ -502,47 +563,36 @@ class ExplorerHistory:
         revision = header['revision_uuid']
         if recorded(added_revision_uuid=lineage):
             # Indexed lineage: earlier links were recorded when they were bound.
-            if recorded(added_revision_uuid=revision) or recorded(removed_revision_uuid=revision):
+            if recorded(added_revision_uuid=revision):
                 return  # Rebinding an already recorded revision (e.g. after an undo).
             links = [revision]
         elif header['delta']['removed'] and not header['delta']['added']:
             return  # A removal on an unindexed lineage leaves it unindexed: O(removed).
         else:
             links = list(reversed(self._chain(revision)))  # One-time backfill of the whole chain.
-        pending, marks = {}, []
+        pending = {}
         for link_uuid in links:
             link = self.header(link_uuid)
             if link.get('storage') != DELTA_STORAGE:
                 for key, value in self.members(link_uuid).items():
-                    pending[key] = {**restriction, 'epoch_uuid': key, 'added_revision_uuid': link_uuid,
-                                    'metadata_hash': value, 'removed_revision_uuid': None}
+                    row_key = (key, link_uuid)
+                    pending[row_key] = {**restriction, 'epoch_uuid': key, 'added_revision_uuid': link_uuid,
+                                        'metadata_hash': value, 'removed_revision_uuid': None}
                 continue
             for row in link['delta']['added']:
-                pending[row['uuid']] = {**restriction, 'epoch_uuid': row['uuid'], 'added_revision_uuid': link_uuid,
-                                        'metadata_hash': row['metadata_hash'], 'removed_revision_uuid': None}
-            for key in link['delta']['removed']:
-                if key in pending:
-                    pending[key]['removed_revision_uuid'] = link_uuid
-                else:
-                    marks.append((key, link_uuid))
+                row_key = (row['uuid'], link_uuid)
+                pending[row_key] = {**restriction, 'epoch_uuid': row['uuid'], 'added_revision_uuid': link_uuid,
+                                    'metadata_hash': row['metadata_hash'], 'removed_revision_uuid': None}
         if pending:
             table.insert(list(pending.values()))
-        if marks:
-            chain_set = set(self._chain(revision))
-            current = {row['epoch_uuid']: row for row in (table & restriction & [
-                {'epoch_uuid': key} for key, _ in marks]).to_dicts()
-                if row['added_revision_uuid'] in chain_set and row['removed_revision_uuid'] is None}
-            for key, link_uuid in marks:
-                table.update1({**current[key], 'removed_revision_uuid': link_uuid})
 
     def retire_delta(self, revision_uuid):
-        """Remove an undone delta's rows from its lineage: one DELETE, caller's transaction."""
-        table = self.Membership
-        header = self.header(revision_uuid)
-        if table is None or header.get('storage') != DELTA_STORAGE:
-            return
-        (table & {'project_uuid': self.project_uuid, 'lineage_uuid': header['lineage_uuid'],
-                  'added_revision_uuid': header['revision_uuid']}).delete_quick()
+        """Retain immutable additions when a binding leaves a sealed revision.
+
+        Other pins, exports and historical verification may still use it. Chain
+        selection excludes these rows from the restored binding automatically.
+        """
+        self.header(revision_uuid)
 
     def verify_lineage(self, revision_uuid):
         """Re-hash a bound revision's indexed membership against its sealed multiset hash.
@@ -554,15 +604,14 @@ class ExplorerHistory:
         header = self.header(revision_uuid)
         if table is None:
             return None
-        chain = set(self._chain(revision_uuid))
+        chain = [self.header(identity) for identity in self._chain(revision_uuid)]
         lineage = header.get('lineage_uuid', header['revision_uuid'])
         rows = (table & {'project_uuid': self.project_uuid, 'lineage_uuid': lineage}).to_dicts()
         if not rows:
             return None
-        rows = [row for row in rows if row['added_revision_uuid'] in chain
-                and row.get('removed_revision_uuid') not in chain]
-        members = {row['epoch_uuid']: row['metadata_hash'] for row in rows}
-        if len(members) != len(rows) or membership_hash(members.items()) != self.membership_hash(revision_uuid):
+        items = indexed_lineage_members(rows, chain)
+        members = dict(items)
+        if len(members) != len(items) or membership_hash(members.items()) != self.membership_hash(revision_uuid):
             raise ValueError('Indexed lineage membership failed integrity verification')
         return members
 

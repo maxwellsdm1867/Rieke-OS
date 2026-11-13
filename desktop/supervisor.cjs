@@ -39,7 +39,7 @@ class ServiceSupervisor {
     Object.assign(this, {resourcesPath, userData, appVersion, spawnProcess, request, inspectProcess, startupTimeout, drainTimeout, recoverProcess, onFailure});
     this.capability = randomBytes(32).toString('hex'); this.sessionId = randomUUID();
     this.rendererCapability = createHash('sha256').update(this.capability + ':renderer').digest('hex');
-    this.origins = new Set(); this.child = null; this.exited = true; this.ready = false;
+    this.origins = new Set(); this.child = null; this.exited = true; this.ready = false; this.quitRequested = false;
     this.registryPath = path.join(userData, 'desktop-service.json');
   }
   async loadManifest() {
@@ -58,6 +58,7 @@ class ServiceSupervisor {
     return this.manifest;
   }
   async start() {
+    if(this.quitRequested)throw new Error('Desktop is closing; backend startup cancelled');
     if (this.child && !this.exited) throw new Error('Previous backend is still running; replacement is deferred');
     await this.loadManifest();
     await this.reconcilePrevious();
@@ -75,11 +76,14 @@ class ServiceSupervisor {
       RIEKE_PARSER_CONFIG: path.join(backendState, 'parser', 'config.ini')};
     if (process.env.DISCO_LAZY_ROOT_EXPERIMENT === '1') env.DISCO_LAZY_ROOT_EXPERIMENT = '1';
     if (process.env.DISCO_LIFECYCLE_DIAGNOSTIC_DIR) env.DISCO_LIFECYCLE_DIAGNOSTIC_DIR = process.env.DISCO_LIFECYCLE_DIAGNOSTIC_DIR;
+    // No await separates this final cancellation check from spawning. Quit may
+    // have completed while manifest, prior-session or directory work was pending.
+    if(this.quitRequested)throw new Error('Desktop is closing; backend startup cancelled');
     this.child = this.spawnProcess(this.executable, ['-B', this.entry, '--host', '127.0.0.1', '--port', String(port),
       '--resources', this.resourcesPath, '--user-state', backendState,
       '--manifest', path.join(this.resourcesPath, 'runtime', 'runtime-manifest.json'), '--session-id', this.sessionId],
     {cwd: backendState, env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true});
-    this.exited = false; this.exitCode = null; this.abnormalExit = false; this.stopping = false; this.bound = false;
+    this.exited = false; this.exitCode = null; this.exitSignal = null; this.abnormalExit = false; this.stopping = false; this.stopAcknowledged = false; this.bound = false;
     const expectedBound = {pid: this.child.pid, session_id: this.sessionId, port,
       application_version: this.appVersion, source_commit: this.manifest.source_commit};
     let finishBound;
@@ -101,7 +105,8 @@ class ServiceSupervisor {
       }
     });
     this.child.once('error', () => { this.exited = true; this.exitCode = 'spawn'; finishBound(false); });
-    this.child.once('exit', code => { this.exited = true; this.exitCode = code; this.abnormalExit = !this.stopping;
+    this.child.once('exit', (code, signal) => { this.exited = true; this.exitCode = code; this.exitSignal = signal || null;
+      this.abnormalExit = !this.stopping || code !== 0 || this.exitSignal !== null;
       finishBound(false); if (this.ready && !this.stopping) { this.origins.clear(); this.onFailure('The owned backend stopped unexpectedly. Scientific projects are closed until recovery.'); } });
     // Backend output may contain scientific paths or credentials. Do not persist or expose it.
     this.child.stdout?.resume(); this.child.stderr?.resume();
@@ -116,7 +121,7 @@ class ServiceSupervisor {
     while (Date.now() < deadline && !this.exited) {
       try {
         const health = await this.api('/api/desktop/health');
-        if (!matchesHealth(health, expected)) throw new Error('Owned backend identity mismatch');
+        if (this.exited || !matchesHealth(health, expected)) throw new Error('Owned backend identity mismatch or process exited');
         this.origins.add(this.origin); this.ready = true; return this.origin;
       } catch (error) { this.lastStartupError = error.message; await delay(200); }
     }
@@ -228,6 +233,7 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
       throw new Error('Prior service has not exited after cleanup; retry recovery');
   }
   async quit({timeout = this.drainTimeout, drafts, startup} = {}) {
+    this.quitRequested=true;
     const until = Date.now()+timeout, remaining = () => Math.max(1, until-Date.now());
     if (!this.child) {
       try {await fs.access(this.registryPath);return {ready:false,reason:'Previous service cleanup remains unverified. Its ownership and operation records are retained for recovery.'};}
@@ -239,9 +245,10 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
     this.registry.quit = {requested:true, state:'closing', requested_at:new Date().toISOString(),
       drafts_saved:drafts?.ready===true, reason:drafts?.reason || null};
     await atomicJSON(this.registryPath, this.registry);
-    if (this.abnormalExit) return {ready:false, reason:'The backend stopped without clean shutdown evidence. Existing project operation records remain available for recovery.'};
-    if (this.exited) {this.ready=false;await fs.rm(this.registryPath,{force:true});return {ready:true};}
     try {
+      if (this.abnormalExit || (this.exited && !this.stopAcknowledged))
+        throw new Error('The backend stopped without clean shutdown evidence. Existing project operation records remain available for recovery.');
+      if (this.exited) {this.ready=false;this.origins.clear();await fs.rm(this.registryPath,{force:true});return {ready:true};}
       const health = await this.api('/api/desktop/health',{timeout:Math.min(3000,remaining())});
       if (!Object.entries(this.expectedHealth()).every(([key,value])=>JSON.stringify(health[key])===JSON.stringify(value)))
         throw new Error('Owned backend identity changed before quit');
@@ -260,15 +267,19 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
       }
       const result = await this.api('/api/desktop/quit',{method:'POST',timeout:remaining()});
       if (result.ready!==true) throw new Error('Backend quit cleanup was not acknowledged');
-      this.stopping=true;
-      await this.api('/api/desktop/stop',{method:'POST',timeout:remaining()});
+      this.stopping=true;this.stopAcknowledged=false;
+      const stopped=await this.api('/api/desktop/stop',{method:'POST',timeout:remaining()});
+      if(stopped.ready!==true)throw new Error('Backend stop cleanup was not acknowledged');
+      this.stopAcknowledged=true;
       while (!this.exited && Date.now()<until) await delay(Math.min(50,remaining()));
       if (!this.exited) throw new Error('Backend process exit remains unconfirmed. Recovery will finish cleanup on relaunch.');
+      if(this.abnormalExit)throw new Error('Backend exited abnormally after stop; recovery evidence is retained.');
       this.ready=false;this.origins.clear();
       if(drafts?.ready===true)await fs.rm(this.registryPath,{force:true});
       else {this.registry.quit.state='services_closed';await atomicJSON(this.registryPath,this.registry);}
       return {ready:true};
     } catch (error) {
+      if(!this.stopAcknowledged)this.stopping=false;
       this.registry.quit.state='interrupted';this.registry.quit.reason=error.message;
       await atomicJSON(this.registryPath,this.registry);
       // Do not resume admission, terminate writers or manufacture a clean exit.
@@ -280,6 +291,7 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
     workspace_formats: this.manifest.workspace_formats, database_compatibility: this.manifest.database_compatibility}; }
   async api(route, {origin = this.origin, method = 'GET', timeout = 3000, body = {}} = {}) {
     if (!this.bound) throw new Error('Owned backend has not proved listener ownership');
+    if (this.exited) throw new Error('Owned backend process has exited; its port is no longer authorized');
     if (origin !== this.origin || !/^\/api\/desktop\/[a-z-]+$/.test(route)) throw new Error('Desktop controls target only the exact owned root service');
     const response = await this.request(`${origin}${route}`, {method,
       headers: {'X-Rieke-Desktop-Capability': this.capability, 'X-Workspace-Request': '1', 'Content-Type': 'application/json'},
@@ -316,20 +328,28 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
       try {await fs.access(this.registryPath);return {ready:false,reason:'Previous service cleanup remains unverified; replacement must wait for recovery.'};}
       catch(error){if(error.code==='ENOENT')return {ready:true};throw error;}
     }
-    if (this.exited) { this.ready = false; await fs.rm(this.registryPath, {force: true}); return {ready: true}; }
+    if (this.exited) {
+      if(!this.stopAcknowledged)return {ready:false,reason:'Backend stop acknowledgement is missing; recovery evidence is retained'};
+      this.ready = false; this.origins.clear(); await fs.rm(this.registryPath, {force: true}); return {ready: true};
+    }
     try {
       const result = await this.api('/api/desktop/drain', {method: 'POST', timeout: this.drainTimeout});
       if (result.ready !== true) throw new Error('Backend did not acknowledge drain');
       // Ack only starts the exit phase; process exit is independent required evidence.
-      this.stopping = true;
-      await this.api('/api/desktop/stop', {method: 'POST', timeout: 3000});
+      this.stopping = true;this.stopAcknowledged=false;
+      const stopped=await this.api('/api/desktop/stop', {method: 'POST', timeout: 3000});
+      if(stopped.ready!==true)throw new Error('Backend stop cleanup was not acknowledged');
+      this.stopAcknowledged=true;
       const deadline = Date.now() + this.drainTimeout; this.ready = false;
       while (!this.exited && Date.now() < deadline) await delay(50);
       if (!this.exited) return {ready: false, reason: 'Backend has not acknowledged process exit; replacement is deferred'};
+      if(this.abnormalExit)return {ready:false,reason:'Backend exited abnormally after stop; recovery evidence is retained'};
       this.origins.clear(); await fs.rm(this.registryPath, {force: true}); return {ready: true};
     } catch (error) {
-      this.stopping = false;
-      try { await this.api('/api/desktop/resume', {method: 'POST'}); } catch {}
+      if(!this.stopAcknowledged)this.stopping = false;
+      if(!this.exited && !this.stopAcknowledged){
+        try { await this.api('/api/desktop/resume', {method: 'POST'}); } catch {}
+      }
       return {ready: false, reason: error.message};
     }
   }

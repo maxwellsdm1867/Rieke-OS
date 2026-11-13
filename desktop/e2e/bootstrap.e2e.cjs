@@ -3,7 +3,7 @@
 // so the owned physical child can be attached by Playwright. No validation mock.
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path');
 const {createHash}=require('node:crypto'),asar=require('@electron/asar');
-const {createFixture,launch,gracefulQuit,cleanupOwnedFixture,run}=require('./qualification-helpers.cjs');
+const {createFixture,launch,gracefulQuit,cleanupOwnedFixture,ownedControl,run}=require('./qualification-helpers.cjs');
 const {RuntimeGenerations,runtimeStore}=require('../runtime-generations.cjs');
 const {bundleDigest,quarantinePreserved}=require('../bootstrap.cjs');
 const output=path.resolve(__dirname,'../../docs/dev/desktop-ui-e2e/bootstrap-receipt.json');
@@ -62,9 +62,26 @@ async function main(){
   const launched=await launch(next);secondApplication=launched.application;secondPage=launched.page;
   await secondPage.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});
   assert.equal(application.process().exitCode,null);assert.equal(secondApplication.process().exitCode,null);
+  const firstHealth=await ownedControl(fixture,'health'),secondHealth=await ownedControl(next,'health');
+  assert.notEqual(firstHealth.pid,secondHealth.pid);assert.notEqual(firstHealth.session_id,secondHealth.session_id);
+  assert.deepEqual(firstHealth.services,[]);assert.deepEqual(secondHealth.services,[]);
+  const secondStarted=performance.now();
   await gracefulQuit(secondApplication,secondPage);secondApplication=null;
+  const secondQuitMs=performance.now()-secondStarted;
+  await assert.rejects(fs.access(path.join(next.userData,'desktop-service.json')),{code:'ENOENT'});
+  await assert.rejects(run('/bin/ps',['-p',String(secondHealth.pid),'-o','pid=']),{code:1});
+  const surviving=await ownedControl(fixture,'health');
+  assert.equal(surviving.ready,true);assert.equal(surviving.pid,firstHealth.pid);assert.equal(surviving.session_id,firstHealth.session_id);
+  assert.equal(application.process().exitCode,null);
+  await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:5000});
+  const firstStarted=performance.now();
   await gracefulQuit(application,page);application=null;
-  return {two_real_sessions:true,independent_profiles:true,no_reinstallation:true,ordinary_quit:true};
+  const firstQuitMs=performance.now()-firstStarted;
+  await assert.rejects(fs.access(path.join(fixture.userData,'desktop-service.json')),{code:'ENOENT'});
+  await assert.rejects(run('/bin/ps',['-p',String(firstHealth.pid),'-o','pid=']),{code:1});
+  return {two_real_sessions:true,independent_profiles:true,no_reinstallation:true,ordinary_quit:true,
+    unrelated_session_still_ready_after_other_quit:true,exact_roots_exited:true,ownership_records_removed:true,
+    ordinary_quit_ms:{second:secondQuitMs,first:firstQuitMs}};
  });
  await check('a never-executed quarantined source keeps quarantine through generation staging',async()=>{
   const quarantined=path.join(fixture.root,'quarantine-source/Disco.app');await fs.mkdir(path.dirname(quarantined),{recursive:true});await run('/usr/bin/ditto',[downloaded,quarantined]);

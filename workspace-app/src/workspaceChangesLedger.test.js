@@ -23,6 +23,29 @@ async function step(h,action,ms=500){const before=h.fixture.requests.length;awai
 const tab=(h,name)=>h.root.findAllByProps({'aria-label':name}).find(node=>visible(node)&&node.props.role==='tab');
 const protocolView=h=>h.root.findAll(node=>typeof node.props?.onMergeIncoming==='function'&&typeof node.props.onChange==='function'&&node.props.id).find(visible);
 
+test('creating a protocol from Search refreshes the sidebar inventory without a metadata refresh',async()=>{
+ const h=await createWorkflowHarness();h.fixture.route={page:'explore',key:'search'};
+ const protocols=[{protocol_uuid:'protocol-A',name:'Test'}];
+ h.fixture.respond=(url,options,fallback)=>{
+  if(url.pathname==='/api/overview')return {project:{project_uuid:'project',name:'Fixture'},protocols:[...protocols],sources:[]};
+  if(url.pathname==='/api/workbench/summary')return {workbench_counts:[]};
+  return fallback();
+ };
+ try{
+  await h.mount();await h.settle(500);
+  const sidebar=()=>h.root.findAll(node=>node.type==='workflow-child'&&node.props.onChanged&&node.props.onNavigate)[0];
+  assert.deepEqual(sidebar().props.protocols.map(row=>row.protocol_uuid),['protocol-A']);
+  const explorer=h.root.findAll(node=>node.type==='workflow-child'&&node.props.onProtocolApplied)[0];
+  // The accepted write has added a new protocol before its completion callback.
+  protocols.push({protocol_uuid:'protocol-new',name:'New pinned dataset'});
+  const reads=await step(h,()=>explorer.props.onProtocolApplied('protocol-new'),600);
+  assert.deepEqual(sidebar().props.protocols.map(row=>row.protocol_uuid),['protocol-A','protocol-new']);
+  assert.ok(reads.includes('GET /overview?cells_limit=200'),reads.join('\n'));
+  assert.ok(!reads.some(line=>line.includes('/metadata/refresh')),'no manual or automatic metadata rebuild');
+  assert.equal(h.root.findByProps({'aria-label':'Current workspace'}).props.children,'New pinned dataset');
+ }finally{await h.close();}
+});
+
 test('merge-all and its undo send one POST and at most two GETs, scoped to that protocol',async()=>{
  const h=await createWorkflowHarness();h.fixture.route={page:'protocol',protocol:'protocol-A',key:'route-1'};serve(h);
  try{

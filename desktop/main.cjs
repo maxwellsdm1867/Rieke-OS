@@ -502,8 +502,17 @@ function registerIPC() {
   });
   handle('desktop:cancel-project-close',value=>{const identity=projectIdentity(value);for(const views of projectViews.values())views.cancelClose(identity);return {cancelled:true};});
   handle('desktop:confirm-project-closed',async value=>{
-    const identity=projectIdentity(value),health=await supervisor.api('/api/desktop/health');
-    if(!matchesHealth(health,supervisor.expectedHealth())||!Array.isArray(health.services)||health.services.some(record=>record.project_uuid===identity.projectUuid&&record.project_path===identity.path))throw Error('Project closure is not confirmed.');
+    const identity=projectIdentity(value),closingSupervisor=supervisor,expected=closingSupervisor.expectedHealth();
+    const deadline=Date.now()+(closingSupervisor.drainTimeout??30000);
+    // The close response precedes the child's orderly HTTP-server exit. Keep
+    // the renderer fenced until the same authenticated root observes absence.
+    while(true){
+      const health=await closingSupervisor.api('/api/desktop/health',{timeout:Math.max(1,Math.min(3000,deadline-Date.now()))});
+      if(supervisor!==closingSupervisor||!matchesHealth(health,expected)||!Array.isArray(health.services))throw Error('Project closure is not confirmed.');
+      if(!health.services.some(record=>record.project_uuid===identity.projectUuid&&record.project_path===identity.path))break;
+      if(Date.now()>=deadline)throw Error('Project closure is not confirmed.');
+      await new Promise(resolve=>setTimeout(resolve,Math.min(50,deadline-Date.now())));
+    }
     for(const views of projectViews.values())for(const owner of views.find(identity)){
       if(!owner.closing)throw Error('Project view closure was not prepared.');
       if(owner.active)await activateProject(owner.parentWindow,supervisor.origin);

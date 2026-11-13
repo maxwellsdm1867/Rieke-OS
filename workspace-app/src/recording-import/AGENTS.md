@@ -31,7 +31,11 @@ stops on failure, refuses concurrent submission and never automatically retries
 an uncertain POST. Existing XHR timers and upload lifetime remain unchanged.
 
 Monitor GETs use their own eight-second timeout, abort on replacement/unmount and
-retain last confirmed data on error. Existing 2.5/10-second polling and recovered
+retain last confirmed data on error. The timeout itself retires loading even if
+the transport never settles after abort; late responses cannot publish. Enqueuing
+a batch requests a fresh job list and waits for that response before submission.
+Queued status distinguishes this check from an import that has already started.
+Existing 2.5/10-second polling and recovered
 completion behavior remain unchanged. App owns the queue so route changes do not
 lose chosen files. UI choice/review hints grant neither ingest nor acceptance
 consent; backend import and incoming-workbench authorities stay separate.
@@ -43,9 +47,16 @@ would make progress-only callers learn submission and reconciliation rules, whil
 removing these entries would repeat uncertainty and terminal-state policy. This
 organization performs no H5 porting, ingestion, parser change or fixture expansion.
 
+Active transfer/accepted-receipt/job progress remains visible until resolved;
+only terminal notifications expire. Stage percentages use confirmed bounded
+counters, and monitor outages label retained progress as last confirmed.
+
 ## Executable public examples
 
 [importProgress.test.js](importProgress.test.js) and [importReadiness.test.js](importReadiness.test.js) use synthetic DTOs.
+[importHookRecovery.test.js](importHookRecovery.test.js) covers stalled/retired monitor
+requests and fresh batch admission; [liveImportStatus.test.js](liveImportStatus.test.js)
+covers persistent active status and terminal expiry.
 [uploadRecording.test.js](uploadRecording.test.js) replaces XHR/FormData with owned stand-ins; it sends no
 recording. Retained review/route tests exercise the existing actual App workflow.
 

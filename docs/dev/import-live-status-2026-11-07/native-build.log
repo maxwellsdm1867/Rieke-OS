@@ -1,0 +1,19 @@
+vite v8.3.1 building client environment for production...
+transforming...
+✓ 2259 modules transformed.
+rendering chunks...
+computing gzip size...
+../../../../../../../private/tmp/disco-retention-native-refresh-gELswh/resources/runtime/frontend/index.html                                   0.51 kB │ gzip:   0.32 kB
+../../../../../../../private/tmp/disco-retention-native-refresh-gELswh/resources/runtime/frontend/assets/FolderBrowserDialog-40Wp9BpX.css      5.16 kB │ gzip:   1.28 kB
+../../../../../../../private/tmp/disco-retention-native-refresh-gELswh/resources/runtime/frontend/assets/ProtocolInfographic-CKi9N1ot.css      6.01 kB │ gzip:   1.52 kB
+../../../../../../../private/tmp/disco-retention-native-refresh-gELswh/resources/runtime/frontend/assets/index-CiQerou7.css                  383.10 kB │ gzip:  60.62 kB
+../../../../../../../private/tmp/disco-retention-native-refresh-gELswh/resources/runtime/frontend/assets/FolderBrowserDialog-C1AHSUav.js       6.96 kB │ gzip:   2.58 kB
+../../../../../../../private/tmp/disco-retention-native-refresh-gELswh/resources/runtime/frontend/assets/ProtocolInfographic-DM6Yp3Ht.js       7.49 kB │ gzip:   2.71 kB
+../../../../../../../private/tmp/disco-retention-native-refresh-gELswh/resources/runtime/frontend/assets/index-D7uAcoFj.js                 1,227.49 kB │ gzip: 368.16 kB
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 479ms

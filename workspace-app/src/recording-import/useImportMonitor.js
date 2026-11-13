@@ -11,16 +11,20 @@ export default function useImportMonitor(revision,onCompleted,watchingRequest=fa
   const reload=useCallback(()=>setNonce(value=>value+1),[]);
   useEffect(()=>{
     if(!enabled){setState({data:null,loading:false,error:null,observedAt:null});return;}
-    const controller=new AbortController();let timedOut=false;
+    const controller=new AbortController();
     setState(value=>({...value,loading:true}));
-    const timeout=setTimeout(()=>{timedOut=true;controller.abort();},8000);
+    const timeout=setTimeout(()=>{
+      controller.abort();
+      // Do not rely on an aborted transport settling to release the queue.
+      setState(value=>({...value,loading:false,error:'Import monitor did not respond within 8 seconds. Job state remains unconfirmed.'}));
+    },8000);
     api('/jobs',{signal:controller.signal}).then(data=>{
       if(controller.signal.aborted)return;
       if(!Array.isArray(data.jobs))throw new Error('Import monitor returned an invalid job list.');
       setState({data,loading:false,error:null,observedAt:Date.now()});
     }).catch(error=>{
-      if(controller.signal.aborted&&!timedOut)return;
-      setState(value=>({...value,loading:false,error:timedOut?'Import monitor did not respond within 8 seconds. Job state remains unconfirmed.':error.message}));
+      if(controller.signal.aborted)return;
+      setState(value=>({...value,loading:false,error:error.message}));
     }).finally(()=>clearTimeout(timeout));
     return()=>{clearTimeout(timeout);controller.abort();};
   },[revision,nonce,enabled]);

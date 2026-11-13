@@ -15,7 +15,7 @@ export default function GlobalSearch({revision=0,onEpoch,onCell,onPredicate}){
   useEffect(()=>{if(open){dialog.current?.showModal();input.current?.focus();}else dialog.current?.close();},[open]);
   function choose(result){
     if(!state.canChoose(result))return;
-    if(result.kind==='epoch'){if(result.protocol_uuid&&onEpoch)onEpoch(result);else onCell?.(result);}
+    if(result.kind==='epoch')(onEpoch||onCell)?.(result);
     else if(result.kind==='cell')onCell?.(result);
     else onPredicate?.(result.predicate);
     setOpen(false);
@@ -31,7 +31,7 @@ export default function GlobalSearch({revision=0,onEpoch,onCell,onPredicate}){
         {rows.length>0&&!state.fresh&&<p className="global-search-hint" role="status">Showing previous results. {state.loading?'Refreshing recorded metadata…':'Refresh search before choosing a result.'}</p>}
         {state.unavailable?<p className="global-search-empty">Open a project to search its recorded metadata.</p>:!rows.length?state.loading?<p className="global-search-empty">Searching recorded metadata…</p>:state.error?null:!query.trim()?<p className="global-search-empty">Search works within the current project. Raw traces are loaded only after inspection.</p>:<p className="global-search-empty">No matches. Try a full UUID or an exact field name and typed value.</p>:<>
           {rows.map((result,index)=>{const Icon=result.kind==='cell'?Users:result.kind==='epoch'?Hash:SlidersHorizontal;return <button key={`${result.kind}:${result.id}`} disabled={!state.fresh} ref={node=>{items.current[index]=node;}} className="global-search-result" onClick={()=>choose(result)} onKeyDown={event=>{if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();const next=index+(event.key==='ArrowDown'?1:-1);if(next<0)input.current?.focus();else items.current[Math.min(rows.length-1,next)]?.focus();}}}>
-            <Icon size={17}/><span><strong>{result.label}</strong><small>{result.detail}</small>{['cell','epoch'].includes(result.kind)&&<><code>{result.id}</code><small><Database size={11}/>{result.source_filename}{result.query_excluded?' · excluded from new source queries':''}{result.protocols?.length>0?` · inspect in ${result.protocols[0].name}`:''}</small></>}</span><ArrowRight size={15}/>
+            <Icon size={17}/><span><strong>{result.label}</strong><small>{result.detail}</small>{['cell','epoch'].includes(result.kind)&&<><code>{result.id}</code><small><Database size={11}/>{result.source_filename}{result.query_excluded?' · excluded from new source queries':''}{' · Open in Cell QC'}</small></>}</span><ArrowRight size={15}/>
           </button>;})}
           {state.data.total>rows.length&&<p className="global-search-hint">Showing {rows.length} of {state.data.total} results. Narrow the field name or UUID prefix.</p>}
           {state.data.identity_ambiguous&&<p className="global-search-hint">This prefix matches multiple identities. Choose an exact UUID above.</p>}

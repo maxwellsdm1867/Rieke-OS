@@ -43,6 +43,77 @@ class CellQCTests(unittest.TestCase):
         self.service.rows[self.ids[1]]['cell_uuid'] = self.cell
         self.service.rows[self.ids[1]]['cell_label'] = 'Cell1'
 
+    def test_light_overview_defers_prepared_voltage_validation(self):
+        from unittest.mock import patch
+        with patch.object(self.qc, 'prepared_baselines', side_effect=AssertionError('voltage must stay lazy')):
+            result = self.qc.overview(self.cell, include_baselines=False)
+        self.assertEqual(result['resting_voltage']['supporting_measurements'], {})
+        full = self.qc.overview(self.cell)
+        self.assertEqual({k: v for k, v in result.items() if k != 'resting_voltage'},
+                         {k: v for k, v in full.items() if k != 'resting_voltage'})
+
+    def test_display_projection_preserves_visible_facts_and_default_family_order(self):
+        self.same_cell()
+        self.service.rows[self.ids[0]]['protocol_name'] = 'lab.Movie'
+        self.service.rows[self.ids[1]]['protocol_name'] = 'lab.CurrentStep'
+        full = self.qc.overview(self.cell, include_baselines=False)
+        display = self.case.client.get(self.base + '?projection=display').get_json()
+        self.assertNotIn('resistance', display)
+        self.assertEqual(display, {k: v for k, v in full.items() if k != 'resistance'})
+        page = self.case.client.get(self.base + '/epochs?family=default&limit=1').get_json()
+        self.assertEqual(page['family'], 'current_step')
+        self.assertEqual([r['epoch_uuid'] for r in page['epochs']], [self.ids[1]])
+        self.service.rows[self.ids[1]]['protocol_name'] = 'lab.AMovie'
+        page = self.qc.epochs(self.cell, 'default')
+        self.assertEqual(page['family'], 'protocol:lab.AMovie')
+        for query in ('projection=unknown', 'projection=display&include_baselines=true', 'projection=display&projection=full'):
+            self.assertEqual(self.case.client.get(self.base + '?' + query).status_code, 400)
+
+    def test_solution_summary_uses_one_verified_detail_per_recording_group(self):
+        self.same_cell()
+        backing = self.service.details
+        for index, identity in enumerate(self.ids):
+            self.service.rows[identity]['group_uuid'] = str(uuid.uuid4())
+            backing[identity]['metadata']['group'] = {'properties': {
+                'pipetteSolution': 'K-gluconate',
+                'internalSolutionAdditions': None,
+                'externalSolutionAdditions': [] if index == 0 else ['AP5 50 uM']}}
+        template = self.service.rows[self.ids[0]]
+        extra = str(uuid.uuid4())
+        self.service.rows[extra] = {**template, 'epoch_uuid': extra}
+        backing[extra] = copy.deepcopy(backing[self.ids[0]])
+        full = self.qc.overview(self.cell, include_baselines=False)
+        reads = []
+
+        class ProjectedDetails(dict):
+            def many(self, keys):
+                reads.append(list(keys))
+                return [(key, copy.deepcopy(self[key])) for key in keys]
+            def projected_many(self, keys, fields):
+                return [(key, {field: copy.deepcopy(self[key].get(field, {})) for field in fields}) for key in keys]
+
+        self.service.details = ProjectedDetails(backing)
+        display = self.qc.overview(self.cell, display_only=True)
+        self.assertEqual(display['recording_conditions'], full['recording_conditions'])
+        self.assertEqual(len(reads), 1)
+        self.assertEqual(len(reads[0]), 2, 'One full detail per source/group, not per epoch')
+        self.assertEqual(len(display['recording_conditions']), 2)
+        self.assertEqual(display['recording_conditions'][1]['external_additions'], ['AP5 50 uM'])
+        self.assertEqual(display['recording_conditions'][0]['pipette_solution'], 'K-gluconate')
+        self.service.trace.assert_not_called()
+
+    def test_response_uses_exact_registered_row_but_preserves_custom_cell_policy(self):
+        from unittest.mock import patch
+        with patch.object(self.qc, 'rows', side_effect=AssertionError('No cohort sort for one response')):
+            result = self.qc.response(self.cell, self.ids[0], summary_only=True)
+        self.assertEqual(result['cell_uuid'], self.cell)
+        with patch.object(self.service, 'cell_rows', return_value=[]):
+            with self.assertRaisesRegex(ValueError, 'does not belong'):
+                self.qc.response(self.cell, self.ids[0], summary_only=True)
+        self.service.rows[self.ids[0]]['epoch_uuid'] = self.ids[1]
+        with self.assertRaisesRegex(ValueError, 'does not belong'):
+            self.qc.response(self.cell, self.ids[0], summary_only=True)
+
     def test_overview_reads_each_detail_once_and_rechecks_changes_on_next_request(self):
         self.same_cell()
         backing = self.service.details
@@ -105,6 +176,79 @@ class CellQCTests(unittest.TestCase):
         self.assertFalse(self.case.curation.rows)
         self.assertFalse(self.case.datasets.rows)
 
+    def test_epoch_anchor_resolves_exact_non_qc_protocol_and_bounded_page(self):
+        template = self.service.rows[self.ids[0]]
+        identities = []
+        for index in range(85):
+            identity = str(uuid.uuid5(uuid.UUID(self.cell), f'anchor-{index}'))
+            identities.append(identity)
+            self.service.rows[identity] = {**copy.deepcopy(template), 'epoch_uuid': identity,
+                'protocol_name': 'lab.NoiseExample',
+                'start_time': f'09/24/2026 14:{index // 60:02d}:{index % 60:02d}:000000'}
+            self.service.details[identity] = {'parameters': {'ordinal': index}}
+        response = self.case.client.get(self.base + '/epochs', query_string={
+            'family': 'default', 'limit': 40, 'anchor_epoch_uuid': identities[73]})
+        self.assertEqual(response.status_code, 200, response.get_json())
+        page = response.get_json()
+        self.assertEqual(page['family'], 'protocol:lab.NoiseExample')
+        self.assertEqual((page['offset'], page['total'], page['limit']), (40, 85, 40))
+        self.assertEqual(page['anchor_epoch_uuid'], identities[73])
+        self.assertEqual([row['epoch_uuid'] for row in page['epochs']], identities[40:80])
+        self.assertEqual(page['epochs'][33]['parameters'], {'ordinal': 73})
+        for options in [
+            {'anchor_epoch_uuid': self.ids[1]},
+            {'anchor_epoch_uuid': str(uuid.uuid4())},
+            {'anchor_epoch_uuid': 'not-a-uuid'},
+            {'anchor_epoch_uuid': identities[73], 'family': 'expanding_spots'},
+            {'anchor_epoch_uuid': identities[73], 'limit': 101},
+        ]:
+            result = self.case.client.get(self.base + '/epochs', query_string=options)
+            self.assertEqual(result.status_code, 400, result.get_json())
+        self.service.trace.assert_not_called()
+        self.assertFalse(self.case.events.rows)
+        self.assertFalse(self.case.curation.rows)
+        self.assertFalse(self.case.datasets.rows)
+
+    def test_epoch_anchor_selects_the_targets_qc_family(self):
+        self.same_cell()
+        self.service.rows[self.ids[1]]['protocol_name'] = 'lab.SplitFieldCentering'
+        page = self.qc.epochs(self.cell, 'default', limit=40, anchor_epoch_uuid=self.ids[1])
+        self.assertEqual(page['family'], 'split_field')
+        self.assertEqual([row['epoch_uuid'] for row in page['epochs']], [self.ids[1]])
+        self.assertEqual(page['offset'], 0)
+
+    def test_other_protocols_are_distinct_exact_names_and_pages(self):
+        self.same_cell()
+        names = ['lab.one.UnusualProtocol', 'lab.two.UnusualProtocol']
+        for identity, name in zip(self.ids, names):
+            self.service.rows[identity]['protocol_name'] = name
+        groups = self.qc.overview(self.cell)['families']
+        self.assertNotIn('other', [group['id'] for group in groups])
+        for identity, name in zip(self.ids, names):
+            group = next(group for group in groups if group['id'] == 'protocol:' + name)
+            self.assertEqual(group['label'], name)
+            self.assertEqual(group['epoch_count'], 1)
+            page = self.case.client.get(self.base + '/epochs', query_string={'family': group['id'], 'limit': 1}).get_json()
+            self.assertEqual([row['epoch_uuid'] for row in page['epochs']], [identity])
+            self.assertEqual(page['total'], 1)
+        self.service.trace.assert_not_called()
+
+    def test_recording_summary_uses_source_rig_and_complete_epoch_durations(self):
+        self.same_cell()
+        self.service.sources[0]['metadata'] = {'rig': 'EF', 'rig_type': 'PATCH'}
+        for identity, seconds in zip(self.ids, [2.5, 3.5]):
+            self.service.rows[identity]['duration_seconds'] = seconds
+        result = self.qc.overview(self.cell)
+        self.assertEqual(result['cell']['recording_rigs'], ['EF'])
+        self.assertFalse(result['cell']['recording_rig_missing'])
+        self.assertEqual(result['recording_seconds'], 6.)
+        self.service.rows[self.ids[1]]['duration_seconds'] = None
+        self.service.sources[0]['metadata'] = {'rig_type': 'PATCH'}
+        result = self.qc.overview(self.cell)
+        self.assertIsNone(result['recording_seconds'])
+        self.assertEqual(result['cell']['recording_rigs'], [])
+        self.assertTrue(result['cell']['recording_rig_missing'])
+
     def test_compensation_is_not_a_resistance_measurement(self):
         details = self.service.details[self.ids[0]]
         details['metadata']['group'] = {'uuid': 'group-id', 'properties': {'seriesResistanceCompensation': 0}}
@@ -140,6 +284,9 @@ class CellQCTests(unittest.TestCase):
                 'start_time': f'09/24/2026 14:{index // 60:02d}:{index % 60:02d}:000000'}
             self.service.details[identity] = {'properties': {'bathTemperature': 30.}}
         first = self.case.client.get(self.base + '/temperature?limit=2').get_json()
+        summary = self.qc.overview(self.cell)['temperature']
+        self.assertEqual(summary['unknown_units_count'], 501)
+        self.assertEqual(summary['missing_count'], 1)
         self.assertEqual(first['total'], 503)
         self.assertTrue(first['has_more'])
         self.assertEqual(first['observations'][0]['epoch_uuid'], self.ids[0])

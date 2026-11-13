@@ -635,24 +635,41 @@ class _Details(Mapping):
                     self.index._detail_cache_bytes+=cost
             self.cache.move_to_end(key);return copy.deepcopy(self.cache[key])
     def many(self,keys):
-        """Independent details for many epochs from one connection, in key order.
+        """Independent full details, in key order, without per-epoch connections."""
+        yield from self._many(keys)
 
-        Bulk readers (one cell's QC) would otherwise open a connection per epoch
-        and churn the small shared LRU that tree and inspector reads rely on.
-        Entries already cached are copied; the rest are decoded without admission.
+    def projected_many(self,keys,fields):
+        """Independent inline fields, retaining all ancestor integrity checks.
+
+        Projection avoids copying unused ancestor payloads, not validating them.
+        Shared decoder objects never escape through this interface.
         """
+        fields=tuple(fields)
+        if not fields or any(field not in {'parameters','properties','attributes'} for field in fields):
+            raise ValueError('Only inline epoch fields can be projected')
+        yield from self._many(keys,fields)
+
+    def _many(self,keys,fields=None):
         keys=list(keys);result={}
+        duplicate_projection=fields is not None and len(keys)!=len(set(keys))
+        self.index._check()
         with self.lock:
             for key in keys:
-                if key in self.cache: result[key]=copy.deepcopy(self.cache[key])
+                if key in self.cache:
+                    datum=self.cache[key]
+                    result[key]=copy.deepcopy(datum if fields is None else
+                        {field:datum[field] for field in fields if field in datum})
         missing=[key for key in keys if key not in result]
         if missing:
             with self.index._connect(missing) as connection:
                 for key,row_json,blob in connection.execute('SELECT e.epoch_uuid,e.row_json,e.detail_blob FROM scope s JOIN epochs e USING(epoch_id) ORDER BY s.ordinal'):
-                    result[key]=self.index._metadata_decoder.decode(connection,json.loads(row_json),blob)
+                    datum=self.index._metadata_decoder.decode(connection,json.loads(row_json),blob,
+                        shared_objects=fields is not None)
+                    result[key]=datum if fields is None else {field:datum[field] for field in fields if field in datum}
+        self.index._check()
         for key in keys:
             if key not in result: raise KeyError(key)
-            yield key,result[key]
+            yield key,copy.deepcopy(result[key]) if duplicate_projection else result[key]
 
 class _ScopedDetails(Mapping):
     def __init__(self,details,rows):

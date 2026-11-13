@@ -172,3 +172,11 @@ allowance for the entire load. `preparedTreeMount.test.js` covers initial demand
 layout edits, failed/explicit retry, cancellation, hidden/paused revisits, predicate
 fences, mismatched replies, anchors and frozen exclusion. Native initial-entry
 and filtered-tree checks remain separately required.
+
+PagedTree keeps its click anchor across temporary read/availability gates within
+the same scope. Source/revision/order recipe and explicit selection-proof identity
+changes clear it; all existing request cancellation and current-authority checks
+remain. The first Command/Ctrl extension includes the preceding plain-clicked
+Main epoch only with a matching page revision. Workbench highlights and explicit
+selection switches remain separate. `pagedTreeLifecycle.test.js` covers loading
+recovery, changed page receipts and changed proof identity.

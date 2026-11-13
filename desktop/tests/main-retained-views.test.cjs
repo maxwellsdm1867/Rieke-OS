@@ -25,7 +25,7 @@ async function fixture(t,{retainedViews=true}={}){
  }
  class View{constructor(){this.webContents=new Contents();}setBounds(value){this.bounds=value;}}
  const records=ids.map((id,i)=>({bound:true,project_uuid:id,project_path:`/owned/project-${i}`,port:42002+i,pid:200+i,created_at:i+1,session_id:'session'}));
- const origin='http://127.0.0.1:42001';const supervisor={origin,origins:new Set([origin]),ready:true,sessionId:'session',registry:{services:records},expectedHealth:()=>({session_id:'session'}),async drain(){return {ready:true};},async api(){return {ready:true,session_id:'session',services:this.registry.services};},async authorizeProjectURL(url){const selected=new URL(url).origin;if(selected!==origin&&!this.registry.services.some(item=>selected===`http://127.0.0.1:${item.port}`))return false;this.origins.add(selected);return true;}};
+ const origin='http://127.0.0.1:42001';const supervisor={drainTimeout:20,origin,origins:new Set([origin]),ready:true,sessionId:'session',registry:{services:records},expectedHealth:()=>({session_id:'session'}),async drain(){return {ready:true};},async api(){return {ready:true,session_id:'session',services:this.registry.services};},async authorizeProjectURL(url){const selected=new URL(url).origin;if(selected!==origin&&!this.registry.services.some(item=>selected===`http://127.0.0.1:${item.port}`))return false;this.origins.add(selected);return true;}};
  const actualRequire=require('node:module').createRequire(path.join(__dirname,'../main.cjs'));
  const electron={app,BrowserWindow:Window,WebContentsView:retainedViews?View:undefined,ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},dialog:{},session:{},shell:{},Menu:{},powerMonitor:{}};
  const context={require:name=>name==='electron'?electron:actualRequire(name),__dirname:path.join(__dirname,'..'),process,console,URL,AbortSignal,setTimeout,clearTimeout,queueMicrotask};
@@ -176,3 +176,18 @@ test('legacy scientific host without WebContentsView returns a validated cold-pa
  h.window.draftUnavailable=true;await assert.rejects(h.call(h.window,'desktop:activate-retained-project',retainedIdentity(1)),/no longer active/);
  h.window.draftUnavailable=false;h.recovery('legacy recovery');await assert.rejects(h.call(h.window,'desktop:activate-retained-project',retainedIdentity(1)),/paused/);
 });
+
+ test('active unmount waits for actual child exit after the HTTP close receipt',async t=>{
+ const h=await fixture(t);await h.activateProject(h.window,'http://127.0.0.1:42002');const views=h.projectViews.get(h.window),first=views.active;
+ const identity={projectUuid:ids[0],path:'/owned/project-0'};await h.call(first,'desktop:prepare-project-close',identity);
+ h.supervisor.drainTimeout=1000;let checks=0;
+ h.supervisor.api=async()=>{checks++;assert.equal(first.isDestroyed(),false);return {ready:true,session_id:'session',services:checks<3?h.records:[]};};
+ await h.call(first,'desktop:confirm-project-closed',identity);
+ assert.equal(checks,3);assert.equal(first.isDestroyed(),true);assert.equal(views.active.binding.project_uuid,'launcher');
+ });
+ test('close confirmation refuses changed root identity while waiting',async t=>{
+ const h=await fixture(t);await h.activateProject(h.window,'http://127.0.0.1:42002');const views=h.projectViews.get(h.window),first=views.active;
+ const identity={projectUuid:ids[0],path:'/owned/project-0'};await h.call(first,'desktop:prepare-project-close',identity);
+ h.supervisor.drainTimeout=1000;let checks=0;h.supervisor.api=async()=>({ready:true,session_id:++checks===1?'session':'replacement',services:checks===1?h.records:[]});
+ await assert.rejects(h.call(first,'desktop:confirm-project-closed',identity),/not confirmed/);assert.equal(first.isDestroyed(),false);assert.equal(checks,2);
+ });

@@ -317,3 +317,15 @@ rows is materialized; the range bounds retain the exact total. Mutable/custom
 publications and non-lowercase cell identities keep case-insensitive scanning.
 Exact UUID precedence, cell-before-epoch ordering and source-excluded identity
 visibility are unchanged. Preparation cost is paid with publication, not each keypress.
+
+## Inline detail projections for cell display
+
+`details.projected_many(keys, fields)` returns independent `parameters`,
+`properties`, or `attributes` dictionaries in requested key order, including
+independent duplicate occurrences. It validates the same index generation and all
+ancestor ownership/checksums as full detail reads. Only copying unused ancestor
+payloads is avoided; shared decoder objects never escape. Cached and uncached
+results retain mutation isolation, unknown UUID refusal and closed/changed-reader
+errors. The legacy `many` interface and full detail contents remain available.
+Changing this reader changes the native generation recipe, so existing disposable
+native/typed indexes may rebuild once; recordings and authored state are unchanged.

@@ -51,11 +51,14 @@ const {verifyResources} = require('../updater-validation.cjs');
     fault_code_sha256: createHash('sha256').update(literalFailure).digest('hex'), recovery_before_projects: true,
     backend_exited: true, no_service_or_database_start: true, ordinary_quit_exited: true,
     teardown: 'Actual ordinary Quit acknowledges exit; known failed backend is already exited; no workers or databases existed'};
+  // Playwright disposes its application dispatcher on exit. Retain the native
+  // process handle before Quit so the exit assertion survives that disposal.
+  const appProcess = application.process();
   await gracefulQuit(application, page);
-  assert.equal(application.process().exitCode, 0);
+  assert.equal(appProcess.exitCode, 0);
   const interrupted = JSON.parse(await fs.readFile(path.join(fixture.userData, 'desktop-service.json'), 'utf8'));
   assert.equal(interrupted.quit.requested, true);
   assert.ok(['interrupted', 'closing'].includes(interrupted.quit.state), 'Abnormal backend exit must retain recovery evidence');
   await fs.writeFile(path.join(output, 'backend-startup-failure.json'), JSON.stringify(receipt, null, 2) + '\n');
   console.log(JSON.stringify(receipt));
-})().catch(error => {console.error(error.message); process.exitCode = 1;});
+})().catch(error => {console.error(error.stack || error.message); process.exitCode = 1;});

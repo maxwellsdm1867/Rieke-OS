@@ -243,3 +243,57 @@ test('verified orphaned project still closes normally before the new chooser sta
  await supervisor.reconcilePrevious();assert.deepEqual(operations,['health','quit','stop']);
  assert.equal(live,false);await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});
 });
+
+for (const operation of ['quit', 'drain']) {
+  test(`${operation} rejects a missing stop acknowledgement even when the owned process exits zero`, async t => {
+    const {supervisor,child}=await fixture(t,(sup,worker,url)=>{
+      if(url.endsWith('/stop')) { process.nextTick(()=>worker.emit('exit',0)); return response({ready:false}); }
+      return response(url.endsWith('/health')?{...sup.expectedHealth(),ready:true,services:[]}:{ready:true});
+    });
+    child.kill=()=>assert.fail('No force termination');
+    await supervisor.start();
+    const close=()=>operation==='quit'?supervisor.quit({timeout:1000,drafts:{ready:true}}):supervisor.drain();
+    assert.equal((await close()).ready,false);
+    assert.equal((await close()).ready,false,'A later exit must not turn an unacknowledged stop into a clean receipt');
+    assert.ok(await fs.readFile(supervisor.registryPath,'utf8'));
+  });
+  for (const [code,signal] of [[1,null],[null,'SIGTERM']]) {
+    test(`${operation} retains recovery after acknowledged stop followed by ${signal||'nonzero exit'}`,async t=>{
+      const {supervisor,child}=await fixture(t,(sup,worker,url)=>{
+        if(url.endsWith('/stop'))process.nextTick(()=>worker.emit('exit',code,signal));
+        return response(url.endsWith('/health')?{...sup.expectedHealth(),ready:true,services:[]}:{ready:true});
+      });
+      child.kill=()=>assert.fail('No force termination');
+      await supervisor.start();
+      const close=()=>operation==='quit'?supervisor.quit({timeout:1000,drafts:{ready:true}}):supervisor.drain();
+      assert.equal((await close()).ready,false);
+      assert.equal((await close()).ready,false);
+      assert.ok(await fs.readFile(supervisor.registryPath,'utf8'));
+    });
+  }
+}
+test('exited owned root cannot receive further capabilities at its reusable port',async t=>{
+  let requests=0;
+  const {supervisor,child}=await fixture(t,sup=>{requests++;return response({...sup.expectedHealth(),ready:true});});
+  await supervisor.start();child.emit('exit',1);
+  const before=requests;
+  await assert.rejects(supervisor.api('/api/desktop/health'),/exited/);
+  await assert.rejects(supervisor.api('/api/desktop/stop',{method:'POST'}),/exited/);
+  assert.equal(requests,before);
+});
+
+test('Quit during pre-spawn startup cancels that spawn and every later startup attempt',async t=>{
+  const {supervisor,spawned}=await fixture(t,()=>assert.fail('No capability without a backend'));
+  let entered,release;
+  const reached=new Promise(resolve=>{entered=resolve;}),held=new Promise(resolve=>{release=resolve;});
+  const load=supervisor.loadManifest.bind(supervisor);
+  supervisor.loadManifest=async()=>{await load();entered();await held;};
+  const starting=supervisor.start();await reached;
+  const result=await supervisor.quit({timeout:1000,drafts:{ready:true}});
+  assert.equal(result.ready,true);assert.equal(spawned(),undefined);
+  release();
+  await assert.rejects(starting,/closing.*startup cancelled/);
+  await assert.rejects(supervisor.start(),/closing.*startup cancelled/);
+  assert.equal(spawned(),undefined);
+  await assert.rejects(fs.access(supervisor.registryPath),{code:'ENOENT'});
+});

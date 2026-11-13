@@ -49,6 +49,50 @@ view. Public entries and styles:
 
 Keep UUIDs, source-specific query revisions, predicate values, frozen candidate identity and branch scope exact. Invalid frozen context must refuse rather than fall back globally. Curation submission checks current selection and receipt authority; browsing or restored focus never grants consent. Page requests remain bounded and preserve anchor versus offset behavior. Preserve loading/error states, abort cleanup and stale-result fences.
 
+Pinned Main views expose membership removal in the shared selected
+toolbar (list and tree), or for the focused epoch when selection is empty.
+Ordinary source protocols, incoming and scoped read owners expose no removal.
+The selected bar appears for two or more selected epochs, with neutral cell/epoch
+counts and no addition prefixes. Hide actions collapses only its commands and
+preserves the selection; returning from zero/one to multiple selections reopens it.
+Its commands include Select all, Select focused cell, Deselect all and the existing
+tag/inclusion actions. Ordinary single-epoch focus keeps its existing detail actions. `loadProtocolSelection` collects bounded
+pages for the complete filtered protocol or focused cell, verifying query/binding,
+counts and identities before replacing selection; more than 1,000 refuses whole.
+Selection pages explicitly request `selection_receipt=true` and must share the
+same `selection_revision`, which includes shared/scoped annotation generations
+that ordinary curation revisions deliberately omit. Ordinary browse pages pay no
+extra selection-witness reads. Live retained activity tokens fence selection
+publication and consent even when a busy view stays mounted while hidden.
+The removal command snapshots exact UUIDs, query/binding and view scope in a
+confirmation dialog naming the pin and count. Cancel sends no mutation. The
+confirmation lease retires on selection, authority, visibility or read-state
+changes; a stale dialog/callback cannot submit even after returning to an earlier
+scope. An accepted write survives navigation and is never retried automatically.
+Confirmed or uncertain completion invalidates the originating protocol; only the
+still-current owner may clear its selection/focus. Undo uses the sealed response
+receipt through the session Undo owner. `inspectorMembershipLifecycle.test.js`
+and `bulkSelectionControls.test.js` cover these bounds; native checks are separate.
+
+Incoming Workbench's mounted top selection tools own Deselect all, including its
+explicit tree-selection clear intent. The shared selected bar omits its redundant
+clear only when frozen read context, draft selection and the top-tools portal
+target are all present. Main, Search and incoming views without that top owner
+retain the shared Deselect all action.
+
+The selected bar's distinct cell count describes the complete explicit UUID set,
+never only loaded rows. `readSelectedEpochCellCount` reuses bounded
+`/annotations/read` epoch/cell identity maps for Main and Search, validating exact
+UUID coverage; frozen incoming uses its advertised selection summary and existing
+manifest path above 1,000 epochs, without a global fallback. This is display only
+and grants no selection or mutation authority. `useSelectedEpochCellCount` keys
+reads by project, request owner, query/membership scope and exact selected IDs;
+selection/scope changes, pauses and hidden retained views abort/mask old results,
+including busy views whose effects stay connected. Nonempty pending or failed
+counts stay unavailable rather than displaying zero. Counts settle after selection
+gestures; unchanged UUID sets retain their current display. Tests live in
+`selectedEpochCellCount.test.js` and `selectedEpochCellCountLifecycle.test.js`.
+
 Pending counts and the bounded cell list (requires backend #118/#119): a
 multi-field query run or page may answer with null totals, `cells_pending: true`
 and `counts: {status: "pending", request_id}`. `queryCounts.js` reads that job and
@@ -300,3 +344,19 @@ pages, a single dialog, collapsed-cell retry and exact frozen retry;
 `inspectorNavigationLifecycle.test.js` covers real parent/child renewal, bounded
 request counts/no polling, fresh action gates, owner refusal and retained UUID
 intent. These mounted tests exclude native paint and real recording I/O.
+
+Temporary same-membership read gates retire pending ranges and old handlers but
+retain the plain-click origin for later Command/Ctrl and Shift gestures. Source,
+revision or ordered membership changes clear that origin. Reusing an origin for
+Command/Ctrl selection requires the current page revision; it never grants write
+authority. `inspectionTreeLifecycle.test.js` covers the loading-to-ready sequence.
+
+EpochViewer's optional `selectionActions` supplies counted bulk Include/Exclude
+controls alongside Tag selected and Clear in both list and tree modes. Inspector
+uses the existing guarded Main curation write or frozen incoming-decision owner
+with actual selected UUIDs, never transient highlights. Main labels refer to
+protocol exports; incoming labels refer to additions. MatchingEpochs delegates
+only local Search-export inclusion to its owning viewer. Existing 1,000-target
+ordinary action bounds and freshness gates apply. The explicit epoch-tag action
+in tree mode retires ephemeral cell targets before opening the epoch editor.
+Mounted examples: `bulkSelectionControls.test.js`, `inspectorCurationLifecycle.test.js`.

@@ -218,11 +218,61 @@ test('building then running a query: editing sends nothing, running sends the ru
   for(const text of ['2','25','250'])await h.act(()=>value().props.onChange({target:{value:text}}));
   await h.settle(350);
   assert.deepEqual(h.requests.slice(editing).map(item=>item.path),[],'editing a predicate sends no request of any kind');
+  await h.render(h.MetadataExplorer,{projectId:'P1',initialProtocolId:'A',initialPredicate:{all:[{field:'parameters/field1',operator:'gt',value:1}]},revision:1});await h.settle(50);
+  assert.equal(h.requests.some(item=>item.path==='/explore/preview'),false,'known changes while the editor is open do not preview the draft');
   const running=h.requests.length;
   await h.act(()=>h.button('View matching epochs').props.onClick());await h.settle();await h.settle(50);
   const after=h.requests.slice(running).map(item=>item.path);
   assert.deepEqual(after.filter(path=>path.startsWith('/explore/')),['/explore/run','/explore/summaries'],'the run, then exactly one summary job');
   assert.equal(Object.hasOwn(h.requests.slice(running).find(item=>item.path==='/explore/run').body,'catalog_summary'),false,'the deprecated catalog_summary flag is not sent');
+ }finally{await h.close();}
+});
+
+test('displayed search previews renew on known changes, retain annotation holds and resume interrupted reads',async()=>{
+ const h=await harness({explorerShell:true}),pending=[];
+ let serial=0,delay=false;
+ const result=()=>({matched_count:4,tree_revision:`tree-${++serial}`,last_run:{cell_count:1},catalog:{fields:definitions},tree:{count:4,levels:[],split_order:['date','cell']}});
+ h.respond=(path,options)=>{
+  if(path==='/explore/field-registry')return registry;
+  if(path.startsWith('/search-presets'))return {presets:[]};
+  if(path.startsWith('/explore/revisions'))return {revisions:[]};
+  if(path==='/explore/run')return result();
+  if(path==='/explore/preview'){
+   if(!delay)return result();
+   const request=deferred();pending.push({...request,signal:options.signal});return request.promise;
+  }
+  throw Error(`Unexpected ${path}`);
+ };
+ const props={projectId:'P1',initialPredicate:{all:[{field:'date',operator:'eq',value:'2026-01-01'}]}};
+ function Host({mode='visible',revision=0}){return React.createElement(React.Activity,{mode},React.createElement(h.MetadataExplorer,{...props,revision}));}
+ const previewReads=()=>h.requests.filter(item=>item.path==='/explore/preview');
+ const viewer=()=>h.root.findByType('explorer-viewer');
+ try{
+  await h.render(Host,{});await h.settle(50);
+  await h.act(()=>h.button('View matching epochs').props.onClick());await h.settle(50);
+  assert.equal(previewReads().length,0,'explicit Run is not followed by a duplicate preview');
+  await h.render(Host,{revision:1});await h.settle(50);
+  assert.equal(previewReads().length,1,'known action renews the displayed witness');
+  assert.equal(viewer().props.preview.tree_revision,'tree-2');
+  await h.render(Host,{mode:'hidden',revision:2});await h.settle(50);
+  assert.equal(previewReads().length,1,'hidden results do not issue a preview');
+  await h.render(Host,{revision:2});await h.settle(50);
+  assert.equal(previewReads().length,2,'return renews the changed result once');
+  await h.act(()=>viewer().props.onAnnotationsChanged({},true));
+  await h.render(Host,{revision:3});await h.settle(50);
+  assert.equal(previewReads().length,2,'tag edits retain explicit membership hold');
+  await h.act(()=>viewer().props.onRefresh());await h.settle(50);
+  assert.equal(previewReads().length,3,'manual refresh clears hold with one preview');
+  delay=true;await h.render(Host,{revision:4});await h.settle(50);
+  assert.equal(pending.length,1);
+  await h.render(Host,{mode:'hidden',revision:4});
+  assert.equal(pending[0].signal.aborted,true);
+  await h.render(Host,{revision:4});await h.settle(50);
+  assert.equal(pending.length,2,'reveal retries an interrupted preview instead of staying loading');
+  await h.act(()=>pending[1].resolve(result()));await h.settle(50);
+  const current=viewer().props.preview.tree_revision;
+  await h.act(()=>pending[0].resolve(result()));await h.settle(50);
+  assert.equal(viewer().props.preview.tree_revision,current,'retired response cannot replace current result');
  }finally{await h.close();}
 });
 

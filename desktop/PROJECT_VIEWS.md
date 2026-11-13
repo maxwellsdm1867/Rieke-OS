@@ -41,7 +41,7 @@ A document reactivated while a checkpoint is pending wins over eviction.
 `prepareClose({projectUuid,path})` checkpoints the exact matching retained target,
 including hidden documents. It blocks reactivation until cancellation or confirmed
 closure. Main's `desktop:confirm-project-closed` requires authenticated root health
-that no longer reports that UUID/path. A renderer declaration alone cannot
+that no longer reports that UUID/path. Because the close response precedes HTTP-server exit, confirmation polls within the supervisor drain deadline and revalidates the captured root identity on every response. A live child, changed root, failed request or expired deadline retains the fenced view. A renderer declaration alone cannot
 release a view. Closing the active target first activates the launcher, because
 the old renderer cannot navigate after its WebContents is destroyed.
 

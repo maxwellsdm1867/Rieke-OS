@@ -1,0 +1,28 @@
+{
+  "checked_at": "2026-11-07T18:12:55.291898+00:00",
+  "native_shell": "Electron44.9.2 (integration owner launch)",
+  "project_uuid": "d158f86a-7946-4c5d-bc66-23d938f3161a",
+  "protocol_uuid": "2feb9aaf-2c7e-5e84-a716-42ce0c0e9b97",
+  "workflow": "Search\u2192Export\u2192Update pinned\u2192Native refresh renamed\u2192review2removals\u2192consent\u2192Update",
+  "outcome": "passed",
+  "visible_result": {
+    "protocol_name": "Native refresh renamed",
+    "cells": 1,
+    "epochs": 61,
+    "included": 61,
+    "excluded": 0
+  },
+  "manual_metadata_refresh": false,
+  "followup_search_return": "not_verified_due_inconsistent_CUA_native_targeting",
+  "observations": [
+    "Full AX showed63\u219261and2\u21921comparison before apply; immediate navigation to protocol Overview after apply displayed61epochs1cell.",
+    "Later native input focus landed hidden recovery document; AX and screenshot diverged; coordinate click returned noWindowsAvailable.",
+    "Two running com.github.Electron bundle IDs were present in CUA inventory. Duplicate identity is suspected, not proven as the cause.",
+    "Stopped further UI actions; test app intentionally remains running for integration owner."
+  ],
+  "runtime_file_sha256": {
+    "workspace_api.py": "d76d9925163eb7b2c9697ba3875432d4eb7fe79ad4aa86604e50fc3203bcd138",
+    "frontend/index.html": "93be3d251bb8396d5d7238ae30dab325e4b86e0b3cdf123e12a3753b36b56f65",
+    "/assets/index-D7uAcoFj.js": "dc7c5bfdc6bb7e216138a3523eca4eacaf3e1708c9101d998ce4d3a73069566f"
+  }
+}

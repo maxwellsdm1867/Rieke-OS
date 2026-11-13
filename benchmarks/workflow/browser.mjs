@@ -392,8 +392,8 @@ export async function run(config){
         receipt.setup_receipts.push({phase,sample,action:'workbench.prepare/fresh',...reset});
         await fs.appendFile(path.join(output,'setup-receipts.jsonl'),JSON.stringify(receipt.setup_receipts.at(-1))+'\n');
         const preparation=await measure('workbench.prepare','fresh',button('Benchmark Workbench'),{selector:'button',text:'Select all',enabled:true,requestPath:'/prepare',prepared:true,preparedUuids:meta.incoming_epochs,expectedReused:false,expectedPrepareStatus:201});
-        await measure('tree.selection','incoming-select-all',button('Select all'),{selector:'button',text:`Merge (${meta.incoming_count} epochs)`,selected:meta.incoming_epochs});
-        await measure('tree.selection','incoming-deselect-all',button('Deselect all'),{selector:'button',text:'Merge (0 epochs)',selected:[]});
+        await measure('tree.selection','incoming-select-all',page.getByRole('region',{name:'Incoming selection actions',exact:true}).getByRole('button',{name:'Select all',exact:true}),{selector:'button',text:`Merge (${meta.incoming_count} epochs)`,selected:meta.incoming_epochs});
+        await measure('tree.selection','incoming-deselect-all',page.getByRole('region',{name:'Incoming selection actions',exact:true}).getByRole('button',{name:'Deselect all',exact:true}),{selector:'button',text:'Merge (0 epochs)',selected:[]});
         await button('Benchmark Away').click();
         await page.evaluate(()=>{delete window.__workflow.incomingSession;});
         const replay=await measure('workbench.prepare','receipt-replay',button('Benchmark Workbench'),{selector:'button',text:'Select all',enabled:true,requestPath:'/prepare',prepared:true,preparedUuids:meta.incoming_epochs,expectedReused:false,expectedPrepareStatus:200,expectedCandidate:preparation.correctness.prepared.candidate_revision_uuid,expectedOperation:preparation.correctness.prepared.operation_uuid});

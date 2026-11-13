@@ -26,7 +26,9 @@ export async function createInspectorHarness({liveMetadata=true}={}){
       if(id==='\0inspector-tree-owner')return 'export const useTreeBranchReads=()=>null;';
       if(id==='\0inspector-api')return `
         const fixture=globalThis[${JSON.stringify(key)}];
-        export const api=(...args)=>fixture.api(...args);
+        export const api=(path,options)=>path==='/annotations/read'&&options?.background===true?
+          (fixture.selectedCellRead?.(path,options)??Promise.resolve({annotations:Object.fromEntries(options.body.target_uuids.map(epoch_uuid=>[epoch_uuid,{epoch_uuid,cell_uuid:'cell-A'}]))})):
+          fixture.api(path,options);
         export {resolveCurationTargets,number,humanize} from '/src/api.js';
         export const useEpochPrefetch=()=>{},useWholeTraceWarm=()=>{};
         export const useResource=(path,revision,delayMs=0)=>{fixture.resources.push({path,revision,delayMs});return fixture.resource?.(path,revision)||({path,loading:false,error:null,reload:()=>{},data:path?.includes('/epochs?')?{offset:0,total:1,epochs:[fixture.epoch],cells:fixture.protocol.cells||[],query_revision:fixture.protocol.query_revision,expected_binding_version:fixture.protocol.expected_binding_version??0,...fixture.page}:path?.includes('/epochs/')?fixture.epoch:{fields:[]}});};
@@ -38,8 +40,16 @@ export async function createInspectorHarness({liveMetadata=true}={}){
   }]});
   const {default:Inspector}=await server.ssrLoadModule('/src/epoch-browser/ui/Inspector.jsx');
   const {WorkspaceRequestProvider}=await server.ssrLoadModule('/src/workspaceRequest.js');let root;
+  const {RetainedWorkspaceViews,RetainedWorkspacePanel,useRetainedViewProtection}=await server.ssrLoadModule('/src/retainedWorkspaceViews.js');
+  const presentation={remember(){}};
+  function ProtectedInspector({props,busy}){useRetainedViewProtection({busy});return React.createElement(Inspector,props);}
   return {fixture,
-    async render(props,{port,activity='visible'}={}){fixture.protocol=props.protocol;await act(async()=>{const inspector=React.createElement(React.Activity,{mode:activity},React.createElement(Inspector,props));const element=port===undefined?inspector:React.createElement(WorkspaceRequestProvider,{port},inspector);if(root)root.update(element);else root=TestRenderer.create(element);});},
+    async render(props,{port,activity='visible',retainedActive,nestedActive=true,retainedBusy=false}={}){fixture.protocol=props.protocol;await act(async()=>{
+      const inspector=retainedActive===undefined?React.createElement(React.Activity,{mode:activity},React.createElement(Inspector,props)):
+        React.createElement(RetainedWorkspaceViews,{route:{key:retainedActive?'inspect':'other',page:retainedActive?'protocol':'overview',...(retainedActive?{protocol:props.protocol.definition.protocol_uuid}:{})},projectId:'fixture-project',projectPath:'/fixture',presentation,
+          render:route=>route.key==='inspect'?React.createElement(RetainedWorkspacePanel,{name:'inspect',visible:nestedActive},React.createElement(ProtectedInspector,{props,busy:retainedBusy})):null});
+      const element=port===undefined?inspector:React.createElement(WorkspaceRequestProvider,{port},inspector);if(root)root.update(element);else root=TestRenderer.create(element);
+    });},
     get viewer(){return root.root.findByType('inspector-viewer').props;},
     get tags(){return this.viewer.tags.props.children.props;},
     async act(callback){await act(callback);},

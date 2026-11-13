@@ -138,3 +138,35 @@ test('ghost completion shows the rest of an existing tag in grey; Tab accepts it
     assert.equal(h.fixture.requests.slice(before).length,0,'Suggestions and completion are local');
   }finally{await h.close();}
 });
+
+test('bulk tag add and typed removal mutate only the selected epochs and active author',async()=>{
+ const h=await createWorkflowHarness();
+ try{
+  const Tags=await h.component('AnnotationTags');await h.mount(Tags,{...props,reconcileReceipt:true});
+  await h.waitFor(()=>editor(h)&&!editor(h).props.disabled);
+  await h.act(()=>editor(h).props.onChange({target:{value:'bulk-reviewed'}}));
+  await h.act(()=>editor(h).parent.props.onSubmit({preventDefault(){}}));
+  await h.waitFor(()=>['epoch-0','epoch-1'].every(id=>h.fixture.annotations.get(id)?.includes('bulk-reviewed')));
+  await h.act(()=>editor(h).props.onChange({target:{value:'bulk-reviewed'}}));
+  const remove=()=>h.root.findAllByType('button').find(button=>button.props['aria-label']==='Remove my tag from 2 selected epochs');
+  await h.waitFor(()=>remove()&&!remove().props.disabled);await h.act(()=>remove().props.onClick());
+  await h.waitFor(()=>['epoch-0','epoch-1'].every(id=>!h.fixture.annotations.get(id)?.includes('bulk-reviewed')));
+  const writes=h.fixture.requests.filter(row=>row.path==='/annotations');assert.equal(writes.length,2);
+  for(const write of writes){assert.deepEqual(write.body.target_uuids,['epoch-0','epoch-1']);assert.equal(write.body.profile_uuid,'author');}
+  assert.deepEqual(writes[0].body.tags_add,['bulk-reviewed']);assert.deepEqual(writes[1].body.tags_remove,['bulk-reviewed']);assert.deepEqual(writes[1].body.tags_add,[]);
+  assert.equal(h.fixture.annotations.has('epoch-2'),false);
+ }finally{await h.close();}
+});
+
+test('failed bulk tag removal retains the typed tag and never retries or clears known tags',async()=>{
+ const h=await createWorkflowHarness();
+ try{
+  for(const id of ['epoch-0','epoch-1'])h.fixture.annotations.set(id,['keep']);
+  const Tags=await h.component('AnnotationTags');await h.mount(Tags,{...props,reconcileReceipt:true});await h.waitFor(()=>editor(h)&&!editor(h).props.disabled);
+  await h.act(()=>editor(h).props.onChange({target:{value:'keep'}}));h.fixture.failNextSave=true;
+  await h.act(()=>h.root.findAllByType('button').find(button=>button.props['aria-label']==='Remove my tag from 2 selected epochs').props.onClick());
+  await h.waitFor(()=>h.root.findAllByProps({role:'alert'}).length>0);await h.settle(50);
+  assert.equal(editor(h).props.value,'keep');assert.equal(h.fixture.requests.filter(row=>row.path==='/annotations').length,1);
+  for(const id of ['epoch-0','epoch-1'])assert.deepEqual(h.fixture.annotations.get(id),['keep']);
+ }finally{await h.close();}
+});

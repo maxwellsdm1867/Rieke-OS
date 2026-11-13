@@ -1,0 +1,32 @@
+{
+  "keys": [
+    "active_source_counts",
+    "annotation_summary",
+    "catalog",
+    "cells",
+    "cells_next",
+    "cells_total",
+    "counts",
+    "events",
+    "exports",
+    "project",
+    "protocols",
+    "source_scope",
+    "sources"
+  ],
+  "counts": {
+    "approved": 0,
+    "cells": 2,
+    "duration_seconds": 1.612800000000001,
+    "epochs": 63,
+    "exported": 0,
+    "included": 63,
+    "protocols": 2,
+    "reviewed": 0,
+    "shared_tagged_cells": 0,
+    "shared_tagged_epochs": 0,
+    "sources": 1,
+    "unreviewed": 63
+  },
+  "source_count": 1
+}

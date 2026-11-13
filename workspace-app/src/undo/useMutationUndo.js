@@ -11,6 +11,19 @@ import {desktopBridge} from "../desktopLifecycle.js";
 export async function persistUndo(input,request=api){
  const action=expandUndoAction(input);
  const options={method:'POST',undoOperation:true};
+ if(action.kind==='protocol-membership'){
+  const result=await request(`/protocols/${action.protocol_uuid}/membership/undo-remove`,{...options,body:{
+   removal_revision_uuid:action.removal_revision_uuid,expected_binding_version:action.expected_binding_version}});
+  if(result?.protocol_uuid!==action.protocol_uuid||result.binding?.version!==action.expected_binding_version+1||
+    !Array.isArray(result.restored_epoch_uuids)||result.restored_epoch_uuids.length!==action.count||new Set(result.restored_epoch_uuids).size!==action.count){
+   const error=Error('The membership restore receipt is incomplete. Refresh this protocol.');error.saved=true;throw error;
+  }
+  if(result.next_undo!=null&&(typeof result.next_undo.removal_revision_uuid!=='string'||
+    result.next_undo.expected_binding_version!==result.binding.version)){
+   const error=Error('The membership Undo continuation is incomplete. Refresh this protocol.');error.saved=true;throw error;
+  }
+  return {revisions:{},kind:'membership',protocolId:action.protocol_uuid,nextMembershipUndo:result.next_undo};
+ }
  if(action.kind==='annotation_group'){
   // Keep this UUID in session history for recovery-unconfirmed retries.
   action.inverse_operation_uuid ||= crypto.randomUUID();
@@ -41,7 +54,7 @@ export async function persistUndo(input,request=api){
 export function useMutationUndo(projectId,onChanged){
  const changed=useRef(onChanged);changed.current=onChanged;
  useEffect(()=>{mutationUndo.project(projectId);groupAnnotationRecovery.project(projectId);return groupAnnotationRecovery.onChange(event=>{if(event.project===projectId&&groupAnnotationRecovery.currentProject()===projectId)changed.current?.({kind:'annotations'});});},[projectId]);
- const run=async()=>mutationUndo.undo(async action=>{try{const result=await persistUndo(action);changed.current?.({kind:result.kind,confirmed:result.confirmed});return result;}catch(error){if(error.saved)changed.current?.({kind:action.kind==='annotation_group'?'annotations':action.kind});throw error;}});
+ const run=async()=>mutationUndo.undo(async action=>{try{const result=await persistUndo(action);changed.current?.({kind:result.kind,confirmed:result.confirmed,...(result.protocolId?{protocolId:result.protocolId}:{})});return result;}catch(error){if(error.saved||action.kind==='protocol-membership')changed.current?.({kind:action.kind==='annotation_group'?'annotations':action.kind==='protocol-membership'?'membership':action.kind,...(action.kind==='protocol-membership'?{protocolId:action.protocol_uuid}:{})});throw error;}});
  const current=useRef(run);current.current=run;
  useEffect(()=>installUndoShortcuts({documentObject:document,bridge:desktopBridge(),run:()=>current.current(),enabled:undoEnabled}),[]);
  return {...mutationUndo.view(),enabled:undoEnabled,undo:run};

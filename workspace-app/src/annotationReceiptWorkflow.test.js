@@ -7,6 +7,7 @@ import {createResourceCache} from './resourceCache.js';
 const input=h=>h.root.findAllByType('input').find(node=>node.props['aria-label']?.startsWith('Tag ')&&!node.props['aria-label'].startsWith('Tag to add'));
 async function ready(h){await h.waitFor(()=>{try{return !!input(h)&&!input(h).props.disabled;}catch{return false;}});}
 async function save(h,value){await h.act(()=>input(h).props.onChange({target:{value}}));await h.act(()=>input(h).parent.props.onSubmit({preventDefault(){}}));await ready(h);}
+const isEpochRead=path=>path.startsWith('/epochs/')||path.includes('/epochs?');
 const text=node=>node.children.filter(value=>typeof value==='string').join('').trim();
 async function filterRules(h,logic,rules){
   await h.act(()=>h.root.findByProps({className:'protocol-view-filter'}).findByType('button').props.onClick());
@@ -29,14 +30,27 @@ test('mounted tag10 then another10 acknowledges each exact receipt, then compose
       const ids=Array.from({length:10},(_,offset)=>`epoch-${start+offset}`);
       await h.act(()=>h.viewer.treePane.listProps.setTargets(ids));
       const before=h.fixture.requests.length;
-      await save(h,tag);
-      const calls=h.fixture.requests.slice(before);
-      assert.deepEqual(calls.filter(row=>row.method==='POST').map(row=>row.path),['/annotations'],'Never-tagged targets: one write, no pre-read');
-      assert.deepEqual(calls.find(row=>row.path==='/annotations').body.target_uuids,ids);
-      assert.equal(calls.filter(row=>row.path.startsWith('/epochs/')||row.path.includes('/epochs?')).length,0,'Acknowledgment must not wait for an epoch/page read');
-      assert.equal(input(h).props.disabled,false);
-      assert.match(h.root.findByProps({className:'annotation-result'}).children.join(''),/Saved 10 selected epoch/);
-      for(const id of ids)assert.deepEqual(h.fixture.annotations.get(id),[tag]);
+      let release;
+      const gate=new Promise(resolve=>{release=resolve;});
+      h.fixture.respond=async(url,options,next)=>{
+        if((options.method||'GET')==='GET'&&isEpochRead(url.pathname.replace(/^\/api/,'')+url.search))await gate;
+        return next();
+      };
+      try{
+        await save(h,tag);
+        // Background membership refresh may start before a busy runner observes
+        // the acknowledgment. Prove it cannot block acknowledgment by holding it.
+        await h.waitFor(()=>h.fixture.requests.slice(before).some(row=>isEpochRead(row.path)&&!row.completed));
+        const calls=h.fixture.requests.slice(before);
+        assert.deepEqual(calls.filter(row=>row.method==='POST').map(row=>row.path),['/annotations'],'Never-tagged targets: one write, no pre-read');
+        assert.deepEqual(calls.find(row=>row.path==='/annotations').body.target_uuids,ids);
+        assert.ok(calls.some(row=>isEpochRead(row.path)&&!row.completed),'Epoch/page response remains unresolved at acknowledgment');
+        assert.equal(input(h).props.disabled,false);
+        assert.match(h.root.findByProps({className:'annotation-result'}).children.join(''),/Saved 10 selected epoch/);
+        for(const id of ids)assert.deepEqual(h.fixture.annotations.get(id),[tag]);
+      }finally{release();h.fixture.respond=undefined;}
+      await h.waitFor(()=>!h.viewer.treePane.listProps.disabled&&h.viewer.treePane.listProps.source.queryRevision===`query-${start===0?1:2}`);
+      assert.equal(h.viewer.navigation.total,40);
     }
     await filterRules(h,'any',[{scope:'effective',value:'A'},{scope:'epoch',value:'B'}]);
     assert.equal(h.viewer.navigation.total,20);

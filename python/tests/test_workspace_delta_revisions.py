@@ -192,7 +192,9 @@ class DeltaRevisionTests(_Workbench):
         after = history.protocol_binding_header(self.protocol)
         self.assertEqual(after['revision_uuid'], before['revision_uuid'])
         self.assertEqual(dict(history.members(after['revision_uuid']).items()), before_members)
-        self.assertFalse([row for row in self.membership.rows if row['added_revision_uuid'] == head])
+        self.assertEqual(sorted(row['epoch_uuid'] for row in self.membership.rows if row['added_revision_uuid'] == head),
+                         sorted([self.added, first]))
+        history.verify_membership(head)  # Historical recipes and other pins remain valid.
         self.assertEqual(self.queue()['pending_epoch_count'], 2)
         again = self.post_merge()
         self.assertEqual(again.status_code, 200, again.get_json())

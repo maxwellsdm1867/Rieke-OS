@@ -323,6 +323,29 @@ class SourceCITests(unittest.TestCase):
         self.jobs[4] = [dict(name='Verify smoke', conclusion='success')]
         with self.assertRaisesRegex(ValueError, 'Verify updater'): self.verify()
 
+    def test_extended_explanation_only_is_allowed_when_all_requirements_are_identical(self):
+        self.all_suites()
+        self.plans['release-plan.json']['risk_reasons'] = {'packaging': ['desktop/main.cjs']}
+        self.verification_plan = copy.deepcopy(self.plans['release-plan.json'])
+        self.verification_plan['risk_reasons']['extended'] = ['Explicit extended qualification requested']
+        self.assertEqual(self.verify()['verification_run'], 4)
+        self.assertIn('extended', self.verification_plan['risk_reasons'])
+        self.assertNotIn('extended', self.plans['release-plan.json']['risk_reasons'])
+        accepted = copy.deepcopy(self.verification_plan)
+        for change in ({'head': 'f' * 40}, {'updater': False}, {'updater': 1},
+                       {'base': 'f' * 40}, {'extra': 'changed'}):
+            self.verification_plan = {**accepted, **change}
+            with self.assertRaisesRegex(ValueError, 'Verification plan'): self.verify()
+        for reasons in ({'extended': ['Explicit extended qualification requested']},
+                        {'packaging': ['changed'], 'extended': ['Explicit extended qualification requested']},
+                        {'packaging': ['desktop/main.cjs'], 'extended': ['other explanation']},
+                        {'packaging': ['desktop/main.cjs'], 'extended': ['Explicit extended qualification requested'], 'other': []}):
+            self.verification_plan = {**accepted, 'risk_reasons': reasons}
+            with self.assertRaisesRegex(ValueError, 'Verification plan'): self.verify()
+        self.verification_plan = accepted
+        self.plans['release-plan.json']['database'] = False
+        with self.assertRaisesRegex(ValueError, 'Verification plan'): self.verify()
+
     def test_each_original_required_verification_suite_and_compact_proof_is_required(self):
         self.all_suites(); original = copy.deepcopy(self.jobs[4])
         for i, job in enumerate(original):

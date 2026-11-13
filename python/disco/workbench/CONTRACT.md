@@ -189,6 +189,15 @@ minus the accepted epochs (main's query and seen recordings are unchanged), so
 neither merge nor undo re-runs main's query. Re-running a search predicate
 is the separate, explicit full-diff path.
 
+Explicit pinned removals and their inverses preserve that original seen-source
+boundary. Discovery follows the sealed membership-edit chain and suppresses
+explicitly removed epoch UUIDs; it does not mark their entire recording seen.
+Thus removing an accepted epoch from a partially merged recording leaves its
+unmerged sibling pending, without reoffering the deliberately removed epoch.
+Undo restores only the removed membership. These per-UUID decisions survive read
+manager cache resets. A merge Undo retains immutable lineage additions needed
+by other pins or historical exports; its restored chain excludes them.
+
 The combined review is one immutable candidate per main revision and pool
 (`prepare_pool_candidate`): main plus the whole pool, parented on main, with no
 origin proposals to re-prove. Left-out decisions carry forward for unchanged

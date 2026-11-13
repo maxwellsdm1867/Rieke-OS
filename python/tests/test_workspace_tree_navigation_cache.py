@@ -2,6 +2,7 @@
 from pathlib import Path
 import tempfile
 import copy
+import cProfile
 import unittest
 import sys
 import gc
@@ -36,16 +37,17 @@ class StructuralNavigationTests(unittest.TestCase):
         self.addCleanup(index.close)
         return index
 
-    def pages(self, body):
-        root = self.pager.page(body)
+    def pages(self, body, pager=None):
+        pager = self.pager if pager is None else pager
+        root = pager.page(body)
         result = []
         def walk(page):
             result.append(page)
             for branch in page['branches']:
-                walk(self.pager.page({**body, 'path': branch['path'],
+                walk(pager.page({**body, 'path': branch['path'],
                                      'revision': root['revision']}))
             if page['has_more']:
-                walk(self.pager.page({**body, 'path':page['path'],
+                walk(pager.page({**body, 'path':page['path'],
                     'offset':page['offset']+page['limit'], 'revision':root['revision']}))
         walk(root)
         return result
@@ -67,6 +69,101 @@ class StructuralNavigationTests(unittest.TestCase):
              patch.object(self.service, 'curation_provider', side_effect=AssertionError('No full curation read')):
             self.assertEqual([self.pages(body) for body in bodies], expected)
             self.assertEqual([self.pager.page(body) for body in anchors], expected_anchors)
+
+    def test_compact_counts_pages_anchors_and_selection_match_general_reader(self):
+        template = next(iter(self.service.rows.values()))
+        detail = next(iter(self.service.details.values()))
+        self.service.rows, self.service.details, self.service._fingerprints = {}, {}, {}
+        for n in range(70):
+            identity = f'00000000-0000-0000-0000-{n + 1:012x}'
+            self.service.rows[identity] = {**template, 'epoch_uuid': identity,
+                'cell_uuid': self.service.cell_ids[n % 2], 'cell_label': f'Cell{n % 2}',
+                'date': f'2026-09-{24 + n % 3:02d}',
+                'start_time': f'09/{24 + n % 3:02d}/2026 12:00:{n % 60:02d}:000000',
+                'block_uuid': None if n % 11 == 0 else f'00000000-0000-0000-0001-{n % 4:012x}',
+                'block_start_time': f'09/24/2026 11:00:{3 - n % 4:02d}:000000'}
+            self.service.details[identity] = copy.deepcopy(detail)
+            self.service._fingerprints[identity] = 'b' * 64
+        self.service.protocols[self.service.protocol_id]['result']['epochs'] = [
+            {'uuid': identity, 'metadata_hash': 'b' * 64} for identity in self.service.rows]
+        bodies = [{'splits': order, 'limit': 1, 'counts_only': True, **scope}
+                  for order in ('date,cell,block', 'block,date,cell', 'cell', 'date')
+                  for scope in ({}, {'protocol_uuid': self.service.protocol_id},
+                                {'filters': {'cell_type': 'ON'}})]
+        expected = [self.pages(body) for body in bodies]
+        self.index()
+        self.assertEqual([self.pages(body) for body in bodies], expected)
+        body = {'protocol_uuid': self.service.protocol_id, 'splits': 'date,cell,block',
+                'counts_only': True, 'limit': 2}
+        root = self.pager.page(body)
+        values = self.pager._scope(body)[2]
+        compact = values.compact
+        self.assertIsNotNone(compact)
+        self.assertLessEqual(values.group_bytes + values.compact_bytes, values.grouping_budget)
+        profile = cProfile.Profile()
+        with profile:
+            for identity in self.service.rows:
+                anchor = self.pager.page({**body, 'anchor_uuid': identity})
+                self.assertIn(identity, [row['epoch_uuid'] for row in anchor['epochs']])
+                self.assertEqual(self.pager.page(body), root)
+                self.assertIs(values.compact, compact)
+        self.assertFalse(any(getattr(item.code, 'co_name', None) == '_group_buckets' for item in profile.getstats()))
+        selected = self.pager.selection({'protocol_uuid': self.service.protocol_id,
+            'splits': body['splits'], 'revision': root['revision']}, root['count'])
+        leaf_ids = [row['epoch_uuid'] for page in self.pages(body) for row in page['epochs']]
+        self.assertEqual(selected['epoch_uuids'], leaf_ids)
+        self.assertLessEqual(values.group_bytes + values.compact_bytes, values.grouping_budget)
+        compact_pages = self.pages(body)
+        anchors = [self.pager.page({**body, 'anchor_uuid': identity}) for identity in self.service.rows]
+        class GeneralReader(TreePages):
+            def _scope(self, request):
+                return super()._scope(request)
+        general = GeneralReader(self.service)
+        self.assertEqual(self.pages(body, general), compact_pages)
+        self.assertEqual([general.page({**body, 'anchor_uuid': identity})
+                          for identity in self.service.rows], anchors)
+
+    def test_compact_budget_refusal_falls_back_once_and_keeps_original_reservation(self):
+        self.index()
+        body = {'protocol_uuid': self.service.protocol_id, 'splits': 'date,cell,block', 'counts_only': True}
+        scope = self.pager._scope(body)
+        values = scope[2]
+        self.assertEqual(values.compact_budget, min(12 * 1024 * 1024, values.grouping_budget))
+        class GeneralReader(TreePages):
+            def _scope(self, request):
+                return super()._scope(request)
+        expected = GeneralReader(self.service).page(body)
+        values.compact_budget = 1
+        profile = cProfile.Profile()
+        with profile:
+            self.assertEqual(self.pager.page(body), expected)
+            self.assertEqual(self.pager.page(body), expected)
+        self.assertEqual(sum(item.callcount for item in profile.getstats()
+                             if getattr(item.code, 'co_qualname', None) == '_CompactTree.__init__'), 1)
+        self.assertIsNone(values.compact)
+        self.assertEqual(values.compact_bytes, 0)
+        self.assertLessEqual(values.group_bytes, values.grouping_budget)
+
+    def test_compact_cohort_and_revision_fences_reject_outside_and_changed_membership(self):
+        self.index()
+        body = {'protocol_uuid': self.service.protocol_id, 'splits': 'cell,block', 'counts_only': True}
+        removed = self.service.protocols[self.service.protocol_id]['result']['epochs'].pop()['uuid']
+        root = self.pager.page(body)
+        self.assertIsNotNone(self.pager._scope(body)[2].compact)
+        with self.assertRaises(KeyError):
+            self.pager.page({**body, 'anchor_uuid': removed})
+        remaining = self.service.protocols[self.service.protocol_id]['result']['epochs'][0]['uuid']
+        self.service._fingerprints[remaining] = 'c' * 64
+        with self.assertRaises(StaleTreePage):
+            self.pager.page({**body, 'revision': root['revision']})
+        latest = self.pager.page(body)
+        self.service.protocols[self.service.protocol_id]['result']['epochs'].pop()
+        with self.assertRaises(StaleTreePage):
+            self.pager.page({**body, 'revision': latest['revision']})
+        empty = self.pager.page(body)
+        self.assertEqual(empty['count'], 0)
+        self.service._fingerprints[remaining] = 'd' * 64
+        self.assertEqual(self.pager.page({**body, 'revision': empty['revision']}), empty)
 
     def test_cache_refuses_membership_fingerprint_source_binding_and_file_changes(self):
         index = self.index()

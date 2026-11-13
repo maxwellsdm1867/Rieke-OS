@@ -54,6 +54,10 @@ def _session_phase(user_state, record):
 
 
 class ProjectData:
+    @staticmethod
+    def _import_trace_library():
+        import h5py  # noqa: F401 - process-local library initialization only
+
     def __init__(self, shell, build, cleanup_failed, receipt, identity):
         self.shell, self.build, self.cleanup_failed = shell, build, cleanup_failed
         self.receipt, self.identity = receipt, identity
@@ -61,6 +65,7 @@ class ProjectData:
         self.application = self.partial = None
         self.loading = self.attempted = False
         self.error = self.cleanup_error = None
+        self.reader_preparation = None
         self._record('unused')
 
     def _record(self, phase):
@@ -109,6 +114,7 @@ class ProjectData:
                 inbox = app.extensions.get('h5_inbox')
                 if inbox:
                     inbox.start()
+                self._prepare_reader()
             except Exception as error:
                 self.application = None
                 self.error = str(error)
@@ -120,6 +126,28 @@ class ProjectData:
                 raise
             finally:
                 self.loading = False
+
+    def _prepare_reader(self):
+        # Import-only preparation belongs to this backend, never to the launcher.
+        # No recording, dataset, sample cache, or scientific authority is touched.
+        if self.reader_preparation is not None:
+            return
+
+        def prepare():
+            try:
+                self._import_trace_library()
+            except Exception:
+                # Optional preparation must not turn a successful activation into
+                # a failed project. The ordinary reader retains its error path.
+                self.shell.logger.exception('Trace reader preparation failed')
+
+        worker = threading.Thread(target=prepare, name='trace-reader-prepare', daemon=True)
+        try:
+            worker.start()
+        except RuntimeError:
+            self.shell.logger.exception('Trace reader preparation could not start')
+        else:
+            self.reader_preparation = worker
 
     def _cleanup_partial(self):
         app = self.partial

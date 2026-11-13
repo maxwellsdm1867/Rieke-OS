@@ -1,0 +1,165 @@
+✔ cell annotation identity uses UUID rather than reused date or cell labels (3.590167ms)
+✔ inherited, direct, dataset and same-text author annotations remain distinct (0.299333ms)
+✔ bulk targets are exact UUIDs with verified author-specific revisions and no cell promotion (0.357334ms)
+✔ tag filters use exact array membership in the intended shared annotation scope (0.120541ms)
+✔ Tab waits for a tag save and never advances on failure or a changed epoch (0.173875ms)
+✔ compact row indicators show cell tags once and direct tags only on epochs (0.102708ms)
+✔ tag pills keep one color per text and merge authors without hiding distinct tags (0.200875ms)
+✔ chip tooltip shows author and added time; approximate and pending states are explicit (78.669833ms)
+✔ unsaved tag recovery restores one text and names every other cancelled text (0.505958ms)
+✔ bulk removal targets only the active author with exact per-target revisions (0.345041ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ counted selection bar exposes tag, exclude, include and clear with freshness gates (576.097708ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ shared viewer renders bulk controls in list and tree modes without relying on a focused trace (1554.713792ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ mounted Inspector saves 1,000 exact selected epochs in two calls and clears only the successful draft (1010.214667ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ mounted Inspector retains draft and blocks save when selection or scope changes during read (2498.839ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ mounted Inspector keeps the draft after an optimistic save conflict and does not retry (334.889125ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ a retained old Inspector action cannot save a previous scope (345.805333ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ same-scope rerender permits completion; saving never replays after later navigation (586.956084ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ counted Main selection actions exclude and include exactly selected UUIDs in one atomic save (321.607375ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ bulk inclusion refuses changed selection during its receipt read without submitting a write (248.783917ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ Workbench bulk actions use explicit selected UUIDs and incoming decisions rather than Main curation (224.240791ms)
+✔ undo targets original identities after navigation; repeated shortcuts cannot race (2.395916ms)
+✔ sequential undo rebases only the preceding own target revision (0.250458ms)
+✔ session memory enforces action and byte limits; oversized gestures clear whole undo steps (25.124583ms)
+✔ in-flight, failed and no-op gestures cannot be undone; project switching clears session history (0.342166ms)
+✔ conflicts leave history intact and never auto-replay (0.133875ms)
+✔ unfinished text keeps native undo; cleared saved tag input hands off exactly once (0.115083ms)
+✔ curation undo reads only original targets and sends mixed minimal inverse in one mutation (0.886292ms)
+✔ a stale original target prevents every inverse write in a batch (0.284375ms)
+✔ temporary search inclusion undo is local and has no scientific mutation path (0.974208ms)
+✔ browser and Electron use one authoritative gesture path, including delayed DOM delivery (1.271916ms)
+✔ compact 1000-target gestures fit the session budget without repeated tag or profile strings (2.34475ms)
+✔ a confirmed SQL inverse with failed recovery is never offered for replay (0.160125ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ actual annotation and candidate export controls retain unfinished text and format across Activity reconnect (862.417959ms)
+✔ pending hidden panels keep owners mounted while their real portals are hidden and inert (494.678917ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ actual trace window input retains unfinished edits across hide/reveal and resets for another epoch (376.498542ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ saved candidate hydration runs once per identity and preserves later search edits on reveal (698.560042ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ hidden search local undo remains unavailable while an unrelated desktop write keeps Activity mounted (499.953042ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ Search holds the current result owner after annotations change until explicit refresh (540.792333ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ bulk search inclusion is one reversible local action and stays fenced while hidden (730.572375ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ editing a candidate predicate sends no request of any kind and offers no preview (639.39625ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ a restored unsupported saved AST stays visible (400.311041ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ candidate Inspector routes frozen rows/cells/detail and review callbacks without protocol curation (2241.128541ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ viewer-owned unsaved tag drafts survive remount and remain isolated by exact target identity (2629.088166ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ stale group verification after native per-target read preserves draft and submits no write (1583.225708ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ scope change cancels delayed group verification before durable submit (1309.843458ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ successful group verification retains exact initial IDs and native per-actor revision body (747.945542ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+An update to AnnotationTags inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to AnnotationTags inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to AnnotationTags inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to AnnotationTags inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to AnnotationTags inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to AnnotationTags inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to AnnotationTags inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+✔ query group composer submits compact server operation for all 1857 without explicit-target reads (718.814209ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ dismissed query composer still publishes a submitted durable receipt (682.2055ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ multi-selection tags show pending on every selected epoch before the write returns, then confirm (998.302ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ group and confirmed epoch receipts do not tick the app clock; other annotation changes do (720.75525ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ ghost completion shows the rest of an existing tag in grey; Tab accepts it without saving or navigating (785.632167ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ bulk tag add and typed removal mutate only the selected epochs and active author (694.541ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ failed bulk tag removal retains the typed tag and never retries or clears known tags (754.897ms)
+ℹ tests 53
+ℹ suites 0
+ℹ pass 53
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11932.193708

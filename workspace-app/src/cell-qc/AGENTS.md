@@ -8,7 +8,7 @@ recorded labels remain unchanged and unknown types retain the neutral fallback. 
 Existing named exports, component props and adjacent CSS remain the public interface.
 
 Recorded UUIDs identify cells even when labels/dates repeat. Type labels remain source
-metadata; presentation grouping never retypes a cell. Missing type/value/unit stays
+metadata; presentation grouping never retypes a cell. Missing type/value stays
 unknown rather than becoming a zero or a fabricated category count. QC plots use
 finite recorded observations and preserve recorded units. Bath-temperature pages
 remain bounded to 50 observations; opening a selected epoch verifies both its epoch
@@ -49,7 +49,112 @@ and its visible chevron retain keyboard access. QC receives the exact cell UUID
 through the existing caller-owned route callback; it neither toggles disclosure
 nor reads or prepares QC data. Unknown counts/export coverage remain unavailable.
 Recording rig labels use the additive metadata-backed `recording_rigs` and
-`recording_rig_missing` display fields; missing rig is Not recorded, multiple
+`recording_rig_missing` display fields; missing rig falls back to the acquisition filename code only for valid YYYY-MM-DD_CODE.h5 or YYYYMMDDCODE.h5 names; otherwise it is Not recorded. Multiple
 source rigs remain distinguishable, and labels do not change scientific identity.
 `overviewPresentation.test.js` checks collapsed-row navigation, both Overview
 entries and repeated-label UUIDs; browser fixture evidence checks reveal/layout.
+
+QC's top summary shows recorded source rigs and the sum of all same-cell catalog
+epoch durations (unavailable if any duration is missing or invalid). Temperature
+keeps its observation drill-down. Optional voltage preparation remains below the
+recordings. Non-QC protocols have individual `protocol:<exact recorded name>`
+groups; duplicate short labels retain the full name. Legacy `other` paging remains
+readable. Restored `other` navigation resets its combined-list offset and resolves
+the individual protocol from the preserved selected epoch (or the first available
+protocol when no epoch was selected).
+
+QC overview, bounded trial pages and response statistics use the shared 30-second,
+entry/byte-bounded response snapshot cache under exact URL and structure revision.
+Explicit Cell QC refresh invalidates the cell's entire QC prefix before renewing
+reads. Annotation-only changes do not invalidate these annotation-free displays.
+Prepared voltage is excluded: the overview requests `projection=display`,
+and opening the voltage panel reads its existing integrity-checked endpoint.
+Accepted preparation refreshes that panel only. Trace loading proceeds independently
+of response statistics; each displayed statistic still requires matching cell and
+epoch identity. The legacy overview API defaults to including prepared voltage.
+
+First-open display requests `projection=display`: exact temperature properties,
+rigs, durations, family counts and provenance, without unused resistance payloads
+or supporting-voltage validation. The full QC API remains available. The bounded
+trial request resolves `family=default` independently using the same family order
+as the overview; explicit/restored family selection still wins and late reads are
+fenced by path/revision. Trial pages request only epoch parameters from the shared
+metadata owner. Canonical response lookup verifies both cell and epoch UUIDs
+without sorting the whole cell; custom `cell_rows` policy retains its old path.
+
+The Bath temperature tile opens one combined temperature/recording-conditions
+panel with recorded group labels, the lazy trend and paginated epoch readings.
+There is no separate conditions bar. The tile exposes expanded state and controls
+the panel; its close button and the tile both collapse it. Opening uses the existing
+bounded temperature-observations endpoint; the closed tile constructs no trend and
+loads no observation pages. No preparation command or new endpoint is introduced.
+
+Temperature summaries and trial rows show recorded units (Celsius aliases display
+as °C). Values strictly below 25 °C, or the equivalent in recorded °F/K, are red.
+Missing readings are Unknown and red. The tile shows only the numeric range or
+Unknown, without observation counts or explanatory text. Per the scientist’s acquisition convention, bathTemperature
+values without a separate unit field display as Celsius and are not unknown.
+Explicit recorded units remain respected; source metadata remains unchanged and inspectable.
+
+The top summary always shows Pipette solution from recorded group `pipetteSolution`,
+using Not recorded for missing/null. Internal additions and External additions
+are independent conditional cards from `internalSolutionAdditions` and
+`externalSolutionAdditions`. Each appears when it has a recorded display value,
+including explicit N/A or Unknown. Empty/serialized empty lists do not create cards.
+Multiple recorded values remain distinct, and missing groups are disclosed.
+Per-field group provenance is available in each card title. The display overview
+reads one full detail per source/group alongside inline temperature projection;
+no extra endpoint, preparation command or per-epoch ancestor copying is introduced.
+
+Literal NA/N/A/not applicable remains N/A; missing/null remains Not recorded.
+Technique and protocol names never synthesize N/A. The observed project catalog
+has these three solution fields; no base external solution is inferred.
+
+Cell QC uses a compact toolbar for Back, epoch/block counts, UUID copy and refresh.
+The metrics row's left identity tile contains the recorded type, retinal icon,
+cell name and recorded date; no duplicate hero/banner sits above it. Full UUID
+is in the copy control's title and exposed as selectable text if clipboard fails.
+Recorded identity qualifiers remain visible. Dates are never rewritten.
+
+An explicit epoch entry anchors its first bounded trial page via the existing
+`GET /cells/<cell>/qc/epochs` read with `anchor_epoch_uuid`. With `family=default`,
+the backend resolves the target's QC family (or exact non-QC protocol) and its
+page offset. Anchors outside the cell or requested family are refused. Only the
+returned page's parameter details are read; no waveform or scientific write is
+performed. The renderer retains exact selected-epoch identity and adopts the
+resolved page only while that entry intent is current; explicit family changes
+win over late anchor responses. History restores its own selected trial/page.
+The explicit entry's selected row is revealed by scrolling only the bounded trial
+list, without moving the outer workspace or stealing keyboard focus. Hidden lists
+perform no scroll work.
+
+Cell QC date and cell label share one prominent heading. Metric values retain their vertical midpoint
+and use the label text’s left anchor, with larger primary values. All summary tiles remain in one horizontal row, including additions. Narrow
+views scroll the summary horizontally instead of wrapping cards or shrinking
+primary text below a readable size. The rig
+filename fallback is display-only and never changes recorded metadata.
+
+Field labels sit at the upper-left of each metric tile, independently of the
+vertically centered primary value. Redundant acquisition/provenance captions are omitted;
+source group provenance stays in the solution tooltip, and incomplete-group
+warnings remain visible below the value. Identity leads with date/cell, followed by the original icon beside the cell type.
+
+The summary uses common text anchors: metric values align with their label text,
+not the leading label icon. Their approved vertical midpoint is preserved.
+Identity keeps its horizontal centering, 18px dark date/cell text and familiar 42px
+glyph. The date/cell line starts near the upper field-label level; the glyph and
+larger 22px cell type share the next line. The summary row is 120px minimum high.
+Qualifiers remain in normal flow. The user selected compact variant B from the
+throwaway comparison on branch codex/qc-identity-layout-prototype at 437f270 (initial compact B at c9b691f),
+reviewed visually at full and narrower widths before native qualification.
+
+
+## Selected three-field identity layout (2026-10-31)
+The current approved design supersedes the earlier centered identity-tile notes.
+A page heading shows recorded date · cell name · rig. Rig uses the existing
+recorded-rig/filename-fallback presentation and is no longer a separate tile.
+The horizontal row contains Cell type, Bath temperature, Pipette solution, plus
+recorded additions when present. Cell type uses existing CellsIcon (16px) in its
+label and CellTypeIcon (36px wide, 42px high) beside its 30px type value. The row
+retains 120px minimum height, qualifiers, missing-value warnings, and horizontal
+scrolling at narrow widths. No scientific metadata changes.

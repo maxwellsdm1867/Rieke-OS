@@ -21,6 +21,21 @@ Temporary search-inclusion undo remains local to the original viewer and has no
 scientific mutation path. Text inputs preserve native editing undo; saved empty tag
 input handoff and Electron/browser dispatch still share one authoritative gesture.
 
+Pinned-membership receipts retain only protocol/removal identities, binding version
+and bounded count. The server derives the inverse from sealed history; no epoch
+list is supplied by Undo. A successful inverse can rebase only the exact preceding
+receipt named by `next_undo`. Any unconfirmed membership inverse invalidates its
+original protocol, without automatic replay. Tests: `mutationUndo.test.js` and
+`membershipUndoLifecycle.test.js`.
+
+The top pinned-removal receipt exposes a display-only summary for the bottom-left
+Undo notice. The notice persists until Undo, dismissal or replacement by another
+edit; project changes retire it. Its Undo button rechecks the live project and
+removal identity before invoking the same canonical Undo handler. Dismissal
+does not clear history. Pending/busy gates and server-derived inverses remain
+unchanged. `removalNotice.test.js` covers stale clicks, dismissal, failures and
+project changes.
+
 Deleting this owner distributes serialization, original-target and revision-rebase
 knowledge to editors. A smaller export list would hide needed capabilities rather
 than reduce caller knowledge. KEEP the factory, singleton, hook and shortcut entries

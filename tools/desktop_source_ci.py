@@ -12,6 +12,24 @@ import tempfile
 from pathlib import Path
 
 
+def matching_verification_plan(original, verified):
+    if verified == original:
+        return True
+    # Explicit extended qualification adds an explanation even when source
+    # changes already require every suite. It must not change any requirement.
+    flags = ('build_required', 'updater', 'database', 'packaging', 'full_ui')
+    if not all(original.get(flag) is True and verified.get(flag) is True for flag in flags):
+        return False
+    reasons = verified.get('risk_reasons')
+    original_reasons = original.get('risk_reasons')
+    if (not isinstance(reasons, dict) or not isinstance(original_reasons, dict)
+            or 'extended' in original_reasons
+            or reasons.get('extended') != ['Explicit extended qualification requested']):
+        return False
+    normalized = {**verified, 'risk_reasons': {key: value for key, value in reasons.items() if key != 'extended'}}
+    return normalized == original
+
+
 def api(path):
     return json.loads(subprocess.check_output(['gh', 'api', path], text=True))
 
@@ -234,7 +252,7 @@ def _require_source_ci(repository, source, candidate_run_id, verification_run_id
     if not isinstance(harness, str) or not re.fullmatch('[0-9a-f]{40}', harness):
         raise ValueError('Verification requires an exact harness commit')
     verified_plan = artifact(repository, verification, 'desktop-release-plan', 'release-plan.json')
-    if (verified_plan != plan or verified_plan.get('build_required') is not True
+    if (not matching_verification_plan(plan, verified_plan) or verified_plan.get('build_required') is not True
             or any(type(verified_plan.get(flag)) is not bool for flag in flags)):
         raise ValueError('Verification plan differs from the original exact-source candidate plan')
     require_jobs(repository, verification, [f'Verify {suite}' for suite in suites])

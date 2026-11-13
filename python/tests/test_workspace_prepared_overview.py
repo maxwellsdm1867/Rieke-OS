@@ -11,6 +11,98 @@ from disco.decisions.explorer import MemberView
 
 
 class PreparedOverviewTests(fixtures.MemoFixture):
+    def test_apply_candidate_preserves_unchanged_native_publication_but_rejects_changed_sources(self):
+        from pathlib import Path
+        from recording_workspace import write_json
+        from workspace_service import freeze
+        # This fixture has SQL leaf doubles, not transactional generation locks.
+        self.tracker.assert_current_locked = lambda expected: self.assertEqual(self.tracker.token(self.protocol), expected)
+        entry = self.service.protocols[self.protocol]
+        path = Path(self.case.temp.name) / 'protocols' / 'fixture.protocol.json'
+        path.parent.mkdir(exist_ok=True)
+        write_json(path, entry['definition'])
+        self.service.protocols = freeze({**self.service.protocols, self.protocol: {**entry, 'file': path}})
+        history = self.case.explorer_history
+        preview = self.service.explore_preview({'all': []}, 'cell', include_tree=False, include_catalog_summary=False)
+        initial = history.create(preview, self.service.sources, 'catalog.json', 'fixture')
+        history.bind(initial['revision_uuid'], self.protocol, 0, 'fixture', {}, 2)
+        preview = self.service.explore_preview({'field': 'epoch', 'operator': 'eq', 'value': self.ids[0]},
+            'cell', include_tree=False, include_catalog_summary=False)
+        candidate = history.create(preview, self.service.sources, 'catalog.json', 'fixture')
+        endpoint = '/api/explore/revisions/' + candidate['revision_uuid']
+        def compare():
+            response = self.client.post(endpoint + '/compare-to-protocol',
+                json={'protocol_uuid': self.protocol}, headers=self.case.headers)
+            self.assertEqual(response.status_code, 200, response.get_json())
+            comparison = response.get_json()
+            self.assertTrue(comparison['expected_query_revision'].startswith('protocol-state-v5:'))
+            return {key: comparison[key] for key in ('protocol_uuid', 'expected_binding_version', 'expected_query_revision')}
+        def republish():
+            self.service.protocols = freeze(dict(self.service.protocols))
+        expected = compare()
+        with patch.object(self.service, 'verify_sources', return_value=None) as verify, \
+             patch.object(self.service, 'refresh', side_effect=republish) as refresh:
+            response = self.client.post(endpoint + '/apply-to-protocol', json=expected, headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        verify.assert_called_once(); refresh.assert_not_called()
+        self.assertEqual(set(history.members(history.protocol_binding_header(self.protocol)['revision_uuid'])), {self.ids[0]})
+        expected = compare()
+        before = history.protocol_binding_header(self.protocol)
+        with patch.object(self.service, 'verify_sources', side_effect=republish):
+            response = self.client.post(endpoint + '/apply-to-protocol', json=expected, headers=self.case.headers)
+        self.assertEqual(response.status_code, 409, response.get_json())
+        self.assertEqual(history.protocol_binding_header(self.protocol), before)
+        # Source witnesses alone do not cover an external edit/delete of the
+        # target manifest. Both must still reject without changing the binding.
+        expected = compare()
+        for state in ('edited', 'deleted'):
+            if state == 'edited':
+                write_json(path, {**entry['definition'], 'name': 'External edit'})
+            else:
+                path.unlink()
+            with patch.object(self.service, 'verify_sources', return_value=None):
+                response = self.client.post(endpoint + '/apply-to-protocol', json=expected, headers=self.case.headers)
+            self.assertEqual(response.status_code, 409, (state, response.get_json()))
+            self.assertEqual(history.protocol_binding_header(self.protocol), before)
+        with patch.object(self.service, 'verify_sources', side_effect=lambda: setattr(self.service, 'protocols', freeze({}))):
+            response = self.client.post(endpoint + '/apply-to-protocol', json=expected, headers=self.case.headers)
+        self.assertEqual(response.status_code, 409, response.get_json())
+        self.assertEqual(history.protocol_binding_header(self.protocol), before)
+
+    def test_rename_republishes_frozen_protocol_and_refreshes_prepared_views(self):
+        from pathlib import Path
+        from workspace_service import freeze, publication_serial
+        from recording_workspace import write_json
+        entry = self.service.protocols[self.protocol]
+        path = Path(self.case.temp.name) / 'protocols' / 'fixture.protocol.json'
+        path.parent.mkdir(exist_ok=True)
+        write_json(path, entry['definition'])
+        self.service.protocols = freeze({**self.service.protocols, self.protocol: {**entry, 'file': path}})
+        before = self.service.protocols
+        original = before[self.protocol]['definition']
+        self.prepare()
+        serial = publication_serial(self.service)
+        endpoint = '/api/protocols/' + self.protocol + '/display-name'
+        with patch('recording_workspace.workspace_tables', return_value=(None, None, self.case.events, None)):
+            response = self.client.post(endpoint, json={'name': 'Renamed pinned dataset',
+                'expected_name': original['name']}, headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertNotEqual(publication_serial(self.service), serial)
+        self.assertIsNotNone(publication_serial(self.service), 'publication remains deeply frozen')
+        self.assertEqual(before[self.protocol]['definition'], original, 'old readers retain their snapshot')
+        self.assertEqual(json.loads(path.read_text()), {**original, 'name': 'Renamed pinned dataset'})
+        self.assertEqual(self.client.get('/api/overview?cells_limit=200').status_code, 202)
+        self.prepare()
+        overview = self.get('/api/overview?cells_limit=200')
+        self.assertEqual(overview['protocols'][0]['name'], 'Renamed pinned dataset')
+        protocol = self.get('/api/protocols/' + self.protocol + '/overview?cells_limit=200')
+        self.assertEqual(protocol['definition']['name'], 'Renamed pinned dataset')
+        labels = self.get('/api/search?q=' + self.ids[0])['results'][0]['protocols']
+        self.assertEqual(labels[0]['name'], 'Renamed pinned dataset')
+        replay = self.client.post(endpoint, json={'name': 'Renamed pinned dataset',
+            'expected_name': original['name']}, headers=self.case.headers)
+        self.assertEqual(replay.status_code, 200, replay.get_json())
+
     @contextlib.contextmanager
     def no_search_member_hydration(self):
         previous=sys.getprofile()
@@ -284,6 +376,35 @@ class PreparedOverviewTests(fixtures.MemoFixture):
         app.extensions['overview_durations'].submit(model.duration_orders[self.protocol],model.rows,
             lambda result:completed.set(),key=self.protocol)
         self.assertTrue(completed.wait(2))
+
+    def test_close_retry_after_verified_database_exit_does_not_reopen_sql_for_snapshot(self):
+        import os
+        from pathlib import Path
+        from unittest.mock import Mock
+        from workspace_api import create_app
+        self.service.config['connection']={'credential_provider':{'kind':'native-project'}}
+        with patch.dict(os.environ,{'RIEKE_DESKTOP_MODE':'1','RIEKE_DESKTOP_FRONTEND':self.case.temp.name}):
+            app=create_app(self.case.temp.name,self.case.temp.name,service=self.service,store=self.case.store,
+                explorer_history=self.case.explorer_history,data_stores=self.case.data_stores,
+                protocol_suggestions=self.case.protocol_suggestions,shared_annotations=self.shared)
+        self.addCleanup(app.extensions['close_overview_publication'])
+        self.addCleanup(app.extensions['close_trace_workers'])
+        self.addCleanup(app.extensions['disco.navigation.prepared'].close)
+        scheduler=Mock();app.extensions['backup_scheduler']=scheduler
+        owner=Path(self.case.temp.name)/'database/native-owner.json'
+        owner.parent.mkdir(exist_ok=True);owner.write_text('{"clean_shutdown": false}')
+        with patch('workspace_native_mysql.stop_native_database') as stop:
+            with self.assertRaisesRegex(ValueError,'clean database shutdown'):
+                app.extensions['desktop_stop_database']()
+            scheduler.flush.assert_called_once()
+            # Native recovery has now verified and completed the actual shutdown.
+            owner.write_text('{"clean_shutdown": true}')
+            scheduler.flush.side_effect=AssertionError('Must not query the stopped database')
+            with patch('disco.projects.runtime_state.project_runtime_state',return_value={'state':'stopped_clean'}):
+                app.extensions['desktop_stop_database']()
+            self.assertEqual(stop.call_count,2)
+            scheduler.flush.assert_called_once()
+            scheduler.close.assert_called_once_with(flush=False)
 
     def test_same_revision_rebind_updates_version_without_recomputing_duration(self):
         history=self.case.explorer_history

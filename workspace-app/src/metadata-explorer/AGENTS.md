@@ -74,3 +74,17 @@ same controlled preference into MatchingEpochs. Restored preferences are validat
 by the trace presentation owner and never restore read or mutation authority.
 
 Successful initial candidate hydration is keyed by initial revision and explicit retry. Activity reveal cannot reapply the immutable recipe over later draft/name edits. Current preview reads still refresh through their existing authority owner; aborted or failed initial hydration remains retryable.
+
+Displayed draft-result previews include the held workspace revision and explicit
+refresh generation in their read key. Known changes renew the witness when the
+result is visible; hidden results defer reads until return. The effect owns
+cancellation and restarts an interrupted read on reveal. An open predicate editor
+starts no preview. Annotation edits retain their explicit membership hold until
+Refresh results; that action clears the hold and requests one fresh preview.
+
+Counted epoch selection can Include/Exclude locally for Search export. One gesture
+records changed UUIDs with each prior included value as one `search-inclusion`
+undo item; old single-UUID items remain readable. Undo verifies every current
+after-state plus the existing viewer generation and visibility fences before
+restoring all prior values. This path performs no scientific write and leaves
+unselected exclusions intact. See `retainedControls.test.js` bulk undo example.

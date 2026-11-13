@@ -88,6 +88,19 @@ class PreparedNavigationTests(unittest.TestCase):
             self.service._prepared_navigation = previous
             self.assertEqual(selected['epoch_uuids'], legacy['epoch_uuids'])
 
+    def test_existing_prepared_navigation_never_enters_compact_fallback(self):
+        body = {'protocol_uuid': self.service.protocol_id, 'splits': 'date,cell,block', 'counts_only': True}
+        self.owner.prepare(body)
+        self.service._prepared_navigation = self.owner
+        profile = cProfile.Profile()
+        with profile:
+            root = self.pager.page(body)
+            for identity in self.service.rows:
+                page = self.pager.page({**body, 'anchor_uuid': identity})
+                self.assertIn(identity, [row['epoch_uuid'] for row in page['epochs']])
+            self.assertEqual(root['count'], len(self.service.rows))
+        self.assertFalse(any(getattr(item.code, 'co_name', None) == '_compact_tree' for item in profile.getstats()))
+
     def test_unrelated_commit_does_not_change_revision_for_equivalent_scope_defaults(self):
         body = {'protocol_uuid': self.service.protocol_id, 'splits': 'date'}
         self.owner.prepare(body)

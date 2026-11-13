@@ -1,6 +1,40 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {epochPageRequest,epochPageRevision} from './epochBrowserSource.js';
+import {epochPageRequest,epochPageRevision,loadProtocolSelection} from './epochBrowserSource.js';
+
+test('all/cell selection collects complete filtered pages rather than a displayed cell window',async()=>{
+ const source={kind:'protocol',protocolId:'pin',query:'cell_type=ON',queryRevision:'q',bindingVersion:4},calls=[];
+ const request=async path=>{calls.push(path);const query=new URLSearchParams(path.split('?')[1]),offset=Number(query.get('offset'));
+  assert.equal(query.get('cell_type'),'ON');assert.equal(query.get('limit'),'60');assert.equal(query.get('cell_uuid'),'cell');
+  assert.equal(query.get('selection_receipt'),'true');
+  return {selection_revision:'selected-q',query_revision:'q',expected_binding_version:4,total:65,offset,epochs:Array.from({length:Math.min(60,65-offset)},(_,i)=>({epoch_uuid:`e-${offset+i}`,cell_uuid:'cell'}))};
+ };
+ assert.deepEqual(await loadProtocolSelection({source,request,cellUuid:'cell'}),Array.from({length:65},(_,i)=>`e-${i}`));
+ assert.equal(calls.length,2);
+ assert.deepEqual(await loadProtocolSelection({source,request:async()=>({selection_revision:'selected-q',query_revision:'q',expected_binding_version:4,total:0,offset:0,epochs:[]})}),[]);
+});
+
+test('complete selection refuses oversized, changed, missing, duplicate and out-of-cell pages',async()=>{
+ const source={kind:'protocol',protocolId:'pin',queryRevision:'q',bindingVersion:4};
+ for(const failure of ['oversized','query','binding','total','short','duplicate','cell','retired','tags','missing-witness']){
+  let calls=0,current=true;
+  await assert.rejects(loadProtocolSelection({source,cellUuid:'cell',isCurrent:()=>current,request:async()=>{
+   const offset=calls++*60,total=failure==='oversized'?1001:61;
+   const page={selection_revision:'selected-q',query_revision:'q',expected_binding_version:4,total,offset,epochs:Array.from({length:Math.min(60,total-offset)},(_,i)=>({epoch_uuid:`e-${offset+i}`,cell_uuid:'cell'}))};
+   if(calls===2){
+    if(failure==='query')page.query_revision='other';if(failure==='binding')page.expected_binding_version=5;
+    if(failure==='total')page.total=62;if(failure==='short')page.epochs=[];
+    if(failure==='duplicate')page.epochs[0].epoch_uuid='e-0';if(failure==='cell')page.epochs[0].cell_uuid='other';
+    if(failure==='retired')current=false;
+    if(failure==='tags')page.selection_revision='changed-tags';if(failure==='missing-witness')delete page.selection_revision;
+   }
+   return page;
+  }}),undefined,failure);
+  assert.equal(calls,failure==='oversized'?1:2,failure);
+ }
+ const controller=new AbortController();controller.abort();
+ await assert.rejects(loadProtocolSelection({source,signal:controller.signal,request:()=>assert.fail('No retired read')}),{name:'AbortError'});
+});
 
 test('shared browser preserves protocol filters and locates cell pages by UUID',()=>{
  const source={kind:'protocol',protocolId:'saved',query:'group_label=NBQX&cell_type=ON'};

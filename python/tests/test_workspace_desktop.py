@@ -1,6 +1,7 @@
 """Fault contracts for desktop supervision; no claim of artifact qualification."""
 import json
 import os
+import sys
 from pathlib import Path
 import tempfile
 import threading
@@ -58,6 +59,21 @@ class DesktopBoundaryTests(unittest.TestCase):
         self.assertEqual(self.post('pause-all').status_code, 409)
         self.assertTrue(self.boundary.draining)
         self.assertEqual(self.get('/api/write').status_code, 503)
+
+    def test_child_pause_failure_is_not_misreported_as_active_scientific_work(self):
+        services = Mock()
+        services.quiesce.return_value = False
+        services.shutdown_failure = {'stage': 'child_pause', 'pid': 1234,
+            'project_uuid': 'project-id', 'error': 'Desktop service process ownership changed'}
+        self.boundary.services = services
+        response = self.post('quit')
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json['stage'], 'child_pause')
+        self.assertEqual(response.json['pid'], 1234)
+        self.assertEqual(response.json['project_uuid'], 'project-id')
+        self.assertIn('ownership changed', response.json['error'])
+        self.assertNotIn('operations remain active', response.json['error'])
+        self.assertTrue(self.boundary.draining)
 
     def test_capability_is_required_for_ui_and_health(self):
         for path in ('/', '/api/desktop/health', '/api/write'):
@@ -316,6 +332,32 @@ class DesktopRegistryTests(unittest.TestCase):
         self.assertFalse(self.services.drain(.01, for_quit=True))
         self.assertTrue(self.services.draining)
         self.assertEqual(calls, [(1, 'pause'), (2, 'pause'), (1, 'quit'), (2, 'quit')])
+
+    def test_child_pause_retains_exact_failure_and_attempts_every_child(self):
+        self.services.records = Mock(return_value=[{'pid': 1, 'project_uuid': 'one'}, {'pid': 2}])
+        self.services.call = Mock(side_effect=[ValueError('ownership changed'), {'paused': True}])
+        self.assertFalse(self.services.quiesce())
+        self.assertEqual(self.services.call.call_count, 2)
+        self.assertEqual(self.services.shutdown_failure, {'stage': 'child_pause', 'pid': 1,
+            'project_uuid': 'one', 'error': 'ownership changed'})
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS clock-adjustment identity')
+    def test_child_control_uses_kernel_birth_time_after_clock_change(self):
+        process = Mock()
+        process.create_time.return_value = 1120.0
+        process._proc.create_time.return_value = 1000.0
+        process.exe.return_value = '/usr/bin/true'
+        record = {'pid': 1234, 'created_at': 1000.0,
+                  'executable': str(Path('/usr/bin/true').resolve()), 'port': 8766, 'bound': True}
+        response = Mock()
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        response.read.return_value = b'{"paused": true}'
+        with patch('psutil.Process', return_value=process), \
+             patch('workspace_desktop.urlopen', return_value=response) as send:
+            self.assertTrue(self.services.call(record, 'pause', {})['paused'])
+            send.assert_called_once()
+        process.create_time.assert_not_called()
 
     def test_health_rejects_wrong_release_session_and_pid(self):
         import psutil

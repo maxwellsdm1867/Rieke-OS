@@ -61,3 +61,8 @@ path integration is coordinated at the parent wave; recursive tests need no new
 runner. The [benchmark registry](../../../benchmarks/registry.json) and
 [guide](../../../docs/dev/benchmarks.md) remain canonical. Source tests do not
 qualify native transport, packaged UI, heap usage or performance.
+
+Cell and epoch UUID results open Cell QC. Protocol membership does not change
+the destination. Epoch callbacks retain the exact cell/epoch UUID pair; the
+App opens a fresh explicit visit rather than reusing a prior cell selection.
+Typed metadata matches retain their predicate destination and existing freshness gates.

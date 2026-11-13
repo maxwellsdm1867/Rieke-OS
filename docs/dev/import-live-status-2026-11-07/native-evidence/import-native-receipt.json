@@ -1,0 +1,36 @@
+{
+  "source_business_code_commit": "65149c9223541fb760bba60328ef2fae45a43dab",
+  "electron": "44.9.2",
+  "native_shell_bundle_id": "org.riekeos.native-import-selection-checks",
+  "automatic_start_without_refresh_jobs": true,
+  "live_progress_visible_at_elapsed_seconds": 9,
+  "live_progress_stage": "Rechecking source checksum",
+  "live_counter_bytes": 1129352,
+  "qualified_import_job_uuid": "6d26760c-1422-4fa8-ad46-ba0bdd1ca6ad",
+  "catalog_committed": true,
+  "review_opened_automatically": true,
+  "source_added": {
+    "recordings": 1,
+    "cells": 2,
+    "epochs": 63
+  },
+  "pinned_main_epochs": 61,
+  "pinned_pending_epochs": 61,
+  "pinned_proposed_epochs": 122,
+  "same_name_refusal_kept_original_catalog": {
+    "sources": 1,
+    "cells": 2,
+    "epochs": 63
+  },
+  "limits": [
+    "The original user-session transport state was not captured before its manual recovery.",
+    "Native stalled-transport recovery is covered by deterministic hook tests, not a live network fault injection.",
+    "This is native source-shell validation; final packaged validation remains separate."
+  ],
+  "loaded_files_sha256": {
+    "application/python/workspace_api.py": "d76d9925163eb7b2c9697ba3875432d4eb7fe79ad4aa86604e50fc3203bcd138",
+    "frontend/assets/FolderBrowserDialog-C1AHSUav.js": "3213c5184fc804025240f5eb7e51c5144ae8cfc1efcdb5e74d257d8dbc0cb15e",
+    "frontend/assets/ProtocolInfographic-DM6Yp3Ht.js": "bb71691b03df79cee011037a9907583cf7b9a7be7a8787b68a73ce2216fef5b8",
+    "frontend/assets/index-D7uAcoFj.js": "dc7c5bfdc6bb7e216138a3523eca4eacaf3e1708c9101d998ce4d3a73069566f"
+  }
+}

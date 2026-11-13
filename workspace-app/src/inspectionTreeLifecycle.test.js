@@ -355,3 +355,19 @@ test('frozen fallback refresh re-reads the exact context after a fault without s
   assert.ok(h.buttons.some(button=>button['aria-label']?.startsWith('Inspect ')));
  }finally{await h.close();}
 });
+
+test('same-membership navigation loading preserves plain-click anchor for Shift and Command gestures',async()=>{
+ const h=await createInspectionHarness();
+ try{
+  for(const modifier of ['shiftKey','metaKey','ctrlKey']){
+   let targets=[];
+   const props={...base,onFocus(){},setTargets:ids=>{targets=ids;}};
+   await h.render(props);await h.selectEpoch(1);
+   await h.render({...props,disabled:true,navigationDisabled:false});
+   await h.render(props);
+   await h.selectEpoch(4,{[modifier]:true});
+   assert.deepEqual(targets,modifier==='shiftKey'?['cell-A-1','cell-A-2','cell-A-3','cell-A-4']:['cell-A-1','cell-A-4'],modifier);
+   await h.unmount();
+  }
+ }finally{await h.close();}
+});

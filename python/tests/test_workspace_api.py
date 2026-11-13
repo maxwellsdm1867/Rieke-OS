@@ -62,8 +62,11 @@ class FixtureService(WorkspaceService):
             'query': {'version': 1, 'all': [{'field': 'EpochBlock.protocol_name',
                                           'operator': 'eq', 'value': 'example'}]},
             'view': {'group_by': ['date', 'cell'], 'layout': 'landscape'}}
+        protocol_file = self.project_dir / 'protocols' / 'fixture.json'
+        protocol_file.parent.mkdir(exist_ok=True)
+        protocol_file.write_text(json.dumps(definition))
         self.protocols = {self.protocol_id: {'definition': definition,
-            'file': self.project_dir / 'protocol.json',
+            'file': protocol_file,
             'result': {'project_uuid': self.project['project_uuid'],
                        'protocol_uuid': self.protocol_id, 'protocol_name': 'example',
                        'source_revisions': ['a' * 64],
@@ -110,6 +113,18 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(cell['recording_rigs'], [])
         self.assertTrue(cell['recording_rig_missing'])
 
+    def test_rig_uses_acquisition_filename_only_when_recorded_rig_is_empty(self):
+        from workspace_api import recorded_source_rig
+        for filename, expected in [('2026-10-07_E.h5', 'E'), ('2026-10-07_2.h5', '2'),
+                                   ('20261013FK.h5', 'FK'), ('2026-02-30_E.h5', None),
+                                   ('recording_2.h5', None), ('2026-10-07.h5', None)]:
+            with self.subTest(filename=filename):
+                self.assertEqual(recorded_source_rig({'filename': filename, 'metadata': {'rig': None, 'rig_type': 'PATCH'}}), expected)
+        source = {'filename': '2026-10-07_E.h5', 'metadata': {'rig': 'Rig H'}}
+        self.assertEqual(recorded_source_rig(source), 'Rig H')
+        source['metadata'] = {'properties': {'rig': 'Rig H'}}
+        self.assertEqual(recorded_source_rig(source), 'Rig H')
+
     def test_event_history_is_paged_and_full_evidence_is_loaded_separately(self):
         from unittest.mock import Mock
         from workspace_audit import build_audit_payload
@@ -136,7 +151,8 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(storage['root'], str(Path(self.temp.name).resolve()))
         self.assertNotEqual(storage['root'], storage['code_root'])
         files = self.client.get('/api/files?path=protocols').get_json()
-        self.assertEqual(files['entries'], [])
+        self.assertEqual([(entry['name'], entry['path'], entry['type']) for entry in files['entries']],
+                         [('fixture.json', 'protocols/fixture.json', 'file')])
         for path in ('../', '/etc', 'database/mysql'):
             with self.subTest(path=path):
                 response = self.client.get('/api/files', query_string={'path': path})
