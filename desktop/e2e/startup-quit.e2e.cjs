@@ -65,7 +65,7 @@ async function open(app, args) {
 }
 async function preflight() {
   helper = path.join(fixture.root, 'startup-quit-probe');
-  await run('/usr/bin/clang',['-fobjc-arc','-framework','AppKit','-framework','CoreGraphics','-o',helper,path.join(__dirname,'startup-quit-probe.m')]);
+  await run('/usr/bin/clang++',['-std=c++17','-fobjc-arc','-framework','AppKit','-framework','CoreGraphics','-o',helper,path.join(__dirname,'startup-quit-probe.mm')]);
   const apps = [];
   for (const name of ['Parent','Child']) {
     const app = path.join(fixture.root, name+'.app'), contents = path.join(app,'Contents');

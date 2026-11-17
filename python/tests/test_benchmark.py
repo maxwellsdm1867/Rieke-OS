@@ -160,6 +160,27 @@ class BenchmarkTests(unittest.TestCase):
                 bench.gate(receipt,expected_commit=self.commit,expected_version='0.1.6',root=self.repo)
             self.assertFalse(bench.compare(receipt,copy.deepcopy(receipt),root=self.repo)['comparable'])
 
+    def test_empty_linux_processor_uses_kernel_model_or_stays_unqualified(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            inventory = Path(tmp) / 'cpuinfo'
+            for contents, expected in (
+                ('processor : 0\nmodel name : Example CPU 123\n', 'Example CPU 123'),
+                ('processor : 0\nmodel name : \n', ''),
+                (None, ''),
+            ):
+                if contents is None:
+                    inventory.unlink()
+                else:
+                    inventory.write_text(contents)
+                with self.subTest(contents=contents), patch.object(bench.sys, 'platform', 'linux'), \
+                        patch.object(bench.platform, 'processor', return_value=''), \
+                        patch.object(bench, 'Path', return_value=inventory) as proc_path:
+                    cpu = bench.environment()['cpu']
+                    proc_path.assert_called_once_with('/proc/cpuinfo')
+                    self.assertEqual(cpu, expected)
+                    errors = bench.hardware_errors({'cpu':cpu, 'logical_cpus':4, 'memory_bytes':1024})
+                    self.assertEqual(errors, [] if expected else ['CPU hardware is unknown; diagnostic only'])
+
     def test_legacy_diagnostics_upload_always_precedes_signing(self):
         import yaml
         workflow=yaml.safe_load((ROOT/'.github/workflows/workspace-release-candidate.yml').read_text())

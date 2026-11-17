@@ -2,7 +2,8 @@
 #import <AppKit/AppKit.h>
 #import <libproc.h>
 #import <CoreGraphics/CoreGraphics.h>
-#import <unistd.h>
+#include <chrono>
+#include <thread>
 
 static int fail(NSString *message) {
     fprintf(stderr, "%s\n", message.UTF8String);
@@ -31,7 +32,7 @@ int main(int argc, const char **argv) {
             NSDictionary *env = NSProcessInfo.processInfo.environment;
             NSDictionary *paths = @{@"home": env[@"HOME"] ?: @"", @"cocoa_home": NSHomeDirectory(),
                                     @"temporary": env[@"TMPDIR"] ?: @"", @"preferences":env[@"RIEKE_PREFERENCES_DIR"] ?: @""};
-            NSData *data = [NSJSONSerialization dataWithJSONObject:paths options:0 error:nil];
+            NSData *data = [NSJSONSerialization dataWithJSONObject:paths options:0 error:nullptr];
             return [data writeToFile:args[2] atomically:YES] ? 0 : fail(@"Could not save isolation evidence");
         }
         if (argc != 7 || !([args[1] isEqual:@"quit"] || [args[1] isEqual:@"window"]))
@@ -59,17 +60,17 @@ int main(int argc, const char **argv) {
                 [titles addObject:title ?: NSNull.null];
             }
             NSDictionary *result = @{@"titles":titles, @"can_read_titles":@(CGPreflightScreenCaptureAccess())};
-            NSData *json = [NSJSONSerialization dataWithJSONObject:result options:0 error:nil];
+            NSData *json = [NSJSONSerialization dataWithJSONObject:result options:0 error:nullptr];
             if (!json) return fail(@"Could not encode owned window observations");
             fwrite(json.bytes, 1, json.length, stdout);
             return 0;
         }
         NSString *phase = @"ready";
         if (![args[4] isEqual:@"-"]) {
-            NSTimeInterval deadline = NSProcessInfo.processInfo.systemUptime + 90;
+            const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(90);
             for (;;) {
                 NSData *data = [NSData dataWithContentsOfFile:args[4]];
-                NSDictionary *registry = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
+                NSDictionary *registry = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nullptr] : nil;
                 if (data && ![registry[@"services"] isKindOfClass:NSArray.class]) return fail(@"Malformed project registry");
                 NSDictionary *service = nil;
                 for (NSDictionary *row in registry[@"services"]) {
@@ -80,9 +81,9 @@ int main(int argc, const char **argv) {
                         return fail(@"Missed startup observation: project listener already bound; no early Quit verdict");
                     break;
                 }
-                if (NSProcessInfo.processInfo.systemUptime >= deadline)
+                if (std::chrono::steady_clock::now() >= deadline)
                     return fail(@"Project was never observed starting; ordinary Quit was not sent");
-                usleep(10000);
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
             phase = @"project-spawned-before-listener-binding";
         }
