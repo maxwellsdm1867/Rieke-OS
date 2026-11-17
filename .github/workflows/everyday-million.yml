@@ -3,6 +3,9 @@ name: Everyday million query and workflow regression
 on:
   workflow_call:
     inputs:
+      baseline_sha:
+        type: string
+        default: ''
       timing_policy:
         required: true
         type: string
@@ -42,11 +45,11 @@ jobs:
           fetch-depth: 0
       - id: plan
         env:
-          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE_REF: ${{ inputs.baseline_sha || github.event.pull_request.base.sha || github.event.before }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           args=(--all)
-          if [ "$EVENT_NAME" != workflow_dispatch ] && [ -n "$BASE_REF" ] && [ "$BASE_REF" != 0000000000000000000000000000000000000000 ]; then args=(--base "$BASE_REF"); fi
+          if { [ "$EVENT_NAME" != workflow_dispatch ] || [ "$DISCO_TIMING_POLICY" = integration ]; } && [ -n "$BASE_REF" ] && [ "$BASE_REF" != 0000000000000000000000000000000000000000 ]; then args=(--base "$BASE_REF"); fi
           python3 -B tools/architecture_guard.py check --language metadata
           python3 -B tools/architecture_guard.py plan "${args[@]}" --github-output "$GITHUB_OUTPUT" --output "$RUNNER_TEMP/performance-scope.json"
       - id: sources

@@ -25,6 +25,11 @@ import tempfile
 import time
 import uuid
 
+if __package__:
+    import tools.benchmark_ci as ci
+else:
+    import benchmark_ci as ci
+
 ROOT = Path(__file__).resolve().parents[1]
 HARNESS = ROOT / 'benchmarks/prepared_geometry'
 HISTORICAL_GEOMETRY = '4de896f2e0b4ea966b5a428c3d2314f93fba935f'
@@ -391,7 +396,7 @@ def integration_verdict(output, plan):
         if sources['previous'] != HISTORICAL_GEOMETRY:
             before, after, comparison = read_pair(output / 'previous', sources['previous'], sources['candidate'])
         if __package__:
-            from .benchmark_workflow import compare_metrics
+            from tools.benchmark_workflow import compare_metrics
         else:
             from benchmark_workflow import compare_metrics
         # Post-stroke is a draw call. The first animation frame and full display
@@ -420,10 +425,6 @@ def integration_verdict(output, plan):
 
 
 def attribute_geometry(previous, candidate, output):
-    if __package__:
-        from . import benchmark_ci as ci
-    else:
-        import benchmark_ci as ci
     # Reuse the serial source preparation and pinned lockfile checks. The
     # previous pair runs only after a historical timing flag, on this same host.
     with tempfile.TemporaryDirectory(prefix='disco-geometry-previous-') as directory:
@@ -457,7 +458,6 @@ def main():
         if args.source_plan:
             plan = json.loads(args.source_plan.read_text())
             if plan.get('timing_policy') == 'integration' and result['status'] in ('passed', 'review_required'):
-                from benchmark_ci import timing_notice
                 previous = plan['sources']['previous']
                 if (result['status'] == 'review_required' and
                         previous not in (plan['sources']['candidate'], HISTORICAL_GEOMETRY)):
@@ -465,7 +465,7 @@ def main():
                 result = integration_verdict(args.output, plan)
                 (args.output / 'integration-verdict.json').write_text(json.dumps(result, indent=2) + '\n')
                 for message in result['warnings']:
-                    timing_notice(message)
+                    ci.timing_notice(message)
                 for message in result['regressions']:
                     print(message, file=sys.stderr)
     else:

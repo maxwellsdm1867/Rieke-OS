@@ -7,15 +7,19 @@ import base64
 from datetime import datetime
 import hashlib
 import json
+import logging
 from pathlib import Path
 import re
 import subprocess
+import time
 from urllib.parse import quote
 
 REPOSITORY = 'maxwellsdm1867/Rieke-OS'
 WEB = f'https://github.com/{REPOSITORY}'
 TAG = re.compile(r'desktop-test-v((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))')
 SHA = re.compile(r'[0-9a-f]{40}')
+INTEGRATION = '.github/workflows/integration.yml'
+VERDICT = 'Disco integration verdict'
 
 
 def block(name, content):
@@ -160,13 +164,16 @@ def render(readme, changelog, release):
 
 
 class GitHub:
-    def request(self, endpoint, method='GET', data=None, paginate=False):
+    def request(self, endpoint, method='GET', data=None, paginate=False, *, api_version=None):
         args = ['gh', 'api', endpoint, '--method', method]
+        if api_version:
+            args += ['-H', 'X-GitHub-Api-Version: ' + api_version]
         if paginate:
             args += ['--paginate', '--slurp']
         if data is not None:
             args += ['--input', '-']
-        value = json.loads(subprocess.check_output(args, input=None if data is None else json.dumps(data), text=True))
+        value = json.loads(subprocess.check_output(args, input=None if data is None else json.dumps(data),
+                                                   text=True, timeout=60))
         return [item for page in value for item in page] if paginate else value
 
     def releases(self):
@@ -192,12 +199,74 @@ class GitHub:
             raise ValueError('Unexpected documentation file')
         return base64.b64decode(value['content']).decode('utf-8')
 
+    def remove_staging(self, commit):
+        # A leased delete is atomic even if the ref moved after we last read it.
+        # Clearing credential helpers limits authentication to the configured gh identity.
+        ref = 'refs/heads/' + staging_branch(commit)
+        subprocess.run(['git', '-c', 'credential.helper=', '-c', 'credential.helper=!gh auth git-credential',
+                        'push', f'--force-with-lease={ref}:{commit}', WEB + '.git', ':' + ref],
+                       cwd=Path(__file__).resolve().parents[1], check=True, timeout=60)
+
+
+def staging_branch(commit):
+    if not SHA.fullmatch(commit):
+        raise ValueError('Invalid generated documentation commit')
+    return 'disco-release-pages-ci/' + commit
+
+
+def integration_proof(github, commit, base, *, timeout=900):
+    branch = staging_branch(commit)
+    api = f'repos/{REPOSITORY}/actions'
+    # The dated API returns the ID for this dispatch, avoiding a lookup that
+    # could mistake another invocation on the same ref for our requested run.
+    dispatch = github.request(f'{api}/workflows/integration.yml/dispatches', 'POST',
+                              {'ref': branch, 'inputs': {'base_sha': base}}, api_version='2026-03-10')
+    run_id = dispatch.get('workflow_run_id')
+    if type(run_id) is not int or run_id <= 0:
+        raise ValueError('Integration dispatch did not return its run ID')
+    logging.info('Checking %s/actions/runs/%s for %s', WEB, run_id, commit)
+    endpoint = f'{api}/runs/{run_id}'
+    deadline = time.monotonic() + timeout
+    read_failures = 0
+    while time.monotonic() < deadline:
+        try:
+            run = github.request(endpoint)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            # Retry only the read. Dispatch itself must never be repeated.
+            read_failures += 1
+            if read_failures >= 3:
+                raise
+            time.sleep(min(5, max(0, deadline - time.monotonic())))
+            continue
+        read_failures = 0
+        if (run.get('id') != run_id or run.get('path') != INTEGRATION or run.get('event') != 'workflow_dispatch'
+                or run.get('head_sha') != commit or run.get('head_branch') != branch
+                or run.get('repository', {}).get('full_name') != REPOSITORY
+                or run.get('head_repository', {}).get('full_name') != REPOSITORY):
+            raise ValueError('Integration run does not match the generated commit, staging branch and workflow')
+        if run.get('status') == 'completed':
+            attempt = run.get('run_attempt')
+            if run.get('conclusion') != 'success' or type(attempt) is not int or attempt <= 0:
+                raise ValueError(f'Documentation integration did not pass: {run_id}')
+            jobs = github.request(f'{endpoint}/attempts/{attempt}/jobs?per_page=100')['jobs']
+            verdicts = [job for job in jobs if job.get('name') == VERDICT]
+            if (len(verdicts) != 1 or verdicts[0].get('status') != 'completed' or verdicts[0].get('conclusion') != 'success'
+                    or verdicts[0].get('head_sha') != commit or verdicts[0].get('run_id') != run_id):
+                raise ValueError('Missing successful Disco integration verdict on the generated commit')
+            return {'run_id': run_id, 'attempt': attempt, 'commit': commit,
+                    'url': f'{WEB}/actions/runs/{run_id}/attempts/{attempt}'}
+        time.sleep(min(10, max(0, deadline - time.monotonic())))
+    raise TimeoutError(f'Documentation integration {run_id} did not finish within {timeout}s')
+
 
 def sync(github, apply=False):
     selected = newest(github.releases())
-    release = validate(selected, github.descriptor(selected['tag_name']), github.tag_commit(selected['tag_name']))
+    descriptor = github.descriptor(selected['tag_name'])
+    release = validate(selected, descriptor, github.tag_commit(selected['tag_name']))
     repo = github.request(f'repos/{REPOSITORY}')
     branch = repo['default_branch']
+    if apply and branch != 'main':
+        raise ValueError('Release page updates require main to be the default branch')
     ref = f'repos/{REPOSITORY}/git/refs/heads/{branch}'
     head = github.request(f'repos/{REPOSITORY}/git/ref/heads/{branch}')['object']['sha']
     before = {p: github.file(p, head) for p in ('README.md', 'CHANGELOG.md')}
@@ -208,14 +277,15 @@ def sync(github, apply=False):
               'release_notes_changed': notes != selected['body'], 'applied': False}
     if not apply or (not changed and notes == selected['body']):
         return result
-    # Re-read after planning; an old event must never move pages back a version.
-    fresh = newest(github.releases())
-    if (fresh['id'], fresh['updated_at']) != (selected['id'], selected['updated_at']):
-        raise ValueError('Published release changed during planning; rerun the hook')
-    if github.tag_commit(selected['tag_name']) != release['source']:
-        raise ValueError('Release tag changed during planning')
-    if github.request(f'repos/{REPOSITORY}/git/ref/heads/{branch}')['object']['sha'] != head:
-        raise ValueError('Default branch changed during planning; rerun the hook')
+    def still_current(expected_head):
+        fresh = newest(github.releases())
+        if (fresh['id'], fresh['updated_at'], fresh['body']) != (selected['id'], selected['updated_at'], selected['body']):
+            raise ValueError('Published release changed; rerun the hook')
+        validate(fresh, descriptor, github.tag_commit(selected['tag_name']))
+        if github.request(f'repos/{REPOSITORY}/git/ref/heads/{branch}')['object']['sha'] != expected_head:
+            raise ValueError('Default branch changed; rerun the hook')
+
+    still_current(head)
     if changed:
         tree = github.request(f'repos/{REPOSITORY}/git/commits/{head}')['tree']['sha']
         created = github.request(f'repos/{REPOSITORY}/git/trees', 'POST', {
@@ -224,13 +294,20 @@ def sync(github, apply=False):
         commit = github.request(f'repos/{REPOSITORY}/git/commits', 'POST', {
             'message': f'docs: synchronize Disco {release["version"]} release pages',
             'tree': created['sha'], 'parents': [head]})
-        # Non-fast-forward rejection preserves concurrent changes. A failed run is
-        # visible in Actions and can be rerun; it never force-pushes or moves tags.
-        latest = newest(github.releases())
-        if (latest['id'], latest['updated_at']) != (selected['id'], selected['updated_at']):
-            raise ValueError('Published release changed before documentation update; rerun')
-        github.request(ref, 'PATCH', {'sha': commit['sha'], 'force': False})
-        result['documentation_commit'] = commit['sha']
+        candidate = commit['sha']
+        stage = staging_branch(candidate)
+        github.request(f'repos/{REPOSITORY}/git/refs', 'POST', {'ref': 'refs/heads/' + stage, 'sha': candidate})
+        # Only the process whose create succeeded owns this ref. A collision
+        # fails before this try/finally, preserving the existing owner's branch.
+        try:
+            result['integration'] = integration_proof(github, candidate, head)
+            still_current(head)
+            if github.request(f'repos/{REPOSITORY}/git/ref/heads/{stage}')['object']['sha'] != candidate:
+                raise ValueError('Staging ref changed before documentation update')
+            github.request(ref, 'PATCH', {'sha': candidate, 'force': False})
+            result['documentation_commit'] = candidate
+        finally:
+            github.remove_staging(candidate)
     if notes != selected['body']:
         current = github.request(f'repos/{REPOSITORY}/releases/{selected["id"]}')
         if current['updated_at'] != selected['updated_at'] or current['body'] != selected['body']:
@@ -241,6 +318,7 @@ def sync(github, apply=False):
 
 
 def main():
+    logging.basicConfig(level=logging.INFO, format='%(message)s')
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--apply', action='store_true', help='Update only README, changelog and release-body presentation')
     parser.add_argument('--output', type=Path)

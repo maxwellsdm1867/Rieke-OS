@@ -1,5 +1,6 @@
 """Select the user workflows a change can affect for Disco integration."""
 import argparse
+import os
 from pathlib import Path, PurePosixPath
 import re
 import subprocess
@@ -46,11 +47,23 @@ def changed_paths(base):
     return [path.decode('utf-8', 'surrogateescape') for path in data.split(b'\0') if path]
 
 
+def verify_release_pages(base, ref, sha, parents, paths):
+    if (not re.fullmatch(r'[0-9a-f]{40}', sha) or ref != 'refs/heads/disco-release-pages-ci/' + sha
+            or parents != [base] or not paths or not set(paths) <= {'README.md', 'CHANGELOG.md'}):
+        raise ValueError('Manual integration requires a staged documentation-only commit with the expected parent')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--base', required=True)
     parser.add_argument('--github-output', required=True, type=Path)
     args = parser.parse_args()
+    paths = changed_paths(args.base)
+    if os.environ.get('GITHUB_EVENT_NAME') == 'workflow_dispatch':
+        commit, *parents = subprocess.check_output(['git', 'rev-list', '--parents', '-n1', 'HEAD'], text=True).split()
+        if commit != os.environ['GITHUB_SHA']:
+            raise ValueError('Checkout differs from the dispatch revision')
+        verify_release_pages(args.base, os.environ['GITHUB_REF'], commit, parents, paths)
     with args.github_output.open('a') as out:
-        for key, value in select(changed_paths(args.base)).items():
+        for key, value in select(paths).items():
             print(f'{key}={str(value).lower()}', file=out)

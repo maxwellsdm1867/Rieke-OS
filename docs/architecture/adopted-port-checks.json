@@ -3623,8 +3623,11 @@
             "statistics",
             "subprocess",
             "sys",
+            "tempfile",
             "time",
             "uuid",
+            "benchmark_ci",
+            "tools.benchmark_ci",
             "benchmark_workflow",
             "tools.benchmark_workflow"
           ]

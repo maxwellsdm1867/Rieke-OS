@@ -1,5 +1,11 @@
 name: Disco integration
 on:
+  workflow_dispatch:
+    inputs:
+      base_sha:
+        description: Parent commit of a staged release-page update
+        required: true
+        type: string
   pull_request:
     branches: [main, master]
   push:
@@ -35,18 +41,21 @@ jobs:
       - id: scope
         if: steps.proof.outputs.reused == 'false'
         env:
-          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE: ${{ inputs.base_sha || github.event.pull_request.base.sha || github.event.before }}
         run: python3 -B tools/integration_scope.py --base "$BASE" --github-output "$GITHUB_OUTPUT"
   source:
     needs: scope
     if: needs.scope.outputs.reused == 'false'
     uses: ./.github/workflows/workspace-ci.yml
+    with:
+      base_sha: ${{ inputs.base_sha || '' }}
   performance:
     needs: scope
     if: needs.scope.outputs.reused == 'false'
     uses: ./.github/workflows/everyday-million.yml
     with:
       timing_policy: integration
+      baseline_sha: ${{ inputs.base_sha || '' }}
   native:
     needs: scope
     if: needs.scope.outputs.native == 'true'

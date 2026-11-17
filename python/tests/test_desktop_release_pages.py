@@ -4,7 +4,10 @@ import hashlib
 import sys
 import json
 from pathlib import Path
+import subprocess
+import tempfile
 import unittest
+from unittest.mock import patch
 
 _import_path = sys.path[:]
 try:
@@ -45,10 +48,17 @@ class FakeGitHub:
         self.release_reads = 0
         self.race = None
         self.ref_reads = 0
+        self.stage = None
+        self.removed = []
+        self.verdicts = ['success']
+        self.run_overrides = {}
+        self.run_reads = []
+        self.job_overrides = {}
 
     def releases(self):
         self.release_reads += 1
-        if self.race == 'release' and self.release_reads > 1:
+        if ((self.race == 'release' and self.release_reads > 1)
+                or (self.race == 'late release' and self.release_reads > 2)):
             new, _ = fixture('0.2.14'); new['id'] = 14
             return [self.release, new]
         return [copy.deepcopy(self.release)]
@@ -57,12 +67,21 @@ class FakeGitHub:
         return self.raw
 
     def tag_commit(self, tag):
-        return 'e' * 40 if self.race == 'tag' and self.release_reads > 1 else 'a' * 40
+        if ((self.race == 'tag' and self.release_reads > 1)
+                or (self.race == 'late tag' and self.release_reads > 2)):
+            return 'e' * 40
+        return 'a' * 40
 
     def file(self, path, ref):
         return self.files[path]
 
-    def request(self, endpoint, method='GET', data=None, paginate=False):
+    def remove_staging(self, commit):
+        if self.stage != commit:
+            raise ValueError('Staging ref no longer owned')
+        self.removed.append(commit)
+        self.stage = None
+
+    def request(self, endpoint, method='GET', data=None, paginate=False, *, api_version=None):
         if method != 'GET':
             self.writes.append((endpoint, method, data))
             if endpoint.endswith('/git/trees'):
@@ -70,6 +89,16 @@ class FakeGitHub:
                 return {'sha': 'f' * 40}
             if endpoint.endswith('/git/commits'):
                 return {'sha': '1' * 40}
+            if endpoint.endswith('/git/refs'):
+                if self.stage is not None:
+                    raise ValueError('Staging ref already exists')
+                self.stage = data['sha']
+                assert data['ref'] == 'refs/heads/' + pages.staging_branch(self.stage)
+                return {'object': {'sha': self.stage}}
+            if endpoint.endswith('/workflows/integration.yml/dispatches'):
+                assert api_version == '2026-03-10'
+                assert data == {'ref': pages.staging_branch(self.stage), 'inputs': {'base_sha': self.head}}
+                return {'workflow_run_id': 71}
             if '/git/refs/heads/' in endpoint:
                 if self.race == 'push':
                     raise RuntimeError('Update is not a fast forward')
@@ -83,9 +112,25 @@ class FakeGitHub:
             raise AssertionError(endpoint)
         if endpoint == f'repos/{pages.REPOSITORY}':
             return {'default_branch': 'main'}
+        if '/git/ref/heads/disco-release-pages-ci/' in endpoint:
+            return {'object': {'sha': self.stage}}
         if '/git/ref/heads/' in endpoint:
             self.ref_reads += 1
-            return {'object': {'sha': '2' * 40 if self.race == 'head' and self.ref_reads > 1 else self.head}}
+            moved = ((self.race == 'head' and self.ref_reads > 1)
+                     or (self.race == 'late head' and self.ref_reads > 2))
+            return {'object': {'sha': '2' * 40 if moved else self.head}}
+        if endpoint.endswith('/actions/runs/71'):
+            if self.run_reads:
+                result = self.run_reads.pop(0)
+                if isinstance(result, Exception): raise result
+                self.run_overrides = result
+            repo = {'full_name': pages.REPOSITORY}
+            return dict({'id': 71, 'head_sha': self.stage, 'event': 'workflow_dispatch', 'head_branch': pages.staging_branch(self.stage),
+                         'repository': repo, 'head_repository': repo, 'path': pages.INTEGRATION,
+                         'status': 'completed', 'conclusion': 'success', 'run_attempt': 1}, **self.run_overrides)
+        if endpoint.endswith('/runs/71/attempts/1/jobs?per_page=100'):
+            return {'jobs': [dict({'name': pages.VERDICT, 'status': 'completed', 'conclusion': verdict,
+                                  'head_sha': self.stage, 'run_id': 71}, **self.job_overrides) for verdict in self.verdicts]}
         if '/git/commits/' in endpoint:
             return {'tree': {'sha': '3' * 40}}
         if '/releases/' in endpoint:
@@ -154,11 +199,89 @@ class ReleasePagesTests(unittest.TestCase):
         self.assertEqual(gh.writes, [])
         result = pages.sync(gh, apply=True)
         self.assertTrue(result['applied'])
+        self.assertEqual(result['integration']['commit'], result['documentation_commit'])
+        self.assertEqual(result['integration']['run_id'], 71)
+        self.assertEqual(gh.removed, [result['documentation_commit']])
         self.assertEqual(len([w for w in gh.writes if '/git/refs/' in w[0]]), 1)
         self.assertEqual(len([w for w in gh.writes if '/releases/' in w[0]]), 1)
         gh.writes.clear()
         self.assertFalse(pages.sync(gh, apply=True)['applied'])
         self.assertEqual(gh.writes, [])
+
+    def test_wrong_or_missing_integration_cannot_update_main_or_release_notes(self):
+        for field, value in [('conclusion','failure'),('head_sha','0'*40),('event','push'),('id',72),
+                             ('path','.github/workflows/other.yml'),('head_branch','main'),
+                             ('repository',{'full_name':'other/repo'}),('head_repository',{'full_name':'other/repo'}),
+                             ('run_attempt',0),('verdicts',[]),('verdicts',['skipped']),
+                             ('verdicts',['failure']),('verdicts',['success','success']),
+                             ('job',{'head_sha':'0'*40}),('job',{'run_id':72}),('job',{'name':'Other check'})]:
+            with self.subTest(field=field,value=value):
+                gh = FakeGitHub()
+                if field == 'verdicts': gh.verdicts = value
+                elif field == 'job': gh.job_overrides = value
+                else: gh.run_overrides[field] = value
+                with self.assertRaises(ValueError):
+                    pages.sync(gh, apply=True)
+                self.assertFalse(any(write[1]=='PATCH' for write in gh.writes))
+                self.assertEqual(gh.removed, ['1'*40])
+
+    def test_queued_and_temporarily_unreadable_run_is_only_dispatched_once(self):
+        gh = FakeGitHub()
+        gh.run_reads = [subprocess.CalledProcessError(1, 'gh api'), {'status':'queued','conclusion':None}, {}]
+        with patch.object(pages.time,'sleep'):
+            result = pages.sync(gh, apply=True)
+        self.assertTrue(result['applied'])
+        self.assertEqual(sum(w[0].endswith('/dispatches') for w in gh.writes), 1)
+
+    def test_release_body_only_edit_does_not_stage_or_mutate_a_git_ref(self):
+        gh = FakeGitHub()
+        release = pages.validate(gh.release, gh.raw, gh.tag_commit(gh.release['tag_name']))
+        gh.files, _ = pages.render(gh.files['README.md'], gh.files['CHANGELOG.md'], release)
+        result = pages.sync(gh, apply=True)
+        self.assertTrue(result['applied'])
+        self.assertEqual(result['changed_files'], [])
+        self.assertEqual([(p.rsplit('/',2)[1],method) for p,method,_ in gh.writes], [('releases','PATCH')])
+
+    def test_timeout_and_late_races_preserve_main_and_release(self):
+        for race in ('late release','late head','late tag'):
+            gh = FakeGitHub(); gh.race = race
+            with self.subTest(race=race), self.assertRaises(ValueError):
+                pages.sync(gh, apply=True)
+            self.assertFalse(any(write[1]=='PATCH' for write in gh.writes))
+            self.assertEqual(gh.removed, ['1'*40])
+        gh = FakeGitHub()
+        gh.run_overrides = {'status':'in_progress', 'conclusion':None}
+        with patch.object(pages.time,'monotonic',side_effect=[0,1,901,901]), patch.object(pages.time,'sleep'), self.assertRaises(TimeoutError):
+            pages.sync(gh, apply=True)
+        self.assertFalse(any(write[1]=='PATCH' for write in gh.writes))
+        self.assertEqual(gh.removed, ['1'*40])
+
+    def test_staging_collision_preserves_other_owner(self):
+        gh = FakeGitHub(); gh.stage = '1'*40
+        with self.assertRaisesRegex(ValueError, 'already exists'):
+            pages.sync(gh, apply=True)
+        self.assertEqual(gh.removed, [])
+        self.assertFalse(any('/dispatches' in write[0] or write[1]=='PATCH' for write in gh.writes))
+
+    def test_leased_staging_cleanup_preserves_moved_tip(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)/'local.git'
+            subprocess.run(['git','init','--bare','-q',repo], check=True)
+            def git(*args, data=None):
+                return subprocess.check_output(['git','-C',repo,'-c','user.name=Test','-c','user.email=test@example.test',
+                                                *args], input=data,text=True).strip()
+            tree = git('mktree',data='')
+            candidate = git('commit-tree',tree,'-m','docs')
+            moved = git('commit-tree',tree,'-p',candidate,'-m','concurrent change')
+            ref = 'refs/heads/' + pages.staging_branch(candidate)
+            git('update-ref',ref,moved)
+            with patch.object(pages,'WEB',str(repo.with_suffix(''))):
+                with self.assertRaises(subprocess.CalledProcessError):
+                    pages.GitHub().remove_staging(candidate)
+                self.assertEqual(git('rev-parse',ref), moved)
+                git('update-ref',ref,candidate,moved)
+                pages.GitHub().remove_staging(candidate)
+            self.assertEqual(git('for-each-ref',ref), '')
 
     def test_release_head_and_tag_races_fail_before_writes(self):
         for race in ('release', 'head', 'tag'):

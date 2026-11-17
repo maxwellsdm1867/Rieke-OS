@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 
 from tools import integration_incidents as inbox
-from tools.integration_scope import select
+from tools.integration_scope import select, verify_release_pages
 
 
 class IntegrationScopeTests(unittest.TestCase):
@@ -39,3 +39,14 @@ class IntegrationScopeTests(unittest.TestCase):
             self.assertEqual(inbox.incident('feature', run['head_sha'], 'pull_request', 10)['run_id'], 8)
         with patch.object(inbox, 'get', return_value={'workflow_runs':[dict(run, status='in_progress'), run]}):
             self.assertIsNone(inbox.incident('feature', run['head_sha'], 'pull_request', 10))
+
+    def test_release_pages_requires_exact_staged_doc_commit(self):
+        base, sha = 'a' * 40, 'b' * 40
+        ref = 'refs/heads/disco-release-pages-ci/' + sha
+        verify_release_pages(base, ref, sha, [base], ['README.md', 'CHANGELOG.md'])
+        for bad_ref, parents, paths in [(ref, [base], ['README.md', 'desktop/main.cjs']),
+                                        (ref, ['c' * 40], ['README.md']),
+                                        ('refs/heads/main', [base], ['README.md']),
+                                        (ref, [base], [])]:
+            with self.assertRaises(ValueError):
+                verify_release_pages(base, bad_ref, sha, parents, paths)

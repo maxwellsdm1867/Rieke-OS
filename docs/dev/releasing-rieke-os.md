@@ -26,8 +26,11 @@ the heading. Missing features, malformed markers or mismatched identity fail the
 run instead of inventing notes. Keep feature changes in the reviewed release notes;
 do not manually edit generated README/changelog blocks.
 
-README and CHANGELOG are committed together to the default branch with a
-non-forced ref update. Concurrent branch/release edits fail visibly and can be
+README and CHANGELOG are staged together on a temporary release-page ref.
+The writer dispatches integration on that exact documentation commit, waits for
+the required verdict, rechecks freshness, and advances the default branch
+without force. The same GitHub status requirement applies to a manual merge
+and to this automated writer. Concurrent branch/release edits fail visibly and can be
 rerun without overwriting the edit. Repeated runs with unchanged inputs make no
 commit or release edit. Tags, app bytes, assets and prerelease flags are never
 modified. The repository About URL is the permanent `/releases` page, so it does
@@ -142,7 +145,10 @@ For a normal change, review **Disco integration verdict** on the latest revision
 It combines the selected source, performance, installed-app, source-install and
 release-page checks. A failed user workflow stays red while a repair is being
 tested. A verified identical merge on main links back to the successful PR run.
-A direct push, changed tree, or expired proof takes the normal integration path.
+Main requires the GitHub Actions check **Disco integration verdict** with the
+latest base. No second reviewer is required. An unverified direct update is
+blocked. An admitted push with missing or incompatible PR proof takes the
+normal integration path.
 The source-install lane uses the same supported Apple silicon macOS 15 runner
 family as the desktop checks.
 
