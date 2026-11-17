@@ -10,6 +10,7 @@ const {execFile} = require('node:child_process');
 const {promisify} = require('node:util');
 const {setTimeout: delay} = require('node:timers/promises');
 const {packagedSource} = require('./packaged-path.cjs');
+const {projectWindowEvidence} = require('./startup-quit-window.cjs');
 const {ownedControl} = require('./helpers.cjs');
 const {runtimeStore} = require('../runtime-generations.cjs');
 const {ServiceSupervisor} = require('../supervisor.cjs');
@@ -190,10 +191,16 @@ async function checkScience(importFixture) {
   assert.deepEqual(trace.values,[17,18,19,20].map(i=>epoch.ordinal+i/256));
   assert.ok(!scienceSessions.has(row.session_id),'Relaunch must have a fresh scientific session');
   scienceSessions.add(row.session_id);
-  const window = await poll('visible native project window',30000,async()=>{
-    const {stdout}=await run(helper,['window',String(target.pid),generation,'-',project.name,project.path],{timeout:5000});
-    return stdout.trim() !== 'awaiting-window' && stdout.trim();
-  });
+  const until = performance.now()+30000;
+  let window;
+  for (;;) {
+    const {stdout} = await run(helper,['window',String(target.pid),generation,'-',project.name,project.path],{timeout:5000});
+    const observed = JSON.parse(stdout);
+    window = projectWindowEvidence(observed.titles,project.name,observed.can_read_titles);
+    if (window.state === 'matched-project-title' || window.state === 'visible-window-titles-unavailable') break;
+    if (performance.now() >= until) throw Error('Restored project window deadline exceeded: '+JSON.stringify(window));
+    await delay(150);
+  }
   return {session_id:row.session_id,project_uuid:row.project_uuid,epochs,epoch_uuid:epoch.uuid,
     waveform_oracle:'owned-project-backend',verified_samples:trace.values,window};
 }

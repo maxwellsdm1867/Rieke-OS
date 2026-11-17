@@ -50,16 +50,19 @@ int main(int argc, const char **argv) {
             // WindowServer publishes owner PID and bounds without controlling
             // the desktop. Window titles can be redacted by macOS privacy.
             NSArray *windows = CFBridgingRelease(CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID));
+            NSMutableArray *titles = [NSMutableArray array];
             for (NSDictionary *window in windows) {
                 if ([window[(id)kCGWindowOwnerPID] intValue] != pid || [window[(id)kCGWindowLayer] intValue] != 0) continue;
                 NSDictionary *bounds=window[(id)kCGWindowBounds];
                 if ([bounds[@"Width"] intValue] < 200 || [bounds[@"Height"] intValue] < 150) continue;
                 NSString *title = window[(id)kCGWindowName];
-                BOOL named = [title rangeOfString:args[5] options:NSCaseInsensitiveSearch].location != NSNotFound && title.length > 0;
-                puts(named ? "owned-visible-window-with-project-title" : "owned-visible-window");
-                return 0;
+                [titles addObject:title ?: NSNull.null];
             }
-            puts("awaiting-window"); return 0;
+            NSDictionary *result = @{@"titles":titles, @"can_read_titles":@(CGPreflightScreenCaptureAccess())};
+            NSData *json = [NSJSONSerialization dataWithJSONObject:result options:0 error:nil];
+            if (!json) return fail(@"Could not encode owned window observations");
+            fwrite(json.bytes, 1, json.length, stdout);
+            return 0;
         }
         NSString *phase = @"ready";
         if (![args[4] isEqual:@"-"]) {

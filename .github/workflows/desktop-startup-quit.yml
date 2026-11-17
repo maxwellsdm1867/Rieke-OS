@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/desktop-startup-quit.yml'
+      - 'tools/desktop_packaging_fs.cjs'
       - 'desktop/entry.cjs'
       - 'desktop/bootstrap.cjs'
       - 'desktop/main.cjs'
@@ -54,6 +55,9 @@ jobs:
           cache-dependency-path: |
             desktop/package-lock.json
             workspace-app/package-lock.json
+      - name: Verify project-window observation rules
+        if: steps.distribution.outputs.channel == 'unsigned-testing'
+        run: node --test desktop/e2e/startup-quit-window.test.cjs
       - uses: astral-sh/setup-uv@v6
         if: steps.distribution.outputs.channel == 'unsigned-testing'
       - name: Package the PR revision in a disposable app directory
@@ -64,12 +68,13 @@ jobs:
           npm ci --prefix workspace-app
           npm ci --prefix desktop
           python3 tools/desktop_build_runtime.py
-          npm run pack --prefix desktop
+          NODE_OPTIONS="--require=$GITHUB_WORKSPACE/tools/desktop_packaging_fs.cjs" npm run pack --prefix desktop
       - name: Quit during installed startup and reopen the project
+        id: native
         if: steps.distribution.outputs.channel == 'unsigned-testing'
         run: node desktop/e2e/startup-quit.e2e.cjs
       - uses: actions/upload-artifact@v4
-        if: always() && steps.distribution.outputs.channel == 'unsigned-testing'
+        if: always() && (steps.native.outcome == 'success' || steps.native.outcome == 'failure')
         with:
           name: installed-startup-quit
           path: docs/dev/desktop-ui-e2e/startup-quit-receipt.json

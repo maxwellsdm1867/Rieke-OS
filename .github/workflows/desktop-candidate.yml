@@ -169,14 +169,6 @@ jobs:
           path: benchmarks/results/candidate/
           if-no-files-found: error
           retention-days: 90
-      - name: Prepare packaging filesystem retries
-        run: |
-          node - <<'NODE'
-          const fs = require('node:fs'), path = require('node:path');
-          const graceful = require.resolve('graceful-fs', {paths: [path.resolve('desktop')]});
-          fs.writeFileSync(path.join(process.env.RUNNER_TEMP, 'rieke-packaging-fs.cjs'),
-            `require(${JSON.stringify(graceful)}).gracefulify(require('node:fs'));\n`);
-          NODE
       - name: Build unsigned local qualification candidate
         id: unsigned_package
         if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
@@ -185,7 +177,7 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: |
           # Queue EMFILE/ENFILE retries before osx-sign captures fs.open.
-          NODE_OPTIONS="--require=$RUNNER_TEMP/rieke-packaging-fs.cjs" npm run dist
+          NODE_OPTIONS="--require=$GITHUB_WORKSPACE/tools/desktop_packaging_fs.cjs" npm run dist
       - name: Build signed and notarized candidate
         id: signed_package
         if: (github.event_name == 'push' && startsWith(github.ref_name, 'v')) || inputs.signed
@@ -204,7 +196,7 @@ jobs:
           test -n "$APPLE_API_KEY"
           test -n "$APPLE_API_KEY_ID"
           test -n "$APPLE_API_ISSUER"
-          NODE_OPTIONS="--require=$RUNNER_TEMP/rieke-packaging-fs.cjs" npm run dist
+          NODE_OPTIONS="--require=$GITHUB_WORKSPACE/tools/desktop_packaging_fs.cjs" npm run dist
           codesign --verify --deep --strict 'dist/mac-arm64/Disco.app'
           spctl --assess --type execute 'dist/mac-arm64/Disco.app'
           xcrun stapler validate 'dist/mac-arm64/Disco.app'
