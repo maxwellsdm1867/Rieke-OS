@@ -1,0 +1,76 @@
+name: Installed Disco startup and Quit
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/desktop-startup-quit.yml'
+      - 'desktop/entry.cjs'
+      - 'desktop/bootstrap.cjs'
+      - 'desktop/main.cjs'
+      - 'desktop/supervisor.cjs'
+      - 'desktop/preload.cjs'
+      - 'desktop/project-views.cjs'
+      - 'desktop/session-profiles.cjs'
+      - 'desktop/runtime-generations.cjs'
+      - 'desktop/runtime-store.py'
+      - 'desktop/close/*.cjs'
+      - 'desktop/startup/*.cjs'
+      - 'desktop/integrity/*.cjs'
+      - 'desktop/e2e/startup-quit*'
+      - 'desktop/e2e/packaged-path.cjs'
+      - 'desktop/distribution.json'
+      - 'desktop/package.json'
+      - 'desktop/package-lock.json'
+      - 'desktop/tests/main-startup-restoration.test.cjs'
+      - 'desktop/drafts/*.cjs'
+      - 'python/workspace_desktop.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: installed-startup-quit-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  startup-quit:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select the installed testing-channel scenario
+        id: distribution
+        run: |
+          CHANNEL=$(node -p "require('./desktop/distribution.cjs').distributionPolicy(require('./desktop/distribution.json')).channel")
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+          if [ "$CHANNEL" != unsigned-testing ]; then
+            echo "The installed startup scenario applies to unsigned-testing. This revision uses $CHANNEL." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.distribution.outputs.channel == 'unsigned-testing'
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: |
+            desktop/package-lock.json
+            workspace-app/package-lock.json
+      - uses: astral-sh/setup-uv@v6
+        if: steps.distribution.outputs.channel == 'unsigned-testing'
+      - name: Package the PR revision in a disposable app directory
+        if: steps.distribution.outputs.channel == 'unsigned-testing'
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npm ci --prefix workspace-app
+          npm ci --prefix desktop
+          python3 tools/desktop_build_runtime.py
+          npm run pack --prefix desktop
+      - name: Quit during installed startup and reopen the project
+        if: steps.distribution.outputs.channel == 'unsigned-testing'
+        run: node desktop/e2e/startup-quit.e2e.cjs
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.distribution.outputs.channel == 'unsigned-testing'
+        with:
+          name: installed-startup-quit
+          path: docs/dev/desktop-ui-e2e/startup-quit-receipt.json
+          if-no-files-found: error

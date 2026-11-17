@@ -413,6 +413,8 @@ function restoreStartupWindow(window){
 }
 async function startScientificUI() {
   if (startupInProgress || quitting || integrityFailed) return;
+  const generation = navigationGeneration;
+  const superseded = () => quitting || integrityFailed || generation !== navigationGeneration;
   startupInProgress = true;
   profilePreparedForExit=false;
   try {
@@ -424,14 +426,15 @@ async function startScientificUI() {
       origin=started.origin;
     } else if (supervisor.child && !supervisor.exited) {
       const health = await supervisor.api('/api/desktop/health');
+      if (superseded()) return;
       if (!matchesHealth(health, supervisor.expectedHealth())) throw new Error('Existing backend is not ready for recovery');
       origin = supervisor.origin; supervisor.ready = true; supervisor.origins.add(origin);
     } else {
       await checkpointRetainedOwners();
-      if (integrityFailed || quitting) return;
+      if (superseded()) return;
       origin = await supervisor.start();
     }
-    if (integrityFailed || quitting) return;
+    if (superseded()) return;
     disposeStaleOwners();
     if (!coordinator && !preview) {
       const createUpdateCoordinator = distribution.channel === 'unsigned-testing'
@@ -457,15 +460,18 @@ async function startScientificUI() {
       if(target&&!startupSession.cancelled){
         try{restored=(await restoreStartupWindow(window)).restored;}
         catch(error){
+          if (superseded()) return;
           // Retained project children remain owned/recovery-gated. They do not
           // prevent another folder from opening through a healthy exact root.
           const health=await supervisor.api('/api/desktop/health');
+          if (superseded()) return;
           if(!matchesHealth(health,supervisor.expectedHealth()))throw error;
           startupError=error.message;
         }
       }
-      if(quitting||integrityFailed)return;
+      if (superseded()) return;
       if(!restored)await activateProject(window,origin);
+      if (superseded()) return;
       window.draftUnavailable = false;if(!WebContentsView)scientificWindows.add(window);
     }
     lifecycleStatus = {state: 'Running'};
@@ -473,7 +479,9 @@ async function startScientificUI() {
     broadcast(supervisor.recoveredQuit?.drafts_saved === false
       ? {...status(),message:'The previous quit could not confirm the latest view. The last saved view is retained; accepted operations were reconciled before reopening.'}
       : status());
-  } catch (error) { recovery('The packaged scientific backend could not start. Projects have not been opened.', error.message); }
+  } catch (error) {
+    if (!superseded()) recovery('The packaged scientific backend could not start. Projects have not been opened.', error.message);
+  }
   finally { startupInProgress = false; }
 }
 function registerIPC() {

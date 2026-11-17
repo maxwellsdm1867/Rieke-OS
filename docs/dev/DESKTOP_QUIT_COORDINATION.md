@@ -34,3 +34,20 @@ startup synchronously. Startup checks this intent both on entry and immediately 
 await. A Quit completed during asynchronous manifest/recovery/directory work
 cannot be followed by a new backend spawn. This adds no wait and does not cancel
 or terminate a process that has already started.
+
+## Quit during startup
+
+Once Quit or recovery takes control of the window, a pending startup operation
+can finish its cleanup. Its completion or error must preserve the current status
+and recovery reason. The composition tests in
+`desktop/tests/main-startup-restoration.test.cjs` replay Quit while chooser
+authorization or document loading is outstanding.
+
+On Apple silicon macOS with a packaged unsigned-testing app under
+`desktop/dist/mac-arm64`, run `node desktop/e2e/startup-quit.e2e.cjs`.
+The driver opens a copy through LaunchServices under a private home, requests
+ordinary OS Quit while a project is reopening, and checks the next session
+against the synthetic recording. It writes the observed phase, elapsed times
+and outcome to `docs/dev/desktop-ui-e2e/startup-quit-receipt.json`.
+The installed-channel PR workflow runs this scenario on lifecycle changes.
+Candidate smoke runs it on the verified testing archive.

@@ -78,6 +78,7 @@ docs/legacy/old_epochtree/
 
 # Private packaged smoke and verification receipts
 docs/dev/desktop-smoke-e2e.json
+docs/dev/desktop-ui-e2e/startup-quit-receipt.json
 docs/dev/desktop-native-database-e2e.json
 docs/dev/desktop-verification-provenance.json
 

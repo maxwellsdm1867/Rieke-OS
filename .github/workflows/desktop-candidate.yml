@@ -83,12 +83,12 @@ jobs:
           requested_suite = os.environ.get('CHECK_SUITE') or 'auto'
           if candidate and not re.fullmatch(r'[1-9][0-9]*', candidate): raise SystemExit('Invalid candidate run ID')
           if requested_suite != 'auto' and not candidate: raise SystemExit('A focused check requires an existing candidate run')
-          # Fixture copy/generation verification precedes the unchanged 5-minute app smoke.
-          checks = [{'suite': 'smoke', 'timeout': 15}]
+          # The job covers extraction, the installed startup/quit probe and the routine smoke.
+          checks = [{'suite': 'smoke', 'timeout': 25}]
           for flag, suite, timeout in [('updater','updater',90),('database','database',20),('packaging','packaging',40),('full_ui','ui',20)]:
               if plan[flag]: checks.append({'suite': suite, 'timeout': timeout})
           if requested_suite != 'auto':
-              checks = [{'suite': requested_suite, 'timeout': {'smoke':15,'updater':90,'database':20,'packaging':40,'ui':20}[requested_suite]}]
+              checks = [{'suite': requested_suite, 'timeout': {'smoke':25,'updater':90,'database':20,'packaging':40,'ui':20}[requested_suite]}]
           with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
               out.write('checks='+json.dumps({'include': checks})+'\n')
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
@@ -347,6 +347,13 @@ jobs:
           output.parent.mkdir(parents=True, exist_ok=True)
           output.write_text(json.dumps(provenance, indent=2)+'\n')
           PYVERIFY
+      - name: Read candidate distribution channel
+        if: matrix.suite == 'smoke'
+        id: distribution
+        run: node -p "'channel='+require('./desktop/build/candidate-source/desktop/distribution.json').channel" >> "$GITHUB_OUTPUT"
+      - name: Quit during installed startup and reopen the project
+        if: matrix.suite == 'smoke' && steps.distribution.outputs.channel == 'unsigned-testing'
+        run: node desktop/e2e/startup-quit.e2e.cjs
       - name: Packaged launch, project persistence, update check and orderly quit
         if: matrix.suite == 'smoke'
         env:
