@@ -370,6 +370,18 @@ def environment():
         except (OSError, subprocess.CalledProcessError): return 'unavailable'
     memory = command('/usr/sbin/sysctl', '-n', 'hw.memsize') if sys.platform == 'darwin' else str(os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES'))
     cpu = command('/usr/sbin/sysctl', '-n', 'machdep.cpu.brand_string') if sys.platform == 'darwin' else platform.processor()
+    if sys.platform == 'linux' and not cpu:
+        # platform.processor() can be empty on hosted Linux. The million-row
+        # runner also obtains the model name from the kernel's CPU inventory.
+        try:
+            with Path('/proc/cpuinfo').open(encoding='utf-8', errors='replace') as cpuinfo:
+                for line in cpuinfo:
+                    field, _, model = line.partition(':')
+                    if field.strip() == 'model name' and model.strip():
+                        cpu = model.strip()
+                        break
+        except OSError:
+            pass  # Keep the missing identity diagnostic-only.
     packages = {}
     for name in ('numpy', 'scipy', 'h5py', 'flask', 'datajoint'):
         try: packages[name] = importlib.metadata.version(name)

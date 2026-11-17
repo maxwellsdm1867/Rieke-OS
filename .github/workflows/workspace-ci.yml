@@ -115,7 +115,8 @@ jobs:
   python:
     needs: architecture
     if: needs.architecture.outputs.documentation_only != 'true' && needs.architecture.outputs.python_required == 'true'
-    runs-on: ubuntu-latest
+    # setup-python publishes CPython 3.11.13 for Ubuntu 24.04 x64.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:

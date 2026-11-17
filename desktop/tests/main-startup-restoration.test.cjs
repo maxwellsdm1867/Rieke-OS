@@ -75,7 +75,7 @@ function fixture(options = {}) {
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../main.cjs'), 'utf8') + `
     startDesktop();supervisor=seed.supervisor; startupSession=seed.startupSession;
     registerIPC(); globalThis.window=createWindow(); globalThis.sendUpdaterStatus=publishUpdateStatus;
-    globalThis.startNativeRestore=()=>{supervisor.child={pid:100};supervisor.exited=false;coordinator={getStatus:()=>({state:"Current"})};return startScientificUI();};
+    globalThis.startNativeRestore=()=>{supervisor.child={pid:100};supervisor.exited=false;coordinator={getStatus:()=>({state:"Current"}),stop(){}};return startScientificUI();};
     globalThis.enterRecovery=()=>{recovery('Test recovery');openSession=async()=>({opened:true});};
     globalThis.rejectIntegrity=()=>{integrityFailed=true;};
   `, context);
@@ -230,6 +230,54 @@ test('native startup loads the saved project as the first application document',
   assert.deepEqual(h.navigation,[project]);
   assert.equal(h.startupSession.claim(),null);
   assert.equal(h.calls.filter(call=>call.route==='/api/desktop/resume-project').length,1);
+});
+
+for (const pending of ['authorization succeeds', 'authorization fails', 'document load finishes']) {
+  test(`Quit keeps Closing while chooser startup is pending: ${pending}`, {timeout: 2000}, async () => {
+    const entered = deferred(), settle = deferred(), cleanup = deferred();
+    const hold = () => { entered.resolve(); return settle.promise; };
+    const h = fixture({authorize: async () => {
+      if (pending === 'document load finishes') return true;
+      await hold();
+      if (pending === 'authorization fails') throw Error('Chooser authorization failed');
+      return true;
+    }});
+    h.startupSession.value.mode = 'chooser';
+    if (pending === 'document load finishes') {
+      const load = h.window.loadURL.bind(h.window);
+      h.window.loadURL = async url => { await load(url); await hold(); };
+    }
+    h.supervisor.quit = () => cleanup.promise;
+
+    const startup = h.startNativeRestore();
+    await entered.promise;
+    const navigationAtQuit = [...h.navigation];
+    const quit = h.invoke('quit');
+    settle.resolve();
+    await startup;
+    assert.deepEqual(h.messages.filter(item => item.channel === 'desktop:status-changed').map(item => item.value.state), ['Closing']);
+    assert.equal((await h.invoke('status')).state, 'Closing');
+    assert.deepEqual(h.navigation, navigationAtQuit);
+    assert.equal(h.quits, 0);
+    cleanup.resolve({ready: true});
+    assert.equal((await quit).services_closed, true);
+    assert.equal(h.quits, 1);
+  });
+}
+
+test('a startup cancellation preserves the recovery reason that interrupted chooser activation', async () => {
+  const entered = deferred(), authorization = deferred();
+  const h = fixture({authorize: () => { entered.resolve(); return authorization.promise; }});
+  h.startupSession.value.mode = 'chooser';
+  const startup = h.startNativeRestore();
+  await entered.promise;
+  h.enterRecovery();
+  authorization.resolve(true);
+  await startup;
+  const status = await h.invoke('status');
+  assert.equal(status.state, 'Recovery');
+  assert.equal(status.message, 'Test recovery');
+  assert.deepEqual(h.navigation, []);
 });
 
 test('native startup failure without a retained child opens the chooser with visible error',async()=>{
