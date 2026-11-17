@@ -136,6 +136,24 @@ adapter queues file-open retries when macOS reports `EMFILE` or `ENFILE`.
 `NODE_OPTIONS` is scoped to each packaging command; application launches and
 qualification tests use their normal filesystem implementation. Local and CI packaging use the same preload from the tools directory. It stays outside the app.
 
+### Daily integration and release qualification
+
+For a normal change, review **Disco integration verdict** on the latest revision.
+It combines the selected source, performance, installed-app, source-install and
+release-page checks. A failed user workflow stays red while a repair is being
+tested. A verified identical merge on main links back to the successful PR run.
+A direct push, changed tree, or expired proof takes the normal integration path.
+The source-install lane uses the same supported Apple silicon macOS 15 runner
+family as the desktop checks.
+
+Use `python3 -B tools/integration_incidents.py` to list unresolved failed runs on
+the current main revision and the owner's current PR heads. The Disco repair
+automation uses this list to avoid working on superseded failures. Its human
+handoff identifies the affected user workflow, the attempted repair, the remaining
+decision and the run link. Raw status emails are managed separately in the user's
+mailbox. Publication still requires separate exact-source regression and strict
+million-row qualifications, plus the packaged artifact evidence.
+
 The desktop candidate workflow separates **plan**, **build**, and **verification**.
 It compares the candidate with the previous published ancestor release tag in
 the same channel (or an explicit ancestor `compare_ref`) and records its selected

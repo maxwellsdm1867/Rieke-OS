@@ -328,14 +328,17 @@ existing fixed core correctness suite above and the separate `everyday-million`
 query track below. This is a development regression requirement, including updates
 whose intended effect is not performance. Product optimization does not justify
 skipping either check. Missing, failed, partial or incomparable evidence is not a
-green iteration. The [everyday-million workflow](../../.github/workflows/everyday-million.yml)
-enforces this query track on pull requests and pushes to `main`/`master`, except
-committed comparisons containing only Markdown files. Those still validate
-catalog references; code, configuration, unknown and harness paths retain the full
-track. Manual dispatch always runs it, including exact-source release checks.
-It also runs the fixed core and complements workspace correctness. Publication
-requires successful exact-source stress comparisons in addition to, never instead
-of, the existing native/artifact release qualification.
+green iteration. The [Disco integration workflow](../../.github/workflows/integration.yml)
+runs this check for application changes. An identical merge on main can use a
+previously successful PR verdict. Its receipt binds the PR, base and head
+commits, tested merge tree, successful workflow and attempt. Missing proof,
+a changed tree or a direct push runs the checks. Markdown-only diffs still
+validate catalog references. Manual exact-source qualification runs separately.
+
+The automatic verdict blocks failed correctness, incomplete or incomparable
+evidence, and attributable performance regressions. Historical timing drift
+remains visible in the benchmark receipts and job summaries. Release publication
+still requires all strict exact-source comparisons and packaged checks.
 
 The one registry remains [benchmarks/registry.json](../../benchmarks/registry.json),
 under `stress_tracks.everyday-million`. The core remains small; do not substitute
@@ -442,9 +445,9 @@ cancelled by later PR updates. Cancellation never supplies a passing receipt.
 Both comparisons run even if an earlier measurement fails or flags a regression.
 Browser compatibility checks precede large browser allocations; core and browser
 measurements retain their failures independently. Each family uploads its raw
-evidence, and the final aggregate requires both successful families, matching
-source plans, unchanged alias bytes, all four passing comparisons and successful
-core evidence. A missing, skipped, cancelled or failed family cannot qualify. Raw receipts,
+evidence, and the aggregate checks both families, matching source plans, unchanged alias bytes,
+all four comparison receipts and successful core evidence. Exact-source release
+qualification additionally requires all strict timing comparisons to pass. A missing, skipped, cancelled or failed family cannot qualify. Raw receipts,
 logs, comparison JSON and selected source references upload with `always()` and
 30-day retention, including failed runs. Preserve important baselines beyond the
 artifact expiry in owned evidence storage. Each measurement family retains a 90-minute safety timeout; a timeout is

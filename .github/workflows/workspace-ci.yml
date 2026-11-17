@@ -11,12 +11,12 @@ on:
         required: false
         type: boolean
         default: false
-  pull_request:
+  workflow_call:
   push:
-    branches: [main, master, codex/rieke-native-e2e, codex/0.1.8-stable-ports]
+    branches: [codex/rieke-native-e2e, codex/0.1.8-stable-ports]
 concurrency:
-  group: regression-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: regression-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
 jobs:

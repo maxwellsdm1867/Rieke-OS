@@ -1,29 +1,6 @@
 name: Installed Disco startup and Quit
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/desktop-startup-quit.yml'
-      - 'tools/desktop_packaging_fs.cjs'
-      - 'desktop/entry.cjs'
-      - 'desktop/bootstrap.cjs'
-      - 'desktop/main.cjs'
-      - 'desktop/supervisor.cjs'
-      - 'desktop/preload.cjs'
-      - 'desktop/project-views.cjs'
-      - 'desktop/session-profiles.cjs'
-      - 'desktop/runtime-generations.cjs'
-      - 'desktop/runtime-store.py'
-      - 'desktop/close/*.cjs'
-      - 'desktop/startup/*.cjs'
-      - 'desktop/integrity/*.cjs'
-      - 'desktop/e2e/startup-quit*'
-      - 'desktop/e2e/packaged-path.cjs'
-      - 'desktop/distribution.json'
-      - 'desktop/package.json'
-      - 'desktop/package-lock.json'
-      - 'desktop/tests/main-startup-restoration.test.cjs'
-      - 'desktop/drafts/*.cjs'
-      - 'python/workspace_desktop.py'
+  workflow_call:
   workflow_dispatch:
 permissions:
   contents: read

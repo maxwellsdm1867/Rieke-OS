@@ -1,0 +1,121 @@
+name: Disco integration
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+permissions:
+  contents: read
+concurrency:
+  group: disco-integration-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  scope:
+    name: Select integration checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      reused: ${{ steps.proof.outputs.reused }}
+      run_url: ${{ steps.proof.outputs.run_url }}
+      native: ${{ steps.scope.outputs.native }}
+      install: ${{ steps.scope.outputs.install }}
+      pages: ${{ steps.scope.outputs.pages }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: proof
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B tools/integration_reuse.py check --output "$RUNNER_TEMP/integration-reuse.json" --github-output "$GITHUB_OUTPUT"
+      - id: scope
+        if: steps.proof.outputs.reused == 'false'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python3 -B tools/integration_scope.py --base "$BASE" --github-output "$GITHUB_OUTPUT"
+  source:
+    needs: scope
+    if: needs.scope.outputs.reused == 'false'
+    uses: ./.github/workflows/workspace-ci.yml
+  performance:
+    needs: scope
+    if: needs.scope.outputs.reused == 'false'
+    uses: ./.github/workflows/everyday-million.yml
+    with:
+      timing_policy: integration
+  native:
+    needs: scope
+    if: needs.scope.outputs.native == 'true'
+    uses: ./.github/workflows/desktop-startup-quit.yml
+  install:
+    needs: scope
+    if: needs.scope.outputs.install == 'true'
+    uses: ./.github/workflows/verify.yml
+  pages:
+    needs: scope
+    if: needs.scope.outputs.pages == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: python3 -B -m unittest discover -s python/tests -p test_desktop_release_pages.py -v
+  verdict:
+    name: Disco integration verdict
+    if: always()
+    needs: [scope, source, performance, native, install, pages]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether this revision can merge
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          jobs = json.loads(os.environ['RESULTS'])
+          scope = jobs['scope']
+          plan = scope['outputs']
+          reused = plan.get('reused')
+          errors = []
+          if scope['result'] != 'success' or reused not in ('true', 'false'):
+              errors.append('Check selection or proof validation did not complete.')
+          for name, label in [('source','Source regression'), ('performance','Correctness and performance'),
+                              ('native','Installed startup and Quit'), ('install','Source installation'),
+                              ('pages','Release-page checks')]:
+              if reused == 'false' and name not in ('source','performance') and plan.get(name) not in ('true','false'):
+                  errors.append(f'{label}: missing selection decision.')
+              required = reused == 'false' and (name in ('source','performance') or plan.get(name) == 'true')
+              actual = jobs[name]['result']
+              if actual != ('success' if required else 'skipped'):
+                  errors.append(f'{label}: {actual}.')
+          if errors:
+              summary = '### Integration blocked\n\n' + '\n'.join('- ' + err for err in errors)
+          elif reused == 'true':
+              summary = f"### Integrated\n\nThis merge has the [verified PR file tree]({plan['run_url']})."
+          else:
+              summary = '### Integration passed\n\nAll selected workflows completed. Timing advisories are in the performance summary.'
+          with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a') as out:
+              print(summary, file=out)
+          if errors:
+              raise SystemExit(summary)
+          PY
+      - uses: actions/checkout@v4
+        if: github.event_name == 'pull_request'
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Record the tested PR tree
+        if: github.event_name == 'pull_request'
+        run: python3 -B tools/integration_reuse.py record --output "$RUNNER_TEMP/integration-pr-proof.json"
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'pull_request'
+        with:
+          name: integration-pr-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/integration-pr-proof.json
+          retention-days: 30
+          if-no-files-found: error

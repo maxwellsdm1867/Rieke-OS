@@ -21,11 +21,13 @@ import signal
 import statistics
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 HARNESS = ROOT / 'benchmarks/prepared_geometry'
+HISTORICAL_GEOMETRY = '4de896f2e0b4ea966b5a428c3d2314f93fba935f'
 
 
 def digest(path):
@@ -365,6 +367,79 @@ def run_pair(baseline, candidate, output):
     return result
 
 
+def read_pair(output, baseline_sha, candidate_sha):
+    before, after = [json.loads((output / role / 'receipt.json').read_text()) for role in ('baseline', 'candidate')]
+    if before['source_start']['commit'] != baseline_sha or after['source_start']['commit'] != candidate_sha:
+        raise ValueError('Geometry observations belong to a different source')
+    comparison = compare(before, after)
+    if comparison != json.loads((output / 'comparison.json').read_text()):
+        raise ValueError('Geometry comparison differs from validated raw observations')
+    return before, after, comparison
+
+
+def integration_verdict(output, plan):
+    """Verify historical drift and, when needed, attribute visible slowdowns to this change."""
+    sources = plan['sources']
+    before, after, comparison = read_pair(output, HISTORICAL_GEOMETRY, sources['candidate'])
+    warnings = []
+    for row in comparison['metrics']:
+        if row['review_required']:
+            warnings.append(f"Historical drawing {row['metric']}: {row['baseline_ms']:.1f} → "
+                            f"{row['candidate_ms']:.1f} ms (limit {row['threshold_ms']:.1f} ms).")
+    blocked = []
+    if warnings and sources['previous'] != sources['candidate']:
+        if sources['previous'] != HISTORICAL_GEOMETRY:
+            before, after, comparison = read_pair(output / 'previous', sources['previous'], sources['candidate'])
+        if __package__:
+            from .benchmark_workflow import compare_metrics
+        else:
+            from benchmark_workflow import compare_metrics
+        # Post-stroke is a draw call. The first animation frame and full display
+        # completion represent visible progress. Compare the same sample classes
+        # (first trace versus subsequent fresh renderers) across both sources.
+        visible = {'total_ms': 'complete_ms', 'endpoint:first_raf': 'first_raf_ms'}
+        for row in comparison['metrics']:
+            metric = row['metric']
+            if not row['review_required']:
+                continue
+            paired_slow = 0
+            if metric in visible:
+                for old, new in zip(before['samples'], after['samples']):
+                    old_value = {'draw': {'total_ms': old['trace'][visible[metric]]}}
+                    new_value = {'draw': {'total_ms': new['trace'][visible[metric]]}}
+                    if compare_metrics(old_value, new_value, comparison['policy'])['review_required']:
+                        paired_slow += 1
+            message = (f"Previous-source drawing {metric}: {row['baseline_ms']:.1f} → "
+                       f"{row['candidate_ms']:.1f} ms (limit {row['threshold_ms']:.1f} ms).")
+            if paired_slow >= 2:
+                blocked.append(message + f' {paired_slow}/3 matched samples exceeded policy.')
+            else:
+                warnings.append(message)
+    return {'status': 'failed' if blocked else 'passed', 'warnings': warnings, 'regressions': blocked,
+            'previous_commit': sources['previous'], 'candidate_commit': sources['candidate']}
+
+
+def attribute_geometry(previous, candidate, output):
+    if __package__:
+        from . import benchmark_ci as ci
+    else:
+        import benchmark_ci as ci
+    # Reuse the serial source preparation and pinned lockfile checks. The
+    # previous pair runs only after a historical timing flag, on this same host.
+    with tempfile.TemporaryDirectory(prefix='disco-geometry-previous-') as directory:
+        root = Path(directory)
+        plan = {'harness': ci.git(ROOT, 'rev-parse', 'HEAD'), 'order': ['previous'], 'sources': {'previous': previous}}
+        try:
+            paths = ci.prepare_sources(plan, root, output, sys.executable, browser=True)
+            result = run_pair(paths['previous'], candidate, output / 'previous')
+            if result['status'] not in ('passed', 'review_required'):
+                raise ValueError('Previous-source geometry failed: ' + str(result))
+        finally:
+            worktree = root / 'previous'
+            if (worktree / '.git').is_file():
+                subprocess.run(['git', '-C', str(ROOT), 'worktree', 'remove', '--force', str(worktree)], check=True)
+
+
 def main():
     def interrupted(signum, _frame):
         raise InterruptedError('Geometry run cancelled by signal ' + str(signum))
@@ -373,10 +448,26 @@ def main():
     sub = parser.add_subparsers(dest='command', required=True)
     command = sub.add_parser('run'); command.add_argument('--source-root', type=Path, required=True); command.add_argument('--output', type=Path, required=True)
     command = sub.add_parser('pair'); command.add_argument('--baseline-source', type=Path, required=True); command.add_argument('--source-root', type=Path, required=True); command.add_argument('--output', type=Path, required=True)
+    command.add_argument('--source-plan', type=Path)
     command = sub.add_parser('compare'); command.add_argument('baseline', type=Path); command.add_argument('candidate', type=Path); command.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     if args.command == 'run': result = run(args.source_root, args.output)
-    elif args.command == 'pair': result = run_pair(args.baseline_source, args.source_root, args.output)
+    elif args.command == 'pair':
+        result = run_pair(args.baseline_source, args.source_root, args.output)
+        if args.source_plan:
+            plan = json.loads(args.source_plan.read_text())
+            if plan.get('timing_policy') == 'integration' and result['status'] in ('passed', 'review_required'):
+                from benchmark_ci import timing_notice
+                previous = plan['sources']['previous']
+                if (result['status'] == 'review_required' and
+                        previous not in (plan['sources']['candidate'], HISTORICAL_GEOMETRY)):
+                    attribute_geometry(previous, args.source_root, args.output)
+                result = integration_verdict(args.output, plan)
+                (args.output / 'integration-verdict.json').write_text(json.dumps(result, indent=2) + '\n')
+                for message in result['warnings']:
+                    timing_notice(message)
+                for message in result['regressions']:
+                    print(message, file=sys.stderr)
     else:
         try: result = compare(json.loads(args.baseline.read_text()), json.loads(args.candidate.read_text()))
         except Exception as error: result = {'status': 'failed', 'error': str(error)}

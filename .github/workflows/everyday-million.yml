@@ -1,9 +1,11 @@
 name: Everyday million query and workflow regression
 
 on:
-  push:
-    branches: [main, master]
-  pull_request:
+  workflow_call:
+    inputs:
+      timing_policy:
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       baseline_sha:
@@ -17,6 +19,9 @@ on:
 
 permissions:
   contents: read
+
+env:
+  DISCO_TIMING_POLICY: ${{ inputs.timing_policy || 'qualification' }}
 
 # Only superseded automatic PR runs cancel. Push and explicit qualification runs
 # have distinct groups and retain their full evidence even when new work arrives.
@@ -53,7 +58,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
         run: |
           python3 -B tools/benchmark_ci.py resolve --pinned "$PINNED_SHA" --previous "$PREVIOUS_SHA" \
-            --candidate "$REQUESTED_CANDIDATE_SHA" --event "$EVENT_NAME" \
+            --candidate "$REQUESTED_CANDIDATE_SHA" --event "$EVENT_NAME" --timing-policy "$DISCO_TIMING_POLICY" \
             --output "$RUNNER_TEMP/source-plan.json" --github-output "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -185,7 +190,7 @@ jobs:
           done
           candidate=$(python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/performance-plan/source-plan.json")); r=p["canonical"]["candidate"]; print(os.environ["GITHUB_WORKSPACE"] if p["sources"][r]==p["harness"] else os.environ["RUNNER_TEMP"]+"/browser-sources/"+r)')
           "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_prepared_geometry.py -v
-          "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_prepared_geometry.py pair --baseline-source "$geometry_baseline" --source-root "$candidate" --output "$RUNNER_TEMP/everyday-browser/geometry-pair"
+          "$RUNNER_TEMP/everyday-python/bin/python" -B tools/benchmark_prepared_geometry.py pair --baseline-source "$geometry_baseline" --source-root "$candidate" --output "$RUNNER_TEMP/everyday-browser/geometry-pair" --source-plan "$RUNNER_TEMP/performance-plan/source-plan.json"
       - name: Retain compact Linux geometry proof without changing raw evidence
         if: always()
         run: |
@@ -200,6 +205,12 @@ jobs:
             mkdir -p "$root/geometry-proof"
             cp "$root/geometry-pair/comparison.json" "$root/geometry-proof/comparison.json"
           fi
+          for file in integration-verdict.json previous/comparison.json previous/baseline/receipt.json previous/candidate/receipt.json; do
+            if [ -f "$root/geometry-pair/$file" ]; then
+              mkdir -p "$(dirname "$root/geometry-proof/$file")"
+              cp "$root/geometry-pair/$file" "$root/geometry-proof/$file"
+            fi
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -208,6 +219,7 @@ jobs:
             ${{ runner.temp }}/everyday-browser/
             !${{ runner.temp }}/everyday-browser/geometry-pair/baseline/**
             !${{ runner.temp }}/everyday-browser/geometry-pair/candidate/**
+            !${{ runner.temp }}/everyday-browser/geometry-pair/previous/**
           if-no-files-found: error
           retention-days: 30
       - uses: actions/upload-artifact@v4
@@ -218,6 +230,7 @@ jobs:
             ${{ runner.temp }}/everyday-browser/geometry-pair/baseline/
             ${{ runner.temp }}/everyday-browser/geometry-pair/candidate/
             ${{ runner.temp }}/everyday-browser/geometry-pair/comparison.json
+            ${{ runner.temp }}/everyday-browser/geometry-pair/previous/
             !${{ runner.temp }}/everyday-browser/**/node_modules/**
           if-no-files-found: warn
           retention-days: 30
@@ -290,7 +303,7 @@ jobs:
           unset RIEKE_TEST_DOM_MODULE PREPARED_GEOMETRY_TIMING PREPARED_GEOMETRY_BROWSER
           node --test benchmarks/workflow/browser-readiness.test.mjs benchmarks/prepared_geometry/observer.test.mjs benchmarks/prepared_geometry/paired.test.mjs 2>&1 | tee "$RUNNER_TEMP/trace-macos/observer-tests.log"
           "$RUNNER_TEMP/trace-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_prepared_geometry.py -v
-          "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_prepared_geometry.py pair --baseline-source "$RUNNER_TEMP/trace-baseline" --source-root "$RUNNER_TEMP/trace-candidate" --output "$RUNNER_TEMP/trace-macos/pair"
+          "$RUNNER_TEMP/trace-python/bin/python" -B tools/benchmark_prepared_geometry.py pair --baseline-source "$RUNNER_TEMP/trace-baseline" --source-root "$RUNNER_TEMP/trace-candidate" --output "$RUNNER_TEMP/trace-macos/pair" --source-plan "$RUNNER_TEMP/performance-plan/source-plan.json"
       - name: Preserve compact publication proof
         uses: actions/upload-artifact@v4
         if: always()
@@ -300,6 +313,10 @@ jobs:
             ${{ runner.temp }}/trace-macos/pair/baseline/receipt.json
             ${{ runner.temp }}/trace-macos/pair/candidate/receipt.json
             ${{ runner.temp }}/trace-macos/pair/comparison.json
+            ${{ runner.temp }}/trace-macos/pair/integration-verdict.json
+            ${{ runner.temp }}/trace-macos/pair/previous/comparison.json
+            ${{ runner.temp }}/trace-macos/pair/previous/baseline/receipt.json
+            ${{ runner.temp }}/trace-macos/pair/previous/candidate/receipt.json
           if-no-files-found: error
           retention-days: 30
       - uses: actions/upload-artifact@v4

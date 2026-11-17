@@ -14,6 +14,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 ROLES = ('pinned', 'previous', 'candidate')
@@ -35,7 +36,9 @@ def git(root, *args):
     return subprocess.check_output(['git', '-C', str(root), *args], text=True).strip()
 
 
-def resolve_sources(root, pinned, previous, candidate, event):
+def resolve_sources(root, pinned, previous, candidate, event, timing_policy='qualification'):
+    if timing_policy not in ('integration', 'qualification'):
+        raise ValueError('Unknown benchmark timing policy')
     harness = git(root, 'rev-parse', 'HEAD')
     if not previous and event == 'workflow_dispatch':
         previous = git(root, 'rev-parse', 'HEAD^')
@@ -50,7 +53,7 @@ def resolve_sources(root, pinned, previous, candidate, event):
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
             subprocess.run(['git', '-C', str(root), 'fetch', '--no-tags', 'origin', sha], check=True)
         resolved.append(git(root, 'rev-parse', sha + '^{commit}'))
-    return {**plan_sources(*resolved), 'harness': harness, 'event': event,
+    return {**plan_sources(*resolved), 'harness': harness, 'event': event, 'timing_policy': timing_policy,
             'run_id': os.environ.get('GITHUB_RUN_ID', ''),
             'run_attempt': os.environ.get('GITHUB_RUN_ATTEMPT', '')}
 
@@ -61,6 +64,78 @@ def write(path, value):
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def timing_notice(message):
+    print(message)
+    if os.environ.get('GITHUB_ACTIONS') == 'true':
+        escaped = message.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+        print('::warning title=Performance timing review::' + escaped)
+        if os.environ.get('GITHUB_STEP_SUMMARY'):
+            with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+                summary.write('- ' + message + '\n')
+
+
+def comparison_warnings(family, plan, output, role, code, *, verify_raw=False):
+    """Only a validated comparator's timing-only exit 2 can become an advisory."""
+    prefix = 'workflow-' if family == 'browser' else ''
+    path = output / (prefix + role + '-comparison.json')
+    baseline = output / (prefix + role) / 'receipt.json'
+    candidate = output / (prefix + 'candidate') / 'receipt.json'
+    comparison = json.loads(path.read_text())
+    if (comparison.get('candidate_receipt_sha256') != digest(candidate) or
+            comparison.get('baseline_receipt_sha256') != digest(baseline)):
+        raise ValueError('Mismatched comparison source receipts: ' + path.name)
+    if code == 0 and comparison.get('status') == 'passed' and comparison.get('review_required') == []:
+        return []
+    if (code != 2 or plan.get('timing_policy') != 'integration' or
+            comparison.get('status') != 'review_required' or not comparison.get('review_required')):
+        raise ValueError('Failed comparison: ' + path.name)
+    if verify_raw:
+        # The aggregate consumes downloaded artifacts. Revalidate the actual observations
+        # and rerun the comparator before accepting any red-to-advisory change of verdict.
+        if __package__:
+            from . import benchmark_everyday, benchmark_workflow
+        else:
+            import benchmark_everyday, benchmark_workflow
+        runner = benchmark_workflow if family == 'browser' else benchmark_everyday
+        with tempfile.TemporaryDirectory() as tmp:
+            expected = runner.compare(baseline, candidate, Path(tmp) / 'recomputed.json')
+        # Backend comparisons record absolute paths from the measurement runner.
+        for key in ('baseline', 'candidate'):
+            if family == 'backend':
+                comparison.pop(key)
+                expected.pop(key)
+        if expected != comparison:
+            raise ValueError('Timing review differs from the validated raw measurements: ' + path.name)
+    messages = []
+    findings = []
+    candidate_data = json.loads(candidate.read_text())
+    for row in comparison['metrics']:
+        if row['review_required'] is not True:
+            continue
+        case = row['case']
+        if family == 'browser':
+            metric = row['metric']
+            observed = candidate_data['metrics'][case]
+            if metric != 'total_ms' and not (metric.startswith('endpoint:') and metric[9:] in observed['endpoints']):
+                raise ValueError('Unknown timing metric: ' + metric)
+            name = case + '/' + metric
+            before, after, threshold = (row[k] for k in ('baseline_ms', 'candidate_ms', 'threshold_ms'))
+        else:
+            name = case
+            config = candidate_data['config']['cases']
+            if not any(case in config[lane] or case == lane + '.setup_ms' for lane in ('tree', 'typed')):
+                raise ValueError('Non-timing or unknown backend regression: ' + case)
+            before, after, threshold = (row[k] for k in ('baseline', 'candidate', 'threshold'))
+        if role != 'pinned' and not (family == 'backend' and case.endswith('.setup_ms')):
+            raise ValueError(f'Immediate previous source regression in {name}: {before:.1f} → {after:.1f} (limit {threshold:.1f} ms)')
+        findings.append(name)
+        basis = 'historical' if role == 'pinned' else 'previous-source fixture setup'
+        messages.append(f'{family} {basis} timing, {name}: {before:.1f} → {after:.1f} ms (limit {threshold:.1f} ms).')
+    if findings != comparison['review_required']:
+        raise ValueError('Incomplete or unknown timing review: ' + path.name)
+    return messages
 
 
 def run_command(command, output, label):
@@ -157,8 +232,16 @@ def run_family(family, plan, output, worktrees, python):
             run(prefix + role + '-compare', [python, '-B', runner, 'compare',
                 output / (prefix + role) / 'receipt.json', output / (prefix + 'candidate') / 'receipt.json',
                 '--output', output / (prefix + role + '-comparison.json')])
-        if any(item['exit_code'] for item in record['commands']):
-            raise ValueError('One or more benchmark commands failed; raw evidence retained')
+        comparisons = {prefix + role + '-compare': role for role in ('pinned', 'previous')}
+        warnings = []
+        for item in record['commands']:
+            if item['label'] in comparisons:
+                warnings.extend(comparison_warnings(family, plan, output, comparisons[item['label']], item['exit_code']))
+            elif item['exit_code'] != 0:
+                raise ValueError('Benchmark measurement failed: ' + item['label'])
+        record['warnings'] = warnings
+        for message in warnings:
+            timing_notice(message)
         record['status'] = 'passed'
     except Exception as error:
         record['error'] = str(error)
@@ -170,7 +253,7 @@ def run_family(family, plan, output, worktrees, python):
 def aggregate(plan, output, backend_result, browser_result):
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
-    result = {'status': 'failed', 'plan': plan}
+    result = {'status': 'failed', 'plan': plan, 'warnings': []}
     try:
         expected = plan_sources(*(plan['sources'][role] for role in ROLES))
         if (any(plan.get(key) != value for key, value in expected.items())
@@ -191,9 +274,10 @@ def aggregate(plan, output, backend_result, browser_result):
                 expected_labels.update('compatibility-' + role for role in plan['order'])
                 expected_labels.add('candidate-core')
             commands = record.get('commands', [])
+            compare_labels = {prefix + role + '-compare' for role in ('pinned', 'previous')}
             if (len(commands) != len(expected_labels)
                     or {item.get('label') for item in commands} != expected_labels
-                    or any(item.get('exit_code') != 0 for item in commands)):
+                    or any(item.get('exit_code') != 0 for item in commands if item.get('label') not in compare_labels)):
                 raise ValueError('Incomplete or failed family commands')
             for role in ROLES:
                 path = output / (prefix + role) / 'receipt.json'
@@ -209,18 +293,31 @@ def aggregate(plan, output, backend_result, browser_result):
                         or alias.get('sha256') != digest(path)
                         or alias.get('sha256') != digest(output / alias['source_receipt'])):
                     raise ValueError('Aliased receipt bytes or provenance differ')
+            codes = {item['label']: item['exit_code'] for item in commands}
+            warnings = []
             for role in ('pinned', 'previous'):
-                comparison = json.loads((output / (prefix + role + '-comparison.json')).read_text())
-                if (comparison.get('status') != 'passed' or comparison.get('review_required') != []
-                        or comparison.get('candidate_receipt_sha256') != digest(output / (prefix + 'candidate') / 'receipt.json')
-                        or comparison.get('baseline_receipt_sha256') != digest(output / (prefix + role) / 'receipt.json')):
-                    raise ValueError('Missing, failed or mismatched comparison')
+                warnings.extend(comparison_warnings(family, plan, output, role, codes[prefix + role + '-compare'], verify_raw=True))
+            if warnings != record['warnings']:
+                raise ValueError('Inconsistent family timing review')
+            result['warnings'].extend(warnings)
         core = json.loads((output / 'core/benchmark.json').read_text())
         if (core.get('validation_errors') != [] or core.get('fixture_cleaned') is not True
                 or core.get('source_start', {}).get('commit') != plan['sources']['candidate']
                 or core.get('source_start', {}).get('dirty') is not False
                 or core.get('source_end') != core.get('source_start')):
             raise ValueError('Core benchmark did not pass')
+        if plan.get('timing_policy') == 'integration':
+            if __package__:
+                from .benchmark_prepared_geometry import integration_verdict
+            else:
+                from benchmark_prepared_geometry import integration_verdict
+            for name in ('geometry-proof', 'trace-macos'):
+                verified = integration_verdict(output / name, plan)
+                if verified != json.loads((output / name / 'integration-verdict.json').read_text()):
+                    raise ValueError('Geometry integration verdict differs from observations: ' + name)
+                if verified['status'] != 'passed':
+                    raise ValueError('Attributable drawing regression: ' + name)
+                result['warnings'].extend(verified['warnings'])
         result['status'] = 'passed'
     except Exception as error:
         result['error'] = str(error)
@@ -237,6 +334,7 @@ def main():
     resolve.add_argument('--previous', default='')
     resolve.add_argument('--candidate', default='')
     resolve.add_argument('--event', required=True)
+    resolve.add_argument('--timing-policy', choices=['integration', 'qualification'], default='qualification')
     resolve.add_argument('--output', type=Path, required=True)
     resolve.add_argument('--github-output', type=Path)
     run = commands.add_parser('run')
@@ -252,7 +350,7 @@ def main():
     merge.add_argument('--browser-result', required=True)
     args = parser.parse_args()
     if args.command == 'resolve':
-        result = resolve_sources(ROOT, args.pinned, args.previous, args.candidate, args.event)
+        result = resolve_sources(ROOT, args.pinned, args.previous, args.candidate, args.event, args.timing_policy)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         write(args.output, result)
         if args.github_output:
