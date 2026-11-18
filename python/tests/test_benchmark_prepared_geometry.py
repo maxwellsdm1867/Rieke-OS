@@ -42,6 +42,55 @@ def role_receipt(result, role):
 
 
 class PreparedGeometryTests(unittest.TestCase):
+    def test_integration_compares_visible_matched_samples_to_the_previous_source(self):
+        previous, candidate = 'd' * 40, 'e' * 40
+        plan = {'sources': {'candidate': candidate, 'previous': previous}}
+        def pair(root, baseline_sha, old, new):
+            root.mkdir(exist_ok=True)
+            before, after = receipt('baseline'), receipt('candidate')
+            for value, sha, samples in [(before, baseline_sha, old), (after, candidate, new)]:
+                for key in ('source_start', 'source_end'):
+                    value[key]['commit'] = sha
+                for sample, (stroke, raf, complete) in zip(value['samples'], samples):
+                    sample['trace'].update(first_visible_ms=stroke, first_raf_ms=raf, complete_ms=complete)
+                    sample['total_ms'] = complete
+                    sample['observer']['ready_at'] = 16 + complete
+            bindings = {name: runner.source_binding(value['source_start']) for name, value in [('baseline', before), ('candidate', after)]}
+            for role, value in [('baseline', before), ('candidate', after)]:
+                value['pair']['sources'] = bindings
+                (root / role).mkdir(exist_ok=True)
+                (root / role / 'receipt.json').write_text(json.dumps(value))
+            comparison = runner.compare(before, after)
+            (root / 'comparison.json').write_text(json.dumps(comparison))
+            return comparison
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fast = [(98.5, 149.5, 181.4)] * 3
+            stroke_only = [(124, 141.1, 174.6)] * 3
+            historical = pair(root, runner.HISTORICAL_GEOMETRY, fast, stroke_only)
+            self.assertEqual(historical['status'], 'review_required')  # strict release verdict
+            with self.assertRaises(FileNotFoundError):
+                runner.integration_verdict(root, plan)
+            pair(root / 'previous', previous, fast, stroke_only)
+            advisory = runner.integration_verdict(root, plan)
+            self.assertEqual(advisory['status'], 'passed')
+            self.assertTrue(any('post_stroke' in message for message in advisory['warnings']))
+            pair(root / 'previous', previous, fast, [(130, 210, 260)] * 3)
+            blocked = runner.integration_verdict(root, plan)
+            self.assertEqual(blocked['status'], 'failed')
+            self.assertTrue(any('3/3' in message for message in blocked['regressions']))
+            pair(root / 'previous', previous, fast, fast[:2] + [(180, 280, 370)])
+            self.assertEqual(runner.integration_verdict(root, plan)['status'], 'passed')
+            (root / 'previous/comparison.json').write_text('{"status":"passed"}')
+            with self.assertRaisesRegex(ValueError, 'validated raw'):
+                runner.integration_verdict(root, plan)
+            pair(root / 'previous', '8' * 40, fast, fast)
+            with self.assertRaisesRegex(ValueError, 'different source'):
+                runner.integration_verdict(root, plan)
+            unchanged = dict(sources=dict(candidate=candidate, previous=candidate))
+            self.assertEqual(runner.integration_verdict(root, unchanged)['status'], 'passed')
+
     def test_release_version_only_changes_preserve_locked_dependency_comparability(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

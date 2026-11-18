@@ -18,13 +18,6 @@ on:
       - .github/workflows/release-pages.yml
       - tools/desktop_release_pages.py
       - python/tests/test_desktop_release_pages.py
-  pull_request:
-    paths:
-      - README.md
-      - CHANGELOG.md
-      - .github/workflows/release-pages.yml
-      - tools/desktop_release_pages.py
-      - python/tests/test_desktop_release_pages.py
 permissions:
   contents: read
 concurrency:
@@ -45,8 +38,10 @@ jobs:
       github.event_name != 'pull_request' &&
       (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
+    timeout-minutes: 23
     permissions:
       contents: write
+      actions: write
     steps:
       # Never execute the event's release/tag/artifact code with a write token.
       - uses: actions/checkout@v4

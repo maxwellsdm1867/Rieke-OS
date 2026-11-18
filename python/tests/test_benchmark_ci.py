@@ -153,6 +153,9 @@ class SchedulingTests(unittest.TestCase):
         self.assertEqual(manual['sources'], dict(pinned=pinned, previous=previous, candidate=candidate))
         first_push = ci.resolve_sources(self.repo, pinned, '0' * 40, '', 'push')
         self.assertEqual(first_push['sources'], dict(pinned=pinned, previous=pinned, candidate=candidate))
+        self.assertEqual(manual['timing_policy'], 'qualification')
+        with self.assertRaisesRegex(ValueError, 'timing policy'):
+            ci.resolve_sources(self.repo, pinned, previous, candidate, 'push', 'unknown')
         for bad in ('main', candidate[:12], 'g' * 40, ''):
             with self.subTest(invalid_previous=bad), self.assertRaises(ValueError):
                 ci.resolve_sources(self.repo, pinned, bad, candidate, 'pull_request')
@@ -342,7 +345,9 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertEqual(proof['if'], 'always()')
         self.assertEqual(proof['with']['name'], 'trace-macos-proof-${{ github.run_id }}-${{ github.run_attempt }}')
         self.assertEqual(proof['with']['if-no-files-found'], 'error')
-        self.assertEqual(len(proof['with']['path'].splitlines()), 3)
+        self.assertIn('/pair/previous/baseline/receipt.json', proof['with']['path'])
+        self.assertIn('/pair/previous/candidate/receipt.json', proof['with']['path'])
+        self.assertIn('/pair/integration-verdict.json', proof['with']['path'])
         self.assertNotIn('node_modules', proof['with']['path'])
         self.assertIn('comparison.json', proof['with']['path'])
         raw = next(step for step in job['steps'] if step.get('with', {}).get('name', '').startswith('trace-macos-${'))
@@ -449,6 +454,61 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertEqual(upload['with']['name'], 'everyday-million-${{ github.run_id }}-${{ github.run_attempt }}')
         sources = next(step for step in self.jobs['scope']['steps'] if step.get('id') == 'sources')
         self.assertEqual(sources['env']['PINNED_SHA'], 'a16c915f9730384af3285949bb962d12707ccf01')
+
+
+class AutomaticTimingTests(unittest.TestCase):
+    def test_only_validated_historical_timing_can_warn(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            paths = {}
+            for role in ('pinned', 'previous', 'candidate'):
+                directory = output / ('workflow-' + role)
+                directory.mkdir()
+                paths[role] = directory / 'receipt.json'
+                ci.write(paths[role], {'metrics': {'waveform': {'total_ms': 150, 'endpoints': {}}}})
+            row = dict(case='waveform', metric='total_ms', baseline_ms=100, candidate_ms=150,
+                       threshold_ms=125, review_required=True)
+            comparison = dict(status='review_required', review_required=['waveform/total_ms'], metrics=[row],
+                              baseline_receipt_sha256=ci.digest(paths['pinned']),
+                              candidate_receipt_sha256=ci.digest(paths['candidate']))
+            historical = output / 'workflow-pinned-comparison.json'
+            ci.write(historical, comparison)
+            ci.write(output / 'workflow-previous-comparison.json', comparison)
+            integration = {'timing_policy': 'integration'}
+            with patch('tools.benchmark_workflow.compare', return_value=comparison) as recompute:
+                warnings = ci.comparison_warnings('browser', integration, output, 'pinned', 2, verify_raw=True)
+                self.assertEqual(len(warnings), 1)
+                self.assertIn('100.0 → 150.0 ms', warnings[0])
+                self.assertTrue(recompute.called)
+            with self.assertRaisesRegex(ValueError, 'Immediate previous'):
+                ci.comparison_warnings('browser', integration, output, 'previous', 2)
+            for policy, code in [('integration', 1), ('qualification', 2)]:
+                with self.subTest(policy=policy, code=code), self.assertRaises(ValueError):
+                    ci.comparison_warnings('browser', {'timing_policy': policy}, output, 'pinned', code)
+            with patch('tools.benchmark_workflow.compare', return_value={'status': 'passed'}), self.assertRaisesRegex(ValueError, 'raw measurements'):
+                ci.comparison_warnings('browser', integration, output, 'pinned', 2, verify_raw=True)
+            for change in ({'review_required': []}, {'metrics': []}, {'candidate_receipt_sha256': 'bad'},
+                           {'metrics': [{**row, 'metric': 'endpoint:unknown'}]}):
+                ci.write(historical, comparison | change)
+                with self.subTest(change=change), self.assertRaises(ValueError):
+                    ci.comparison_warnings('browser', integration, output, 'pinned', 2)
+
+    def test_backend_memory_review_is_still_blocking(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in ('pinned', 'candidate'):
+                (root / name).mkdir()
+                ci.write(root / name / 'receipt.json', {'config': {'cases': {'typed': [], 'tree': ['tree.root']}}})
+            result = {'status': 'review_required', 'candidate_receipt_sha256': ci.digest(root / 'candidate/receipt.json'),
+                      'baseline_receipt_sha256': ci.digest(root / 'pinned/receipt.json')}
+            for case, allowed in [('tree.root', True), ('typed.peak_rss_bytes', False), ('unknown', False)]:
+                row = dict(case=case, baseline=10, candidate=40, threshold=30, review_required=True)
+                ci.write(root / 'pinned-comparison.json', result | {'metrics': [row], 'review_required': [case]})
+                if allowed:
+                    self.assertTrue(ci.comparison_warnings('backend', {'timing_policy': 'integration'}, root, 'pinned', 2))
+                else:
+                    with self.assertRaisesRegex(ValueError, 'Non-timing or unknown'):
+                        ci.comparison_warnings('backend', {'timing_policy': 'integration'}, root, 'pinned', 2)
 
 
 if __name__ == '__main__':
