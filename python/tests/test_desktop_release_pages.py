@@ -26,7 +26,7 @@ def fixture(version='0.2.13'):
                   'source_dirty': False, 'production_ready': False, 'source_commit': 'a' * 40,
                   'archive': {'filename': f'Disco-{version}-arm64.zip', 'sha256': 'b' * 64, 'size': 42}}
     raw = json.dumps(descriptor).encode()
-    release = {'id': 13, 'draft': False, 'prerelease': True, 'tag_name': tag,
+    release = {'id': 13, 'draft': False, 'prerelease': True, 'tag_name': tag, 'name': f'Disco {version} testing',
                'published_at': '2026-11-07T23:28:23Z', 'updated_at': '2026-11-07T23:29:00Z',
                'body': "Unsigned testing.\n\n## What's new\n\n- First feature\n  continued.\n\n- Second feature\n\n## History\n\nEarlier failed run retained.\n",
                'assets': []}
@@ -54,6 +54,10 @@ class FakeGitHub:
         self.run_overrides = {}
         self.run_reads = []
         self.job_overrides = {}
+        self.badge = {'databaseId': 2, 'tagName': 'desktop-test-v0.2.2', 'publishedAt': '2026-10-01T00:00:00Z'}
+
+    def latest(self):
+        return self.badge
 
     def releases(self):
         self.release_reads += 1
@@ -106,8 +110,12 @@ class FakeGitHub:
                 self.files.update(self.pending_files); self.head = data['sha']
                 return {}
             if '/releases/' in endpoint:
-                assert set(data) == {'body'}
-                self.release['body'] = data['body']
+                assert set(data) <= {'body', 'name', 'prerelease', 'make_latest'}
+                if 'make_latest' in data:
+                    assert data['make_latest'] == 'true' and data['prerelease'] is False
+                    self.badge = {'databaseId': self.release['id'], 'tagName': self.release['tag_name'],
+                                  'publishedAt': self.release['published_at']}
+                self.release.update({k: v for k, v in data.items() if k != 'make_latest'})
                 return {}
             raise AssertionError(endpoint)
         if endpoint == f'repos/{pages.REPOSITORY}':
@@ -149,11 +157,12 @@ class ReleasePagesTests(unittest.TestCase):
         self.assertEqual(pages.newest([old, draft, latest, unrelated]), latest)
 
     def test_descriptor_tag_and_asset_identity_refuse_tampering(self):
-        for fault in ('draft', 'stable', 'descriptor_digest', 'archive_digest', 'archive_name', 'tag', 'dirty', 'missing_sums'):
+        for fault in ('draft', 'wrong_channel', 'descriptor_digest', 'archive_digest', 'archive_name', 'tag', 'dirty', 'missing_sums'):
             with self.subTest(fault=fault):
                 release, raw = fixture(); commit = 'a' * 40
                 if fault == 'draft': release['draft'] = True
-                if fault == 'stable': release['prerelease'] = False
+                if fault == 'wrong_channel':
+                    d = json.loads(raw); d['channel'] = 'stable'; raw = json.dumps(d).encode()
                 if fault == 'descriptor_digest': release['assets'][0]['digest'] = 'sha256:' + 'e' * 64
                 if fault == 'archive_digest': release['assets'][1]['digest'] = 'sha256:' + 'e' * 64
                 if fault == 'archive_name': release['assets'][1]['name'] = 'Disco-0.2.12-arm64.zip'
@@ -207,6 +216,34 @@ class ReleasePagesTests(unittest.TestCase):
         gh.writes.clear()
         self.assertFalse(pages.sync(gh, apply=True)['applied'])
         self.assertEqual(gh.writes, [])
+
+    def test_badge_only_repair_and_next_testing_release(self):
+        gh = FakeGitHub()
+        for version, identifier in [('0.2.15', 15), ('0.2.16', 16)]:
+            gh.release, gh.raw = fixture(version)
+            gh.release['id'] = identifier
+            release = pages.validate(gh.release, gh.raw, gh.tag_commit(gh.release['tag_name']))
+            gh.files, gh.release['body'] = pages.render(gh.files['README.md'], gh.files['CHANGELOG.md'], release)
+            self.assertTrue(pages.sync(gh)['latest_changed'])
+            self.assertFalse(gh.writes)
+            pages.sync(gh, apply=True)
+            self.assertEqual(gh.writes, [(f'repos/{pages.REPOSITORY}/releases/{identifier}', 'PATCH',
+                                          {'prerelease': False, 'make_latest': 'true'})])
+            self.assertEqual(gh.latest()['tagName'], gh.release['tag_name'])
+            self.assertIn('testing', gh.release['name'])
+            gh.writes.clear()
+            self.assertFalse(pages.sync(gh, apply=True)['applied'])
+            self.assertFalse(gh.writes)
+
+    def test_absent_badge_and_newer_non_testing_latest(self):
+        gh = FakeGitHub()
+        gh.badge = None
+        self.assertTrue(pages.sync(gh)['latest_changed'])
+        gh.badge = {'databaseId': 99, 'tagName': 'v1.0.0', 'publishedAt': '2026-11-10T12:00:00Z'}
+        result = pages.sync(gh, apply=True)
+        self.assertFalse(result['latest_changed'])
+        self.assertTrue(gh.release['prerelease'])
+        self.assertEqual(gh.latest()['databaseId'], 99)
 
     def test_wrong_or_missing_integration_cannot_update_main_or_release_notes(self):
         for field, value in [('conclusion','failure'),('head_sha','0'*40),('event','push'),('id',72),
