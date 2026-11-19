@@ -32,8 +32,10 @@ do not manually edit generated README/changelog blocks.
 
 README and CHANGELOG are staged together on a temporary release-page ref.
 The writer dispatches integration on that exact documentation commit, waits for
-the required verdict, rechecks freshness, and advances the default branch
-without force. The same GitHub status requirement applies to a manual merge
+the verdict, and rechecks freshness. GitHub branch rules exclude workflow-dispatch
+job checks. The writer reports the verified verdict as a GitHub Actions commit
+status on the same documentation SHA, links the successful attempt, then advances
+the default branch without force. The same GitHub status requirement applies to a manual merge
 and to this automated writer. Concurrent branch/release edits fail visibly and can be
 rerun without overwriting the edit. Repeated runs with unchanged inputs make no
 commit or release edit. Tags, app bytes and assets are never

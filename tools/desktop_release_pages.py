@@ -334,6 +334,12 @@ def sync(github, apply=False):
             still_current(head)
             if github.request(f'repos/{REPOSITORY}/git/ref/heads/{stage}')['object']['sha'] != candidate:
                 raise ValueError('Staging ref changed before documentation update')
+            # Rulesets do not evaluate workflow_dispatch job checks. Report the
+            # verified verdict as a commit status on the very same docs-only SHA.
+            github.request(f'repos/{REPOSITORY}/statuses/{candidate}', 'POST', {
+                'state': 'success', 'context': VERDICT, 'target_url': result['integration']['url'],
+                'description': 'Verified release-page integration on this exact commit',
+            })
             github.request(ref, 'PATCH', {'sha': candidate, 'force': False})
             result['documentation_commit'] = candidate
         finally:
