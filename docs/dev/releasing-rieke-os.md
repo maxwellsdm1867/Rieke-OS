@@ -17,9 +17,13 @@ descriptor, tag commit, archive name, size and GitHub asset digests before writi
 These are presentation identity checks, not new qualification or an archive
 download/audit. The existing publication gates remain authoritative.
 
-The hook updates only marked current-release sections of README, the current
+The hook updates marked current-release sections of README, the current
 version's marked CHANGELOG entry, and a marked download/source block in release
-notes. Historical changelog entries and authored release notes remain intact.
+notes. It also assigns the repository-wide **Latest** badge to the selected testing build.
+GitHub requires clearing the prerelease flag for this badge. The testing title,
+unsigned-testing descriptor and production qualification remain independent. An
+unrelated release published later can retain Latest until the next testing build.
+Historical changelog entries and authored release notes remain intact.
 The reviewed `What's new` bullets in the published release body supply the text;
 for existing notes without that heading, the first feature list is used and given
 the heading. Missing features, malformed markers or mismatched identity fail the
@@ -32,7 +36,7 @@ the required verdict, rechecks freshness, and advances the default branch
 without force. The same GitHub status requirement applies to a manual merge
 and to this automated writer. Concurrent branch/release edits fail visibly and can be
 rerun without overwriting the edit. Repeated runs with unchanged inputs make no
-commit or release edit. Tags, app bytes, assets and prerelease flags are never
+commit or release edit. Tags, app bytes and assets are never
 modified. The repository About URL is the permanent `/releases` page, so it does
 not need an administrator token or a per-version settings edit.
 
@@ -325,7 +329,8 @@ The publisher compares that descriptor with the candidate's small
 tag used by the candidate workflow, and creates a draft
 unsigned-testing prerelease containing the exact ZIP, descriptor and SHA256SUMS,
 checks GitHub's uploaded digests/sizes, and rechecks CI and tag before visibility.
-A failure after upload leaves a draft for inspection. Existing releases/assets
+The publisher first exposes the qualified build as a prerelease. The release-page
+hook then validates it and sets Latest. A failure before publication leaves a draft for inspection. Existing releases/assets
 are never overwritten. Do not bypass this path with a raw release API command.
 The backend family, browser family and final aggregate jobs must each succeed.
 The aggregate binds both family records to the same resolved source plan while

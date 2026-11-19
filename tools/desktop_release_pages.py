@@ -75,8 +75,8 @@ def release_notes(body):
 
 def validate(release, raw_descriptor, tag_commit):
     match = TAG.fullmatch(release.get('tag_name', ''))
-    if not match or release.get('draft') or release.get('prerelease') is not True:
-        raise ValueError('Expected a published testing prerelease')
+    if not match or release.get('draft') is not False or type(release.get('prerelease')) is not bool:
+        raise ValueError('Expected a published desktop testing release')
     version = match[1]
     date = datetime.fromisoformat(release['published_at'].replace('Z', '+00:00')).date().isoformat()
     d = json.loads(raw_descriptor)
@@ -125,7 +125,7 @@ def render(readme, changelog, release):
               'Existing users: **App Updates → Download update → Restart to update**. '
               'For manual installation, extract the ZIP and open **Disco.app**. '
               'Python and native MySQL are bundled; no Docker or Terminal setup is needed. '
-              'Unsigned, unnotarized Apple silicon testing prerelease; not production-qualified. '
+              'Unsigned, unnotarized Apple silicon testing build; not production-qualified. '
               'Targets macOS 14+, with macOS 14 runtime support unqualified and Intel unsupported. '
               'macOS may require **Privacy & Security → Open Anyway**.')
     current = (f'### DISCO {v}\n\n{download} · [Release notes and checksums]({url})\n\n'
@@ -137,7 +137,7 @@ def render(readme, changelog, release):
     readme = replace_block(readme, 'current-release', current)
     entry = (f"## {v} - {release['date']}\n\n"
              f'[Download and release details]({url}) · {tag_link}\n\n'
-             'Unsigned, unnotarized Apple silicon testing prerelease.\n\n'
+             'Unsigned, unnotarized Apple silicon testing build.\n\n'
              f"### What's new\n\n{release['summary']}\n\n"
              f'Packaged source: [`{source[:7]}`]({WEB}/commit/{source}). '
              'See the release notes for qualification evidence and testing limits.')
@@ -154,7 +154,7 @@ def render(readme, changelog, release):
     links = (f'## Download and source\n\n{download} · [Checksums and metadata]({url})\n\n'
              'Existing users: **App Updates → Download update → Restart to update**.\n\n'
              f'{tag_link} · Packaged source [`{source[:7]}`]({WEB}/commit/{source}).\n\n'
-             'Unsigned, unnotarized Apple silicon testing prerelease; not production-qualified.')
+             'Unsigned, unnotarized Apple silicon testing build; not production-qualified.')
     notes = release['notes']
     if '<!-- disco:release-links:start -->' in notes:
         notes = replace_block(notes, 'release-links', links)
@@ -178,6 +178,13 @@ class GitHub:
 
     def releases(self):
         return self.request(f'repos/{REPOSITORY}/releases?per_page=100', paginate=True)
+
+    def latest(self):
+        owner, name = REPOSITORY.split('/')
+        query = ('query($owner:String!,$name:String!) { repository(owner:$owner,name:$name) '
+                 '{ latestRelease { databaseId tagName publishedAt } } }')
+        result = self.request('graphql', 'POST', {'query': query, 'variables': {'owner': owner, 'name': name}})
+        return result['data']['repository']['latestRelease']
 
     def descriptor(self, tag):
         return subprocess.check_output(['gh', 'release', 'download', tag, '--repo', REPOSITORY,
@@ -259,6 +266,19 @@ def integration_proof(github, commit, base, *, timeout=900):
     raise TimeoutError(f'Documentation integration {run_id} did not finish within {timeout}s')
 
 
+def needs_latest(selected, latest):
+    if latest is None:
+        return True
+    if latest['databaseId'] == selected['id']:
+        return False
+    # A subsequent stable or source publication can deliberately take Latest.
+    # An edit or repair run for an older testing release must respect that choice.
+    if not TAG.fullmatch(latest['tagName']):
+        return (datetime.fromisoformat(selected['published_at'].replace('Z', '+00:00')) >
+                datetime.fromisoformat(latest['publishedAt'].replace('Z', '+00:00')))
+    return True
+
+
 def sync(github, apply=False):
     selected = newest(github.releases())
     descriptor = github.descriptor(selected['tag_name'])
@@ -272,10 +292,20 @@ def sync(github, apply=False):
     before = {p: github.file(p, head) for p in ('README.md', 'CHANGELOG.md')}
     files, notes = render(before['README.md'], before['CHANGELOG.md'], release)
     changed = {p: text for p, text in files.items() if text != before[p]}
+    latest = github.latest()
+    set_latest = needs_latest(selected, latest)
+    edits = {}
+    if notes != selected['body']:
+        edits['body'] = notes
+    if set_latest:
+        edits.update(prerelease=False, make_latest='true')
+        title = selected.get('name') or f"Disco {release['version']}"
+        if not re.search(r'\btesting\b', title, re.I):
+            edits['name'] = title + ' (testing build)'
     result = {'tag': release['tag'], 'source_commit': release['source'], 'branch': branch,
-              'base_commit': head, 'changed_files': list(changed),
+              'base_commit': head, 'changed_files': list(changed), 'latest_changed': set_latest,
               'release_notes_changed': notes != selected['body'], 'applied': False}
-    if not apply or (not changed and notes == selected['body']):
+    if not apply or (not changed and not edits):
         return result
     def still_current(expected_head):
         fresh = newest(github.releases())
@@ -308,11 +338,16 @@ def sync(github, apply=False):
             result['documentation_commit'] = candidate
         finally:
             github.remove_staging(candidate)
-    if notes != selected['body']:
+    if edits:
+        still_current(result.get('documentation_commit', head))
+        if github.latest() != latest:
+            raise ValueError('Latest release changed concurrently; rerun the hook')
         current = github.request(f'repos/{REPOSITORY}/releases/{selected["id"]}')
         if current['updated_at'] != selected['updated_at'] or current['body'] != selected['body']:
             raise ValueError('Release notes changed concurrently; rerun to preserve the edit')
-        github.request(f'repos/{REPOSITORY}/releases/{selected["id"]}', 'PATCH', {'body': notes})
+        github.request(f'repos/{REPOSITORY}/releases/{selected["id"]}', 'PATCH', edits)
+        if set_latest and (github.latest() or {}).get('databaseId') != selected['id']:
+            raise ValueError('GitHub did not confirm the Latest badge for the selected testing release')
     result['applied'] = True
     return result
 
@@ -320,7 +355,7 @@ def sync(github, apply=False):
 def main():
     logging.basicConfig(level=logging.INFO, format='%(message)s')
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--apply', action='store_true', help='Update only README, changelog and release-body presentation')
+    parser.add_argument('--apply', action='store_true', help='Synchronize release documentation and the testing release’s Latest badge')
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
     result = sync(GitHub(), apply=args.apply)

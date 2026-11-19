@@ -120,7 +120,7 @@ def publish(bundle, archive, output, notes, candidate_run_id, verification_run_i
         sums.write_text(''.join(f'{hashes(path)[0]}  {path.name}\n' for path in assets))
         assets.append(sums)
         release_notes = root / 'notes.md'
-        release_notes.write_text('Unsigned Apple silicon testing prerelease. Not production-qualified.\n\n' + note_text)
+        release_notes.write_text('Unsigned Apple silicon testing build. Not production-qualified.\n\n' + note_text)
         # Existing releases are refused by gh; no --clobber.
         subprocess.run(['gh', 'release', 'create', tag, '--repo', REPOSITORY,
                         '--target', descriptor['source_commit'], '--draft', '--prerelease',
@@ -148,6 +148,8 @@ def publish(bundle, archive, output, notes, candidate_run_id, verification_run_i
         # Recheck immediately before visibility: a newer pending/failed CI run blocks it.
         require_source_ci(REPOSITORY, descriptor['source_commit'], candidate_run_id, **verification)
         require_tag(REPOSITORY, tag, descriptor['source_commit'])
+        # The release-page hook assigns Latest after it verifies this is the
+        # highest published testing version. Publishing a backfill cannot steal it.
         subprocess.run(['gh', 'release', 'edit', tag, '--repo', REPOSITORY,
                         '--draft=false', '--prerelease', '--latest=false'], check=True)
     return proof
