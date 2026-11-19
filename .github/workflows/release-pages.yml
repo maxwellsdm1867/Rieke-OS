@@ -42,6 +42,7 @@ jobs:
     permissions:
       contents: write
       actions: write
+      statuses: write
     steps:
       # Never execute the event's release/tag/artifact code with a write token.
       - uses: actions/checkout@v4

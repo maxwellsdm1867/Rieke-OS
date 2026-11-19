@@ -103,7 +103,13 @@ class FakeGitHub:
                 assert api_version == '2026-03-10'
                 assert data == {'ref': pages.staging_branch(self.stage), 'inputs': {'base_sha': self.head}}
                 return {'workflow_run_id': 71}
+            if '/statuses/' in endpoint:
+                assert endpoint.endswith('/statuses/' + self.stage)
+                assert data['context'] == pages.VERDICT and data['state'] == 'success'
+                assert data['target_url'] == pages.WEB + '/actions/runs/71/attempts/1'
+                return {}
             if '/git/refs/heads/' in endpoint:
+                assert self.writes[-2][0].endswith('/statuses/' + data['sha'])
                 if self.race == 'push':
                     raise RuntimeError('Update is not a fast forward')
                 assert data['force'] is False
@@ -259,7 +265,7 @@ class ReleasePagesTests(unittest.TestCase):
                 else: gh.run_overrides[field] = value
                 with self.assertRaises(ValueError):
                     pages.sync(gh, apply=True)
-                self.assertFalse(any(write[1]=='PATCH' for write in gh.writes))
+                self.assertFalse(any(write[1]=='PATCH' or '/statuses/' in write[0] for write in gh.writes))
                 self.assertEqual(gh.removed, ['1'*40])
 
     def test_queued_and_temporarily_unreadable_run_is_only_dispatched_once(self):
