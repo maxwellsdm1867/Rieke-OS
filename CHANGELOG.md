@@ -7,7 +7,7 @@
 
 [Download and release details](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.15) · [Source tag: desktop-test-v0.2.15](https://github.com/maxwellsdm1867/Rieke-OS/tree/desktop-test-v0.2.15)
 
-Unsigned, unnotarized Apple silicon testing prerelease.
+Unsigned, unnotarized Apple silicon testing build.
 
 ### What's new
 
