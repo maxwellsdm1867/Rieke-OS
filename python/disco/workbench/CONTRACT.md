@@ -512,6 +512,17 @@ publish neither context/page bundle nor freshness signal.
 The pending tests cover fresh/ordinary/replay equivalence, changed-draft replay,
 transaction-race replay, native token refusal and failed commit. Workbench tests
 compare bundled context/page with independent fresh reads and reject closing changes.
+## Recorded fields in the Wheeler SQLite export
+
+The full Wheeler SQLite export adds `epoch_recorded_fields(epoch_uuid, field_id,
+value_json)` for protocol parameters, recovered stimulus settings and physical
+H5 attributes. `epoch_h5_attributes` adds the original paths, names, H5 types
+and shapes. The writer reads the verified per-source inventories for the frozen
+members, stores each physical value once per recording and links inherited
+attributes through each epoch’s own field IDs. Exact integers and arrays stay in
+JSON. See the `amplifier_settings` and `recorded_attributes` SQL examples in
+each new Wheeler database. Earlier exports retain their original schema.
+
 ## Linked internal export extension
 
 The opt-in `linked-sqlite` format follows the [linked export contract](../../../docs/architecture/linked-sqlite-managed-recordings.md). Only this format omits duplicate full reference JSON staging. It delivers a compact SQLite database plus a standalone Python loader in a ZIP. Existing formats retain their staging and publication behavior. Selection, acceptance, and export receipts retain their existing authority.

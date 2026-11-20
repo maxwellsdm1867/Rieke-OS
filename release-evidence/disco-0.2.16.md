@@ -3,7 +3,7 @@
 ## What's new
 
 - Search recorded Symphony H5 attributes in Search predicate, Arrange tree and the live metadata sidebar. Each nested field keeps its original parent and name. Amp1 operating mode, offset and offset units are available when recorded. The value menu offers choices for the current search scope.
-- Combine metadata and tag conditions in Filter view and Filter export. MATLAB data exports include the selected epochs’ physical H5 attributes, their types and shapes, and links to inherited attributes.
+- Combine metadata and tag conditions in Filter view and Filter export. MATLAB data and Wheeler SQLite exports include the selected epochs’ physical H5 attributes, their types and shapes, and links to inherited attributes. In Wheeler SQLite, query `epoch_recorded_fields` for Amp1 mode, offset and nested fields. Use `epoch_h5_attributes` for the original H5 paths and encodings.
 - Text inputs use the blinking caret. Opening Recorded values moves typing into the filter. Use the arrow keys and Enter to choose a value or Escape to return to the condition. Selected rows and checked choices keep their highlights.
 
 ## Updating an existing project

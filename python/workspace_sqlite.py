@@ -58,6 +58,23 @@ CREATE TABLE streams (stream_uuid TEXT PRIMARY KEY, epoch_uuid TEXT NOT NULL REF
  kind TEXT NOT NULL CHECK(kind IN ('responses','stimuli')), device TEXT NOT NULL,
  h5_path TEXT NOT NULL, data_path TEXT, sample_rate REAL, sample_rate_units TEXT,
  sample_count INTEGER, units TEXT, metadata_json TEXT NOT NULL);
+CREATE TABLE stimulus_settings (epoch_uuid TEXT NOT NULL REFERENCES epochs,
+ field_id TEXT NOT NULL, value_json TEXT NOT NULL, PRIMARY KEY(epoch_uuid,field_id)) WITHOUT ROWID;
+CREATE TABLE h5_attribute_inventories (source_sha256 TEXT PRIMARY KEY REFERENCES sources,
+ logical_sha256 TEXT NOT NULL);
+CREATE TABLE h5_attributes (source_sha256 TEXT NOT NULL REFERENCES h5_attribute_inventories,
+ record_id INTEGER NOT NULL, object_path TEXT NOT NULL, attribute_name TEXT NOT NULL,
+ path_bytes_hex TEXT NOT NULL, name_bytes_hex TEXT NOT NULL, dtype TEXT NOT NULL,
+ h5_type_hex TEXT NOT NULL, shape_json TEXT NOT NULL, value_json TEXT NOT NULL,
+ PRIMARY KEY(source_sha256,record_id)) WITHOUT ROWID;
+CREATE TABLE h5_attribute_membership (epoch_uuid TEXT NOT NULL REFERENCES epochs,
+ field_id TEXT NOT NULL, source_sha256 TEXT NOT NULL, record_id INTEGER NOT NULL,
+ PRIMARY KEY(epoch_uuid,field_id,source_sha256,record_id),
+ FOREIGN KEY(source_sha256,record_id) REFERENCES h5_attributes) WITHOUT ROWID;
+CREATE INDEX h5_fields ON h5_attribute_membership(field_id,epoch_uuid);
+CREATE VIEW epoch_h5_attributes AS
+ SELECT m.epoch_uuid,m.field_id,a.* FROM h5_attribute_membership m
+ JOIN h5_attributes a USING(source_sha256,record_id);
 CREATE TABLE epoch_tags (epoch_uuid TEXT NOT NULL REFERENCES epochs, tag TEXT NOT NULL,
  PRIMARY KEY(epoch_uuid,tag));
 CREATE TABLE shared_annotations (target_kind TEXT NOT NULL CHECK(target_kind IN ('cell','epoch')),
@@ -69,6 +86,10 @@ CREATE TABLE annotation_revisions (target_kind TEXT NOT NULL CHECK(target_kind I
  PRIMARY KEY(target_kind,target_uuid,profile_uuid));
 CREATE VIEW epoch_parameters AS SELECT e.epoch_uuid,p.field_id,p.json_type,p.value_json,p.numeric_value,p.text_value
  FROM epochs e JOIN parameter_values p USING(parameter_set_sha256);
+CREATE VIEW epoch_recorded_fields AS
+ SELECT epoch_uuid,field_id,value_json FROM epoch_parameters UNION ALL
+ SELECT epoch_uuid,field_id,value_json FROM stimulus_settings UNION ALL
+ SELECT epoch_uuid,field_id,value_json FROM epoch_h5_attributes;
 CREATE INDEX epochs_parameters ON epochs(parameter_set_sha256);
 CREATE INDEX epochs_block ON epochs(block_uuid);
 CREATE INDEX blocks_group ON epoch_blocks(group_uuid);
@@ -86,7 +107,8 @@ CREATE VIEW epoch_overview AS
  JOIN cells c USING(cell_uuid) JOIN sources s USING(source_sha256);
 '''
 TABLES = ('export_metadata', 'sources', 'cells', 'epoch_groups', 'epoch_blocks',
-          'epochs', 'streams', 'epoch_tags', 'shared_annotations', 'annotation_revisions', 'parameter_sets', 'parameter_values', 'frozen_records', 'example_queries', 'documentation')
+          'epochs', 'streams', 'epoch_tags', 'shared_annotations', 'annotation_revisions', 'parameter_sets', 'parameter_values', 'frozen_records', 'example_queries', 'documentation',
+          'stimulus_settings', 'h5_attribute_inventories', 'h5_attributes', 'h5_attribute_membership')
 
 
 def _json(value):
@@ -238,7 +260,36 @@ def validate_sqlite_package(package):
                 shared_annotations=shared_annotations)
 
 
-def build_sqlite_export(package, output_path):
+def _write_h5_attributes(connection, inventories, records):
+    from workspace_h5_attributes import export_epoch_attributes
+
+    members = {}
+    for row in records:
+        members.setdefault(row['source_sha256'], []).append(row['epoch_uuid'])
+    for source, identities in members.items():
+        descriptor = inventories.get(source)
+        if descriptor is None:
+            continue
+        if descriptor['source_sha256'] != source:
+            raise ValueError('H5 attribute inventory belongs to another recording')
+        physical, links, aliases = export_epoch_attributes(descriptor, identities)
+        connection.execute('INSERT INTO h5_attribute_inventories VALUES (?,?)',
+                           (source, descriptor['logical_sha256']))
+        connection.executemany('INSERT INTO h5_attributes VALUES (?,?,?,?,?,?,?,?,?,?)', (
+            (source, a['record_id'], a['object_path'], a['attribute_name'], a['path_bytes_hex'],
+             a['name_bytes_hex'], a['dtype'], a['h5_type_hex'], _json(a['shape']), a['value_json'])
+            for a in physical))
+        default_fields = {a['record_id']: a['field_id'] for a in physical}
+        for identity, record_ids in links.items():
+            fields = {}
+            for alias in aliases[identity]:
+                fields.setdefault(alias['record_id'], []).append(alias['field_id'])
+            connection.executemany('INSERT INTO h5_attribute_membership VALUES (?,?,?,?)', (
+                (identity, field, source, record_id) for record_id in record_ids
+                for field in fields.get(record_id, (default_fields[record_id],))))
+
+
+def build_sqlite_export(package, output_path, *, inventories=None):
     """Publish one complete SQLite snapshot atomically, never replace a file."""
     validated = validate_sqlite_package(package)
     recipe, members, records = (validated[key] for key in ('recipe', 'members', 'records'))
@@ -277,6 +328,9 @@ def build_sqlite_export(package, output_path):
                 ('blocks', 'Acquisition blocks remain separate even when settings repeat', 'SELECT c.cell_uuid,b.block_uuid,b.start_time,count(*) AS epochs FROM epochs e JOIN epoch_blocks b USING(block_uuid) JOIN epoch_groups g USING(group_uuid) JOIN cells c USING(cell_uuid) GROUP BY c.cell_uuid,b.block_uuid ORDER BY c.cell_uuid,b.start_time'),
                 ('settings', 'Exact shared settings; a parameter set is not an inferred scientific condition', 'SELECT parameter_set_sha256,count(*) AS epochs FROM epochs GROUP BY parameter_set_sha256'),
                 ('stimulus_recipes', 'Recorded stimulus generator metadata, not regenerated current samples', "SELECT epoch_uuid,device,metadata_json FROM streams WHERE kind='stimuli'"),
+                ('amplifier_settings', 'Amp1 mode, offset and units for each exported epoch', "SELECT epoch_uuid,field_id,value_json FROM stimulus_settings WHERE field_id IN ('stimulus/Amp1/operatingMode','stimulus/Amp1/offset','stimulus/Amp1/offsetUnits')"),
+                ('recorded_attributes', 'Nested H5 attributes with their original location, type, shape and value', 'SELECT epoch_uuid,field_id,object_path,attribute_name,dtype,shape_json,value_json FROM epoch_h5_attributes ORDER BY epoch_uuid,field_id'),
+                ('attribute_coverage', 'Check which selected recordings supplied a verified attribute inventory', 'SELECT s.source_sha256,i.logical_sha256 IS NOT NULL AS inventory_available FROM sources s LEFT JOIN h5_attribute_inventories i USING(source_sha256)'),
                 ('tags', 'Frozen protocol tags and acquisition identity', 'SELECT * FROM epoch_tags ORDER BY epoch_uuid,tag')])
             connection.executemany('INSERT INTO documentation VALUES (?,?)', [
                 ('README', COMPATIBILITY + '\nOpen with sqlite3 or Python sqlite3.connect(file_uri+"?mode=ro",uri=True).\nStart with example_queries and epoch_overview. Original H5 source files must remain accessible; verify source_sha256 before reading. Waveform sample units/rate/path are recorded per stream. Do not infer drug identity from group labels. IDs are stable UUIDs; date/cell labels are display metadata. Missing metadata remains NULL; arrays/large integer parameters remain exact value_json. Shared parameter_sets are deduplicated by exact typed JSON; epoch_parameters is a query-compatible view. A parameter set is NOT a scientific condition: choose grouping fields explicitly and preserve acquisition block boundaries. cells.recording_date comes from cell start, not epoch day. Stimulus streams with no data_path carry generator metadata only; reconstruction requires a validated adapter with exact generator version, seed and units. No cleaned voltage, inferred drug phases or fitted results are manufactured. frozen_records holds zlib-compressed UTF-8 JSON with decoded byte count and SHA256 for lossless audit; use load_frozen_record in workspace_sqlite.py. Queryable metadata remains plain SQL/JSON. Mutation triggers protect exported tables against accidental changes but are not tamper-proof. Create separate analysis tables/database for derived results.'),
@@ -316,6 +370,10 @@ def build_sqlite_export(package, output_path):
                     raise ValueError('Frozen epoch archive exceeds size limit')
                 connection.execute('INSERT INTO frozen_records VALUES (?,?,?,?,?)',
                     (identity,'zlib-json',len(raw_record),hashlib.sha256(raw_record).hexdigest(),zlib.compress(raw_record)))
+                if record.get('stimulus'):
+                    connection.executemany('INSERT INTO stimulus_settings VALUES (?,?,?)',
+                        ((identity, field, _json(value)) for field, value in
+                         _parameter_leaves(record['stimulus'], ('stimulus',))))
                 for stream in record['streams']:
                     stream_id = _uuid(stream['uuid'])
                     if stream['kind'] not in {'responses','stimuli'} or not isinstance(stream.get('h5_path'),str) or not stream['h5_path']:
@@ -328,6 +386,13 @@ def build_sqlite_export(package, output_path):
                          stream.get('sample_rate'),stream.get('sample_rate_units'),stream.get('sample_count'),
                          stream.get('units') if stream.get('units') is not None else raw.get('units'),_json(raw)))
                 connection.executemany('INSERT INTO epoch_tags VALUES (?,?)',[(identity,tag) for tag in curation['tags']])
+            if inventories:
+                _write_h5_attributes(connection, inventories, records)
+            connection.execute('INSERT INTO documentation VALUES (?,?)', ('recorded_fields',
+                'epoch_recorded_fields exposes protocol parameters, recorded stimulus settings and physical H5 attributes as epoch_uuid, field_id, value_json. '
+                'epoch_h5_attributes includes inherited and direct attributes for each selected epoch. '
+                'The attribute_coverage example identifies any source exported without a verified inventory. '
+                'Use value_json to retain exact large integers and arrays. path_bytes_hex, name_bytes_hex and h5_type_hex preserve the original HDF5 encoding.'))
             for entry in shared_annotations:
                 kind, key = entry['target_kind'], entry['target_uuid']
                 connection.executemany('INSERT INTO shared_annotations VALUES (?,?,?,?,?,?)',
