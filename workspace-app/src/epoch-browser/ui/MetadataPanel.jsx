@@ -78,9 +78,13 @@ export default function MetadataPanel({epoch,catalog,onClose,context,connections
     const identity=defined(Object.fromEntries(['epoch_uuid','cell_uuid','group_uuid','block_uuid','protocol_name','start_time','date','epoch_number','duration_seconds','cell_label','cell_type','group_label','block_start_time','block_end_time'].map(key=>[key,valueEpoch[key]])));
     const fields=catalog?.data?.fields || [];
     const parameterRows=metadataRows(valueEpoch.parameters,['parameters']).sort((a,b)=>{const left=registeredMetadataField(a.path,fields)||{},right=registeredMetadataField(b.path,fields)||{};return groupingFieldRank(left)-groupingFieldRank(right)||(left.grouping_priority??999)-(right.grouping_priority??999);});
+    const stimulusRows=metadataRows(valueEpoch.stimulus,['stimulus']).map(row=>({
+      ...row,label:registeredMetadataField(row.path,fields)?.label || row.path.join(':'),
+    }));
     const technical=row=>registeredMetadataField(row.path,fields)?.grouping_role==='technical';
     const source=valueEpoch.source_reference || defined({filename:valueEpoch.source_filename,sha256:valueEpoch.source_sha256,path:valueEpoch.source_path});
     return [
+      ...(stimulusRows.length?[{id:'stimulus',title:'Stimulus settings',rows:stimulusRows}]:[]),
       {id:'parameters',title:'Protocol settings',rows:parameterRows.filter(row=>!technical(row))},
       ...(parameterRows.some(technical)?[{id:'technical',title:'Acquisition details',rows:parameterRows.filter(technical)}]:[]),
       {id:'epoch',title:'Epoch',rows:[...metadataRows(identity),...withLabel(metadataRows(valueEpoch.properties,['properties']),'properties.'),...withLabel(metadataRows(valueEpoch.attributes,['attributes']),'attributes.'),...withLabel(metadataRows(valueEpoch.metadata?.epoch,['metadata','epoch']),'source.')]},
@@ -89,7 +93,7 @@ export default function MetadataPanel({epoch,catalog,onClose,context,connections
     ];
   },[valueEpoch,catalog?.data]);
   const total=sections.reduce((sum,section)=>sum+section.rows.length,0);
-  const visibleSections=tab==='settings'?sections.filter(section=>['parameters','technical'].includes(section.id)):sections;
+  const visibleSections=tab==='settings'?sections.filter(section=>['parameters','stimulus','technical'].includes(section.id)):sections;
   const matched=visibleSections.reduce((sum,section)=>sum+section.rows.filter(row=>matchesMetadataSearch(row,parsedSearch,catalog?.data?.fields || [])).length,0);
   const controls=loadingPolicy&&<div className="metadata-loading-controls"><div><label className="metadata-live-switch"><input type="checkbox" role="switch" aria-label="Live metadata" checked={loadingPolicy.live} onChange={event=>{setSearch('');loadingPolicy.onLiveChange(event.target.checked);}}/><span className="metadata-switch-track" aria-hidden="true"/><span>Live metadata</span><strong className="metadata-switch-status">{loadingPolicy.live?'On':'Off'}</strong></label><button disabled={!loadingPolicy.canLoad||loadingPolicy.values.loading&&loadingPolicy.requested} onClick={loadingPolicy.load}>{loadingPolicy.requested&&loadingPolicy.values.loading?'Loading…':loadingPolicy.values.error?'Retry values':valueEpoch?'Refresh values':'Load values'}</button></div>
     <p>{loadingPolicy.live?'Values follow the selected epoch.':'Trace and tags stay live. Values load only when requested.'}</p>

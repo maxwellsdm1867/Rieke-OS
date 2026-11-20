@@ -23,6 +23,19 @@ RetinAnalysis currently builds its experiment object from the first animal. The 
 
 ## Files and database records
 
+DISCO's v2 import adapter records each device's stimulus settings on the epoch
+under `stimulus` in `metadata.catalog.json` and `epoch-index.json`. For example,
+`stimulus:Amp1:offset` and `stimulus:Amp1:offsetUnits` come from the stimulus
+generator's `parameters` attributes `offset` and `units`. The recorded command
+units can differ from the top-level stream units. The amplifier's
+`stimulus:Amp1:operatingMode` comes from the matching device under each
+`dataConfigurationSpans` entry. When spans disagree or have partial coverage,
+`operatingModeSpans` retains the named spans and their recorded values and
+timing. A whole-epoch mode requires agreement across all spans. Missing
+settings remain absent. Registered projects built with the older adapter
+recover these searchable values from their verified H5 files at the next
+projection rebuild, preserving the original sealed documents and decisions.
+
 - `project.json`: project UUID/name and main-catalog reference.
 - `catalog.json`: DataJoint catalog/schema reference and a local credential-provider reference. No database password is stored in protocol files.
 - `protocols/*.protocol.json`: one saved query definition for each acquisition protocol found in this source. These are starting workspace definitions, not a claim that each supporting measurement should be a primary navigation item.

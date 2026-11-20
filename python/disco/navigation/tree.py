@@ -268,6 +268,8 @@ def catalog(rows, details, known_fields=None, *, sources=()):
         current = {key: row[path] for key, (_, _, path) in BASE_FIELDS.items() if row.get(path) is not None}
         metadata_sources = [('Parameters', ('parameters',), datum.get('parameters', {})),
                    ('Conditions', ('properties',), datum.get('properties', {}))]
+        if row.get('stimulus'):
+            metadata_sources.append(('Stimulus', ('stimulus',), row['stimulus']))
         for level in ('cell', 'group', 'block'):
             ancestor = datum.get('metadata', {}).get(level, {})
             metadata_sources.append(('Conditions', ('metadata', level, 'properties'), ancestor.get('properties', {})))
@@ -285,7 +287,8 @@ def catalog(rows, details, known_fields=None, *, sources=()):
                 if key is None:
                     key = path_ids[path] = field_id(path)
                     prefix = f'{categories[path[1]]} · ' if path[0] == 'metadata' else ('Epoch · ' if path[0] == 'properties' else '')
-                    definitions[key] = {'id': key, 'label': prefix + humanize(path[-1]),
+                    label = ':'.join(path) if path[0] == 'stimulus' else prefix + humanize(path[-1])
+                    definitions[key] = {'id': key, 'label': label,
                                         'category': category, 'path': '.'.join(path)}
                 current[key] = value
         values[identity] = current

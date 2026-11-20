@@ -76,7 +76,7 @@ def _raw_definition(field):
     if key in tree.BASE_FIELDS:
         label, category, path = tree.BASE_FIELDS[key]
         return dict(id=key, label=label, category=category, path=path)
-    if key.startswith('joint/'):
+    if key.startswith(('joint/', 'stimulus/')):
         return {name: field[name] for name in ('id','label','category','path','components') if name in field}
     parts = [unquote(part).replace('~1','/').replace('~0','~') for part in key.split('/')]
     names = {'experiment':'Experiment','cell':'Cell','group':'Epoch group','block':'Epoch block','epoch':'Epoch'}

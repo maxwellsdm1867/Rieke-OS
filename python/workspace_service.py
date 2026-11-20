@@ -762,7 +762,7 @@ class WorkspaceService:
         rows, details, cells = {}, {}, {}
         source_epoch_count = 0
         source_cells = set()
-        from recording_workspace import validate_source_identity, validate_manifest_cell_count
+        from recording_workspace import stimulus_settings, validate_source_identity, validate_manifest_cell_count
         with h5py.File(path, 'r') as h5:
             validate_source_identity(h5, document)
             for animal in document['animals']:
@@ -777,6 +777,7 @@ class WorkspaceService:
                 source_epoch_count += 1
                 source_cells.add(cell['uuid'])
                 streams = []
+                stimulus = {}
                 for kind in ('responses', 'stimuli'):
                     for device, stream in epoch.get(kind, {}).items():
                         obj = h5[stream['h5path']]
@@ -787,6 +788,10 @@ class WorkspaceService:
                         data = obj.get('data')
                         rate = stream.get('sampleRate')
                         units = None
+                        if kind == 'stimuli':
+                            settings = stimulus_settings(obj, device)
+                            if settings:
+                                stimulus[device] = settings
                         if kind == 'responses':
                             if data is None or not data.dtype.names or not {'quantity', 'units'} <= set(data.dtype.names):
                                 raise ValueError('Unsupported response representation')
@@ -798,6 +803,9 @@ class WorkspaceService:
                             'sample_count': len(data) if data is not None else None,
                             'units': units, 'h5_path': stream['h5path'],
                             'data_path': data.name if data is not None else None})
+                if manifest.get('adapter_version', 1) >= 2:
+                    if json.dumps(epoch.get('stimulus', {}), sort_keys=True, allow_nan=False) != json.dumps(stimulus, sort_keys=True, allow_nan=False):
+                        raise ValueError('Parsed stimulus settings disagree with source H5')
                 durations = [s['sample_count'] / s['sample_rate'] for s in streams
                              if s['kind'] == 'responses' and s['sample_rate'] and s['sample_count'] is not None]
                 rows[identity] = {'epoch_uuid': identity, 'cell_uuid': cell['uuid'],
@@ -808,6 +816,8 @@ class WorkspaceService:
                     'block_end_time': block.get('end_time'), 'protocol_name': block['protocolID'],
                     'duration_seconds': max(durations, default=0), 'streams': streams,
                     'source_sha256': source['source_sha256'], 'metadata_hash': _fingerprint(epoch)}
+                if stimulus:
+                    rows[identity]['stimulus'] = stimulus
                 details[identity] = {'parameters': epoch.get('parameters', {}),
                     'properties': epoch.get('properties', {}), 'attributes': epoch.get('attributes', {}),
                     'metadata': {'cell': _metadata(cell, {'epoch_groups'}),

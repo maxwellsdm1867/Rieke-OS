@@ -573,11 +573,18 @@ class RefreshCacheTests(unittest.TestCase):
                    if list(review['reviewed_build']) == build]
         self.assertEqual(len(reviews), 1, 'Current implementation needs one exact review receipt')
         review = reviews[0]
-        self.assertEqual(review['decision'], 'compatible')
-        self.assertEqual(review['legacy_contract'], checksum(list(review['legacy_owners'])))
-        self.assertEqual(projection_contract.resolve_projection_contract(owners), review['legacy_contract'])
-        self.assertEqual(self.service._projection_contract, review['legacy_contract'])
-        return review['legacy_contract'], checksum(build)
+        if review['decision'] == 'compatible':
+            current, other = review['legacy_contract'], checksum(build)
+            self.assertEqual(current, checksum(list(review['legacy_owners'])))
+        else:
+            self.assertEqual(review['decision'], 'breaking')
+            current = checksum(build)
+            other = next(item['legacy_contract'] for item in COMPATIBILITY_RECEIPTS['reviews']
+                         if item['decision'] == 'compatible')
+        self.assertNotEqual(current, other)
+        self.assertEqual(projection_contract.resolve_projection_contract(owners), current)
+        self.assertEqual(self.service._projection_contract, current)
+        return current, other
 
     def _projection_semantics(self, service):
         return copy.deepcopy(dict(rows=service.rows, cells=service.cells,
@@ -597,10 +604,7 @@ class RefreshCacheTests(unittest.TestCase):
     def test_reviewed_projection_contract_reopens_exact_sealed_generation(self):
         from disco.metadata.disk_index import DiskMetadataIndex
         from disco.metadata.projection_cache import ProjectionCache
-        # This proves key compatibility using the current equivalent builder;
-        # actual historical-build reuse is covered by the native upgrade audit.
-        legacy, fallback = self._reviewed_projection_identity()
-        self.assertNotEqual(legacy, fallback)
+        current, _ = self._reviewed_projection_identity()
         expected = self._projection_semantics(self.service)
         scientific = self._scientific_file_snapshot()
         index_path = self.service.disk_index.path
@@ -615,7 +619,7 @@ class RefreshCacheTests(unittest.TestCase):
              patch('h5py.File', side_effect=AssertionError('No H5 opens')):
             restarted = WorkspaceService(self.folder)
             self.assertEqual(self._projection_semantics(restarted), expected)
-        self.assertEqual(restarted._projection_contract, legacy)
+        self.assertEqual(restarted._projection_contract, current)
         self.assertEqual(restarted.disk_index.generation, generation)
         self.assertEqual(restarted.disk_index.path, index_path)
         self.assertEqual(Path(str(restarted.disk_index.path) + '.sha256.json'), seal_path)
@@ -625,18 +629,20 @@ class RefreshCacheTests(unittest.TestCase):
         self.assertEqual(self.evaluator.call_count, initial_queries + 1)
         self.assertEqual(self._scientific_file_snapshot(), scientific)
 
-    def test_reviewed_projection_matches_full_five_witness_rebuild(self):
-        legacy, fallback = self._reviewed_projection_identity()
-        self.assertNotEqual(legacy, fallback)
-        expected = self._projection_semantics(self.service)
+    def test_reviewed_projection_rebuilds_from_a_different_witness(self):
+        current, other = self._reviewed_projection_identity()
+        # Give both fixture registrations fresh keys before building under
+        # the other witness. Their old setUp projections cannot mask a rebuild.
+        for registration in self.sources.rows:
+            registration['manifest']['validated_at'] = '2026-09-25T12:00:00+00:00'
+        with patch('disco.metadata.projection_contract.resolve_projection_contract', return_value=other):
+            previous = WorkspaceService(self.folder)
+        expected = self._projection_semantics(previous)
         scientific = self._scientific_file_snapshot()
-        generation, index_path = self.service.disk_index.generation, self.service.disk_index.path
+        generation, index_path = previous.disk_index.generation, previous.disk_index.path
         initial_queries = self.evaluator.call_count
-        # Force only the public resolver's exact unreviewed-build identity. The
-        # normal source admission, projection builder and SQL checks all run.
-        with patch('disco.metadata.projection_contract.resolve_projection_contract', return_value=fallback):
-            rebuilt = WorkspaceService(self.folder)
-        self.assertEqual(rebuilt._projection_contract, fallback)
+        rebuilt = WorkspaceService(self.folder)
+        self.assertEqual(rebuilt._projection_contract, current)
         self.assertNotEqual(rebuilt.disk_index.generation, generation)
         self.assertNotEqual(rebuilt.disk_index.path, index_path)
         self.assertEqual(rebuilt.last_refresh['metadata_index'], 'built')

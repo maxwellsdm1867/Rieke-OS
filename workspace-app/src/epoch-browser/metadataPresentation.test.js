@@ -20,6 +20,24 @@ async function harness(){
   async close(){await act(async()=>renderer?.unmount());await server.close();if(prior===undefined)delete globalThis.ResizeObserver;else globalThis.ResizeObserver=prior;},
  };
 }
+test('loaded stimulus settings keep their device, exact searchable label and recorded zero',async()=>{
+ const h=await harness();
+ try {
+  const stimulus={Amp1:{offset:0,offsetUnits:'mV',operatingMode:'VClamp'},Amp2:{operatingMode:'IClamp'}};
+  await h.render({epoch:{...epoch,stimulus},loadingPolicy:null});
+  for(const [field,value] of [['Amp1:offset','0'],['Amp1:offsetUnits','mV'],['Amp1:operatingMode','VClamp'],['Amp2:operatingMode','IClamp']]){
+   const label='stimulus:'+field;
+   assert.deepEqual(h.root.findByProps({'aria-label':'Copy setting value '+label}).children,[value]);
+  }
+  const search=h.root.findByProps({'aria-label':'Search focused epoch metadata'});
+  await act(async()=>search.props.onChange({target:{value:'stimulus:Amp2:operatingMode'}}));
+  assert.equal(h.root.findAllByProps({className:'metadata-value-row'}).length,1);
+  await h.render({epoch,loadingPolicy:null});
+  assert.equal(h.root.findAllByProps({className:'metadata-value-row'}).length,0);
+ } finally {
+  await h.close();
+ }
+});
 const groups=h=>h.root.findAllByProps({className:'metadata-field-group'}).length;
 const slots=h=>h.root.findAllByProps({className:'metadata-tag-slot'});
 test('shared sidebar reserves measured tag geometry, removes tag component, and retains only inert catalog through pause/error',async()=>{

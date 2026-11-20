@@ -1413,7 +1413,7 @@
       ]
     },
     "src/epoch-browser/ui/MetadataPanel.jsx": {
-      "fingerprint": "0cf178c940ab6d3e93282cc64dbe84d6ac7a8e87bc70c5411fe23ce04af2f2a6",
+      "fingerprint": "1a6c1553b584fbe8d145d1d45e821f08c45455854f21fd6289d1feed83a903e0",
       "sites": [
         {
           "owner": "MetadataPanel",
@@ -1422,7 +1422,7 @@
         }
       ],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Independently reviewed same-frozen-sidebar display boundary measures the current direct tag section and disconnects its ResizeObserver on lifetime changes. Unavailable tag components unmount; an empty measured slot preserves geometry. Only field catalog JSON is retained for inert display, never read or mutation authority; changed scope/focus/structure or Live/value mode retires it synchronously. Current error/retry controls remain outside inert content and scrolling flow, and fresh empty catalogs replace old display. Combined 0.2.12: separate field-name and ID clipboard commands preserve the blocked/inert gate and layout lifetime, with no scientific write or new read.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Independently reviewed same-frozen-sidebar display boundary measures the current direct tag section and disconnects its ResizeObserver on lifetime changes. Unavailable tag components unmount; an empty measured slot preserves geometry. Only field catalog JSON is retained for inert display, never read or mutation authority; changed scope/focus/structure or Live/value mode retires it synchronously. Current error/retry controls remain outside inert content and scrolling flow, and fresh empty catalogs replace old display. Combined 0.2.12: separate field-name and ID clipboard commands preserve the blocked/inert gate and layout lifetime, with no scientific write or new read. Stimulus settings render from the selected epoch’s loaded values and follow the same focus and load policy as protocol settings.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",

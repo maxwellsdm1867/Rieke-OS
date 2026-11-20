@@ -218,6 +218,59 @@ def _source_text(value):
     return value.decode('utf-8') if isinstance(value, bytes) else str(value)
 
 
+def stimulus_settings(stream, device):
+    """Extract the generator offset and the matching device's recorded mode.
+
+    The caller has verified this file and stream's identity. All spans must
+    record the same value to describe the whole epoch with a scalar mode.
+    """
+    import h5py
+    import numpy as np
+
+    def attribute(obj, name):
+        value = obj.attrs[name]
+        if isinstance(value, h5py.Empty):
+            return None
+        if isinstance(value, np.generic):
+            value = value.item()
+        if isinstance(value, bytes):
+            return value.decode('utf-8')
+        if isinstance(value, np.ndarray):
+            return value.tolist()
+        return value
+
+    result = {}
+    params = stream.get('parameters')
+    if params is not None and 'offset' in params.attrs:
+        result['offset'] = attribute(params, 'offset')
+        if 'units' in params.attrs:
+            result['offsetUnits'] = attribute(params, 'units')
+
+    spans = stream.get('dataConfigurationSpans')
+    if spans is not None:
+        recorded = []
+        for name, span in spans.items():
+            config = span.get(device)
+            entry = {'span': name}
+            if config is not None and 'operatingMode' in config.attrs:
+                entry['operatingMode'] = attribute(config, 'operatingMode')
+            recorded.append(entry)
+        if any('operatingMode' in entry for entry in recorded):
+            first = recorded[0]
+            if ('operatingMode' in first and all('operatingMode' in entry and
+                    type(entry['operatingMode']) is type(first['operatingMode']) and
+                    entry['operatingMode'] == first['operatingMode'] for entry in recorded)):
+                result['operatingMode'] = first['operatingMode']
+            else:
+                for entry in recorded:
+                    span = spans[entry['span']]
+                    for key in ('index', 'startTimeSeconds', 'timeSpanSeconds'):
+                        if key in span.attrs:
+                            entry[key] = attribute(span, key)
+                result['operatingModeSpans'] = recorded
+    return result
+
+
 def validate_source_identity(h5, document):
     """Compare parser hierarchy to physical Symphony objects, including empties.
 
@@ -445,6 +498,12 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
                                    "metadata_sha256": digest(raw_path),
                                    "parser_sha256": digest(parser_path), "at": now()})
     raw = json.loads(raw_path.read_text())
+    normalized_path = folder / "metadata.catalog.json"
+    # The catalog in an existing registration is sealed by its original
+    # checksum. Repeat imports keep that artifact's format. Legacy projects
+    # gain the same fields from the H5 on their next source projection.
+    persist_stimulus = (not normalized_path.exists() or
+                        json.loads(normalized_path.read_bytes()).get('stimulus_metadata_version') == 1)
     total_epochs = sum(1 for _ in epochs(raw))
     emit("validating_metadata", completed=0, total=total_epochs, unit="epochs")
     rows, protocol_counts, cell_ids = [], {}, set()
@@ -464,6 +523,8 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
         ).__dict__
         experiment["label"] = experiment.get("label") or source.stem
         experiment["animals"] = raw["animals"]
+        if persist_stimulus:
+            experiment['stimulus_metadata_version'] = 1
         if raw["uuid"] != experiment["uuid"]:
             warnings.append({"code": "experiment_identity_restored",
                              "parser_uuid": raw["uuid"],
@@ -476,6 +537,7 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
         for cell, group, block, epoch in epochs(experiment):
             cell_ids.add(cell["uuid"])
             streams = []
+            stimulus = {}
             source_epoch = h5[inventory['epoch'][epoch['uuid']]['path']]
             source_block = h5[inventory['block'][block['uuid']]['path']]
             source_parameters = dict(source_block['protocolParameters'].attrs)
@@ -506,6 +568,10 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
                         raise ValueError("Parsed protocol differs from the H5 block")
                     data = obj.get("data")
                     units = None
+                    if kind == 'stimuli':
+                        settings = stimulus_settings(obj, device)
+                        if settings:
+                            stimulus[device] = settings
                     if kind == "responses":
                         rate = stream.get("sampleRate")
                         if data is None or not isinstance(data, h5py.Dataset):
@@ -542,20 +608,22 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
                                     "sample_rate": stream.get("sampleRate"),
                                     "sample_rate_units": stream.get("sampleRateUnits")})
             name = block["protocolID"]
+            if persist_stimulus and stimulus:
+                epoch['stimulus'] = stimulus
             protocol_counts[name] = protocol_counts.get(name, 0) + 1
             rows.append({"epoch_uuid": epoch["uuid"], "cell_uuid": cell["uuid"],
                          "cell_label": cell["label"], "cell_type": cell.get("type"),
                          "group_uuid": group["uuid"], "group_label": group.get("label"),
                          "block_uuid": block["uuid"], "protocol_name": name,
                          "start_time": epoch.get("start_time"),
-                         "parameters": epoch.get("parameters", {}), "streams": streams})
+                         "parameters": epoch.get("parameters", {}), "streams": streams,
+                         **({'stimulus': stimulus} if stimulus else {})})
             emit("validating_metadata", completed=len(rows), total=total_epochs, unit="epochs")
     after = source.stat()
     if (stat.st_size, stat.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
         raise ValueError("Source changed during parsing/validation")
     if digest(source, progress, "verifying_source_hash") != source_hash:
         raise ValueError("Source checksum changed during validation")
-    normalized_path = folder / "metadata.catalog.json"
     write_json(normalized_path, experiment)
     experiment = json.loads(normalized_path.read_text())
     write_json(folder / "epoch-index.json", rows)
@@ -565,7 +633,7 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
                 "source_path": str(source), "source_filename": source.name, "source_sha256": source_hash,
                 "source_size": stat.st_size, "experiment_uuid": experiment["uuid"],
                 "parser_path": str(parser_path), "parser_sha256": digest(parser_path),
-                "adapter_version": 1, "adapter_sha256": digest(__file__),
+                "adapter_version": 2 if persist_stimulus else 1, "adapter_sha256": digest(__file__),
                 "validated_at": now(), "metadata_path": str(normalized_path),
                 "metadata_sha256": digest(normalized_path),
                 "cell_count_semantics": "all-source-cells-v1",
