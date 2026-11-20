@@ -1,6 +1,7 @@
 """A populated project opens with new fields queryable, then repairs one damaged recording."""
 import json
 from pathlib import Path
+import sqlite3
 from time import perf_counter
 import unittest
 from unittest.mock import patch
@@ -11,6 +12,42 @@ import test_workspace_refresh_cache as refresh_fixture
 
 
 class AttributeUpgradeTests(unittest.TestCase):
+    def test_sqlite_export_keeps_only_selected_source_attributes_with_exact_values(self):
+        from disco.workbench.recipes import capture_query, prepare_export
+        from workspace_sqlite import build_sqlite_export
+
+        project = refresh_fixture.RefreshCacheTests()
+        project.setUp()
+        self.addCleanup(project.doCleanups)
+        source = project.add_source('precise', epoch_attributes={'ticks': 2**62 + 1})
+        service = project.service
+        service.refresh()
+        epoch = next(key for key, row in service.rows.items() if row['source_sha256'] == source['source_sha256'])
+        result = {**service.query_result(project.protocol), 'project_uuid':project.project,
+                  'protocol_uuid':project.protocol, 'source_revisions':[s['source_sha256'] for s in service.sources],
+                  'metadata_fingerprint_version':2, 'epochs':[
+                      {'uuid':key, 'metadata_hash':service._fingerprints[key]} for key in service.rows]}
+        snapshot = capture_query(service.protocol(project.protocol)['definition'], result, str(project.folder/'catalog.json'))
+        recipe = prepare_export(snapshot, [epoch], destination='wheeler-sqlite',
+                                review_policy='include_unreviewed', actor='fixture')
+        row = service.epoch(epoch)
+        row['stimulus'] = {'Amp1': {'operatingMode': 'VClamp', 'offset': -62.5}}
+        package = {'format':'recording-reference-package', 'version':1, 'recipe':recipe,
+                   'epochs':[row], 'sources':service.sources}
+        descriptors = {s['source_sha256']:s['h5_attribute_inventory'] for s in service.sources}
+        artifact = project.folder/'one.sqlite'
+        with patch.object(h5py, 'File', side_effect=AssertionError('Export reopened the H5')):
+            build_sqlite_export(package, artifact, inventories=descriptors)
+        with sqlite3.connect(artifact) as db:
+            self.assertEqual(db.execute('SELECT DISTINCT epoch_uuid,source_sha256 FROM epoch_h5_attributes').fetchall(),
+                             [(epoch, source['source_sha256'])])
+            fields = dict(db.execute('SELECT field_id,value_json FROM epoch_recorded_fields'))
+            self.assertEqual(fields['h5/epoch/@ticks'], str(2**62 + 1))
+            self.assertEqual(fields['stimulus/Amp1/operatingMode'], '"VClamp"')
+            self.assertEqual(fields['stimulus/Amp1/offset'], '-62.5')
+            with self.assertRaisesRegex(sqlite3.IntegrityError, 'Immutable'):
+                db.execute('DELETE FROM h5_attributes')
+
     def test_global_search_accepts_raw_leaf_names_and_keeps_each_owner(self):
         from disco.metadata.search import search_workspace
 

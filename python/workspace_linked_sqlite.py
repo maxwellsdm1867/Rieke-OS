@@ -10,9 +10,10 @@ import tempfile
 import zipfile
 
 from disco.workbench.recipes import build_tree
-from disco.navigation.tree import catalog
+from disco.navigation.tree import catalog, joint_components
 from linked_export_loader import FORMAT, VERSION, DETAIL_KEYS, canonical, verified_metadata, database_seal, signature
 from workspace_sqlite import validate_sqlite_package
+from workspace_h5_attribute_inventory import inventory_path, inventory_reader, verified_inventory
 
 SCHEMA = '''
 CREATE TABLE export_info (format TEXT NOT NULL, version INTEGER NOT NULL,
@@ -22,6 +23,10 @@ CREATE TABLE sources (source_sha256 TEXT PRIMARY KEY, source_path TEXT NOT NULL,
  metadata_path TEXT NOT NULL, metadata_sha256 TEXT NOT NULL,
  source_project_relative TEXT, metadata_project_relative TEXT,
  source_workspace_relative TEXT, metadata_workspace_relative TEXT);
+CREATE TABLE h5_attribute_sources (source_sha256 TEXT PRIMARY KEY REFERENCES sources,
+ inventory_path TEXT NOT NULL, inventory_sha256 TEXT NOT NULL, inventory_version INTEGER NOT NULL,
+ inventory_contract TEXT NOT NULL, inventory_logical_sha256 TEXT NOT NULL,
+ inventory_project_relative TEXT NOT NULL, inventory_workspace_relative TEXT NOT NULL);
 CREATE TABLE cells (cell_uuid TEXT PRIMARY KEY, source_sha256 TEXT NOT NULL REFERENCES sources,
  cell_label TEXT, cell_type TEXT, recording_date TEXT);
 CREATE TABLE epoch_groups (group_uuid TEXT PRIMARY KEY, cell_uuid TEXT NOT NULL REFERENCES cells, group_label TEXT);
@@ -115,6 +120,34 @@ file paths to new paths. These options change locators, never file identities.
 The Python constructor accepts the corresponding project_root, workspace_root,
 and file_map arguments. An optional expected_sha256 verifies the SQLite file.
 
+Version 2 also links the verified recorded H5 attribute inventory in the project's
+imports/h5-attributes folder. Its path, original recording SHA, exact inventory
+checksum, format, extractor contract and logical digest are frozen in
+h5_attribute_sources. No inventory or attribute values are copied into this ZIP.
+Keep that referenced SQLite file with the project when moving it or provide its
+explicit --file-map entry. An exact verified copy works without the project's
+application, cache, or seal file. A changed or missing reference requires the
+original bytes. Version 1 exports continue to open with their original metadata.
+
+record(epoch_uuid) and --epoch include h5_attributes when this recording has a
+linked inventory. The same individual records are available through
+export.h5_attributes(epoch_uuid) and the loader's SQL function. Field IDs retain
+their source header and distinct aliases. value_json is the exact recorded JSON
+text, including large integer digits and structured/array values. Each record
+also provides the physical H5 path, name, original name/path bytes as hex, H5
+datatype encoding and shape. SQL example (run through this loader):
+
+    SELECT e.epoch_uuid, json_extract(j.value,'$.field_id') AS field_id,
+           json_extract(j.value,'$.value_json') AS value_json
+    FROM epochs e JOIN h5_attribute_sources USING(source_sha256)
+    CROSS JOIN json_each(epoch_h5_attributes(e.epoch_uuid)) j
+    WHERE json_extract(j.value,'$.attribute_name')='operatingMode'
+
+An entry in h5_attribute_sources identifies a covered recording. A selected
+epoch without a source reference has no H5 inventory coverage in this export.
+Requesting h5_attributes for it raises an error. The parsed parameter SQL
+functions and sample-window reads can be used independently.
+
 The loader checks metadata checksums and epoch fingerprints on demand. The first
 read of each H5 checks the full file checksum, which can take time for large
 recordings; subsequent windows reuse that verification within the same reader.
@@ -127,7 +160,9 @@ samples per call; nonfinite recorded values are represented as null/None.
 def prepare_linked_package(package, manifests, project_dir, *, grouping_sources=()):
     """Bind caller-verified import locators, without new membership authority."""
     root = Path(project_dir).resolve(strict=True)
-    sources = []
+    grouping_sources = list(grouping_sources)
+    published = {s['source_sha256']: s for s in grouping_sources}
+    sources, grouping = [], []
     used = {row['source_sha256'] for row in package['epochs']}
     for source in package['sources']:
         if source['source_sha256'] not in used:
@@ -142,8 +177,20 @@ def prepare_linked_package(package, manifests, project_dir, *, grouping_sources=
         from disco.projects.recording_files import managed_recording_owner
         if managed_recording_owner(root, raw) is None:
             raise ValueError('Linked export requires managed H5 files; retain this recording in a project first')
-        sources.append({**source, 'metadata_path': str(metadata), 'metadata_sha256': manifest['metadata_sha256']})
-    return {**package, 'sources': sources, 'project_root': str(root), 'grouping_sources': list(grouping_sources)}
+        entry = {**source, 'metadata_path': str(metadata), 'metadata_sha256': manifest['metadata_sha256']}
+        sha = source['source_sha256']
+        group_source = dict(published.get(sha, source))
+        advertised = published.get(sha, {}).get('h5_attribute_inventory') or source.get('h5_attribute_inventory')
+        expected = manifest.get('h5_attribute_inventory')
+        if advertised or expected or inventory_path(root, sha).exists():
+            descriptor = verified_inventory(root, sha, expected=expected)
+            if advertised and advertised != descriptor:
+                raise ValueError('Linked H5 attribute reference differs from the verified project inventory')
+            entry['h5_attribute_inventory'] = descriptor
+            group_source['h5_attribute_inventory'] = descriptor
+        sources.append(entry)
+        grouping.append(group_source)
+    return {**package, 'sources': sources, 'project_root': str(root), 'grouping_sources': grouping}
 
 
 def build_linked_sqlite_export(package, output_path):
@@ -160,10 +207,15 @@ def build_linked_sqlite_export(package, output_path):
         if canonical(details) != canonical({key: row[key] for key in DETAIL_KEYS}):
             raise ValueError('Existing imported metadata cannot reproduce the exact frozen epoch')
     frozen_fields = recipe.get('options', {}).get('tree_view', {}).get('fields', [])
+    split = recipe.get('options', {}).get('split_order', ','.join(recipe.get('view', {}).get('group_by', [])))
+    # Decode joint grouping IDs with the same owner that builds the tree.
+    # Ordinary splits can be frozen without loading physical attribute values.
+    levels = [field.strip() for field in split.replace('→', ',').split(',')]
+    components = (part for field in levels for part in
+                  (joint_components(field) if field.startswith('joint/') else (field,)))
     fields, values = catalog(records, valid['details'],
         known_fields=[field for field in frozen_fields if isinstance(field, dict)],
-        sources=package.get('grouping_sources', ()))
-    split = recipe.get('options', {}).get('split_order', ','.join(recipe.get('view', {}).get('group_by', [])))
+        sources=package.get('grouping_sources', ()), include_h5=any(part.startswith('h5/') for part in components))
     # catalog() returns a summary object; its split vocabulary is the field ids.
     allowed = {field['id'] for field in fields['fields']} | {field for field in frozen_fields if isinstance(field, str)}
     tree = build_tree(records, split, values, allowed)
@@ -174,6 +226,7 @@ def build_linked_sqlite_export(package, output_path):
     descriptor, temporary = tempfile.mkstemp(prefix='.linked-export-', dir=path.parent)
     os.close(descriptor)
     connection = None
+    inventory_signatures = {}
     try:
         connection = sqlite3.connect(temporary)
         connection.execute('PRAGMA foreign_keys=ON')
@@ -192,6 +245,23 @@ def build_linked_sqlite_export(package, output_path):
                     (sha, source['source_path'], source['metadata_path'], source['metadata_sha256'],
                      relative(source['source_path'], root), relative(source['metadata_path'], root),
                      relative(source['source_path'], root.parent), relative(source['metadata_path'], root.parent)))
+                descriptor = source.get('h5_attribute_inventory')
+                if descriptor:
+                    inventory = inventory_path(root, sha)
+                    if descriptor['source_sha256'] != sha or Path(descriptor['path']) != inventory or descriptor['version'] != 1:
+                        raise ValueError('Unsupported or misplaced linked H5 attribute inventory')
+                    inventory_signatures[inventory] = signature(inventory)
+                    with inventory_reader(descriptor) as db:
+                        members = [r['epoch_uuid'] for r in records if r['source_sha256'] == sha]
+                        db.execute('CREATE TEMP TABLE linked_epochs(id TEXT PRIMARY KEY)')
+                        db.executemany('INSERT INTO linked_epochs VALUES (?)', ((key,) for key in members))
+                        missing = db.execute('''SELECT id FROM linked_epochs n WHERE NOT EXISTS
+                            (SELECT 1 FROM epoch_owners e WHERE e.epoch_uuid=n.id) LIMIT 1''').fetchone()
+                        if missing:
+                            raise ValueError('Selected epoch missing from its linked H5 attribute inventory')
+                    connection.execute('INSERT INTO h5_attribute_sources VALUES (?,?,?,?,?,?,?,?)',
+                        (sha, str(inventory), descriptor['sha256'], descriptor['version'], descriptor['contract'],
+                         descriptor['logical_sha256'], str(inventory.relative_to(root)), str(inventory.relative_to(root.parent))))
             ancestors = {}
             def ancestor(table, row):
                 key = (table, row[0])
@@ -244,6 +314,9 @@ def build_linked_sqlite_export(package, output_path):
                 ('analysis_groups', 'SELECT * FROM analysis_groups ORDER BY group_id'),
                 ('recordings', 'SELECT * FROM sources'),
                 ('responses', "SELECT * FROM streams WHERE kind='responses'"),
+                ('recorded_h5_attributes', """SELECT e.epoch_uuid,json_extract(j.value,'$.field_id') AS field_id,
+                    json_extract(j.value,'$.value_json') AS value_json FROM epochs e JOIN h5_attribute_sources USING(source_sha256)
+                    CROSS JOIN json_each(epoch_h5_attributes(e.epoch_uuid)) j"""),
             ])
             connection.execute('UPDATE export_info SET content_sha256=?', (database_seal(connection),))
             for (table,) in connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall():
@@ -255,6 +328,8 @@ def build_linked_sqlite_export(package, output_path):
         connection = None
         if any(signature(Path(sources[sha]['metadata_path']).resolve()) != before for sha, before in signatures.items()):
             raise ValueError('Referenced metadata changed while writing the export')
+        if any(signature(inventory) != before for inventory, before in inventory_signatures.items()):
+            raise ValueError('Referenced H5 attribute inventory changed while writing the export')
         with open(temporary, 'rb') as handle:
             os.fsync(handle.fileno())
         os.link(temporary, path)

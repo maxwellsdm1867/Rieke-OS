@@ -36,8 +36,12 @@ def stage_export(output, recipe, *, format, build_package, publish, matlab_write
                                              grouping_sources=grouping_sources)
         else:
             write_json(output / 'recordings.json', package)
+        inventories = {}
+        if format == 'wheeler-sqlite' and linked_sources:
+            inventories = {s['source_sha256']: s['h5_attribute_inventory']
+                           for s in linked_sources[2] if s.get('h5_attribute_inventory')}
         artifact = materialize_export_format(package, output, format=format,
-            matlab_writer=matlab_writer, write_json=write_json)
+            matlab_writer=matlab_writer, write_json=write_json, sqlite_inventories=inventories)
         return publish(artifact)
     except Exception as error:
         try:
@@ -48,7 +52,7 @@ def stage_export(output, recipe, *, format, build_package, publish, matlab_write
         raise
 
 
-def materialize_export_format(package, output, *, format, matlab_writer, write_json):
+def materialize_export_format(package, output, *, format, matlab_writer, write_json, sqlite_inventories=None):
     """Return the selected artifact, propagating adapter errors unchanged.
 
     ``matlab_writer(recipe, output_dir, *, epoch_records)`` is caller-bound and
@@ -63,7 +67,10 @@ def materialize_export_format(package, output, *, format, matlab_writer, write_j
     if format == 'wheeler-sqlite':
         from workspace_sqlite import build_sqlite_export
         artifact = output / 'recordings.sqlite'
-        build_sqlite_export(package, artifact)
+        if sqlite_inventories:
+            build_sqlite_export(package, artifact, inventories=sqlite_inventories)
+        else:
+            build_sqlite_export(package, artifact)
         from disco.decisions.external_tags import prepare_return_folder
         prepare_return_folder(output, package)
         return artifact
