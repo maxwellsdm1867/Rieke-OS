@@ -27,9 +27,14 @@ and projections. The status panel reports recorded attributes, searchable field
 definitions across recordings and the number of inventories rebuilt. Failure
 preserves the last successful receipt and marks the current read model unready.
 
-An unchanged running project checks file witnesses and cached proofs. Opening
-an upgraded project for the first time can require reading every registered
-source. A new extractor changes the contract automatically. Each subsequent
+After updating, open the existing project normally. Project startup automatically
+runs Refresh metadata and makes the recovered fields available to protocol search.
+The first open can read each registered H5, so its source drive must be available.
+If a recording was offline, reconnect it and click **Refresh metadata** in the
+project toolbar. Expand **Metadata refresh status** to see elapsed time, source
+reuse and rebuild counts, and searchable field coverage.
+
+An unchanged running project checks file witnesses and cached proofs. A new extractor changes the contract automatically. Each subsequent
 refresh reuses the repaired inventory until its source, contract or on-disk proof
 changes. Changed source bytes must match the registered checksum before the
 service publishes a replacement.
