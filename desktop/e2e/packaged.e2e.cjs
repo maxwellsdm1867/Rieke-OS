@@ -38,13 +38,18 @@ async function quitAndVerifyOwnedExit() {
 }
 async function chooseTestProfile() {
   const dialog = page.getByRole('dialog', {name: 'Tag author', exact: true});
-  const visible = await dialog.waitFor({state: 'visible', timeout: 3000}).then(() => true).catch(() => false);
-  if (visible) {
-    const existing = dialog.getByRole('button', {name: 'Electron E2E', exact: true});
+  // Profile discovery finishes asynchronously on each project renderer.
+  const selected = page.locator('button[aria-label="Choose tag author profile"][title^="Tag author: "]:not([title="Tag author: Choose profile"])');
+  await dialog.or(selected).first().waitFor({state: 'attached', timeout: 90000});
+  if (await dialog.isVisible()) {
+    const choices = dialog.getByRole('group', {name: 'Tag authors', exact: true});
+    await choices.waitFor({state: 'attached'});
+    const existing = choices.getByRole('button', {name: /^Electron E2E(?: Selected)?$/});
     if (await existing.count()) await existing.first().click();
     else {await dialog.getByRole('textbox').fill('Electron E2E'); await dialog.getByRole('button', {name: 'Create profile', exact: true}).click();}
     await dialog.waitFor({state: 'hidden'});
   }
+  await selected.waitFor({state: 'attached'});
   await showProjectSidebar(page);
 }
 async function bindProject(projectName) {
