@@ -1,17 +1,17 @@
 :root{font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#202d32;background:#f4f5f3}body{margin:0;display:grid;place-items:center;min-height:100vh}main{width:min(520px,80vw);padding:48px;background:white;border-radius:18px;box-shadow:0 14px 55px #17363a14}h1{font-size:26px;font-weight:600}p{line-height:1.55;color:#566567}#channel{font-size:13px;font-weight:600;color:#72508a}#detail,#gatekeeper{font-size:13px;white-space:pre-wrap}button{font:inherit;border:1px solid #bdcccb;border-radius:7px;padding:10px 16px;margin:10px 8px 0 0;background:#f6f8f7;cursor:pointer}#install{background:#186f69;color:white;border-color:#186f69}button:disabled{opacity:.55;cursor:wait}
 
 /* The recovery renderer starts before the workspace theme is available. */
-button:focus-visible,button:not(:disabled):active{outline:0;background:#d4e5e1;color:#203e3b}
-#install:focus-visible,#install:not(:disabled):active{background:#104e49;color:white}
+button:focus-visible{outline:0;background:#d4e5e1;color:#203e3b}
+#install:focus-visible{background:#104e49;color:white}
 @media(prefers-color-scheme:dark){
  :root{color-scheme:dark;background:#171f20;color:#e7efed}
  main{background:#202b2b}
  p{color:#bacac6}
  #channel{color:#d0b2dd}
  button{color:#e7efed;background:#293736;border-color:#52645f}
- button:focus-visible,button:not(:disabled):active{background:#395853;color:#fff}
+ button:focus-visible{background:#395853;color:#fff}
  #install{background:#386d63;border-color:#52867b}
- #install:focus-visible,#install:not(:disabled):active{background:#24483f}
+ #install:focus-visible{background:#24483f}
 }
 @media(forced-colors:active){
  button:focus-visible{outline:1px solid Highlight;outline-offset:1px}

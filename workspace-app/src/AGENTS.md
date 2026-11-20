@@ -78,9 +78,11 @@ container border may remain; changing state must not change its width or padding
 Do not decorate rounded cards, warnings or nested query groups with a thick edge.
 Use their text, icons, background and indentation to convey meaning.
 
-Hover and keyboard focus follow the same rule. Use the shared theme focus fill on
-controls, row labels and choices. A compound text field shows a single fill across
-its input and icon. An adjacent action button receives its own focus treatment.
+Editable text fields, searches, textareas and editable regions show their native
+caret. The field, its placeholder and any surrounding search or value wrapper
+keep their resting colors and geometry during editing. Keyboard navigation gives
+a fill to nontext controls and choices, including adjacent action buttons. Pointer
+presses on momentary buttons return to the normal hover or resting state on release.
 Forced-color mode uses the system Highlight color so keyboard focus remains visible
 when the platform suppresses backgrounds. Keep control geometry stable on focus.
 Structural pane separators, tree connector lines, native control indicators and

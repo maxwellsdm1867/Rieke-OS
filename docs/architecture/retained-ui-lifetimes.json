@@ -4114,7 +4114,7 @@
       ]
     },
     "src/typed-query/ui/PredicateValueInput.jsx": {
-      "fingerprint": "6b49da305e9e55a2d3c628016d897371a2de0654fa3919add7b45d48f9370dd6",
+      "fingerprint": "b8c757eedc0b7c4f25beabeabc64bc1d7cd091c04bd652a75bbd9629854d09fe",
       "sites": [
         {
           "owner": "PredicateValueInput",
@@ -4138,7 +4138,7 @@
         }
       ],
       "lifetime": "semantic-option-scroll + active-global-handlers",
-      "reason": "Selected option identity controls list scroll. Active retained owner gates global outside/position listeners and popover. Disabled-state close and live tag vocabulary keep their existing ordinary effects. Only an open scalar chooser reads the selected field from the registry generation and query scope through useResource; close, disable, field/scope change and hidden retained state retire its request. Selections preserve the typed value and append alternatives without converting previous 64-bit integer literals. Search focus waits for the popup and its containment ref to mount; both pointer and keyboard can reach it.",
+      "reason": "Selected option identity controls list scroll. Active retained owner gates global outside/position listeners and popover. Disabled-state close and live tag vocabulary keep their existing ordinary effects. Only an open scalar chooser reads the selected field from the registry generation and query scope through useResource; close, disable, field/scope change and hidden retained state retire its request. Selections preserve the typed value and append alternatives without converting previous 64-bit integer literals. Search focus waits for the popup and its containment ref to mount; both pointer and keyboard can reach it. The active recorded-value filter exposes its keyboard option. Successful selection and Escape restore the primary editable caret for scalar and alternative values. Outside pointer dismissal preserves the clicked control\u2019s focus.",
       "tests": [
         "src/useSemanticReset.test.js",
         "src/semanticPresentationControls.test.js",

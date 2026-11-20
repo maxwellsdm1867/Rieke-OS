@@ -89,30 +89,22 @@ input::placeholder,textarea::placeholder{color:var(--ink-muted);opacity:1}
 .qc-trend svg text,.qc-condition-summary svg text,.trace text{fill:var(--plot-ink)}
 .rail{--control-focus-wash:color-mix(in srgb,var(--rail-ink) 25%,transparent)}
 .primary{--control-focus-wash:color-mix(in srgb,var(--ink) 22%,transparent)}
-/* Paint over existing fills so selection, checked state and danger colors survive.
-   The overlay owns focus even on controls whose component sets a background shorthand. */
-:is(button,input,select,textarea,summary,a[href],[tabindex],[contenteditable=true]):not(.tv-plot):focus-visible,
-button:not(:disabled):active,
+/* Text editors identify the insertion point with their native caret. */
+:is(input,textarea,[contenteditable]:not([contenteditable=false])):focus-visible{outline:0}
+/* A keyboard cue sits on top of the control's existing selection or status color.
+   Mouse activation returns to its ordinary resting, hover or selected state. */
+:is(button,select,summary,a[href],[tabindex]):not(.tv-plot,input,textarea,[contenteditable]:not([contenteditable=false])):focus-visible,
+input[readonly]:focus-visible,textarea[readonly]:focus-visible,
+input:is([type=button],[type=submit],[type=reset],[type=image],[type=file],[type=color],[type=range],[type=date],[type=datetime-local],[type=month],[type=time],[type=week],[type=radio],[type=checkbox]):focus-visible,
 label:has(>input:is([type=radio],[type=checkbox]):focus-visible),
 .epoch-skim-row:has(>input[type=checkbox]:focus-visible){
  outline:0;
  background-image:linear-gradient(var(--control-focus-wash),var(--control-focus-wash))!important;
 }
-/* Compound text fields include the search icon in their focus fill. A separate
-   button in the same control keeps its own keyboard focus. */
-:is(.global-search-input,.metadata-panel-search,.pb-field-search,.tb-search-wrap,.pb-value-control):has(>input:focus){
- background-color:var(--control-focus-fill);
-}
-:root :is(.global-search-input,.metadata-panel-search,.pb-field-search,.tb-search-wrap,.pb-value-control)>input:focus{
- outline:0;
- background-color:transparent;
- background-image:none!important;
-}
-input:focus::placeholder,textarea:focus::placeholder{color:var(--ink-secondary)}
 /* Forced-color palettes can suppress both tint and images. Use the user's
    system highlight at one pixel, including labels around hidden native inputs. */
 @media(forced-colors:active){
- :is(button,input,select,textarea,summary,a[href],[tabindex],[contenteditable=true]):focus-visible,
+ :is(button,input,select,textarea,summary,a[href],[tabindex],[contenteditable]:not([contenteditable=false])):focus-visible,
  label:has(>input:is([type=radio],[type=checkbox]):focus-visible),
  :is(.global-search-input,.metadata-panel-search,.pb-field-search,.tb-search-wrap,.pb-value-control):has(>input:focus-visible){
   outline:1px solid Highlight!important;

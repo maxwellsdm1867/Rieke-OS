@@ -29,13 +29,13 @@ async function harness({explorerShell=false}={}){
  // Compile the explorer/App source too; the mounted tree exercises the shared builder.
  const {default:MetadataExplorer}=await server.ssrLoadModule('/src/metadata-explorer/ui/MetadataExplorer.jsx');
  await server.ssrLoadModule('/src/App.jsx');
- let root,probe;
+ let root,probe,focusedControl;
  function Probe({kind,request,revision,enabled=true,fallbackPath='/explore/predicate-fields'}){
   const summary=useRequestedSummaries(request||{predicate:{all:[]},summary_fields:['date']},{enabled:kind==='summary'&&enabled});
   const fields=useFieldRegistry(revision,fallbackPath);
   probe={summary,fields};return React.createElement('probe',{status:summary.status});
  }
- const h={requests,memory,TreeBuilder,PredicateDialog,MetadataExplorer,Probe,set respond(value){respond=value;},get probe(){return probe;},get root(){return root.root;},async render(Component,props){await act(async()=>{const element=React.createElement(Component,props);if(root)root.update(element);else root=TestRenderer.create(element,{createNodeMock:()=>({showModal(){},close(){},focus(){},closest:()=>null,getBoundingClientRect:()=>({left:50,top:100,bottom:120,width:300}),contains:()=>false})});});},async act(callback){await act(callback);},async settle(ms=0){await act(async()=>{if(ms)await new Promise(resolve=>setTimeout(resolve,ms));for(let i=0;i<12;i++)await Promise.resolve();});},async close(){await act(()=>root?.unmount());await server.close();Object.assign(globalThis,old);},button(label){return root.root.findAllByType('button').find(node=>node.children.some(child=>typeof child==='string'&&child.includes(label)));},text(){return JSON.stringify(root.toJSON());}};
+ const h={requests,memory,TreeBuilder,PredicateDialog,MetadataExplorer,Probe,set respond(value){respond=value;},get probe(){return probe;},get focusedControl(){return focusedControl;},get root(){return root.root;},async render(Component,props){await act(async()=>{const element=React.createElement(Component,props);if(root)root.update(element);else root=TestRenderer.create(element,{createNodeMock:node=>({children:[],showModal(){},close(){},focus(){focusedControl=node.props['aria-label'];},closest:()=>null,getBoundingClientRect:()=>({left:50,top:100,bottom:120,width:300}),contains:()=>false})});});},async act(callback){await act(callback);},async settle(ms=0){await act(async()=>{if(ms)await new Promise(resolve=>setTimeout(resolve,ms));for(let i=0;i<12;i++)await Promise.resolve();});},async close(){await act(()=>root?.unmount());await server.close();Object.assign(globalThis,old);},button(label){return root.root.findAllByType('button').find(node=>node.children.some(child=>typeof child==='string'&&child.includes(label)));},text(){return JSON.stringify(root.toJSON());}};
  return h;
 }
 
@@ -344,13 +344,24 @@ test('recorded number choices use one explicit field read, preserve large intege
   assert.equal(requests().length,0);
   await open();await h.settle(180);
   assert.equal(requests().length,1);assert.equal(new URL(requests()[0].path,'http://fixture').searchParams.has('protocol_uuid'),false);
-  await h.act(()=>choice(large).props.onClick());assert.equal(input().props.value,large);
+  const filter=()=>h.root.findByProps({'aria-label':'Find a recorded value'});
+  const key=name=>h.act(()=>filter().props.onKeyDown({key:name,preventDefault(){}}));
+  assert.equal(h.focusedControl,'Find a recorded value');
+  await key('ArrowDown');assert.equal(filter().props['aria-activedescendant'],choice(other).props.id);
+  assert.equal(input().props.value,'-65.5');
+  await key('ArrowUp');await key('Enter');assert.equal(input().props.value,large);
+  assert.equal(h.focusedControl,'Condition value');
+  assert.equal(input().props['aria-expanded'],false);
   await h.act(()=>h.button('View matching epochs').props.onClick());assert.deepEqual(saved.at(-1).all[0],{field:field.id,operator:'eq',value:large,value_encoding:'json'});
   const filters={cell_uuid:'recorded-cell'};
   await h.render(h.PredicateDialog,{...props,key:'scoped',draft:condition('in'),readContext:{protocol_uuid:'protocol-a',filters}});await open();await h.settle(180);
   const params=new URL(requests().at(-1).path,'http://fixture').searchParams;
   assert.equal(params.get('protocol_uuid'),'protocol-a');assert.deepEqual(JSON.parse(params.get('filters')),filters);
-  for(const number of [large,other,large])await h.act(()=>choice(number).props.onClick());
+  for(const number of [large,other,large]){
+    if(!h.root.findAllByProps({role:'listbox'}).length){await open();await h.settle(180);}
+    await h.act(()=>choice(number).props.onClick());
+    assert.equal(input().props['aria-expanded'],false);
+  }
   await h.act(()=>h.button('View matching epochs').props.onClick());
   assert.deepEqual(saved.at(-1).all[0],{field:field.id,operator:'in',value:'['+large+','+other+']',value_encoding:'json'});
   const prior=requests().length;

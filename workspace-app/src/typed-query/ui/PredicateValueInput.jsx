@@ -62,7 +62,7 @@ export default function PredicateValueInput({node,choices,pinnedProtocols,onChan
     try{onChange(recorded?applyRecordedChoice(node,choice):{...node,valueText:choice.value});}
     catch{setSelectionError('Use a valid JSON list with at most 100 alternatives.');return;}
     setSelectionError('');setActive(0);
-    if(!recorded||!alternatives){input.current?.focus();setOpen(false);}
+    input.current?.focus();setOpen(false);
   }
   function keys(event){
     if(event.key==='Escape'&&open){event.preventDefault();event.stopPropagation();input.current?.focus();setOpen(false);}
@@ -71,11 +71,11 @@ export default function PredicateValueInput({node,choices,pinnedProtocols,onChan
   }
   function blur(event){if(!wrap.current?.contains(event.relatedTarget)&&!popup.current?.contains(event.relatedTarget))setOpen(false);}
   return <div className="pb-value-control pb-autocomplete" ref={wrap}>
-    <input ref={input} role="combobox" aria-label="Condition value" aria-autocomplete="list" aria-expanded={open} aria-controls={open?id:undefined} aria-activedescendant={open&&suggestions[selected]?`${id}-${selected}`:undefined} disabled={disabled} value={node.valueText} title={node.valueText} placeholder={alternatives?'[25, 100]':protocol?'e.g. VariableMeanNoise':sharedTag?'Search tags…':'Enter value'} onFocus={()=>{if(!recorded){setOpen(true);setActive(0);}}} onBlur={blur} onChange={event=>{onChange({...node,valueText:event.target.value});setActive(0);if(!recorded)setOpen(true);}} onKeyDown={keys}/>
+    <input ref={input} role="combobox" aria-label="Condition value" aria-autocomplete="list" aria-expanded={open} aria-controls={open?id:undefined} aria-activedescendant={open&&suggestions[selected]?`${id}-${selected}`:undefined} disabled={disabled} value={node.valueText} title={node.valueText} placeholder={alternatives?'[25, 100]':protocol?'e.g. VariableMeanNoise':sharedTag?'Search tags…':'Enter value'} onFocus={()=>{setOpen(!recorded);setActive(0);}} onBlur={blur} onChange={event=>{onChange({...node,valueText:event.target.value});setActive(0);if(!recorded)setOpen(true);}} onKeyDown={keys}/>
     <button type="button" disabled={disabled} className="pb-value-toggle" aria-label="Show value suggestions" aria-expanded={open} onMouseDown={event=>event.preventDefault()} onClick={()=>{const next=!open;input.current?.focus();setQuery('');setSelectionError('');setOpen(next);}}><ChevronDown size={13}/></button>
     {open&&position&&retainedActive&&createPortal(<div ref={popup} className="pb-value-popup" style={position} onMouseDown={event=>{if(event.target.tagName!=='INPUT')event.preventDefault();}}>
       <div className="pb-value-popup-title">{protocol?'Protocol ID suggestions':sharedTag?'Saved tags':'Recorded values'}<small>{recorded?'↑ ↓ choose · Enter to select':'↑ ↓ choose · Tab complete'}</small></div>
-      {recorded&&<input type="search" ref={searchInput} aria-label="Find a recorded value" placeholder="Find a recorded value" value={query} maxLength={120} onBlur={blur} onKeyDown={keys} onChange={event=>{setQuery(event.target.value);setActive(0);}}/>}
+      {recorded&&<input type="search" ref={searchInput} role="combobox" aria-label="Find a recorded value" aria-expanded="true" aria-autocomplete="list" aria-controls={id} aria-activedescendant={suggestions[selected]?`${id}-${selected}`:undefined} placeholder="Find a recorded value" value={query} maxLength={120} onBlur={blur} onKeyDown={keys} onChange={event=>{setQuery(event.target.value);setActive(0);}}/>}
       <div ref={list} role="listbox" id={id} aria-label="Matching value suggestions" className="pb-value-options">{suggestions.map((choice,index)=>{
         const value=recorded?(choice.type==='string'?JSON.parse(choice.value_json):choice.value_json):choice.value;
         return <button type="button" tabIndex={-1} role="option" id={`${id}-${index}`} aria-selected={index===selected} key={recorded?choice.type+choice.value_json:choice.value} className={index===selected?'active':''} onMouseEnter={()=>setActive(index)} onClick={()=>choose(choice)}><span><strong>{protocol?humanize(value.split('.').at(-1)):value===''?'""':value}</strong>{protocol&&<small>{value}</small>}</span>{recorded&&<small>{choice.type}</small>}{choice.pinned&&<span className="pb-value-pin"><Pin size={11}/> Pinned</span>}</button>;
