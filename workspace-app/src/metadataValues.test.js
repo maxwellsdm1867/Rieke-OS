@@ -1,6 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {metadataRows,metadataClipboard,metadataValueSafe,metadataPredicateValueSupported,registeredMetadataField} from './components/metadataValues.js';
+import {h5AttributeField,metadataRows,metadataClipboard,metadataValueSafe,metadataPredicateValueSupported,registeredMetadataField} from './components/metadataValues.js';
+
+test('flat H5 labels keep encoded separators literal and preserve owner and span identity',()=>{
+  const parent='h5/stimulus/Amp1/dataConfigurationSpans/span_0/DAQ~0%25';
+  assert.deepEqual(h5AttributeField(parent+'/@gain~1range~0%25'),{
+    parentId:parent,header:'Stimulus · Amp1 · dataConfigurationSpans · span_0 · DAQ~%',name:'gain/range~%',
+  });
+  assert.equal(h5AttributeField('h5/device/Amp1/@%FF').name,'%FF');
+  assert.equal(h5AttributeField('h5/epoch/A%20%C2%B7%20B/@offset').header,'Epoch · "A · B"');
+  assert.equal(h5AttributeField('stimulus/Amp1/offset'),null);
+  const owners=['h5/response/Amp1','h5/stimulus/Amp1','h5/stimulus/Amp2'];
+  const ids=owners.flatMap(owner=>['span_0','span_1'].map(span=>owner+'/'+span+'/@offset'));
+  assert.equal(new Set(ids.map(id=>h5AttributeField(id).parentId)).size,6);
+  assert.ok(ids.every(id=>h5AttributeField(id).name==='offset'));
+});
 
 test('metadata rows preserve source paths and whole array values',()=>{
   const values={'literal.dot':{'slash/key':[0,false,'',null]},'~tilde':{},empty:''};

@@ -8,6 +8,7 @@ const text=node=>typeof node==='string'?node:node?.children?.map(text).join(' ')
 test('metadata refresh remains a metadata operation and ignores legacy MATLAB mask proposals',async()=>{
  const prior={fetch:globalThis.fetch,document:globalThis.document},calls=[];let changed=0,root;
  const refresh={sources:3,epochs:12,protocols:1,reused_sources:2,rebuilt_sources:1,elapsed_seconds:0.25,completed_at:'2026-09-30T12:00:00Z'};
+ refresh.attribute_coverage={status:'complete',checked_sources:3,inventoried_attributes:67,recorded_attributes:67,source_fields:22,searchable_source_fields:22,inventories_recovered:1};
  const masks={checked:true,candidates:[{dataset_uuid:'legacy-export',name:'Legacy mask',changed_count:2,included_count:4,epoch_count:5}]};
  globalThis.document={addEventListener(){},removeEventListener(){}};
  globalThis.fetch=async(path,options)=>{calls.push({path,options});return {ok:true,json:async()=>path==='/api/metadata/refresh'?{refresh,masks,warnings:[]}:{status:'ready',last_refresh:refresh,masks}};};
@@ -17,6 +18,8 @@ test('metadata refresh remains a metadata operation and ignores legacy MATLAB ma
   assert.doesNotMatch(text(root.toJSON()),/MATLAB|selection masks|Apply updated mask/);
   await act(async()=>root.root.findByProps({'aria-label':'Refresh project metadata'}).props.onClick());
   assert.match(text(root.toJSON()),/Metadata refresh completed/);assert.equal(changed,1);
+  assert.match(text(root.toJSON()).replace(/\s+/g,' '),/67 of 67 recorded H5 attributes inventoried/);
+  assert.match(text(root.toJSON()).replace(/\s+/g,' '),/Rebuilt attribute inventories for 1 recording/);
   assert.equal(calls.filter(call=>call.path==='/api/metadata/refresh').length,1);assert.equal(calls.some(call=>call.path.includes('/masks/')),false);
  }finally{await act(async()=>root?.unmount());await server.close();for(const [key,value]of Object.entries(prior)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
 });

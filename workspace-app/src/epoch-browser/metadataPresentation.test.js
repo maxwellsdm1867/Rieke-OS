@@ -20,6 +20,24 @@ async function harness(){
   async close(){await act(async()=>renderer?.unmount());await server.close();if(prior===undefined)delete globalThis.ResizeObserver;else globalThis.ResizeObserver=prior;},
  };
 }
+test('loaded stimulus settings keep their device, exact searchable label and recorded zero',async()=>{
+ const h=await harness();
+ try {
+  const stimulus={Amp1:{offset:0,offsetUnits:'mV',operatingMode:'VClamp'},Amp2:{operatingMode:'IClamp'}};
+  await h.render({epoch:{...epoch,stimulus},loadingPolicy:null});
+  for(const [field,value] of [['Amp1:offset','0'],['Amp1:offsetUnits','mV'],['Amp1:operatingMode','VClamp'],['Amp2:operatingMode','IClamp']]){
+   const label='stimulus:'+field;
+   assert.deepEqual(h.root.findByProps({'aria-label':'Copy setting value '+label}).children,[value]);
+  }
+  const search=h.root.findByProps({'aria-label':'Search focused epoch metadata'});
+  await act(async()=>search.props.onChange({target:{value:'stimulus:Amp2:operatingMode'}}));
+  assert.equal(h.root.findAllByProps({className:'metadata-value-row'}).length,1);
+  await h.render({epoch,loadingPolicy:null});
+  assert.equal(h.root.findAllByProps({className:'metadata-value-row'}).length,0);
+ } finally {
+  await h.close();
+ }
+});
 const groups=h=>h.root.findAllByProps({className:'metadata-field-group'}).length;
 const slots=h=>h.root.findAllByProps({className:'metadata-tag-slot'});
 test('shared sidebar reserves measured tag geometry, removes tag component, and retains only inert catalog through pause/error',async()=>{
@@ -115,4 +133,83 @@ test('Inspector selected-view presentation survives only renewal of the same exp
   await h.render(Inspector,{...props,readContext:{...context,selection_token:'renewed'}});assert.equal(h.viewer.metadata.presentation?.key,key);
   await h.render(Inspector,{...props,readContext:{...context,selection_view_key:'selected-B'}});assert.notEqual(h.viewer.metadata.presentation?.key,key);
  }finally{await h.close();}
+});
+
+test('fields-only search finds separated H5 field terms and retains the exact copyable field ID',async()=>{
+ const h=await harness(),id='h5/stimulus/Amp1/dataConfigurationSpans/span_0/Amp1/@operatingMode';
+ try{
+  await h.render({catalog:{data:{fields:[{id,label:'H5 stimulus/Amp1/dataConfigurationSpans/span_0/Amp1/@operatingMode',category:'H5 attributes',grouping_role:'technical'}]},loading:false}});
+  const input=h.root.findByProps({'aria-label':'Search metadata fields'});
+  await act(()=>input.props.onChange({target:{value:'Amp1 span_0 operatingMode'}}));
+  assert.equal(h.root.findAllByProps({'aria-label':'Copy field ID '+id}).length,1);
+  await act(()=>input.props.onChange({target:{value:'technical'}}));
+  assert.equal(h.root.findAllByProps({'aria-label':'Copy field ID '+id}).length,1);
+  await act(()=>input.props.onChange({target:{value:'Amp2 span_0 operatingMode'}}));
+  assert.equal(h.root.findAllByProps({'aria-label':'Copy field ID '+id}).length,0);
+ }finally{await h.close();}
+});
+
+test('recorded H5 values are requested only on disclosure and old epoch values retire on focus change',async()=>{
+ const prior=globalThis.fetch,seen=[];
+ globalThis.fetch=async url=>{
+   seen.push(String(url));
+   const exact=String(url).includes('record=7');
+   return {ok:true,json:async()=>exact?{value_json:'"value for epoch-a"',value_sha256:'c'.repeat(64)}:
+     {records:[['span_0',7,'note'],['span_1',8,'note'],['span_0',9,'gain~1range']].map(([span,id,name])=>({
+       record_id:id,field_id:'h5/stimulus/Amp1/dataConfigurationSpans/'+span+'/@'+name,
+       object_path:'/epoch/stimuli/Amp1/dataConfigurationSpans/'+span,value_preview:'"value"',dtype:'text',shape:[],
+     })),inventory:'b'.repeat(64),total:3,has_more:false}};
+ };
+ const h=await harness();
+ const button=text=>h.root.findAllByType('button').find(b=>b.children.includes(text));
+ try{
+   const render=id=>h.render({epoch:{...epoch,epoch_uuid:id,source_sha256:'a'.repeat(64)},loadingPolicy:null});
+   await render('epoch-a');
+   assert.equal(seen.length,0);
+   await act(async()=>button('Recorded H5 attributes for this epoch').props.onClick());
+   await act(async()=>new Promise(resolve=>setTimeout(resolve,170)));
+   assert.equal(seen.length,1);assert.match(seen[0],/epoch_uuid=epoch-a/);assert.ok(!seen[0].includes('record='));
+   const groups=h.root.findAllByProps({className:'h5-field-group'});
+   assert.deepEqual(groups.map(group=>group.findByType('h4').children[0]),[
+     'Stimulus · Amp1 · dataConfigurationSpans · span_0','Stimulus · Amp1 · dataConfigurationSpans · span_1']);
+   assert.deepEqual(groups.map(group=>group.findAllByType('dt').map(node=>node.children[0])),[['note','gain/range'],['note']]);
+   assert.ok(groups.every(group=>group.findAllByType('summary').length===0));
+   await act(async()=>{button('Inspect exact value').props.onClick();});
+   await act(async()=>new Promise(resolve=>setTimeout(resolve,30)));
+   assert.ok(seen[1].includes('record=7&inventory='));
+   assert.ok(h.root.findAllByType('pre').some(node=>node.children.includes('"value for epoch-a"')));
+   await render('epoch-b');
+   assert.equal(button('Recorded H5 attributes for this epoch').props['aria-expanded'],false);
+   assert.ok(!h.root.findAllByType('pre').some(node=>node.children.includes('"value for epoch-a"')));
+   assert.equal(seen.length,2);
+ }finally{await h.close();globalThis.fetch=prior;}
+});
+
+test('the focused sidebar search sends only bounded raw pages for the selected source and epoch',async()=>{
+ const prior=globalThis.fetch,seen=[];
+ globalThis.fetch=async url=>{
+   const request=new URL(String(url),'http://fixture');seen.push(request);
+   return {ok:true,json:async()=>({records:[{record_id:7,field_id:'h5/stimulus/Amp1/parameters/@offset',object_path:'/epoch/stimuli/Amp1/parameters',value_preview:'0',dtype:'int64',shape:[]}],inventory:'b'.repeat(64),total:1,has_more:false})};
+ };
+ const h=await harness();
+ try{
+  const render=id=>h.render({epoch:{...epoch,epoch_uuid:id,source_sha256:'a'.repeat(64)},loadingPolicy:null});
+  await render('epoch-a');
+  const search=()=>h.root.findByProps({'aria-label':'Search focused epoch metadata'});
+  const type=term=>act(()=>search().props.onChange({target:{value:term}}));
+  const settle=()=>act(async()=>new Promise(resolve=>setTimeout(resolve,165)));
+  assert.equal(seen.length,0);
+  const query='h5/stimulus/Amp1/parameters/@offset = 0';
+  await type(query);await settle();
+  assert.equal(seen.length,1);
+  assert.deepEqual(Object.fromEntries(seen[0].searchParams),{q:query,offset:'0',limit:'40',epoch_uuid:'epoch-a'});
+  assert.equal(h.root.findByProps({className:'h5-field-group'}).findByType('dt').children[0],'offset');
+  assert.equal(h.root.findAllByProps({'aria-label':'Search recorded H5 attributes'}).length,0);
+  await render('epoch-b');await settle();
+  assert.equal(seen.at(-1).searchParams.get('epoch_uuid'),'epoch-b');
+  assert.ok(seen.every(url=>!url.searchParams.has('record')));
+  await type('');await settle();
+  assert.equal(seen.length,2);
+  assert.equal(h.root.findAllByProps({className:'h5-field-group'}).length,0);
+ }finally{await h.close();globalThis.fetch=prior;}
 });

@@ -25,7 +25,7 @@ import './MatchingEpochs.css';
 import AnnotationTags from '../../annotations/ui/AnnotationTags.jsx';
 import TagExchangeControls from '../../annotations/ui/TagExchangeControls.jsx';
 
-function MatchingEpochsContent({projectId=null,designMode=false,builder=null,columnTree=null,toolbarTarget=null,viewFilters,onViewFilters,filterRevision,filterDisabled=false,predicate,splits,preview,onRefresh,session,onSession,tracePreference:providedTracePreference,onTracePreference,onTagFilter,onAnnotationsChanged,onDesign,designDisabled=false,onExport,exportDisabled=false,actions=[],inclusionForEpoch,onToggleInclusion,onToggleSelectionInclusion,onQC}){
+function MatchingEpochsContent({projectId=null,metadataCatalog=null,designMode=false,builder=null,columnTree=null,toolbarTarget=null,viewFilters,onViewFilters,filterRevision,filterDisabled=false,predicate,splits,preview,onRefresh,session,onSession,tracePreference:providedTracePreference,onTracePreference,onTagFilter,onAnnotationsChanged,onDesign,designDisabled=false,onExport,exportDisabled=false,actions=[],inclusionForEpoch,onToggleInclusion,onToggleSelectionInclusion,onQC}){
   const [localTracePreference,setLocalTracePreference]=useState(()=>normalizeTraceViewPreference(session?.tracePreference));
   const tracePreference=providedTracePreference??localTracePreference;
   const setTracePreference=onTracePreference??setLocalTracePreference;
@@ -114,6 +114,6 @@ function MatchingEpochsContent({projectId=null,designMode=false,builder=null,col
     navigation={{position:index<0?-1:offset+index,total:page.data?(page.data.total??preview.matched_count??null):0,loading:page.loading,onMove:move}}
     traceRevision={traceRevision} detailDisabled={!currentPage||epoch.loading} onQC={onQC}
     inclusion={onToggleInclusion?{disabled:filterDisabled||!currentPage||epoch.loading,onToggle:onToggleInclusion}:null} tags={tagEntry}
-    metadata={{loadingPolicy:inspection.metadata,selectionCell:cellTagRequest,selectedEpochs:targets,onClearSelection:()=>setTargets([]),catalog:{data:preview.catalog},onClose:()=>toggleMetadata(false),connections:inspection.metadata.values.data&&<EpochConnections epoch={inspection.metadata.values.data} protocolName={humanize(detail.protocol_name)} contextLabel="Acquisition protocol"/>}}/>;
+    metadata={{loadingPolicy:inspection.metadata,selectionCell:cellTagRequest,selectedEpochs:targets,onClearSelection:()=>setTargets([]),catalog:metadataCatalog||{data:preview.catalog},onClose:()=>toggleMetadata(false),connections:inspection.metadata.values.data&&<EpochConnections epoch={inspection.metadata.values.data} protocolName={humanize(detail.protocol_name)} contextLabel="Acquisition protocol"/>}}/>;
 }
 export default function MatchingEpochs(props){return <NavigationLoadingProvider><MatchingEpochsContent {...props}/></NavigationLoadingProvider>;}

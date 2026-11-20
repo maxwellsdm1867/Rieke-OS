@@ -11,7 +11,6 @@
 .selection-summary-types{position:relative;min-width:0}
 .selection-summary .incoming-cell-type-trigger{display:inline-flex;align-items:center;min-height:24px;margin:0;padding:0;border:0;border-radius:3px;background:transparent;color:inherit;text-align:left}
 .selection-summary .incoming-cell-type-trigger:hover{color:var(--ink)}
-.selection-summary .incoming-cell-type-trigger:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .selection-summary .incoming-cell-type-card{z-index:20;text-align:left;white-space:normal}
 .selection-summary .incoming-cell-type-title{display:block;font-size:12px;margin-bottom:5px}
 .selection-summary-retry{position:absolute;right:-22px;top:2px;display:grid;place-items:center;width:20px;height:20px;padding:2px;border:0;background:transparent;color:var(--error-ink)}

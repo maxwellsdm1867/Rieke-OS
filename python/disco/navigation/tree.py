@@ -244,7 +244,7 @@ def _descriptive_metadata(metadata):
     return result
 
 
-def catalog(rows, details, known_fields=None, *, sources=()):
+def catalog(rows, details, known_fields=None, *, sources=(), include_h5=True):
     """Return field summaries and per-epoch values for a fixed metadata scope."""
     definitions = {key: {'id': key, 'label': label, 'category': category, 'path': path}
                    for key, (label, category, path) in BASE_FIELDS.items()}
@@ -268,6 +268,8 @@ def catalog(rows, details, known_fields=None, *, sources=()):
         current = {key: row[path] for key, (_, _, path) in BASE_FIELDS.items() if row.get(path) is not None}
         metadata_sources = [('Parameters', ('parameters',), datum.get('parameters', {})),
                    ('Conditions', ('properties',), datum.get('properties', {}))]
+        if row.get('stimulus'):
+            metadata_sources.append(('Stimulus', ('stimulus',), row['stimulus']))
         for level in ('cell', 'group', 'block'):
             ancestor = datum.get('metadata', {}).get(level, {})
             metadata_sources.append(('Conditions', ('metadata', level, 'properties'), ancestor.get('properties', {})))
@@ -285,10 +287,23 @@ def catalog(rows, details, known_fields=None, *, sources=()):
                 if key is None:
                     key = path_ids[path] = field_id(path)
                     prefix = f'{categories[path[1]]} · ' if path[0] == 'metadata' else ('Epoch · ' if path[0] == 'properties' else '')
-                    definitions[key] = {'id': key, 'label': prefix + humanize(path[-1]),
+                    label = ':'.join(path) if path[0] == 'stimulus' else prefix + humanize(path[-1])
+                    definitions[key] = {'id': key, 'label': label,
                                         'category': category, 'path': '.'.join(path)}
                 current[key] = value
         values[identity] = current
+    if include_h5:
+        for source in sources:
+            descriptor = source.get('h5_attribute_inventory')
+            if not descriptor:
+                continue
+            from workspace_h5_attributes import epoch_values, field_definitions
+            for field in field_definitions(descriptor):
+                definitions[field['id']] = field
+            ids = [row['epoch_uuid'] for row in rows if row.get('source_sha256') == source['source_sha256']]
+            if ids:
+                for epoch, field, value in epoch_values(descriptor, ids):
+                    values[epoch][field] = value
     if all(field in definitions for field in HISTORY_COMPONENTS):
         definitions[HISTORY_JOINT] = joint_definition(HISTORY_JOINT, definitions)
     for key, definition in list(definitions.items()):
@@ -311,6 +326,8 @@ def catalog(rows, details, known_fields=None, *, sources=()):
                 distinct.setdefault(value_key(value), value)
         samples = sorted(distinct.values(), key=value_order)
         examples = [('null (recorded)' if value is None else value_label(value))[:160] for value in samples[:5]]
+        if key.startswith('h5/'):
+            examples = []
         if key in {'cell', 'block', 'group'}:
             labels = {row.get(BASE_FIELDS[key][2]): (
                 f"{row.get('date', '')} · {row.get('cell_label', 'Cell')}" if key == 'cell' else
@@ -428,7 +445,7 @@ def annotate_grouping_fields(fields, values, rows, family):
         key = field['id']; leaf = key.rsplit('/',1)[-1]
         technical = (key.startswith(('parameters/','metadata/block/parameters/')) and
                      (leaf in TECHNICAL_PARAMETERS or leaf.lower().endswith('seed')) and leaf!='useRandomSeed')
-        role = 'technical' if technical else 'other'
+        role = 'technical' if technical or key.startswith('h5/') else 'other'
         if key in axes:
             role = 'alternative' if family=='history-noise' and key not in {'parameters/isControl',HISTORY_JOINT,'parameters/segmentTime','parameters/frequencyCutoff'} else 'primary'
         if key in BASE_FIELDS: role = 'context'

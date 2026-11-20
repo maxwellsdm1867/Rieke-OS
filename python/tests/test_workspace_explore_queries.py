@@ -1,5 +1,6 @@
 """Service/HTTP contract checks using disposable acquisition and SQL fixtures."""
 import copy
+import json
 import threading
 import unittest
 from unittest.mock import patch
@@ -32,6 +33,29 @@ class RequestedSummaryTests(unittest.TestCase):
     def submit(self, **changes):
         body = {'predicate': {'all': []}, 'summary_fields': ['parameters/example'], **changes}
         return self.client.post('/api/explore/summaries', json=body, headers=self.fixture.headers)
+
+    def test_scalar_menu_scopes_exact_choices_without_rebuilding_the_registry(self):
+        registry = self.client.get('/api/explore/field-registry').get_json()
+        self.assertTrue(registry['field_values_available'])
+        path = '/api/explore/field-values'
+        options = {'field': 'parameters/example'}
+        with patch.object(self.service, '_registered_tree_fields', side_effect=AssertionError('all-field scan')):
+            page = self.client.get(path, query_string={**options, 'limit': 1}).get_json()
+            self.assertEqual(page['values'], [{'type': 'number', 'value_json': '0'}])
+            self.assertTrue(page['truncated'])
+            for args in ({'q': '1'}, {'protocol_uuid': self.service.protocol_id, 'filters':
+                          json.dumps({'cell_uuid': self.service.cell_ids[1]})}):
+                scoped = self.client.get(path, query_string={**options, **args})
+                self.assertEqual(scoped.status_code, 200, scoped.get_json())
+                self.assertEqual(scoped.get_json()['values'], [{'type':'number','value_json':'1'}])
+                self.assertFalse(scoped.get_json()['truncated'])
+            self.service.set_source_state_provider(lambda: {'a'*64: {'query_excluded': True}})
+            for args in ({}, {'protocol_uuid': self.service.protocol_id}):
+                empty = self.client.get(path, query_string={**options, **args}).get_json()
+                self.assertEqual(empty['values'], [])
+        for change in ({'limit': 61}, {'filters':'{"unsupported":"bad"}'}, {'field': 'missing/name'},
+                       {'protocol_uuid': 'not-a-uuid'}):
+            self.assertEqual(self.client.get(path, query_string={**options, **change}).status_code, 400)
 
     def test_native_bound_datetime_header_has_stable_identity_witness(self):
         import datetime
@@ -499,7 +523,7 @@ class PublicationCacheTests(unittest.TestCase):
             owner._check()
         self.assertTrue(self.service._loaded)
 
-    def test_refresh_rebuilds_invalid_typed_seal_but_refuses_changed_native(self):
+    def test_refresh_recovers_typed_seal_and_reverifies_changed_native_before_reuse(self):
         from pathlib import Path
         import os
         owner = self.service.typed_index
@@ -508,12 +532,18 @@ class PublicationCacheTests(unittest.TestCase):
         self.service.refresh()
         self.assertEqual(self.service.last_refresh['typed_metadata_index'], 'built')
         self.service.typed_index._check()
-        native = self.service.disk_index.path
+        previous = self.service.disk_index
+        members = set(previous.values())
+        native = previous.path
         stat = native.stat()
         os.utime(native, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000))
         with self.assertRaises(ValueError):
-            self.service.refresh()
-        self.assertFalse(self.service._loaded)
+            previous._check()
+        result = self.service.refresh()
+        self.assertIsNot(self.service.disk_index, previous)
+        self.assertEqual(set(self.service.disk_index.values()), members)
+        self.assertEqual(result['attribute_coverage']['status'], 'complete')
+        self.service.typed_index._check()
 
     def test_rebuild_pins_old_native_and_typed_assets_for_existing_readers(self):
         owner = self.service.typed_index
@@ -562,8 +592,11 @@ class NativeSummaryReadTests(unittest.TestCase):
         service.disk_index, service.details = index, index.details
         service._registered_tree_cache = None
         service._registered_tree_fields()
-        with patch.object(index, '_connect', wraps=index._connect) as connect:
+        value_type=type(index.values())
+        with patch.object(index, '_connect', wraps=index._connect) as connect, \
+             patch.object(value_type,'subset',autospec=True,side_effect=value_type.subset) as subset:
             result = queries._native_summaries(service, context, lambda: False)
+        self.assertEqual(subset.call_args.kwargs['fields'],set(context['summary_fields']))
         self.assertEqual(result, expected)
         self.assertEqual(result['matched_count'], 602)
         self.assertLessEqual(connect.call_count, 4, connect.call_count)

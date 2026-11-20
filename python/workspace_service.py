@@ -762,9 +762,10 @@ class WorkspaceService:
         rows, details, cells = {}, {}, {}
         source_epoch_count = 0
         source_cells = set()
-        from recording_workspace import validate_source_identity, validate_manifest_cell_count
+        from recording_workspace import stimulus_settings, validate_source_identity, validate_manifest_cell_count
+        from workspace_h5_attributes import ensure_inventory
         with h5py.File(path, 'r') as h5:
-            validate_source_identity(h5, document)
+            physical_identity = validate_source_identity(h5, document)
             for animal in document['animals']:
                 for preparation in animal['preparations']:
                     for cell in preparation['cells']:
@@ -777,6 +778,7 @@ class WorkspaceService:
                 source_epoch_count += 1
                 source_cells.add(cell['uuid'])
                 streams = []
+                stimulus = {}
                 for kind in ('responses', 'stimuli'):
                     for device, stream in epoch.get(kind, {}).items():
                         obj = h5[stream['h5path']]
@@ -787,6 +789,10 @@ class WorkspaceService:
                         data = obj.get('data')
                         rate = stream.get('sampleRate')
                         units = None
+                        if kind == 'stimuli':
+                            settings = stimulus_settings(obj, device)
+                            if settings:
+                                stimulus[device] = settings
                         if kind == 'responses':
                             if data is None or not data.dtype.names or not {'quantity', 'units'} <= set(data.dtype.names):
                                 raise ValueError('Unsupported response representation')
@@ -798,6 +804,9 @@ class WorkspaceService:
                             'sample_count': len(data) if data is not None else None,
                             'units': units, 'h5_path': stream['h5path'],
                             'data_path': data.name if data is not None else None})
+                if manifest.get('adapter_version', 1) >= 2:
+                    if json.dumps(epoch.get('stimulus', {}), sort_keys=True, allow_nan=False) != json.dumps(stimulus, sort_keys=True, allow_nan=False):
+                        raise ValueError('Parsed stimulus settings disagree with source H5')
                 durations = [s['sample_count'] / s['sample_rate'] for s in streams
                              if s['kind'] == 'responses' and s['sample_rate'] and s['sample_count'] is not None]
                 rows[identity] = {'epoch_uuid': identity, 'cell_uuid': cell['uuid'],
@@ -808,6 +817,8 @@ class WorkspaceService:
                     'block_end_time': block.get('end_time'), 'protocol_name': block['protocolID'],
                     'duration_seconds': max(durations, default=0), 'streams': streams,
                     'source_sha256': source['source_sha256'], 'metadata_hash': _fingerprint(epoch)}
+                if stimulus:
+                    rows[identity]['stimulus'] = stimulus
                 details[identity] = {'parameters': epoch.get('parameters', {}),
                     'properties': epoch.get('properties', {}), 'attributes': epoch.get('attributes', {}),
                     'metadata': {'cell': _metadata(cell, {'epoch_groups'}),
@@ -815,6 +826,8 @@ class WorkspaceService:
                         'block': _metadata(block, {'epochs'}), 'epoch': epoch}}
                 cells[cell['uuid']] = {'cell_uuid': cell['uuid'], 'label': cell['label'],
                     'cell_type': cell.get('type'), 'date': _date(cell['start_time']), 'start_time': cell['start_time']}
+            inventory = ensure_inventory(h5, physical_identity, self.project_dir, source['source_sha256'],
+                expected=manifest.get('h5_attribute_inventory'), source_signature=signature)
         validate_manifest_cell_count(manifest, cells, source_cells)
         if source_epoch_count != manifest['counts']['epochs']:
             raise ValueError('Source count differs from validated manifest')
@@ -823,6 +836,7 @@ class WorkspaceService:
             raise ValueError('Source recording changed while reading metadata')
         from disco.projects.recording_files import recording_display_name
         summary = {'source_sha256': source['source_sha256'], 'filename': recording_display_name(manifest),
+            'h5_attribute_inventory': inventory,
             'source_path': str(path), 'imported_at': manifest.get('imported_at', manifest['validated_at']),
             'counts': manifest['counts'], 'warnings': manifest.get('warnings', []),
             'experiment_uuid': document['uuid'], 'metadata': _metadata(document, {'animals'})}
@@ -852,8 +866,10 @@ class WorkspaceService:
             with heap.refresh() if heap is not None else contextlib.nullcontext():
                 result = self._refresh_verified_sources(metrics)
         except Exception as error:
+            if 'attribute_coverage' in metrics:
+                metrics['attribute_coverage']['status'] = 'incomplete'
             metrics['timing_ms']['total'] = (time.perf_counter() - started) * 1000
-            self.last_refresh = {**metrics, 'status': 'failed', 'error_type': type(error).__name__,
+            self.last_refresh = {**metrics, 'status': 'failed', 'error_type': type(error).__name__, 'error': str(error),
                 'reused_sources': metrics['source_cache_hits'], 'rebuilt_sources': metrics['source_cache_rebuilt'],
                 'elapsed_seconds': metrics['timing_ms']['total']/1000,
                 'completed_at': dt.datetime.now(dt.timezone.utc).isoformat()}
@@ -866,7 +882,19 @@ class WorkspaceService:
         self.last_successful_refresh = copy.deepcopy(self.last_refresh)
         return copy.deepcopy(self.last_refresh)
 
+    def _rebuild_source_projection(self, source, metadata_path, signatures, metrics):
+        started = time.perf_counter()
+        document = json.loads(metadata_path.read_text())
+        if document['uuid'] != source['experiment_uuid']:
+            raise ValueError('Imported experiment identity disagrees with catalog')
+        path, signature = self._verified_source(source['manifest'], signatures)
+        projection = self._read_source_metadata(source, document, path, signature)
+        metrics['source_cache_rebuilt'] += 1
+        metrics['timing_ms']['source_rebuild'] += (time.perf_counter() - started) * 1000
+        return projection
+
     def _refresh_verified_sources(self, metrics):
+        from workspace_h5_attributes import verified_inventory
         project = json.loads((self.project_dir / 'project.json').read_text())
         config = json.loads((self.project_dir / 'catalog.json').read_text())
         if config.get('adapter') != 'datajoint' or config.get('database') != 'schema':
@@ -890,14 +918,18 @@ class WorkspaceService:
         pending_projections = []
         next_cache, final_checks, prepared = {}, [], []
         verified_signatures = dict(getattr(self, '_source_signatures', {}))
-        verified_metadata = {}
+        verified_metadata, inputs = {}, {}
+        inventories, recovered = {}, {}
+        coverage = {'status': 'checking', 'checked_sources': 0, 'inventories_recovered': 0,
+                    'recorded_attributes': 0, 'inventoried_attributes': 0, 'source_fields': 0}
+        metrics['attribute_coverage'] = coverage
         # Establish the entire verified input generation before decoding any
         # source projection. A matching sealed index is already the projection.
         for source in source_records:
             check_started = time.perf_counter()
             manifest = source['manifest']
             identity = source['source_sha256']
-            if identity in next_cache:
+            if identity in inputs:
                 raise ValueError('Duplicate source identity in the main catalog')
             if manifest['source_sha256'] != identity:
                 raise ValueError('Database source identity and manifest disagree')
@@ -918,11 +950,33 @@ class WorkspaceService:
             verified_metadata[metadata_signature] = metadata_sha
             source_path = Path(manifest['source_path']).resolve()
             source_signature = self._input_signature(source_path)
+            inputs[identity] = (source, metadata_path, metadata_signature, metadata_sha, source_signature)
+            final_checks.extend([(metadata_path, metadata_signature), (source_path, source_signature)])
+            metrics['timing_ms']['metadata_check'] += (time.perf_counter() - check_started) * 1000
+        for identity, (source, metadata_path, metadata_signature, metadata_sha, source_signature) in inputs.items():
+            check_started = time.perf_counter()
+            expected = source['manifest'].get('h5_attribute_inventory')
+            try:
+                inventory = verified_inventory(self.project_dir, identity, expected=expected)
+            except (FileNotFoundError, ValueError):
+                # The original source is the recovery authority. Reuse the projection
+                # produced by this walk if the project index also needs rebuilding.
+                metrics['timing_ms']['metadata_check'] += (time.perf_counter() - check_started) * 1000
+                projection = self._rebuild_source_projection(source, metadata_path, verified_signatures, metrics)
+                check_started = time.perf_counter()
+                recovered[identity] = projection
+                inventory = projection['source']['h5_attribute_inventory']
+                coverage['inventories_recovered'] += 1
+            inventories[identity] = inventory
+            coverage['checked_sources'] += 1
+            coverage['recorded_attributes'] += inventory['physical_attribute_count']
+            coverage['inventoried_attributes'] += inventory['attribute_count']
+            coverage['source_fields'] += inventory['field_count']
             key = (checksum(source), metadata_signature, metadata_sha, source_signature,
-                   getattr(self, '_projection_contract', None))
+                   getattr(self, '_projection_contract', None), inventory['contract'],
+                   inventory['logical_sha256'], inventory['sha256'])
             next_cache[identity] = {'key':key, 'disk':True}
             prepared.append((source, metadata_path, key))
-            final_checks.extend([(metadata_path, metadata_signature), (source_path, source_signature)])
             metrics['timing_ms']['metadata_check'] += (time.perf_counter() - check_started) * 1000
         # Prepared source projections remain leased until this refresh either
         # publishes its complete generation or releases them after failure.
@@ -938,8 +992,17 @@ class WorkspaceService:
                                   (workspace_disk_index,workspace_tree,workspace_predicates,workspace_metadata_objects)]})
             index_started = time.perf_counter()
             location = self.project_dir / 'cache' / 'metadata' / (generation + '.sqlite')
+            if previous_index is not None:
+                try:
+                    previous_index._check()
+                    old_seal = self._input_signature(str(previous_index.path) + '.sha256.json')
+                    if old_seal != getattr(self, '_metadata_seal_signature', None):
+                        previous_index = None
+                except (OSError, ValueError, sqlite3.DatabaseError):
+                    # A damaged old generation cannot supply projections for a
+                    # new generation, even if only one recording changed.
+                    previous_index = None
             if previous_index is not None and previous_index.generation == generation:
-                previous_index._check()
                 disk_index = previous_index
                 metrics['metadata_index'] = 'reused'
             else:
@@ -963,7 +1026,8 @@ class WorkspaceService:
         if reuse_published:
             rows, cells, fingerprints = self.rows, self.cells, self._fingerprints
             sources, manifests, details = self.sources, self.manifests, self.details
-            metrics['source_cache_hits'] += len(prepared)
+            metrics['source_cache_hits'] += len(prepared) - len(recovered)
+            recovered.clear()
             metrics['published_read_model'] = 'reused'
         else:
             for source, metadata_path, key in prepared:
@@ -972,7 +1036,11 @@ class WorkspaceService:
                 # Even when one new source requires a new generation, unchanged
                 # sources can retain lazy detail views from the previous index.
                 reusable_index = disk_index or (previous_index if projection_store and cached is not None and cached['key'] == key else None)
-                if reusable_index is not None:
+                if identity in recovered:
+                    projection = recovered.pop(identity)
+                    if projection_store:
+                        pending_projections.append((key, projection))
+                elif reusable_index is not None:
                     projection = reusable_index.source_projection(identity, lazy_details=True)
                     metrics['source_cache_hits'] += 1
                 else:
@@ -984,18 +1052,11 @@ class WorkspaceService:
                         projection = cached['projection']
                         metrics['source_cache_hits'] += 1
                     else:
-                        rebuild_started = time.perf_counter()
-                        document = json.loads(metadata_path.read_text())
-                        if document['uuid'] != source['experiment_uuid']:
-                            raise ValueError('Imported experiment identity disagrees with catalog')
-                        path, signature = self._verified_source(manifest, verified_signatures)
-                        projection = self._read_source_metadata(source, document, path, signature)
+                        projection = self._rebuild_source_projection(source, metadata_path, verified_signatures, metrics)
                         if projection_store:
                             pending_projections.append((key, projection))
                         else:
                             projection = copy.deepcopy(projection)
-                        metrics['source_cache_rebuilt'] += 1
-                        metrics['timing_ms']['source_rebuild'] += (time.perf_counter() - rebuild_started) * 1000
                 if rows.keys() & projection['rows'].keys():
                     raise ValueError('Duplicate epoch UUID across source recordings')
                 snapshot = projection if projection_store else copy.deepcopy(projection)
@@ -1068,6 +1129,26 @@ class WorkspaceService:
             for path, signature in final_checks:
                 if self._input_signature(path) != signature:
                     raise ValueError('Recorded input changed while building metadata index')
+        for identity, inventory in inventories.items():
+            current = verified_inventory(self.project_dir, identity, expected=inventory)
+            if (current['contract'], current['logical_sha256']) != (inventory['contract'], inventory['logical_sha256']):
+                raise ValueError('Recorded attribute inventory changed during refresh')
+        if disk_index is not None:
+            registered = disk_index.h5_attribute_coverage()
+            if registered.keys() != inventories.keys():
+                raise ValueError('Search coverage does not match the registered H5 sources')
+            for identity, inventory in inventories.items():
+                receipt = registered[identity]
+                if (receipt['contract'] != inventory['contract'] or receipt['logical_sha256'] != inventory['logical_sha256']
+                        or receipt['registered_field_count'] != inventory['field_count']
+                        or inventory['attribute_count'] != inventory['physical_attribute_count']):
+                    raise ValueError(f'Incomplete search coverage for recording {identity}')
+            coverage['searchable_source_fields'] = sum(item['registered_field_count'] for item in registered.values())
+            coverage['fields_without_epochs'] = sum(item['unassociated_field_count'] for item in registered.values())
+            coverage['status'] = 'complete'
+            seal_signature = self._input_signature(str(disk_index.path) + '.sha256.json')
+        else:
+            coverage['status'] = 'inventoried'
         typed_index = None
         if disk_index is not None:
             from disco.metadata.typed_lifecycle import prepare as prepare_typed
@@ -1111,6 +1192,7 @@ class WorkspaceService:
             self._source_metadata_cache = next_cache
             self._source_signatures = verified_signatures
             self._metadata_digests = verified_metadata
+            self._metadata_seal_signature = seal_signature if disk_index is not None else None
             self._loaded = True
             self.manager_error = None
             if projection_leases is not None:projection_leases.close()
@@ -1136,6 +1218,7 @@ class WorkspaceService:
         self._source_metadata_cache = next_cache
         self._source_signatures = verified_signatures
         self._metadata_digests = verified_metadata
+        self._metadata_seal_signature = seal_signature if disk_index is not None else None
         if not preserve_indexes:
             self._predicate_catalog_cache = None
             self._registered_tree_cache = None

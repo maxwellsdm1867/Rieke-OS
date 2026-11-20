@@ -68,6 +68,34 @@ test('field and split chooser pagination and keyboard position survive Activity 
  }finally{await h.close();}
 });
 
+test('identical H5 leaf names are ordinary predicate choices under flat owner and span headers',async()=>{
+ const h=await harness();
+ try{
+  const Predicate=await h.component('/src/typed-query/ui/PredicateBuilder.jsx');
+  const parents=['h5/stimulus/Amp1/span_0','h5/response/Amp1/span_0','h5/stimulus/Amp1/span_1'];
+  const fields=parents.map(parent=>({id:parent+'/@offset',label:'H5 '+parent+'/@offset',category:'H5 attributes',types:['number'],operators:['eq','gt']}));
+  const draft={id:'g',kind:'group',mode:'all',children:[{id:'c',kind:'condition',field:fields[0].id,operator:'eq',valueType:'exact',valueText:'0'}]};
+  let changed;
+  const props={draft,fields,onChange:value=>{changed=value;}};
+  await h.render(Predicate,props);
+  const trigger=()=>h.root.findByProps({className:'pb-field-button'});
+  await h.act(()=>trigger().props.onClick());
+  const input=h.root.findByProps({'aria-label':'Find predicate field'});
+  await h.act(()=>input.props.onChange({target:{value:'offset'}}));
+  const options=h.root.findAllByProps({role:'option'});
+  assert.deepEqual(options.map(text),['offset','offset','offset']);
+  assert.equal(new Set(options.map(option=>option.props['aria-label'])).size,3);
+  await h.act(()=>input.props.onChange({target:{value:'Stimulus · Amp1 · span_1'}}));
+  assert.equal(h.root.findAllByProps({role:'option'}).length,1);
+  await h.act(()=>input.props.onKeyDown({key:'Enter',preventDefault(){}}));
+  assert.equal(changed.children[0].field,fields[2].id);
+  await h.render(Predicate,{...props,draft:changed});
+  assert.equal(text(trigger().findByType('small')),'Stimulus · Amp1 · span_1');
+  assert.equal(text(trigger().findByType('strong')),'offset');
+  assert.equal(h.requests.length,0);
+ }finally{await h.close();}
+});
+
 for(const kind of ['field','split','value'])test(`a busy hidden ${kind} chooser detaches global handlers and hides its portal`,async()=>{
  const h=await harness();let finish;const fields=Array.from({length:60},(_,i)=>({id:`metadata/field${i}`,label:`Field ${i}`,path:`field${i}`,category:'Epoch',value_types:['string'],operators:['eq']}));h.respond=()=>({fields,tree_fields:fields});
  try{const {RetainedWorkspaceViews}=await h.module('/src/retainedWorkspaceViews.js'),{trackWrite}=await h.module('/src/desktopLifecycle.js');

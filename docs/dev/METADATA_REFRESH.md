@@ -18,6 +18,27 @@ implementation contract. The complete index generation also includes the project
 and index/tree/predicate code checksums. Metadata checksums and current SQL
 protocol membership validation still run on refresh.
 
+Attribute recovery also checks each registered recording against its extractor
+version, source checksum and inventory seal. Refresh rebuilds a missing, damaged
+or obsolete attribute inventory from the verified source, then checks the
+inventory's physical and stored attribute counts and the searchable field count
+for that source. A search index can be rebuilt from intact source inventories
+and projections. The status panel reports recorded attributes, searchable field
+definitions across recordings and the number of inventories rebuilt. Failure
+preserves the last successful receipt and marks the current read model unready.
+
+After updating, open the existing project normally. Project startup automatically
+runs Refresh metadata and makes the recovered fields available to protocol search.
+The first open can read each registered H5, so its source drive must be available.
+If a recording was offline, reconnect it and click **Refresh metadata** in the
+project toolbar. Expand **Metadata refresh status** to see elapsed time, source
+reuse and rebuild counts, and searchable field coverage.
+
+An unchanged running project checks file witnesses and cached proofs. A new extractor changes the contract automatically. Each subsequent
+refresh reuses the repaired inventory until its source, contract or on-disk proof
+changes. Changed source bytes must match the registered checksum before the
+service publishes a replacement.
+
 For an unchanged generation, the running service reuses its verified index. After
 restart, it can reopen the same sealed index after SHA256, generation, project,
 format/completeness, and SQLite integrity checks. This happens **before** decoding

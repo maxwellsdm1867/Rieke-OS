@@ -35,6 +35,12 @@ Check each source_sha256 before reading a moved or changed recording.
 Numeric IDs are display ordinals. h5_uuid preserves the acquisition identity.
 metadata.recipe_json, source_metadata_json and workspace_tags_json retain the
 exact frozen query, source facts, tags, author profiles and export provenance.
+For each epoch, look up its h5_attribute_ids in experiment.h5_attributes.record_id.
+Each record includes the physical H5 path, name, encoded type, shape_json and
+value_json. numeric_value retains MATLAB-compatible numeric types, including
+uint64. The attribute table contains the selected epochs and their ancestors.
+For a physical object with multiple field names, h5_attribute_field_aliases on
+each epoch gives the exact record-to-field mappings in that epoch.
 No plotting application, GUI, generated script or MATLAB path setup is needed.
 This file is a frozen data export; changing it does not update project decisions.
 """
@@ -62,6 +68,23 @@ def _structs(items):
         for key, value in item.items():
             result[key][0, index] = value
     return result
+
+
+def _mat_attribute(record):
+    """Keep exact H5 encoding and JSON alongside numeric MATLAB values."""
+    item = {key:value for key,value in record.items() if key != 'shape'}
+    item['shape_json'] = _json(record['shape'])
+    item['numeric_value'] = []
+    try:
+        dtype = np.dtype(record['dtype'])
+    except (TypeError, ValueError):
+        return item  # Compound H5 type descriptions also retain h5_type_hex.
+    if record['shape'] is not None and dtype.kind in 'iufb' and dtype.itemsize <= 8:
+        try:
+            item['numeric_value'] = np.asarray(json.loads(item['value_json']), dtype=dtype).reshape(record['shape'])
+        except (TypeError, ValueError, OverflowError):
+            pass  # Special H5 values retain their tagged, exact JSON encoding.
+    return item
 
 
 def _params(parameters, warnings):
@@ -154,8 +177,12 @@ def build_matlab_export(service, recipe, output_dir, *, epoch_records=None):
     if used_sources - sources.keys() or used_sources - set(recipe['source_revisions']):
         raise ValueError('Export membership has an unrecorded source revision')
     rows = [service.rows[key] for key in ids]
-    registered, _ = catalog(list(service.rows.values()), service.details, sources=service.sources)
-    fields, values = catalog(rows, service.details, registered['fields'], sources=service.sources)
+    index = getattr(service, 'disk_index', None)
+    if index is None:
+        registered, _ = catalog(list(service.rows.values()), service.details, sources=service.sources)
+    else:
+        registered = index.catalog()
+    fields, values = catalog(rows, service.details, registered['fields'], sources=[sources[sha] for sha in sorted(used_sources)])
     definitions = {field['id']: field for field in fields['fields']}
     order = parse_splits(recipe.get('options', {}).get('split_order', 'date,cell,block'), definitions)
     fields, values = materialize_combinations(fields, values, order)
@@ -178,14 +205,22 @@ def build_matlab_export(service, recipe, output_dir, *, epoch_records=None):
     display = [{'field': field, 'label': definitions[field]['label'],
                 'values': [{'value': encoded, 'label': label} for encoded, label in display_values[field].items()]}
                for field in order]
-    groups = {}
+    groups, source_members = {}, {}
     for row in sorted(rows, key=lambda row: (row['source_sha256'], row['cell_uuid'], row['group_uuid'], row['block_uuid'], row['start_time'], row['epoch_uuid'])):
         groups.setdefault(row['source_sha256'], {}).setdefault(row['cell_uuid'], {}).setdefault(row['group_uuid'], {}).setdefault(row['block_uuid'], []).append(row)
+        source_members.setdefault(row['source_sha256'], []).append(row['epoch_uuid'])
     epoch_order, experiments = [], []
     for exp_index, (source_sha, cells) in enumerate(groups.items(), 1):
         source = sources[source_sha]
         source_meta = source.get('metadata', {})
         experiment_uuid = _uuid(source.get('experiment_uuid') or source_meta.get('uuid'))
+        attribute_records, attribute_ids, aliases = [], {}, {}
+        inventory = source.get('h5_attribute_inventory')
+        if inventory is not None:
+            from workspace_h5_attributes import export_epoch_attributes
+            if inventory['source_sha256'] != source_sha:
+                raise ValueError('Recorded H5 attributes belong to a different export source')
+            attribute_records, attribute_ids, aliases = export_epoch_attributes(inventory, source_members[source_sha])
         cell_items = []
         for cell_index, (cell_uuid, epoch_groups) in enumerate(cells.items(), 1):
             group_items = []
@@ -229,6 +264,7 @@ def build_matlab_export(service, recipe, output_dir, *, epoch_records=None):
                             if kind == 'stimuli':
                                 recorded_parameters = raw.get('parameters', {k: v for k, v in raw.items() if k not in {'uuid', 'h5path'}})
                                 result['stimulus_parameters'] = _params(recorded_parameters, warnings)
+                                result['amplifier_settings_json'] = _json((row.get('stimulus') or {}).get(device, {}))
                             if stream.get('sample_rate') is None:
                                 result['sample_rate'] = []
                             streams[kind].append(result)
@@ -247,6 +283,8 @@ def build_matlab_export(service, recipe, output_dir, *, epoch_records=None):
                             'parameters': _params(detail.get('parameters', {}), warnings),
                             'tags': _structs(tags), 'responses': _structs(streams['responses']), 'stimuli': _structs(streams['stimuli']),
                             'h5_file': source['source_path'], 'source_sha256': source_sha,
+                            'h5_attribute_ids': np.asarray(attribute_ids.get(key, []), dtype=np.int64),
+                            'h5_attribute_field_aliases': _structs(aliases.get(key, [])),
                             'source_metadata_json': _json(detail), 'curation_json': _json(curation),
                             'workspace_annotations_json': _json(records.get(key, {}).get('annotations')),
                             'workspaceGrouping': grouping})
@@ -272,6 +310,8 @@ def build_matlab_export(service, recipe, output_dir, *, epoch_records=None):
             'is_mea': False, 'label': source_meta.get('label') or '', 'experimenter': source_meta.get('experimenter') or '',
             'rig': source_meta.get('rig') or '', 'institution': source_meta.get('institution') or '',
             'h5_file': source['source_path'], 'source_sha256': source_sha, 'source_metadata_json': _json(source_meta),
+            'h5_attributes': _structs([_mat_attribute(record) for record in attribute_records]),
+            'h5_attribute_inventory_sha256': inventory['logical_sha256'] if inventory else '',
             'tags': _structs([]), 'cells': _structs(cell_items)})
     # Source timestamps include microseconds in a format MATLAB's datenum does
     # not reliably parse. Freeze exact UI sequencing as UUIDs, independently of

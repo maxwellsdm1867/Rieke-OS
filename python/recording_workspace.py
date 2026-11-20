@@ -143,9 +143,10 @@ def validate_self_contained_h5(h5):
     links only after external links everywhere in this file have been ruled out.
     """
     import h5py
+    from workspace_h5_attribute_inventory import link_info
     pending, seen, soft_links = ['/'], set(), []
     while pending:
-        obj = h5[pending.pop()]
+        obj = h5[os.fsencode(pending.pop())]
         address = h5py.h5o.get_info(obj.id).addr
         if address in seen:
             continue
@@ -156,14 +157,16 @@ def validate_self_contained_h5(h5):
             if obj.external:
                 raise ValueError(f'External dataset storage is unsupported: {obj.name}')
         elif isinstance(obj, h5py.Group):
+            parent = os.fsdecode(obj.name).rstrip('/') + '/'
             for name in obj:
-                link = obj.get(name, getlink=True)
-                if isinstance(link, h5py.ExternalLink):
+                link, _ = link_info(obj,name)
+                child_path = parent + os.fsdecode(name)
+                if link == h5py.h5l.TYPE_EXTERNAL:
                     raise ValueError(f'External H5 links are unsupported: {obj.name}/{name}')
-                if isinstance(link, h5py.SoftLink):
-                    soft_links.append(obj.name.rstrip('/') + '/' + name)
-                elif isinstance(link, h5py.HardLink):
-                    pending.append(obj.name.rstrip('/') + '/' + name)
+                if link == h5py.h5l.TYPE_SOFT:
+                    soft_links.append(child_path)
+                elif link == h5py.h5l.TYPE_HARD:
+                    pending.append(child_path)
                 else:
                     raise ValueError(f'Unsupported H5 link: {obj.name}/{name}')
     for path in soft_links:
@@ -180,6 +183,7 @@ def resolve_sealed_h5_path(h5, path):
     back into this file, virtual mappings and external raw-storage datasets.
     """
     import h5py
+    from workspace_h5_attribute_inventory import link_info
     if not isinstance(path, str) or not path.startswith('/'):
         raise ValueError('H5 locator must be an absolute path within its source')
     parts, current, expansions = path.split('/')[1:], h5['/'], 0
@@ -189,21 +193,21 @@ def resolve_sealed_h5_path(h5, path):
             continue
         if name == '..' or not isinstance(current, h5py.Group):
             raise ValueError(f'Invalid H5 source locator: {path}')
-        link = current.get(name, getlink=True)
-        if isinstance(link, h5py.ExternalLink):
+        link, soft_target = link_info(current,name)
+        if link == h5py.h5l.TYPE_EXTERNAL:
             raise ValueError(f'External H5 links are unsupported: {path}')
-        if isinstance(link, h5py.SoftLink):
+        if link == h5py.h5l.TYPE_SOFT:
             expansions += 1
             if expansions > 64:
                 raise ValueError(f'Unresolvable or cyclic H5 soft link: {path}')
-            target = link.path
+            target = os.fsdecode(soft_target)
             if not target.startswith('/'):
-                target = current.name.rstrip('/') + '/' + target
+                target = os.fsdecode(current.name).rstrip('/') + '/' + target
             parts, current = target.split('/')[1:] + parts, h5['/']
             continue
-        if not isinstance(link, h5py.HardLink):
+        if link != h5py.h5l.TYPE_HARD:
             raise ValueError(f'Missing or unsupported H5 source link: {path}')
-        current = current[name]
+        current = current[os.fsencode(name)]
         if current.file.id != h5.id:
             raise ValueError(f'H5 link target is outside the sealed source: {path}')
     if isinstance(current, h5py.Dataset):
@@ -218,6 +222,59 @@ def _source_text(value):
     return value.decode('utf-8') if isinstance(value, bytes) else str(value)
 
 
+def stimulus_settings(stream, device):
+    """Extract the generator offset and the matching device's recorded mode.
+
+    The caller has verified this file and stream's identity. All spans must
+    record the same value to describe the whole epoch with a scalar mode.
+    """
+    import h5py
+    import numpy as np
+
+    def attribute(obj, name):
+        value = obj.attrs[name]
+        if isinstance(value, h5py.Empty):
+            return None
+        if isinstance(value, np.generic):
+            value = value.item()
+        if isinstance(value, bytes):
+            return value.decode('utf-8')
+        if isinstance(value, np.ndarray):
+            return value.tolist()
+        return value
+
+    result = {}
+    params = stream.get('parameters')
+    if params is not None and 'offset' in params.attrs:
+        result['offset'] = attribute(params, 'offset')
+        if 'units' in params.attrs:
+            result['offsetUnits'] = attribute(params, 'units')
+
+    spans = stream.get('dataConfigurationSpans')
+    if spans is not None:
+        recorded = []
+        for name, span in spans.items():
+            config = span.get(device)
+            entry = {'span': name}
+            if config is not None and 'operatingMode' in config.attrs:
+                entry['operatingMode'] = attribute(config, 'operatingMode')
+            recorded.append(entry)
+        if any('operatingMode' in entry for entry in recorded):
+            first = recorded[0]
+            if ('operatingMode' in first and all('operatingMode' in entry and
+                    type(entry['operatingMode']) is type(first['operatingMode']) and
+                    entry['operatingMode'] == first['operatingMode'] for entry in recorded)):
+                result['operatingMode'] = first['operatingMode']
+            else:
+                for entry in recorded:
+                    span = spans[entry['span']]
+                    for key in ('index', 'startTimeSeconds', 'timeSpanSeconds'):
+                        if key in span.attrs:
+                            entry[key] = attribute(span, key)
+                result['operatingModeSpans'] = recorded
+    return result
+
+
 def validate_source_identity(h5, document):
     """Compare parser hierarchy to physical Symphony objects, including empties.
 
@@ -229,7 +286,7 @@ def validate_source_identity(h5, document):
     """
     import h5py
     validate_self_contained_h5(h5)
-    roots = [h5[name] for name in h5 if name.startswith('experiment-')]
+    roots = [h5[name] for name in h5 if os.fsdecode(name).startswith('experiment-')]
     if len(roots) != 1 or not isinstance(roots[0], h5py.Group):
         raise ValueError('Expected exactly one Symphony experiment root')
     root = roots[0]
@@ -357,7 +414,7 @@ def restore_empty_blocks(h5, experiment, parser):
                     if group['uuid'] in groups:
                         raise ValueError('Duplicate parsed epoch group identity')
                     groups[group['uuid']] = group
-    roots = [h5[name] for name in h5 if name.startswith('experiment-')]
+    roots = [h5[name] for name in h5 if os.fsdecode(name).startswith('experiment-')]
     if len(roots) != 1 or not isinstance(roots[0], h5py.Group):
         raise ValueError('Expected exactly one Symphony experiment root')
     additions, seen = [], set()
@@ -411,6 +468,7 @@ def validate_manifest_cell_count(manifest, all_cell_ids, epoch_cell_ids):
 
 def prepare(source, project, repository, progress=None, expected_sha256=None):
     import h5py
+    from workspace_h5_attributes import coverage_summary, ensure_inventory
 
     stat = source.stat()
     source_hash = digest(source, progress)
@@ -445,12 +503,18 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
                                    "metadata_sha256": digest(raw_path),
                                    "parser_sha256": digest(parser_path), "at": now()})
     raw = json.loads(raw_path.read_text())
+    normalized_path = folder / "metadata.catalog.json"
+    # The catalog in an existing registration is sealed by its original
+    # checksum. Repeat imports keep that artifact's format. Legacy projects
+    # gain the same fields from the H5 on their next source projection.
+    persist_stimulus = (not normalized_path.exists() or
+                        json.loads(normalized_path.read_bytes()).get('stimulus_metadata_version') == 1)
     total_epochs = sum(1 for _ in epochs(raw))
     emit("validating_metadata", completed=0, total=total_epochs, unit="epochs")
     rows, protocol_counts, cell_ids = [], {}, set()
     warnings = []
     with h5py.File(source, "r") as h5:
-        roots = [k for k in h5 if k.startswith("experiment-")]
+        roots = [k for k in h5 if os.fsdecode(k).startswith("experiment-")]
         if len(roots) != 1:
             raise ValueError("Expected exactly one Symphony experiment root")
         root = resolve_sealed_h5_path(h5, "/" + roots[0])
@@ -464,6 +528,8 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
         ).__dict__
         experiment["label"] = experiment.get("label") or source.stem
         experiment["animals"] = raw["animals"]
+        if persist_stimulus:
+            experiment['stimulus_metadata_version'] = 1
         if raw["uuid"] != experiment["uuid"]:
             warnings.append({"code": "experiment_identity_restored",
                              "parser_uuid": raw["uuid"],
@@ -476,6 +542,7 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
         for cell, group, block, epoch in epochs(experiment):
             cell_ids.add(cell["uuid"])
             streams = []
+            stimulus = {}
             source_epoch = h5[inventory['epoch'][epoch['uuid']]['path']]
             source_block = h5[inventory['block'][block['uuid']]['path']]
             source_parameters = dict(source_block['protocolParameters'].attrs)
@@ -506,6 +573,10 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
                         raise ValueError("Parsed protocol differs from the H5 block")
                     data = obj.get("data")
                     units = None
+                    if kind == 'stimuli':
+                        settings = stimulus_settings(obj, device)
+                        if settings:
+                            stimulus[device] = settings
                     if kind == "responses":
                         rate = stream.get("sampleRate")
                         if data is None or not isinstance(data, h5py.Dataset):
@@ -542,20 +613,24 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
                                     "sample_rate": stream.get("sampleRate"),
                                     "sample_rate_units": stream.get("sampleRateUnits")})
             name = block["protocolID"]
+            if persist_stimulus and stimulus:
+                epoch['stimulus'] = stimulus
             protocol_counts[name] = protocol_counts.get(name, 0) + 1
             rows.append({"epoch_uuid": epoch["uuid"], "cell_uuid": cell["uuid"],
                          "cell_label": cell["label"], "cell_type": cell.get("type"),
                          "group_uuid": group["uuid"], "group_label": group.get("label"),
                          "block_uuid": block["uuid"], "protocol_name": name,
                          "start_time": epoch.get("start_time"),
-                         "parameters": epoch.get("parameters", {}), "streams": streams})
+                         "parameters": epoch.get("parameters", {}), "streams": streams,
+                         **({'stimulus': stimulus} if stimulus else {})})
             emit("validating_metadata", completed=len(rows), total=total_epochs, unit="epochs")
+        source_signature = (str(source.resolve()), stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+        h5_inventory = ensure_inventory(h5, inventory, project, source_hash, source_signature=source_signature)
     after = source.stat()
     if (stat.st_size, stat.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
         raise ValueError("Source changed during parsing/validation")
     if digest(source, progress, "verifying_source_hash") != source_hash:
         raise ValueError("Source checksum changed during validation")
-    normalized_path = folder / "metadata.catalog.json"
     write_json(normalized_path, experiment)
     experiment = json.loads(normalized_path.read_text())
     write_json(folder / "epoch-index.json", rows)
@@ -565,7 +640,8 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
                 "source_path": str(source), "source_filename": source.name, "source_sha256": source_hash,
                 "source_size": stat.st_size, "experiment_uuid": experiment["uuid"],
                 "parser_path": str(parser_path), "parser_sha256": digest(parser_path),
-                "adapter_version": 1, "adapter_sha256": digest(__file__),
+                "adapter_version": 2 if persist_stimulus else 1, "adapter_sha256": digest(__file__),
+                "h5_attribute_inventory": coverage_summary(h5_inventory),
                 "validated_at": now(), "metadata_path": str(normalized_path),
                 "metadata_sha256": digest(normalized_path),
                 "cell_count_semantics": "all-source-cells-v1",

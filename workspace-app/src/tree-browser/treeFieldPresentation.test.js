@@ -41,3 +41,10 @@ test('history field search accepts either human spacing or the recorded paramete
  assert.equal(treeFieldLabel(field),'History 1');
  for(const search of ['history1','history 1','History 1'])assert.equal(treeFieldMatches(field,{category:'All',search}),true);
 });
+
+test('raw split fields match owner, device, span and leaf in a multi-word search',()=>{
+ const field={id:'h5/stimulus/Amp1/dataConfigurationSpans/span_0/Amp1/@operatingMode',label:'Stimulus · Amp1 · dataConfigurationSpans · span_0 · Amp1 · operatingMode',category:'H5 attributes'};
+ assert.equal(treeFieldMatches(field,{category:'All',search:'Amp1 span_0 operatingMode'}),true);
+ assert.equal(treeFieldMatches(field,{category:'All',search:'operatingMode span_1 Amp1'}),false);
+ assert.equal(treeFieldMatches(field,{category:'All',order:[field.id],search:'operatingMode'}),false);
+});

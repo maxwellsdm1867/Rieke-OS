@@ -10,7 +10,7 @@ import uuid
 import numpy as np
 from scipy.io import loadmat
 
-from workspace_matlab import build_matlab_export
+from workspace_matlab import build_matlab_export, _mat_attribute
 from disco.workbench.recipes import capture_query, prepare_export, seal
 if __package__:
     from .test_workspace_api import FixtureService
@@ -29,6 +29,26 @@ def epochs(data):
 
 
 class MatlabExportTests(unittest.TestCase):
+    def test_physical_attribute_mat_types_retain_uint64_matrix_and_exact_special_values(self):
+        import io
+        from scipy.io import savemat
+        for dtype,shape,json_text in [('uint64',[],'9007199254740993'),
+                                     ('int32',[2,2],'[[0,0],[1,3]]'),
+                                     ('float32',[],'{"$h5_float":"000080ff","dtype":"<f4"}')]:
+            with self.subTest(dtype=dtype):
+                record = _mat_attribute({'dtype':dtype,'shape':shape,'value_json':json_text})
+                buffer = io.BytesIO()
+                savemat(buffer,{'attribute':record})
+                buffer.seek(0)
+                saved = loadmat(buffer,struct_as_record=False)['attribute'].item()
+                self.assertEqual(json.loads(saved.shape_json.item()),shape)
+                self.assertEqual(saved.value_json.item(),json_text)
+                if dtype=='float32':
+                    self.assertEqual(saved.numeric_value.size,0)
+                else:
+                    self.assertEqual(saved.numeric_value.dtype,np.dtype(dtype))
+                    np.testing.assert_array_equal(saved.numeric_value.reshape(shape),json.loads(json_text))
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

@@ -1,5 +1,15 @@
+function validCoverage(coverage,sources){
+  if(!coverage||!['complete','inventoried'].includes(coverage.status))return false;
+  const counts=['checked_sources','inventories_recovered','recorded_attributes','inventoried_attributes','source_fields'];
+  if(!counts.every(key=>Number.isSafeInteger(coverage[key])&&coverage[key]>=0))return false;
+  return coverage.checked_sources===sources&&coverage.inventories_recovered<=sources
+    &&coverage.inventoried_attributes===coverage.recorded_attributes
+    &&(coverage.status==='inventoried'||coverage.searchable_source_fields===coverage.source_fields);
+}
+
 export function validMetadataRefresh(value){
   return !!value&&['sources','epochs','protocols','reused_sources','rebuilt_sources'].every(key=>Number.isInteger(value[key])&&value[key]>=0)&&
+    (!('attribute_coverage' in value)||validCoverage(value.attribute_coverage,value.sources))&&
     typeof value.elapsed_seconds==='number'&&Number.isFinite(value.elapsed_seconds)&&value.elapsed_seconds>=0&&
     typeof value.completed_at==='string'&&Number.isFinite(Date.parse(value.completed_at));
 }

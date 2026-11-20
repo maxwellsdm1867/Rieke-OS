@@ -8,6 +8,9 @@ booleans, strings and arrays retain distinct types. Ordering is numeric only.
 from __future__ import annotations
 
 import copy
+import hashlib
+import re
+from functools import lru_cache
 import json
 import math
 
@@ -55,6 +58,34 @@ def literal(value, depth=0):
     return value_type
 
 
+# H5 attributes can contain 64-bit integers, large arrays and structured values.
+# Exact JSON text survives a round trip through JavaScript and saved predicates.
+# A digest selects an entire value that exceeds a bounded query request.
+@lru_cache(maxsize=64)
+def _parse_exact_json(text):
+    if not isinstance(text, str) or len(text.encode('utf-8')) > 32768:
+        raise ValueError('Exact JSON comparison text must fit within 32 KiB')
+    try:
+        value = json.loads(text)
+        json.dumps(value, allow_nan=False)
+    except (ValueError, RecursionError) as error:
+        raise ValueError('Invalid finite JSON comparison value') from error
+    return value
+
+
+def comparison_value(node):
+    if node.get('value_encoding') == 'json':
+        if not isinstance(node['value'],str):
+            raise ValueError('Exact JSON comparisons require text')
+        return _parse_exact_json(node['value'])
+    return node['value']
+
+
+def h5_value_digest(value):
+    data = json.dumps(value, sort_keys=True, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+    return hashlib.sha256(data.encode('utf-8')).hexdigest()
+
+
 def equal(left, right):
     if kind(left) != kind(right):
         return False
@@ -83,12 +114,16 @@ def predicate_catalog(catalog, values):
     result = copy.deepcopy(catalog)
     for field in result['fields']:
         buckets, types, indexed = [], set(), {}
+        omitted = False
         for current in values.values():
             if field['id'] not in current:
                 continue
             value = current[field['id']]
             value_type = kind(value)
             types.add(value_type)
+            if field['id'].startswith('h5/'):
+                omitted = True
+                continue
             key = equality_key(value)
             found = indexed.get(key)
             if found is not None:
@@ -99,7 +134,7 @@ def predicate_catalog(catalog, values):
                 indexed[key] = bucket
         field['types'] = sorted(types)
         field['choices'] = buckets[:MAX_CHOICES]
-        field['choices_truncated'] = len(buckets) > MAX_CHOICES
+        field['choices_truncated'] = omitted or len(buckets) > MAX_CHOICES
     result['operators'] = list(OPERATORS)
     result['predicate_version'] = PREDICATE_VERSION
     result['limits'] = {'max_depth': MAX_DEPTH, 'max_nodes': MAX_NODES, 'max_choices': MAX_CHOICES}
@@ -172,7 +207,7 @@ def validate(predicate, catalog, values):
             return {key: [walk(child, depth + 1) for child in node[key]]}
         if set(node) == {'not'}:
             return {'not': walk(node['not'], depth + 1)}
-        if set(node) not in ({'field', 'operator'}, {'field', 'operator', 'value'}):
+        if set(node) not in ({'field', 'operator'}, {'field', 'operator', 'value'}, {'field','operator','value','value_encoding'}):
             raise ValueError('Unknown predicate shape or extra fields')
         field, operator = node['field'], node['operator']
         if not isinstance(field, str) or field not in fields:
@@ -185,8 +220,25 @@ def validate(predicate, catalog, values):
             return {'field': field, 'operator': operator}
         if 'value' not in node:
             raise ValueError('This predicate operator requires a value')
-        value = node['value']
-        value_type = literal(value)
+        encoding = node.get('value_encoding')
+        if 'value_encoding' in node:
+            if encoding not in ('json', 'sha256') or (encoding == 'sha256' and not field.startswith('h5/')):
+                raise ValueError('Unknown encoded comparison for this field')
+            if encoding == 'sha256':
+                if (operator not in ('eq', 'ne') or not isinstance(node['value'], str)
+                        or not re.fullmatch('[a-f0-9]{64}', node['value'])):
+                    raise ValueError('An exact value signature requires equality and a SHA-256 digest')
+                return dict(node)
+        value = comparison_value(node)
+        if encoding == 'json' and not field.startswith('h5/'):
+            # A numeric choice can exceed the browser's exact integer range on
+            # a normalized parameter just as it can on its original H5 path.
+            numbers = value if operator in ('in', 'not_in') and isinstance(value, list) else [value]
+            if (types[field] - {'null', 'number'} and 'number' not in types[field]
+                    or operator not in ('eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'in', 'not_in')
+                    or any(kind(item) != 'number' for item in numbers)):
+                raise ValueError('Encoded choices for this field require exact JSON numbers')
+        value_type = kind(value) if encoding else literal(value)
         observed = types[field] - {'null'}
         def compatible(item):
             item_type = kind(item)
@@ -195,6 +247,8 @@ def validate(predicate, catalog, values):
         if operator in {'in', 'not_in'}:
             if not isinstance(value, list):
                 raise ValueError('In/not_in require an array of typed comparison values')
+            if len(value) > 100:
+                raise ValueError('Use at most 100 alternative values')
             for item in value:
                 compatible(item)
         elif operator in {'gt', 'gte', 'lt', 'lte'}:
@@ -208,7 +262,7 @@ def validate(predicate, catalog, values):
                 raise ValueError('Contains value type does not match recorded text/array elements')
         else:
             compatible(value)
-        return {'field': field, 'operator': operator, 'value': copy.deepcopy(value)}
+        return copy.deepcopy(node)
 
     return walk(predicate, 0)
 
@@ -230,7 +284,11 @@ def matches(predicate, current):
         return present and current[field] is None
     if not present:
         return False
-    value, target = current[field], predicate['value']
+    value = current[field]
+    if predicate.get('value_encoding') == 'sha256':
+        same = h5_value_digest(value) == predicate['value']
+        return same if operator == 'eq' else not same
+    target = comparison_value(predicate)
     if operator == 'eq':
         return equal(value, target)
     if operator == 'ne':

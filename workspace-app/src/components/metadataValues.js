@@ -28,6 +28,24 @@ export function metadataRows(value,path=[]){
   });}
   return walk(value,path);
 }
+
+// Split the canonical path before decoding. A slash in an attribute name is data.
+export function h5AttributeField(id){
+  if(!id?.startsWith('h5/'))return null;
+  const parts=id.split('/').slice(1),leaf=parts.pop();
+  if(!parts.length||!leaf.startsWith('@'))return null;
+  function decode(component){
+    try{return decodeURIComponent(component).replaceAll('~1','/').replaceAll('~0','~');}
+    catch{return component;} // Preserve percent-encoded HDF5 names outside UTF-8.
+  }
+  const parent=parts.map(decode);
+  parent[0]=parent[0].charAt(0).toUpperCase()+parent[0].slice(1);
+  return {
+    parentId:id.slice(0,id.lastIndexOf('/')),
+    header:parent.map(part=>part.includes(' · ')?JSON.stringify(part):part).join(' · '),
+    name:decode(leaf.slice(1)),
+  };
+}
 function predicateLiteralText(value){return Array.isArray(value)?`[${value.map(predicateLiteralText).join(', ')}]`:JSON.stringify(value);}
 export function metadataPredicateValueSupported(value,depth=0){
   if(depth>6||!metadataValueSafe(value)||metadataHasEncodedInteger(value))return false;

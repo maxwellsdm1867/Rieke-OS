@@ -5,6 +5,11 @@ test('metadata refresh success requires a complete quantitative receipt',()=>{
   const receipt={sources:2,epochs:1776,protocols:5,reused_sources:1,rebuilt_sources:1,elapsed_seconds:.32,completed_at:'2026-09-27T12:00:00Z'};
   assert.equal(validMetadataRefresh(receipt),true);
   for(const key of Object.keys(receipt)){const incomplete={...receipt};delete incomplete[key];assert.equal(validMetadataRefresh(incomplete),false);}
+  const coverage={status:'complete',checked_sources:2,inventories_recovered:1,recorded_attributes:9,inventoried_attributes:9,source_fields:3,searchable_source_fields:3};
+  assert.equal(validMetadataRefresh({...receipt,attribute_coverage:coverage}),true);
+  for(const mismatch of [{checked_sources:1},{inventoried_attributes:8},{searchable_source_fields:2},{status:'checking'}]){
+    assert.equal(validMetadataRefresh({...receipt,attribute_coverage:{...coverage,...mismatch}}),false);
+  }
   assert.equal(validMetadataRefresh({...receipt,reused_sources:'1'}),false);
   assert.equal(validMetadataRefresh({...receipt,elapsed_seconds:Infinity}),false);
   assert.equal(validMetadataRefresh({...receipt,completed_at:'not a timestamp'}),false);

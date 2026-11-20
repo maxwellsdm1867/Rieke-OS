@@ -14,7 +14,8 @@ test('protocol and search adapters delegate their entire viewer assembly to one 
 
 test('search designer delegates to the shared viewer and both adapters supply local filters',async()=>{
  const explorer=await readFile(new URL('./metadata-explorer/ui/MetadataExplorer.jsx',import.meta.url),'utf8');
- assert.match(explorer,/<MatchingEpochs designMode/);
+ const viewers = explorer.match(/<MatchingEpochs\b[\s\S]*?\/>/g) ?? [];
+ assert.ok(viewers.some(viewer=>/\bdesignMode\b/.test(viewer)),'Search renders the shared viewer in design mode');
  assert.doesNotMatch(explorer,/<(?:TreeBuilder|PagedTree|EpochBrowserLayout)\b/);
  for(const adapter of ['Inspector','MatchingEpochs']){
   const source=await readFile(new URL(`./${adapter==='MetadataExplorer'?'metadata-explorer':'epoch-browser'}/ui/${adapter}.jsx`,import.meta.url),'utf8');

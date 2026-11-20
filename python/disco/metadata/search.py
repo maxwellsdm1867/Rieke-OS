@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from bisect import bisect_left
+from functools import lru_cache
 import json
 from pathlib import Path
 import re
@@ -12,6 +13,18 @@ from disco.navigation.predicates import equal, literal
 
 def _json(value):
     return json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+
+
+@lru_cache(maxsize=4096)
+def _field_names(key, label):
+    if key.startswith('h5/'):
+        from workspace_h5_attributes import attribute_field_aliases
+        return frozenset(name.casefold() for name in attribute_field_aliases(key, label))
+    leaf = unquote(key.rsplit('/', 1)[-1]).replace('~1','/').replace('~0','~')
+    names = {key, label, leaf}
+    if key.startswith('stimulus/'):
+        names.add(key.replace('/', ':'))
+    return frozenset(name.casefold() for name in names)
 
 
 def _cell_rows(service):
@@ -155,14 +168,16 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
         return {'query': query, 'results': [], 'total': 0, 'limit': limit}
     catalog = service.predicate_fields()
     # Convenient exact syntax; JSON gives numbers/pairs/booleans their types.
+    encoding = {}
     pair = re.fullmatch(r'(.+?)\s*(>=|<=|!=|=|>|<)\s*(.*)', query)
     if field is None and pair:
         field_text, symbol, value_text = pair.groups()
         requested = field_text.strip().casefold()
-        aliases = [item for item in catalog['fields']
-                   if requested in {item['id'].casefold(), item['label'].casefold(),
-                       unquote(item['id'].rsplit('/', 1)[-1]).replace('~1','/').replace('~0','~').casefold()}]
-        exact = [item for item in aliases if item['id'].casefold() == requested]
+        aliases = [item for item in catalog['fields'] if requested in _field_names(item['id'], item['label'])]
+        exact = [item for item in aliases if item['id'] == field_text.strip()]
+        if not exact:
+            exact = [item for item in aliases if item['id'].casefold() == requested or
+                     (item['id'].startswith('stimulus/') and item['id'].replace('/', ':').casefold() == requested)]
         canonical = [item for item in aliases if item['id'].startswith('parameters/') and item['id'].count('/') == 1]
         # A source parameter also appears in block/epoch provenance copies.
         # Unqualified names refer to the effective merged epoch parameters;
@@ -195,7 +210,11 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
                     'source_scope_revision': scope['revision']}
         field = aliases[0]['id']
     if field is not None:
-        predicate = {'field': field, 'operator': operator}
+        if field.startswith('h5/') and operator not in {'exists', 'missing', 'is_null'}:
+            # This also applies to each owner-qualified choice for ambiguous names.
+            encoding = {'value_encoding': 'json'}
+            value = _json(value)
+        predicate = {'field': field, 'operator': operator, **encoding}
         if operator not in {'exists', 'missing', 'is_null'}:
             predicate['value'] = value
         predicate, matched, _ = service.match_predicate(predicate)
@@ -214,11 +233,17 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
         typed = False
         typed_value = None
     examples_only = False
+    words = normalized.split()
     for definition in catalog['fields']:
         identity, label = definition['id'], definition['label']
-        if normalized in f'{identity} {label}'.casefold():
+        field_text = f'{identity} {label}'.casefold()
+        if (normalized in field_text or
+                identity.startswith(('h5/', 'stimulus/')) and
+                (normalized in _field_names(identity, label) or all(word in field_text for word in words))):
             results.append({'kind': 'field', 'id': identity, 'label': label, 'detail': identity,
                             'field_id': identity, 'predicate': {'field': identity, 'operator': 'exists'}})
+        if identity.startswith('h5/') and hasattr(getattr(service, 'disk_index', None), 'search_h5_values'):
+            continue
         examples_only |= bool(definition.get('choices_truncated'))
         for choice in definition.get('choices', []):
             current = choice['value']
@@ -233,6 +258,14 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
             results.append({'kind': 'value', 'id': identity + ':' + encoded, 'label': f'{label} = {encoded}',
                 'detail': f"{choice['count']} matching epochs · {identity}", 'field_id': identity,
                 'predicate': {'field': identity, 'operator': 'eq', 'value': current}, 'count': choice['count']})
+    search_h5 = getattr(getattr(service, 'disk_index', None), 'search_h5_values', None)
+    if search_h5 and len(results) < limit:
+        names = {field['id']:field['label'] for field in catalog['fields']}
+        hits, more = search_h5(query, active, limit-len(results))
+        examples_only |= more
+        for field_id, preview, count, pred in hits:
+            results.append({'kind':'value','id':field_id+':'+_json(pred),'label':names[field_id]+' = '+preview,
+                'field_id':field_id,'predicate':pred,'count':count,'detail':f'{count} matching epochs · {field_id}'})
     return {'query': query, 'results': results[:limit], 'total': len(results) + unlisted, 'limit': limit,
             'value_examples_only': examples_only, 'scope': 'project_identities_and_active_metadata',
             'source_scope_revision': scope['revision']}
@@ -240,6 +273,40 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
 
 def register_search_routes(app, service, db_lock, *, membership_lookup=None):
     from flask import jsonify, request
+
+    @app.get('/api/h5-attributes/<source_sha>')
+    def recorded_attributes(source_sha):
+        from workspace_h5_attributes import attribute_page, attribute_record
+        allowed = {'epoch_uuid','q','offset','limit','record','inventory'}
+        if set(request.args)-allowed or any(len(request.args.getlist(k))!=1 for k in request.args):
+            raise ValueError('Unknown or repeated H5 attribute option')
+        with db_lock:
+            service._ready()
+            source = next((s for s in service.sources if s['source_sha256']==source_sha),None)
+            if source is None:
+                raise KeyError('Recording is outside the registered project')
+            desc = source.get('h5_attribute_inventory')
+            if not desc:
+                return jsonify(error='No verified attribute inventory is available for this recording.'),409
+            epoch = request.args.get('epoch_uuid')
+            if epoch is not None and service.rows.get(epoch,{}).get('source_sha256')!=source_sha:
+                raise ValueError('Epoch does not belong to this recording')
+            if 'record' in request.args:
+                if set(request.args)-{'epoch_uuid','record','inventory'}:
+                    raise ValueError('Choose either an attribute record or a filtered page')
+                if request.args.get('inventory') != desc['logical_sha256']:
+                    return jsonify(error='The recorded attribute inventory changed. Reopen its list.'),409
+                result=attribute_record(desc,int(request.args['record']),epoch_uuid=epoch)
+                from disco.navigation.predicates import h5_value_digest
+                return jsonify(**result,value_sha256=h5_value_digest(json.loads(result['value_json'])))
+            if 'inventory' in request.args:
+                raise ValueError('Inventory identity is required only for an exact record')
+            q = request.args.get('q','')
+            offset = int(request.args.get('offset',0))
+            limit = int(request.args.get('limit',40))
+            if len(q)>512 or offset<0 or not 1<=limit<=100:
+                raise ValueError('Invalid H5 attribute page or search length')
+            return jsonify(**attribute_page(desc,epoch_uuid=epoch,q=q,offset=offset,limit=limit),inventory=desc['logical_sha256'])
 
     @app.get('/api/search')
     def workspace_search():

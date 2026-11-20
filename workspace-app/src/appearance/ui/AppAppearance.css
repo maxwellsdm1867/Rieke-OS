@@ -10,7 +10,6 @@
 .theme-option{position:relative;min-width:0;display:flex;flex-direction:column;padding:7px 7px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;background:var(--surface);transition:border-color .12s,background .12s}
 .theme-option:hover{background:var(--surface-subtle)}
 .theme-option.is-selected{background:var(--accent-soft)}
-.theme-option:has(input:focus-visible){outline:2px solid var(--focus);outline-offset:4px}
 .theme-option input{position:absolute;opacity:0;clip-path:inset(50%);overflow:hidden;width:1px;height:1px;margin:0;pointer-events:none}
 .theme-picker[aria-busy=true] .theme-option{cursor:progress}
 .theme-picker[aria-busy=true] .theme-option:not(.is-selected):hover{background:var(--surface);}
@@ -43,7 +42,6 @@
 .app-header .app-icon-button>.header-app-icon{display:block;width:42px;height:42px;object-fit:contain}
 .launcher-release-tools .app-icon-button{width:46px;height:46px;padding:0}
 .launcher-release-tools .app-icon-button img{display:block;width:46px;height:46px;object-fit:contain}
-.app-icon-button:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
 :root[data-theme="fred"] .app-icon-button img{object-fit:contain;transform:scale(.9)}
 @media(max-width:1100px){.rail .app-mark.app-icon-button,.rail .app-mark.app-icon-button>img{width:42px;height:42px}}
  .appearance-entry{gap:8px}.appearance-entry>small{margin-left:auto;color:var(--ink-muted);font-size:11px;font-weight:400}.appearance-entry:not(.nav-item){padding:9px 12px}.appearance-entry:not(.nav-item)>small{margin-left:10px}
@@ -58,7 +56,6 @@
 .rail-bottom{display:flex;flex-direction:column;align-items:center;gap:12px}
 .rail .appearance-entry.appearance-rail-button{width:38px;height:38px;padding:8px;border:1px solid transparent;border-radius:10px;color:var(--rail-ink);background:transparent}
 .rail .appearance-rail-button:hover{background:var(--rail-active)}
-.rail .appearance-rail-button:focus-visible{outline:2px solid var(--rail-ink);outline-offset:2px}
 
 .theme-preview{display:block;height:85px;min-width:0}
 .theme-preview>.theme-miniature{height:100%}

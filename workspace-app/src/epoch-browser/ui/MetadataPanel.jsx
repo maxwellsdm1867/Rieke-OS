@@ -1,3 +1,4 @@
+import H5Attributes from './H5Attributes.jsx';
 import {memo,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {ChevronDown,PanelRightClose,Search,X} from 'lucide-react';
 import {Metadata} from '../../components/Common.jsx';
@@ -22,7 +23,12 @@ const FieldCatalog=memo(function FieldCatalog({catalog,query='',blocked=false,st
   const [feedback,setFeedback]=useState('');
   const needle=query.trim().toLocaleLowerCase();
   const {fields,groups}=useMemo(()=>{
-  const fields=(catalog?.data?.fields||[]).filter(field=>typeof field.id==='string'&&field.id&&(!needle||[field.id,field.label,field.category,field.grouping_role,field.type].some(value=>String(value||'').toLocaleLowerCase().includes(needle))));
+  const terms=needle.split(/\s+/).filter(Boolean);
+  const fields=(catalog?.data?.fields||[]).filter(field=>{
+    if(typeof field.id!=='string'||!field.id)return false;
+    const text=[field.id,field.label,field.category,field.grouping_role,field.type].join(' ').toLocaleLowerCase();
+    return field.id.startsWith('h5/')?terms.every(term=>text.includes(term)):text.includes(needle);
+  });
   const groups=new Map();
   for(const field of fields){const category=field.category||'Other fields';if(!groups.has(category))groups.set(category,[]);groups.get(category).push(field);}
   return {fields,groups};
@@ -78,9 +84,13 @@ export default function MetadataPanel({epoch,catalog,onClose,context,connections
     const identity=defined(Object.fromEntries(['epoch_uuid','cell_uuid','group_uuid','block_uuid','protocol_name','start_time','date','epoch_number','duration_seconds','cell_label','cell_type','group_label','block_start_time','block_end_time'].map(key=>[key,valueEpoch[key]])));
     const fields=catalog?.data?.fields || [];
     const parameterRows=metadataRows(valueEpoch.parameters,['parameters']).sort((a,b)=>{const left=registeredMetadataField(a.path,fields)||{},right=registeredMetadataField(b.path,fields)||{};return groupingFieldRank(left)-groupingFieldRank(right)||(left.grouping_priority??999)-(right.grouping_priority??999);});
+    const stimulusRows=metadataRows(valueEpoch.stimulus,['stimulus']).map(row=>({
+      ...row,label:registeredMetadataField(row.path,fields)?.label || row.path.join(':'),
+    }));
     const technical=row=>registeredMetadataField(row.path,fields)?.grouping_role==='technical';
     const source=valueEpoch.source_reference || defined({filename:valueEpoch.source_filename,sha256:valueEpoch.source_sha256,path:valueEpoch.source_path});
     return [
+      ...(stimulusRows.length?[{id:'stimulus',title:'Stimulus settings',rows:stimulusRows}]:[]),
       {id:'parameters',title:'Protocol settings',rows:parameterRows.filter(row=>!technical(row))},
       ...(parameterRows.some(technical)?[{id:'technical',title:'Acquisition details',rows:parameterRows.filter(technical)}]:[]),
       {id:'epoch',title:'Epoch',rows:[...metadataRows(identity),...withLabel(metadataRows(valueEpoch.properties,['properties']),'properties.'),...withLabel(metadataRows(valueEpoch.attributes,['attributes']),'attributes.'),...withLabel(metadataRows(valueEpoch.metadata?.epoch,['metadata','epoch']),'source.')]},
@@ -89,7 +99,7 @@ export default function MetadataPanel({epoch,catalog,onClose,context,connections
     ];
   },[valueEpoch,catalog?.data]);
   const total=sections.reduce((sum,section)=>sum+section.rows.length,0);
-  const visibleSections=tab==='settings'?sections.filter(section=>['parameters','technical'].includes(section.id)):sections;
+  const visibleSections=tab==='settings'?sections.filter(section=>['parameters','stimulus','technical'].includes(section.id)):sections;
   const matched=visibleSections.reduce((sum,section)=>sum+section.rows.filter(row=>matchesMetadataSearch(row,parsedSearch,catalog?.data?.fields || [])).length,0);
   const controls=loadingPolicy&&<div className="metadata-loading-controls"><div><label className="metadata-live-switch"><input type="checkbox" role="switch" aria-label="Live metadata" checked={loadingPolicy.live} onChange={event=>{setSearch('');loadingPolicy.onLiveChange(event.target.checked);}}/><span className="metadata-switch-track" aria-hidden="true"/><span>Live metadata</span><strong className="metadata-switch-status">{loadingPolicy.live?'On':'Off'}</strong></label><button disabled={!loadingPolicy.canLoad||loadingPolicy.values.loading&&loadingPolicy.requested} onClick={loadingPolicy.load}>{loadingPolicy.requested&&loadingPolicy.values.loading?'Loading…':loadingPolicy.values.error?'Retry values':valueEpoch?'Refresh values':'Load values'}</button></div>
     <p>{loadingPolicy.live?'Values follow the selected epoch.':'Trace and tags stay live. Values load only when requested.'}</p>
@@ -104,6 +114,6 @@ export default function MetadataPanel({epoch,catalog,onClose,context,connections
     {controls}{tagPresentation}{catalogStatus}
     {!fieldsOnly&&<nav className="metadata-view-tabs" aria-label="Epoch detail views">{[['settings','Settings'],['summary','Summary'],['fields','All fields'],['links','Links']].map(([key,label])=><button key={key} className={tab===key?'active':''} aria-pressed={tab===key} onClick={()=>{setTab(key);setSearch('');}}>{label}</button>)}</nav>}
     <label className="metadata-panel-search"><Search size={15}/><input value={search} onChange={event=>{setSearch(event.target.value);if(event.target.value.trim()&&tab!=='settings')setTab('fields');}} aria-label={fieldsOnly?"Search metadata fields":"Search focused epoch metadata"} maxLength={512} placeholder={fieldsOnly?'Search field names or IDs…':tab==='settings'?'Search settings or values…':'Field, value, or field = value'}/>{search&&<button onClick={()=>setSearch('')} aria-label="Clear metadata search"><X size={13}/></button>}</label>
-    <div className="metadata-panel-scroll">{fieldsOnly?fieldCatalog:epoch?<>{tab==='summary'&&!query&&<><dl className="metadata-key-facts"><div><dt>Epoch in block</dt><dd>{epoch.epoch_number??'—'}</dd></div><div><dt>Recorded at</dt><dd>{epoch.start_time?.split(/[T ]/)[1]?.slice(0,8)||'—'}</dd></div><div><dt>Duration</dt><dd>{Number.isFinite(epoch.duration_seconds)?`${epoch.duration_seconds.toFixed(2)} s`:'—'}</dd></div><div><dt>Cell type</dt><dd>{epoch.cell_type||'Not recorded'}</dd></div></dl>{context}<button className="metadata-all-fields" onClick={()=>setTab('fields')}>Browse all {total} recorded fields</button></>}{tab==='links'&&!query&&connections}{catalog?.error&&<p className="metadata-panel-note">Predicate field catalog unavailable. Raw key/value copying is still available.</p>}{parsedSearch.error&&<p className="metadata-panel-note" role="alert">{parsedSearch.error}</p>}{query&&<p className="metadata-panel-note">{matched} matching {matched===1?'field':'fields'}</p>}{(tab==='settings'||tab==='fields'||query)&&visibleSections.map(section=><PanelSection key={section.id} section={section} query={query} fields={catalog?.data?.fields || []} initialOpen={tab==='settings'||section.id==='parameters'}/>)}{tab==='settings'&&<p className="metadata-panel-note">Click a name or value to copy.</p>}{tab==='settings'&&!visibleSections.some(section=>section.rows.length)&&<p className="metadata-panel-note">No protocol settings were recorded for this epoch.</p>}{tab==='fields'&&!query&&<p className="metadata-panel-note">Click a name or value to copy. Large source integers may be encoded as text.</p>}</>:<p className="metadata-panel-note">Select an epoch to inspect its recorded metadata.</p>}</div>
+    <div className="metadata-panel-scroll">{fieldsOnly?fieldCatalog:epoch?<>{tab==='summary'&&!query&&<><dl className="metadata-key-facts"><div><dt>Epoch in block</dt><dd>{epoch.epoch_number??'—'}</dd></div><div><dt>Recorded at</dt><dd>{epoch.start_time?.split(/[T ]/)[1]?.slice(0,8)||'—'}</dd></div><div><dt>Duration</dt><dd>{Number.isFinite(epoch.duration_seconds)?`${epoch.duration_seconds.toFixed(2)} s`:'—'}</dd></div><div><dt>Cell type</dt><dd>{epoch.cell_type||'Not recorded'}</dd></div></dl>{context}<button className="metadata-all-fields" onClick={()=>setTab('fields')}>Browse all {total} recorded fields</button></>}{tab==='links'&&!query&&connections}{catalog?.error&&<p className="metadata-panel-note">Predicate field catalog unavailable. Raw key/value copying is still available.</p>}{parsedSearch.error&&<p className="metadata-panel-note" role="alert">{parsedSearch.error}</p>}{query&&<p className="metadata-panel-note">{matched} matching {matched===1?'field':'fields'}{valueEpoch?.source_sha256?' in loaded metadata':''}</p>}{(tab==='settings'||tab==='fields'||query)&&visibleSections.map(section=><PanelSection key={section.id} section={section} query={query} fields={catalog?.data?.fields || []} initialOpen={tab==='settings'||section.id==='parameters'}/>)}{(tab==='settings'||tab==='fields')&&valueEpoch?.source_sha256&&<H5Attributes key={valueEpoch.source_sha256+valueEpoch.epoch_uuid} source={valueEpoch.source_sha256} epoch={valueEpoch.epoch_uuid} search={query}/>}{tab==='settings'&&<p className="metadata-panel-note">Click a name or value to copy.</p>}{tab==='settings'&&!query&&!visibleSections.some(section=>section.rows.length)&&<p className="metadata-panel-note">No protocol settings were recorded for this epoch.</p>}{tab==='fields'&&!query&&<p className="metadata-panel-note">Click a name or value to copy. Large source integers may be encoded as text.</p>}</>:<p className="metadata-panel-note">Select an epoch to inspect its recorded metadata.</p>}</div>
   </aside>;
 }

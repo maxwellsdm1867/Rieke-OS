@@ -389,6 +389,21 @@ class SharedAnnotationTests(unittest.TestCase):
                     self.assertEqual([row['epoch_uuid'] for row in package['epochs']], expected)
         self.assertEqual(self.service.query_result(self.service.protocol_id), original)
 
+    def test_recorded_scalar_menu_honors_tag_filters_and_generation(self):
+        self.client.get('/api/explore/field-registry')
+        self.edit('epoch', self.second, ['observed'])
+        args = {'field':'parameters/example', 'protocol_uuid':self.service.protocol_id,
+                'filters':json.dumps({'tag':'observed'})}
+        def lookup():
+            return self.client.get('/api/explore/field-values', query_string=args)
+        self.assertEqual(lookup().get_json()['values'], [{'type':'number','value_json':'1'}])
+        args['filters'] = json.dumps({'epoch_uuid':self.first,'tag':'observed'})
+        self.assertEqual(lookup().get_json()['values'], [])
+        with patch('disco.metadata.explore_queries.generation', side_effect=[{'source':1}, {'source':2}]):
+            response = lookup()
+        self.assertEqual(response.status_code,409)
+        self.assertNotIn('values',response.get_json())
+
     def test_protocol_tag_predicate_rejects_non_tag_fields_and_invalid_ast(self):
         base = '/api/protocols/' + self.service.protocol_id
         predicates = ['{', 'null', json.dumps({'field': 'parameters/example', 'operator': 'eq', 'value': 1}),

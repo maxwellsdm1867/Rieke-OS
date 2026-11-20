@@ -1,6 +1,7 @@
 """Physical H5 identity and dependency closure, using only disposable recordings."""
 import copy
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -71,6 +72,8 @@ class SourceIdentityTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.path = Path(self.temp.name) / 'source.h5'
         self.doc = fixture(self.path)
+        self.service = WorkspaceService.__new__(WorkspaceService)
+        self.service.project_dir = Path(self.temp.name)
 
     def validate(self):
         with h5py.File(self.path, 'r') as h5:
@@ -128,7 +131,7 @@ class SourceIdentityTests(unittest.TestCase):
         source = {'source_sha256': workspace.digest(self.path), 'manifest': {
             'counts': {'cells': 2, 'epochs': 2}, 'validated_at': '2026-09-29'}}
         with self.assertRaisesRegex(ValueError, 'group.*(identity|membership|source)'):
-            WorkspaceService.__new__(WorkspaceService)._read_source_metadata(source, self.doc, self.path, signature)
+            self.service._read_source_metadata(source, self.doc, self.path, signature)
 
     def signature(self):
         stat = self.path.stat()
@@ -194,7 +197,8 @@ class SourceIdentityTests(unittest.TestCase):
             self.trace()
 
     def prepare(self):
-        repository = Path(__file__).resolve().parents[2] / '.rieke-runtime/retinanalysis'
+        repository = Path(os.environ.get('RETINANALYSIS_DIR') or
+                          Path(__file__).resolve().parents[2] / '.rieke-runtime/retinanalysis')
         if not (repository / 'src/retinanalysis/utils/parse_data.py').exists():
             self.skipTest('Pinned RetinAnalysis parser is not installed')
         _, parser_path = workspace.load_parser(repository)
@@ -220,7 +224,7 @@ class SourceIdentityTests(unittest.TestCase):
         self.assertEqual(manifest['counts']['cells'], 3)
         self.assertEqual(manifest['cell_count_semantics'], 'all-source-cells-v1')
         self.assertEqual({r['cell_uuid'] for r in rows}, {uid(10), uid(20)})
-        projection = WorkspaceService.__new__(WorkspaceService)._read_source_metadata(
+        projection = self.service._read_source_metadata(
             {'source_sha256': manifest['source_sha256'], 'manifest': manifest}, doc, self.path, self.signature())
         self.assertEqual(set(projection['cells']), {uid(10), uid(20), uid(40)})
         self.assertEqual(projection['rows'][uid(23)]['cell_uuid'], uid(20))
@@ -229,7 +233,7 @@ class SourceIdentityTests(unittest.TestCase):
         legacy = copy.deepcopy(manifest)
         legacy.pop('cell_count_semantics')
         legacy['counts']['cells'] = 2
-        reopened = WorkspaceService.__new__(WorkspaceService)._read_source_metadata(
+        reopened = self.service._read_source_metadata(
             {'source_sha256': legacy['source_sha256'], 'manifest': legacy}, doc, self.path, self.signature())
         self.assertEqual(set(reopened['cells']), {uid(10), uid(20), uid(40)})
         self.assertEqual(reopened['rows'], projection['rows'])
@@ -239,8 +243,84 @@ class SourceIdentityTests(unittest.TestCase):
                     {key: value for key, value in manifest.items() if key != 'cell_count_semantics'}):
             with self.subTest(bad=bad.get('cell_count_semantics')):
                 with self.assertRaisesRegex(ValueError, 'count|semantics'):
-                    WorkspaceService.__new__(WorkspaceService)._read_source_metadata(
+                    self.service._read_source_metadata(
                         {'source_sha256': bad['source_sha256'], 'manifest': bad}, doc, self.path, self.signature())
+
+    def add_stimulus(self, device, number, offset=None, modes=()):
+        epoch = next(workspace.epochs(self.doc))[3]
+        with h5py.File(self.path, 'r+') as h5:
+            source_epoch = h5[epoch['responses']['Amp1']['h5path']].parent.parent
+            stimulus = source_epoch.require_group('stimuli').create_group(device + '-' + uid(number))
+            stimulus.attrs.update(uuid=uid(number), units='V')
+            params = stimulus.create_group('parameters')
+            if offset is not None:
+                params.attrs.update(offset=offset, units='mV')
+            for i, mode in enumerate(modes):
+                span = stimulus.create_group(f'dataConfigurationSpans/span_{i}')
+                span.attrs['index'] = i
+                span.create_group('Other device').attrs['operatingMode'] = 'unrelated'
+                if mode is not None:
+                    span.create_group(device).attrs['operatingMode'] = mode
+            epoch['stimuli'][device] = {'uuid': uid(number), 'h5path': stimulus.name, 'units': 'V'}
+
+    def test_legacy_stimulus_settings_rebuild_into_search_without_changing_fingerprint(self):
+        from disco.metadata.disk_index import DiskMetadataIndex
+
+        self.add_stimulus('Amp1', 50, np.float64(-62.5), ['VClamp', 'VClamp'])
+        self.add_stimulus('Amp2', 51, modes=['IClamp', 'VClamp', None])
+        self.add_stimulus('Amp3', 52, modes=[None])
+        source = {'source_sha256': workspace.digest(self.path), 'manifest': {
+            'counts': {'cells': 2, 'epochs': 2}, 'validated_at': '2026-01-01', 'source_path': str(self.path)}}
+        projection = self.service._read_source_metadata(
+            source, self.doc, self.path, self.signature())
+        settings = projection['rows'][uid(13)]['stimulus']
+        self.assertEqual(settings['Amp1'], {'offset': -62.5, 'offsetUnits': 'mV', 'operatingMode': 'VClamp'})
+        self.assertEqual(settings['Amp2'], {'operatingModeSpans': [
+            {'span': 'span_0', 'index': 0, 'operatingMode': 'IClamp'},
+            {'span': 'span_1', 'index': 1, 'operatingMode': 'VClamp'},
+            {'span': 'span_2', 'index': 2}]})
+        self.assertNotIn('Amp3', settings)
+        self.assertNotIn('stimulus', projection['rows'][uid(23)])
+        self.assertEqual(projection['details'][uid(13)]['metadata']['epoch'], next(workspace.epochs(self.doc))[3])
+        index = DiskMetadataIndex.build(self.path.parent / 'fields.sqlite',
+            projection['rows'], projection['details'], [projection['source']], 'generation', uid(110))
+        self.addCleanup(index.close)
+        fields = index.catalog_definitions()
+        self.assertEqual(fields['stimulus/Amp1/operatingMode']['label'], 'stimulus:Amp1:operatingMode')
+        self.assertNotIn('stimulus/Amp2/operatingMode', fields)
+        for field, operator, value in [('operatingMode', 'eq', 'VClamp'), ('offset', 'lt', -60),
+                                       ('offsetUnits', 'eq', 'mV')]:
+            query = {'field': 'stimulus/Amp1/' + field, 'operator': operator, 'value': value}
+            _, matched = index.match(query)
+            self.assertEqual(matched, [uid(13)])
+
+    def test_prepare_seals_stimulus_metadata_and_projection_checks_recorded_values(self):
+        self.add_stimulus('Amp1', 50, 0., ['IClamp'])
+        doc, rows, manifest, folder = self.prepare()
+        saved = json.loads((folder / 'metadata.catalog.json').read_text())
+        expected = {'Amp1': {'offset': 0., 'offsetUnits': 'mV', 'operatingMode': 'IClamp'}}
+        self.assertEqual(next(workspace.epochs(saved))[3]['stimulus'], expected)
+        self.assertEqual(rows[0]['stimulus'], expected)
+        self.assertEqual(manifest['adapter_version'], 2)
+        self.assertNotIn('stimulus', next(workspace.epochs(self.doc))[3])
+        (folder / 'import-manifest.json').unlink()
+        self.assertEqual(self.prepare()[2]['metadata_sha256'], manifest['metadata_sha256'])
+        next(workspace.epochs(doc))[3]['stimulus']['Amp1']['operatingMode'] = 'VClamp'
+        with self.assertRaisesRegex(ValueError, 'stimulus settings'):
+            self.service._read_source_metadata(
+                {'source_sha256': manifest['source_sha256'], 'manifest': manifest}, doc, self.path, self.signature())
+        # A repeat prepare of an existing v1 registration must retain the
+        # canonical document hash already stored by MySQL.
+        del next(workspace.epochs(saved))[3]['stimulus']
+        del saved['stimulus_metadata_version']
+        catalog_path = folder / 'metadata.catalog.json'
+        workspace.write_json(catalog_path, saved)
+        legacy_hash = workspace.digest(catalog_path)
+        workspace.write_json(folder / 'import-manifest.json', {**manifest, 'adapter_version': 1,
+                             'metadata_sha256': legacy_hash})
+        _, retry_rows, retry_manifest, _ = self.prepare()
+        self.assertEqual(retry_manifest['metadata_sha256'], legacy_hash)
+        self.assertEqual(retry_rows[0]['stimulus'], expected)
 
     def test_prepare_validates_parameters_on_streamless_epochs(self):
         with h5py.File(self.path, 'r+') as h5:

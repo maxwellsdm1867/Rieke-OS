@@ -78,9 +78,13 @@ container border may remain; changing state must not change its width or padding
 Do not decorate rounded cards, warnings or nested query groups with a thick edge.
 Use their text, icons, background and indentation to convey meaning.
 
-Hover follows the same rule. Keyboard-only focus indicators on controls remain
-visible; row labels may use a distinct focus fill instead of a text outline.
-Do not show focus-within outlines on an entire choice just because it was clicked.
+Editable text fields, searches, textareas and editable regions show their native
+caret. The field, its placeholder and any surrounding search or value wrapper
+keep their resting colors and geometry during editing. Keyboard navigation gives
+a fill to nontext controls and choices, including adjacent action buttons. Pointer
+presses on momentary buttons return to the normal hover or resting state on release.
+Forced-color mode uses the system Highlight color so keyboard focus remains visible
+when the platform suppresses backgrounds. Keep control geometry stable on focus.
 Structural pane separators, tree connector lines, native control indicators and
 transient drag insertion markers are not decorative selection stripes.
 Apply this rule across the UI, including dialogs, pickers, QC, imports, exports,
