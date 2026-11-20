@@ -118,7 +118,8 @@ test('running a query sends no catalog statistics in previews and exactly one su
   const predicate={all:[]},preview={catalog_summary:false,matched_count:17,tree_revision:'T',catalog:{fields:definitions.map(({id,label,category,path})=>({id,label,category,path}))},tree:{count:17,levels:[],split_order:['date']}};
   const applied={revision_uuid:'R',recipe:{predicate,splits:'date'},preview,previewGeneration:0,previewRevision:0};
   const props={projectId:'P1',initialProtocolId:'A',session:{applied,step:'tree',resultsFromDraft:false,splits:'date',filterSplits:'date'}};
-  const summaryRegistry={...registry,summary_available:true};
+  const raw={id:'h5/stimulus/Amp1/@segmentSeeds',label:'H5 seeds',types:['array'],category:'H5 attributes'};
+  const summaryRegistry={...registry,fields:[...registry.fields,raw],tree_fields:[...registry.tree_fields,raw],summary_available:true};
   h.respond=(path)=>{
    if(path==='/explore/field-registry')return summaryRegistry;
    if(path==='/explore/preview')return preview;
@@ -135,6 +136,7 @@ test('running a query sends no catalog statistics in previews and exactly one su
   assert.equal(jobs().length,1,'one summary job for the shown result set');
   assert.deepEqual(jobs()[0].body.predicate,predicate);
   assert.deepEqual(jobs()[0].body.summary_fields,definitions.map(field=>field.id));
+  assert.ok(builder().catalogData.fields.some(field=>field.id===raw.id),'raw definitions remain available without fetching array distributions');
   assert.equal(builder().summaryEnabled,false,'the builder renders the result job instead of starting its own');
   assert.equal(builder().catalogData.fields.find(field=>field.id==='date').distinct_count,1);
   let start=h.requests.length;await h.act(()=>builder().onChange(['date','parameters/field150']));await h.settle();await h.settle(50);

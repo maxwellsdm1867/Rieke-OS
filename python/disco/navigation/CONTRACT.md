@@ -32,6 +32,13 @@ current. Frozen export snapshots of source predicates record
 `predicate_contract_version`; reuse refuses an older affected contract. The change rebuilds disposable metadata indexes once. Saved methods and layouts retain optimistic versions and do
 not replace immutable applied-query, source or native revision authority.
 
+Recorded H5 predicates accept a bounded JSON string with `value_encoding=json`
+to preserve full-precision numbers and arrays across renderer requests and saved
+searches. `comparison_value` decodes that representation for both query
+implementations. Equality by `value_encoding=sha256` identifies an entire
+recorded value using `h5_value_digest`, including arrays larger than the request
+limit. Nested All and Any groups use the same evaluation as other fields.
+
 Tree pages retain captured WorkspaceService/ExplorerHistory method identity,
 structural-reader checks, override fallback, graph budgets and response-end
 attestation. Do not recreate classes or move captures. The cross-authority

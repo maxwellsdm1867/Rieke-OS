@@ -134,3 +134,31 @@ test('Inspector selected-view presentation survives only renewal of the same exp
   await h.render(Inspector,{...props,readContext:{...context,selection_view_key:'selected-B'}});assert.notEqual(h.viewer.metadata.presentation?.key,key);
  }finally{await h.close();}
 });
+
+test('recorded H5 values are requested only on disclosure and old epoch values retire on focus change',async()=>{
+ const prior=globalThis.fetch,seen=[];
+ globalThis.fetch=async url=>{
+   seen.push(String(url));
+   const exact=String(url).includes('record=7');
+   return {ok:true,json:async()=>exact?{value_json:'"value for epoch-a"',value_sha256:'c'.repeat(64)}:
+     {records:[{record_id:7,label:'Epoch note',object_path:'/epoch',value_preview:'"value"',dtype:'text',shape:[]}],inventory:'b'.repeat(64),total:1,has_more:false}};
+ };
+ const h=await harness();
+ const button=text=>h.root.findAllByType('button').find(b=>b.children.includes(text));
+ try{
+   const render=id=>h.render({epoch:{...epoch,epoch_uuid:id,source_sha256:'a'.repeat(64)},loadingPolicy:null});
+   await render('epoch-a');
+   assert.equal(seen.length,0);
+   await act(async()=>button('Recorded H5 attributes for this epoch').props.onClick());
+   await act(async()=>new Promise(resolve=>setTimeout(resolve,170)));
+   assert.equal(seen.length,1);assert.match(seen[0],/epoch_uuid=epoch-a/);assert.ok(!seen[0].includes('record='));
+   await act(async()=>{button('Inspect exact value').props.onClick();});
+   await act(async()=>new Promise(resolve=>setTimeout(resolve,30)));
+   assert.ok(seen[1].includes('record=7&inventory='));
+   assert.ok(h.root.findAllByType('pre').some(node=>node.children.includes('"value for epoch-a"')));
+   await render('epoch-b');
+   assert.equal(button('Recorded H5 attributes for this epoch').props['aria-expanded'],false);
+   assert.ok(!h.root.findAllByType('pre').some(node=>node.children.includes('"value for epoch-a"')));
+   assert.equal(seen.length,2);
+ }finally{await h.close();globalThis.fetch=prior;}
+});

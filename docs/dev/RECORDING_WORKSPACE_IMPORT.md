@@ -36,6 +36,33 @@ settings remain absent. Registered projects built with the older adapter
 recover these searchable values from their verified H5 files at the next
 projection rebuild, preserving the original sealed documents and decisions.
 
+### Recorded H5 attributes
+
+For registered Symphony PATCH recordings, the DISCO import adapter also walks
+the H5 object graph and records attributes on groups, datasets and named types.
+This includes preparation properties, device configuration spans, stimulus
+generator settings, response metadata and attributes on objects with no epochs.
+The source inventory preserves object paths, attribute names, HDF5 types, array
+shapes and values. It tracks links by physical object identity so Symphony's
+backlinks do not create cycles or duplicate physical attributes. Waveform sample
+arrays remain in the H5 and load through the trace reader.
+
+Search predicate lists these fields under **H5 attributes**. For instance,
+`h5/stimulus/Amp1/parameters/@segmentSeeds` identifies the generator's recorded
+attribute, and `h5/preparation/properties/@bathSolution` identifies the solution
+on the preparation. Epoch queries follow the acquisition's recorded ownership
+hierarchy. In **Epoch details → Load values** or the recording's **Data stores**
+detail, open **Recorded H5 attributes** to inspect physical paths, types, shapes
+and exact values. The recording view also includes objects without member epochs.
+
+Each source has a versioned SQLite inventory in `imports/h5-attributes/` with a
+SHA-256 seal. Extraction compares an independent HDF5 object-header attribute
+count with the stored location count and verifies a digest of the paths, types,
+shapes and values after serialization. Project search then checks that the
+source's distinct fields and their epoch associations were installed. New imports
+carry a portable coverage summary. Older registrations can recover from their
+verified original H5 using **Refresh metadata**.
+
 - `project.json`: project UUID/name and main-catalog reference.
 - `catalog.json`: DataJoint catalog/schema reference and a local credential-provider reference. No database password is stored in protocol files.
 - `protocols/*.protocol.json`: one saved query definition for each acquisition protocol found in this source. These are starting workspace definitions, not a claim that each supporting measurement should be a primary navigation item.

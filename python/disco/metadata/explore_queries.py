@@ -244,8 +244,12 @@ def _native_summaries(service, context, cancelled):
     stream = None
     if (summaries and metadata_fields and isinstance(values, StreamingValueView) and hasattr(values.base, 'subset')
             and len(set(identities)) == len(identities)):
-        stream = StreamingValueView(values.base.subset(identities), allowed=values.allowed,
-                                    combinations=values.combinations).items()
+        # Limit SQLite reads to the requested fields. An ordinary result summary
+        # must not decode unrelated acquisition arrays for every matching epoch.
+        combinations = {key: parts for key,parts in values.combinations.items() if key in metadata_fields}
+        needed = metadata_fields.union(*(set(parts) for parts in combinations.values()))
+        stream = StreamingValueView(values.base.subset(identities, fields=needed), allowed=values.allowed,
+                                    combinations=combinations).items()
     for identity in identities if metadata_fields else ():
         if cancelled():
             raise InterruptedError('Summary cancelled')

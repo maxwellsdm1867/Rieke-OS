@@ -32,7 +32,17 @@ JSON values are returned. Arrays, objects, escaped fields, chronological rank
 (date/start time/epoch UUID) and conjunctive scopes retain their existing meaning.
 Empty source/epoch lists mean empty scope. Backend ranks are not public cursors.
 Requested facets retain first chronological occurrence, missing/present counts and
-existing 60-value truncation. This does not prove all raw fields are filterable.
+existing 60-value truncation.
+
+For recorded Symphony H5 attributes, the native field registry must cover every
+field in each verified source inventory. Values inherit the epoch membership of
+their physical owner. An owner with no epoch remains discoverable through the
+recording inspector and contributes zero predicate matches. The native and typed
+indexes accept the same exact JSON value predicates, including integers outside
+JavaScript's safe range and full arrays. The recording inspector reads original
+H5 paths, types, shapes and values from the verified inventory. See the
+[import contract](../../../docs/dev/RECORDING_WORKSPACE_IMPORT.md) and
+[refresh coverage checks](../../../docs/dev/METADATA_REFRESH.md).
 
 Object encoding binds source, ancestor kind and UUID. Identical display labels do
 not merge owners. Conflicting content for the same owner rejects, including

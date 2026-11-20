@@ -7,7 +7,7 @@ export function predicateToDraft(predicate) {
   if(predicate.all || predicate.any)return {...newGroup(),mode:predicate.all?'all':'any',children:(predicate.all || predicate.any).map(predicateToDraft)};
   const value=predicate.value;
   return {...newCondition(),field:predicate.field,operator:predicate.operator,
-    valueType:value===null?'null':Array.isArray(value)?'array':typeof value==='number'?'number':typeof value==='boolean'?'boolean':'string',
+    valueType:predicate.value_encoding==='json'?'exact':predicate.value_encoding==='sha256'?'signature':value===null?'null':Array.isArray(value)?'array':typeof value==='number'?'number':typeof value==='boolean'?'boolean':'string',
     valueText:typeof value==='string'?value:value===undefined?'':JSON.stringify(value)};
 }
 function validateJSON(value) {
@@ -45,8 +45,21 @@ export function compilePredicate(node,fields=null,depth=0) {
     if(field?.operators&&!field.operators.includes(node.operator))throw new Error(`The operator is unavailable for ${field.label}.`);
     result={field:node.field,operator:node.operator};
     if(!['exists','missing','is_null'].includes(node.operator)){
-      result.value=typedValue(node.valueText,['in','not_in'].includes(node.operator)?'array':node.valueType);
-      if(['gt','gte','lt','lte'].includes(node.operator)&&typeof result.value!=='number')throw new Error('Ordering comparisons require a numeric value.');
+      if(node.field.startsWith('h5/')&&['exact','signature'].includes(node.valueType)){
+        const text=node.valueText.trim();
+        if(node.valueType==='signature'){
+          if(!['eq','ne'].includes(node.operator)||!/^[a-f0-9]{64}$/.test(text))throw Error('Use the recorded SHA-256 signature with is or is not.');
+          result.value_encoding='sha256';
+        }else{
+          if(new TextEncoder().encode(text).length>32768)throw Error('For a value over 32 KiB, choose its exact value signature.');
+          let parsed;
+          try{parsed=JSON.parse(text);}catch{throw Error('Enter exact JSON, with quotes around text.');}
+          if(['gt','gte','lt','lte'].includes(node.operator)&&typeof parsed!=='number')throw Error('Ordering comparisons require a number.');
+          result.value_encoding='json';
+        }
+        result.value=text;
+      }else result.value=typedValue(node.valueText,['in','not_in'].includes(node.operator)?'array':node.valueType);
+      if(['gt','gte','lt','lte'].includes(node.operator)&&result.value_encoding!=='json'&&typeof result.value!=='number')throw new Error('Ordering comparisons require a numeric value.');
     }
   }
   return node.negated?{not:result}:result;

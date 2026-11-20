@@ -143,9 +143,10 @@ def validate_self_contained_h5(h5):
     links only after external links everywhere in this file have been ruled out.
     """
     import h5py
+    from workspace_h5_attribute_inventory import link_info
     pending, seen, soft_links = ['/'], set(), []
     while pending:
-        obj = h5[pending.pop()]
+        obj = h5[os.fsencode(pending.pop())]
         address = h5py.h5o.get_info(obj.id).addr
         if address in seen:
             continue
@@ -156,14 +157,16 @@ def validate_self_contained_h5(h5):
             if obj.external:
                 raise ValueError(f'External dataset storage is unsupported: {obj.name}')
         elif isinstance(obj, h5py.Group):
+            parent = os.fsdecode(obj.name).rstrip('/') + '/'
             for name in obj:
-                link = obj.get(name, getlink=True)
-                if isinstance(link, h5py.ExternalLink):
+                link, _ = link_info(obj,name)
+                child_path = parent + os.fsdecode(name)
+                if link == h5py.h5l.TYPE_EXTERNAL:
                     raise ValueError(f'External H5 links are unsupported: {obj.name}/{name}')
-                if isinstance(link, h5py.SoftLink):
-                    soft_links.append(obj.name.rstrip('/') + '/' + name)
-                elif isinstance(link, h5py.HardLink):
-                    pending.append(obj.name.rstrip('/') + '/' + name)
+                if link == h5py.h5l.TYPE_SOFT:
+                    soft_links.append(child_path)
+                elif link == h5py.h5l.TYPE_HARD:
+                    pending.append(child_path)
                 else:
                     raise ValueError(f'Unsupported H5 link: {obj.name}/{name}')
     for path in soft_links:
@@ -180,6 +183,7 @@ def resolve_sealed_h5_path(h5, path):
     back into this file, virtual mappings and external raw-storage datasets.
     """
     import h5py
+    from workspace_h5_attribute_inventory import link_info
     if not isinstance(path, str) or not path.startswith('/'):
         raise ValueError('H5 locator must be an absolute path within its source')
     parts, current, expansions = path.split('/')[1:], h5['/'], 0
@@ -189,21 +193,21 @@ def resolve_sealed_h5_path(h5, path):
             continue
         if name == '..' or not isinstance(current, h5py.Group):
             raise ValueError(f'Invalid H5 source locator: {path}')
-        link = current.get(name, getlink=True)
-        if isinstance(link, h5py.ExternalLink):
+        link, soft_target = link_info(current,name)
+        if link == h5py.h5l.TYPE_EXTERNAL:
             raise ValueError(f'External H5 links are unsupported: {path}')
-        if isinstance(link, h5py.SoftLink):
+        if link == h5py.h5l.TYPE_SOFT:
             expansions += 1
             if expansions > 64:
                 raise ValueError(f'Unresolvable or cyclic H5 soft link: {path}')
-            target = link.path
+            target = os.fsdecode(soft_target)
             if not target.startswith('/'):
-                target = current.name.rstrip('/') + '/' + target
+                target = os.fsdecode(current.name).rstrip('/') + '/' + target
             parts, current = target.split('/')[1:] + parts, h5['/']
             continue
-        if not isinstance(link, h5py.HardLink):
+        if link != h5py.h5l.TYPE_HARD:
             raise ValueError(f'Missing or unsupported H5 source link: {path}')
-        current = current[name]
+        current = current[os.fsencode(name)]
         if current.file.id != h5.id:
             raise ValueError(f'H5 link target is outside the sealed source: {path}')
     if isinstance(current, h5py.Dataset):
@@ -282,7 +286,7 @@ def validate_source_identity(h5, document):
     """
     import h5py
     validate_self_contained_h5(h5)
-    roots = [h5[name] for name in h5 if name.startswith('experiment-')]
+    roots = [h5[name] for name in h5 if os.fsdecode(name).startswith('experiment-')]
     if len(roots) != 1 or not isinstance(roots[0], h5py.Group):
         raise ValueError('Expected exactly one Symphony experiment root')
     root = roots[0]
@@ -410,7 +414,7 @@ def restore_empty_blocks(h5, experiment, parser):
                     if group['uuid'] in groups:
                         raise ValueError('Duplicate parsed epoch group identity')
                     groups[group['uuid']] = group
-    roots = [h5[name] for name in h5 if name.startswith('experiment-')]
+    roots = [h5[name] for name in h5 if os.fsdecode(name).startswith('experiment-')]
     if len(roots) != 1 or not isinstance(roots[0], h5py.Group):
         raise ValueError('Expected exactly one Symphony experiment root')
     additions, seen = [], set()
@@ -464,6 +468,7 @@ def validate_manifest_cell_count(manifest, all_cell_ids, epoch_cell_ids):
 
 def prepare(source, project, repository, progress=None, expected_sha256=None):
     import h5py
+    from workspace_h5_attributes import coverage_summary, ensure_inventory
 
     stat = source.stat()
     source_hash = digest(source, progress)
@@ -509,7 +514,7 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
     rows, protocol_counts, cell_ids = [], {}, set()
     warnings = []
     with h5py.File(source, "r") as h5:
-        roots = [k for k in h5 if k.startswith("experiment-")]
+        roots = [k for k in h5 if os.fsdecode(k).startswith("experiment-")]
         if len(roots) != 1:
             raise ValueError("Expected exactly one Symphony experiment root")
         root = resolve_sealed_h5_path(h5, "/" + roots[0])
@@ -619,6 +624,8 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
                          "parameters": epoch.get("parameters", {}), "streams": streams,
                          **({'stimulus': stimulus} if stimulus else {})})
             emit("validating_metadata", completed=len(rows), total=total_epochs, unit="epochs")
+        source_signature = (str(source.resolve()), stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+        h5_inventory = ensure_inventory(h5, inventory, project, source_hash, source_signature=source_signature)
     after = source.stat()
     if (stat.st_size, stat.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
         raise ValueError("Source changed during parsing/validation")
@@ -634,6 +641,7 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
                 "source_size": stat.st_size, "experiment_uuid": experiment["uuid"],
                 "parser_path": str(parser_path), "parser_sha256": digest(parser_path),
                 "adapter_version": 2 if persist_stimulus else 1, "adapter_sha256": digest(__file__),
+                "h5_attribute_inventory": coverage_summary(h5_inventory),
                 "validated_at": now(), "metadata_path": str(normalized_path),
                 "metadata_sha256": digest(normalized_path),
                 "cell_count_semantics": "all-source-cells-v1",

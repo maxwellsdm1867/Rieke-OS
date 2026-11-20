@@ -50,6 +50,29 @@ def equality_json(value):
 
 
 
+def bulky_raw_value(value):
+    return isinstance(value,(list,dict)) or isinstance(value,str) and len(value)>240
+
+
+def _integral_floats_to_ints(value):
+    """JSON numeric equality includes exact integral floats and signed zero."""
+    if isinstance(value,float) and value.is_integer():
+        return int(value)
+    if isinstance(value,list):
+        return [_integral_floats_to_ints(item) for item in value]
+    if isinstance(value,dict):
+        return {key:_integral_floats_to_ints(item) for key,item in value.items()}
+    return value
+
+
+def stored_equality(value, raw_field):
+    if raw_field and bulky_raw_value(value):
+        # Compact canonical bytes preserve numeric equality without repeating
+        # ratios and escaped nested strings. The key is stable across runtimes.
+        return canonical(_integral_floats_to_ints(value)).encode('utf-8')
+    return equality_json(value)
+
+
 class _TypedQueries:
     def _leaf(self, node):
         field, op = node['field'], node['operator']
@@ -69,15 +92,16 @@ class _TypedQueries:
         selector, arguments = '', [number]
         if op == 'is_null':
             selector = "v.kind='null'"
-        elif op in {'eq','ne','in','not_in'}:
-            choices = node['value'] if op in {'in','not_in'} else [node['value']]
+        elif op in {'eq','ne','in','not_in'} and node.get('value_encoding') != 'sha256':
+            value = predicates.comparison_value(node)
+            choices = value if op in {'in','not_in'} else [value]
             selector = 'v.equality_json IN (' + ','.join('?' for _ in choices) + ')' if choices else '0'
-            arguments.extend(equality_json(value) for value in choices)
+            arguments.extend(stored_equality(value, field.startswith('h5/')) for value in choices)
             if op in {'ne','not_in'}:
                 selector = 'NOT (' + selector + ')'
-        elif op in {'gt','gte','lt','lte'} and number not in self.wide_fields:
+        elif op in {'gt','gte','lt','lte'} and number not in self.wide_fields and node.get('value_encoding') != 'json':
             selector = "v.kind='number' AND v.numeric_value " + {'gt':'>','gte':'>=','lt':'<','lte':'<='}[op] + ' ?'
-            arguments.append(node['value'])
+            arguments.append(predicates.comparison_value(node))
         else:
             # Contains and wide-int range comparisons are evaluated only on the
             # small native dictionary, never by materializing per-epoch DTOs.

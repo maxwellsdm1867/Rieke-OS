@@ -200,7 +200,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
   // results are shown, one summary job covers that result set; a changed query
   // (or generation) retires it, and the builder renders it when it completes.
   const registryFields=catalog.data?.tree_fields||catalog.data?.fields||[];
-  const resultSummaryFields=useMemo(()=>{const known=new Set((catalog.data?.fields||[]).map(field=>field.id));return registryFields.map(field=>field.id).filter(id=>known.has(id));},[catalog.data]);
+  const resultSummaryFields=useMemo(()=>{const known=new Set((catalog.data?.fields||[]).map(field=>field.id));return registryFields.map(field=>field.id).filter(id=>known.has(id)&&!id.startsWith('h5/'));},[catalog.data]);
   // The job starts once this predicate's results are loaded and stays while the
   // same query only reloads its tree (layout, focus); a new predicate waits.
   const resultQueryKey=resultPredicate?predicateIdentity(resultPredicate):null,summarizedQuery=useRef(null);

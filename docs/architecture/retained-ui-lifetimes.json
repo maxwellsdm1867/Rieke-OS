@@ -1412,8 +1412,17 @@
         "src/epoch-browser/selectedEpochCellCountLifecycle.test.js"
       ]
     },
+    "src/epoch-browser/ui/H5Attributes.jsx": {
+      "reason": "On-demand H5 pages use the project request owner; closing the disclosure retires the exact-value read. Source and epoch render keys reset requests and selection on navigation. Only the chosen record and logical inventory digest can request its full value.",
+      "tests": [
+        "src/epoch-browser/metadataPresentation.test.js"
+      ],
+      "lifetime": "transitive-dependency",
+      "fingerprint": "0c55de3da28c20f0583f57a76151dcb510b6b5169577f4647e910603cfa0d594",
+      "sites": []
+    },
     "src/epoch-browser/ui/MetadataPanel.jsx": {
-      "fingerprint": "1a6c1553b584fbe8d145d1d45e821f08c45455854f21fd6289d1feed83a903e0",
+      "fingerprint": "b919d6d0344f318d8601450a2bbc02acba28bbb725ae231aebba020a778cda29",
       "sites": [
         {
           "owner": "MetadataPanel",
@@ -1422,7 +1431,7 @@
         }
       ],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Independently reviewed same-frozen-sidebar display boundary measures the current direct tag section and disconnects its ResizeObserver on lifetime changes. Unavailable tag components unmount; an empty measured slot preserves geometry. Only field catalog JSON is retained for inert display, never read or mutation authority; changed scope/focus/structure or Live/value mode retires it synchronously. Current error/retry controls remain outside inert content and scrolling flow, and fresh empty catalogs replace old display. Combined 0.2.12: separate field-name and ID clipboard commands preserve the blocked/inert gate and layout lifetime, with no scientific write or new read. Stimulus settings render from the selected epoch’s loaded values and follow the same focus and load policy as protocol settings.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Independently reviewed same-frozen-sidebar display boundary measures the current direct tag section and disconnects its ResizeObserver on lifetime changes. Unavailable tag components unmount; an empty measured slot preserves geometry. Only field catalog JSON is retained for inert display, never read or mutation authority; changed scope/focus/structure or Live/value mode retires it synchronously. Current error/retry controls remain outside inert content and scrolling flow, and fresh empty catalogs replace old display. Combined 0.2.12: separate field-name and ID clipboard commands preserve the blocked/inert gate and layout lifetime, with no scientific write or new read. Stimulus settings render from the selected epoch\u2019s loaded values and follow the same focus and load policy as protocol settings. The raw H5 inspector mounts for the selected epoch only after its values are loaded. Changing the source or epoch drops its disclosure, page and selected physical record.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",
@@ -2306,7 +2315,7 @@
       ]
     },
     "src/metadata-explorer/ui/MetadataExplorer.jsx": {
-      "fingerprint": "41ec917b52ecaec66865bc0bd70096a6a80113ad0c5df0ea21c1cf4b7806adba",
+      "fingerprint": "8dd7c5077e2d3112585323f3c2031e4fb6a3ac9da1ac9591f8f7ae207ffb63f2",
       "sites": [
         {
           "owner": "MetadataExplorer",
@@ -2370,7 +2379,7 @@
         }
       ],
       "lifetime": "semantic-presentation + hydration-witness + active-local-undo",
-      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged. Tag decoupling review (2026-10-17): tag saves report kind annotations (not an untyped structural change) with the confirmed receipt; focused epoch and presets follow annotationRevision. Effect sites unchanged. Summary-after-query review (2026-10-18): previews/runs/revisions always send catalog_summary:false and the explicit full-catalog key/effect is removed; one requested-summaries job is keyed to the shown result set (starts after that predicate's results load, survives same-query tree reloads, retires on predicate/filter/generation change) and decorates the builder fields. One effect site removed; hook-owned job lifetime unchanged. Preview removal (2026-10-19): PredicateDialog no longer receives previous-run preview props; result reads and the after-query summary job are unchanged. catalog_summary removal (2026-10-19, requires backend #117): result preview/run/revision bodies no longer send the deprecated catalog_summary flag; effect dependencies, abort and publication fences unchanged. Pending counts and cell windows (2026-10-19, requires backend #118/#119): the shown result's counts job is polled with useQueryCounts and merged into the displayed preview; a changed query cancels the previous job. Effect sites unchanged. Protocol-refresh review 2026-11-07: new protocol completion invalidates structural inventory; existing membership stays scoped. Displayed draft search witnesses follow held revision and explicit refresh generation, with editor-open suppression and effect-owned cancellation/reconnect. No command, recipe or removal consent is replayed. Workspace change ledger and requested-summary lifecycle regressions verify creation, exactly-one renewal, annotation hold and interrupted retained reads. Independently reviewed bulk actions (2026-11-07): explicit counted selection controls call existing Main curation or incoming-decision owner with actual selected UUIDs; Search inclusion is one local undo gesture with per-UUID prior values and original visibility/generation fences. Shared-tag removal uses exact active-author revisions and existing pre-POST scope checks without an optimistic add. Tree Tag selected epochs clears only ephemeral cell targets. Mounted curation/control/undo/tag failure cases pass; native remains separately qualified.",
+      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners. Independent review 2026-10-14: preserve same-key error presentation and project/query-scoped predicate list sessions. Only MatchingEpochs session publication effect adds listNavigation; request and write lifetimes unchanged. Tag decoupling review (2026-10-17): tag saves report kind annotations (not an untyped structural change) with the confirmed receipt; focused epoch and presets follow annotationRevision. Effect sites unchanged. Summary-after-query review (2026-10-18): previews/runs/revisions always send catalog_summary:false and the explicit full-catalog key/effect is removed; one requested-summaries job is keyed to the shown result set (starts after that predicate's results load, survives same-query tree reloads, retires on predicate/filter/generation change) and decorates the builder fields. One effect site removed; hook-owned job lifetime unchanged. Preview removal (2026-10-19): PredicateDialog no longer receives previous-run preview props; result reads and the after-query summary job are unchanged. catalog_summary removal (2026-10-19, requires backend #117): result preview/run/revision bodies no longer send the deprecated catalog_summary flag; effect dependencies, abort and publication fences unchanged. Pending counts and cell windows (2026-10-19, requires backend #118/#119): the shown result's counts job is polled with useQueryCounts and merged into the displayed preview; a changed query cancels the previous job. Effect sites unchanged. Protocol-refresh review 2026-11-07: new protocol completion invalidates structural inventory; existing membership stays scoped. Displayed draft search witnesses follow held revision and explicit refresh generation, with editor-open suppression and effect-owned cancellation/reconnect. No command, recipe or removal consent is replayed. Workspace change ledger and requested-summary lifecycle regressions verify creation, exactly-one renewal, annotation hold and interrupted retained reads. Independently reviewed bulk actions (2026-11-07): explicit counted selection controls call existing Main curation or incoming-decision owner with actual selected UUIDs; Search inclusion is one local undo gesture with per-UUID prior values and original visibility/generation fences. Shared-tag removal uses exact active-author revisions and existing pre-POST scope checks without an optimistic add. Tree Tag selected epochs clears only ephemeral cell targets. Mounted curation/control/undo/tag failure cases pass; native remains separately qualified. Search result summary jobs exclude physical H5 field distributions by default. Raw field definitions remain visible and explicit value inspection and summary requests retain their own lifetimes.",
       "tests": [
         "src/retainedControls.test.js",
         "src/requested-summaries/requestedSummariesLifecycle.test.js",
@@ -2408,17 +2417,18 @@
       ]
     },
     "src/metadata-refresh/metadataRefresh.js": {
-      "fingerprint": "884ec43f176b6f489b999dfc908c646b7258c296eef43aa595a319652f328d3c",
+      "fingerprint": "51d9685efb7ea8b0e6b15627897861f81f1c218841388117e3a0e35cbc9d7f97",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Recorded-attribute coverage is validated and displayed from the existing refresh receipt.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/metadataRefreshLifecycle.test.js"
       ]
     },
     "src/metadata-refresh/ui/MetadataRefresh.jsx": {
-      "fingerprint": "39fdb2f166ea5210df9504dd70a424d5045563ed2575f89f8e1d41c91ac39586",
+      "fingerprint": "65550021047748b5e4c34d10b214521f6fbd7a00622341277ea004111252bf71",
       "sites": [
         {
           "owner": "MetadataRefresh",
@@ -2432,7 +2442,7 @@
         }
       ],
       "lifetime": "project-shell-transient-status",
-      "reason": "Refresh controls are in the project shell. Pending seconds timer and outside-click close remain ordinary subscriptions; operations remain explicit and drive revision invalidation. Independent epoch-refresh source review (2026-10-21): Adds an anchor target for contextual metadata-refresh discovery; existing explicit verification workflow and its effect ownership unchanged.",
+      "reason": "Refresh controls are in the project shell. Pending seconds timer and outside-click close remain ordinary subscriptions; operations remain explicit and drive revision invalidation. Independent epoch-refresh source review (2026-10-21): Adds an anchor target for contextual metadata-refresh discovery; existing explicit verification workflow and its effect ownership unchanged. Recorded-attribute coverage is validated and displayed from the existing refresh receipt.",
       "tests": [
         "src/metadataRefreshLifecycle.test.js",
         "src/presentationSessionsApp.test.js",
@@ -2589,7 +2599,7 @@
       ]
     },
     "src/project-workspace/ui/DataStores.jsx": {
-      "fingerprint": "6016267de8da0544ae782c556bdf1dd5e5c90e68a17e12bce9522f1c53a417c4",
+      "fingerprint": "bf377c94a89e6966458b693df1e797cc3d370d0058f923106004eda6022ccd00",
       "sites": [
         {
           "owner": "StoreTimeline",
@@ -2613,12 +2623,13 @@
         }
       ],
       "lifetime": "semantic-source-pagination + fresh-source-reads",
-      "reason": "StoreTimeline source SHA resets event offset; same-source Activity return retains offset and performs normal resource revalidation. Main saved tab/query paging already has a committed-filter guard; source actions remain explicit. Authored-reason binding now owned by persistence agent. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged.",
+      "reason": "StoreTimeline source SHA resets event offset; same-source Activity return retains offset and performs normal resource revalidation. Main saved tab/query paging already has a committed-filter guard; source actions remain explicit. Authored-reason binding now owned by persistence agent. Reviewed 2026-10-17 Overview visual pass and shared byte formatting: protocol Overview presentation, a summary variant of the type rows, a generic cells line icon and one decimal byte formatter; effect sites, semantic reset, UUID keys, reads and authority are unchanged. The recorded H5 attributes disclosure belongs to the selected recording SHA. Ordinary store navigation requests no raw attribute page until expanded.",
       "tests": [
         "src/useSemanticReset.test.js",
         "src/semanticPresentationControls.test.js",
         "src/overviewPresentation.test.js",
-        "src/storageSizeAgreement.test.js"
+        "src/storageSizeAgreement.test.js",
+        "src/epoch-browser/metadataPresentation.test.js"
       ]
     },
     "src/project-workspace/ui/ProjectClosedNotice.jsx": {
@@ -4039,7 +4050,7 @@
       ]
     },
     "src/typed-query/ui/PredicateBuilder.jsx": {
-      "fingerprint": "24670f89faabae2eb760c61967d72ec34f48a0a01e4a0b908b955690760d307b",
+      "fingerprint": "6e4572f8927d52f484d1c05c995d0c33ab9e9dceae3e0a4d68ba7fe2fafce797",
       "sites": [
         {
           "owner": "FieldPicker",
@@ -4068,10 +4079,11 @@
         }
       ],
       "lifetime": "semantic-chooser-state + active-global-handlers",
-      "reason": "Search/category resets chooser limit/active choice; explicit open/position and keyboard-choice keys control focus/scroll. Global outside/position listeners and popover render only while retained owner is active; cleanup still runs independently. Preview cleanup (2026-10-19): the field picker no longer renders distinct-value counts/examples (only the removed dialog summaries supplied them); effect sites unchanged.",
+      "reason": "Search/category resets chooser limit/active choice; explicit open/position and keyboard-choice keys control focus/scroll. Global outside/position listeners and popover render only while retained owner is active; cleanup still runs independently. Preview cleanup (2026-10-19): the field picker no longer renders distinct-value counts/examples (only the removed dialog summaries supplied them); effect sites unchanged. Exact JSON and value signatures are H5-specific typed alternatives in the existing condition editor, sharing its retained-view and submission lifetime.",
       "tests": [
         "src/useSemanticReset.test.js",
-        "src/semanticPresentationControls.test.js"
+        "src/semanticPresentationControls.test.js",
+        "src/typed-query/predicateState.test.js"
       ]
     },
     "src/typed-query/ui/PredicateDialog.jsx": {
@@ -4177,23 +4189,25 @@
       ]
     },
     "src/typed-query/ui/predicateEditor.js": {
-      "fingerprint": "54f106aa59a36f6413fad5d6ff7724e5a520ad0d5ea6d08de86b1fe3675c25b6",
+      "fingerprint": "4c80a8127c1e0f9f1ca2013a4744abd027d8f1dea6fef12a1cfe320d572f8249",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. H5 numeric, structured and array fields choose exact text by default so the editor preserves raw integer digits before compilation.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/typed-query/predicateState.test.js"
       ]
     },
     "src/typed-query/ui/predicateState.js": {
-      "fingerprint": "017a65638415e583a865e375becac48909cad077a02d45831939fe4dd7750b29",
+      "fingerprint": "7fb14b9a4d5f0fcd9b914be6d1591dd9d72fcb8e63481fc33e209be32669d9ea",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Raw-H5 predicate drafts round-trip exact JSON strings and bounded digest comparisons without routing acquisition integers through JavaScript numeric conversion.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/typed-query/predicateState.test.js"
       ]
     },
     "src/undo/mutationUndo.js": {

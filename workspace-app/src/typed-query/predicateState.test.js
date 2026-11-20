@@ -25,3 +25,11 @@ test('unsafe integer values and incomplete numeric inputs are rejected',()=>{
 test('ordering cannot silently coerce a textual source value',()=>{
  assert.throws(()=>compilePredicate(predicateToDraft({field:'parameters/frequencyCutoff',operator:'gt',value:'25'}),fields),/numeric value/);
 });
+
+test('raw H5 field exact JSON preserves uint64 digits and long arrays across draft edits',()=>{
+ const value='18446744073709551615';
+ for(const [operator,encoded] of [['gte',value],['eq',JSON.stringify(Array.from({length:300},(_,i)=>i))],['contains',value]]){
+  const predicate={field:'h5/epoch/@data',operator,value:encoded,value_encoding:'json'};
+  assert.deepEqual(compilePredicate(predicateToDraft(predicate)),predicate);
+ }
+});

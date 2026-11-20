@@ -72,6 +72,8 @@ class SourceIdentityTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.path = Path(self.temp.name) / 'source.h5'
         self.doc = fixture(self.path)
+        self.service = WorkspaceService.__new__(WorkspaceService)
+        self.service.project_dir = Path(self.temp.name)
 
     def validate(self):
         with h5py.File(self.path, 'r') as h5:
@@ -129,7 +131,7 @@ class SourceIdentityTests(unittest.TestCase):
         source = {'source_sha256': workspace.digest(self.path), 'manifest': {
             'counts': {'cells': 2, 'epochs': 2}, 'validated_at': '2026-09-29'}}
         with self.assertRaisesRegex(ValueError, 'group.*(identity|membership|source)'):
-            WorkspaceService.__new__(WorkspaceService)._read_source_metadata(source, self.doc, self.path, signature)
+            self.service._read_source_metadata(source, self.doc, self.path, signature)
 
     def signature(self):
         stat = self.path.stat()
@@ -222,7 +224,7 @@ class SourceIdentityTests(unittest.TestCase):
         self.assertEqual(manifest['counts']['cells'], 3)
         self.assertEqual(manifest['cell_count_semantics'], 'all-source-cells-v1')
         self.assertEqual({r['cell_uuid'] for r in rows}, {uid(10), uid(20)})
-        projection = WorkspaceService.__new__(WorkspaceService)._read_source_metadata(
+        projection = self.service._read_source_metadata(
             {'source_sha256': manifest['source_sha256'], 'manifest': manifest}, doc, self.path, self.signature())
         self.assertEqual(set(projection['cells']), {uid(10), uid(20), uid(40)})
         self.assertEqual(projection['rows'][uid(23)]['cell_uuid'], uid(20))
@@ -231,7 +233,7 @@ class SourceIdentityTests(unittest.TestCase):
         legacy = copy.deepcopy(manifest)
         legacy.pop('cell_count_semantics')
         legacy['counts']['cells'] = 2
-        reopened = WorkspaceService.__new__(WorkspaceService)._read_source_metadata(
+        reopened = self.service._read_source_metadata(
             {'source_sha256': legacy['source_sha256'], 'manifest': legacy}, doc, self.path, self.signature())
         self.assertEqual(set(reopened['cells']), {uid(10), uid(20), uid(40)})
         self.assertEqual(reopened['rows'], projection['rows'])
@@ -241,7 +243,7 @@ class SourceIdentityTests(unittest.TestCase):
                     {key: value for key, value in manifest.items() if key != 'cell_count_semantics'}):
             with self.subTest(bad=bad.get('cell_count_semantics')):
                 with self.assertRaisesRegex(ValueError, 'count|semantics'):
-                    WorkspaceService.__new__(WorkspaceService)._read_source_metadata(
+                    self.service._read_source_metadata(
                         {'source_sha256': bad['source_sha256'], 'manifest': bad}, doc, self.path, self.signature())
 
     def add_stimulus(self, device, number, offset=None, modes=()):
@@ -269,7 +271,7 @@ class SourceIdentityTests(unittest.TestCase):
         self.add_stimulus('Amp3', 52, modes=[None])
         source = {'source_sha256': workspace.digest(self.path), 'manifest': {
             'counts': {'cells': 2, 'epochs': 2}, 'validated_at': '2026-01-01', 'source_path': str(self.path)}}
-        projection = WorkspaceService.__new__(WorkspaceService)._read_source_metadata(
+        projection = self.service._read_source_metadata(
             source, self.doc, self.path, self.signature())
         settings = projection['rows'][uid(13)]['stimulus']
         self.assertEqual(settings['Amp1'], {'offset': -62.5, 'offsetUnits': 'mV', 'operatingMode': 'VClamp'})
@@ -305,7 +307,7 @@ class SourceIdentityTests(unittest.TestCase):
         self.assertEqual(self.prepare()[2]['metadata_sha256'], manifest['metadata_sha256'])
         next(workspace.epochs(doc))[3]['stimulus']['Amp1']['operatingMode'] = 'VClamp'
         with self.assertRaisesRegex(ValueError, 'stimulus settings'):
-            WorkspaceService.__new__(WorkspaceService)._read_source_metadata(
+            self.service._read_source_metadata(
                 {'source_sha256': manifest['source_sha256'], 'manifest': manifest}, doc, self.path, self.signature())
         # A repeat prepare of an existing v1 registration must retain the
         # canonical document hash already stored by MySQL.

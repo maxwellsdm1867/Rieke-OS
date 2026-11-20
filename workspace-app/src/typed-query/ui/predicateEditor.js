@@ -13,6 +13,10 @@ export function fieldCategory(field){
 }
 function typeOf(value){return value===null?'null':Array.isArray(value)?'array':typeof value;}
 export function preferredValueType(field,operator='eq'){
+  if(field?.id?.startsWith('h5/')&&!['in','not_in'].includes(operator)){
+    if(['gt','gte','lt','lte'].includes(operator)||field.types?.includes('number'))return 'exact';
+    if(field.types?.some(kind=>kind==='array'||kind==='object'))return 'exact';
+  }
   if(['in','not_in'].includes(operator))return 'array';
   if(['gt','gte','lt','lte'].includes(operator))return 'number';
   if(field?.id==='date')return 'string';

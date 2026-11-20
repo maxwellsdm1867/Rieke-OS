@@ -499,7 +499,7 @@ class PublicationCacheTests(unittest.TestCase):
             owner._check()
         self.assertTrue(self.service._loaded)
 
-    def test_refresh_rebuilds_invalid_typed_seal_but_refuses_changed_native(self):
+    def test_refresh_recovers_typed_seal_and_reverifies_changed_native_before_reuse(self):
         from pathlib import Path
         import os
         owner = self.service.typed_index
@@ -508,12 +508,18 @@ class PublicationCacheTests(unittest.TestCase):
         self.service.refresh()
         self.assertEqual(self.service.last_refresh['typed_metadata_index'], 'built')
         self.service.typed_index._check()
-        native = self.service.disk_index.path
+        previous = self.service.disk_index
+        members = set(previous.values())
+        native = previous.path
         stat = native.stat()
         os.utime(native, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000))
         with self.assertRaises(ValueError):
-            self.service.refresh()
-        self.assertFalse(self.service._loaded)
+            previous._check()
+        result = self.service.refresh()
+        self.assertIsNot(self.service.disk_index, previous)
+        self.assertEqual(set(self.service.disk_index.values()), members)
+        self.assertEqual(result['attribute_coverage']['status'], 'complete')
+        self.service.typed_index._check()
 
     def test_rebuild_pins_old_native_and_typed_assets_for_existing_readers(self):
         owner = self.service.typed_index
@@ -562,8 +568,11 @@ class NativeSummaryReadTests(unittest.TestCase):
         service.disk_index, service.details = index, index.details
         service._registered_tree_cache = None
         service._registered_tree_fields()
-        with patch.object(index, '_connect', wraps=index._connect) as connect:
+        value_type=type(index.values())
+        with patch.object(index, '_connect', wraps=index._connect) as connect, \
+             patch.object(value_type,'subset',autospec=True,side_effect=value_type.subset) as subset:
             result = queries._native_summaries(service, context, lambda: False)
+        self.assertEqual(subset.call_args.kwargs['fields'],set(context['summary_fields']))
         self.assertEqual(result, expected)
         self.assertEqual(result['matched_count'], 602)
         self.assertLessEqual(connect.call_count, 4, connect.call_count)

@@ -76,12 +76,68 @@ def _raw_definition(field):
     if key in tree.BASE_FIELDS:
         label, category, path = tree.BASE_FIELDS[key]
         return dict(id=key, label=label, category=category, path=path)
-    if key.startswith(('joint/', 'stimulus/')):
+    if key.startswith(('joint/', 'stimulus/', 'h5/')):
         return {name: field[name] for name in ('id','label','category','path','components') if name in field}
     parts = [unquote(part).replace('~1','/').replace('~0','~') for part in key.split('/')]
     names = {'experiment':'Experiment','cell':'Cell','group':'Epoch group','block':'Epoch block','epoch':'Epoch'}
     prefix = names[parts[1]]+' · ' if parts[0]=='metadata' else 'Epoch · ' if parts[0]=='properties' else ''
     return dict(id=key,label=prefix+tree.humanize(parts[-1]),category=field['category'],path='.'.join(parts))
+
+
+def _install_h5_inventory(connection, sources, definitions, field_numbers):
+    """Register source dictionaries once, then join inherited values by integer ID."""
+    inventories = [source for source in sources if source.get('h5_attribute_inventory')]
+    if not inventories:
+        return {}
+    from workspace_h5_attributes import field_definitions, field_value_rows, epoch_value_ids
+    connection.execute('CREATE TEMP TABLE raw_value(local_id INTEGER PRIMARY KEY, field_no INTEGER, value_id INTEGER)')
+    connection.execute('CREATE TEMP TABLE raw_link(epoch_uuid TEXT, local_id INTEGER)')
+    connection.execute('CREATE TEMP TABLE raw_fields(field_no INTEGER PRIMARY KEY,field_id TEXT UNIQUE)')
+    receipts = {}
+    for source in inventories:
+        sha = source['source_sha256']
+        descriptor = source['h5_attribute_inventory']
+        if descriptor['source_sha256'] != sha:
+            raise ValueError('H5 attribute inventory belongs to another source')
+        expected = {}
+        for field in field_definitions(descriptor):
+            key = field['id']
+            if not key.startswith('h5/') or key in expected:
+                raise ValueError('Invalid or duplicate recorded H5 field')
+            if key not in field_numbers:
+                number = len(field_numbers) + 1
+                field_numbers[key] = number
+                definitions[key] = _raw_definition(field)
+                connection.execute('INSERT INTO fields VALUES(?,?,?)', (number,key,_json(definitions[key])))
+            expected[key] = field_numbers[key]
+        connection.executemany('INSERT INTO raw_fields(field_no,field_id) VALUES(?,?)',((n,k) for k,n in expected.items()))
+        registered, = connection.execute('SELECT count(*) FROM raw_fields JOIN fields USING(field_no,field_id)').fetchone()
+        if registered != len(expected) or registered != descriptor['field_count']:
+            raise ValueError('H5 field inventory count differs from its descriptor')
+        for local_id, key, raw in field_value_rows(descriptor):
+            number = expected[key]
+            connection.execute('INSERT OR IGNORE INTO field_values(field_no,value_json) VALUES(?,?)', (number,raw))
+            value_id, = connection.execute('SELECT value_id FROM field_values WHERE field_no=? AND value_json=?', (number,raw)).fetchone()
+            connection.execute('INSERT INTO raw_value VALUES(?,?,?)', (local_id,number,value_id))
+        connection.executemany('INSERT INTO raw_link VALUES(?,?)', epoch_value_ids(descriptor))
+        expected_links, = connection.execute('SELECT count(*) FROM raw_link').fetchone()
+        inserted = connection.execute("""INSERT INTO epoch_values(epoch_id,field_no,value_id)
+            SELECT e.epoch_id,v.field_no,v.value_id FROM raw_link l JOIN raw_value v USING(local_id)
+            JOIN epochs e ON e.epoch_uuid=l.epoch_uuid AND e.source_sha=?""", (sha,)).rowcount
+        if inserted != expected_links:
+            raise ValueError('H5 attribute association references another source or an unknown value')
+        linked, = connection.execute('SELECT count(DISTINCT field_no) FROM raw_link JOIN raw_value USING(local_id)').fetchone()
+        receipts[sha] = {'source_sha256': sha, 'inventory_sha256': descriptor['sha256'],
+            'contract': descriptor['contract'], 'logical_sha256': descriptor['logical_sha256'],
+            'registered_field_count': registered, 'unassociated_field_count': registered-linked,
+            'epoch_field_associations': inserted}
+        connection.execute('DELETE FROM raw_link')
+        connection.execute('DELETE FROM raw_value')
+        connection.execute('DELETE FROM raw_fields')
+    connection.execute('DROP TABLE raw_link')
+    connection.execute('DROP TABLE raw_value')
+    connection.execute('DROP TABLE raw_fields')
+    return receipts
 
 
 class DiskMetadataIndex:
@@ -132,7 +188,7 @@ class DiskMetadataIndex:
             for offset in range(0,len(row_list),CHUNK_SIZE):
                 chunk = row_list[offset:offset+CHUNK_SIZE]
                 chunk_details = {row['epoch_uuid']:details[row['epoch_uuid']] for row in chunk}
-                summary, values = tree.catalog(chunk,chunk_details,sources=sources)
+                summary, values = tree.catalog(chunk,chunk_details,sources=sources,include_h5=False)
                 for field in summary['fields']:
                     key = field['id']
                     if key.startswith('joint/') or key in definitions:
@@ -159,6 +215,9 @@ class DiskMetadataIndex:
                             if len(value_cache)>8192: value_cache.popitem(last=False)
                         links.append((epoch_id,number,value_id))
                     connection.executemany('INSERT INTO epoch_values VALUES(?,?,?)',links)
+            h5_coverage = _install_h5_inventory(connection, sources, definitions, field_numbers)
+            if h5_coverage:
+                connection.execute('INSERT INTO meta VALUES(?,?)', ('h5_attribute_coverage',_json(h5_coverage)))
             # Empty indexes still expose the stable base schema.
             for key,(label,category,field_path) in tree.BASE_FIELDS.items():
                 if key not in definitions:
@@ -280,6 +339,44 @@ class DiskMetadataIndex:
             self._check()
         finally: connection.close()
 
+    def search_h5_values(self, text, active_sources, limit):
+        """Find exact-value predicates from the full recorded dictionary, with bounded replies."""
+        sources = tuple(active_sources)
+        if not sources or not any(f['id'].startswith('h5/') for f in self._definitions):
+            return [], False
+        hits = []
+        needle = text.casefold()
+        with self._connect([]) as conn:
+            conn.execute('CREATE TEMP TABLE active_sources(sha TEXT PRIMARY KEY)')
+            conn.executemany('INSERT INTO active_sources VALUES(?)', ((sha,) for sha in sources))
+            def matches_text(raw):
+                if needle in raw.casefold():
+                    return True
+                return '\\' in raw and needle in _json(json.loads(raw)).casefold()
+            conn.create_function('contains_text',1,matches_text,deterministic=True)
+            matches = conn.execute("""SELECT f.field_id,v.value_json,count(*)
+                FROM fields f CROSS JOIN field_values v ON f.field_no=v.field_no
+                CROSS JOIN epoch_values ev ON ev.field_no=v.field_no AND ev.value_id=v.value_id
+                JOIN epochs e ON ev.epoch_id=e.epoch_id JOIN active_sources a ON e.source_sha=a.sha
+                WHERE f.field_id GLOB 'h5/*' AND contains_text(v.value_json)
+                GROUP BY f.field_no,v.value_id ORDER BY f.field_no,v.value_id LIMIT ?""", (limit+1,))
+            for key, raw, count in matches:
+                if len(hits)==limit:
+                    return hits, True
+                # Dictionary counts describe the exact recorded JSON spelling.
+                # A scientific numeric predicate (1 == 1.0) can match multiple
+                # dictionary entries, so activate each hit by its exact value.
+                pred = {'field':key,'operator':'eq','value_encoding':'sha256',
+                        'value':predicates.h5_value_digest(json.loads(raw))}
+                hits.append((key,raw[:160],count,pred))
+        return hits, False
+
+    def h5_attribute_coverage(self):
+        """Read the source-bound coverage proven when this immutable index was built."""
+        with self._connect([]) as connection:
+            row = connection.execute("SELECT value FROM meta WHERE key='h5_attribute_coverage'").fetchone()
+        return json.loads(row[0]) if row else {}
+
     def values(self,ids=None,fields=None):
         return _Values(self,ids,fields)
 
@@ -387,9 +484,21 @@ class DiskMetadataIndex:
             scoped_join=('CROSS JOIN' if ids is not None and
                          len(rows)<getattr(self,'_epoch_count',float('inf')) else 'JOIN')
             statistics={}
+            raw_stats={}
+            raw_filter=''
+            if any(key.startswith('h5/') for key in definitions):
+                # Physical acquisition arrays can be much larger than scientific
+                # settings. Catalogs carry counts/types; inspection loads values.
+                raw_filter="WHERE ev.field_no NOT IN (SELECT field_no FROM fields WHERE field_id GLOB 'h5/*')"
+                for number,present,distinct,nonnull,nulls in connection.execute(f'''SELECT ev.field_no,count(*),
+                        count(DISTINCT ev.value_id),count(DISTINCT CASE WHEN v.value_json!='null' THEN ev.value_id END),
+                        sum(v.value_json='null') FROM scope s {scoped_join} epoch_values ev USING(epoch_id)
+                        JOIN field_values v USING(value_id)
+                        WHERE ev.field_no IN (SELECT field_no FROM fields WHERE field_id GLOB 'h5/*') GROUP BY ev.field_no'''):
+                    raw_stats[number]=(present,distinct,nonnull,nulls)
             for number,raw,count,first in connection.execute(f'''SELECT ev.field_no,v.value_json,COUNT(*),MIN(s.ordinal)
                     FROM scope s {scoped_join} epoch_values ev USING(epoch_id) JOIN field_values v USING(value_id)
-                    GROUP BY ev.field_no,ev.value_id ORDER BY ev.field_no,MIN(s.ordinal)'''):
+                    {raw_filter} GROUP BY ev.field_no,ev.value_id ORDER BY ev.field_no,MIN(s.ordinal)'''):
                 statistics.setdefault(number,[]).append((raw,count,first))
             field_numbers=dict(connection.execute('SELECT field_id,field_no FROM fields'))
             for field in self._definitions:
@@ -409,6 +518,11 @@ class DiskMetadataIndex:
                     projected=dict(self.values(ids=[row['epoch_uuid'] for row in rows],fields=[key]).items())
                     joint_projections[key]=projected
                     field.update(tree._joint_summary(field,projected));continue
+                if key.startswith('h5/'):
+                    present,distinct,nonnull,nulls=raw_stats.get(field_numbers.get(key),(0,0,0,0))
+                    field.update(distinct_count=distinct,missing_count=total-present,recorded_distinct_count=nonnull,
+                        varying=nonnull>1,null_count=nulls,count=total,examples=[])
+                    continue
                 stats=statistics.get(field_numbers.get(key),[])
                 distinct=[json.loads(raw) for raw,_,_ in stats];samples=sorted(distinct,key=tree.value_order)[:5]
                 examples=[('null (recorded)' if value is None else tree.value_label(value))[:160] for value in samples]
@@ -442,14 +556,26 @@ class DiskMetadataIndex:
             self._check();return copy.deepcopy(self._predicate_cache)
         result=self.catalog(ids)
         with self._connect(ids) as connection:
+            raw_types={}
+            if any(field['id'].startswith('h5/') for field in result['fields']):
+                names={'true':'boolean','false':'boolean','integer':'number','real':'number','text':'string'}
+                for key,kind in connection.execute('''SELECT DISTINCT f.field_id,json_type(v.value_json)
+                    FROM fields f JOIN field_values v USING(field_no) WHERE f.field_id GLOB 'h5/*'
+                    AND EXISTS(SELECT 1 FROM epoch_values ev JOIN scope s USING(epoch_id)
+                        WHERE ev.field_no=f.field_no AND ev.value_id=v.value_id) '''):
+                    raw_types.setdefault(key,set()).add(names.get(kind,kind))
             for field in result['fields']:
+                if field['id'].startswith('h5/'):
+                    field.update(types=sorted(raw_types.get(field['id'],())),choices=[],choices_truncated=bool(field['distinct_count']))
+                    continue
                 buckets=[];indexed={};types=set()
                 if field['id'].startswith('joint/'):
                     projected=self.values(ids,fields=[field['id']])
                     summary=predicates.predicate_catalog({'fields':[field]},projected)['fields'][0]
                     field.update({key:summary[key] for key in ('types','choices','choices_truncated')});continue
                 for raw,count in connection.execute('SELECT v.value_json,COUNT(*) FROM scope s JOIN epoch_values ev USING(epoch_id) JOIN fields f USING(field_no) JOIN field_values v USING(value_id) WHERE f.field_id=? GROUP BY v.value_id ORDER BY MIN(s.ordinal)',(field['id'],)):
-                    value=json.loads(raw);kind=predicates.kind(value);types.add(kind);key=predicates.equality_key(value)
+                    value=json.loads(raw);kind=predicates.kind(value);types.add(kind)
+                    key=predicates.equality_key(value)
                     if key in indexed: indexed[key]['count']+=count
                     elif len(buckets)<=predicates.MAX_CHOICES:
                         bucket=dict(value=value,type=kind,count=count);buckets.append(bucket);indexed[key]=bucket
@@ -567,13 +693,14 @@ class _Values(Mapping):
             found=list(_Values(self.index,None,self.fields,_start=key,_limit=size+1).items())
             if len(found)>size: self._next=found[size][0]
             self._window=dict(found[:size])
-    def subset(self,ids):
+    def subset(self,ids,fields=None):
         """A streaming view of these identities in their order: one read, not one per key."""
         ids=tuple(ids)
         if self.idset is not None:
             missing=next((key for key in ids if key not in self.idset),None)
             if missing is not None: raise KeyError(missing)
-        return _Values(self.index,ids,self.fields)
+        selected = self.fields if fields is None else fields if self.fields is None else set(self.fields).intersection(fields)
+        return _Values(self.index, ids, selected)
     def items(self):
         definitions={field['id']:field for field in self.index._definitions}
         joints={}

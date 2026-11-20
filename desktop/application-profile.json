@@ -103,6 +103,8 @@
     "workspace_linked_sqlite.py",
     "workspace_export_folder.py",
     "workspace_frontend.py",
+    "workspace_h5_attribute_inventory.py",
+    "workspace_h5_attributes.py",
     "workspace_h5_inbox.py",
     "workspace_http_boundary.py",
     "workspace_import_check.py",

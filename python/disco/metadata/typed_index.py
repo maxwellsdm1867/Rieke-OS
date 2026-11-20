@@ -10,7 +10,7 @@ import hashlib
 import json, os, resource, shutil, sqlite3, sys, threading, time
 from pathlib import Path
 from disco.metadata.typed_query import (_TypedQueries, ORIGINAL_TABLES, CORE_COLUMNS, CORE_FIELDS,
-                                canonical, equality_json, predicates, Decoder, file_sha)
+                                canonical, equality_json, bulky_raw_value, stored_equality, predicates, Decoder, file_sha)
 
 FORMAT = 1
 
@@ -169,6 +169,10 @@ def build(source_db, target_db, *, max_seconds=300, min_free_gib=4, max_rss_gib=
         target.execute('UPDATE typed_core SET chronology_rank=(SELECT chronology_rank FROM typed_ranks r WHERE r.epoch_id=typed_core.epoch_id)')
         target.execute('DROP TABLE typed_ranks')
         target.commit(); mark('chronology_assign_seconds',start)
+        raw_fields = {n for n, in target.execute("SELECT field_no FROM native.fields WHERE field_id GLOB 'h5/*'")}
+        # Validation depends on kinds only. Keep a bounded representative for each
+        # recorded kind, independent of acquisition array sizes.
+        kind_example = {'array':[], 'object':{}, 'string':'', 'number':0, 'boolean':False, 'null':None}
         start=time.perf_counter(); batch=[]
         for value_id, field_no, raw in target.execute('SELECT value_id,field_no,value_json FROM native.field_values ORDER BY value_id'):
             value=json.loads(raw); kind=predicates.kind(value); kinds[kind]=kinds.get(kind,0)+1
@@ -178,15 +182,20 @@ def build(source_db, target_db, *, max_seconds=300, min_free_gib=4, max_rss_gib=
                 if type(value) is int and abs(value)>2**53-1:
                     numeric_class='wide_integer';wide_fields.add(field_no)
                 else: numeric=value
-            batch.append((value_id,field_no,kind,numeric,numeric_class,text,equality_json(value),raw))
+            is_raw = field_no in raw_fields
+            bulky = is_raw and bulky_raw_value(value)
+            batch.append((value_id,field_no,kind,numeric,numeric_class,None if bulky else text,
+                          stored_equality(value,is_raw),raw))
             # validate() only inspects observed value and array-element kinds.
             # Preserve one actual value for each such kind, avoiding million-ID
             # dictionary scans when predicates are validated at query time.
             samples=representatives.setdefault(field_no,{})
-            samples.setdefault(kind,raw)
+            samples.setdefault(kind,canonical(kind_example[kind]) if is_raw else raw)
             if kind=='array':
                 for item in value:
-                    samples.setdefault('array_element:'+predicates.kind(item),raw)
+                    element_kind = predicates.kind(item)
+                    if 'array_element:'+element_kind not in samples:
+                        samples['array_element:'+element_kind] = canonical([kind_example[element_kind]]) if is_raw else raw
             if len(batch)>=2000:
                 target.executemany('INSERT INTO typed_values VALUES (?,?,?,?,?,?,?,?)',batch)
                 batch.clear();budget.check()
