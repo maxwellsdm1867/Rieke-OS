@@ -137,11 +137,14 @@ test('running a query sends no catalog statistics in previews and exactly one su
   assert.deepEqual(jobs()[0].body.predicate,predicate);
   assert.deepEqual(jobs()[0].body.summary_fields,definitions.map(field=>field.id));
   assert.ok(builder().catalogData.fields.some(field=>field.id===raw.id),'raw definitions remain available without fetching array distributions');
+  const viewer=()=>h.root.findByType('explorer-viewer').props;
+  assert.ok(viewer().metadataCatalog.data.fields.some(field=>field.id===raw.id),'live sidebar can classify recorded fields absent from summary-only previews');
   assert.equal(builder().summaryEnabled,false,'the builder renders the result job instead of starting its own');
   assert.equal(builder().catalogData.fields.find(field=>field.id==='date').distinct_count,1);
   let start=h.requests.length;await h.act(()=>builder().onChange(['date','parameters/field150']));await h.settle();await h.settle(50);
   assert.ok(h.requests.slice(start).filter(item=>item.path==='/explore/preview').every(item=>!Object.hasOwn(item.body,'catalog_summary')));
   assert.equal(jobs().length,1,'a layout change of the same query reuses the result statistics');
+  assert.equal(viewer().splits,viewer().preview.tree.split_order.join(','),'matching pages pair the displayed split order with its witnessed revision');
  }finally{await h.close();}
 });
 
@@ -278,7 +281,7 @@ test('displayed search previews renew on known changes, retain annotation holds 
  }finally{await h.close();}
 });
 
-test('the predicate editor keeps tag-name autocomplete: the one request allowed while editing',async()=>{
+test('the predicate editor preserves tag-name autocomplete without requesting field statistics',async()=>{
  const h=await harness();
  try{
   const tagField={id:'annotations/epoch/tags',label:'Epoch tags',category:'Annotations',path:'annotations.epoch.tags',types:['string'],operators:['contains']};
@@ -295,13 +298,13 @@ test('the predicate editor keeps tag-name autocomplete: the one request allowed 
  }finally{await h.close();}
 });
 
-test('recorded-value choices: none on the current registry, and a legacy catalog with 1,000 counted values opens with no request and a bounded render',async()=>{
+test('recorded-value choices without advertised lookup, and a legacy catalog with 1,000 counted values opens with no request and a bounded render',async()=>{
  const h=await harness();
  try{
   const condition=(field,valueType,operator='eq')=>({kind:'group',id:'g',mode:'all',negated:false,children:[{kind:'condition',id:'c',field,operator,valueType,valueText:'',negated:false}]});
-  // Current service: /explore/field-registry carries no recorded choices, so the editor has no value list.
+  // Registry versions without on-demand lookup contain no recorded choices.
   await h.render(h.PredicateDialog,{draft:condition('parameters/field1','number'),catalog:{data:registry,supportsSummaries:true,reload(){}},projectId:'P1',protocolId:'A',onClose(){},onSearch(){}});await h.settle();
-  assert.equal(h.root.findAllByProps({className:'pb-recorded-values'}).length,0,'no recorded-value dropdown from the current field registry');
+  assert.equal(h.root.findAllByProps({className:'pb-recorded-values'}).length,0,'no dropdown without a recorded-value provider');
   // Legacy service (no field-registry route): /explore/predicate-fields brings choices with counts once, with the catalog.
   const choices=Array.from({length:1000},(_,i)=>({value:`v${String(i).padStart(4,'0')}`,type:'string',count:i+1}));
   const legacy={fields:[{id:'parameters/name',label:'Name',category:'Parameters',path:'parameters.name',types:['string'],operators:['eq','ne','contains'],choices},
@@ -320,6 +323,54 @@ test('recorded-value choices: none on the current registry, and a legacy catalog
   assert.ok(h.root.findAllByProps({role:'option'}).length<=30,'suggestions are bounded');
   console.log(`recorded-values legacy 1,000: open ${openMs.toFixed(1)} ms, type ${typeMs.toFixed(1)} ms (react-test-renderer commit)`);
   assert.ok(openMs<1000&&typeMs<1000);
+ }finally{await h.close();}
+});
+
+test('recorded number choices use one explicit field read, preserve large integer text and respect scope',async()=>{
+ const h=await harness();
+ try{
+  const field={id:'stimulus/Amp1/offset',label:'Amp1 offset',category:'Stimulus',types:['number'],operators:['eq','in']};
+  const data={...registry,fields:[field],field_values_available:true};
+  const condition=(operator='eq')=>({kind:'group',id:'g',mode:'all',children:[{kind:'condition',id:'c',field:field.id,operator,valueType:operator==='in'?'array':'number',valueText:operator==='in'?'[]':''}]});
+  const saved=[],props={draft:condition(),catalog:{data,reload(){}},projectId:'P1',protocolId:'draft-context',onClose(){},onSearch:(_,predicate)=>saved.push(predicate)};
+  const large='4611686018427387905',other='4611686018427387904';
+  h.respond=path=>path.startsWith('/explore/field-values?')?{field:field.id,generation:data.generation,values:[{type:'number',value_json:large},{type:'number',value_json:other}],truncated:false}:{};
+  await h.render(h.PredicateDialog,props);await h.settle();
+  const requests=()=>h.requests.filter(item=>item.path.includes('/field-values?'));
+  const open=()=>h.act(()=>h.root.findByProps({'aria-label':'Show value suggestions'}).props.onClick());
+  const choice=text=>h.root.findAllByProps({role:'option'}).find(node=>node.findByType('strong').children.includes(text));
+  const input=()=>h.root.findByProps({'aria-label':'Condition value'});
+  await h.act(()=>input().props.onFocus());await h.act(()=>input().props.onChange({target:{value:'-65.5'}}));await h.settle(150);
+  assert.equal(requests().length,0);
+  await open();await h.settle(180);
+  assert.equal(requests().length,1);assert.equal(new URL(requests()[0].path,'http://fixture').searchParams.has('protocol_uuid'),false);
+  await h.act(()=>choice(large).props.onClick());assert.equal(input().props.value,large);
+  await h.act(()=>h.button('View matching epochs').props.onClick());assert.deepEqual(saved.at(-1).all[0],{field:field.id,operator:'eq',value:large,value_encoding:'json'});
+  const filters={cell_uuid:'recorded-cell'};
+  await h.render(h.PredicateDialog,{...props,key:'scoped',draft:condition('in'),readContext:{protocol_uuid:'protocol-a',filters}});await open();await h.settle(180);
+  const params=new URL(requests().at(-1).path,'http://fixture').searchParams;
+  assert.equal(params.get('protocol_uuid'),'protocol-a');assert.deepEqual(JSON.parse(params.get('filters')),filters);
+  for(const number of [large,other,large])await h.act(()=>choice(number).props.onClick());
+  await h.act(()=>h.button('View matching epochs').props.onClick());
+  assert.deepEqual(saved.at(-1).all[0],{field:field.id,operator:'in',value:'['+large+','+other+']',value_encoding:'json'});
+  const prior=requests().length;
+  await h.render(h.PredicateDialog,{...props,key:'frozen',readContext:{root:'/frozen',protocol_uuid:'protocol-a',filters}});
+  assert.equal(h.root.findAllByProps({'aria-label':'Show value suggestions'}).length,0);
+  await h.settle(150);assert.equal(requests().length,prior);
+ }finally{await h.close();}
+});
+
+test('a generation change cannot offer old scalar choices from an open menu',async()=>{
+ const h=await harness();
+ try{
+  const field={id:'stimulus/Amp1/operatingMode',label:'Mode',types:['string'],operators:['eq']};
+  const draft={kind:'group',id:'g',mode:'all',children:[{kind:'condition',id:'c',field:field.id,operator:'eq',valueType:'string',valueText:''}]};
+  const data={...registry,fields:[field],field_values_available:true};
+  h.respond=path=>path.startsWith('/explore/field-values?')?{field:field.id,generation:{...data.generation,source:'older'},values:[{type:'string',value_json:'"stale mode"'}]}:{};
+  await h.render(h.PredicateDialog,{draft,catalog:{data},projectId:'P1',onClose(){},onSearch(){}});await h.settle();
+  await h.act(()=>h.root.findByProps({'aria-label':'Show value suggestions'}).props.onClick());await h.settle(180);
+  assert.equal(h.root.findAllByProps({role:'option'}).length,0);
+  assert.match(h.text(),/Recorded fields changed/);
  }finally{await h.close();}
 });
 

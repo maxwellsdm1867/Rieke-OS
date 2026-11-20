@@ -25,7 +25,14 @@ Joint recipes retain two to six unique nonnested components and their order;
 split recipes retain the eight-level maximum. Labels and units are presentation
 metadata, never canonical group keys or unit conversion.
 
-Draft edits are in-process and perform no scientific transaction. Building a query in `ui/PredicateDialog.jsx` sends no preview, count or statistics request; fields come from the registry. The one intended exception is tag-name autocomplete: while a shared-tag value dropdown is open, `ui/PredicateValueInput.jsx` reads `/annotation-tags?q=`. The predicate field picker shows label and source path only (no distinct-value counts or examples; the registry carries none). Recorded-value choices (with per-value epoch counts) come only from a loaded catalog: the current `/explore/field-registry` carries none, the legacy `/explore/predicate-fields` fallback does; opening or typing in the value list sends no request and renders at most 100 select options / 30 suggestions. The user runs the query (`onSearch`); results and one after-query summary job follow (metadata explorer). Dialog and
+Draft edits run in the renderer. The field registry provides labels, types and
+qualified IDs. Opening a scalar value menu reads options for that one field
+from `/explore/field-values`. Its scope follows the active recordings and any
+applicable protocol and view filters. Options carry their exact JSON text and
+a type. Opening a shared-tag menu reads the shared tag vocabulary from
+`/annotation-tags`. Legacy catalogs can provide local examples. The editor
+sends a preview or membership request only when the user applies the query.
+The user runs the query (`onSearch`); results and one after-query summary job follow (metadata explorer). Dialog and
 suggestion reads use remote but owned metadata endpoints through existing request
 and resource adapters. Preserve their scoped registry identity, request cancellation
 and mounted lifetime. App/callers apply and save; backend evaluation and canonical

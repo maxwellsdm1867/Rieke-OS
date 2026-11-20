@@ -22,6 +22,7 @@ export function treeFieldMatches(field,{order=[],category='Common',suggestions=[
  if(order.includes(field.id))return false;
  if(category!=='All' && !(category==='Common'?COMMON_TREE_FIELDS.includes(field.id):category==='Suggested'?suggestions.includes(field.id):field.category===category))return false;
  const text=[treeFieldLabel(field),treeFieldHint(field),field.id,field.path,field.category,treeFieldExamples(field)].join(' ').toLocaleLowerCase();
+ if(query&&field.id.startsWith('h5/'))return query.split(/\s+/).every(token=>text.includes(token));
  return !query || text.includes(query) || text.replace(/\s+/g,'').includes(query.replace(/\s+/g,''));
 }
 

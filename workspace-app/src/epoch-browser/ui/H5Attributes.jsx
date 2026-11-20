@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {useSemanticReset} from '../../useSemanticReset.js';
 import {useResource} from '../../api.js';
 import {h5AttributeField} from '../../components/metadataValues.js';
 import './H5Attributes.css';
@@ -15,23 +16,25 @@ function groupsOnPage(records){
 }
 
 // Keep physical records, including large acquisition arrays, off ordinary browsing requests.
-export default function H5Attributes({source,epoch=null,revision=0}){
+export default function H5Attributes({source,epoch=null,revision=0,search=''}){
   const [open,setOpen]=useState(false),[query,setQuery]=useState(''),[offset,setOffset]=useState(0);
   const [selected,setSelected]=useState(null);
-  const params=new URLSearchParams({q:query,offset:String(offset),limit:'40'});
+  useSemanticReset(search,()=>{setOffset(0);setSelected(null);});
+  const expanded=open||!!search;
+  const params=new URLSearchParams({q:search||query,offset:String(offset),limit:'40'});
   if(epoch)params.set('epoch_uuid',epoch);
   const root='/h5-attributes/'+encodeURIComponent(source);
-  const page=useResource(open?root+'?'+params:null,revision,100);
+  const page=useResource(expanded?root+'?'+params:null,revision,100);
   const record=new URLSearchParams();
   if(epoch)record.set('epoch_uuid',epoch);
   if(selected){record.set('record',String(selected.id));record.set('inventory',selected.inventory);}
-  const exact=useResource(open&&selected?root+'?'+record:null,revision);
+  const exact=useResource(expanded&&selected?root+'?'+record:null,revision);
   const title=epoch?'Recorded H5 attributes for this epoch':'Recorded H5 attributes for this recording';
-  return <section className="metadata-panel-section"><button type="button" className="metadata-section-toggle"
-    aria-expanded={open} onClick={()=>{setOpen(!open);setSelected(null);}}>{title}</button>
-    {open&&<div className="h5-attribute-browser">
-      <input type="search" aria-label="Search recorded H5 attributes" placeholder="Search names, paths or recorded values"
-        maxLength={512} value={query} onChange={event=>{setQuery(event.target.value);setOffset(0);setSelected(null);}}/>
+  return <section className="metadata-panel-section">{search?<h3 className="metadata-section-toggle">{title}</h3>:<button type="button" className="metadata-section-toggle"
+    aria-expanded={open} onClick={()=>{setOpen(!open);setSelected(null);}}>{title}</button>}
+    {expanded&&<div className="h5-attribute-browser">
+      {!search&&<input type="search" aria-label="Search recorded H5 attributes" placeholder="Search names, paths or recorded values"
+        maxLength={512} value={query} onChange={event=>{setQuery(event.target.value);setOffset(0);setSelected(null);}}/>}
       {page.loading?<p role="status">Reading recorded attributes…</p>:page.error?<p role="alert">{page.error} <button onClick={page.reload}>Retry</button></p>:page.data&&<>
         <p>{page.data.total} matching {page.data.total===1?'attribute':'attributes'}</p>
         {groupsOnPage(page.data.records).map(({key,header,rows})=><section key={key} className="h5-field-group" aria-label={header}>

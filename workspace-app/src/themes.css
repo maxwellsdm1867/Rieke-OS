@@ -11,6 +11,8 @@
  --ink:#202a3c;--ink-secondary:#465269;--ink-muted:#5f697b;--muted:var(--ink-muted);
  --border:#d6dde9;--border-subtle:#e5e9f1;--border-strong:#7888a3;
  --accent:#445fc6;--accent-hover:#354ca8;--accent-soft:#e5ebff;--on-accent:#fff;--focus:#385bcc;
+ --control-focus-wash:color-mix(in srgb,var(--accent) 23%,transparent);
+ --control-focus-fill:color-mix(in srgb,var(--accent) 23%,var(--surface));
  --success-ink:#276348;--success-soft:#e8f3ec;--success-border:#adceb8;
  --warning-ink:#825713;--warning-soft:#fff2d7;--warning-border:#ddc083;
  --error-ink:#ac3d47;--error-soft:#fbecef;--error-border:#ddaeb5;
@@ -85,5 +87,36 @@ input::placeholder,textarea::placeholder{color:var(--ink-muted);opacity:1}
 .tv-status.tv-loading{background:color-mix(in srgb,var(--plot-background) 35%,transparent)}
 .qc-trend svg,.qc-condition-summary svg{background:var(--plot-background)}
 .qc-trend svg text,.qc-condition-summary svg text,.trace text{fill:var(--plot-ink)}
-.rail :focus-visible{outline-color:var(--rail-ink)}
+.rail{--control-focus-wash:color-mix(in srgb,var(--rail-ink) 25%,transparent)}
+.primary{--control-focus-wash:color-mix(in srgb,var(--ink) 22%,transparent)}
+/* Paint over existing fills so selection, checked state and danger colors survive.
+   The overlay owns focus even on controls whose component sets a background shorthand. */
+:is(button,input,select,textarea,summary,a[href],[tabindex],[contenteditable=true]):not(.tv-plot):focus-visible,
+button:not(:disabled):active,
+label:has(>input:is([type=radio],[type=checkbox]):focus-visible),
+.epoch-skim-row:has(>input[type=checkbox]:focus-visible){
+ outline:0;
+ background-image:linear-gradient(var(--control-focus-wash),var(--control-focus-wash))!important;
+}
+/* Compound text fields include the search icon in their focus fill. A separate
+   button in the same control keeps its own keyboard focus. */
+:is(.global-search-input,.metadata-panel-search,.pb-field-search,.tb-search-wrap,.pb-value-control):has(>input:focus){
+ background-color:var(--control-focus-fill);
+}
+:root :is(.global-search-input,.metadata-panel-search,.pb-field-search,.tb-search-wrap,.pb-value-control)>input:focus{
+ outline:0;
+ background-color:transparent;
+ background-image:none!important;
+}
+input:focus::placeholder,textarea:focus::placeholder{color:var(--ink-secondary)}
+/* Forced-color palettes can suppress both tint and images. Use the user's
+   system highlight at one pixel, including labels around hidden native inputs. */
+@media(forced-colors:active){
+ :is(button,input,select,textarea,summary,a[href],[tabindex],[contenteditable=true]):focus-visible,
+ label:has(>input:is([type=radio],[type=checkbox]):focus-visible),
+ :is(.global-search-input,.metadata-panel-search,.pb-field-search,.tb-search-wrap,.pb-value-control):has(>input:focus-visible){
+  outline:1px solid Highlight!important;
+  outline-offset:0;
+ }
+}
 @media(prefers-reduced-motion:reduce){.theme-option{transition:none}}

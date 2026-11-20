@@ -135,6 +135,20 @@ test('Inspector selected-view presentation survives only renewal of the same exp
  }finally{await h.close();}
 });
 
+test('fields-only search finds separated H5 field terms and retains the exact copyable field ID',async()=>{
+ const h=await harness(),id='h5/stimulus/Amp1/dataConfigurationSpans/span_0/Amp1/@operatingMode';
+ try{
+  await h.render({catalog:{data:{fields:[{id,label:'H5 stimulus/Amp1/dataConfigurationSpans/span_0/Amp1/@operatingMode',category:'H5 attributes',grouping_role:'technical'}]},loading:false}});
+  const input=h.root.findByProps({'aria-label':'Search metadata fields'});
+  await act(()=>input.props.onChange({target:{value:'Amp1 span_0 operatingMode'}}));
+  assert.equal(h.root.findAllByProps({'aria-label':'Copy field ID '+id}).length,1);
+  await act(()=>input.props.onChange({target:{value:'technical'}}));
+  assert.equal(h.root.findAllByProps({'aria-label':'Copy field ID '+id}).length,1);
+  await act(()=>input.props.onChange({target:{value:'Amp2 span_0 operatingMode'}}));
+  assert.equal(h.root.findAllByProps({'aria-label':'Copy field ID '+id}).length,0);
+ }finally{await h.close();}
+});
+
 test('recorded H5 values are requested only on disclosure and old epoch values retire on focus change',async()=>{
  const prior=globalThis.fetch,seen=[];
  globalThis.fetch=async url=>{
@@ -168,5 +182,34 @@ test('recorded H5 values are requested only on disclosure and old epoch values r
    assert.equal(button('Recorded H5 attributes for this epoch').props['aria-expanded'],false);
    assert.ok(!h.root.findAllByType('pre').some(node=>node.children.includes('"value for epoch-a"')));
    assert.equal(seen.length,2);
+ }finally{await h.close();globalThis.fetch=prior;}
+});
+
+test('the focused sidebar search sends only bounded raw pages for the selected source and epoch',async()=>{
+ const prior=globalThis.fetch,seen=[];
+ globalThis.fetch=async url=>{
+   const request=new URL(String(url),'http://fixture');seen.push(request);
+   return {ok:true,json:async()=>({records:[{record_id:7,field_id:'h5/stimulus/Amp1/parameters/@offset',object_path:'/epoch/stimuli/Amp1/parameters',value_preview:'0',dtype:'int64',shape:[]}],inventory:'b'.repeat(64),total:1,has_more:false})};
+ };
+ const h=await harness();
+ try{
+  const render=id=>h.render({epoch:{...epoch,epoch_uuid:id,source_sha256:'a'.repeat(64)},loadingPolicy:null});
+  await render('epoch-a');
+  const search=()=>h.root.findByProps({'aria-label':'Search focused epoch metadata'});
+  const type=term=>act(()=>search().props.onChange({target:{value:term}}));
+  const settle=()=>act(async()=>new Promise(resolve=>setTimeout(resolve,165)));
+  assert.equal(seen.length,0);
+  const query='h5/stimulus/Amp1/parameters/@offset = 0';
+  await type(query);await settle();
+  assert.equal(seen.length,1);
+  assert.deepEqual(Object.fromEntries(seen[0].searchParams),{q:query,offset:'0',limit:'40',epoch_uuid:'epoch-a'});
+  assert.equal(h.root.findByProps({className:'h5-field-group'}).findByType('dt').children[0],'offset');
+  assert.equal(h.root.findAllByProps({'aria-label':'Search recorded H5 attributes'}).length,0);
+  await render('epoch-b');await settle();
+  assert.equal(seen.at(-1).searchParams.get('epoch_uuid'),'epoch-b');
+  assert.ok(seen.every(url=>!url.searchParams.has('record')));
+  await type('');await settle();
+  assert.equal(seen.length,2);
+  assert.equal(h.root.findAllByProps({className:'h5-field-group'}).length,0);
  }finally{await h.close();globalThis.fetch=prior;}
 });

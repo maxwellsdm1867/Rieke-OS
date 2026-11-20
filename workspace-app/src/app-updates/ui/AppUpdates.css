@@ -13,7 +13,6 @@
 .rail .app-update-rail-button.has-update{background:var(--rail-update);border-color:var(--rail-update);color:var(--on-rail-update)}
 .app-update-glyph{display:flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0}
 .app-update-glyph>svg{display:block;flex-shrink:0}
-.rail .app-update-rail-button:focus-visible{outline:2px solid var(--rail-ink);outline-offset:2px}
 .app-update-rail-status{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
 .app-update-dialog{max-height:calc(100vh - 48px);overflow:auto;box-shadow:0 20px 60px color-mix(in srgb,var(--shadow-base) 24%,transparent)}

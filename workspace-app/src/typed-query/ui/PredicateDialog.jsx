@@ -21,7 +21,15 @@ export default function PredicateDialog({draft:initialDraft,catalog,onSearch,onC
   const compiled=useMemo(()=>{try{return {predicate:compilePredicate(draft,catalog.data?.fields||null)};}catch(error){return {error:error.message};}},[draft,catalog.data]);
   const exactDraft=useMemo(()=>{try{return compilePredicate(draft);}catch{return null;}},[draft]);
   // Fields come from the registry; no statistics are requested while editing.
-  const fields=catalog.data?.fields||[];
+  const fields=useMemo(()=>{
+    const definitions=catalog.data?.fields||[];
+    return readContext?definitions.map(field=>field.choices?.length?{...field,choices:[]}:field):definitions;
+  },[catalog.data,readContext]);
+  const normalScope=!readContext||readContext.protocol_uuid&&Object.keys(readContext).every(key=>['protocol_uuid','filters'].includes(key));
+  const valueLookup=catalog.data?.field_values_available&&normalScope?{
+    generation:catalog.data.generation,revision:JSON.stringify([projectId,catalog.data.generation]),
+    protocol:readContext?.protocol_uuid,filters:readContext?.filters,
+  }:null;
   useRetainedModal(dialog);
   useEffect(()=>()=>request.current?.abort(),[]);
   async function search(){
@@ -34,7 +42,7 @@ export default function PredicateDialog({draft:initialDraft,catalog,onSearch,onC
   return <dialog ref={dialog} className="predicate-dialog" aria-labelledby="predicate-dialog-title" onCancel={event=>{event.preventDefault();onClose();}}>
     <header><h2 id="predicate-dialog-title"><Search size={18}/> {title}</h2><button className="icon-button" aria-label="Close predicate editor" onClick={onClose}><X size={17}/></button></header>
     <div className="predicate-dialog-body"><StableContent data={catalog.data} loading={catalog.loading} error={catalog.error} retry={catalog.reload} scope={`${projectId||''}:${protocolId||''}`} label="Refreshing search fields">
-      {catalog.data&&<PredicateBuilder pinnedProtocols={pinnedProtocols} draft={draft} fields={fields} disabled={busy||catalog.loading} onChange={setDraft}/>}
+      {catalog.data&&<PredicateBuilder valueLookup={valueLookup} pinnedProtocols={pinnedProtocols} draft={draft} fields={fields} disabled={busy||catalog.loading} onChange={setDraft}/>}
     </StableContent>
       {(compiled.error||error)&&<p role="alert" className="mx-validation">{error||compiled.error}</p>}
       <details className="mx-predicate-json"><summary>Exact predicate</summary><pre>{(compiled.predicate||exactDraft)?JSON.stringify(compiled.predicate||exactDraft,null,2):'Complete the conditions to search.'}</pre></details>

@@ -17,8 +17,9 @@
 .tv-range small{font:inherit;font-size:11px;color:var(--ink-muted)}
 .tv-footer{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;padding:6px 14px;color:var(--ink-muted)}
 .tv-shortcuts{margin-left:auto;color:var(--ink-muted);font-size:11px;line-height:1.5}
-.tv-plot{position:relative;height:300px;width:100%;outline-offset:-3px;touch-action:none;background:var(--surface)}
-.tv-plot:focus-visible{outline:2px solid var(--accent)}
+.tv-plot{position:relative;height:300px;width:100%;touch-action:none;background:var(--surface)}
+.tv-plot:focus-visible{outline:0}
+.tv-plot:focus-visible+.tv-readout{background-color:var(--control-focus-fill)}
 .tv-plot canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .tv-base{pointer-events:none}.tv-overlay{touch-action:none}.tv-zoom .tv-overlay{cursor:crosshair}.tv-pan .tv-overlay{cursor:grab}.tv-pan .tv-overlay:active{cursor:grabbing}
 .tv-status{position:absolute;inset:0;display:flex;gap:9px;align-items:center;justify-content:center;padding:25px;background:color-mix(in srgb,var(--surface) 93%,transparent);color:var(--tv-ink);font-size:13px}
@@ -32,7 +33,6 @@
 .tv-readout output{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0;color:var(--ink-secondary)}
 .tv-measure{display:grid;grid-template-rows:16px 26px;min-width:0;gap:2px}.tv-measure small{font-size:11px;line-height:16px;color:var(--ink-muted)}
 .tv-value{display:block;min-width:0;overflow-x:auto;white-space:nowrap;font:12px/20px ui-monospace,SFMono-Regular,Consolas,monospace;font-variant-numeric:tabular-nums;padding-block:2px;outline-offset:-2px}
-.tv-value:focus-visible,.tv-gap-notice:focus-visible,.tv-range:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .tv-readout label{display:grid;grid-template-rows:16px 26px;gap:2px;min-width:0;font-size:11px;line-height:16px;color:var(--ink-muted)}
 .tv-readout input{width:100%;height:26px;padding:4px 7px;font:12px/18px ui-monospace,SFMono-Regular,Consolas,monospace;font-variant-numeric:tabular-nums;border-radius:3px}
 :root[data-theme] .tv-readout input,:root[data-theme] .tv-window-fields input{border-color:var(--border);color:var(--ink-secondary);background-color:var(--surface)}

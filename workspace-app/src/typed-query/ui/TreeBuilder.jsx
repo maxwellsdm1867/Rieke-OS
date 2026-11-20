@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, CircleMinus, GitBranch, GripVertical, Keyboard, LoaderCircle, Plus, Search, X } from 'lucide-react';
 import { number } from '../../api.js';
+import {h5AttributeField} from '../../components/metadataValues.js';
 import {useFieldRegistry} from '../../summary-jobs/useFieldRegistry.js';
 import {requestedSummaryFields} from '../../requested-summaries/requestedSummaries.js';
 import './TreeBuilder.css';
@@ -41,7 +42,8 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
   const fields = useMemo(()=>{
     const recorded=definitions.map(field=>{
       const {distinct_count,recorded_distinct_count,missing_count,null_count,present_count,examples,choices,summary_available,varying,...definition}=field;
-      return {...definition,label:treeFieldLabel(field)};
+      const h5=h5AttributeField(field.id);
+      return {...definition,h5,label:h5?h5.header+' · '+h5.name:treeFieldLabel(field)};
     });
     for(const id of order)if(!recorded.some(field=>field.id===id)){
       const combined=jointDefinition(id,recorded);if(combined)recorded.push(combined);
@@ -79,7 +81,14 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
   },[fields,orderKey,search,category,suggestions,pickerTarget]);
   const suggestedLayout=catalog.data?.suggested_layout;
   const offerLayout=suggestedLayout&&!sameOrder(order,suggestedLayout.fields);
-  const shown=matches.slice(0,visible);
+  const groupedPage=new Map();
+  for(const field of matches.slice(0,visible)){
+    const key=field.h5?.parentId||(category==='Common'?'Common':field.category);
+    if(!groupedPage.has(key))groupedPage.set(key,{key,header:field.h5?.header||categoryLabel(key),fields:[]});
+    groupedPage.get(key).fields.push(field);
+  }
+  const groups=[...groupedPage.values()],shown=groups.flatMap(group=>group.fields);
+  const shownIndex=new Map(shown.map((field,index)=>[field.id,index]));
   useSemanticReset(JSON.stringify([search,category,orderKey,pickerTarget?.selected]),()=>{setActive(0);setVisible(40);});
   useEffect(()=>{
     if(!open||!retainedActive)return;
@@ -162,12 +171,6 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
   const pending = loading || orderKey!==valueKey;
   const showPending=useDelayedLoading(pending&&!error);
   const heading = order.map(id=>fieldMap.get(id)?.label || id).join(' → ');
-  const groups=shown.reduce((result,field,index)=>{
-    const groupCategory=category==='Common'?'Common':field.category;
-    const group=result.find(g=>g.category===groupCategory);
-    if(group)group.entries.push({field,index});else result.push({category:groupCategory,entries:[{field,index}]});
-    return result;
-  },[]);
   return <section className="tree-builder" aria-label="Tree builder">
     <div className="tb-heading"><button className="tb-disclosure" onClick={()=>{setExpanded(!expanded);setOpen(false);}} aria-expanded={expanded}>
       {expanded?<ChevronDown size={14}/>:<ChevronRight size={14}/>}<GitBranch size={15}/><strong>Arrange tree</strong>
@@ -192,7 +195,8 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
               aria-label={`Reorder ${field?.label || id}, level ${index+1}`} aria-describedby={dragHelpId}
               title="Drag to reorder · Alt + ↑ / ↓" onKeyDown={event=>{if(event.altKey&&['ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();move(index,event.key==='ArrowUp'?-1:1);}}}>
               <GripVertical size={17}/></button><span className="tb-step-number">{index+1}</span><div className="tb-step-field">
-            <strong title={field?.path || id}>{components.length?'Combined settings':field?.label || id}</strong>
+            {field?.h5&&<small>{field.h5.header}</small>}
+            <strong title={field?.path || id}>{components.length?'Combined settings':field?.h5?.name||field?.label||id}</strong>
             {!!components.length&&<div className="tb-joint-level">{components.map((key,index)=><span className={`joint-chip joint-color-${index%3}`} key={key}>{componentName(key)}</span>)}</div>}
           </div><div className="tb-step-actions">
             {!!components.length&&<button aria-label={`Separate ${field?.label || components.map(componentName).join(' + ')} grouping`} title="Separate into individual levels" onClick={()=>{try{changeOrder(uncombineLevel(order,id));setLayoutError('');}catch(error){setLayoutError(error.message);}}}>Separate</button>}
@@ -235,14 +239,14 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
       <div className="tb-categories">{categories.filter(name=>!pickerTarget||name!=='Combinations').map(name=><button key={name} className={category===name?'active':''}
         onMouseDown={event=>event.preventDefault()} onClick={()=>{setCategory(name);input.current?.focus();}}>{categoryLabel(name)}</button>)}</div>
       <div id={listId} role="listbox" aria-label="Available split fields" className="tb-options">
-        {groups.map(group=><div role="group" aria-label={categoryLabel(group.category)} key={group.category}>
-          {category!=='Common'&&<div className="tb-group-name">{categoryLabel(group.category)}</div>}
-          {group.entries.map(({field,index})=><button id={`${listId}-${index}`} role="option" aria-selected={active===index} tabIndex={-1}
-            className={`tb-option ${active===index?'active':''}`} key={field.id} title={field.path || field.id}
+        {groups.map(group=><div role="group" aria-label={group.header} key={group.key}>
+          {category!=='Common'&&<div className="tb-group-name">{group.header}</div>}
+          {group.fields.map(field=>{const index=shownIndex.get(field.id);return <button id={`${listId}-${index}`} role="option" aria-selected={active===index} tabIndex={-1}
+            className={`tb-option ${active===index?'active':''}`} key={field.id} title={field.path || field.id} aria-label={field.h5?field.label:undefined}
             onMouseDown={event=>event.preventDefault()} onMouseEnter={()=>setActive(index)} onClick={()=>add(field)}>
-            <div><strong><Highlight text={field.label} term={search}/></strong></div>
-            {(COMMON_TREE_FIELDS.includes(field.id)||field.grouping_hint)&&<small className="tb-field-hint">{treeFieldHint(field)}</small>}<small><Highlight text={field.path || field.id} term={search}/></small>
-          </button>)}
+            <div><strong><Highlight text={field.h5?.name||field.label} term={search}/></strong></div>
+            {!field.h5&&(COMMON_TREE_FIELDS.includes(field.id)||field.grouping_hint)&&<small className="tb-field-hint">{treeFieldHint(field)}</small>}{!field.h5&&<small><Highlight text={field.path || field.id} term={search}/></small>}
+          </button>;})}
         </div>)}
         {!matches.length&&<div className="tb-no-results"><p>{catalog.error?'Fields could not be loaded.':search?'No fields match this search. Try a parameter name or source value.':'All fields in this category are already in the tree.'}</p><button onMouseDown={event=>event.preventDefault()} onClick={()=>{setCategory('All');setSearch('');input.current?.focus();}}>Browse all metadata fields</button></div>}
       </div>

@@ -1,5 +1,4 @@
 .tree-group-tag-button{display:inline-flex;align-items:center;justify-content:center;padding:5px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--accent);min-width:25px;min-height:25px;cursor:pointer}
-.tree-group-tag-button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .hierarchy-tree .ht-branch>.tree-group-tag-button{position:static;width:26px;min-height:26px;padding:5px;align-items:center;justify-content:center;align-self:start;margin-top:3px}
 
 .tp-group-tag-wrap{position:relative}
@@ -15,7 +14,6 @@
 .incoming-explicit-select,.incoming-tree-actions>.tree-group-tag-button{display:inline-flex;align-items:center;justify-content:center;gap:3px;min-height:26px;padding:4px 6px;font-size:10px;white-space:nowrap;flex-shrink:0}
 .incoming-explicit-select[aria-pressed=true]{background:var(--success-soft);color:var(--success-ink);}
 .incoming-tree-actions>.tree-group-tag-button{color:var(--ink);border-color:var(--border-strong,var(--border));font-weight:600}
-.incoming-explicit-select:focus-visible{outline:2px solid var(--success-ink);outline-offset:2px}
 .tp-group-tag-wrap>.incoming-tree-actions{position:absolute;right:9px;bottom:8px}
 .tp-group-tag-wrap:has(>.incoming-tree-actions)>.tp-branch{padding-bottom:40px}
 .tp-level-heading>.incoming-tree-actions{margin-left:auto;flex-wrap:wrap;justify-content:flex-end;max-width:150px}
@@ -28,7 +26,6 @@
 /* Binary branch intent stays on when an individual descendant is switched off. */
 .incoming-selection-switch{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:28px;min-width:58px;padding:4px 7px;border:1px solid var(--border);border-radius:7px;background:var(--accent-soft);color:var(--accent);font-size:10px;font-weight:650;white-space:nowrap;cursor:pointer}
 .incoming-selection-switch[aria-checked=true]{background:var(--success-soft);color:var(--success-ink)}
-.incoming-selection-switch:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .incoming-selection-switch:disabled{cursor:default;opacity:.55}
 .incoming-switch-track{display:inline-flex;align-items:center;width:23px;height:14px;padding:2px;border-radius:20px;background:var(--accent)}
 .incoming-switch-track>span{display:block;width:10px;height:10px;border-radius:50%;background:var(--surface);transition:transform .12s ease}

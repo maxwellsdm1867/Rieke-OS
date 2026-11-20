@@ -45,7 +45,7 @@ export function compilePredicate(node,fields=null,depth=0) {
     if(field?.operators&&!field.operators.includes(node.operator))throw new Error(`The operator is unavailable for ${field.label}.`);
     result={field:node.field,operator:node.operator};
     if(!['exists','missing','is_null'].includes(node.operator)){
-      if(node.field.startsWith('h5/')&&['exact','signature'].includes(node.valueType)){
+      if(node.valueType==='exact'||(node.field.startsWith('h5/')&&node.valueType==='signature')){
         const text=node.valueText.trim();
         if(node.valueType==='signature'){
           if(!['eq','ne'].includes(node.operator)||!/^[a-f0-9]{64}$/.test(text))throw Error('Use the recorded SHA-256 signature with is or is not.');
@@ -54,6 +54,8 @@ export function compilePredicate(node,fields=null,depth=0) {
           if(new TextEncoder().encode(text).length>32768)throw Error('For a value over 32 KiB, choose its exact value signature.');
           let parsed;
           try{parsed=JSON.parse(text);}catch{throw Error('Enter exact JSON, with quotes around text.');}
+          if(!node.field.startsWith('h5/')&&!(typeof parsed==='number'||Array.isArray(parsed)&&parsed.every(value=>typeof value==='number')))throw Error('Exact comparisons on this field require recorded numbers.');
+          if(['in','not_in'].includes(node.operator)&&(!Array.isArray(parsed)||parsed.length>100))throw Error('Use a list of at most 100 alternative values.');
           if(['gt','gte','lt','lte'].includes(node.operator)&&typeof parsed!=='number')throw Error('Ordering comparisons require a number.');
           result.value_encoding='json';
         }

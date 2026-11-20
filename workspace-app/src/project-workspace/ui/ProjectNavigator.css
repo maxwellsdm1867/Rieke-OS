@@ -2,8 +2,7 @@
 .project-rail-list .project-rail-item{display:flex;position:relative;align-items:center;justify-content:center;width:38px;height:38px;min-height:38px;padding:0;background:color-mix(in srgb,var(--surface) 11%,transparent);border:1px solid color-mix(in srgb,var(--border-subtle) 13%,transparent);border-radius:10px;color:var(--rail-ink);box-shadow:none;font-size:11px;font-weight:650;letter-spacing:.3px;line-height:1;touch-action:pan-y}
 .project-rail-list .project-rail-item>span{display:grid;place-items:center;width:32px;height:32px;border-radius:8px}
 .project-rail-list .project-rail-item:hover{background:color-mix(in srgb,var(--surface) 20%,transparent)}
-.project-rail-list .project-rail-item.current{border-color:var(--border);background:var(--rail-active);box-shadow:0 0 0 2px color-mix(in srgb,var(--shadow-base) 18%,transparent)}
-.project-rail-list .project-rail-item:focus-visible{outline:2px solid var(--rail-ink);outline-offset:4px}
+.project-rail-list .project-rail-item.current{border-color:var(--border);background:var(--rail-active)}
 .project-rail-list .project-rail-item:disabled{opacity:1;cursor:default}.project-rail-list .project-rail-item.unavailable{opacity:.5}
 .project-rail-list .project-drag-source{opacity:.45!important}.project-rail-list .project-drop-before{box-shadow:0 -4px 0 var(--rail-ink)}.project-rail-list .project-drop-after{box-shadow:0 4px 0 var(--rail-ink)}
 .project-rail-list .project-rail-add{width:38px;height:38px;min-height:38px;padding:0;border:1px dashed var(--border-strong);background:transparent;color:var(--ink-muted);border-radius:10px;margin-top:4px}.project-rail-list .project-rail-add:hover{background:var(--rail-active);color:var(--rail-ink)}.project-rail-loading{color:var(--ink-muted);padding:9px}
