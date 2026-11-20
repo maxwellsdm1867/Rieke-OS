@@ -23,8 +23,10 @@ from workspace_linked_sqlite import prepare_linked_package, build_linked_sqlite_
 from workspace_sqlite import build_sqlite_export, _fingerprint
 if __package__:
     from .test_workspace_api import FixtureService
+    from .test_workspace_source_identity import fixture as symphony_fixture, uid
 else:
     from test_workspace_api import FixtureService
+    from test_workspace_source_identity import fixture as symphony_fixture, uid
 
 
 def linked_fixture(root, service=None, *, epoch_count=2, parameter_array_size=10000):
@@ -127,6 +129,135 @@ class LinkedSQLiteTests(unittest.TestCase):
 
     def build(self):
         return build_linked_sqlite_export(self.package, self.path)
+
+    def build_scoped_inventory(self, *, split='h5/experiment/@inheritedBath'):
+        import recording_workspace as rw
+        service = self.service
+        raw = service.project_dir / 'raw-uploads' / 'scoped.h5'
+        doc = symphony_fixture(raw)
+        with h5py.File(raw, 'r+') as h:
+            exp = h['experiment-' + uid(1)]
+            exp.attrs['inheritedBath'] = 'Ames'
+            def epoch(group, block, identity):
+                return exp[f'epochGroups/group-{uid(group)}/epochBlocks/block-{uid(block)}/epochs/epoch-{uid(identity)}']
+            excluded, selected = epoch(11,12,13), epoch(21,22,23)
+            shared = excluded.create_group('firstCalibration')
+            shared.attrs['exactTicks'] = np.uint64(2**63+9)
+            selected['secondCalibration'] = shared
+            selected['protocolParameters'].attrs['largeArray'] = np.arange(9000, dtype=np.int32)
+            excluded['protocolParameters'].attrs['excludedOnly'] = 'private to another epoch'
+        sha = rw.digest(raw)
+        catalog = service.project_dir / 'imports' / 'scoped.json'
+        catalog.write_text(json.dumps(doc))
+        manifest = dict(source_sha256=sha, source_path=str(raw), source_size=raw.stat().st_size,
+                        metadata_path=str(catalog), metadata_sha256=rw.digest(catalog), validated_at='2026-11-20',
+                        counts={'cells':2, 'epochs':2})
+        projection = service._read_source_metadata({'source_sha256':sha,'manifest':manifest},doc,raw,service._input_signature(raw))
+        service.sources, service.manifests = [projection['source']], {sha:manifest}
+        service.rows,service.cells,service.details,service._fingerprints = (
+            projection[name] for name in ('rows','cells','details','fingerprints'))
+        result = service.protocols[service.protocol_id]['result']
+        result.update(epochs=[{'uuid':k,'metadata_hash':v} for k,v in service._fingerprints.items()],
+                      cells=[{'uuid':k} for k in service.cells],source_revisions=[sha], metadata_fingerprint_version=2)
+        snapshot = capture_query(service.protocols[service.protocol_id]['definition'],result,str(service.project_dir/'catalog.json'))
+        chosen = uid(23)
+        recipe = prepare_export(snapshot,[chosen],destination='linked-sqlite',review_policy='include_unreviewed',
+                                actor='fixture',options={'split_order':split})
+        self.package = prepare_linked_package(
+            {'format':'recording-reference-package','version':1,'recipe':recipe,'epochs':[service.epoch(chosen)],'sources':service.sources},
+            service.manifests,service.project_dir)
+        self.build()
+        return chosen, uid(13), Path(projection['source']['h5_attribute_inventory']['path'])
+
+    def test_joint_grouping_preserves_the_recorded_attribute_component(self):
+        from disco.navigation.tree import joint_id
+        field = joint_id(['cell', 'h5/experiment/@inheritedBath'])
+        epoch, _, _ = self.build_scoped_inventory(split=field)
+        with LinkedExport(self.path) as export:
+            group, = export.query('SELECT field_id,value_json FROM analysis_groups WHERE depth=1')
+            self.assertEqual(group['field_id'], field)
+            self.assertEqual(json.loads(group['value_json']), [
+                {'present':True, 'value':self.service.rows[epoch]['cell_uuid']},
+                {'present':True, 'value':'Ames'}])
+
+    def test_record_and_standalone_sql_resolve_exact_scoped_inventory_without_copying_it(self):
+        epoch, excluded, inventory = self.build_scoped_inventory()
+        query = """SELECT json_extract(j.value,'$.field_id') AS field_id,
+                   json_extract(j.value,'$.value_json') AS value_json
+                   FROM epochs e CROSS JOIN json_each(epoch_h5_attributes(e.epoch_uuid)) j"""
+        with LinkedExport(self.path) as export:
+            group, = export.query('SELECT field_id,value_json,missing FROM analysis_groups')
+            self.assertEqual(group,dict(field_id='h5/experiment/@inheritedBath',value_json='"Ames"',missing=0))
+            with patch('h5py.File',side_effect=AssertionError('Recorded attributes must not open raw H5')):
+                attrs = export.record(epoch)['h5_attributes']
+                by_id = {r['field_id']:r for r in attrs}
+                ticks = by_id['h5/epoch/secondCalibration/@exactTicks']
+                self.assertTrue(ticks['object_path'].endswith('/firstCalibration'))
+                self.assertEqual(bytes.fromhex(ticks['path_bytes_hex']).decode(),ticks['object_path'])
+                self.assertEqual(bytes.fromhex(ticks['name_bytes_hex']),b'exactTicks')
+                self.assertEqual(ticks['value_json'],str(2**63+9))
+                self.assertEqual(ticks['shape'],[])
+                self.assertTrue(ticks['h5_type_hex'])
+                self.assertEqual(by_id['h5/experiment/@inheritedBath']['value_json'],'"Ames"')
+                self.assertNotIn('h5/epoch/firstCalibration/@exactTicks',by_id)
+                self.assertFalse(any(r['attribute_name']=='excludedOnly' for r in attrs))
+                array = by_id['h5/epoch/protocolParameters/@largeArray']
+                self.assertEqual(array['shape'],[9000])
+                self.assertEqual(json.loads(array['value_json']),list(range(9000)))
+                with patch('linked_export_loader.digest',side_effect=AssertionError('A warm inventory was rehashed')):
+                    sql = {r['field_id']:r['value_json'] for r in export.query(query)}
+                    self.assertEqual(sql,{k:r['value_json'] for k,r in by_id.items()})
+                with self.assertRaisesRegex(ValueError,'not part'):
+                    export.query('SELECT epoch_h5_attributes(?)',(excluded,))
+        with sqlite3.connect(self.path) as db:
+            self.assertEqual(db.execute('SELECT count(*) FROM h5_attribute_sources').fetchone(),(1,))
+            self.assertNotIn('physical_attributes',{r[0] for r in db.execute('SELECT name FROM sqlite_schema')})
+        self.assertNotIn(array['value_json'].encode(),self.path.read_bytes())
+        standalone = self.root/'standalone'
+        standalone.mkdir()
+        loader = standalone/'linked_export_loader.py'
+        shutil.copyfile(Path(__file__).resolve().parents[1]/loader.name,loader)
+        isolated = subprocess.run([sys.executable,'-I','-S','-B',str(loader),str(self.path),'--sql',query],
+                                  cwd=standalone,capture_output=True,text=True,check=True)
+        self.assertEqual({r['field_id']:r['value_json'] for r in json.loads(isolated.stdout)},sql)
+        moved = self.root/'moved-project'
+        self.service.project_dir.rename(moved)
+        with LinkedExport(self.path,project_root=moved) as export:
+            self.assertEqual(export.record(epoch)['h5_attributes'],attrs)
+        relocated = (moved/inventory.relative_to(self.service.project_dir)).rename(self.root/'other-inventory.sqlite')
+        with LinkedExport(self.path,file_map={str(inventory):str(relocated)}) as export:
+            self.assertEqual(export.h5_attributes(epoch),attrs)
+            with relocated.open('ab') as handle:
+                handle.write(b'changed')
+            with self.assertRaisesRegex(ValueError,'changed'):
+                export.h5_attributes(epoch)
+        with LinkedExport(self.path,file_map={str(inventory):str(relocated)}) as export:
+            with self.assertRaisesRegex(ValueError,'checksum'):
+                export.query(query)
+        with LinkedExport(self.path,project_root=moved) as export:
+            with self.assertRaises(FileNotFoundError):
+                export.query(query)
+            self.assertEqual(export.record(epoch,include_h5_attributes=False)['epoch_uuid'],epoch)
+        with sqlite3.connect(self.path) as db:
+            db.execute('DROP TRIGGER freeze_h5_attribute_sources_update')
+            db.execute("UPDATE h5_attribute_sources SET inventory_path='substituted.sqlite'")
+        with self.assertRaisesRegex(ValueError,'Frozen SQLite tables changed'):
+            LinkedExport(self.path)
+
+    def test_historical_linked_layout_keeps_its_original_seal_and_reports_missing_coverage(self):
+        from linked_export_loader import database_seal
+        self.build()
+        with sqlite3.connect(self.path) as db:
+            db.execute('DROP TABLE h5_attribute_sources')
+            db.execute('DROP TRIGGER freeze_example_queries_delete')
+            db.execute("DELETE FROM example_queries WHERE name='recorded_h5_attributes'")
+            db.execute('DROP TRIGGER freeze_export_info_update')
+            db.execute('PRAGMA user_version=1')
+            db.execute('UPDATE export_info SET version=1,content_sha256=?',(database_seal(db,1),))
+        with LinkedExport(self.path) as export:
+            self.assertEqual(export.record(self.service.ids[0]),self.package['epochs'][0])
+            with self.assertRaisesRegex(ValueError,'no recorded H5 attribute inventory reference'):
+                export.h5_attributes(self.service.ids[0])
 
     def test_exact_metadata_groups_decisions_sql_and_smaller_database(self):
         before = copy.deepcopy(self.package)

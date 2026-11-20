@@ -15,7 +15,7 @@ import sqlite3
 import uuid
 
 FORMAT = 'recording-workspace-linked-sqlite'
-VERSION = 1
+VERSION = 2
 DETAIL_KEYS = ('parameters', 'properties', 'attributes', 'metadata')
 SEALED_TABLES = ('sources', 'cells', 'epoch_groups', 'epoch_blocks', 'epochs', 'epoch_records',
                  'streams', 'epoch_tags', 'shared_annotations', 'annotation_revisions',
@@ -36,10 +36,13 @@ def signature(path):
     return (str(path), stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
 
 
-def database_seal(connection):
+def database_seal(connection, version=None):
     """Detect changes to frozen SQL data, without fetching any external files."""
     result = hashlib.sha256()
-    for table in SEALED_TABLES:
+    if version is None:
+        version = connection.execute('SELECT version FROM export_info').fetchone()[0]
+    tables = SEALED_TABLES if version == 1 else (*SEALED_TABLES, 'h5_attribute_sources')
+    for table in tables:
         result.update(table.encode() + b'\n')
         columns = len(connection.execute('PRAGMA table_info(' + table + ')').fetchall())
         order = ','.join(str(index + 1) for index in range(columns))
@@ -108,6 +111,8 @@ class LinkedExport:
         self.connection = sqlite3.connect(self.path.as_uri() + '?mode=ro', uri=True)
         self.connection.row_factory = sqlite3.Row
         self._metadata_cache, self._h5_cache = OrderedDict(), {}
+        self._inventory_cache = OrderedDict()
+        self._sql_attribute_error = None
         self.project_root = Path(project_root).expanduser().resolve() if project_root else None
         self.workspace_root = Path(workspace_root).expanduser().resolve() if workspace_root else None
         self.file_map = dict(file_map or {})
@@ -115,7 +120,8 @@ class LinkedExport:
             self.connection.execute('PRAGMA query_only=ON')
             self.connection.execute('PRAGMA trusted_schema=OFF')
             rows = self.connection.execute('SELECT * FROM export_info').fetchall()
-            if len(rows) != 1 or rows[0]['format'] != FORMAT or rows[0]['version'] != VERSION:
+            if (len(rows) != 1 or rows[0]['format'] != FORMAT or rows[0]['version'] not in (1, VERSION)
+                    or self.connection.execute('PRAGMA user_version').fetchone()[0] != rows[0]['version']):
                 raise ValueError('Unsupported linked SQLite export')
             self.info = dict(rows[0])
             if database_seal(self.connection) != self.info['content_sha256']:
@@ -139,9 +145,12 @@ class LinkedExport:
             if actual != {key: value['metadata_hash'] for key, value in self.members.items()}:
                 raise ValueError('SQLite membership differs from frozen recipe')
             self.sources = {row['source_sha256']: dict(row) for row in self.connection.execute('SELECT * FROM sources')}
+            self._attribute_sources = {} if self.info['version'] == 1 else {
+                row['source_sha256']: dict(row) for row in self.connection.execute('SELECT * FROM h5_attribute_sources')}
             self._ready()
-            self.connection.create_function('epoch_metadata', 1, lambda key: canonical(self.record(key)['metadata']))
-            self.connection.create_function('epoch_parameters', 1, lambda key: canonical(self.record(key)['parameters']))
+            self.connection.create_function('epoch_metadata', 1, lambda key: canonical(self.record(key, include_h5_attributes=False)['metadata']))
+            self.connection.create_function('epoch_parameters', 1, lambda key: canonical(self.record(key, include_h5_attributes=False)['parameters']))
+            self.connection.create_function('epoch_h5_attributes', 1, self._sql_h5_attributes)
             def authorize(action, first, second, database, trigger):
                 if action in {sqlite3.SQLITE_SELECT, sqlite3.SQLITE_READ, sqlite3.SQLITE_FUNCTION, sqlite3.SQLITE_RECURSIVE}:
                     return sqlite3.SQLITE_OK
@@ -180,6 +189,9 @@ class LinkedExport:
             self.connection = None
         self._metadata_cache.clear()
         self._h5_cache.clear()
+        for connection, _ in self._inventory_cache.values():
+            connection.close()
+        self._inventory_cache.clear()
 
     def _path(self, source, kind):
         original = source[kind + '_path']
@@ -201,7 +213,15 @@ class LinkedExport:
     def query(self, sql, parameters=()):
         """Execute read-only SQL. Lazy metadata functions are available here."""
         self._ready()
-        rows = [dict(row) for row in self.connection.execute(sql, parameters)]
+        self._sql_attribute_error = None
+        try:
+            rows = [dict(row) for row in self.connection.execute(sql, parameters)]
+        except sqlite3.OperationalError:
+            if self._sql_attribute_error is not None:
+                raise self._sql_attribute_error
+            raise
+        finally:
+            self._sql_attribute_error = None
         self._ready()
         return rows
 
@@ -212,9 +232,72 @@ class LinkedExport:
         return {'format': FORMAT, 'export_uuid': self.info['export_uuid'],
                 'project_uuid': self.info['project_uuid'], 'counts': counts,
                 'split_order': self.recipe.get('options', {}).get('split_order', ''),
-                'source_files': list(self.sources.values()), 'usage': 'Metadata and H5 remain in managed project folders.'}
+                'source_files': list(self.sources.values()), 'h5_attribute_sources': list(self._attribute_sources.values()),
+                'usage': 'Metadata and H5 remain in managed project folders.'}
 
-    def record(self, epoch_uuid):
+    def _sql_h5_attributes(self, epoch_uuid):
+        try:
+            return canonical(self.h5_attributes(epoch_uuid))
+        except (ValueError, OSError, sqlite3.DatabaseError) as error:
+            # SQLite otherwise hides the missing/changed reference behind a generic UDF error.
+            self._sql_attribute_error = error
+            raise
+
+    def h5_attributes(self, epoch_uuid):
+        """Read the exact physical attributes and field aliases belonging to one exported epoch."""
+        self._ready()
+        if epoch_uuid not in self.members:
+            raise ValueError('Epoch is not part of this frozen export')
+        sha = self.connection.execute('SELECT source_sha256 FROM epochs WHERE epoch_uuid=?', (epoch_uuid,)).fetchone()[0]
+        reference = self._attribute_sources.get(sha)
+        if reference is None:
+            raise ValueError('This export has no recorded H5 attribute inventory reference for this source')
+        path = self._path(reference, 'inventory')
+        before = signature(path)
+        cached = self._inventory_cache.get(sha)
+        if cached is None:
+            if digest(path) != reference['inventory_sha256'] or signature(path) != before:
+                raise ValueError('Referenced H5 attribute inventory checksum changed; restore the exact exported reference')
+            db = sqlite3.connect(path.as_uri() + '?mode=ro&immutable=1', uri=True)
+            try:
+                db.row_factory = sqlite3.Row
+                db.execute('PRAGMA trusted_schema=OFF')
+                receipt = json.loads(db.execute('SELECT json FROM receipt').fetchone()[0])
+                if (reference['inventory_version'] != 1 or receipt['version'] != reference['inventory_version']
+                        or receipt['source_sha256'] != sha or receipt['contract'] != reference['inventory_contract']
+                        or receipt['logical_sha256'] != reference['inventory_logical_sha256']):
+                    raise ValueError('Referenced H5 attribute inventory identity differs from the frozen export')
+            except BaseException:
+                db.close()
+                raise
+            self._inventory_cache[sha] = db, before
+            if len(self._inventory_cache) > 2:
+                _, (old, _) = self._inventory_cache.popitem(last=False)
+                old.close()
+        else:
+            db, verified = cached
+            if before != verified:
+                raise ValueError('Referenced H5 attribute inventory changed during the reader session')
+            self._inventory_cache.move_to_end(sha)
+        rows = []
+        for item in db.execute("""WITH scoped AS (
+              SELECT DISTINCT a.attribute,v.field FROM epoch_owners e JOIN assignments a ON a.owner=e.owner
+              JOIN field_values v ON v.id=a.field_value WHERE e.epoch_uuid=?)
+            SELECT a.id AS record_id,f.field_id,f.label,o.object_path,a.name AS attribute_name,
+                   hex(o.raw_path) AS path_bytes_hex,hex(a.raw_name) AS name_bytes_hex,
+                   t.dtype,t.h5_type_hex,t.shape_json,c.value_json
+            FROM scoped s JOIN attributes a ON a.id=s.attribute JOIN fields f ON f.id=s.field
+            JOIN objects o ON o.address=a.object JOIN encodings t ON t.id=a.encoding
+            JOIN contents c ON c.id=a.content ORDER BY f.field_id,a.id""", (epoch_uuid,)):
+            row = dict(item)
+            row['shape'] = json.loads(row.pop('shape_json'))
+            rows.append(dict(epoch_uuid=epoch_uuid, source_sha256=sha, **row))
+        if signature(path) != before:
+            raise ValueError('Referenced H5 attribute inventory changed during lookup')
+        self._ready()
+        return rows
+
+    def record(self, epoch_uuid, *, include_h5_attributes=True):
         self._ready()
         row = self.connection.execute('SELECT * FROM epoch_records WHERE epoch_uuid=?', (epoch_uuid,)).fetchone()
         if row is None or epoch_uuid not in self.members:
@@ -246,13 +329,16 @@ class LinkedExport:
             if detail['metadata'][level].get('uuid') != record[column]:
                 raise ValueError('Referenced hierarchy differs from frozen export')
         self._ready()
-        return {**record, **copy.deepcopy(detail)}
+        result = {**record, **copy.deepcopy(detail)}
+        if include_h5_attributes and record['source_sha256'] in self._attribute_sources:
+            result['h5_attributes'] = self.h5_attributes(epoch_uuid)
+        return result
 
     def read_trace(self, epoch_uuid, stream_uuid, *, start=0, count=20000):
         """Read original response samples, not generated stimuli or downsampling."""
         import h5py
         import numpy as np
-        record = self.record(epoch_uuid)
+        record = self.record(epoch_uuid, include_h5_attributes=False)
         stream = next((item for item in record['streams'] if item['uuid'] == stream_uuid), None)
         if stream is None or stream['kind'] != 'responses':
             raise ValueError('Choose an exported recorded response stream')
@@ -306,7 +392,7 @@ def main():
     parser.add_argument('--project-root', type=Path)
     parser.add_argument('--workspace-root', type=Path)
     parser.add_argument('--file-map', type=Path, help='JSON mapping original paths to relocated files')
-    parser.add_argument('--sql', help='Read-only SQL; epoch_metadata/epoch_parameters functions are available')
+    parser.add_argument('--sql', help='Read-only SQL, including epoch_metadata, epoch_parameters and epoch_h5_attributes')
     parser.add_argument('--epoch', help='Return complete metadata for this exported epoch UUID')
     parser.add_argument('--stream', help='With --epoch, read a response stream UUID')
     parser.add_argument('--start', type=int, default=0)

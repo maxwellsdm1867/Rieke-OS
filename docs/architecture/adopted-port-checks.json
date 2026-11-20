@@ -3391,6 +3391,8 @@
         "python/workspace_linked_sqlite.py",
         "python/linked_export_loader.py",
         "python/workspace_sqlite.py",
+        "python/workspace_h5_attribute_inventory.py",
+        "python/workspace_h5_attributes.py",
         "python/disco/projects/recording_registry.py",
         "python/disco/projects/recording_files.py",
         "python/disco/projects/datastore_deletion.py",
@@ -3430,6 +3432,7 @@
             "pathlib",
             "sqlite3",
             "tempfile",
+            "workspace_h5_attribute_inventory",
             "workspace_sqlite",
             "zipfile"
           ]

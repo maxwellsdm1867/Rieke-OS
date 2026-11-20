@@ -29,6 +29,41 @@ No running Disco, DataJoint or MySQL is required. Loader SQL functions
 `epoch_metadata(uuid)` and `epoch_parameters(uuid)` fetch checked metadata lazily.
 Ordinary SQLite clients can query stored tables directly.
 
+Linked format 2 adds one sealed `h5_attribute_sources` row per selected recording
+with a verified inventory. It records the original source SHA, the inventory's
+exact file SHA, format version, extraction contract and logical digest, with
+absolute, project-relative and workspace-relative locators. The referenced
+`imports/h5-attributes/*.sqlite` is an independent parsed scientific import
+artifact. Export validates its project identity and selected epoch coverage.
+Field dictionaries, recorded values and waveforms stay outside the linked ZIP.
+The full SQLite export carries its selected recorded attributes for portable SQL.
+
+The standalone reader continues to open format 1 exports. In format 2,
+`LinkedExport.record(epoch_uuid)` and CLI `--epoch` include `h5_attributes` for
+covered recordings. `LinkedExport.h5_attributes(epoch_uuid)` and the SQLite
+function `epoch_h5_attributes(epoch_uuid)` use the frozen epoch whitelist and
+that epoch's precise inherited owners. Each result retains its canonical field
+ID (including scope-specific aliases), inventory record ID, source SHA,
+physical object path, attribute name, exact path/name bytes in hex, H5 datatype
+encoding, dtype, shape and the original JSON value text. For example:
+
+```sql
+SELECT e.epoch_uuid, json_extract(j.value,'$.field_id') AS field_id,
+       json_extract(j.value,'$.value_json') AS value_json
+FROM epochs e JOIN h5_attribute_sources USING(source_sha256)
+CROSS JOIN json_each(epoch_h5_attributes(e.epoch_uuid)) AS j
+WHERE json_extract(j.value,'$.attribute_name')='offset';
+```
+
+Open the referenced inventory lazily through the loader. Its checksum and
+internal receipt must match the frozen reference. Later calls recheck file
+identity and reuse up to two verified read-only connections. Existing
+`project_root`, `workspace_root` and explicit file maps also relocate inventory
+files. The exact SQLite file is sufficient without the application or a sidecar
+seal. A missing or changed inventory fails the nested read. Older exports and
+sources without coverage can still supply their original parsed metadata and
+traces. The explicit nested reader reports unavailable coverage in that case.
+
 Metadata hashes and epoch fingerprints must match. H5 reads verify checksums,
 UUID hierarchy, units/rate/layout and at most 20,000 full-rate samples per call.
 Generated stimuli remain metadata, not synthesized waveforms. Changed or missing
