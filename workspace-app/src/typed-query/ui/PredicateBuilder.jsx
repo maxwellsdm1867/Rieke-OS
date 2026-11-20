@@ -2,7 +2,8 @@ import {useRetainedView} from '../../retainedWorkspaceViews.js';
 import {useSemanticReset} from '../../useSemanticReset.js';
 import PredicateValueInput from './PredicateValueInput.jsx';
 import {predicateFieldLabel as fieldLabel,predicateFieldGroup,predicateFieldRank,predicateFieldSearch} from '../predicateFieldPresentation.js';
-import {useEffect,useId,useRef,useState} from 'react';
+import {useEffect,useId,useMemo,useRef,useState} from 'react';
+import {h5AttributeField} from '../../components/metadataValues.js';
 import {createPortal} from 'react-dom';
 import {ChevronDown,FolderPlus,MessageCircle,Info,MoreHorizontal,Plus,Search,Trash2,X} from 'lucide-react';
 import {humanize} from '../../api.js';
@@ -19,13 +20,18 @@ function FieldPicker({fields,value,onChange,disabled}){
   const [open,setOpen]=useState(false),[search,setSearch]=useState(''),[category,setCategory]=useState('All fields'),[limit,setLimit]=useState(50),[active,setActive]=useState(0),[position,setPosition]=useState(null);
   const wrap=useRef(null),popup=useRef(null),trigger=useRef(null),input=useRef(null),listId=useId();
   const selected=fields.find(field=>field.id===value);
-  const categories=[...new Set(fields.map(predicateFieldGroup))].sort((a,b)=>categoryRank(a)-categoryRank(b)||a.localeCompare(b));
+  const selectedH5=h5AttributeField(value);
+  const options=useMemo(()=>fields.map(field=>{
+    const h5=h5AttributeField(field.id),category=predicateFieldGroup(field);
+    return {field,h5,category,header:h5?.header||category,groupId:h5?.parentId||category,name:h5?.name||fieldLabel(field)};
+  }),[fields]);
+  const categories=[...new Set(options.map(option=>option.category))].sort((a,b)=>categoryRank(a)-categoryRank(b)||a.localeCompare(b));
   const tokens=search.toLowerCase().trim().split(/\s+/).filter(Boolean);
-  const available=fields.filter(field=>{
-    const group=predicateFieldGroup(field);if(category!=='All fields'&&group!==category)return false;
-    const text=predicateFieldSearch(field);
+  const available=open?options.filter(option=>{
+    if(category!=='All fields'&&option.category!==category)return false;
+    const text=predicateFieldSearch(option.field)+(option.h5?' '+(option.header+' · '+option.name).toLowerCase():'');
     return tokens.every(token=>text.includes(token));
-  }).sort((a,b)=>categoryRank(predicateFieldGroup(a))-categoryRank(predicateFieldGroup(b))||predicateFieldRank(a)-predicateFieldRank(b)||predicateFieldGroup(a).localeCompare(predicateFieldGroup(b))||fieldLabel(a).localeCompare(fieldLabel(b)));
+  }).sort((a,b)=>categoryRank(a.category)-categoryRank(b.category)||predicateFieldRank(a.field)-predicateFieldRank(b.field)||a.category.localeCompare(b.category)||a.groupId.localeCompare(b.groupId)||a.name.localeCompare(b.name)):[];
   const shown=available.slice(0,limit);
   useSemanticReset(JSON.stringify([search,category]),()=>{setActive(0);setLimit(50);});
   useEffect(()=>{if(disabled)setOpen(false);},[disabled]);
@@ -45,13 +51,16 @@ function FieldPicker({fields,value,onChange,disabled}){
   useSemanticReset(JSON.stringify([open,active,listId]),()=>{if(retainedActive&&open)document.getElementById(`${listId}-${active}`)?.scrollIntoView({block:'nearest'});});
   function close(){setOpen(false);trigger.current?.focus();}
   function select(field){if(disabled)return;onChange(field);close();setSearch('');}
-  return <div className="pb-field-picker" ref={wrap}><button type="button" ref={trigger} className="pb-field-button" disabled={disabled} onClick={()=>setOpen(value=>!value)} onKeyDown={event=>{if(event.key==='ArrowDown'){event.preventDefault();setOpen(true);}}} aria-expanded={open} aria-haspopup="listbox" title={selected?`${selected.label}\n${selected.path}`:value}><span>{fieldLabel(selected) || value || 'Choose field'}</span><ChevronDown size={12}/></button>
+  return <div className="pb-field-picker" ref={wrap}><button type="button" ref={trigger} className="pb-field-button" disabled={disabled} onClick={()=>setOpen(value=>!value)} onKeyDown={event=>{if(event.key==='ArrowDown'){event.preventDefault();setOpen(true);}}} aria-expanded={open} aria-haspopup="listbox" title={selected?`${selected.label}\n${selected.path}`:value}>{selectedH5?<span className="pb-selected-h5"><small>{selectedH5.header}</small><strong>{selectedH5.name}</strong></span>:<span>{fieldLabel(selected) || value || 'Choose field'}</span>}<ChevronDown size={12}/></button>
     {open&&position&&retainedActive&&createPortal(<div ref={popup} className="pb-field-popup pb-field-portal" style={{left:position.left,top:position.top,width:position.width,maxHeight:position.height}}><label className="pb-field-search"><Search size={14}/><input ref={input} value={search} placeholder="Search fields or recorded values" role="combobox" aria-label="Find predicate field" aria-expanded="true" aria-controls={listId} aria-autocomplete="list" aria-activedescendant={shown[active]?`${listId}-${active}`:undefined} onChange={event=>setSearch(event.target.value)} onKeyDown={event=>{
       if(event.key==='Escape'){close();event.preventDefault();}
       if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();setActive(index=>Math.max(0,Math.min(shown.length-1,index+(event.key==='ArrowDown'?1:-1))));}
-      if(event.key==='Enter'){event.preventDefault();if(shown[active])select(shown[active]);}
+      if(event.key==='Enter'){event.preventDefault();if(shown[active])select(shown[active].field);}
     }}/></label><div className="pb-field-categories"><label>Field group<select value={category} onChange={event=>setCategory(event.target.value)} aria-label="Predicate field group"><option>All fields</option>{categories.map(group=><option key={group}>{group}</option>)}</select></label><span>{available.length} {available.length===1?'field':'fields'}</span></div>
-      <div id={listId} className="pb-field-options" role="listbox" aria-label="Predicate fields">{shown.map((field,index)=><div key={field.id} role="presentation">{(index===0||predicateFieldGroup(shown[index-1])!==predicateFieldGroup(field))&&<div className="pb-field-category-heading" role="presentation">{predicateFieldGroup(field)}</div>}<button id={`${listId}-${index}`} type="button" tabIndex={-1} className={index===active?'active':''} role="option" aria-selected={index===active} title={field.path} onMouseEnter={()=>setActive(index)} onClick={()=>select(field)}><span><strong>{fieldLabel(field)}</strong><small>{field.path||field.id}</small></span></button></div>)}{!shown.length&&<p>No recorded fields match.</p>}</div>
+      <div id={listId} className="pb-field-options" role="listbox" aria-label="Predicate fields">{shown.map(({field,h5,header,groupId,name},index)=><div key={field.id} role="presentation">
+        {(index===0||shown[index-1].groupId!==groupId)&&<div className={h5?'pb-field-category-heading pb-h5-heading':'pb-field-category-heading'} role="presentation">{header}</div>}
+        <button id={`${listId}-${index}`} type="button" tabIndex={-1} className={index===active?'active':''} role="option" aria-selected={index===active} aria-label={h5?`${header} · ${name}`:undefined} title={field.path||field.id} onMouseEnter={()=>setActive(index)} onClick={()=>select(field)}><span><strong>{name}</strong>{!h5&&<small>{field.path||field.id}</small>}</span></button>
+      </div>)}{!shown.length&&<p>No recorded fields match.</p>}</div>
       <div className="pb-picker-footer"><span>↑ ↓ to browse · Enter to choose</span>{available.length>limit&&<button type="button" onClick={()=>setLimit(value=>value+50)}>Show more</button>}</div>
     </div>,wrap.current?.closest('dialog') || document.body)}
   </div>;

@@ -47,7 +47,10 @@ shapes and values. It tracks links by physical object identity so Symphony's
 backlinks do not create cycles or duplicate physical attributes. Waveform sample
 arrays remain in the H5 and load through the trace reader.
 
-Search predicate lists these fields under **H5 attributes**. For instance,
+In **Search predicate**, each nested attribute has its own selectable field.
+The heading gives its parent path and the option shows the recorded attribute
+name. Selecting a name binds that exact path, even when another device or span
+has an attribute with the same name. For instance,
 `h5/stimulus/Amp1/parameters/@segmentSeeds` identifies the generator's recorded
 attribute, and `h5/preparation/properties/@bathSolution` identifies the solution
 on the preparation. Epoch queries follow the acquisition's recorded ownership

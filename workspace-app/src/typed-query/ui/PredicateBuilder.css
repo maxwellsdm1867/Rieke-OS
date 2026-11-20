@@ -27,3 +27,9 @@ fieldset.predicate-builder{margin:0;padding:0;border:0;min-width:0}.predicate-bu
 /* The wrapper owns the focus indicator so the icon and input have one frame. */
 .pb-field-search>input:focus,.pb-field-search>input:focus-visible{outline:none;box-shadow:none;border:0}
 .pb-field-search:focus-within{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:0}
+
+.pb-field-options .pb-h5-heading { text-transform: none; letter-spacing: normal; overflow-wrap: anywhere; }
+.pb-field-button:has(.pb-selected-h5) { height: auto; min-height: 34px; }
+.pb-field-button .pb-selected-h5 small,.pb-field-button .pb-selected-h5 strong { display: block; white-space: normal; overflow-wrap: anywhere; }
+.pb-selected-h5 small { color: var(--ink-muted); font-size: 11px; }
+.pb-selected-h5 strong { font-weight: 550; }

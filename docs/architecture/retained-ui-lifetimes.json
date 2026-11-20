@@ -836,13 +836,14 @@
       ]
     },
     "src/components/metadataValues.js": {
-      "fingerprint": "fa95fa418bb8c271cd1bd608c1510d52d31039fa46d522c791355d06961f701b",
+      "fingerprint": "45a65b760adefd6ae4decd64db6344b26d235fce6e2f1f5816b15c1e832aa321",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Decoded H5 field labels and their parent headings are pure functions of the canonical field ID.",
       "tests": [
         "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/presentationSessionsIntegration.test.js",
+        "src/metadataValues.test.js"
       ]
     },
     "src/desktopLifecycle.js": {
@@ -1413,12 +1414,12 @@
       ]
     },
     "src/epoch-browser/ui/H5Attributes.jsx": {
-      "reason": "On-demand H5 pages use the project request owner; closing the disclosure retires the exact-value read. Source and epoch render keys reset requests and selection on navigation. Only the chosen record and logical inventory digest can request its full value.",
+      "reason": "On-demand H5 pages use the project request owner; closing the disclosure retires the exact-value read. Source and epoch render keys reset requests and selection on navigation. Only the chosen record and logical inventory digest can request its full value. A bounded page groups its physical records by their encoded parent field ID and renders a flat header for each parent. Exact value selection still uses the individual physical record.",
       "tests": [
         "src/epoch-browser/metadataPresentation.test.js"
       ],
       "lifetime": "transitive-dependency",
-      "fingerprint": "0c55de3da28c20f0583f57a76151dcb510b6b5169577f4647e910603cfa0d594",
+      "fingerprint": "89f0d0fef171288e3a4250afe2c8a1285bd53e8b8f16678fe8ec038ea44509a7",
       "sites": []
     },
     "src/epoch-browser/ui/MetadataPanel.jsx": {
@@ -4050,7 +4051,7 @@
       ]
     },
     "src/typed-query/ui/PredicateBuilder.jsx": {
-      "fingerprint": "6e4572f8927d52f484d1c05c995d0c33ab9e9dceae3e0a4d68ba7fe2fafce797",
+      "fingerprint": "6fc2f40a65a2fdf13e8d796d49924ff57f7a502294c2a53d6a0e8202a544b3ee",
       "sites": [
         {
           "owner": "FieldPicker",
@@ -4079,7 +4080,7 @@
         }
       ],
       "lifetime": "semantic-chooser-state + active-global-handlers",
-      "reason": "Search/category resets chooser limit/active choice; explicit open/position and keyboard-choice keys control focus/scroll. Global outside/position listeners and popover render only while retained owner is active; cleanup still runs independently. Preview cleanup (2026-10-19): the field picker no longer renders distinct-value counts/examples (only the removed dialog summaries supplied them); effect sites unchanged. Exact JSON and value signatures are H5-specific typed alternatives in the existing condition editor, sharing its retained-view and submission lifetime.",
+      "reason": "Search/category resets chooser limit/active choice; explicit open/position and keyboard-choice keys control focus/scroll. Global outside/position listeners and popover render only while retained owner is active; cleanup still runs independently. Preview cleanup (2026-10-19): the field picker no longer renders distinct-value counts/examples (only the removed dialog summaries supplied them); effect sites unchanged. Exact JSON and value signatures are H5-specific typed alternatives in the existing condition editor, sharing its retained-view and submission lifetime. The H5 option and selected condition render the decoded leaf and parent heading from the registry. Pointer and keyboard selection pass the original field object.",
       "tests": [
         "src/useSemanticReset.test.js",
         "src/semanticPresentationControls.test.js",

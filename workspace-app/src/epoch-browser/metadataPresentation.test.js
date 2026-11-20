@@ -141,7 +141,10 @@ test('recorded H5 values are requested only on disclosure and old epoch values r
    seen.push(String(url));
    const exact=String(url).includes('record=7');
    return {ok:true,json:async()=>exact?{value_json:'"value for epoch-a"',value_sha256:'c'.repeat(64)}:
-     {records:[{record_id:7,label:'Epoch note',object_path:'/epoch',value_preview:'"value"',dtype:'text',shape:[]}],inventory:'b'.repeat(64),total:1,has_more:false}};
+     {records:[['span_0',7,'note'],['span_1',8,'note'],['span_0',9,'gain~1range']].map(([span,id,name])=>({
+       record_id:id,field_id:'h5/stimulus/Amp1/dataConfigurationSpans/'+span+'/@'+name,
+       object_path:'/epoch/stimuli/Amp1/dataConfigurationSpans/'+span,value_preview:'"value"',dtype:'text',shape:[],
+     })),inventory:'b'.repeat(64),total:3,has_more:false}};
  };
  const h=await harness();
  const button=text=>h.root.findAllByType('button').find(b=>b.children.includes(text));
@@ -152,6 +155,11 @@ test('recorded H5 values are requested only on disclosure and old epoch values r
    await act(async()=>button('Recorded H5 attributes for this epoch').props.onClick());
    await act(async()=>new Promise(resolve=>setTimeout(resolve,170)));
    assert.equal(seen.length,1);assert.match(seen[0],/epoch_uuid=epoch-a/);assert.ok(!seen[0].includes('record='));
+   const groups=h.root.findAllByProps({className:'h5-field-group'});
+   assert.deepEqual(groups.map(group=>group.findByType('h4').children[0]),[
+     'Stimulus · Amp1 · dataConfigurationSpans · span_0','Stimulus · Amp1 · dataConfigurationSpans · span_1']);
+   assert.deepEqual(groups.map(group=>group.findAllByType('dt').map(node=>node.children[0])),[['note','gain/range'],['note']]);
+   assert.ok(groups.every(group=>group.findAllByType('summary').length===0));
    await act(async()=>{button('Inspect exact value').props.onClick();});
    await act(async()=>new Promise(resolve=>setTimeout(resolve,30)));
    assert.ok(seen[1].includes('record=7&inventory='));

@@ -1,0 +1,7 @@
+.h5-field-group { margin-block: 12px; overflow-wrap: anywhere; }
+.h5-field-group h4 { margin-bottom: 4px; color: var(--ink-secondary); font-size: 12px; }
+.h5-field-group dl { margin: 0; }
+.h5-field-group dl > div { padding-block: 6px; border-bottom: 1px solid var(--border-subtle); }
+.h5-field-group dt { color: var(--ink); font-weight: 550; }
+.h5-field-group dd { margin: 0; min-width: 0; }
+.h5-field-group small { display: block; color: var(--ink-muted); }
