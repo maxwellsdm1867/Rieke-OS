@@ -11,6 +11,11 @@ retain identity, labels, suggestions, scoped filters and joint recipe operations
 
 ## Contract
 
+The field picker and recording inspector share the pure `h5AttributeField`
+formatter from `components/metadataValues.js`. It decodes the owner path into a
+heading and the terminal attribute into a name. Both surfaces retain the
+original qualified field ID for selection and search.
+
 Field IDs are exact recorded registry paths. Compilation preserves string, finite
 safe number, boolean, null and JSON array distinctions; invalid numbers, object
 list values and unavailable fields/operators refuse with actionable errors.

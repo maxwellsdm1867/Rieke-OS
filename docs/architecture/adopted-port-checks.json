@@ -1360,7 +1360,8 @@
             "workspace-app/src/typed-query/ui/predicateEditor.js",
             "workspace-app/src/typed-query/ui/PredicateBuilder.css",
             "workspace-app/src/retainedWorkspaceViews.js",
-            "workspace-app/src/useSemanticReset.js"
+            "workspace-app/src/useSemanticReset.js",
+            "workspace-app/src/components/metadataValues.js"
           ]
         },
         {
