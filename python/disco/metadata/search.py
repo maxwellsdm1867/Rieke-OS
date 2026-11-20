@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from bisect import bisect_left
+from functools import lru_cache
 import json
 from pathlib import Path
 import re
@@ -12,6 +13,18 @@ from disco.navigation.predicates import equal, literal
 
 def _json(value):
     return json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+
+
+@lru_cache(maxsize=4096)
+def _field_names(key, label):
+    if key.startswith('h5/'):
+        from workspace_h5_attributes import attribute_field_aliases
+        return frozenset(name.casefold() for name in attribute_field_aliases(key, label))
+    leaf = unquote(key.rsplit('/', 1)[-1]).replace('~1','/').replace('~0','~')
+    names = {key, label, leaf}
+    if key.startswith('stimulus/'):
+        names.add(key.replace('/', ':'))
+    return frozenset(name.casefold() for name in names)
 
 
 def _cell_rows(service):
@@ -160,10 +173,11 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
     if field is None and pair:
         field_text, symbol, value_text = pair.groups()
         requested = field_text.strip().casefold()
-        aliases = [item for item in catalog['fields']
-                   if requested in {item['id'].casefold(), item['label'].casefold(),
-                       unquote(item['id'].rsplit('/', 1)[-1]).replace('~1','/').replace('~0','~').casefold()}]
-        exact = [item for item in aliases if item['id'] == field_text.strip()] or [item for item in aliases if item['id'].casefold() == requested]
+        aliases = [item for item in catalog['fields'] if requested in _field_names(item['id'], item['label'])]
+        exact = [item for item in aliases if item['id'] == field_text.strip()]
+        if not exact:
+            exact = [item for item in aliases if item['id'].casefold() == requested or
+                     (item['id'].startswith('stimulus/') and item['id'].replace('/', ':').casefold() == requested)]
         canonical = [item for item in aliases if item['id'].startswith('parameters/') and item['id'].count('/') == 1]
         # A source parameter also appears in block/epoch provenance copies.
         # Unqualified names refer to the effective merged epoch parameters;
@@ -181,10 +195,6 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
             if value_text.strip().startswith(('[', '{', '"')):
                 raise ValueError('Use valid JSON for arrays, objects, and quoted strings')
             value = value_text.strip()
-        if len(aliases) == 1 and aliases[0]['id'].startswith('h5/'):
-            # Keep exact numeric/array text across the browser and saved queries.
-            encoding = {'value_encoding':'json'}
-            value = _json(value)
         if len(aliases) > 1:
             choices = []
             for item in aliases:
@@ -200,6 +210,10 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
                     'source_scope_revision': scope['revision']}
         field = aliases[0]['id']
     if field is not None:
+        if field.startswith('h5/') and operator not in {'exists', 'missing', 'is_null'}:
+            # This also applies to each owner-qualified choice for ambiguous names.
+            encoding = {'value_encoding': 'json'}
+            value = _json(value)
         predicate = {'field': field, 'operator': operator, **encoding}
         if operator not in {'exists', 'missing', 'is_null'}:
             predicate['value'] = value
@@ -219,9 +233,13 @@ def search_workspace(service, query, limit=20, *, field=None, operator='eq', val
         typed = False
         typed_value = None
     examples_only = False
+    words = normalized.split()
     for definition in catalog['fields']:
         identity, label = definition['id'], definition['label']
-        if normalized in f'{identity} {label}'.casefold():
+        field_text = f'{identity} {label}'.casefold()
+        if (normalized in field_text or
+                identity.startswith(('h5/', 'stimulus/')) and
+                (normalized in _field_names(identity, label) or all(word in field_text for word in words))):
             results.append({'kind': 'field', 'id': identity, 'label': label, 'detail': identity,
                             'field_id': identity, 'predicate': {'field': identity, 'operator': 'exists'}})
         if identity.startswith('h5/') and hasattr(getattr(service, 'disk_index', None), 'search_h5_values'):

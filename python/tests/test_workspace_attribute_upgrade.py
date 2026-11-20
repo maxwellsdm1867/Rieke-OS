@@ -11,6 +11,26 @@ import test_workspace_refresh_cache as refresh_fixture
 
 
 class AttributeUpgradeTests(unittest.TestCase):
+    def test_global_search_accepts_raw_leaf_names_and_keeps_each_owner(self):
+        from disco.metadata.search import search_workspace
+
+        project = refresh_fixture.RefreshCacheTests()
+        project.setUp()
+        self.addCleanup(project.doCleanups)
+        large_tick = 2**62 + 1
+        project.add_source('precision', epoch_attributes={'exactTick': large_tick})
+        project.service.refresh()
+        result = search_workspace(project.service, f'exactTick = {large_tick}')['results'][0]
+        self.assertEqual(result['count'], 1)
+        self.assertEqual(result['predicate'], {'field': 'h5/epoch/@exactTick', 'operator': 'eq',
+                                               'value_encoding': 'json', 'value': str(large_tick)})
+        epoch = next(iter(project.service.rows))
+        choices = search_workspace(project.service, f'uuid = "{epoch}"')
+        self.assertTrue(choices['field_ambiguous'])
+        counts = {r['field_id']:r['count'] for r in choices['results']}
+        self.assertEqual(counts['h5/epoch/@uuid'], 1)
+        self.assertEqual(counts['h5/block/@uuid'], 0)
+
     def test_open_repair_and_warm_refresh_keep_protocol_predicates_queryable(self):
         project = refresh_fixture.RefreshCacheTests()
         project.setUp()

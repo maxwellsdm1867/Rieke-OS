@@ -60,7 +60,7 @@ multi-user accounts.
 | Format | Use |
 | --- | --- |
 | SQLite | Query the selected cells, groups, blocks, epochs, parameters, annotations and H5 stream references using standard SQLite tools, including compatible Wheeler tools. |
-| MATLAB data (.mat) | Load a standalone MAT data file with standard MATLAB `load`; inspect recorded metadata, frozen annotations/selection and provenance, and use lazy H5 references with `h5read`. No GUI or launcher is included. |
+| MATLAB data (.mat) | Use standard MATLAB `load` to inspect the frozen selection and annotations. Each experiment's `h5_attributes` table stores the original physical paths, HDF5 types, shapes and full values recorded for the exported epochs and their ancestors. Each epoch's `h5_attribute_ids` selects its records. Use `h5read` with the recorded response path for waveform samples. |
 | Reference JSON | Inspect the frozen query, exact epoch membership, metadata and source pointers in a portable structured document. |
 
 New download names use `Protocol_Name_YYYY-MM-DD.ext` by default and can be

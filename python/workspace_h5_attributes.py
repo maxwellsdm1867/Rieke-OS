@@ -4,11 +4,39 @@ The writer's format and implementation identify each immutable inventory.
 Presentation and lookup changes in this module reuse its exact recorded data.
 """
 import json
+import operator
+import re
+from urllib.parse import unquote
+
+from disco.navigation.predicates import equal
 
 from workspace_h5_attribute_inventory import (
     FORMAT_VERSION, contract_hash, coverage_summary, ensure_inventory, inventory_path,
     inventory_reader, verified_inventory,
 )
+
+def attribute_field_aliases(field_id, label=''):
+    """Canonical ID, decoded header/name and searchable spellings of an H5 field."""
+    parts = field_id.split('/')
+    if len(parts) < 3 or parts[0] != 'h5' or not parts[-1].startswith('@'):
+        return ()
+
+    def decode(part):
+        try:
+            return unquote(part, errors='strict').replace('~1', '/').replace('~0', '~')
+        except UnicodeDecodeError:
+            return part
+
+    parents = [decode(part) for part in parts[1:-1]]
+    name = decode(parts[-1][1:])
+    header = [parents[0][:1].upper() + parents[0][1:], *parents[1:]]
+    header = [json.dumps(part, ensure_ascii=False) if ' · ' in part else part for part in header]
+    aliases = [field_id, name, label, ' · '.join([*header, name])]
+    for separator in ('/', '.', ':'):
+        aliases.append(separator.join([*parents, name]))
+    if parents[0] in {'stimulus', 'response', 'background', 'device'} and len(parents) > 1:
+        aliases.append(':'.join([*parents[:2], name]))
+    return tuple(dict.fromkeys(alias for alias in aliases if alias))
 
 
 def field_definitions(descriptor):
@@ -44,6 +72,80 @@ def epoch_values(descriptor, epoch_ids):
             yield eid,fid,json.loads(encoded)
 
 
+_ORDERED = {'>': operator.gt, '>=': operator.ge, '<': operator.lt, '<=': operator.le}
+
+
+def _typed_value_match(operation, text):
+    try:
+        value = json.loads(text)
+        equal(value, value)  # Validate finite numbers and preserve integer precision.
+    except (ValueError, RecursionError):
+        if text.startswith(('[', '{', '"')):
+            return lambda _: False
+        value = text
+
+    def matches(encoded):
+        actual = json.loads(encoded)
+        if operation in _ORDERED:
+            return (type(actual) in (int, float) and type(value) in (int, float)
+                    and _ORDERED[operation](actual, value))
+        return equal(actual, value) == (operation == '=')
+    return matches
+
+
+def _record_filter(db, epoch_uuid, query):
+    term = query.strip().casefold()
+    fields = {}
+    for key, field_id, label in db.execute('SELECT id,field_id,label FROM fields'):
+        fields[key] = tuple(alias.casefold() for alias in attribute_field_aliases(field_id, label))
+    compare = None
+    # An attribute name may itself contain a comparison sign. Try an exact
+    # whole name first, then the longest registered name before an operator.
+    if not any(term in aliases for aliases in fields.values()):
+        for match in reversed(list(re.finditer(r'>=|<=|!=|=|>|<', query))):
+            name = query[:match.start()].strip().casefold()
+            ids = [key for key, aliases in fields.items() if name in aliases]
+            if ids:
+                compare = _typed_value_match(match.group(), query[match.end():].strip())
+                break
+    if compare is None:
+        words = term.replace(' · ', ' ').split() or [term]
+
+        def name_matches(text):
+            return all(word in text for word in words)
+
+        ids = [key for key, aliases in fields.items() if name_matches(' '.join(aliases))]
+        db.create_function('path_matches', 1, lambda path: name_matches(path.casefold()), deterministic=True)
+
+        def value_matches(encoded):
+            if term in encoded.casefold():
+                return True
+            return ('\\u' in encoded and term in json.dumps(json.loads(encoded), ensure_ascii=False,
+                                                            separators=(',', ':')).casefold())
+    else:
+        value_matches = compare
+    db.execute('CREATE TEMP TABLE matching_fields(id INTEGER PRIMARY KEY)')
+    db.executemany('INSERT INTO matching_fields VALUES (?)', ((key,) for key in ids))
+    db.create_function('value_matches', 1, value_matches, deterministic=True)
+    db.execute('CREATE TEMP TABLE matching_values(id INTEGER PRIMARY KEY)')
+    if epoch_uuid is not None:
+        # A focused sidebar reads only values attached to the selected epoch.
+        candidates = ('''SELECT DISTINCT v.content FROM epoch_owners e JOIN assignments s ON s.owner=e.owner
+                         JOIN field_values v ON v.id=s.field_value WHERE e.epoch_uuid=?''' +
+                      (' AND v.field IN matching_fields' if compare else ''))
+        db.execute(f'''INSERT INTO matching_values SELECT id FROM contents
+                       WHERE id IN ({candidates}) AND value_matches(value_json)''', (epoch_uuid,))
+    elif compare is not None:
+        db.execute('''INSERT INTO matching_values SELECT id FROM contents
+                      WHERE id IN (SELECT content FROM field_values WHERE field IN matching_fields)
+                      AND value_matches(value_json)''')
+    else:
+        db.execute('INSERT INTO matching_values SELECT id FROM contents WHERE value_matches(value_json)')
+    if compare is not None:
+        return '(v.field IN matching_fields AND a.content IN matching_values)'
+    return '(v.field IN matching_fields OR path_matches(o.object_path) OR a.content IN matching_values)'
+
+
 def _records(db, epoch_uuid, query, record_id=None):
     where, args = [], []
     scope_join = ''
@@ -52,19 +154,7 @@ def _records(db, epoch_uuid, query, record_id=None):
         where.append('e.epoch_uuid=?')
         args.append(epoch_uuid)
     if query:
-        term = query.casefold()
-        def value_matches(encoded):
-            # Decode escaped Unicode only once per distinct value, independently
-            # of how many epochs share an ancestor or repeat the same attribute.
-            if term in encoded.casefold():
-                return True
-            return ('\\u' in encoded and term in json.dumps(json.loads(encoded), ensure_ascii=False,
-                                                            separators=(',', ':')).casefold())
-        db.create_function('value_matches', 1, value_matches, deterministic=True)
-        db.execute('CREATE TEMP TABLE matching_values(id INTEGER PRIMARY KEY)')
-        db.execute('INSERT INTO matching_values SELECT id FROM contents WHERE value_matches(value_json)')
-        db.create_function('name_matches', 1, lambda text: term in text.casefold(), deterministic=True)
-        where.append("(name_matches(f.field_id) OR name_matches(o.object_path) OR name_matches(f.label) OR a.content IN matching_values)")
+        where.append(_record_filter(db, epoch_uuid, query))
     if record_id is not None:
         where.append('a.id=?')
         args.append(record_id)
@@ -123,3 +213,33 @@ def attribute_record(descriptor, record_id, *, epoch_uuid=None):
         if not result:
             raise KeyError('H5 attribute is outside this scope')
         return {**result[0],'source_sha256':descriptor['source_sha256']}
+
+
+def export_epoch_attributes(descriptor, epoch_ids):
+    """Return physical attributes once per source, plus links for the frozen epochs."""
+    links = {identity: [] for identity in epoch_ids}
+    aliases = {identity: [] for identity in links}
+    with inventory_reader(descriptor) as db:
+        db.execute('CREATE TEMP TABLE selected(epoch_uuid TEXT PRIMARY KEY)')
+        db.executemany('INSERT INTO selected VALUES (?)', ((key,) for key in links))
+        db.execute('CREATE TEMP TABLE selected_owners AS SELECT DISTINCT e.owner FROM selected s '
+                   'JOIN epoch_owners e ON e.epoch_uuid=s.epoch_uuid')
+        db.execute("""CREATE TEMP TABLE selected_fields AS SELECT DISTINCT a.attribute,f.field_id FROM selected_owners o
+            JOIN assignments a ON a.owner=o.owner JOIN field_values v ON v.id=a.field_value
+            JOIN fields f ON f.id=v.field""")
+        matches = 'SELECT attribute,min(field_id) AS field_id FROM selected_fields GROUP BY attribute'
+        records = _record_rows(db,matches,[],True,-1,0,source_order=True)
+        for identity, record_id in db.execute("""SELECT DISTINCT e.epoch_uuid,a.attribute
+                FROM selected s JOIN epoch_owners e ON e.epoch_uuid=s.epoch_uuid
+                JOIN assignments a ON a.owner=e.owner ORDER BY e.epoch_uuid,a.attribute"""):
+            links[identity].append(record_id)
+        # A single physical attribute can be reached under distinct recorded
+        # field IDs. Retain the precise field meanings for each selected epoch.
+        for identity, record_id, field in db.execute("""SELECT DISTINCT e.epoch_uuid,a.attribute,f.field_id
+                FROM selected s JOIN epoch_owners e ON e.epoch_uuid=s.epoch_uuid
+                JOIN assignments a ON a.owner=e.owner JOIN field_values v ON v.id=a.field_value
+                JOIN fields f ON f.id=v.field WHERE a.attribute IN
+                  (SELECT attribute FROM selected_fields GROUP BY attribute HAVING count(*)>1)
+                ORDER BY e.epoch_uuid,a.attribute,f.field_id"""):
+            aliases[identity].append({'record_id':record_id,'field_id':field})
+    return records, links, aliases

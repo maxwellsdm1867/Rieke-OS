@@ -45,11 +45,39 @@ class H5AttributeInventoryTests(unittest.TestCase):
             z.attrs['sourceOnly'] = 'Orphän voilà'
             scoped = data.parent.create_group('calibration')
             scoped.attrs['a/b~c'] = 1.25
+            scoped.attrs['a=b'] = '5'
+            scoped.attrs['enabled'] = True
+            for span, mode in enumerate(('VClamp', 'IClamp')):
+                config = response.create_group(f'dataConfigurationSpans/span_{span}/Amp1')
+                config.attrs['operatingMode'] = mode
+            scoped.attrs['mixed'] = np.array([1, 2])
             scoped['self'] = scoped
             data.parent['z-alias'] = h5py.SoftLink(scoped.name)
             data.parent['z-hard'] = scoped
         self.sha = rw.digest(self.source)
         self.descriptor = self.build()
+
+    def test_export_scopes_a_shared_physical_attribute_to_each_epochs_field_name(self):
+        with h5py.File(self.source, 'r+') as h:
+            root = h['experiment-' + uid(1)]['epochGroups']
+            first = root['group-'+uid(11)+'/epochBlocks/block-'+uid(12)+'/epochs/epoch-'+uid(13)]
+            second = root['group-'+uid(21)+'/epochBlocks/block-'+uid(22)+'/epochs/epoch-'+uid(23)]
+            shared = first.create_group('firstCalibration')
+            shared.attrs['gain'] = np.uint64(2**63+3)
+            second['secondCalibration'] = shared
+        self.sha = rw.digest(self.source)
+        descriptor = self.build()
+        records, links, aliases = inv.export_epoch_attributes(descriptor, [uid(13),uid(23)])
+        gain, = [record for record in records if record['attribute_name']=='gain']
+        record_id = gain['record_id']
+        for epoch, field in [(uid(13),'firstCalibration'), (uid(23),'secondCalibration')]:
+            self.assertIn(record_id,links[epoch])
+            self.assertEqual([entry['field_id'] for entry in aliases[epoch] if entry['record_id']==record_id],
+                             ['h5/epoch/'+field+'/@gain'])
+        self.assertFalse(any(r['attribute_name']=='sourceOnly' for r in records))
+        one, links, aliases = inv.export_epoch_attributes(descriptor, [uid(23)])
+        self.assertEqual([r['field_id'] for r in one if r['attribute_name']=='gain'],['h5/epoch/secondCalibration/@gain'])
+        self.assertNotIn(uid(13),links)
 
     def build(self, expected=None):
         with h5py.File(self.source,'r') as h:
@@ -127,6 +155,37 @@ class H5AttributeInventoryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'registered import'):
             self.build({**expected,'logical_sha256':'f'*64})
         self.assertEqual(inv.coverage_summary(self.build({**expected,'version':0})),expected)
+
+    def test_search_header_name_operator_and_exact_typed_values(self):
+        def fields(query, epoch=uid(13)):
+            return {record['field_id'] for record in inv.attribute_page(
+                self.descriptor, epoch_uuid=epoch, q=query)['records']}
+
+        prefix = 'h5/response/Amp1/dataConfigurationSpans/'
+        first = prefix + 'span_0/Amp1/@operatingMode'
+        second = prefix + 'span_1/Amp1/@operatingMode'
+        self.assertEqual(fields('Amp1 span_0 operatingMode'), {first})
+        self.assertEqual(fields('Response · Amp1 · dataConfigurationSpans · span_0 · Amp1 · operatingMode = VClamp'), {first})
+        self.assertEqual(fields('response:Amp1:operatingMode'), {first, second})
+        self.assertEqual(fields('Response:Amp1:operatingMode = "IClamp"'), {second})
+        self.assertEqual(fields(first + ' != "IClamp"'), {first})
+        self.assertEqual(fields('Response:Amp1:operatingMode = VClamp', uid(23)), set())
+        self.assertEqual(fields('Response:Amp1:operatingMode = vclamp'), set())
+        self.assertEqual(fields('tick >= 9223372036854775811'), {'h5/response/Amp1/data/@tick'})
+        self.assertEqual(fields('tick > 9223372036854775811'), set())
+        self.assertEqual(fields('empty = null'), {'h5/response/Amp1/data/@empty'})
+        cal = 'h5/response/Amp1/calibration/@'
+        self.assertEqual(fields('a/b~c <= 1.25'), {cal + 'a~1b~0c'})
+        self.assertEqual(fields('a=b'), {cal + 'a%3Db'})
+        self.assertEqual(fields('a=b = "5"'), {cal + 'a%3Db'})
+        self.assertEqual(fields('a=b = 5'), set())
+        self.assertEqual(fields('enabled = 1'), set())
+        self.assertEqual(fields('enabled = true'), {cal + 'enabled'})
+        self.assertEqual(fields('mixed = [1, 2]'), {cal + 'mixed'})
+        self.assertEqual(fields('mixed = [true, 2]'), set())
+        self.assertEqual(fields('mixed = [invalid]'), set())
+        self.assertEqual(fields('sourceOnly = Orphän voilà', None), {'h5/block/@sourceOnly'})
+        self.assertEqual(fields('sourceOnly != absent'), set())
 
     def test_large_registered_source_set_keeps_warm_hash_proof(self):
         path = Path(self.descriptor['path'])

@@ -38,6 +38,9 @@ searches. `comparison_value` decodes that representation for both query
 implementations. Equality by `value_encoding=sha256` identifies an entire
 recorded value using `h5_value_digest`, including arrays larger than the request
 limit. Nested All and Any groups use the same evaluation as other fields.
+Normalized numeric fields also accept exact JSON numbers for equality, ranges
+and numeric alternatives. This preserves the recorded integer when a renderer
+selects it from the field's value menu.
 
 Tree pages retain captured WorkspaceService/ExplorerHistory method identity,
 structural-reader checks, override fallback, graph budgets and response-end

@@ -371,6 +371,30 @@ class DiskMetadataIndex:
                 hits.append((key,raw[:160],count,pred))
         return hits, False
 
+    @contextmanager
+    def scalar_value_rows(self, field, active_sources, ids=None):
+        """Stream a single dictionary, restricted to values witnessed by eligible epochs."""
+        with self._connect(ids if active_sources else ()) as db:
+            number = db.execute('SELECT field_no FROM fields WHERE field_id=?', (field,)).fetchone()
+            if number is None:
+                raise ValueError('Choose a recorded field from the predicate catalog')
+            if not active_sources:
+                yield ()
+                return
+            db.execute('CREATE TEMP TABLE eligible_sources(sha TEXT PRIMARY KEY)')
+            db.executemany('INSERT INTO eligible_sources VALUES(?)', ((sha,) for sha in active_sources))
+            scoped = ' JOIN scope s ON s.epoch_id=ev.epoch_id' if ids is not None else ''
+            # Both the field dictionary and its reverse epoch associations have
+            # covering indexes. A single eligible witness suffices for a choice.
+            rows = db.execute('''SELECT v.value_json FROM field_values v WHERE v.field_no=?
+                AND substr(v.value_json,1,1) NOT IN ('[','{','n')
+                AND length(CAST(v.value_json AS BLOB)) <= 4096
+                AND EXISTS (SELECT 1 FROM epoch_values ev JOIN epochs e ON e.epoch_id=ev.epoch_id
+                  JOIN eligible_sources a ON a.sha=e.source_sha''' + scoped + '''
+                  WHERE ev.field_no=v.field_no AND ev.value_id=v.value_id)
+                ORDER BY v.value_json''', number)
+            yield (json.loads(raw) for raw, in rows)
+
     def h5_attribute_coverage(self):
         """Read the source-bound coverage proven when this immutable index was built."""
         with self._connect([]) as connection:

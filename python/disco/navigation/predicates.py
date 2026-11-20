@@ -222,7 +222,7 @@ def validate(predicate, catalog, values):
             raise ValueError('This predicate operator requires a value')
         encoding = node.get('value_encoding')
         if 'value_encoding' in node:
-            if not field.startswith('h5/') or encoding not in ('json', 'sha256'):
+            if encoding not in ('json', 'sha256') or (encoding == 'sha256' and not field.startswith('h5/')):
                 raise ValueError('Unknown encoded comparison for this field')
             if encoding == 'sha256':
                 if (operator not in ('eq', 'ne') or not isinstance(node['value'], str)
@@ -230,6 +230,14 @@ def validate(predicate, catalog, values):
                     raise ValueError('An exact value signature requires equality and a SHA-256 digest')
                 return dict(node)
         value = comparison_value(node)
+        if encoding == 'json' and not field.startswith('h5/'):
+            # A numeric choice can exceed the browser's exact integer range on
+            # a normalized parameter just as it can on its original H5 path.
+            numbers = value if operator in ('in', 'not_in') and isinstance(value, list) else [value]
+            if (types[field] - {'null', 'number'} and 'number' not in types[field]
+                    or operator not in ('eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'in', 'not_in')
+                    or any(kind(item) != 'number' for item in numbers)):
+                raise ValueError('Encoded choices for this field require exact JSON numbers')
         value_type = kind(value) if encoding else literal(value)
         observed = types[field] - {'null'}
         def compatible(item):

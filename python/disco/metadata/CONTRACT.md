@@ -34,6 +34,15 @@ Empty source/epoch lists mean empty scope. Backend ranks are not public cursors.
 Requested facets retain first chronological occurrence, missing/present counts and
 existing 60-value truncation.
 
+Opening a scalar field's value menu requests `GET /api/explore/field-values`.
+The field registry advertises `field_values_available`. The request names one
+field and can supply a protocol UUID, existing view filters, a literal search
+term and a limit of 1–60. It intersects the scope with active source
+revisions, supplies distinct strings, numbers and booleans as exact JSON text,
+and fences the result against changes in registration, binding or metadata.
+The menu covers input literals up to 4 KiB and bounds the number returned.
+The native dictionary lookup works with the typed accelerator disabled.
+
 For recorded Symphony H5 attributes, the native field registry must cover every
 field in each verified source inventory. Values inherit the epoch membership of
 their physical owner. An owner with no epoch remains discoverable through the

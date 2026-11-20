@@ -1,5 +1,6 @@
 """Service/HTTP contract checks using disposable acquisition and SQL fixtures."""
 import copy
+import json
 import threading
 import unittest
 from unittest.mock import patch
@@ -32,6 +33,29 @@ class RequestedSummaryTests(unittest.TestCase):
     def submit(self, **changes):
         body = {'predicate': {'all': []}, 'summary_fields': ['parameters/example'], **changes}
         return self.client.post('/api/explore/summaries', json=body, headers=self.fixture.headers)
+
+    def test_scalar_menu_scopes_exact_choices_without_rebuilding_the_registry(self):
+        registry = self.client.get('/api/explore/field-registry').get_json()
+        self.assertTrue(registry['field_values_available'])
+        path = '/api/explore/field-values'
+        options = {'field': 'parameters/example'}
+        with patch.object(self.service, '_registered_tree_fields', side_effect=AssertionError('all-field scan')):
+            page = self.client.get(path, query_string={**options, 'limit': 1}).get_json()
+            self.assertEqual(page['values'], [{'type': 'number', 'value_json': '0'}])
+            self.assertTrue(page['truncated'])
+            for args in ({'q': '1'}, {'protocol_uuid': self.service.protocol_id, 'filters':
+                          json.dumps({'cell_uuid': self.service.cell_ids[1]})}):
+                scoped = self.client.get(path, query_string={**options, **args})
+                self.assertEqual(scoped.status_code, 200, scoped.get_json())
+                self.assertEqual(scoped.get_json()['values'], [{'type':'number','value_json':'1'}])
+                self.assertFalse(scoped.get_json()['truncated'])
+            self.service.set_source_state_provider(lambda: {'a'*64: {'query_excluded': True}})
+            for args in ({}, {'protocol_uuid': self.service.protocol_id}):
+                empty = self.client.get(path, query_string={**options, **args}).get_json()
+                self.assertEqual(empty['values'], [])
+        for change in ({'limit': 61}, {'filters':'{"unsupported":"bad"}'}, {'field': 'missing/name'},
+                       {'protocol_uuid': 'not-a-uuid'}):
+            self.assertEqual(self.client.get(path, query_string={**options, **change}).status_code, 400)
 
     def test_native_bound_datetime_header_has_stable_identity_witness(self):
         import datetime

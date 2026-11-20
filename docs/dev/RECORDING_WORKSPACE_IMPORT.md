@@ -50,7 +50,9 @@ arrays remain in the H5 and load through the trace reader.
 In **Search predicate**, each nested attribute has its own selectable field.
 The heading gives its parent path and the option shows the recorded attribute
 name. Selecting a name binds that exact path, even when another device or span
-has an attribute with the same name. For instance,
+has an attribute with the same name. Open **Recorded values** on a mode or
+offset condition to choose a value present in the search scope. The **is one of**
+operator accepts several recorded values on the same field. For instance,
 `h5/stimulus/Amp1/parameters/@segmentSeeds` identifies the generator's recorded
 attribute, and `h5/preparation/properties/@bathSolution` identifies the solution
 on the preparation. Epoch queries follow the acquisition's recorded ownership

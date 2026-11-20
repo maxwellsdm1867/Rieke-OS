@@ -40,10 +40,17 @@ class AttributeIndexTests(unittest.TestCase):
         source={'source_sha256':sha,'h5_attribute_inventory':{'source_sha256':sha,'sha256':sha,
             'logical_sha256':'b'*64,'contract':'c'*64,'field_count':len(fields)}}
         rows={e:{'epoch_uuid':e,'source_sha256':sha,'date':'2026-11-20','start_time':'00:00','cell_uuid':'cell'} for e in ids}
-        details={e:{'parameters':{},'metadata':{}} for e in ids}
+        details={e:{'parameters':{'exactTick':tick},'metadata':{}} for e,tick in zip(ids,data)}
         with tempfile.TemporaryDirectory() as tmp, patch.dict(sys.modules,{'workspace_h5_attributes':inventory}):
             native = DiskMetadataIndex.build(Path(tmp)/'native.sqlite',rows,details,[source],'generation','project')
             try:
+                for field in (fields[0], 'parameters/exactTick'):
+                    with native.scalar_value_rows(field,[sha],ids[:1]) as values:
+                        self.assertEqual(list(values),[data[0]])
+                    with native.scalar_value_rows(field,[]) as values:
+                        self.assertEqual(list(values),[])
+                with native.scalar_value_rows(fields[1],[sha]) as values:
+                    self.assertEqual(list(values),[])
                 receipt=native.h5_attribute_coverage()[sha]
                 self.assertEqual((receipt['registered_field_count'],receipt['unassociated_field_count'],receipt['epoch_field_associations']),(len(fields),1,4+len(extra_links)))
                 self.assertEqual(native.catalog_definitions()[fields[2]]['label'],fields[2])
@@ -54,6 +61,8 @@ class AttributeIndexTests(unittest.TestCase):
                 with TypedMetadataIndex(side,native.path) as typed:
                     for key,op,encoding,value,want in [
                         (fields[0],'eq','json',str(data[0]),ids[:1]),
+                        ('parameters/exactTick','eq','json',str(data[0]),ids[:1]),
+                        ('parameters/exactTick','in','json',json.dumps(data[:2]),ids),
                         (fields[0],'gt','json',str(data[0]),ids[1:]),
                         (fields[1],'contains','json','454',ids),
                         (fields[1],'eq','json',json.dumps(data[2]),ids),

@@ -188,7 +188,58 @@ def field_registry(service):
         raise StaleQuery('Metadata generation changed while reading field definitions')
     return {'fields': fields, 'tree_fields': tree_fields, 'operators': list(OPERATORS),
             'predicate_version': 2, 'generation': before, 'source_scope': service.source_scope(),
-            'summary_available': False}
+            'summary_available': False, 'field_values_available': True}
+
+
+def field_value_options(service, field, protocol_uuid, filters, text, limit):
+    if not isinstance(field, str) or not 1 <= len(field) <= 4096 or field.startswith(('joint/', 'annotations/', 'curation/')):
+        raise ValueError('Choose a recorded scalar field')
+    if not 1 <= limit <= 60 or len(text) > 240:
+        raise ValueError('Choose at most 60 values and a search of at most 240 characters')
+    context = query_context(service, {'predicate': {'all': []}, 'protocol_uuid': protocol_uuid, 'filters': filters})
+    before = generation(service, context)
+    active = set(service.source_scope()['active_source_revisions'])
+    index = getattr(service, 'disk_index', None)
+    ids = None
+    if protocol_uuid or context['filters'] or not index or not _whole_catalog(service, context):
+        ids = (row['epoch_uuid'] for row in service._navigation_rows(context['protocol_uuid'], context['filters'])
+               if row['source_sha256'] in active)
+    if index:
+        candidates = index.scalar_value_rows(field, active, ids)
+    else:
+        # In-memory adapters publish their value maps with the field registry.
+        # Never build an all-field distribution to open a one-field menu.
+        cache = getattr(service, '_registered_tree_cache', None)
+        signature = (id(service.rows), len(service.rows), id(service.details), len(service.details))
+        if not cache or cache[0] != signature:
+            raise StaleQuery('Reopen the recorded field list to load its current metadata')
+        catalog, by_epoch = cache[1]
+        if not any(item['id'] == field for item in catalog['fields']):
+            raise ValueError('Choose a recorded field from the predicate catalog')
+        candidates = nullcontext(current[field] for identity in ids
+                                 if field in (current := by_epoch[identity]))
+    options, seen = [], set()
+    needle = text.casefold()
+    truncated = False
+    with candidates as values:
+        for value in values:
+            if type(value) not in (str, int, float, bool):
+                continue
+            encoded = json.dumps(value, ensure_ascii=False, allow_nan=False)
+            label = value if isinstance(value, str) else encoded
+            if len(encoded.encode('utf-8')) > 4096 or needle not in label.casefold():
+                continue
+            key = equality_key(value)
+            if key in seen:
+                continue
+            if len(options) == limit:
+                truncated = True
+                break
+            seen.add(key)
+            options.append({'type': kind(value), 'value_json': encoded})
+    if before != generation(service, context):
+        raise StaleQuery('Metadata or protocol membership changed during the value lookup')
+    return {'field': field, 'generation': before, 'values': options, 'truncated': truncated}
 
 
 def _whole_catalog(service, context):
@@ -612,6 +663,27 @@ def register_explore_query_routes(app, service, db_lock, registration_locks, rea
             # generation reads stay live, and closing failure discards the reply.
             with contract:
                 return jsonify(field_registry(service))
+
+    @app.get('/api/explore/field-values')
+    def explorer_field_values():
+        args = request.args
+        allowed = {'field', 'protocol_uuid', 'filters', 'q', 'limit'}
+        if set(args) - allowed or any(len(args.getlist(key)) != 1 for key in args):
+            raise ValueError('Unsupported or repeated field value option')
+        raw_filters = args.get('filters', '{}')
+        if len(raw_filters.encode('utf-8')) > 32768:
+            raise ValueError('Field value filters exceed the size limit')
+        filters = json.loads(raw_filters)
+        if not isinstance(filters, dict):
+            raise ValueError('Field value filters require an object')
+        protocol = args.get('protocol_uuid')
+        context = {'protocol_uuid': protocol, 'filters': filters}
+        with db_lock, registration_locks(), context_annotation_locks(service, context):
+            try:
+                return jsonify(field_value_options(service, args.get('field'), protocol, filters,
+                                                   args.get('q', ''), int(args.get('limit', '30'))))
+            except StaleQuery as error:
+                return jsonify(status='stale', error=str(error)), 409
 
     @app.post('/api/explore/page')
     def explorer_query_page():
