@@ -1,5 +1,5 @@
 <!-- disco:release-banner:start -->
-> **DISCO 0.2.15 · Mac desktop testing build:** [Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.2.15/Disco-0.2.15-arm64.zip) · [Release details and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.15) · [What's new](CHANGELOG.md). Existing users: **App Updates → Download update → Restart to update**. For manual installation, extract the ZIP and open **Disco.app**. Python and native MySQL are bundled; no Docker or Terminal setup is needed. Unsigned, unnotarized Apple silicon testing build; not production-qualified. Targets macOS 14+, with macOS 14 runtime support unqualified and Intel unsupported. macOS may require **Privacy & Security → Open Anyway**.
+> **DISCO 0.2.16 · Mac desktop testing build:** [Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.2.16/Disco-0.2.16-arm64.zip) · [Release details and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.16) · [What's new](CHANGELOG.md). Existing users: **App Updates → Download update → Restart to update**. For manual installation, extract the ZIP and open **Disco.app**. Python and native MySQL are bundled; no Docker or Terminal setup is needed. Unsigned, unnotarized Apple silicon testing build; not production-qualified. Targets macOS 14+, with macOS 14 runtime support unqualified and Intel unsupported. macOS may require **Privacy & Security → Open Anyway**.
 <!-- disco:release-banner:end -->
 
 # DISCO
@@ -76,16 +76,18 @@ saved scientific membership; they do not turn a search into a selection or merge
 ## Current desktop testing build
 
 <!-- disco:current-release:start -->
-### DISCO 0.2.15
+### DISCO 0.2.16
 
-[Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.2.15/Disco-0.2.15-arm64.zip) · [Release notes and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.15)
+[Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.2.16/Disco-0.2.16-arm64.zip) · [Release notes and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.16)
 
 #### What's new
 
-- The multi-selection toolbar fits on one row with shorter labels for Select All, Deselect All, Tag, and Exclude. It keeps the selected cell and epoch counts and the Remove from pin action.
-- After you remove epochs from a pinned protocol, a bottom-left notice lets you undo the removal. Undo restores the exact epoch membership and the prior export selections.
+- Search recorded Symphony H5 attributes in Search predicate, Arrange tree and the live metadata sidebar. Each nested field keeps its original parent and name. Amp1 operating mode, offset and offset units are available when recorded. The value menu offers choices for the current search scope.
+- Combine metadata and tag conditions in Filter view and Filter export. MATLAB data and Wheeler SQLite exports include the selected epochs’ physical H5 attributes, their types and shapes, and links to inherited attributes. In Wheeler SQLite, query `epoch_recorded_fields` for Amp1 mode, offset and nested fields. Use `epoch_h5_attributes` for the original H5 paths and encodings.
+- Linked SQLite exports reference the project’s verified recording inventories. Use the bundled loader’s `h5_attributes(epoch_uuid)` method or its SQL function `epoch_h5_attributes(epoch_uuid)` to read the nested fields for an exported epoch. Keep the project’s `imports/h5-attributes` folder with the managed project when moving it.
+- Text inputs use the blinking caret. Opening Recorded values moves typing into the filter. Use the arrow keys and Enter to choose a value or Escape to return to the condition. Selected rows and checked choices keep their highlights.
 
-[Source tag: desktop-test-v0.2.15](https://github.com/maxwellsdm1867/Rieke-OS/tree/desktop-test-v0.2.15) identifies packaged source [`4650110`](https://github.com/maxwellsdm1867/Rieke-OS/commit/46501103a74b04fdbd0e0f8db29336138a99a0e9). Later documentation commits do not change the published app. See the release notes for verification results and limitations.
+[Source tag: desktop-test-v0.2.16](https://github.com/maxwellsdm1867/Rieke-OS/tree/desktop-test-v0.2.16) identifies packaged source [`0056abe`](https://github.com/maxwellsdm1867/Rieke-OS/commit/0056abeac79424e55e7fbd89226c380a148b1ec6). Later documentation commits do not change the published app. See the release notes for verification results and limitations.
 <!-- disco:current-release:end -->
 
 The app opens normally without an installer page. It prepares a runtime on

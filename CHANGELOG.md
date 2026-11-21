@@ -2,6 +2,23 @@
 
 <!-- disco:changelog-insert -->
 
+<!-- disco:changelog-0.2.16:start -->
+## 0.2.16 - 2026-11-21
+
+[Download and release details](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.2.16) · [Source tag: desktop-test-v0.2.16](https://github.com/maxwellsdm1867/Rieke-OS/tree/desktop-test-v0.2.16)
+
+Unsigned, unnotarized Apple silicon testing build.
+
+### What's new
+
+- Search recorded Symphony H5 attributes in Search predicate, Arrange tree and the live metadata sidebar. Each nested field keeps its original parent and name. Amp1 operating mode, offset and offset units are available when recorded. The value menu offers choices for the current search scope.
+- Combine metadata and tag conditions in Filter view and Filter export. MATLAB data and Wheeler SQLite exports include the selected epochs’ physical H5 attributes, their types and shapes, and links to inherited attributes. In Wheeler SQLite, query `epoch_recorded_fields` for Amp1 mode, offset and nested fields. Use `epoch_h5_attributes` for the original H5 paths and encodings.
+- Linked SQLite exports reference the project’s verified recording inventories. Use the bundled loader’s `h5_attributes(epoch_uuid)` method or its SQL function `epoch_h5_attributes(epoch_uuid)` to read the nested fields for an exported epoch. Keep the project’s `imports/h5-attributes` folder with the managed project when moving it.
+- Text inputs use the blinking caret. Opening Recorded values moves typing into the filter. Use the arrow keys and Enter to choose a value or Escape to return to the condition. Selected rows and checked choices keep their highlights.
+
+Packaged source: [`0056abe`](https://github.com/maxwellsdm1867/Rieke-OS/commit/0056abeac79424e55e7fbd89226c380a148b1ec6). See the release notes for qualification evidence and testing limits.
+<!-- disco:changelog-0.2.16:end -->
+
 <!-- disco:changelog-0.2.15:start -->
 ## 0.2.15 - 2026-11-12
 
